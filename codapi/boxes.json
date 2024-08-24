@@ -1,0 +1,8 @@
+{
+  "alpine": {
+    "image": "codapi/alpine"
+  },
+  "cangjie":{
+    "image": "cangjie"
+  }
+}

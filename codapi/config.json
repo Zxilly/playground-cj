@@ -1,0 +1,22 @@
+{
+  "pool_size": 8,
+  "verbose": true,
+  "box": {
+    "runtime": "runc",
+    "cpu": 1,
+    "memory": 512,
+    "network": "none",
+    "writable": false,
+    "volume": "%s:/sandbox",
+    "cap_drop": ["all"],
+    "ulimit": ["nofile=96"],
+    "nproc": 64,
+    "tmpfs": ["/tmp"]
+  },
+  "step": {
+    "user": "sandbox",
+    "action": "run",
+    "timeout": 5,
+    "noutput": 4096
+  }
+}

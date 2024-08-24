@@ -1,0 +1,27 @@
+{
+  "run": {
+    "engine": "docker",
+    "entry": "main.cj",
+    "steps": [
+      {
+        "box": "cangjie",
+        "command": [
+          "/cangjie/bin/cjc",
+          "--diagnostic-format",
+          "noColor",
+          "--static-std",
+          "--static-libs",
+          "-o",
+          "main",
+          "main.cj"
+        ]
+      },
+      {
+        "box": "cangjie",
+        "command": [
+          "./main"
+        ]
+      }
+    ]
+  }
+}
