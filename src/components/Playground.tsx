@@ -12,8 +12,17 @@ interface Response {
   stderr: string
 }
 
+const defaultCode = `package cangjie
+
+// 编写你的第一个仓颉程序
+main(): Int64 {
+    println("你好，仓颉！")
+    return 0
+}
+`
+
 export default function Component() {
-  const [code, setCode] = useState('// Write your code here\n'.repeat(50))
+  const [code, setCode] = useState(defaultCode)
   const [compilerOutput, setCompilerOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
