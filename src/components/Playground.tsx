@@ -111,13 +111,13 @@ export default function Component() {
             >
               <div className="h-full pr-2 md:pr-4">
                 {Array.from({length: lineCount}, (_, i) => (
-                  <div key={i} className="leading-5 md:leading-6">{i + 1}</div>
+                  <div key={i} className="leading-4 md:leading-5">{i + 1}</div>
                 ))}
               </div>
             </div>
             <textarea
               ref={codeRef}
-              className="flex-1 p-1 md:p-2 font-mono text-xs md:text-sm bg-transparent resize-none outline-none overflow-y-scroll"
+              className="flex-1 px-1 md:px-2 font-mono text-xs md:text-sm bg-transparent resize-none outline-none overflow-y-scroll"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               spellCheck="false"
