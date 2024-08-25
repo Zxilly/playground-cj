@@ -1,9 +1,20 @@
-import {type Monaco} from "@monaco-editor/react";
+import {loader, type Monaco} from "@monaco-editor/react";
 import {shikiToMonaco} from '@shikijs/monaco'
 import {createHighlighter} from "shiki";
 
 import grammer from "./Cangjie.tmLanguage.json"
 import langConf from "./language-configuration.json"
+
+loader.config({
+  paths: {
+    vs: "https://registry.npmmirror.com/monaco-editor/0.51.0/files/min/vs"
+  },
+  "vs/nls": {
+    availableLanguages: {
+      "*": "zh-cn"
+    }
+  }
+})
 
 export function setupCangjie(monaco: Monaco) {
   monaco.languages.register({id: 'cangjie'});

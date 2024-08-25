@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import React, {useState} from 'react'
+import {Button} from '@/components/ui/button'
+import {ChevronDown, ChevronUp} from 'lucide-react'
 import Editor from "@monaco-editor/react";
 import {setupCangjie} from "@/lib/monaco";
 
