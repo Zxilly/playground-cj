@@ -4,7 +4,7 @@ import React, {useState} from 'react'
 import {Button} from '@/components/ui/button'
 import {ChevronDown, ChevronUp} from 'lucide-react'
 import Editor from "@monaco-editor/react";
-import {setupCangjie} from "@/lib/monaco";
+import {getSetup} from "@/lib/monaco";
 
 interface Response {
   id: string
@@ -92,7 +92,7 @@ export default function Component() {
                 scrollBeyondLastLine: true,
                 fontSize: 14,
               }}
-              beforeMount={setupCangjie}
+              beforeMount={getSetup(handleRun, () => {})}
             />
           </div>
           <div className="w-full md:w-1/3 p-2 md:p-4 flex flex-col overflow-hidden">
