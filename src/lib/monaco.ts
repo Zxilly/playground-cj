@@ -1,0 +1,24 @@
+import {type Monaco} from "@monaco-editor/react";
+import {shikiToMonaco} from '@shikijs/monaco'
+import {createHighlighter} from "shiki";
+
+import grammer from "./Cangjie.tmLanguage.json"
+import langConf from "./language-configuration.json"
+
+export function setupCangjie(monaco: Monaco) {
+  monaco.languages.register({id: 'cangjie'});
+  monaco.languages.setLanguageConfiguration('cangjie', langConf as any);
+
+  (async function () {
+    const highlighter = await createHighlighter({
+      themes: [
+        'vitesse-light',
+      ],
+      langs: [
+        grammer as any,
+      ],
+    })
+
+    shikiToMonaco(highlighter, monaco)
+  })()
+}
