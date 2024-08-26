@@ -88,6 +88,8 @@ export default function Component() {
             setToolOutput(resp.stderr)
           }
 
+          await window.umami.track("format")
+
           return [
             {
               range: model.getFullModelRange(),
@@ -111,6 +113,8 @@ export default function Component() {
           setToolOutput,
           setProgramOutput
         })
+
+        await window.umami.track("run")
       }
     })
 
@@ -121,12 +125,14 @@ export default function Component() {
       contextMenuOrder: 1.5,
       run: async (editor: editor.ICodeEditor) => {
         const code = editor.getValue()
-        const url = await generateShareUrl(code)
+        const url = generateShareUrl(code)
 
         await navigator.clipboard.writeText(url)
         toast({
           description: "已复制分享链接",
         })
+
+        await window.umami.track("share")
       }
     })
 
