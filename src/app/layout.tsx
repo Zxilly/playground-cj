@@ -1,5 +1,4 @@
 import type {Metadata} from "next";
-import Head from "next/head";
 import {Noto_Sans_SC} from "next/font/google";
 import {ReactNode} from "react";
 import "./globals.css";
@@ -16,10 +15,6 @@ export default function RootLayout({children}: Readonly<{
 }>) {
   return (
     <html lang="en">
-    <Head>
-      <script defer src="https://trail.learningman.top/script.js"
-              data-website-id="2cd9ea13-296b-4d90-998a-bbbc5613fc20"></script>
-    </Head>
     <body className={font.className}>{children}</body>
     </html>
   );

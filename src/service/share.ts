@@ -1,4 +1,4 @@
-import {compressToBase64, decompressFromEncodedURIComponent} from "lz-string";
+import {compressToBase64, decompressFromBase64} from "lz-string";
 
 function base64ToBase64Url(base64: string): string {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -17,7 +17,7 @@ export function loadShareCode(): string {
 
   window.location.hash = ""
 
-  return decompressFromEncodedURIComponent(base64UrlToBase64(base64UrlData))
+  return decompressFromBase64(base64UrlToBase64(base64UrlData))
 }
 
 export function generateShareUrl(code: string): string {

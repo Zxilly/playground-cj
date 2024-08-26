@@ -12,6 +12,7 @@ import {useToast} from "@/components/ui/use-toast";
 import {Toaster} from "@/components/ui/toaster";
 import {AnsiUp} from "ansi_up";
 import {generateShareUrl, loadShareCode} from "@/service/share";
+import Script from "next/script";
 
 const defaultCode = `package cangjie
 
@@ -215,6 +216,16 @@ export default function Component() {
         </a>
       </div>
       <Toaster/>
+      <Script id="track" dangerouslySetInnerHTML={{
+        __html: `
+        (function () {
+          var el = document.createElement('script');
+          el.setAttribute('src', 'https://trail.learningman.top/script.js');
+          el.setAttribute('data-website-id', '2cd9ea13-296b-4d90-998a-bbbc5613fc20');
+          document.body.appendChild(el);
+        })();
+      `
+      }}/>
     </div>
   )
 }
