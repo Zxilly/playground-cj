@@ -166,27 +166,32 @@ export default function Component() {
               onMount={onMountFunc}
             />
           </div>
-          <div className="w-full md:w-1/3 p-2 md:p-4 flex flex-col h-full">
+          <div className="w-full md:w-1/3 p-2 md:p-4 flex flex-col h-auto md:h-full">
             <div className="md:hidden mb-2">
               <Button onClick={toggleOutput} variant="outline" className="w-full flex justify-between items-center">
                 <span>{isOutputCollapsed ? "显示" : "隐藏"}输出内容</span>
                 {isOutputCollapsed ? <ChevronDown className="h-4 w-4"/> : <ChevronUp className="h-4 w-4"/>}
               </Button>
             </div>
-            <div className={`flex-1 ${isOutputCollapsed ? 'hidden' : 'flex'} md:flex flex-col overflow-hidden`}>
-              <div className="flex flex-col h-1/2 mb-2 md:mb-4">
+            <div
+              className={`flex-1 ${isOutputCollapsed ? 'hidden' : 'flex'} md:flex flex-col overflow-hidden ${isOutputCollapsed ? '' : 'h-[30vh]'} md:max-h-full transition-all duration-300`}>
+              <div className="flex flex-col flex-1 min-h-0 mb-2 md:mb-4">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
-                <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
-                  <div className="h-full overflow-auto p-1 md:p-2">
-                    <pre dangerouslySetInnerHTML={{__html: toolOutputHtml}}/>
+                <div
+                  className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex flex-col min-h-0">
+                  <div className="flex-1 overflow-auto p-1 md:p-2 min-h-[8rem] md:min-h-0 flex flex-col">
+                    <pre className="flex-1 min-h-full"
+                         dangerouslySetInnerHTML={{__html: toolOutputHtml}}/>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col h-1/2">
+              <div className="flex flex-col flex-1 min-h-0">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
-                <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
-                  <div className="h-full overflow-auto p-1 md:p-2">
-                    <pre dangerouslySetInnerHTML={{__html: programOutputHtml}}/>
+                <div
+                  className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex flex-col min-h-0">
+                  <div className="flex-1 overflow-auto p-1 md:p-2 min-h-[8rem] md:min-h-0 flex flex-col">
+                    <pre className="flex-1 min-h-full"
+                         dangerouslySetInnerHTML={{__html: programOutputHtml}}/>
                   </div>
                 </div>
               </div>
