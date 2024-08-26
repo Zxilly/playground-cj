@@ -2,9 +2,10 @@
 const nextConfig = {
     experimental: {
         optimizePackageImports: [
-            "shiki"
+            "shiki",
         ]
-    }
+    },
+    reactStrictMode: false,
 };
 
 export default nextConfig;

@@ -19,7 +19,21 @@
       {
         "box": "cangjie",
         "command": [
-          "./main"
+          "/sandbox/main"
+        ]
+      }
+    ]
+  },
+  "format": {
+    "engine": "docker",
+    "entry": "main.cj",
+    "steps": [
+      {
+        "box": "cangjie",
+        "command": [
+          "sh",
+          "-c",
+          "output=$(cjfmt -f main.cj -o aa.cj 2>&1); if [ -n \"$output\" ]; then echo \"$output\" >&2; exit 1; else cat aa.cj; fi"
         ]
       }
     ]

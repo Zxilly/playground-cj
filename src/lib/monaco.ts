@@ -16,35 +16,22 @@ loader.config({
   }
 })
 
-export function getSetup(run: () => void, share: () => void) {
-  return function (monaco: Monaco) {
-    monaco.languages.register({id: 'cangjie'});
-    monaco.languages.setLanguageConfiguration('cangjie', langConf as any);
+export function setupEditor(monaco: Monaco) {
+  monaco.languages.register({id: 'cangjie'});
+  monaco.languages.setLanguageConfiguration('cangjie', langConf as any);
 
-    monaco.editor.addEditorAction({
-      id: 'compileAndRun',
-      label: '编译运行',
-      contextMenuGroupId: 'navigation',
-      contextMenuOrder: 1.5,
-      keybindings: [
-        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB,
+  ;(async () => {
+    const highlighter = await createHighlighter({
+      themes: [
+        'vitesse-light',
       ],
-      run: function() {
-        run();
-      }
-    });
+      langs: [
+        grammer as any,
+      ],
+    })
 
-    (async function () {
-      const highlighter = await createHighlighter({
-        themes: [
-          'vitesse-light',
-        ],
-        langs: [
-          grammer as any,
-        ],
-      })
-
-      shikiToMonaco(highlighter, monaco)
-    })()
-  }
+    shikiToMonaco(highlighter, monaco)
+  })();
 }
+
+
