@@ -45,9 +45,10 @@ export async function remoteRun(code: string, actions: Actions): Promise<void> {
   } else {
     if (response.stderr.length > 0) {
       actions.setToolOutput(response.stderr)
+      actions.setProgramOutput("")
     } else {
       actions.setToolOutput("Compiled successfully")
+      actions.setProgramOutput(response.stdout)
     }
-    actions.setProgramOutput(response.stdout)
   }
 }
