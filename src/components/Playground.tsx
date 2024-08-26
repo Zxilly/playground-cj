@@ -60,12 +60,10 @@ export default function Component() {
 
   const onMountFunc = useCallback<OnMount>((ed, monaco) => {
     // we load shared code here to ensure it's loaded after monaco is initialized
-    loadShareCode().then((code) => {
-        if (code) {
-          ed.setValue(code)
-        }
-      }
-    )
+    const code = loadShareCode()
+    if (code) {
+      ed.setValue(code)
+    }
 
     monaco.languages.registerDocumentFormattingEditProvider(
       "cangjie",
