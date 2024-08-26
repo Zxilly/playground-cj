@@ -17,6 +17,6 @@
     "user": "sandbox",
     "action": "run",
     "timeout": 5,
-    "noutput": 4096
+    "noutput": 16384
   }
 }
