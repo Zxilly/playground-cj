@@ -42,13 +42,13 @@ export async function remoteRun(code: string, actions: Actions): Promise<void> {
   const response = await requestRemoteAction(code, "run")
   if (!response.ok) {
     actions.setToolOutput(response.stderr)
+    actions.setProgramOutput("")
   } else {
     if (response.stderr.length > 0) {
       actions.setToolOutput(response.stderr)
-      actions.setProgramOutput("")
     } else {
       actions.setToolOutput("Compiled successfully")
-      actions.setProgramOutput(response.stdout)
     }
+    actions.setProgramOutput(response.stdout)
   }
 }
