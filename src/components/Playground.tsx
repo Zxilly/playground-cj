@@ -13,6 +13,7 @@ import {Toaster} from "@/components/ui/toaster";
 import {AnsiUp} from "ansi_up";
 import {generateShareUrl, loadShareCode} from "@/service/share";
 import Script from "next/script";
+import {saveAsFile} from "@/lib/file";
 
 const defaultCode = `package cangjie
 
@@ -89,7 +90,7 @@ export default function Component() {
             setToolOutput(resp.stderr)
           }
 
-          await window.umami.track("format")
+          await window.umami?.track("format")
 
           return [
             {
@@ -115,7 +116,7 @@ export default function Component() {
           setProgramOutput
         })
 
-        await window.umami.track("run")
+        await window.umami?.track("run")
       }
     })
 
@@ -133,7 +134,22 @@ export default function Component() {
           description: "已复制分享链接",
         })
 
-        await window.umami.track("share")
+        await window.umami?.track("share")
+      }
+    })
+
+    ed.addAction({
+      id: 'cangjie.save',
+      label: '保存代码',
+      contextMenuGroupId: 'navigation',
+      run: async (editor: editor.ICodeEditor) => {
+        saveAsFile(editor.getValue())
+
+        toast({
+          description: "已保存代码",
+        })
+
+        await window.umami?.track("save")
       }
     })
 

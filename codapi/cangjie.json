@@ -22,7 +22,7 @@
         "command": [
           "sh",
           "-c",
-          "output=$(cjfmt -f main.cj -o /tmp/fmt.cj 2>&1); if [ -n \"$output\" ]; then echo -e \"$output\" >&2; exit 1; else cat /tmp/fmt; fi"
+          "output=$(cjfmt -f main.cj -o /tmp/fmt.cj 2>&1); if [ -n \"$output\" ]; then echo -e \"$output\" >&2; exit 1; else cat /tmp/fmt.cj; fi"
         ]
       }
     ]
