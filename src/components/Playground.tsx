@@ -147,15 +147,15 @@ export default function Component() {
     <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
       <div className="flex flex-col h-full overflow-hidden bg-background text-foreground p-4">
         <div className="flex-none p-2 md:p-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center">
+          <div className="flex items-center md:mb-0 mb-2">
             <Image
               src="/icon.png"
               alt="Logo"
-              width={40}
-              height={40}
-              className="mr-4"
+              width={32}
+              height={32}
+              className="m-4"
             />
-            <h1 className="text-2xl font-bold mb-2 md:mb-0">仓颉 Playground</h1>
+            <h1 className="text-2xl font-bold">仓颉 Playground</h1>
           </div>
           <div className="flex flex-row space-y-0 space-x-2 w-full md:w-auto">
             <Button onClick={handleRun} className="w-full sm:w-auto">运行</Button>
