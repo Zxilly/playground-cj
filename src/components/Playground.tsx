@@ -1,21 +1,21 @@
 'use client'
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import {ChevronDown, ChevronUp} from 'lucide-react'
-import type {Monaco, OnMount} from '@monaco-editor/react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import type { Monaco, OnMount } from '@monaco-editor/react'
 import Editor from '@monaco-editor/react'
-import type {editor} from 'monaco-editor'
-import {AnsiUp} from 'ansi_up'
+import type { editor } from 'monaco-editor'
+import { AnsiUp } from 'ansi_up'
 import Script from 'next/script'
-import {Button} from '@/components/ui/button'
-import {setupEditor} from '@/lib/monaco'
-import {remoteRun, requestRemoteAction, SandboxStatus} from '@/service/run'
-import {useToast} from '@/components/ui/use-toast'
-import {Toaster} from '@/components/ui/toaster'
-import {generateDataShareUrl, generateHashShareUrl, loadShareCode} from '@/service/share'
-import {saveAsFile} from '@/lib/file'
-import {useMediaQuery} from "usehooks-ts";
+import { useMediaQuery } from 'usehooks-ts'
+import { Button } from '@/components/ui/button'
+import { setupEditor } from '@/lib/monaco'
+import { SandboxStatus, remoteRun, requestRemoteAction } from '@/service/run'
+import { useToast } from '@/components/ui/use-toast'
+import { Toaster } from '@/components/ui/toaster'
+import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
+import { saveAsFile } from '@/lib/file'
 
 const defaultCode = `package cangjie
 
@@ -33,7 +33,7 @@ export default function Component() {
 
   const [monacoInst, setMonacoInst] = useState<Monaco | null>(null)
 
-  const {toast} = useToast()
+  const { toast } = useToast()
 
   const editor = useCallback((monaco: Monaco) => {
     return monaco.editor.getEditors()[0]
@@ -81,7 +81,8 @@ export default function Component() {
         if (code) {
           ed.setValue(code)
         }
-      } else {
+      }
+      else {
         toast({
           description: '分享代码加载失败',
           variant: 'destructive',
@@ -121,7 +122,8 @@ export default function Component() {
             })
 
             setToolOutput('格式化成功')
-          } else {
+          }
+          else {
             toast({
               description: '格式化失败',
               variant: 'destructive',
@@ -251,7 +253,7 @@ export default function Component() {
               className="border"
               theme="vitesse-light"
               options={{
-                minimap: {enabled: false},
+                minimap: { enabled: false },
                 scrollBeyondLastLine: true,
                 fontSize: 14,
               }}
@@ -266,7 +268,7 @@ export default function Component() {
                   {isOutputCollapsed ? '显示' : '隐藏'}
                   输出内容
                 </span>
-                {!isOutputCollapsed ? <ChevronDown className="h-4 w-4"/> : <ChevronUp className="h-4 w-4"/>}
+                {!isOutputCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </Button>
             </div>
             <div
@@ -278,7 +280,7 @@ export default function Component() {
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
                 <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
                   <div className="h-[15vh] md:h-full overflow-auto p-1 md:p-2">
-                    <pre dangerouslySetInnerHTML={{__html: toolOutputHtml}}/>
+                    <pre dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
                   </div>
                 </div>
               </div>
@@ -286,7 +288,7 @@ export default function Component() {
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
                 <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
                   <div className="h-[15vh] md:h-full overflow-auto p-1 md:p-2">
-                    <pre dangerouslySetInnerHTML={{__html: programOutputHtml}}/>
+                    <pre dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
                   </div>
                 </div>
               </div>
@@ -304,7 +306,7 @@ export default function Component() {
           在 GitHub 查看源代码
         </a>
       </div>
-      <Toaster/>
+      <Toaster />
       <Script
         id="track"
         dangerouslySetInnerHTML={{
