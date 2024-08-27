@@ -12,14 +12,14 @@
           "--static-std",
           "--static-libs",
           "-o",
-          "main",
+          "/tmp/main",
           "main.cj"
         ]
       },
       {
         "box": "cangjie",
         "command": [
-          "/sandbox/main"
+          "/tmp/main"
         ]
       }
     ]
@@ -33,7 +33,7 @@
         "command": [
           "sh",
           "-c",
-          "output=$(cjfmt -f main.cj -o aa.cj 2>&1); if [ -n \"$output\" ]; then echo \"$output\" >&2; exit 1; else cat aa.cj; fi"
+          "output=$(cjfmt -f main.cj -o /tmp/fmt.cj 2>&1); if [ -n \"$output\" ]; then echo \"$output\" >&2; exit 1; else cat /tmp/fmt; fi"
         ]
       }
     ]
