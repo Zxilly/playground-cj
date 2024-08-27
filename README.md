@@ -1,6 +1,7 @@
 # 仓颉 Playground
 
 ![](https://img.shields.io/badge/next.js-000000)
+[![Runs All Unit tests](https://github.com/Zxilly/playground-cj/actions/workflows/test.yml/badge.svg)](https://github.com/Zxilly/playground-cj/actions/workflows/test.yml)
 
 ## Demo
 
