@@ -2,7 +2,7 @@ import {loader, type Monaco} from "@monaco-editor/react";
 import {shikiToMonaco} from '@shikijs/monaco'
 import {createHighlighter} from "shiki";
 
-import grammer from "./Cangjie.tmLanguage.json"
+import grammar from "./Cangjie.tmLanguage.json"
 import langConf from "./language-configuration.json"
 
 loader.config({
@@ -26,12 +26,10 @@ export function setupEditor(monaco: Monaco) {
         'vitesse-light',
       ],
       langs: [
-        grammer as any,
+        grammar as any,
       ],
     })
 
     shikiToMonaco(highlighter, monaco)
   })();
 }
-
-
