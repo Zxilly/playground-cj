@@ -17,7 +17,7 @@ function getSendPayload(code: string, action: string): string {
 }
 
 export async function requestRemoteAction(code: string, action: string): Promise<SandboxResponse> {
-  return await fetch("https://cj-api.learningman.top/v1/exec",
+  return await fetch("https://cj-api.stagoh.com/v1/exec",
     {
       method: "POST",
       headers: {
