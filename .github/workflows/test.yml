@@ -12,15 +12,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          standalone: 'true'
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
           cache: "pnpm"
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Run Lint
         run: pnpm run lint
