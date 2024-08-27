@@ -142,6 +142,10 @@ export default function Component() {
       id: 'cangjie.save',
       label: '保存代码',
       contextMenuGroupId: 'navigation',
+      contextMenuOrder: 1.5,
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+      ],
       run: async (editor: editor.ICodeEditor) => {
         saveAsFile(editor.getValue())
 
