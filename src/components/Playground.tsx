@@ -6,12 +6,12 @@ import {Button} from '@/components/ui/button'
 import {ChevronDown, ChevronUp} from 'lucide-react'
 import Editor, {Monaco, OnMount} from "@monaco-editor/react";
 import {setupEditor} from "@/lib/monaco";
-import {remoteRun, requestRemoteAction} from "@/service/run"
+import {remoteRun, requestRemoteAction, SandboxStatus} from "@/service/run"
 import type {editor} from "monaco-editor";
 import {useToast} from "@/components/ui/use-toast";
 import {Toaster} from "@/components/ui/toaster";
 import {AnsiUp} from "ansi_up";
-import {generateShareUrl, loadShareCode} from "@/service/share";
+import {generateDataShareUrl, generateHashShareUrl, loadShareCode} from "@/service/share";
 import Script from "next/script";
 import {saveAsFile} from "@/lib/file";
 
@@ -54,7 +54,7 @@ export default function Component() {
   const handleShare = useCallback(() => {
     if (!monacoInst) return
 
-    editor(monacoInst).getAction("cangjie.share")?.run()
+    editor(monacoInst).getAction("cangjie.share.hash")?.run()
   }, [editor, monacoInst])
 
   const toggleOutput = useCallback(() => {
@@ -62,103 +62,151 @@ export default function Component() {
   }, [isOutputCollapsed])
 
   const onMountFunc = useCallback<OnMount>((ed, monaco) => {
-    // we load shared code here to ensure it's loaded after monaco is initialized
-    const code = loadShareCode()
-    if (code) {
-      ed.setValue(code)
-    }
-
-    monaco.languages.registerDocumentFormattingEditProvider(
-      "cangjie",
-      {
-        async provideDocumentFormattingEdits(model: editor.ITextModel) {
-          let code = model.getValue()
-          const resp = await requestRemoteAction(code, "format")
-
-          if (resp.ok) {
-            toast({
-              description: "格式化成功",
-            })
-
-            setToolOutput("格式化成功")
-          } else {
-            toast({
-              description: "格式化失败",
-              variant: "destructive",
-            })
-
-            setToolOutput(resp.stderr)
+      // we load shared code here to ensure it's loaded after monaco is initialized
+      loadShareCode().then(([code, success]) => {
+        if (success) {
+          if (code) {
+            ed.setValue(code)
           }
-
-          await window.umami?.track("format")
-
-          return [
-            {
-              range: model.getFullModelRange(),
-              text: resp.ok ? resp.stdout : code
-            }
-          ]
+        } else {
+          toast({
+            description: "分享代码加载失败",
+            variant: "destructive",
+          })
         }
-      }
-    )
+      })
 
-    ed.addAction({
-      id: 'cangjie.compile.run',
-      label: '编译运行',
-      contextMenuGroupId: 'navigation',
-      contextMenuOrder: 1.5,
-      keybindings: [
-        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB,
-      ],
-      run: async (editor: editor.ICodeEditor) => {
-        await remoteRun(editor.getValue(), {
-          setToolOutput,
-          setProgramOutput
-        })
+      monaco.languages.registerDocumentFormattingEditProvider(
+        "cangjie",
+        {
+          async provideDocumentFormattingEdits(model: editor.ITextModel) {
+            let code = model.getValue()
+            const [resp, status] = await requestRemoteAction(code, "format")
 
-        await window.umami?.track("run")
-      }
-    })
+            switch (status) {
+              case SandboxStatus.RATE_LIMIT:
+                toast({
+                  description: "后端负载过大，请稍后再试",
+                  variant: "destructive",
+                })
 
-    ed.addAction({
-      id: 'cangjie.share',
-      label: '分享',
-      contextMenuGroupId: 'navigation',
-      contextMenuOrder: 1.5,
-      run: async (editor: editor.ICodeEditor) => {
-        const code = editor.getValue()
-        const url = generateShareUrl(code)
+                setToolOutput("后端负载过大，请稍后再试")
+                return
+              case SandboxStatus.UNKNOWN_ERROR:
+                toast({
+                  description: "未知错误",
+                  variant: "destructive",
+                })
 
-        await navigator.clipboard.writeText(url)
-        toast({
-          description: "已复制分享链接",
-        })
+                setToolOutput("格式化失败")
+                return
+            }
 
-        await window.umami?.track("share")
-      }
-    })
+            if (resp.ok) {
+              toast({
+                description: "格式化成功",
+              })
 
-    ed.addAction({
-      id: 'cangjie.save',
-      label: '保存代码',
-      contextMenuGroupId: 'navigation',
-      contextMenuOrder: 1.5,
-      keybindings: [
-        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
-      ],
-      run: async (editor: editor.ICodeEditor) => {
-        saveAsFile(editor.getValue())
+              setToolOutput("格式化成功")
+            } else {
+              toast({
+                description: "格式化失败",
+                variant: "destructive",
+              })
 
-        toast({
-          description: "已保存代码",
-        })
+              setToolOutput(resp.stderr)
+            }
 
-        await window.umami?.track("save")
-      }
-    })
+            await window.umami?.track("format")
 
-    setMonacoInst(monaco)
-  }, [toast])
+            return [
+              {
+                range: model.getFullModelRange(),
+                text: resp.ok ? resp.stdout : code
+              }
+            ]
+          }
+        }
+      )
+
+      ed.addAction({
+        id: 'cangjie.compile.run',
+        label: '编译运行',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.5,
+        keybindings: [
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB,
+        ],
+        run: async (editor: editor.ICodeEditor) => {
+          await remoteRun(editor.getValue(), {
+            setToolOutput,
+            setProgramOutput
+          })
+
+          await window.umami?.track("run")
+        }
+      })
+
+      ed.addAction({
+        id: 'cangjie.share.url',
+        label: '分享 (URL方式)',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.5,
+        run: async (editor: editor.ICodeEditor) => {
+          const code = editor.getValue()
+          const url = generateDataShareUrl(code)
+
+          await navigator.clipboard.writeText(url)
+          toast({
+            description: "已复制分享链接",
+          })
+
+          await window.umami?.track("share")
+        }
+      })
+
+      ed.addAction({
+        id: 'cangjie.share.hash',
+        label: '分享 (Hash方式)',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.5,
+        run: async (editor: editor.ICodeEditor) => {
+          const code = editor.getValue()
+          const url = await generateHashShareUrl(code)
+
+          await navigator.clipboard.writeText(url)
+          toast({
+            description: "已复制分享链接",
+          })
+
+          await window.umami?.track("share")
+        }
+      })
+
+
+      ed.addAction({
+        id: 'cangjie.save',
+        label: '保存代码',
+        contextMenuGroupId: 'navigation',
+        contextMenuOrder: 1.5,
+        keybindings: [
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+        ],
+        run: async (editor: editor.ICodeEditor) => {
+          saveAsFile(editor.getValue())
+
+          toast({
+            description: "已保存代码",
+          })
+
+          await window.umami?.track("save")
+        }
+      })
+
+      setMonacoInst(monaco)
+    },
+    [toast]
+  )
 
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [ansiUp, toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [ansiUp, programOutput])

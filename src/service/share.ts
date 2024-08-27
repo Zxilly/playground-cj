@@ -8,25 +8,61 @@ function base64UrlToBase64(base64url: string): string {
   return base64url.replace(/-/g, '+').replace(/_/g, '/');
 }
 
-export function loadShareCode(): string {
+export async function loadShareCode(): Promise<[string, boolean]> {
   const params = new URLSearchParams(window.location.hash.slice(1))
-  const base64UrlData = params.get("data")
-  if (!base64UrlData) {
-    return ""
-  }
-
   window.location.hash = ""
 
-  return decompressFromBase64(base64UrlToBase64(base64UrlData))
+  const base64UrlData = params.get("data")
+  if (base64UrlData) {
+    return [decompressFromBase64(base64UrlToBase64(base64UrlData)), true]
+  }
+
+  const hash = params.get("hash")
+  if (hash) {
+    const response = await fetch(`https://dpaste.com/${hash}.txt`)
+    if (response.ok) {
+      return [await response.text(), true]
+    }
+    return ["", false]
+  }
+
+  return ["", true]
 }
 
-export function generateShareUrl(code: string): string {
+function constructURLWithHash(hash: string): string {
+  const url = new URL(window.location.href);
+  url.hash = hash;
+
+  return url.toString();
+}
+
+export function generateDataShareUrl(code: string): string {
   const base64UrlData = base64ToBase64Url(compressToBase64(code))
 
   const params = new URLSearchParams({data: base64UrlData});
 
-  const url = new URL(window.location.href);
-  url.hash = params.toString();
+  return constructURLWithHash(params.toString());
+}
 
-  return url.toString();
+async function dpaste(content: string) {
+  const query = new URLSearchParams();
+  query.set('content', content);
+  query.set("title", "Playground Cangjie");
+  query.set("expiry_days", "200");
+
+  const response = await fetch('https://dpaste.com/api/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: query.toString(),
+  });
+  return response.text();
+}
+
+export async function generateHashShareUrl(code: string): Promise<string> {
+  const dpasteUrl = await dpaste(code);
+  const hash = dpasteUrl.split('/')[3];
+
+  const params = new URLSearchParams({hash: hash});
+
+  return constructURLWithHash(params.toString());
 }

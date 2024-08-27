@@ -6,6 +6,12 @@ interface SandboxResponse {
   stderr: string
 }
 
+export enum SandboxStatus {
+  OK = 0,
+  RATE_LIMIT = 1,
+  UNKNOWN_ERROR = 2
+}
+
 function getSendPayload(code: string, action: string): string {
   return JSON.stringify({
     "sandbox": "cangjie",
@@ -16,8 +22,8 @@ function getSendPayload(code: string, action: string): string {
   })
 }
 
-export async function requestRemoteAction(code: string, action: string): Promise<SandboxResponse> {
-  return await fetch("https://cj-api.learningman.top/v1/exec",
+export async function requestRemoteAction(code: string, action: string): Promise<[SandboxResponse, SandboxStatus]> {
+  const resp = await fetch("https://cj-api.learningman.top/v1/exec",
     {
       method: "POST",
       headers: {
@@ -25,7 +31,19 @@ export async function requestRemoteAction(code: string, action: string): Promise
       },
       body: getSendPayload(code, action)
     }
-  ).then(res => res.json())
+  )
+
+  const data = await resp.json()
+
+  if (resp.ok) {
+    return [data, SandboxStatus.OK]
+  } else {
+    if (resp.status === 429) {
+      return [data, SandboxStatus.RATE_LIMIT]
+    } else {
+      return [data, SandboxStatus.UNKNOWN_ERROR]
+    }
+  }
 }
 
 type ContentSetter = (content: string) => void
@@ -36,19 +54,31 @@ export type Actions = {
 }
 
 export async function remoteRun(code: string, actions: Actions): Promise<void> {
-  actions.setToolOutput("Compiling...")
-  actions.setProgramOutput("Running...")
+  actions.setToolOutput("编译中")
+  actions.setProgramOutput("运行中")
 
-  const response = await requestRemoteAction(code, "run")
-  if (!response.ok) {
-    actions.setToolOutput(response.stderr)
+  const [data, status] = await requestRemoteAction(code, "run")
+
+  switch (status) {
+    case SandboxStatus.RATE_LIMIT:
+      actions.setToolOutput("后端负载过大，请稍后再试")
+      actions.setProgramOutput("")
+      return
+    case SandboxStatus.UNKNOWN_ERROR:
+      actions.setToolOutput("未知错误")
+      actions.setProgramOutput("")
+      return
+  }
+
+  if (!data.ok) {
+    actions.setToolOutput(data.stderr)
     actions.setProgramOutput("")
   } else {
-    if (response.stderr.length > 0) {
-      actions.setToolOutput(response.stderr)
+    if (data.stderr.length > 0) {
+      actions.setToolOutput(data.stderr)
     } else {
-      actions.setToolOutput("Compiled successfully")
+      actions.setToolOutput("编译成功")
     }
-    actions.setProgramOutput(response.stdout)
+    actions.setProgramOutput(data.stdout)
   }
 }

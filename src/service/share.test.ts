@@ -1,11 +1,11 @@
 import {expect, test} from 'vitest'
-import {generateShareUrl, loadShareCode} from "@/service/share";
+import {generateDataShareUrl, loadShareCode} from "@/service/share";
 
 test.each([
   ["print('Hello, world!')", "http://localhost:3000/#data=A4JwlgdgLgFA5ACQKYBsUHsA0ACA7ukFAEwEI4BKIA"],
   ["print('中文代码')", "http://localhost:3000/#data=A4JwlgdgLgFA5IWjlDhpoY7lCAHnAlEA"]
 ])("Test share serialization with code: %s", (code, expectedUrl) => {
-  const url = generateShareUrl(code)
+  const url = generateDataShareUrl(code)
 
   expect(url).toBe(expectedUrl)
 
