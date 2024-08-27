@@ -1,533 +1,512 @@
 {
-	"version" : "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name" : "cangjie",
-	"scopeName" : "source.cj",
-	"patterns" : [{
-		"include": "#strings"
-		}, {
-			"include": "#mark"
-		}, {
-			"include" : "#package"
-		}, {
-			"include" : "#import"
-		}, {
-			"include" : "#quoteToken"
-		}, {
-			"include" : "#originStrings"
-		}, {
-			"include" : "#comments"
-		}, {
-			"include" : "#code"
-		}, {
-			"include" : "#module"
-		}, {
-			"include" : "#forStruct"
-		}, {
-			"include" : "#at"
-		}, {
-			"include" : "#function"
-		}, {
-			"include" : "#macro"
-		}, {
-			"include" : "#classlike-declaration"
-		}, {
-			"include" : "#variable"
-		}, {
-			"include" : "#qualified-type"
-		}, {
-			"include" : "#type"
-		}
-	],
-	"repository" : {
-		"at" : {
-			"patterns" : [{
-					"name" : "keyword.control.Cangjie",
-					"match" : "@"
-				}
-			]
-		},
-		"classlike-declaration" : {
-			"patterns" : [{
-					"begin" : "(?<=\\b(class|interface|struct|enum|extend|type))\\s+",
-					"end" : "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
-					"name" : "support.class.Cangjie"
-				}, {
-					"match" : "(?<=\\b(class|interface|struct|enum|extend)\\s+[\\p{XID_Start}][\\p{XID_Continue}]*\\s*<:[\\s*[\\p{XID_Start}][\\p{XID_Continue}]*\\s*&\\s*]*)[\\p{XID_Start}][\\p{XID_Continue}]*",
-					"name" : "support.class.Cangjie"
-				}, {
-					"begin" : "(?<=\\b(func))\\s+",
-					"end" : "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
-					"name" : "support.function.Cangjie"
-				}, {
-					"begin" : "(?<=\\b(let|var))\\s+",
-					"end" : "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
-					"name" : "support.variable.Cangjie"
-				}, {
-					"name" : "support.class.Cangjie",
-					"match" : "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\<[\\*\\<\\,\\w\\s]*\\>)"
-				}, {
-					"begin" : "(?<=\\b(case))\\s+",
-					"end" : "(?=(\\=\\>))|[\\n\\r]",
-					"name" : "keyword.operator.Cangjie",
-					"patterns" : [{
-							"include" : "#memberAccess"
-						}, {
-							"include" : "#classlike-declaration"
-						}, {
-							"include" : "#function"
-						}, {
-							"include" : "#strings"
-						}, {
-							"include" : "#keywords"
-						},  {
-							"include" : "#qualified-type"
-						}, {
-							"include" : "#constants"
-						}, {
-							"include" : "#type"
-						}, {
-							"include" : "#variable"
-						}
-					]
-				}
-			]
-		},
-		"type" : {
-			"patterns" : [{
-					"begin" : "(?<!<)<",
-					"end" : "(?=[^,*\\<\\>\\w\\s]|[\\n\\r])",
-					"patterns" : [{
-							"include" : "#keywords"
-						}, {
-							"include": "#strings"
-						},  {
-							"match" : "[\\p{XID_Start}][\\p{XID_Continue}]*\\s*(?=[\\)|\\||\\&|\\n|;])",
-							"name" : "support.variable.Cangjie"
-						}, {
-							"match" : "`[\\p{XID_Start}][\\p{XID_Continue}]*`|[\\p{XID_Start}][\\p{XID_Continue}]*",
-							"name" : "support.class.Cangjie"
-						}, {
-							"include" : "#function"
-						}, {
-							"include" : "#constants"
-						}
-					]
-				}
-			]
-		},
-		"qualified-type" : {
-			"patterns" : [{
-					"begin" : ":",
-					"end" : "(?=[^*\\<,\\|\\w\\s]|\\R|\\n)",
-					"patterns" : [{
-						"include": "#mark"
-						}, {
-							"include" : "#keywords"
-						}, {
-							"include" : "#constants"
-						}, {
-							"match" : "(?<=,)(\\s*)([\\p{XID_Start}][\\p{XID_Continue}]*)(\\s*)(?=(!?)(\\s*):)",
-							"name" : "support.variable.Cangjie"
-						}, {
-							"match" : "`[\\p{XID_Start}][\\p{XID_Continue}]*`|[\\p{XID_Start}][\\p{XID_Continue}]*",
-							"name" : "support.class.Cangjie"
-						}
-					]
-				}
-			]
-		},
-		"mark": {
-			"match": "(?<=(\\(|,)(\\s*))(`?\\w+`?)(?=(\\s*):)",
-			"name" : "support.variable.Cangjie"
-		},
-		"macro" : {
-			"patterns" : [{
-					"name" : "support.function.Cangjie.macro",
-					"match" : "(?<=(@))[A-Za-z_][A-Za-z0-9_.]*"
-				}
-			]
-		},
-		"function" : {
-			"patterns" : [{
-					"name" : "support.function.Cangjie",
-					"match" : "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\(.*)"
-				}, {
-					"name" : "support.function.Cangjie",
-					"match" : "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\<[\\*\\<\\,\\w\\s]*\\>\\s*\\(.*)"
-				}, {
-					"match" : "(?<=operator\\s+func)\\s+((\\(\\))|(\\[\\])|(\\*\\*)|(\\<\\<)|(\\>\\>)|(\\>\\=)|(\\<\\=)|(\\!\\=)|(\\=\\=)|\\!|\\-|\\*|\\/|\\%|\\+|\\<|\\>|\\&|\\^|\\|)",
-					"name" : "support.function.Cangjie"
-				}, {
-					"match" : "(?<=(grad|@vjp|adjointOf|valWithGrad)\\()\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
-					"name" : "support.function.Cangjie"
-				}
-			]
-		},
-		"variable" : {
-			"patterns" : [{
-					"name" : "support.variable.Cangjie",
-					"match" : "\\b([\\p{XID_Start}][\\p{XID_Continue}]*|`[\\p{XID_Start}][\\p{XID_Continue}]*`)"
-				}
-			]
-		},
-		"memberAccess" : {
-			"patterns" : [{
-					"name" : "support.class.Cangjie",
-					"match" : "\\b(([\\p{XID_Start}][\\p{XID_Continue}]*)|(`[\\p{XID_Start}][\\p{XID_Continue}]*`))(?=\\.)"
-				}
-			]
-		},
-		"package" : {
-			"patterns" : [{
-					"begin" : "\\b(package)\\b\\s*",
-					"beginCaptures" : {
-						"1" : {
-							"name" : "keyword.control.package.Cangjie"
-						}
-					},
-					"end" : "(?=[^.\\w\\s])|\\R|\\Z|\n",
-					"endCaptures" : {
-						"1" : {
-							"name" : "punctuation.terminator.Cangjie"
-						}
-					},
-					"name" : "keyword.control.Cangjie",
-					"contentName" : "storage.type.package.Cangjie",
-					"patterns" : [{
-							"include" : "#keywords_to_identifier"
-						}, {
-							"include" : "#comments"
-						}, {
-							"include" : "#keywords"
-						}
-					]
-				}
-			]
-		},
-		"originStrings" : {
-			"patterns" : [{
-					"begin" : "(?<!#)(#{2})+\"",
-					"beginCaptures" : {
-						"1" : {
-							"name" : "punctuation.definition.string.begin.Cangjie"
-						}
-					},
-					"end" : "\"(?<!#)(#{2})+",
-					"endCaptures" : {
-						"1" : {
-							"name" : "punctuation.definition.string.end.Cangjie"
-						}
-					},
-					"name" : "string.quoted.double.Cangjie",
-					"contentName" : "punctuation.definition.string.begin.Cangjie"
-				}, {
-					"begin" : "(?<!#)#(#{2})*\"",
-					"beginCaptures" : {
-						"1" : {
-							"name" : "punctuation.definition.string.begin.Cangjie"
-						}
-					},
-					"end" : "\"(?<!#)#(#{2})*",
-					"endCaptures" : {
-						"1" : {
-							"name" : "punctuation.definition.string.end.Cangjie"
-						}
-					},
-					"name" : "string.quoted.double.Cangjie",
-					"contentName" : "punctuation.definition.string.begin.Cangjie"
-				}
-			]
-		},
-		"import" : {
-			"patterns" : [{
-					"begin" : "\\b(import)\\b\\s*\\b\\s",
-					"beginCaptures" : {
-						"1" : {
-							"name" : "keyword.control.import.Cangjie"
-						}
-					},
-					"end" : "(?=\\b[0-9])|(?=[^\\w\\s.,`*{}])|(?=\\b(public|internal|protected|private|override|abstract|open|redef|sealed)(\\x20)*[^.,\\s])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)",
-					"endCaptures" : {
-						"1" : {
-							"name" : "punctuation.terminator.Cangjie"
-						}
-					},
-					"name" : "keyword.control.Cangjie",
-					"contentName" : "storage.type.import.Cangjie",
-					"patterns" : [{
-							"name" : "keyword.control.char",
-							"begin" : "^(import)",
-							"end" : "\\n|[^(\\s(as)\\s)]",
-							"patterns" : [{
-									"name" : "constant.character.escape.char",
-									"begin" : "(\\s)",
-									"end" : "(\\s)"
-								}
-							]
-						}, {
-							"include" : "#comments"
-						}, {
-							"match" : "(?<=\\.)\\s*\\.|\\.(?=\\s*;)",
-							"name" : "invalid.illegal.character_not_allowed_here.Cangjie"
-						}, {
-							"match" : "(?<!\\.)\\s*\\*",
-							"name" : "invalid.illegal.character_not_allowed_here.Cangjie"
-						}, {
-							"match" : "(?<!_)_(?=\\s*(\\.|;))|\\b\\d+|-+",
-							"name" : "invalid.illegal.character_not_allowed_here.Cangjie"
-						}, {
-							"match" : "(?x)\\b(?<!\\$)\n(false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign)\\b",
-							"name" : "invalid.illegal.character_not_allowed_here.Cangjie"
-						}, {
-							"match" : "\\.|\\*",
-							"name" : "punctuation.separator.Cangjie"
-						}, {
-							"match" : "\\*",
-							"name" : "variable.language.wildcard.Cangjie"
-						}, {
-							"include" : "#keywords_to_identifier"
-						}, {
-							"include" : "#keywords"
-						}
-					]
-				}
-			]
-		},
-		"comments" : {
-			"patterns" : [{
-					"name" : "comment.block.Cangjie",
-					"begin" : "(/\\*)|(/\\*/\\*)",
-					"beginCaptures" : {
-						"0" : {
-							"name" : "punctuation.definition.comment.begin.Cangjie"
-						}
-					},
-					"end" : "(\\*/)",
-					"endCaptures" : {
-						"0" : {
-							"name" : "punctuation.definition.comment.end.Cangjie"
-						}
-					},
-					"patterns" : [{
-							"name" : "comment.block.Cangjie",
-							"begin" : "(/\\*)|(/\\*/\\*)",
-							"end" : "(\\*/)"
-						}
-					]
-				}, {
-					"name" : "comment.line.Cangjie",
-					"begin" : "\/\/",
-					"end" : "\n"
-				}
-			]
-		},
-		"code" : {
-			"patterns" : [{
-					"include" : "#keywords"
-				}, {
-					"include" : "#constants"
-				}, {
-					"include" : "#strings"
-				}
-			]
-		},
-		"keywords_to_identifier" : {
-			"patterns" : [{
-					"match": "\\b(public|internal|private|protected|override|abstract|open|redef|sealed)\\b"
-				}
-			]
-		},
-		"keywords" : {
-			"patterns" : [{
-					"name" : "keyword.control.Cangjie",
-					"match" : "\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|redef|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|sealed|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|public|internal|private|protected|internal|external|override|abstract|open|operator|foreign|inout)\\b"
-				}, {
-					"name" : "keyword.control.Cangjie",
-					"match" : "(\\;|!in)"
-				}, {
-					"name" : "support.class.Cangjie.keyword",
-					"match" : "(\\b(Option|String)\\b)"
-				}, {
-					"name" : "support.function.Cangjie",
-					"match" : "\\b(CFunc)\\b"
-				}
-			]
-		},
-		"constants" : {
-			"patterns" : [{
-					"match" : "\\b0[bB][01]([01_]*)?(u8|u16|u32|u64|i8|i16|i32|i64)?\\b",
-					"name" : "constant.numeric.binary.integer.Cangjie"
-				}, {
-					"match" : "\\b0[oO][0-7]([0-7_]*)?(u8|u16|u32|u64|i8|i16|i32|i64)?\\b",
-					"name" : "constant.numeric.octal.integer.Cangjie"
-				}, {
-					"match" : "\\b[0-9]([0-9_]*)?(u8|u16|u32|u64|i8|i16|i32|i64)?\\b",
-					"name" : "constant.numeric.decimal.integer.Cangjie"
-				}, {
-					"match" : "\\b0[xX][0-9a-fA-F]([0-9a-fA-F_]*)?(u8|u16|u32|u64|i8|i16|i32|i64)?(?!\\.)\\b",
-					"name" : "constant.numeric.hexadecimal.integer.Cangjie"
-				}, {
-					"match" : "(\\b([0-9]([0-9_]*)?[eE][-]?[0-9]([0-9_]*)?)|((?<!\\.)\\.[0-9]([0-9_]*)?([eE][-]?[0-9]([0-9_]*)?)?)|\\b([0-9]([0-9_]*)?\\.[0-9]([0-9_]*)?([eE][-]?[0-9]([0-9_]*)?)?))(f16|f32|f64)?",
-					"name" : "constant.numeric.decimal.float.Cangjie"
-				}, {
-					"match" : "\\b0[xX](\\.[0-9a-fA-F]([0-9a-fA-F_]*)?|[0-9a-fA-F]([0-9a-fA-F_]*)?\\.[0-9a-fA-F]([0-9a-fA-F_]*)?|[0-9a-fA-F]([0-9a-fA-F_]*)?)([pP][-]?[0-9]([0-9_]*)?)",
-					"name" : "constant.numeric.hexadecimal.float.Cangjie"
-				}, {
-					"match" : "\\bb'([^'\\\\]|\\\\[tbrn'\\\\\"fv0]|\\\\u\\{[0-9a-fA-F]{1,2}\\})'",
-					"name" : "constant.character.escape.string.byte.Cangjie"
-				}, {
-					"match" : "\\bb\"([^\"\\\\]|\\\\[tbrn'\\\\\"fv0]|\\\\u\\{[0-9a-fA-F]{1,2}\\})*\"",
-					"name" : "constant.character.escape.string.byteArray.Cangjie"
-				}
-			]
-		},
-		"escape_string" : {
-			"name" : "constant.character.escape.string.byteArray.Cangjie",
-			"match" : "(\\\\\\\\)|(\\\\u\\{[0-9a-fA-F]{1,8}\\})|(\\\\[a|b|t|r|n|\"|\\'|f|v|\\$|0])"
-		},
-		"strings" : {
-			"patterns" : [{
-					"include" : "#string_mutil"
-				}, {
-					"include" : "#string_single"
-				}
-			]
-		},
-		"string_single" : {
-			"patterns" : [{
-					"begin" : "(?<!\\\\)(r)?\\'",
-					"end" : "\\'|\\n|\\r",
-					"name" : "string.quoted.single.Cangjie",
-					"patterns" : [{
-							"include" : "#escape_string"
-						}, {
-							"include" : "#insertValue"
-						}
-					]
-				}, {
-					"match" : "(r)?\\'(?<!\\\\)[\\s\\S](?<!\\\\)\\'",
-					"name" : "string.quoted.single.Cangjie"
-				}, {
-					"begin" : "(?<!\\\\)(r)?\"",
-					"end" : "\"|\\n|\\r",
-					"name" : "string.quoted.double.Cangjie",
-					"patterns" : [{
-							"include" : "#insertValue"
-						}, {
-							"include" : "#escape_string"
-						}
-					]
-				}, {
-					"begin" : "(?<!\\\\)J\"",
-					"end" : "\"|\\n|\\r",
-					"name" : "string.quoted.double.Cangjie",
-					"patterns" : [{
-							"include" : "#escape_string"
-						}
-					]
-				}, {
-					"begin" : "(?<!\\\\)b\"",
-					"end" : "\"|\\n|\\r",
-					"name" : "constant.character.escape.string.byteArray.Cangjie",
-					"patterns" : [{
-							"include" : "#escape_string"
-						}
-					]
-				}, {
-					"begin" : "(?<!\\\\)b'",
-					"end" : "'|\\n|\\r",
-					"name" : "constant.character.escape.string.byteArray.Cangjie",
-					"patterns" : [{
-							"include" : "#escape_string"
-						}
-					]
-				}
-			]
-		},
-		"string_mutil" : {
-			"patterns" : [{
-					"begin" : "(?<!\\\\)\"\"\"",
-					"end" : "\"\"\"",
-					"name" : "string.quoted.double.Cangjie",
-					"patterns" : [{
-							"include" : "#insertValue"
-						}, {
-							"include" : "#escape_string"
-						}
-					]
-				}
-			]
-		},
-		"insertValue" : {
-			"patterns" : [{
-					"begin" : "\\$\\{",
-					"end" : "\\}|\\n|\\r",
-					"name" : "keyword.operator.Cangjie",
-					"patterns" : [{
-							"include" : "#comments"
-						}, {
-							"include" : "#strings"
-						}, {
-							"include" : "#keywords"
-						}, {
-							"include" : "#function"
-						}, {
-							"include" : "#variable"
-						}, {
-							"include" : "#constants"
-						}, {
-							"include" : "#block"
-						}
-					]
-				}
-			]
-		},
-		"quoteToken" : {
-			"begin" : "(?<=quote)\\(",
-			"end" : "(?<!\\\\)\\)",
-			"patterns" : [{
-					"include" : "#quoteToken_inside"
-				}, {
-					"include" : "#quoteToken_content"
-				}
-			]
-		},
-		"quoteToken_inside" : {
-			"name" : "string.quoted.single.Cangjie",
-			"begin" : "(?<!\\\\)\\(",
-			"end" : "(?<!\\\\)\\)",
-			"patterns" : [{
-					"include" : "#quoteToken_inside"
-				}
-			]
-		},
-		"quoteToken_content" : {
-			"name" : "string.quoted.single.Cangjie",
-			"match" : ".",
-			"patterns" : [{
-				"include" : "#quoteToken_inside"
-			}
-		]
-		},
-		"block" : {
-			"begin" : "\\{",
-			"end" : "\\}",
-			"patterns" : [{
-					"include" : "#comments"
-				}, {
-					"include" : "#strings"
-				}, {
-					"include" : "#keywords"
-				}, {
-					"include" : "#function"
-				}, {
-					"include" : "#variable"
-				}, {
-					"include" : "#constants"
-				}, {
-					"include" : "#block"
-				}
-			]
-		}
-	}
+  "version": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "cangjie",
+  "scopeName": "source.cj",
+  "patterns": [{
+    "include": "#strings"
+  }, {
+    "include": "#mark"
+  }, {
+    "include": "#package"
+  }, {
+    "include": "#import"
+  }, {
+    "include": "#quoteToken"
+  }, {
+    "include": "#originStrings"
+  }, {
+    "include": "#comments"
+  }, {
+    "include": "#code"
+  }, {
+    "include": "#module"
+  }, {
+    "include": "#forStruct"
+  }, {
+    "include": "#at"
+  }, {
+    "include": "#function"
+  }, {
+    "include": "#macro"
+  }, {
+    "include": "#classlike-declaration"
+  }, {
+    "include": "#variable"
+  }, {
+    "include": "#qualified-type"
+  }, {
+    "include": "#type"
+  }],
+  "repository": {
+    "at": {
+      "patterns": [{
+        "name": "keyword.control.Cangjie",
+        "match": "@"
+      }
+      ]
+    },
+    "classlike-declaration": {
+      "patterns": [{
+        "begin": "(?<=\\b(class|interface|struct|enum|extend|type))\\s+",
+        "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
+        "name": "support.class.Cangjie"
+      }, {
+        "match": "(?<=\\b(class|interface|struct|enum|extend)\\s+[\\p{XID_Start}][\\p{XID_Continue}]*\\s*<:[\\s*[\\p{XID_Start}][\\p{XID_Continue}]*\\s*&\\s*]*)[\\p{XID_Start}][\\p{XID_Continue}]*",
+        "name": "support.class.Cangjie"
+      }, {
+        "begin": "(?<=\\b(func))\\s+",
+        "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
+        "name": "support.function.Cangjie"
+      }, {
+        "begin": "(?<=\\b(let|var))\\s+",
+        "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
+        "name": "support.variable.Cangjie"
+      }, {
+        "name": "support.class.Cangjie",
+        "match": "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\<[\\*\\<\\,\\w\\s]*\\>)"
+      }, {
+        "begin": "(?<=\\b(case))\\s+",
+        "end": "(?=(\\=\\>))|[\\n\\r]",
+        "name": "keyword.operator.Cangjie",
+        "patterns": [{
+          "include": "#memberAccess"
+        }, {
+          "include": "#classlike-declaration"
+        }, {
+          "include": "#function"
+        }, {
+          "include": "#strings"
+        }, {
+          "include": "#keywords"
+        }, {
+          "include": "#qualified-type"
+        }, {
+          "include": "#constants"
+        }, {
+          "include": "#type"
+        }, {
+          "include": "#variable"
+        }]
+      }]
+    },
+    "type": {
+      "patterns": [{
+        "begin": "(?<!<)<",
+        "end": "(?=[^,*\\<\\>\\w\\s]|[\\n\\r])",
+        "patterns": [{
+          "include": "#keywords"
+        }, {
+          "include": "#strings"
+        }, {
+          "match": "[\\p{XID_Start}][\\p{XID_Continue}]*\\s*(?=[\\)|\\||\\&|\\n|;])",
+          "name": "support.variable.Cangjie"
+        }, {
+          "match": "`[\\p{XID_Start}][\\p{XID_Continue}]*`|[\\p{XID_Start}][\\p{XID_Continue}]*",
+          "name": "support.class.Cangjie"
+        }, {
+          "include": "#function"
+        }, {
+          "include": "#constants"
+        }]
+      }
+      ]
+    },
+    "qualified-type": {
+      "patterns": [{
+        "begin": ":",
+        "end": "(?=[^*\\<,\\|\\w\\s]|\\R|\\n)",
+        "patterns": [{
+          "include": "#mark"
+        }, {
+          "include": "#keywords"
+        }, {
+          "include": "#constants"
+        }, {
+          "match": "(?<=,)(\\s*)([\\p{XID_Start}][\\p{XID_Continue}]*)(\\s*)(?=(!?)(\\s*):)",
+          "name": "support.variable.Cangjie"
+        }, {
+          "match": "`[\\p{XID_Start}][\\p{XID_Continue}]*`|[\\p{XID_Start}][\\p{XID_Continue}]*",
+          "name": "support.class.Cangjie"
+        }]
+      }
+      ]
+    },
+    "mark": {
+      "match": "(?<=(\\(|,)(\\s*))(`?\\w+`?)(?=(\\s*):)",
+      "name": "support.variable.Cangjie"
+    },
+    "macro": {
+      "patterns": [{
+        "name": "support.function.Cangjie.macro",
+        "match": "(?<=(@))[A-Za-z_][A-Za-z0-9_.]*"
+      }
+      ]
+    },
+    "function": {
+      "patterns": [{
+        "name": "support.function.Cangjie",
+        "match": "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\(.*)"
+      }, {
+        "name": "support.function.Cangjie",
+        "match": "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\<[\\*\\<\\,\\w\\s]*\\>\\s*\\(.*)"
+      }, {
+        "match": "(?<=operator\\s+func)\\s+((\\(\\))|(\\[\\])|(\\*\\*)|(\\<\\<)|(\\>\\>)|(\\>\\=)|(\\<\\=)|(\\!\\=)|(\\=\\=)|\\!|\\-|\\*|\\/|\\%|\\+|\\<|\\>|\\&|\\^|\\|)",
+        "name": "support.function.Cangjie"
+      }, {
+        "match": "(?<=(grad|@vjp|adjointOf|valWithGrad)\\()\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
+        "name": "support.function.Cangjie"
+      }]
+    },
+    "variable": {
+      "patterns": [{
+        "name": "support.variable.Cangjie",
+        "match": "\\b([\\p{XID_Start}][\\p{XID_Continue}]*|`[\\p{XID_Start}][\\p{XID_Continue}]*`)"
+      }
+      ]
+    },
+    "memberAccess": {
+      "patterns": [{
+        "name": "support.class.Cangjie",
+        "match": "\\b(([\\p{XID_Start}][\\p{XID_Continue}]*)|(`[\\p{XID_Start}][\\p{XID_Continue}]*`))(?=\\.)"
+      }
+      ]
+    },
+    "package": {
+      "patterns": [{
+        "begin": "\\b(package)\\b\\s*",
+        "beginCaptures": {
+          "1": {
+            "name": "keyword.control.package.Cangjie"
+          }
+        },
+        "end": "(?=[^.\\w\\s])|\\R|\\Z|\n",
+        "endCaptures": {
+          "1": {
+            "name": "punctuation.terminator.Cangjie"
+          }
+        },
+        "name": "keyword.control.Cangjie",
+        "contentName": "storage.type.package.Cangjie",
+        "patterns": [{
+          "include": "#keywords_to_identifier"
+        }, {
+          "include": "#comments"
+        }, {
+          "include": "#keywords"
+        }]
+      }
+      ]
+    },
+    "originStrings": {
+      "patterns": [{
+        "begin": "(?<!#)(#{2})+\"",
+        "beginCaptures": {
+          "1": {
+            "name": "punctuation.definition.string.begin.Cangjie"
+          }
+        },
+        "end": "\"(?<!#)(#{2})+",
+        "endCaptures": {
+          "1": {
+            "name": "punctuation.definition.string.end.Cangjie"
+          }
+        },
+        "name": "string.quoted.double.Cangjie",
+        "contentName": "punctuation.definition.string.begin.Cangjie"
+      }, {
+        "begin": "(?<!#)#(#{2})*\"",
+        "beginCaptures": {
+          "1": {
+            "name": "punctuation.definition.string.begin.Cangjie"
+          }
+        },
+        "end": "\"(?<!#)#(#{2})*",
+        "endCaptures": {
+          "1": {
+            "name": "punctuation.definition.string.end.Cangjie"
+          }
+        },
+        "name": "string.quoted.double.Cangjie",
+        "contentName": "punctuation.definition.string.begin.Cangjie"
+      }]
+    },
+    "import": {
+      "patterns": [{
+        "begin": "\\b(import)\\b\\s*\\b\\s",
+        "beginCaptures": {
+          "1": {
+            "name": "keyword.control.import.Cangjie"
+          }
+        },
+        "end": "(?=\\b[0-9])|(?=[^\\w\\s.,`*{}])|(?=\\b(public|internal|protected|private|override|abstract|open|redef|sealed)(\\x20)*[^.,\\s])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)",
+        "endCaptures": {
+          "1": {
+            "name": "punctuation.terminator.Cangjie"
+          }
+        },
+        "name": "keyword.control.Cangjie",
+        "contentName": "storage.type.import.Cangjie",
+        "patterns": [{
+          "name": "keyword.control.char",
+          "begin": "^(import)",
+          "end": "\\n|[^(\\s(as)\\s)]",
+          "patterns": [{
+            "name": "constant.character.escape.char",
+            "begin": "(\\s)",
+            "end": "(\\s)"
+          }
+          ]
+        }, {
+          "include": "#comments"
+        }, {
+          "match": "(?<=\\.)\\s*\\.|\\.(?=\\s*;)",
+          "name": "invalid.illegal.character_not_allowed_here.Cangjie"
+        }, {
+          "match": "(?<!\\.)\\s*\\*",
+          "name": "invalid.illegal.character_not_allowed_here.Cangjie"
+        }, {
+          "match": "(?<!_)_(?=\\s*(\\.|;))|\\b\\d+|-+",
+          "name": "invalid.illegal.character_not_allowed_here.Cangjie"
+        }, {
+          "match": "(?x)\\b(?<!\\$)\n(false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign)\\b",
+          "name": "invalid.illegal.character_not_allowed_here.Cangjie"
+        }, {
+          "match": "\\.|\\*",
+          "name": "punctuation.separator.Cangjie"
+        }, {
+          "match": "\\*",
+          "name": "variable.language.wildcard.Cangjie"
+        }, {
+          "include": "#keywords_to_identifier"
+        }, {
+          "include": "#keywords"
+        }]
+      }
+      ]
+    },
+    "comments": {
+      "patterns": [{
+        "name": "comment.block.Cangjie",
+        "begin": "(/\\*)|(/\\*/\\*)",
+        "beginCaptures": {
+          "0": {
+            "name": "punctuation.definition.comment.begin.Cangjie"
+          }
+        },
+        "end": "(\\*/)",
+        "endCaptures": {
+          "0": {
+            "name": "punctuation.definition.comment.end.Cangjie"
+          }
+        },
+        "patterns": [{
+          "name": "comment.block.Cangjie",
+          "begin": "(/\\*)|(/\\*/\\*)",
+          "end": "(\\*/)"
+        }
+        ]
+      }, {
+        "name": "comment.line.Cangjie",
+        "begin": "\/\/",
+        "end": "\n"
+      }]
+    },
+    "code": {
+      "patterns": [{
+        "include": "#keywords"
+      }, {
+        "include": "#constants"
+      }, {
+        "include": "#strings"
+      }]
+    },
+    "keywords_to_identifier": {
+      "patterns": [{
+        "match": "\\b(public|internal|private|protected|override|abstract|open|redef|sealed)\\b"
+      }
+      ]
+    },
+    "keywords": {
+      "patterns": [{
+        "name": "keyword.control.Cangjie",
+        "match": "\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|redef|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|sealed|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|public|internal|private|protected|internal|external|override|abstract|open|operator|foreign|inout)\\b"
+      }, {
+        "name": "keyword.control.Cangjie",
+        "match": "(\\;|!in)"
+      }, {
+        "name": "support.class.Cangjie.keyword",
+        "match": "(\\b(Option|String)\\b)"
+      }, {
+        "name": "support.function.Cangjie",
+        "match": "\\b(CFunc)\\b"
+      }]
+    },
+    "constants": {
+      "patterns": [{
+        "match": "\\b0[bB][01]([01_]*)?(u8|u16|u32|u64|i8|i16|i32|i64)?\\b",
+        "name": "constant.numeric.binary.integer.Cangjie"
+      }, {
+        "match": "\\b0[oO][0-7]([0-7_]*)?(u8|u16|u32|u64|i8|i16|i32|i64)?\\b",
+        "name": "constant.numeric.octal.integer.Cangjie"
+      }, {
+        "match": "\\b[0-9]([0-9_]*)?(u8|u16|u32|u64|i8|i16|i32|i64)?\\b",
+        "name": "constant.numeric.decimal.integer.Cangjie"
+      }, {
+        "match": "\\b0[xX][0-9a-fA-F]([0-9a-fA-F_]*)?(u8|u16|u32|u64|i8|i16|i32|i64)?(?!\\.)\\b",
+        "name": "constant.numeric.hexadecimal.integer.Cangjie"
+      }, {
+        "match": "(\\b([0-9]([0-9_]*)?[eE][-]?[0-9]([0-9_]*)?)|((?<!\\.)\\.[0-9]([0-9_]*)?([eE][-]?[0-9]([0-9_]*)?)?)|\\b([0-9]([0-9_]*)?\\.[0-9]([0-9_]*)?([eE][-]?[0-9]([0-9_]*)?)?))(f16|f32|f64)?",
+        "name": "constant.numeric.decimal.float.Cangjie"
+      }, {
+        "match": "\\b0[xX](\\.[0-9a-fA-F]([0-9a-fA-F_]*)?|[0-9a-fA-F]([0-9a-fA-F_]*)?\\.[0-9a-fA-F]([0-9a-fA-F_]*)?|[0-9a-fA-F]([0-9a-fA-F_]*)?)([pP][-]?[0-9]([0-9_]*)?)",
+        "name": "constant.numeric.hexadecimal.float.Cangjie"
+      }, {
+        "match": "\\bb'([^'\\\\]|\\\\[tbrn'\\\\\"fv0]|\\\\u\\{[0-9a-fA-F]{1,2}\\})'",
+        "name": "constant.character.escape.string.byte.Cangjie"
+      }, {
+        "match": "\\bb\"([^\"\\\\]|\\\\[tbrn'\\\\\"fv0]|\\\\u\\{[0-9a-fA-F]{1,2}\\})*\"",
+        "name": "constant.character.escape.string.byteArray.Cangjie"
+      }]
+    },
+    "escape_string": {
+      "name": "constant.character.escape.string.byteArray.Cangjie",
+      "match": "(\\\\\\\\)|(\\\\u\\{[0-9a-fA-F]{1,8}\\})|(\\\\[a|b|t|r|n|\"|\\'|f|v|\\$|0])"
+    },
+    "strings": {
+      "patterns": [{
+        "include": "#string_mutil"
+      }, {
+        "include": "#string_single"
+      }]
+    },
+    "string_single": {
+      "patterns": [{
+        "begin": "(?<!\\\\)(r)?\\'",
+        "end": "\\'|\\n|\\r",
+        "name": "string.quoted.single.Cangjie",
+        "patterns": [{
+          "include": "#escape_string"
+        }, {
+          "include": "#insertValue"
+        }]
+      }, {
+        "match": "(r)?\\'(?<!\\\\)[\\s\\S](?<!\\\\)\\'",
+        "name": "string.quoted.single.Cangjie"
+      }, {
+        "begin": "(?<!\\\\)(r)?\"",
+        "end": "\"|\\n|\\r",
+        "name": "string.quoted.double.Cangjie",
+        "patterns": [{
+          "include": "#insertValue"
+        }, {
+          "include": "#escape_string"
+        }]
+      }, {
+        "begin": "(?<!\\\\)J\"",
+        "end": "\"|\\n|\\r",
+        "name": "string.quoted.double.Cangjie",
+        "patterns": [{
+          "include": "#escape_string"
+        }
+        ]
+      }, {
+        "begin": "(?<!\\\\)b\"",
+        "end": "\"|\\n|\\r",
+        "name": "constant.character.escape.string.byteArray.Cangjie",
+        "patterns": [{
+          "include": "#escape_string"
+        }
+        ]
+      }, {
+        "begin": "(?<!\\\\)b'",
+        "end": "'|\\n|\\r",
+        "name": "constant.character.escape.string.byteArray.Cangjie",
+        "patterns": [{
+          "include": "#escape_string"
+        }
+        ]
+      }]
+    },
+    "string_mutil": {
+      "patterns": [{
+        "begin": "(?<!\\\\)\"\"\"",
+        "end": "\"\"\"",
+        "name": "string.quoted.double.Cangjie",
+        "patterns": [{
+          "include": "#insertValue"
+        }, {
+          "include": "#escape_string"
+        }]
+      }
+      ]
+    },
+    "insertValue": {
+      "patterns": [{
+        "begin": "\\$\\{",
+        "end": "\\}|\\n|\\r",
+        "name": "keyword.operator.Cangjie",
+        "patterns": [{
+          "include": "#comments"
+        }, {
+          "include": "#strings"
+        }, {
+          "include": "#keywords"
+        }, {
+          "include": "#function"
+        }, {
+          "include": "#variable"
+        }, {
+          "include": "#constants"
+        }, {
+          "include": "#block"
+        }]
+      }
+      ]
+    },
+    "quoteToken": {
+      "begin": "(?<=quote)\\(",
+      "end": "(?<!\\\\)\\)",
+      "patterns": [{
+        "include": "#quoteToken_inside"
+      }, {
+        "include": "#quoteToken_content"
+      }]
+    },
+    "quoteToken_inside": {
+      "name": "string.quoted.single.Cangjie",
+      "begin": "(?<!\\\\)\\(",
+      "end": "(?<!\\\\)\\)",
+      "patterns": [{
+        "include": "#quoteToken_inside"
+      }
+      ]
+    },
+    "quoteToken_content": {
+      "name": "string.quoted.single.Cangjie",
+      "match": ".",
+      "patterns": [{
+        "include": "#quoteToken_inside"
+      }
+      ]
+    },
+    "block": {
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [{
+        "include": "#comments"
+      }, {
+        "include": "#strings"
+      }, {
+        "include": "#keywords"
+      }, {
+        "include": "#function"
+      }, {
+        "include": "#variable"
+      }, {
+        "include": "#constants"
+      }, {
+        "include": "#block"
+      }]
+    }
+  }
 }

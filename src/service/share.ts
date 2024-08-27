@@ -1,68 +1,68 @@
-import {compressToBase64, decompressFromBase64} from "lz-string";
+import { compressToBase64, decompressFromBase64 } from 'lz-string'
 
 function base64ToBase64Url(base64: string): string {
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 function base64UrlToBase64(base64url: string): string {
-  return base64url.replace(/-/g, '+').replace(/_/g, '/');
+  return base64url.replace(/-/g, '+').replace(/_/g, '/')
 }
 
 export async function loadShareCode(): Promise<[string, boolean]> {
   const params = new URLSearchParams(window.location.hash.slice(1))
-  window.location.hash = ""
+  window.location.hash = ''
 
-  const base64UrlData = params.get("data")
+  const base64UrlData = params.get('data')
   if (base64UrlData) {
     return [decompressFromBase64(base64UrlToBase64(base64UrlData)), true]
   }
 
-  const hash = params.get("hash")
+  const hash = params.get('hash')
   if (hash) {
     const response = await fetch(`https://dpaste.com/${hash}.txt`)
     if (response.ok) {
       return [await response.text(), true]
     }
-    return ["", false]
+    return ['', false]
   }
 
-  return ["", true]
+  return ['', true]
 }
 
 function constructURLWithHash(hash: string): string {
-  const url = new URL(window.location.href);
-  url.hash = hash;
+  const url = new URL(window.location.href)
+  url.hash = hash
 
-  return url.toString();
+  return url.toString()
 }
 
 export function generateDataShareUrl(code: string): string {
   const base64UrlData = base64ToBase64Url(compressToBase64(code))
 
-  const params = new URLSearchParams({data: base64UrlData});
+  const params = new URLSearchParams({ data: base64UrlData })
 
-  return constructURLWithHash(params.toString());
+  return constructURLWithHash(params.toString())
 }
 
 async function dpaste(content: string) {
-  const query = new URLSearchParams();
-  query.set('content', content);
-  query.set("title", "Playground Cangjie");
-  query.set("expiry_days", "200");
+  const query = new URLSearchParams()
+  query.set('content', content)
+  query.set('title', 'Playground Cangjie')
+  query.set('expiry_days', '200')
 
   const response = await fetch('https://dpaste.com/api/', {
     method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: query.toString(),
-  });
-  return response.text();
+  })
+  return response.text()
 }
 
 export async function generateHashShareUrl(code: string): Promise<string> {
-  const dpasteUrl = await dpaste(code);
-  const hash = dpasteUrl.split('/')[3];
+  const dpasteUrl = await dpaste(code)
+  const hash = dpasteUrl.split('/')[3]
 
-  const params = new URLSearchParams({hash: hash});
+  const params = new URLSearchParams({ hash })
 
-  return constructURLWithHash(params.toString());
+  return constructURLWithHash(params.toString())
 }
