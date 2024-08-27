@@ -6,20 +6,9 @@
       {
         "box": "cangjie",
         "command": [
-          "/cangjie/bin/cjc",
-          "--diagnostic-format",
-          "noColor",
-          "--static-std",
-          "--static-libs",
-          "-o",
-          "/tmp/main",
-          "main.cj"
-        ]
-      },
-      {
-        "box": "cangjie",
-        "command": [
-          "/tmp/main"
+          "sh",
+          "-c",
+          "output=$(/cangjie/bin/cjc --static-std --static-libs -o /tmp/main main.cj 2>&1); if [ -n \"$output\" ]; then echo \"$output\" >&2; exit 1; else /tmp/main; fi"
         ]
       }
     ]
