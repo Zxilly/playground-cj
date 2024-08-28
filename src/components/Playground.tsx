@@ -296,7 +296,7 @@ export default function Component() {
           </div>
         </div>
       </div>
-      <div className="flex-none p-4 text-center text-sm text-muted-foreground">
+      <div className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">
         <a
           href="https://github.com/Zxilly/playground-cj"
           className="hover:underline"
