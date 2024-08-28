@@ -4,6 +4,7 @@ import { createHighlighter } from 'shiki'
 
 import grammar from './Cangjie.tmLanguage.json'
 import langConf from './language-configuration.json'
+import { cangjieCompletionProvider } from '@/lib/completion'
 
 loader.config({
   'paths': {
@@ -19,6 +20,8 @@ loader.config({
 export function setupEditor(monaco: Monaco) {
   monaco.languages.register({ id: 'cangjie' })
   monaco.languages.setLanguageConfiguration('cangjie', langConf as any)
+
+  monaco.languages.registerCompletionItemProvider('cangjie', cangjieCompletionProvider)
 
   ;(async () => {
     const highlighter = await createHighlighter({
