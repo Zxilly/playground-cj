@@ -7,8 +7,7 @@ import type { Monaco, OnMount } from '@monaco-editor/react'
 import Editor from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
 import { AnsiUp } from 'ansi_up'
-import Script from 'next/script'
-import { useMediaQuery } from 'usehooks-ts'
+import { useMedia } from 'react-use'
 import { Button } from '@/components/ui/button'
 import { setupEditor } from '@/lib/monaco'
 import { SandboxStatus, remoteRun, requestRemoteAction } from '@/service/run'
@@ -17,6 +16,8 @@ import { Toaster } from '@/components/ui/toaster'
 import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
 import { saveAsFile } from '@/lib/file'
 import { font } from '@/app/font'
+import TrackingScript from '@/components/TrackingScript'
+import ShareButton from '@/components/ShareButton'
 
 const defaultCode = `package cangjie
 
@@ -26,6 +27,7 @@ main(): Int64 {
     return 0
 }
 `
+const ansiUp = new AnsiUp()
 
 export default function Component() {
   const [toolOutput, setToolOutput] = useState('')
@@ -36,38 +38,23 @@ export default function Component() {
 
   const { toast } = useToast()
 
-  const editor = useCallback((monaco: Monaco) => {
-    return monaco.editor.getEditors()[0]
-  }, [])
-
-  const ansiUp = useMemo(() => new AnsiUp(), [])
+  const getAction = useCallback((id: string) => {
+    return monacoInst?.editor.getEditors()[0].getAction(id)
+  }, [monacoInst?.editor])
 
   const handleRun = useCallback(() => {
-    if (!monacoInst)
-      return
-
-    editor(monacoInst).getAction('cangjie.compile.run')?.run()
-  }, [editor, monacoInst])
+    getAction('cangjie.compile.run')?.run()
+  }, [getAction])
 
   const handleFormat = useCallback(() => {
-    if (!monacoInst)
-      return
-
-    editor(monacoInst)?.getAction('editor.action.formatDocument')?.run()
-  }, [editor, monacoInst])
-
-  const handleShare = useCallback(() => {
-    if (!monacoInst)
-      return
-
-    editor(monacoInst).getAction('cangjie.share.hash')?.run()
-  }, [editor, monacoInst])
+    getAction('editor.action.formatDocument')?.run()
+  }, [getAction])
 
   const toggleOutput = useCallback(() => {
     setIsOutputCollapsed(!isOutputCollapsed)
   }, [isOutputCollapsed])
 
-  const isMiddle = useMediaQuery('(min-width: 768px)')
+  const isMiddle = useMedia('(min-width: 768px)')
 
   useEffect(() => {
     if (isMiddle) {
@@ -228,8 +215,8 @@ export default function Component() {
     setMonacoInst(monaco)
   }, [toast])
 
-  const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [ansiUp, toolOutput])
-  const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [ansiUp, programOutput])
+  const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
+  const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
@@ -248,7 +235,7 @@ export default function Component() {
           <div className="flex flex-row space-y-0 space-x-2 w-full md:w-auto">
             <Button onClick={handleRun} className="w-full sm:w-auto">运行</Button>
             <Button onClick={handleFormat} className="w-full sm:w-auto">格式化</Button>
-            <Button onClick={handleShare} className="w-full sm:w-auto">分享</Button>
+            <ShareButton editor={monacoInst?.editor.getEditors()[0]} />
           </div>
         </div>
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -317,19 +304,7 @@ export default function Component() {
         </a>
       </div>
       <Toaster />
-      <Script
-        id="track"
-        dangerouslySetInnerHTML={{
-          __html: `
-        (function () {
-          var el = document.createElement('script');
-          el.setAttribute('src', 'https://trail.learningman.top/script.js');
-          el.setAttribute('data-website-id', '2cd9ea13-296b-4d90-998a-bbbc5613fc20');
-          document.body.appendChild(el);
-        })();
-      `,
-        }}
-      />
+      <TrackingScript />
     </div>
   )
 }
