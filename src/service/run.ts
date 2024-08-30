@@ -1,3 +1,5 @@
+import { BACKEND_URL } from '@/const'
+
 interface SandboxResponse {
   id: string
   ok: boolean
@@ -23,7 +25,7 @@ function getSendPayload(code: string, action: string): string {
 }
 
 export async function requestRemoteAction(code: string, action: string): Promise<[SandboxResponse, SandboxStatus]> {
-  const resp = await fetch('https://cj-api.learningman.top/v1/exec', {
+  const resp = await fetch(`${BACKEND_URL}/v1/exec`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
