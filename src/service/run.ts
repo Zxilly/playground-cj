@@ -81,7 +81,7 @@ export async function remoteRun(code: string, actions: Actions): Promise<void> {
       actions.setToolOutput(data.stderr)
     }
     else {
-      actions.setToolOutput('编译成功')
+      actions.setToolOutput('编译运行成功')
     }
     actions.setProgramOutput(data.stdout)
   }

@@ -3,9 +3,9 @@
 import React, { useCallback, useState } from 'react'
 import { ChevronDown, Hash, Link } from 'lucide-react'
 import type * as monaco from 'monaco-editor'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { useToast } from '@/components/ui/use-toast'
 
 interface ShareButtonProps {
   editor?: monaco.editor.ICodeEditor
@@ -13,35 +13,27 @@ interface ShareButtonProps {
 
 const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const { toast } = useToast()
 
   const handleShare = useCallback((type: 'url' | 'hash') => {
     if (!editor) {
       return
     }
 
+    if (editor.getValue().trim() === '') {
+      toast.warning('请先输入代码')
+      return
+    }
+
     const action = editor.getAction(`cangjie.share.${type}`)
     if (!action) {
       console.error(`Action cangjie.share.${type} not found`)
-      toast({
-        description: '分享失败，请重试',
-        variant: 'destructive',
-      })
       return
     }
 
     action.run().then(() => {
-      window.umami?.track('share')
-      toast({
-        description: '已复制分享链接',
-      })
       setIsOpen(false)
     }).catch((error) => {
       console.error('Share failed:', error)
-      toast({
-        description: '分享失败，请重试',
-        variant: 'destructive',
-      })
     })
   }, [editor, toast])
 

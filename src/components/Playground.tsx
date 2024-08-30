@@ -8,16 +8,16 @@ import Editor from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
 import { AnsiUp } from 'ansi_up'
 import { useMedia } from 'react-use'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { setupEditor } from '@/lib/monaco'
 import { SandboxStatus, remoteRun, requestRemoteAction } from '@/service/run'
-import { useToast } from '@/components/ui/use-toast'
-import { Toaster } from '@/components/ui/toaster'
 import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
 import { saveAsFile } from '@/lib/file'
 import { font } from '@/app/font'
 import TrackingScript from '@/components/TrackingScript'
 import ShareButton from '@/components/ShareButton'
+import { Toaster } from '@/components/ui/sonner'
 
 const defaultCode = `package cangjie
 
@@ -35,8 +35,6 @@ export default function Component() {
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
 
   const [monacoInst, setMonacoInst] = useState<Monaco | null>(null)
-
-  const { toast } = useToast()
 
   const getAction = useCallback((id: string) => {
     return monacoInst?.editor.getEditors()[0].getAction(id)
@@ -66,21 +64,16 @@ export default function Component() {
     if (window.location.hash !== '') {
       ed.setValue('分享代码加载中...')
 
-      const fail = () => {
-        toast({
-          description: '分享代码加载失败',
-          variant: 'destructive',
-        })
-        ed.setValue(defaultCode)
-      }
-
       // we load shared code here to ensure it's loaded after monaco is initialized
       loadShareCode().then(([code, success]) => {
         if (success && code) {
+          setToolOutput('分享代码加载成功')
           ed.setValue(code)
         }
         else {
-          fail()
+          setToolOutput('分享代码加载失败')
+          toast.error('分享代码加载失败')
+          ed.setValue(defaultCode)
         }
       })
     }
@@ -94,35 +87,24 @@ export default function Component() {
 
           switch (status) {
             case SandboxStatus.RATE_LIMIT:
-              toast({
-                description: '后端负载过大，请稍后再试',
-                variant: 'destructive',
-              })
+              toast.warning('后端负载过大，请稍后再试')
 
               setToolOutput('后端负载过大，请稍后再试')
               return
             case SandboxStatus.UNKNOWN_ERROR:
-              toast({
-                description: '未知错误',
-                variant: 'destructive',
-              })
+              toast.error('未知错误')
 
               setToolOutput('格式化失败')
               return
           }
 
           if (resp.ok) {
-            toast({
-              description: '格式化成功',
-            })
+            toast.success('格式化成功')
 
             setToolOutput('格式化成功')
           }
           else {
-            toast({
-              description: '格式化失败',
-              variant: 'destructive',
-            })
+            toast.warning('格式化失败')
 
             setToolOutput(resp.stderr)
           }
@@ -160,36 +142,32 @@ export default function Component() {
     ed.addAction({
       id: 'cangjie.share.url',
       label: '分享 (URL方式)',
-      contextMenuGroupId: 'navigation',
+      contextMenuGroupId: 'share',
       contextMenuOrder: 1.5,
       run: async (editor: editor.ICodeEditor) => {
         const code = editor.getValue()
         const url = generateDataShareUrl(code)
 
         await navigator.clipboard.writeText(url)
-        toast({
-          description: '已复制分享链接',
-        })
+        toast.info('已复制分享链接')
 
-        await window.umami?.track('share')
+        await window.umami?.track('share.url')
       },
     })
 
     ed.addAction({
       id: 'cangjie.share.hash',
       label: '分享 (Hash方式)',
-      contextMenuGroupId: 'navigation',
+      contextMenuGroupId: 'share',
       contextMenuOrder: 1.5,
       run: async (editor: editor.ICodeEditor) => {
         const code = editor.getValue()
         const url = await generateHashShareUrl(code)
 
         await navigator.clipboard.writeText(url)
-        toast({
-          description: '已复制分享链接',
-        })
+        toast.info('已复制分享链接')
 
-        await window.umami?.track('share')
+        await window.umami?.track('share.hash')
       },
     })
 
@@ -204,9 +182,7 @@ export default function Component() {
       run: async (editor: editor.ICodeEditor) => {
         saveAsFile(editor.getValue())
 
-        toast({
-          description: '已保存代码',
-        })
+        toast.success('已保存代码')
 
         await window.umami?.track('save')
       },
@@ -303,7 +279,7 @@ export default function Component() {
           在 GitHub 查看源代码
         </a>
       </div>
-      <Toaster />
+      <Toaster richColors position="top-center" />
       <TrackingScript />
     </div>
   )
