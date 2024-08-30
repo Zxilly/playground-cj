@@ -75,20 +75,27 @@ export default function Component() {
   }, [isMiddle])
 
   const onMountFunc = useCallback<OnMount>((ed, monaco) => {
-    // we load shared code here to ensure it's loaded after monaco is initialized
-    loadShareCode().then(([code, success]) => {
-      if (success) {
-        if (code) {
-          ed.setValue(code)
-        }
-      }
-      else {
+    if (window.location.hash !== '') {
+      ed.setValue('分享代码加载中...')
+
+      const fail = () => {
         toast({
           description: '分享代码加载失败',
           variant: 'destructive',
         })
+        ed.setValue(defaultCode)
       }
-    })
+
+      // we load shared code here to ensure it's loaded after monaco is initialized
+      loadShareCode().then(([code, success]) => {
+        if (success && code) {
+          ed.setValue(code)
+        }
+        else {
+          fail()
+        }
+      })
+    }
 
     monaco.languages.registerDocumentFormattingEditProvider(
       'cangjie',
