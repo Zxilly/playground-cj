@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { Toaster } from '@/components/ui/toaster'
 import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
 import { saveAsFile } from '@/lib/file'
+import { font } from '@/app/font'
 
 const defaultCode = `package cangjie
 
@@ -263,6 +264,8 @@ export default function Component() {
                 minimap: { enabled: false },
                 scrollBeyondLastLine: true,
                 fontSize: 14,
+                fontFamily: `${font.style.fontFamily}, sans-serif`,
+                fontLigatures: true,
               }}
               beforeMount={setupEditor}
               onMount={onMountFunc}
@@ -287,7 +290,7 @@ export default function Component() {
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
                 <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
                   <div className="h-[15vh] md:h-full overflow-auto p-1 md:p-2">
-                    <pre dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
+                    <pre className={font.className} dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
                   </div>
                 </div>
               </div>
@@ -295,7 +298,7 @@ export default function Component() {
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
                 <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
                   <div className="h-[15vh] md:h-full overflow-auto p-1 md:p-2">
-                    <pre dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
+                    <pre className={font.className} dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
                   </div>
                 </div>
               </div>

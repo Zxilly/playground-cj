@@ -1,10 +1,9 @@
 import { type Monaco, loader } from '@monaco-editor/react'
 import { shikiToMonaco } from '@shikijs/monaco'
-import { createHighlighter } from 'shiki'
 
-import grammar from './Cangjie.tmLanguage.json'
 import langConf from './language-configuration.json'
 import { cangjieCompletionProvider } from '@/lib/completion'
+import { getHighlighter } from '@/lib/shiki'
 
 loader.config({
   'paths': {
@@ -24,14 +23,7 @@ export function setupEditor(monaco: Monaco) {
   monaco.languages.registerCompletionItemProvider('cangjie', cangjieCompletionProvider)
 
   ;(async () => {
-    const highlighter = await createHighlighter({
-      themes: [
-        'vitesse-light',
-      ],
-      langs: [
-        grammar as any,
-      ],
-    })
+    const highlighter = await getHighlighter()
 
     shikiToMonaco(highlighter, monaco)
   })()

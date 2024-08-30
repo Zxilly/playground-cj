@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
-import { Noto_Sans_SC } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
-
-const font = Noto_Sans_SC({ preload: false })
+import { font } from '@/app/font'
 
 export const metadata: Metadata = {
   title: '仓颉 Playground',
