@@ -60,7 +60,7 @@ async function dpaste(content: string) {
 
 export async function generateHashShareUrl(code: string): Promise<string> {
   const dpasteUrl = await dpaste(code)
-  const hash = dpasteUrl.split('/')[3]
+  const hash = dpasteUrl.split('/')[3].trim()
 
   const params = new URLSearchParams({ hash })
 
