@@ -18,15 +18,8 @@ import { font } from '@/app/font'
 import TrackingScript from '@/components/TrackingScript'
 import ShareButton from '@/components/ShareButton'
 import { Toaster } from '@/components/ui/sonner'
+import { defaultCode } from '@/const'
 
-const defaultCode = `package cangjie
-
-// 编写你的第一个仓颉程序
-main(): Int64 {
-    println("你好，仓颉！")
-    return 0
-}
-`
 const ansiUp = new AnsiUp()
 
 export default function Component() {
