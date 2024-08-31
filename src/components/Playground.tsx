@@ -189,7 +189,7 @@ export default function Component() {
     })
 
     setMonacoInst(monaco)
-  }, [toast])
+  }, [])
 
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
@@ -245,7 +245,7 @@ export default function Component() {
               </Button>
             </div>
             <div
-              className={`flex-1 md:flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${
+              className={`flex-1 overflow-hidden transition-all duration-300 ease-in-out ${
                 isOutputCollapsed ? 'max-h-0 opacity-0' : 'max-h-[100vh] opacity-100'
               }`}
             >
