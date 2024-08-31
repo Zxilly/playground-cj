@@ -25,6 +25,6 @@ export function setupEditor(monaco: Monaco) {
   ;(async () => {
     const highlighter = await getHighlighter()
 
-    shikiToMonaco(highlighter, monaco)
+    shikiToMonaco(highlighter!, monaco)
   })()
 }

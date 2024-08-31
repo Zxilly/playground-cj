@@ -19,6 +19,7 @@ import TrackingScript from '@/components/TrackingScript'
 import ShareButton from '@/components/ShareButton'
 import { Toaster } from '@/components/ui/sonner'
 import { defaultCode } from '@/const'
+import { useCodeShareDialog } from '@/components/useCodeImgShare'
 
 const ansiUp = new AnsiUp()
 
@@ -26,7 +27,6 @@ export default function Component() {
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
-
   const [monacoInst, setMonacoInst] = useState<Monaco | null>(null)
 
   const getAction = useCallback((id: string) => {
@@ -52,6 +52,8 @@ export default function Component() {
       setIsOutputCollapsed(false)
     }
   }, [isMiddle])
+
+  const { DialogComponent, addSharePictureAction } = useCodeShareDialog()
 
   const onMountFunc = useCallback<OnMount>((ed, monaco) => {
     if (window.location.hash !== '') {
@@ -164,6 +166,8 @@ export default function Component() {
       },
     })
 
+    addSharePictureAction(ed)
+
     ed.addAction({
       id: 'cangjie.save',
       label: '保存代码',
@@ -272,6 +276,7 @@ export default function Component() {
           在 GitHub 查看源代码
         </a>
       </div>
+      {DialogComponent}
       <Toaster richColors position="top-center" />
       <TrackingScript />
     </div>
