@@ -14,7 +14,7 @@ import { setupEditor } from '@/lib/monaco'
 import { SandboxStatus, remoteRun, requestRemoteAction } from '@/service/run'
 import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
 import { saveAsFile } from '@/lib/file'
-import { font } from '@/app/font'
+import { fontFamily } from '@/app/harmonyFont'
 import TrackingScript from '@/components/TrackingScript'
 import ShareButton from '@/components/ShareButton'
 import { Toaster } from '@/components/ui/sonner'
@@ -224,7 +224,7 @@ export default function Component() {
                 minimap: { enabled: false },
                 scrollBeyondLastLine: true,
                 fontSize: 14,
-                fontFamily: `${font.style.fontFamily}, sans-serif`,
+                fontFamily,
                 fontLigatures: true,
               }}
               beforeMount={setupEditor}
@@ -250,7 +250,7 @@ export default function Component() {
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
                 <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
                   <div className="h-[15vh] md:h-full overflow-auto p-1 md:p-2">
-                    <pre className={font.className} dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
+                    <pre style={{ fontFamily }} dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
                   </div>
                 </div>
               </div>
@@ -258,7 +258,7 @@ export default function Component() {
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
                 <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
                   <div className="h-[15vh] md:h-full overflow-auto p-1 md:p-2">
-                    <pre className={font.className} dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
+                    <pre style={{ fontFamily }} dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
                   </div>
                 </div>
               </div>

@@ -67,7 +67,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-code, kbd, samp, pre {
-  font-family: inherit !important;
-}
