@@ -2,15 +2,14 @@
 import { readFileSync } from 'node:fs'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { toJsxRuntime } from 'hast-util-to-jsx-runtime'
-import { Fragment } from 'react'
-import { jsx, jsxs } from 'react/jsx-runtime'
+import satori from 'satori'
 import { getHighlighter } from '@/lib/shiki'
-import { getCodeSnippet } from '@/components/PictureTemplate'
+import { getTemplate } from '@/components/Template'
 
-export async function GET(req: NextRequest) {
-  const code = req.nextUrl.searchParams.get('code')
-  const shareUrl = req.nextUrl.searchParams.get('shareUrl')
+export async function POST(req: NextRequest) {
+  const data = await req.json()
+  const code = data.code
+  const shareUrl = data.shareUrl
 
   const highlighter = await getHighlighter()
   if (!highlighter || !code || !shareUrl) {
@@ -19,38 +18,30 @@ export async function GET(req: NextRequest) {
       statusText: 'Bad Request',
     })
   }
-  const hast = highlighter.codeToHast(code, {
+
+  const hastTree = highlighter.codeToHast(code, {
     lang: 'cangjie',
     theme: 'vitesse-light',
-  })
-
-  const node = toJsxRuntime(hast, {
-    Fragment,
-    // @ts-expect-error jsx and jsxs are typed
-    jsx,
-    // @ts-expect-error jsx and jsxs are typed
-    jsxs,
   })
 
   const fontMono = readFileSync(`${process.cwd()}/src/app/fonts/JetBrainsMono.ttf`)
   const fontHarmony = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans.ttf`)
 
-  const tmpl = getCodeSnippet(node, shareUrl)
+  const tmpl = getTemplate(hastTree, shareUrl)
 
-  // const svg = await satori(tmpl, {
-  //   width: 800,
-  //   fonts: [
-  //     {
-  //       name: 'HarmonyOS_Sans',
-  //       data: fontHarmony,
-  //     },
-  //     {
-  //       name: 'JetBrains Mono',
-  //       data: fontMono,
-  //     },
-  //   ],
-  // })
-  const svg = ''
+  const svg = await satori(tmpl, {
+    width: 800,
+    fonts: [
+      {
+        name: 'HarmonyOS_Sans',
+        data: fontHarmony,
+      },
+      {
+        name: 'JetBrains Mono',
+        data: fontMono,
+      },
+    ],
+  })
 
   return new NextResponse(svg, {
     status: 200,

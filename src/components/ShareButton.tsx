@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useState } from 'react'
-import { ChevronDown, Hash, Link } from 'lucide-react'
+import { ChevronDown, FileImage, Hash, Link } from 'lucide-react'
 import type * as monaco from 'monaco-editor'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ interface ShareButtonProps {
 const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleShare = useCallback((type: 'url' | 'hash') => {
+  const handleShare = useCallback((type: 'url' | 'hash' | 'picture') => {
     if (!editor) {
       return
     }
@@ -35,7 +35,7 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
     }).catch((error) => {
       console.error('Share failed:', error)
     })
-  }, [editor, toast])
+  }, [editor])
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -63,6 +63,14 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
           >
             <Hash className="mr-2 h-4 w-4" />
             Hash 方式
+          </Button>
+          <Button
+            variant="ghost"
+            className="justify-start"
+            onClick={() => handleShare('picture')}
+          >
+            <FileImage className="mr-2 h-4 w-4" />
+            图片方式
           </Button>
         </div>
       </PopoverContent>

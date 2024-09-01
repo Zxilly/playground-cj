@@ -186,7 +186,7 @@ export default function Component() {
     })
 
     setMonacoInst(monaco)
-  }, [])
+  }, [addSharePictureAction])
 
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
