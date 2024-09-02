@@ -65,7 +65,7 @@ export default function Component() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
       <div className="flex flex-col h-full overflow-hidden bg-background text-foreground p-4">
-        <div className="flex-none p-2 md:p-4 flex flex-col md:flex-row justify-between items-center">
+        <div className="flex-none px-2 md:px-4 pt-2 md:pt-4 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center md:mb-0 mb-2">
             <Image
               src="/icon.png"
