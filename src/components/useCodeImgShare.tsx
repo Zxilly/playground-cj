@@ -110,7 +110,7 @@ export function useCodeShareDialog() {
           <DialogHeader>
             <DialogTitle>分享代码图片</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-start bg-white p-4 rounded max-h-[75vh] overflow-y-auto">
+          <div className="flex flex-col items-start bg-white p-4 rounded max-h-[60vh] overflow-y-auto">
             <img src={picUrl} alt="preview" />
           </div>
           <div className="flex justify-center mt-4 space-x-2">

@@ -25,7 +25,9 @@ export async function POST(req: NextRequest) {
   })
 
   const fontMono = readFileSync(`${process.cwd()}/src/app/fonts/JetBrainsMono.ttf`)
+  const fontMonoBold = readFileSync(`${process.cwd()}/src/app/fonts/JetBrainsMono_Bold.ttf`)
   const fontHarmony = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans.ttf`)
+  const fontHarmonyBold = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans_Bold.ttf`)
 
   const tmpl = getTemplate(hastTree, shareUrl)
 
@@ -35,10 +37,22 @@ export async function POST(req: NextRequest) {
       {
         name: 'HarmonyOS_Sans',
         data: fontHarmony,
+        weight: 400,
       },
       {
         name: 'JetBrains Mono',
         data: fontMono,
+        weight: 400,
+      },
+      {
+        name: 'HarmonyOS_Sans',
+        data: fontHarmonyBold,
+        weight: 700,
+      },
+      {
+        name: 'JetBrains Mono',
+        data: fontMonoBold,
+        weight: 700,
       },
     ],
   })

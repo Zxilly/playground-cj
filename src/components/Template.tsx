@@ -120,6 +120,7 @@ export function getTemplate(code: Root, url: string) {
         fontSize: 14,
         lineHeight: 1.4,
         padding: '40px 60px',
+        fontWeight: 400,
         fontFamily: 'JetBrains Mono, HarmonyOS_Sans, sans-serif',
       }}
     >
@@ -177,7 +178,7 @@ export function getTemplate(code: Root, url: string) {
               color: '#4e4f47',
             }}
           >
-            <h2 style={{ margin: 0, fontSize: 18 }}>仓颉 Playground</h2>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>仓颉 Playground</h2>
             <p style={{ margin: 0 }}>{url}</p>
           </div>
 
