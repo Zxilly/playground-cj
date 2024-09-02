@@ -65,16 +65,17 @@ export async function remoteRun(code: string, actions: Actions): Promise<void> {
     case SandboxStatus.RATE_LIMIT:
       actions.setToolOutput('后端负载过大，请稍后再试')
       actions.setProgramOutput('')
-      return
+      throw new Error('后端负载过大，请稍后再试')
     case SandboxStatus.UNKNOWN_ERROR:
       actions.setToolOutput('未知错误')
       actions.setProgramOutput('')
-      return
+      throw new Error('未知错误')
   }
 
   if (!data.ok) {
     actions.setToolOutput(data.stderr)
     actions.setProgramOutput('')
+    throw new Error('编译运行失败')
   }
   else {
     if (data.stderr.length > 0) {
