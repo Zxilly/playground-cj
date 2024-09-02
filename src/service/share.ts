@@ -10,7 +10,6 @@ function base64UrlToBase64(base64url: string): string {
 
 export async function loadShareCode(): Promise<[string, boolean]> {
   const params = new URLSearchParams(window.location.hash.slice(1))
-  window.location.hash = ''
 
   const base64UrlData = params.get('data')
   if (base64UrlData) {
