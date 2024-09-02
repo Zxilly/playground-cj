@@ -5,6 +5,8 @@ export default antfu({
   rules: {
     'react-dom/no-dangerously-set-innerhtml': 'off',
     'no-template-curly-in-string': 'off',
+    'prefer-promise-reject-errors': 'off',
+    'node/prefer-global/process': 'off',
   },
 }, {
   ignores: [

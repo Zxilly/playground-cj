@@ -63,8 +63,8 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
     if (window.location.hash !== '') {
       ed.setValue('分享代码加载中...')
 
-      toast.promise(new Promise(async (_resolve, reject) => {
-        await remoteLock.acquire('run', async () => {
+      toast.promise(new Promise((_resolve, reject) => {
+        remoteLock.acquire('run', async () => {
           const [code, success] = await loadShareCode()
           if (success && code) {
             setToolOutput('分享代码加载成功')
@@ -91,8 +91,8 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
 
         let text = model.getValue()
 
-        toast.promise(new Promise(async (resolve, reject) => {
-          await remoteLock.acquire('run', async () => {
+        toast.promise(new Promise((resolve, reject) => {
+          remoteLock.acquire('run', async () => {
             const [resp, status] = await requestRemoteAction(text, 'format')
 
             const err = (msg: string) => {

@@ -4,7 +4,6 @@ import Script from 'next/script'
 function TrackingScript() {
   return (
     <>
-      {/* eslint-disable-next-line node/prefer-global/process */}
       {process.env.NODE_ENV === 'production' && (
         <Script
           id="track"

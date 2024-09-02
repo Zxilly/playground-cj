@@ -1,4 +1,3 @@
-/* eslint-disable node/prefer-global/process */
 import { readFileSync } from 'node:fs'
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
