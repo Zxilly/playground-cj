@@ -117,18 +117,18 @@ export default function Component() {
                 isOutputCollapsed ? 'max-h-0 opacity-0' : 'max-h-[100vh] opacity-100'
               }`}
             >
-              <div className="flex flex-col h-1/2 mb-2 md:mb-4">
+              <div className="flex flex-col h-1/2 pb-1 md:pb-2">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
                 <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
-                  <div className="h-[15vh] md:h-full overflow-auto p-1 md:p-2">
+                  <div className={`${isMiddle ? 'h-full' : 'h-[15vh]'} overflow-auto p-1 md:p-2`}>
                     <pre style={{ fontFamily }} dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col h-1/2">
+              <div className="flex flex-col h-1/2 pt-1 md:pt-2">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
                 <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
-                  <div className="h-[15vh] md:h-full overflow-auto p-1 md:p-2">
+                  <div className={`${isMiddle ? 'h-full' : 'h-[15vh]'} overflow-auto p-1 md:p-2`}>
                     <pre style={{ fontFamily }} dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
                   </div>
                 </div>
