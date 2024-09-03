@@ -5,16 +5,17 @@ import QRCode from 'qrcode-svg'
 
 interface LineNumberProps {
   n: number
+  darkMode: boolean
 }
 
-function LineNumber({ n }: LineNumberProps) {
+function LineNumber({ n, darkMode }: LineNumberProps) {
   return (
     <span
       style={{
         width: 0.001,
         transform: 'translateX(-32px)',
         opacity: 0.3,
-        color: '#4e4f47',
+        color: darkMode ? '#bfbaaa' : '#4e4f47',
       }}
     >
       {n}
@@ -38,13 +39,13 @@ function getColor(style?: string) {
   return style?.split(';').find(s => s.includes('color'))?.split(':')[1] ?? '#000'
 }
 
-function transform(node: Node, color: string, context: Context): React.ReactNode[] {
+function transform(node: Node, color: string, context: Context, darkMode: boolean): React.ReactNode[] {
   switch (node.type) {
     case 'element':
     {
       const elColor = getColor(node.properties?.style)
       return node.children?.map(el =>
-        transform(el, elColor || color || '#f8f8f2', context),
+        transform(el, elColor || color || (darkMode ? '#282a36' : '#f8f8f2'), context, darkMode),
       ) ?? []
     }
 
@@ -66,7 +67,7 @@ function transform(node: Node, color: string, context: Context): React.ReactNode
                   }}
                   key={`divider-${context.l}`}
                 />,
-                <LineNumber n={++context.l} key={`line-${context.l}`} />,
+                <LineNumber darkMode={darkMode} n={++context.l} key={`line-${context.l}`} />,
               ]
             : []),
 
@@ -85,13 +86,13 @@ function transform(node: Node, color: string, context: Context): React.ReactNode
 
     default:
       if (node.children) {
-        return node.children.map(el => transform(el, color, context)) ?? []
+        return node.children.map(el => transform(el, color, context, darkMode)) ?? []
       }
   }
   return []
 }
 
-function getSvgDataUri(url: string) {
+function getSvgDataUri(url: string, dark: boolean) {
   const svg = new QRCode({
     width: 60,
     height: 60,
@@ -99,16 +100,18 @@ function getSvgDataUri(url: string) {
     ecl: 'M',
     pretty: false,
     padding: 1,
+    background: 'transparent',
+    color: dark ? '#f8f8f2' : '#282a36',
   }).svg()
 
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
-export function getTemplate(code: Root, url: string) {
+export function getTemplate(code: Root, url: string, dark: boolean) {
   return (
     <div
       style={{
-        background: '#f0f0f0',
+        background: dark ? '#1e1e1e' : '#f0f0f0',
         height: '100%',
         width: '100%',
         display: 'flex',
@@ -126,8 +129,8 @@ export function getTemplate(code: Root, url: string) {
     >
       <div
         style={{
-          color: '#f8f8f2',
-          background: 'white',
+          color: dark ? '#2c2c2c' : '#f8f8f2',
+          background: dark ? '#282a36' : 'white',
           padding: '16px 20px',
           borderRadius: 15,
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -152,9 +155,9 @@ export function getTemplate(code: Root, url: string) {
             }}
           >
             <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-              {[<LineNumber n={1} key={`l-${randomKey()}`} />].concat(
+              {[<LineNumber n={1} darkMode={dark} key={`l-${randomKey()}`} />].concat(
                 // @ts-expect-error fix this type in the future
-                transform(code, '#f8f8f2', { l: 1 }).flat(Infinity),
+                transform(code, dark ? '#2c2c2c' : '#f8f8f2', { l: 1 }, dark).flat(Infinity),
               )}
             </div>
           </div>
@@ -175,7 +178,7 @@ export function getTemplate(code: Root, url: string) {
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-around',
-              color: '#4e4f47',
+              color: dark ? '#a6a79d' : '#4e4f47',
             }}
           >
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>仓颉 Playground</h2>
@@ -183,7 +186,7 @@ export function getTemplate(code: Root, url: string) {
           </div>
 
           <img
-            src={getSvgDataUri(url)}
+            src={getSvgDataUri(url, dark)}
             alt="QR Code"
             style={{
               width: 60,
@@ -194,7 +197,6 @@ export function getTemplate(code: Root, url: string) {
         </div>
       </div>
     </div>
-
   )
 }
 

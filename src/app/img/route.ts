@@ -9,8 +9,9 @@ export async function POST(req: NextRequest) {
   const data = await req.json()
   const code = data.code
   const shareUrl = data.shareUrl
+  const dark = data.dark
 
-  const highlighter = await getHighlighter()
+  const highlighter = await getHighlighter(dark)
   if (!highlighter || !code || !shareUrl) {
     return new Response('Bad Request', {
       status: 400,
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const hastTree = highlighter.codeToHast(code, {
     lang: 'cangjie',
-    theme: 'vitesse-light',
+    theme: dark ? 'vitesse-dark' : 'vitesse-light',
   })
 
   const fontMono = readFileSync(`${process.cwd()}/src/app/fonts/JetBrainsMono.ttf`)
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const fontHarmony = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans.ttf`)
   const fontHarmonyBold = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans_Bold.ttf`)
 
-  const tmpl = getTemplate(hastTree, shareUrl)
+  const tmpl = getTemplate(hastTree, shareUrl, dark)
 
   const svg = await satori(tmpl, {
     width: 800,

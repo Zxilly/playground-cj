@@ -13,6 +13,7 @@ import { SandboxStatus, remoteRun, requestRemoteAction } from '@/service/run'
 import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
 import { defaultCode } from '@/const'
 import { saveAsFile } from '@/lib/file'
+import { isDarkMode } from '@/lib/utils'
 
 loader.config({
   'paths': {
@@ -32,7 +33,7 @@ export function setupEditor(monaco: Monaco) {
   monaco.languages.registerCompletionItemProvider('cangjie', cangjieCompletionProvider)
 
   ;(async () => {
-    const highlighter = await getHighlighter()
+    const highlighter = await getHighlighter(isDarkMode())
 
     shikiToMonaco(highlighter!, monaco)
   })()

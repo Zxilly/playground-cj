@@ -9,12 +9,13 @@ import { AnsiUp } from 'ansi_up'
 import { useMedia } from 'react-use'
 import { Button } from '@/components/ui/button'
 import { createOnMountFunction, setupEditor } from '@/lib/monaco'
-import { fontFamily } from '@/app/harmonyFont'
+import { fontFamily } from '@/app/font'
 import TrackingScript from '@/components/TrackingScript'
 import ShareButton from '@/components/ShareButton'
 import { Toaster } from '@/components/ui/sonner'
 import { defaultCode } from '@/const'
 import { useCodeShareDialog } from '@/components/useCodeImgShare'
+import { isDarkMode } from '@/lib/utils'
 
 const ansiUp = new AnsiUp()
 
@@ -63,7 +64,7 @@ export default function Component() {
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
+    <div className={`flex flex-col h-screen overflow-hidden bg-background text-foreground ${isDarkMode() && 'dark'}`}>
       <div className="flex flex-col h-full overflow-hidden bg-background text-foreground p-4">
         <div className="flex-none px-2 md:px-4 pt-2 md:pt-4 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center md:mb-0 mb-2">
@@ -90,13 +91,13 @@ export default function Component() {
               defaultLanguage="cangjie"
               defaultValue={defaultCode}
               className="border"
-              theme="vitesse-light"
+              theme={isDarkMode() ? 'vitesse-dark' : 'vitesse-light'}
               options={{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: true,
                 fontSize: 14,
                 fontFamily,
-                fontLigatures: true,
+                fontLigatures: false,
               }}
               beforeMount={setupEditor}
               onMount={onMountFunc}

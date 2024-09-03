@@ -6,11 +6,11 @@ import grammar from '@/lib/Cangjie.tmLanguage.json'
 let highlighter: Highlighter | null = null
 const highlighterLock = new AsyncLock()
 
-export async function getHighlighter() {
+export async function getHighlighter(darkMode: boolean) {
   await highlighterLock.acquire('highlighter', async () => {
     highlighter = await createHighlighter({
       themes: [
-        'vitesse-light',
+        darkMode ? 'vitesse-dark' : 'vitesse-light',
       ],
       langs: [
         grammar as any,

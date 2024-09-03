@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { generateHashShareUrl } from '@/service/share'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { isDarkMode } from '@/lib/utils'
 
 async function svgToPng(svgurl: string) {
   const canvas = document.createElement('canvas')
@@ -52,6 +53,7 @@ export function useCodeShareDialog() {
       body: JSON.stringify({
         code: editorCode,
         shareUrl: url,
+        dark: isDarkMode(),
       }),
     }).then(res => res.blob())
     setPicBlob(b)
@@ -106,11 +108,11 @@ export function useCodeShareDialog() {
   const DialogComponent = useMemo(() => {
     return (
       <Dialog open={isOpen} onOpenChange={closeDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+        <DialogContent className={`max-w-2xl max-h-[80vh] overflow-auto ${isDarkMode() && 'dark'}`}>
           <DialogHeader>
             <DialogTitle>分享代码图片</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-start bg-white p-4 rounded max-h-[60vh] overflow-y-auto">
+          <div className="flex flex-col items-start p-4 rounded max-h-[60vh] overflow-y-auto">
             <img src={picUrl} alt="preview" />
           </div>
           <div className="flex justify-center mt-4 space-x-2">

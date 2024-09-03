@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
-import { fontFamily } from '@/app/harmonyFont'
+import { fontFamily } from '@/app/font'
 
 export const metadata: Metadata = {
   title: '仓颉 Playground',
@@ -14,9 +14,10 @@ export default function RootLayout({ children }: Readonly<{
 }>) {
   return (
     <html lang="en">
-      <body style={{
-        fontFamily,
-      }}
+      <body
+        style={{
+          fontFamily,
+        }}
       >
         {children}
       </body>
