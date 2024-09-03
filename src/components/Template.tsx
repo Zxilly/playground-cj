@@ -108,10 +108,14 @@ function getSvgDataUri(url: string, dark: boolean) {
 }
 
 export function getTemplate(code: Root, url: string, dark: boolean) {
+  const background = dark ? '#1e1e1e' : '#f0f0f0'
+  const layer = dark ? '#282a36' : 'white'
+  const layerFont = dark ? '#2c2c2c' : '#f8f8f2'
+
   return (
     <div
       style={{
-        background: dark ? '#1e1e1e' : '#f0f0f0',
+        background,
         height: '100%',
         width: '100%',
         display: 'flex',
@@ -129,8 +133,8 @@ export function getTemplate(code: Root, url: string, dark: boolean) {
     >
       <div
         style={{
-          color: dark ? '#2c2c2c' : '#f8f8f2',
-          background: dark ? '#282a36' : 'white',
+          color: layerFont,
+          background: layer,
           padding: '16px 20px',
           borderRadius: 15,
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
