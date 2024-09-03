@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
   const fontHarmony = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans.ttf`)
   const fontHarmonyBold = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans_Bold.ttf`)
 
-  const tmpl = getTemplate(hastTree, shareUrl, dark)
+  const theme = highlighter.getTheme(dark ? 'vitesse-dark' : 'vitesse-light')
+
+  const tmpl = getTemplate(hastTree, shareUrl, dark, theme.bg)
 
   const svg = await satori(tmpl, {
     width: 800,

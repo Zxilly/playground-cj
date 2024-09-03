@@ -107,9 +107,8 @@ function getSvgDataUri(url: string, dark: boolean) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
-export function getTemplate(code: Root, url: string, dark: boolean) {
+export function getTemplate(code: Root, url: string, dark: boolean, layer: string) {
   const background = dark ? '#1e1e1e' : '#f0f0f0'
-  const layer = dark ? '#282a36' : 'white'
   const layerFont = dark ? '#2c2c2c' : '#f8f8f2'
 
   return (
