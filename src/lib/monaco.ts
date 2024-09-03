@@ -94,13 +94,13 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
         let text = model.getValue()
 
         toast.promise(new Promise((resolve, reject) => {
+          const err = (msg: string) => {
+            setToolOutput(msg)
+            reject(msg)
+          }
+
           remoteLock.acquire('run', async () => {
             const [resp, status] = await requestRemoteAction(text, 'format')
-
-            const err = (msg: string) => {
-              setToolOutput(msg)
-              reject(msg)
-            }
 
             switch (status) {
               case SandboxStatus.RATE_LIMIT:
