@@ -90,6 +90,9 @@ importers:
       ansi_up:
         specifier: ^6.0.2
         version: 6.0.2
+      antlr4:
+        specifier: ^4.13.2
+        version: 4.13.2
       async-lock:
         specifier: ^1.4.1
         version: 1.4.1
@@ -1426,6 +1429,10 @@ packages:
 
   ansi_up@6.0.2:
     resolution: {integrity: sha512-3G3vKvl1ilEp7J1u6BmULpMA0xVoW/f4Ekqhl8RTrJrhEBkonKn5k3bUc5Xt+qDayA6iDX0jyUh3AbZjB/l0tw==}
+
+  antlr4@4.13.2:
+    resolution: {integrity: sha512-QiVbZhyy4xAZ17UPEuG3YTOt8ZaoeOR1CvEAqrEsDBsOqINslaB147i9xqljZqoyf5S+EUlGStaj+t22LT9MOg==}
+    engines: {node: '>=16'}
 
   any-promise@1.3.0:
     resolution: {integrity: sha512-7UvmKalWRt1wgjL1RrGxoSJW/0QZFIegpeGvZG9kjp8vrRu55XTHbwnqq2GpXm9uLbcuhxm3IqX9OB4MZR1b2A==}
@@ -5273,6 +5280,8 @@ snapshots:
   ansi-styles@6.2.1: {}
 
   ansi_up@6.0.2: {}
+
+  antlr4@4.13.2: {}
 
   any-promise@1.3.0: {}
 
