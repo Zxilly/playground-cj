@@ -46,7 +46,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "eslint": "^9.9.1",
-    "eslint-config-next": "14.2.7",
+    "eslint-config-next": "14.2.8",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.35.1",
     "eslint-plugin-react-hooks": "5.1.0-rc-e56f4ae3-20240830",
