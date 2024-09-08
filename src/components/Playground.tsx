@@ -7,6 +7,7 @@ import type { Monaco } from '@monaco-editor/react'
 import Editor from '@monaco-editor/react'
 import { AnsiUp } from 'ansi_up'
 import { useMedia } from 'react-use'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Button } from '@/components/ui/button'
 import { createOnMountFunction, setupEditor } from '@/lib/monaco'
 import { fontFamily } from '@/app/font'
@@ -152,6 +153,7 @@ export default function Component() {
       {DialogComponent}
       <Toaster richColors position="top-center" />
       <TrackingScript />
+      <SpeedInsights />
     </div>
   )
 }
