@@ -1,5 +1,5 @@
-import { expect, it } from 'vitest'
 import { generateDataShareUrl, loadShareCode } from '@/service/share'
+import { expect, it } from 'vitest'
 
 it.each([
   ['print(\'Hello, world!\')', 'http://localhost:3000/#data=A4JwlgdgLgFA5ACQKYBsUHsA0ACA7ukFAEwEI4BKIA'],

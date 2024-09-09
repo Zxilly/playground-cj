@@ -1,7 +1,7 @@
-import type { Highlighter } from 'shiki'
-import { createHighlighter } from 'shiki'
-import AsyncLock from 'async-lock'
 import grammar from '@/lib/Cangjie.tmLanguage.json'
+import AsyncLock from 'async-lock'
+import { createHighlighter } from 'shiki'
+import type { Highlighter } from 'shiki'
 
 let highlighter: Highlighter | null = null
 const highlighterLock = new AsyncLock()

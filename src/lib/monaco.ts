@@ -1,19 +1,19 @@
-import type { Monaco, OnMount } from '@monaco-editor/react'
-import { loader } from '@monaco-editor/react'
-
-import { shikiToMonaco } from '@shikijs/monaco'
-
-import type { editor } from 'monaco-editor'
-import { toast } from 'sonner'
-import AsyncLock from 'async-lock'
-import langConf from './language-configuration.json'
-import { cangjieCompletionProvider } from '@/lib/completion'
-import { getHighlighter } from '@/lib/shiki'
-import { SandboxStatus, remoteRun, requestRemoteAction } from '@/service/run'
-import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
 import { defaultCode } from '@/const'
+import { cangjieCompletionProvider } from '@/lib/completion'
+
 import { saveAsFile } from '@/lib/file'
+
+import { getHighlighter } from '@/lib/shiki'
 import { isDarkMode } from '@/lib/utils'
+import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
+import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
+import { loader } from '@monaco-editor/react'
+import { shikiToMonaco } from '@shikijs/monaco'
+import AsyncLock from 'async-lock'
+import { toast } from 'sonner'
+import type { Monaco, OnMount } from '@monaco-editor/react'
+import type { editor } from 'monaco-editor'
+import langConf from './language-configuration.json'
 
 loader.config({
   'paths': {
