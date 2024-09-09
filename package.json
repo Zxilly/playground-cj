@@ -49,7 +49,7 @@
     "eslint-config-next": "14.2.8",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.35.2",
-    "eslint-plugin-react-hooks": "5.1.0-rc-e56f4ae3-20240830",
+    "eslint-plugin-react-hooks": "5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
     "hast": "^1.0.0",
     "jsdom": "^25.0.0",
