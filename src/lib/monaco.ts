@@ -1,5 +1,4 @@
 import { defaultCode } from '@/const'
-import { cangjieCompletionProvider } from '@/lib/completion'
 
 import { saveAsFile } from '@/lib/file'
 
@@ -29,8 +28,6 @@ loader.config({
 export function setupEditor(monaco: Monaco) {
   monaco.languages.register({ id: 'cangjie' })
   monaco.languages.setLanguageConfiguration('cangjie', langConf as any)
-
-  monaco.languages.registerCompletionItemProvider('cangjie', cangjieCompletionProvider)
 
   ;(async () => {
     const highlighter = await getHighlighter(isDarkMode())
