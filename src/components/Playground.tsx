@@ -140,7 +140,7 @@ export default function Component() {
         </div>
       </div>
       <div className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">
-        仓颉版本 0.54.3 |&nbsp;
+        仓颉版本 0.55.3 |&nbsp;
         <a
           href="https://github.com/Zxilly/playground-cj"
           className="hover:underline"
