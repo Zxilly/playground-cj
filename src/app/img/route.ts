@@ -1,9 +1,9 @@
+import type { NextRequest } from 'next/server'
 import { readFileSync } from 'node:fs'
 import { getTemplate } from '@/components/Template'
 import { getHighlighter } from '@/lib/shiki'
 import { NextResponse } from 'next/server'
 import satori from 'satori'
-import type { NextRequest } from 'next/server'
 
 export async function POST(req: NextRequest) {
   const data = await req.json()

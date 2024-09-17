@@ -1,7 +1,9 @@
+import type { Monaco, OnMount } from '@monaco-editor/react'
+
+import type { editor } from 'monaco-editor'
+
 import { defaultCode } from '@/const'
-
 import { saveAsFile } from '@/lib/file'
-
 import { getHighlighter } from '@/lib/shiki'
 import { isDarkMode } from '@/lib/utils'
 import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
@@ -10,8 +12,6 @@ import { loader } from '@monaco-editor/react'
 import { shikiToMonaco } from '@shikijs/monaco'
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
-import type { Monaco, OnMount } from '@monaco-editor/react'
-import type { editor } from 'monaco-editor'
 import langConf from './language-configuration.json'
 
 loader.config({

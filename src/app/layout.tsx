@@ -1,7 +1,7 @@
-import { fontFamily } from '@/app/font'
-import { Analytics } from '@vercel/analytics/react'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { fontFamily } from '@/app/font'
+import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
 
 export const metadata: Metadata = {

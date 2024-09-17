@@ -1,5 +1,6 @@
 'use client'
 
+import type { Monaco } from '@monaco-editor/react'
 import { fontFamily } from '@/app/font'
 import ShareButton from '@/components/ShareButton'
 import TrackingScript from '@/components/TrackingScript'
@@ -16,7 +17,6 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMedia } from 'react-use'
-import type { Monaco } from '@monaco-editor/react'
 
 const ansiUp = new AnsiUp()
 
