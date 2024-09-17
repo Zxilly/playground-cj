@@ -1,11 +1,11 @@
 'use client'
 
+import type * as monaco from 'monaco-editor'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronDown, FileImage, Hash, Link } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import { toast } from 'sonner'
-import type * as monaco from 'monaco-editor'
 
 interface ShareButtonProps {
   editor?: monaco.editor.ICodeEditor

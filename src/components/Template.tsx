@@ -1,7 +1,7 @@
+import type { Root } from 'hast'
 /* eslint-disable react-refresh/only-export-components */
 import QRCode from 'qrcode-svg'
 import React from 'react'
-import type { Root } from 'hast'
 
 interface LineNumberProps {
   n: number
