@@ -99,6 +99,7 @@ export default function Component() {
                 fontSize: 14,
                 fontFamily,
                 fontLigatures: false,
+                mouseWheelZoom: true,
               }}
               beforeMount={setupEditor}
               onMount={onMountFunc}
