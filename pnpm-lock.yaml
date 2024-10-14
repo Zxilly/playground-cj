@@ -50,7 +50,7 @@ importers:
         version: 1.14.3(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)
       '@monaco-editor/react':
         specifier: ^4.6.0
-        version: 4.6.0(monaco-editor@0.51.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 4.6.0(monaco-editor@0.52.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@shikijs/monaco':
         specifier: ^1.22.0
         version: 1.22.0
@@ -136,8 +136,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       monaco-editor:
-        specifier: ^0.51.0
-        version: 0.51.0
+        specifier: ^0.52.0
+        version: 0.52.0
       postcss:
         specifier: ^8
         version: 8.4.47
@@ -3033,8 +3033,8 @@ packages:
   mlly@1.7.1:
     resolution: {integrity: sha512-rrVRZRELyQzrIUAVMHxP97kv+G786pHmOKzuFII8zDYahFBS7qnHh2AlYSl1GAHhaMPCz6/oHjVMcfFYgFYHgA==}
 
-  monaco-editor@0.51.0:
-    resolution: {integrity: sha512-xaGwVV1fq343cM7aOYB6lVE4Ugf0UyimdD/x5PWcWBMKENwectaEu77FAN7c5sFiyumqeJdX1RPTh1ocioyDjw==}
+  monaco-editor@0.52.0:
+    resolution: {integrity: sha512-OeWhNpABLCeTqubfqLMXGsqf6OmPU6pHM85kF3dhy6kq5hnhuVS1p3VrEW/XhWHc71P2tHyS5JFySD8mgs1crw==}
 
   ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
@@ -4652,15 +4652,15 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
-  '@monaco-editor/loader@1.4.0(monaco-editor@0.51.0)':
+  '@monaco-editor/loader@1.4.0(monaco-editor@0.52.0)':
     dependencies:
-      monaco-editor: 0.51.0
+      monaco-editor: 0.52.0
       state-local: 1.0.7
 
-  '@monaco-editor/react@4.6.0(monaco-editor@0.51.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@monaco-editor/react@4.6.0(monaco-editor@0.52.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
-      '@monaco-editor/loader': 1.4.0(monaco-editor@0.51.0)
-      monaco-editor: 0.51.0
+      '@monaco-editor/loader': 1.4.0(monaco-editor@0.52.0)
+      monaco-editor: 0.52.0
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
@@ -7545,7 +7545,7 @@ snapshots:
       pkg-types: 1.2.0
       ufo: 1.5.4
 
-  monaco-editor@0.51.0: {}
+  monaco-editor@0.52.0: {}
 
   ms@2.1.2: {}
 
