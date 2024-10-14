@@ -55,7 +55,7 @@
     "jsdom": "^25.0.0",
     "lucide-react": "^0.447.0",
     "lz-string": "^1.5.0",
-    "monaco-editor": "^0.51.0",
+    "monaco-editor": "^0.52.0",
     "postcss": "^8",
     "qrcode-svg": "^1.1.0",
     "react-use": "^17.5.1",
