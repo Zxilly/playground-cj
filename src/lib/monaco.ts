@@ -16,7 +16,7 @@ import langConf from './language-configuration.json'
 
 loader.config({
   'paths': {
-    vs: 'https://registry.npmmirror.com/monaco-editor/0.51.0/files/min/vs',
+    vs: 'https://registry.npmmirror.com/monaco-editor/0.52.0/files/min/vs',
   },
   'vs/nls': {
     availableLanguages: {
