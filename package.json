@@ -52,7 +52,7 @@
     "eslint-plugin-react-hooks": "5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.12",
     "hast": "^1.0.0",
-    "jsdom": "^25.0.0",
+    "jsdom": "^25.0.1",
     "lucide-react": "^0.447.0",
     "lz-string": "^1.5.0",
     "monaco-editor": "^0.52.0",
