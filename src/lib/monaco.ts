@@ -109,12 +109,13 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
             }
 
             if (resp.ok) {
-              text = resp.stdout
-              setToolOutput('格式化成功')
+              const content = resp.stdout.split('---===---')
+              text = content[1].substring(1)
+              setToolOutput(content[0])
               resolve('格式化成功')
             }
             else {
-              setToolOutput(resp.stderr)
+              setToolOutput('格式化失败')
               reject('格式化失败')
             }
           })
