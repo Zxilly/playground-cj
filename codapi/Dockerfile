@@ -7,7 +7,7 @@ RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.tuna.tsinghua.edu.cn/d
 
 RUN useradd --home /sandbox --create-home --shell /bin/sh sandbox
 
-ADD ./Cangjie-0.55.3-linux_x64.tar.gz /
+ADD ./Cangjie-0.56.4-linux_x64.tar.gz /
 RUN chown -R sandbox:sandbox /cangjie && \
     chmod -R 755 /cangjie
 
