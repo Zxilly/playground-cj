@@ -2,7 +2,7 @@ FROM debian:12-slim
 
 RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.tuna.tsinghua.edu.cn/debian|g' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && \
-    apt-get install -y --no-install-recommends binutils libc-dev build-essential && \
+    apt-get install -y --no-install-recommends binutils libc-dev build-essential openssl libssl-dev && \
     rm -rf /var/lib/apt/lists/*
 
 RUN useradd --home /sandbox --create-home --shell /bin/sh sandbox
