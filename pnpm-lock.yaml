@@ -88,8 +88,8 @@ importers:
         specifier: ^1.1.0
         version: 1.1.0(next@15.0.2(@babel/core@7.25.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@vitejs/plugin-react':
-        specifier: ^4.3.2
-        version: 4.3.2(vite@5.4.8(@types/node@22.8.7))
+        specifier: ^4.3.3
+        version: 4.3.3(vite@5.4.8(@types/node@22.8.7))
       ansi_up:
         specifier: ^6.0.2
         version: 6.0.2
@@ -1530,8 +1530,8 @@ packages:
       vue-router:
         optional: true
 
-  '@vitejs/plugin-react@4.3.2':
-    resolution: {integrity: sha512-hieu+o05v4glEBucTcKMK3dlES0OeJlD9YVOAPraVMOInBCwzumaIFiUjr4bHK7NPgnAHgiskUoceKercrN8vg==}
+  '@vitejs/plugin-react@4.3.3':
+    resolution: {integrity: sha512-NooDe9GpHGqNns1i8XDERg0Vsg5SSYRhRxxyTGogUdkdNt47jal+fbuYi+Yfq6pzRCKXyoPcWisfxE6RIM3GKA==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
       vite: ^4.2.0 || ^5.0.0
@@ -5661,7 +5661,7 @@ snapshots:
       next: 15.0.2(@babel/core@7.25.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
 
-  '@vitejs/plugin-react@4.3.2(vite@5.4.8(@types/node@22.8.7))':
+  '@vitejs/plugin-react@4.3.3(vite@5.4.8(@types/node@22.8.7))':
     dependencies:
       '@babel/core': 7.25.2
       '@babel/plugin-transform-react-jsx-self': 7.24.7(@babel/core@7.25.2)
