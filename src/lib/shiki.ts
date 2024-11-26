@@ -10,7 +10,7 @@ export async function getHighlighter(darkMode: boolean) {
   await highlighterLock.acquire('highlighter', async () => {
     highlighter = await createHighlighter({
       themes: [
-        darkMode ? 'vitesse-dark' : 'vitesse-light',
+        darkMode ? 'dark-plus' : 'light-plus',
       ],
       langs: [
         grammar as any,

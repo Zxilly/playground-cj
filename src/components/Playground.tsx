@@ -111,7 +111,7 @@ export default function Component() {
               defaultLanguage="cangjie"
               defaultValue={EXAMPLES['hello-world']}
               className="border"
-              theme={isDarkMode() ? 'vitesse-dark' : 'vitesse-light'}
+              theme={isDarkMode() ? 'dark-plus' : 'light-plus'}
               options={{
                 minimap: { enabled: false },
                 scrollBeyondLastLine: true,

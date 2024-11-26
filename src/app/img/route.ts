@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const hastTree = highlighter.codeToHast(code, {
     lang: 'cangjie',
-    theme: dark ? 'vitesse-dark' : 'vitesse-light',
+    theme: dark ? 'dark-plus' : 'light-plus',
   })
 
   const fontMono = readFileSync(`${process.cwd()}/src/app/fonts/JetBrainsMono.ttf`)
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const fontHarmony = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans.ttf`)
   const fontHarmonyBold = readFileSync(`${process.cwd()}/src/app/fonts/HarmonyOS_Sans_Bold.ttf`)
 
-  const theme = highlighter.getTheme(dark ? 'vitesse-dark' : 'vitesse-light')
+  const theme = highlighter.getTheme(dark ? 'dark-plus' : 'light-plus')
 
   const tmpl = getTemplate(hastTree, shareUrl, dark, theme.bg)
 
