@@ -2,7 +2,7 @@
 import std.collection.*
 
 func parse(text: String) {
-    let states = Array(5, {_ => Array(128, item: 0)})
+    let states = Array(5, {_ => Array(128, repeat: 0)})
     states[0][45..58] = [1, 2, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3] // INIT
     states[1][45..58] = [0, 2, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3] // -
     states[2][45..58] = [0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4] // . | -. | N. | -N.
