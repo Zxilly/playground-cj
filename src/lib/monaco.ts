@@ -130,6 +130,10 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
 
         window.umami?.track('format')
 
+        if (text === model.getValue()) {
+          return
+        }
+
         return [
           {
             range: model.getFullModelRange(),
