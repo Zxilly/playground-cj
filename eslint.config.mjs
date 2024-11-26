@@ -7,6 +7,7 @@ export default antfu({
     'no-template-curly-in-string': 'off',
     'prefer-promise-reject-errors': 'off',
     'node/prefer-global/process': 'off',
+    'antfu/no-top-level-await': 'off',
   },
 }, {
   ignores: [
