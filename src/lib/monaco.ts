@@ -2,7 +2,7 @@ import type { Monaco, OnMount } from '@monaco-editor/react'
 
 import type { editor } from 'monaco-editor'
 
-import { defaultCode } from '@/const'
+import { EXAMPLES } from '@/const'
 import { saveAsFile } from '@/lib/file'
 import { getHighlighter } from '@/lib/shiki'
 import { isDarkMode } from '@/lib/utils'
@@ -71,7 +71,7 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
           }
           else {
             setToolOutput('分享代码加载失败')
-            ed.setValue(defaultCode)
+            ed.setValue(EXAMPLES['hello-world'])
             reject()
           }
         })

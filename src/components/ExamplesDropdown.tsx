@@ -8,7 +8,6 @@ import { EXAMPLES } from '@/const'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import * as React from 'react'
-import { useEffect } from 'react'
 
 type EXAMPLE_KEY = keyof typeof EXAMPLES
 
@@ -19,12 +18,6 @@ interface LanguageDropdownProps {
 export function LanguageDropdown({ action }: LanguageDropdownProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<EXAMPLE_KEY>('hello-world')
-
-  const selectedCode = EXAMPLES[value]
-
-  useEffect(() => {
-    action(selectedCode)
-  }, [action, selectedCode])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -50,7 +43,12 @@ export function LanguageDropdown({ action }: LanguageDropdownProps) {
                   key={ex[0]}
                   value={ex[0]}
                   onSelect={(currentValue) => {
-                    setValue((currentValue === value ? '' : currentValue) as EXAMPLE_KEY)
+                    const changed = currentValue !== value
+                    if (changed) {
+                      setValue(currentValue as EXAMPLE_KEY)
+                      action(EXAMPLES[currentValue as EXAMPLE_KEY])
+                    }
+
                     setOpen(false)
                   }}
                 >
