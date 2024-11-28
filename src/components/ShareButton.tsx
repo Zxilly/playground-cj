@@ -14,7 +14,7 @@ interface ShareButtonProps {
 const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleShare = useCallback((type: 'url' | 'hash' | 'picture') => {
+  const handleShare = useCallback((type: 'url' | 'hash' | 'picture' | 'picture-compact') => {
     if (!editor) {
       return
     }
@@ -71,6 +71,14 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
           >
             <FileImage className="mr-2 h-4 w-4" />
             图片方式
+          </Button>
+          <Button
+            variant="ghost"
+            className="justify-start"
+            onClick={() => handleShare('picture-compact')}
+          >
+            <FileImage className="mr-2 h-4 w-4" />
+            图片方式（简洁）
           </Button>
         </div>
       </PopoverContent>

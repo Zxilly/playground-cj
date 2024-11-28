@@ -40,12 +40,12 @@ export function useCodeShareDialog() {
   const [picBlob, setPicBlob] = useState<Blob | null>(null)
   const [picUrl, setPicUrl] = useState('')
 
-  const openDialog = useCallback(async (editorCode: string) => {
+  const openDialog = useCallback(async (editorCode: string, compact: boolean) => {
     const url = await generateHashShareUrl(editorCode)
     setShareUrl(url)
     setCode(editorCode)
 
-    const b = await fetch('/img', {
+    const b = await fetch(`/img`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,6 +54,7 @@ export function useCodeShareDialog() {
         code: editorCode,
         shareUrl: url,
         dark: isDarkMode(),
+        compact,
       }),
     }).then(res => res.blob())
     setPicBlob(b)
@@ -132,7 +133,21 @@ export function useCodeShareDialog() {
       contextMenuGroupId: 'share',
       contextMenuOrder: 1.5,
       run: async () => {
-        toast.promise(openDialog(editor.getValue()), {
+        toast.promise(openDialog(editor.getValue(), false), {
+          success: '已生成图片',
+          error: '生成图片失败',
+          loading: '正在生成图片...',
+        })
+      },
+    })
+
+    editor.addAction({
+      id: 'cangjie.share.picture-compact',
+      label: '分享 (图片-简约)',
+      contextMenuGroupId: 'share',
+      contextMenuOrder: 1.5,
+      run: async () => {
+        toast.promise(openDialog(editor.getValue(), true), {
           success: '已生成图片',
           error: '生成图片失败',
           loading: '正在生成图片...',

@@ -107,7 +107,7 @@ function getSvgDataUri(url: string, dark: boolean) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
-export function getTemplate(code: Root, url: string, dark: boolean, layer: string) {
+export function getTemplate(code: Root, url: string, dark: boolean, layer: string, qrcode: boolean) {
   const background = dark ? '#1e1e1e' : '#f0f0f0'
   const layerFont = dark ? '#2c2c2c' : '#f8f8f2'
 
@@ -188,15 +188,17 @@ export function getTemplate(code: Root, url: string, dark: boolean, layer: strin
             <p style={{ margin: 0 }}>{url}</p>
           </div>
 
-          <img
-            src={getSvgDataUri(url, dark)}
-            alt="QR Code"
-            style={{
-              width: 60,
-              height: 60,
-              margin: '0',
-            }}
-          />
+          {qrcode && (
+            <img
+              src={getSvgDataUri(url, dark)}
+              alt="QR Code"
+              style={{
+                width: 60,
+                height: 60,
+                margin: '0',
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

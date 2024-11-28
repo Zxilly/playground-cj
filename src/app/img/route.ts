@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
   const code = data.code
   const shareUrl = data.shareUrl
   const dark = data.dark
+  const compact = data.compact
 
   const highlighter = await getHighlighter(dark)
   if (!highlighter || !code || !shareUrl) {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const theme = highlighter.getTheme(dark ? 'dark-plus' : 'light-plus')
 
-  const tmpl = getTemplate(hastTree, shareUrl, dark, theme.bg)
+  const tmpl = getTemplate(hastTree, shareUrl, dark, theme.bg, compact)
 
   const svg = await satori(tmpl, {
     width: 800,

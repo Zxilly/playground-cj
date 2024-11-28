@@ -173,7 +173,7 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
 
     ed.addAction({
       id: 'cangjie.share.url',
-      label: '分享 (URL方式)',
+      label: '分享 (URL 方式)',
       contextMenuGroupId: 'share',
       contextMenuOrder: 1.5,
       run: async (editor: editor.ICodeEditor) => {
@@ -188,7 +188,7 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
 
     ed.addAction({
       id: 'cangjie.share.hash',
-      label: '分享 (Hash方式)',
+      label: '分享 (Hash 方式)',
       contextMenuGroupId: 'share',
       contextMenuOrder: 1.5,
       run: async (editor: editor.ICodeEditor) => {
