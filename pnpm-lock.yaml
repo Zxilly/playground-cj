@@ -154,8 +154,8 @@ importers:
         specifier: ^17.5.1
         version: 17.5.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       satori:
-        specifier: ^0.11.3
-        version: 0.11.3
+        specifier: ^0.12.0
+        version: 0.12.0
       shiki:
         specifier: ^1.24.0
         version: 1.24.0
@@ -3817,8 +3817,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  satori@0.11.3:
-    resolution: {integrity: sha512-Wg7sls0iYAEETzi9YYcY16QVIqXjZT06XjkwondC5CGhw1mhmgKBCub8cCmkxdl/naXXQD+m29CFgn8pwtYCnA==}
+  satori@0.12.0:
+    resolution: {integrity: sha512-e0e+qQyeFwEszujN7SpWpRtZgww7Nh8lSO3bUn2spHZ5JpqEl3zJ3P14/JlWruxEwdgREs35ZnavrPrWaRVFDg==}
     engines: {node: '>=16'}
 
   saxes@6.0.0:
@@ -8703,7 +8703,7 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  satori@0.11.3:
+  satori@0.12.0:
     dependencies:
       '@shuding/opentype.js': 1.4.0-beta.0
       css-background-parser: 0.1.0
