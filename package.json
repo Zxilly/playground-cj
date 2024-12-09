@@ -44,7 +44,7 @@
     "ansi_up": "^6.0.2",
     "antlr4": "^4.13.2",
     "async-lock": "^1.4.1",
-    "class-variance-authority": "^0.7.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "eslint": "^9.15.0",
     "eslint-config-next": "15.0.3",
