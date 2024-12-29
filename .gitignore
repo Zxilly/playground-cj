@@ -37,4 +37,4 @@ next-env.d.ts
 
 .idea/
 
-.vercel
+.env

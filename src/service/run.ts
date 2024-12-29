@@ -8,43 +8,48 @@ interface SandboxResponse {
   stderr: string
 }
 
+interface FormatMessage {
+  formatted: string
+  formatter_output: string
+  formatter_code: number
+}
+
+interface RunMessage {
+  compiler_output: string
+  compiler_code: number
+  bin_output: string
+  bin_code: number
+}
+
 export enum SandboxStatus {
   OK = 0,
-  RATE_LIMIT = 1,
-  UNKNOWN_ERROR = 2,
+  UNKNOWN_ERROR = 1,
 }
 
-function getSendPayload(code: string, action: string): string {
-  return JSON.stringify({
-    sandbox: 'cangjie',
-    command: action,
-    files: {
-      '': code,
-    },
-  })
-}
+export async function requestRemoteAction<
+  T extends 'run' | 'format',
+>(
+  code: string,
+  action: T,
+): Promise<[T extends 'run' ? RunMessage : FormatMessage, SandboxStatus]> {
+  const encoder = new TextEncoder()
 
-export async function requestRemoteAction(code: string, action: string): Promise<[SandboxResponse, SandboxStatus]> {
-  const resp = await fetch(`${BACKEND_URL}/v1/exec`, {
+  const resp = await fetch(`${BACKEND_URL}/${action}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: getSendPayload(code, action),
+    body: encoder.encode(code),
   })
 
-  const data = await resp.json()
+  const data: T extends 'run' ? RunMessage : FormatMessage = await resp.json()
 
   if (resp.ok) {
     return [data, SandboxStatus.OK]
   }
   else {
-    if (resp.status === 429) {
-      return [data, SandboxStatus.RATE_LIMIT]
-    }
-    else {
-      return [data, SandboxStatus.UNKNOWN_ERROR]
-    }
+    console.error(await resp.text())
+    return [data, SandboxStatus.UNKNOWN_ERROR]
   }
 }
 
@@ -62,28 +67,21 @@ export async function remoteRun(code: string, actions: Actions): Promise<void> {
   const [data, status] = await requestRemoteAction(code, 'run')
 
   switch (status) {
-    case SandboxStatus.RATE_LIMIT:
-      actions.setToolOutput('后端负载过大，请稍后再试')
-      actions.setProgramOutput('')
-      throw new Error('后端负载过大，请稍后再试')
     case SandboxStatus.UNKNOWN_ERROR:
       actions.setToolOutput('未知错误')
       actions.setProgramOutput('')
       throw new Error('未知错误')
   }
 
-  if (!data.ok) {
-    actions.setToolOutput(data.stderr)
+  actions.setToolOutput(data.compiler_output)
+  if (data.compiler_code !== 0) {
     actions.setProgramOutput('')
-    throw new Error('编译运行失败')
+    throw new Error('编译失败')
   }
-  else {
-    if (data.stderr.length > 0) {
-      actions.setToolOutput(data.stderr)
-    }
-    else {
-      actions.setToolOutput('编译运行成功')
-    }
-    actions.setProgramOutput(data.stdout)
+
+  actions.setProgramOutput(data.bin_output)
+
+  if (data.bin_code !== 0) {
+    throw new Error('运行失败')
   }
 }

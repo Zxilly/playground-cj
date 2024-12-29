@@ -12,93 +12,45 @@ import (
 	"github.com/playground-cj/server"
 )
 
-func Report(msg server.Message) {
-	b, err := json.Marshal(msg)
-	if err != nil {
-		_, _ = os.Stderr.Write([]byte(err.Error()))
-		return
-	}
-	_, _ = os.Stdout.Write(b)
-	_, _ = os.Stdout.Write([]byte("\n"))
-}
+const (
+	LspPath = "/cangjie/tools/bin/LSPServer"
+)
 
-func runLsp(lsp string) error {
-	cmd := exec.Command(lsp)
-	stdout, err := cmd.StdoutPipe()
+func runLsp() {
+	err := os.MkdirAll("/workspace", 0755)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
+	cmd := exec.Command("cjpm", "init")
+	cmd.Dir = "/workspace"
+	Must(cmd.Run())
 
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return err
-	}
+	cmd = exec.Command(LspPath, "src", "-V")
+	cmd.Dir = "/workspace"
+
+	stdout := Must2(cmd.StdoutPipe())
+	stderr := Must2(cmd.StderrPipe())
+	stdin := Must2(cmd.StdinPipe())
 
 	go func() {
 		_, _ = io.Copy(os.Stderr, stderr)
 	}()
 
 	go func() {
-		for {
-			rb := make([]byte, 4096)
-			n, err := stdout.Read(rb)
-			if err != nil {
-				return
-			}
-			if n > 0 {
-				data := server.ForwardMessage{
-					Data: rb[:n],
-				}
-				dataB, _ := json.Marshal(data)
-				msg := server.Message{
-					Typ:  "forward",
-					Data: dataB,
-				}
-				Report(msg)
-			}
-		}
+		_, _ = io.Copy(stdin, os.Stdin)
 	}()
 
 	go func() {
-		for {
-			scan := bufio.NewScanner(os.Stdin)
-			scan.Split(bufio.ScanLines)
-			for scan.Scan() {
-				v := scan.Bytes()
-				msg := server.Message{}
-				err := json.Unmarshal(v, &msg)
-				if err != nil {
-					_, _ = os.Stderr.Write([]byte(err.Error()))
-					continue
-				}
-				switch msg.Typ {
-				case "forward":
-					data := server.ForwardMessage{}
-					_ = json.Unmarshal(msg.Data, &data)
-					_, _ = stdin.Write(data.Data)
-				case "format":
-					format(msg)
-				case "run":
-					run(msg)
-				}
-			}
-		}
+		_, _ = io.Copy(os.Stdout, stdout)
 	}()
 
-	err = cmd.Run()
-	return err
+	Must(cmd.Run())
 }
 
-func format(msg server.Message) {
-	fMsg := server.ForwardMessage{}
-	_ = json.Unmarshal(msg.Data, &fMsg)
+func format(fMsg server.ForwardMessage) {
 	data := fMsg.Data
 
-	tmp, err := os.CreateTemp("", "playground")
+	tmp, err := os.CreateTemp("", "playground.*.cj")
 	if err != nil {
 		panic(err)
 	}
@@ -110,7 +62,6 @@ func format(msg server.Message) {
 		_ = tmp.Close()
 	}(tmp)
 
-	// "cjfmt -f main.cj -o /tmp/fmt.cj 2>&1; echo \"---===---\"; cat /tmp/fmt.cj;"
 	cmd := exec.Command("cjfmt", "-f", tmp.Name(), "-o", tmp.Name())
 
 	cjfmtOut := bytes.NewBuffer(nil)
@@ -121,25 +72,19 @@ func format(msg server.Message) {
 	out, _ := os.ReadFile(tmp.Name())
 
 	ffMsg := server.FormatMessage{
-		Formatted:       out,
-		FormatterOutput: cjfmtOut.Bytes(),
+		Formatted:       string(out),
+		FormatterOutput: cjfmtOut.String(),
 		FormatterCode:   cmd.ProcessState.ExitCode(),
 	}
 
 	b, _ := json.Marshal(ffMsg)
-	cMsg := server.Message{
-		Typ:  "format",
-		Data: b,
-	}
-	Report(cMsg)
+	Report(b)
 }
 
-func run(msg server.Message) {
-	fMsg := server.ForwardMessage{}
-	_ = json.Unmarshal(msg.Data, &fMsg)
+func run(fMsg server.ForwardMessage) {
 	data := fMsg.Data
 
-	tmp, err := os.CreateTemp("", "playground")
+	tmp, err := os.CreateTemp("", "playground.*.cj")
 	if err != nil {
 		panic(err)
 	}
@@ -157,12 +102,7 @@ func run(msg server.Message) {
 		_ = os.Remove(name)
 	}(tmpBin)
 
-	dataMsg := server.RunMessage{
-		CompilerOutput: nil,
-		CompilerCode:   0,
-		BinOutput:      nil,
-		BinCode:        0,
-	}
+	dataMsg := server.RunMessage{}
 
 	compilerOut := bytes.NewBuffer(nil)
 
@@ -172,7 +112,7 @@ func run(msg server.Message) {
 	cmd.Stderr = compilerOut
 	_ = cmd.Run()
 
-	dataMsg.CompilerOutput = compilerOut.Bytes()
+	dataMsg.CompilerOutput = compilerOut.String()
 	dataMsg.CompilerCode = cmd.ProcessState.ExitCode()
 
 	if cmd.ProcessState.Success() {
@@ -182,37 +122,44 @@ func run(msg server.Message) {
 		cmd.Stderr = binOut
 		_ = cmd.Run()
 
-		dataMsg.BinOutput = binOut.Bytes()
+		dataMsg.BinOutput = binOut.String()
 		dataMsg.BinCode = cmd.ProcessState.ExitCode()
 	}
 
 	b, _ := json.Marshal(dataMsg)
-	msg = server.Message{
-		Typ:  "run",
-		Data: b,
+	Report(b)
+}
+
+func loadForwardMessage() server.ForwardMessage {
+	// readline from stdin
+	scan := bufio.NewScanner(os.Stdin)
+	scan.Split(bufio.ScanLines)
+	for scan.Scan() {
+		v := scan.Bytes()
+		msg := server.ForwardMessage{}
+		err := json.Unmarshal(v, &msg)
+		if err != nil {
+			_, _ = os.Stderr.Write([]byte(err.Error()))
+			continue
+		}
+		return msg
 	}
-	Report(msg)
+	panic("unexpected end of input")
 }
 
 func main() {
 	if len(os.Args) < 2 {
-		panic("missing required argument: lsp")
+		panic("missing required argument: type")
 	}
 
-	lsp := os.Args[1]
+	typ := os.Args[1]
 
-	for {
-		err := runLsp(lsp)
-		if err != nil {
-			var msg = server.Message{
-				Typ: "error",
-			}
-			b, err := json.Marshal(msg)
-			if err != nil {
-				_, _ = os.Stderr.Write([]byte(err.Error()))
-				continue
-			}
-			_, _ = os.Stdout.Write(b)
-		}
+	switch typ {
+	case "lsp":
+		runLsp()
+	case "format":
+		format(loadForwardMessage())
+	case "run":
+		run(loadForwardMessage())
 	}
 }

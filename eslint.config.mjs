@@ -8,6 +8,7 @@ export default antfu({
     'prefer-promise-reject-errors': 'off',
     'node/prefer-global/process': 'off',
     'antfu/no-top-level-await': 'off',
+    'perfectionist/sort-imports': 'off',
   },
 }, {
   ignores: [

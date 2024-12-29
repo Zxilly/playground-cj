@@ -1,6 +1,5 @@
 'use client'
 
-import type { Monaco } from '@monaco-editor/react'
 import { fontFamily } from '@/app/font'
 import { LanguageDropdown } from '@/components/ExamplesDropdown'
 import ShareButton from '@/components/ShareButton'
@@ -8,16 +7,16 @@ import TrackingScript from '@/components/TrackingScript'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { useCodeShareDialog } from '@/components/useCodeImgShare'
-import { EXAMPLES } from '@/const'
-import { createOnMountFunction, setupEditor } from '@/lib/monaco'
+import { createOnMountFunction, createWrapperConfig } from '@/lib/monaco'
 import { isDarkMode } from '@/lib/utils'
-import Editor from '@monaco-editor/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { AnsiUp } from 'ansi_up'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMedia } from 'react-use'
+import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
+import { MonacoEditorReactComp } from '@/components/EditorWrapper'
 
 const ansiUp = new AnsiUp()
 
@@ -25,11 +24,12 @@ export default function Component() {
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
-  const [monacoInst, setMonacoInst] = useState<Monaco | null>(null)
+
+  const wrapperRef = useRef<MonacoEditorLanguageClientWrapper | undefined>(undefined)
 
   const getAction = useCallback((id: string) => {
-    return monacoInst?.editor.getEditors()[0]?.getAction(id)
-  }, [monacoInst?.editor])
+    return wrapperRef.current?.getEditor()?.getAction(id)
+  }, [])
 
   const handleRun = useCallback(() => {
     getAction('cangjie.compile.run')?.run()
@@ -53,17 +53,21 @@ export default function Component() {
 
   const { DialogComponent, addSharePictureAction } = useCodeShareDialog()
 
-  const onMountFunc = useMemo(() => {
-    return createOnMountFunction({
-      addSharePictureAction,
-      setMonacoInst,
-      setProgramOutput,
-      setToolOutput,
-    })
-  }, [addSharePictureAction])
-
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
+
+  const onLoad = useCallback((wrapper: MonacoEditorLanguageClientWrapper) => {
+    wrapperRef.current = wrapper
+    createOnMountFunction({
+      addSharePictureAction,
+      setProgramOutput,
+      setToolOutput,
+    })(wrapperRef.current.getEditor()!)
+
+    console.log(`Loaded ${wrapper.reportStatus().join('\n').toString()}`)
+  }, [addSharePictureAction])
+
+  const wrapperConfig = useMemo(() => createWrapperConfig(), [])
 
   return (
     <div className={`flex flex-col h-screen overflow-hidden bg-background text-foreground ${isDarkMode() && 'dark'}`}>
@@ -82,36 +86,29 @@ export default function Component() {
           <div className="flex flex-col justify-between sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto">
             <div className="w-full sm:w-[200px]">
               <LanguageDropdown action={(nxt) => {
-                monacoInst?.editor.getEditors()[0]?.setValue(nxt)
+                wrapperRef.current?.updateCodeResources({
+                  modified: {
+                    text: nxt,
+                    enforceLanguageId: 'Cangjie',
+                    uri: 'file:///workspace/src/main.cj',
+                  },
+                })
               }}
               />
             </div>
             <div className="flex flex-row space-y-0 space-x-2 w-full sm:w-auto">
               <Button onClick={handleRun} className="w-full sm:w-auto">运行</Button>
               <Button onClick={handleFormat} className="w-full sm:w-auto">格式化</Button>
-              <ShareButton editor={monacoInst?.editor.getEditors()[0]} />
+              <ShareButton editor={wrapperRef.current?.getEditor()} />
             </div>
           </div>
         </div>
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           <div className="flex-1 p-2 md:p-4 flex flex-col overflow-hidden">
-            <Editor
-              loading={<div>编辑器加载中...</div>}
-              height="100%"
-              defaultLanguage="cangjie"
-              defaultValue={EXAMPLES['hello-world']}
-              className="border"
-              theme={isDarkMode() ? 'dark-plus' : 'light-plus'}
-              options={{
-                minimap: { enabled: false },
-                scrollBeyondLastLine: true,
-                fontSize: 14,
-                fontFamily,
-                fontLigatures: false,
-                mouseWheelZoom: true,
-              }}
-              beforeMount={setupEditor}
-              onMount={onMountFunc}
+            <MonacoEditorReactComp
+              wrapperConfig={wrapperConfig}
+              style={{ height: '100%' }}
+              onLoad={onLoad}
             />
           </div>
           <div className="w-full md:w-1/3 p-2 md:p-4 flex flex-col h-auto md:h-full">

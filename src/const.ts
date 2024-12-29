@@ -16,8 +16,8 @@ import structBTree from '@/examples/struct-btree.cj'
 import thread from '@/examples/thread.cj'
 import variables from '@/examples/variables.cj'
 
-export const BACKEND_URL = process.env.BACKEND_URL ?? 'https://cj-api.learningman.top'
-export const BASE_URL = process.env.BASE_URL ?? 'https://playground.cj.zxilly.dev'
+export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'
+export const HOST = new URL(BACKEND_URL).host
 
 export const EXAMPLES = {
   'hello-world': helloWorld,

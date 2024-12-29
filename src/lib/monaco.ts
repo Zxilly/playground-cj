@@ -1,40 +1,29 @@
-import type { Monaco, OnMount } from '@monaco-editor/react'
+import '@codingame/monaco-vscode-language-pack-zh-hans'
 
-import type { editor } from 'monaco-editor'
-
-import { EXAMPLES } from '@/const'
+import type { editor, languages } from 'monaco-editor'
+import * as monaco from 'monaco-editor'
+import { EXAMPLES, HOST } from '@/const'
 import { saveAsFile } from '@/lib/file'
-import { getHighlighter } from '@/lib/shiki'
-import { isDarkMode } from '@/lib/utils'
 import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
 import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
-import { loader } from '@monaco-editor/react'
-import { shikiToMonaco } from '@shikijs/monaco'
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
-import langConf from './language-configuration.json'
+import * as vscode from 'vscode'
+import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
+import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc'
+import type { WrapperConfig } from 'monaco-editor-wrapper'
+import { LogLevel } from 'vscode/services'
+import { useWorkerFactory } from 'monaco-editor-wrapper/workerFactory'
 
-loader.config({
-  'paths': {
-    vs: 'https://registry.npmmirror.com/monaco-editor/0.52.2/files/min/vs',
-  },
-  'vs/nls': {
-    availableLanguages: {
-      '*': 'zh-cn',
-    },
-  },
-})
+import '@codingame/monaco-vscode-theme-defaults-default-extension'
+import getConfigurationServiceOverride from '@codingame/monaco-vscode-configuration-service-override'
+import getThemeServiceOverride from '@codingame/monaco-vscode-theme-service-override'
+import getTextmateServiceOverride from '@codingame/monaco-vscode-textmate-service-override'
+import getKeybindingsServiceOverride from '@codingame/monaco-vscode-keybindings-service-override'
+import { fontFamily } from '@/app/font'
 
-export function setupEditor(monaco: Monaco) {
-  monaco.languages.register({ id: 'cangjie' })
-  monaco.languages.setLanguageConfiguration('cangjie', langConf as any)
-
-  ;(async () => {
-    const highlighter = await getHighlighter(isDarkMode())
-
-    shikiToMonaco(highlighter!, monaco)
-  })()
-}
+import langConf from '@/lib/language-configuration.json'
+import textMate from '@/lib/Cangjie.tmLanguage.json'
 
 const remoteLock = new AsyncLock()
 
@@ -45,103 +34,113 @@ function isBusy() {
 interface OnMountFunctionDependencies {
   setToolOutput: (output: string) => void
   setProgramOutput: (output: string) => void
-  setMonacoInst: (monaco: typeof import('monaco-editor')) => void
   addSharePictureAction: (editor: editor.ICodeEditor) => void
 }
 
-export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMount {
-  const {
-    setToolOutput,
-    setProgramOutput,
-    setMonacoInst,
-    addSharePictureAction,
-  } = deps
+function loadShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
+  if (window.location.hash !== '') {
+    ed.setValue('分享代码加载中...')
 
-  return (ed, monaco) => {
-    if (window.location.hash !== '') {
-      ed.setValue('分享代码加载中...')
+    toast.promise(new Promise<void>((resolve, reject) => {
+      remoteLock.acquire('run', async () => {
+        const [code, success] = await loadShareCode()
+        if (success && code) {
+          setToolOutput('分享代码加载成功')
+          setEditorValue(ed, code)
+          resolve()
+        }
+        else {
+          setToolOutput('分享代码加载失败')
+          setEditorValue(ed, EXAMPLES['hello-world'])
+          reject()
+        }
+      })
+    }), {
+      loading: '分享代码加载中...',
+      success: '分享代码加载成功',
+      error: '分享代码加载失败',
+    })
+  }
+  else {
+    setEditorValue(ed, EXAMPLES['hello-world'])
+  }
+}
 
-      toast.promise(new Promise<void>((resolve, reject) => {
+function getFormatter(setToolOutput: (msg: string) => void) {
+  return {
+    async provideDocumentFormattingEdits(model) {
+      if (isBusy()) {
+        return
+      }
+
+      let text = model.getValue()
+
+      toast.promise(new Promise((resolve, reject) => {
+        const err = (msg: string) => {
+          setToolOutput(msg)
+          reject(msg)
+        }
+
         remoteLock.acquire('run', async () => {
-          const [code, success] = await loadShareCode()
-          if (success && code) {
-            setToolOutput('分享代码加载成功')
-            ed.setValue(code)
-            resolve()
+          const [resp, status] = await requestRemoteAction(text, 'format')
+
+          switch (status) {
+            case SandboxStatus.UNKNOWN_ERROR:
+              err('格式化失败，未知错误')
+              return
+          }
+
+          text = resp.formatted
+          setToolOutput(resp.formatter_output)
+
+          if (resp.formatter_code === 0) {
+            resolve('格式化成功')
           }
           else {
-            setToolOutput('分享代码加载失败')
-            ed.setValue(EXAMPLES['hello-world'])
-            reject()
+            reject('格式化失败')
           }
         })
       }), {
-        loading: '分享代码加载中...',
-        success: '分享代码加载成功',
-        error: '分享代码加载失败',
+        success: '格式化成功',
+        error: data => data,
+        loading: '正在格式化...',
       })
-    }
 
-    monaco.languages.registerDocumentFormattingEditProvider('cangjie', {
-      async provideDocumentFormattingEdits(model) {
-        if (isBusy()) {
-          return
-        }
+      // just wait the format to finish
+      await remoteLock.acquire('run', () => {})
 
-        let text = model.getValue()
+      window.umami?.track('format')
 
-        toast.promise(new Promise((resolve, reject) => {
-          const err = (msg: string) => {
-            setToolOutput(msg)
-            reject(msg)
-          }
+      if (text === model.getValue()) {
+        return
+      }
 
-          remoteLock.acquire('run', async () => {
-            const [resp, status] = await requestRemoteAction(text, 'format')
+      return [
+        {
+          range: model.getFullModelRange(),
+          text,
+        },
+      ]
+    },
+  } satisfies languages.DocumentFormattingEditProvider
+}
 
-            switch (status) {
-              case SandboxStatus.RATE_LIMIT:
-                err('后端负载过大，请稍后再试')
-                return
-              case SandboxStatus.UNKNOWN_ERROR:
-                err('格式化失败，未知错误')
-                return
-            }
+export function setEditorValue(ed: editor.ICodeEditor, code: string) {
+  const model = ed.getModel()
+  if (model) {
+    model.setValue(code)
+  }
+}
 
-            if (resp.ok) {
-              const content = resp.stdout.split('---===---')
-              text = content[1].substring(1)
-              setToolOutput(content[0])
-              resolve('格式化成功')
-            }
-            else {
-              setToolOutput('格式化失败')
-              reject('格式化失败')
-            }
-          })
-        }), {
-          success: '格式化成功',
-          error: data => data,
-          loading: '正在格式化...',
-        })
+export function createOnMountFunction(deps: OnMountFunctionDependencies) {
+  const {
+    setToolOutput,
+    setProgramOutput,
+    addSharePictureAction,
+  } = deps
 
-        // just wait the format to finish
-        await remoteLock.acquire('run', () => {})
-
-        window.umami?.track('format')
-
-        if (text === model.getValue()) {
-          return
-        }
-
-        return [
-          {
-            range: model.getFullModelRange(),
-            text,
-          },
-        ]
-      },
-    })
+  return (ed: editor.IStandaloneCodeEditor) => {
+    monaco.languages.registerDocumentFormattingEditProvider('Cangjie', getFormatter(setToolOutput))
 
     ed.addAction({
       id: 'cangjie.compile.run',
@@ -217,6 +216,140 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies): OnMoun
       },
     })
 
-    setMonacoInst(monaco)
+    loadShareCodeToEditor(ed, setToolOutput)
+  }
+}
+
+export function createWrapperConfig(): WrapperConfig {
+  const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
+  const webSocket = new WebSocket(`${protocol}://${HOST}/ws`)
+
+  const iWebSocket = toSocket(webSocket)
+  const reader = new WebSocketMessageReader(iWebSocket)
+  const writer = new WebSocketMessageWriter(iWebSocket)
+
+  const extensionFilesOrContents = new Map<string, string>()
+
+  return {
+    $type: 'extended',
+    htmlContainer: document.getElementById('monaco-editor-root')!,
+    logLevel: LogLevel.Debug,
+    languageClientConfigs: {
+      Cangjie: {
+        name: 'Cangjie Language Client',
+        connection: {
+          options: {
+            $type: 'WebSocketDirect',
+            webSocket,
+          },
+          messageTransports: { reader, writer },
+        },
+        clientOptions: {
+          documentSelector: ['Cangjie'],
+          workspaceFolder: {
+            index: 0,
+            name: 'workspace',
+            uri: vscode.Uri.parse('/workspace'),
+          },
+          initializationOptions: {
+            modulesHomeOption: '/cangjie',
+            telemetryOption: true,
+            multiModuleOption: {
+              'file:///workspace/src/main.cj': {
+                name: 'workspace',
+                requires: {},
+              },
+            },
+          },
+          errorHandler: {
+            error: () => ({
+              action: ErrorAction.Continue,
+            }),
+            closed: () => ({
+              action: CloseAction.Restart,
+            }),
+          },
+        },
+      },
+    },
+    extensions: [
+      {
+        config: {
+          name: 'Cangjie Extension',
+          publisher: 'Zxilly',
+          version: '1.0.0',
+          engines: {
+            vscode: '*',
+          },
+          contributes: {
+            languages: [{
+              id: 'Cangjie',
+              extensions: ['.cj'],
+              aliases: ['cangjie'],
+              configuration: './language-configuration.json',
+            }],
+            grammars: [{
+              language: 'Cangjie',
+              scopeName: 'source.cj',
+              path: './cangjie-grammar.json',
+            }],
+          },
+        },
+        filesOrContents: new Map<string, string>([
+          ['./language-configuration.json', JSON.stringify(langConf)],
+          ['./cangjie-grammar.json', JSON.stringify(textMate)],
+        ]),
+      },
+    ],
+    vscodeApiConfig: {
+      serviceOverrides: {
+        ...getThemeServiceOverride(),
+        ...getTextmateServiceOverride(),
+        ...getKeybindingsServiceOverride(),
+        ...getConfigurationServiceOverride(),
+      },
+      userConfiguration: {
+        json: JSON.stringify({
+          'editor.wordBasedSuggestions': 'off',
+          'editor.experimental.asyncTokenization': true,
+          'window.autoDetectColorScheme': true,
+          'workbench.preferredDarkColorTheme': 'Default Dark Modern',
+          'workbench.preferredLightColorTheme': 'Default Light Modern',
+
+          'editor.minimap.enabled': false,
+          'editor.lightbulb.enabled': 'on',
+          'editor.scrollBeyondLastLine': true,
+          'editor.fontSize': 14,
+          'editor.fontFamily': fontFamily,
+          'editor.fontLigatures': false,
+          'editor.mouseWheelZoom': true,
+          'editor.semanticHighlighting.enabled': true,
+          'editor.quickSuggestionsDelay': 200,
+        }),
+      },
+    },
+    editorAppConfig: {
+      editorOptions: {
+        language: 'Cangjie',
+      },
+      codeResources: {
+        modified: {
+          text: EXAMPLES['hello-world'],
+          uri: vscode.Uri.parse('file:///workspace/src/main.cj').toString(),
+        },
+      },
+      monacoWorkerFactory: () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        useWorkerFactory({
+          workerOverrides: {
+            ignoreMapping: true,
+            workerLoaders: {
+              TextEditorWorker: () => new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url), { type: 'module' }),
+              TextMateWorker: () => new Worker(new URL('@codingame/monaco-vscode-textmate-service-override/worker', import.meta.url), { type: 'module' }),
+            },
+          },
+        })
+      },
+    },
   }
 }
