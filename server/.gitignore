@@ -4,3 +4,5 @@ out
 gen
 *.exe
 .vscode
+
+*.tar.gz

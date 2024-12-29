@@ -8,7 +8,7 @@ import React, { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
 interface ShareButtonProps {
-  editor?: monaco.editor.ICodeEditor
+  editor: monaco.editor.IStandaloneCodeEditor | undefined
 }
 
 const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
