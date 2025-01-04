@@ -90,7 +90,7 @@ export default function Component() {
                   modified: {
                     text: nxt,
                     enforceLanguageId: 'Cangjie',
-                    uri: 'file:///workspace/src/main.cj',
+                    uri: wrapperRef.current?.getEditor()!.getModel()!.uri.toString(),
                   },
                 })
               }}

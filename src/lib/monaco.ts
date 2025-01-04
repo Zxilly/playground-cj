@@ -24,6 +24,7 @@ import { fontFamily } from '@/app/font'
 
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/lib/Cangjie.tmLanguage.json'
+import isMobile from 'is-mobile'
 
 const remoteLock = new AsyncLock()
 
@@ -220,58 +221,77 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies) {
   }
 }
 
-export function createWrapperConfig(): WrapperConfig {
+function tryInitWebSocket() {
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-  const webSocket = new WebSocket(`${protocol}://${HOST}/ws`)
+  let webSocket: WebSocket
+  try {
+    webSocket = new WebSocket(`${protocol}://${HOST}/ws`)
+  }
+  catch (e) {
+    console.error('Failed to create WebSocket:', e)
+    return {}
+  }
 
   const iWebSocket = toSocket(webSocket)
   const reader = new WebSocketMessageReader(iWebSocket)
   const writer = new WebSocketMessageWriter(iWebSocket)
 
-  const extensionFilesOrContents = new Map<string, string>()
+  const messageTransports = {
+    reader,
+    writer,
+  }
+
+  return {
+    Cangjie: {
+      name: 'Cangjie Language Client',
+      connection: {
+        options: {
+          $type: 'WebSocketDirect',
+          webSocket,
+        },
+        messageTransports,
+      },
+      clientOptions: {
+        documentSelector: ['Cangjie'],
+        workspaceFolder: {
+          index: 0,
+          name: 'workspace',
+          uri: vscode.Uri.parse('/workspace'),
+        },
+        initializationOptions: {
+          modulesHomeOption: '/cangjie',
+          telemetryOption: true,
+          multiModuleOption: {
+            'file:///workspace/src/main.cj': {
+              name: 'workspace',
+              requires: {},
+            },
+          },
+        },
+        errorHandler: {
+          error: () => ({
+            action: ErrorAction.Continue,
+          }),
+          closed: () => ({
+            action: CloseAction.Restart,
+          }),
+        },
+      },
+    },
+  }
+}
+
+export function createWrapperConfig(): WrapperConfig {
+  let languageClientConfigs = {}
+  if (!isMobile({ tablet: true, featureDetect: true })) {
+    languageClientConfigs = tryInitWebSocket()
+  }
 
   return {
     $type: 'extended',
     htmlContainer: document.getElementById('monaco-editor-root')!,
     logLevel: LogLevel.Debug,
-    languageClientConfigs: {
-      Cangjie: {
-        name: 'Cangjie Language Client',
-        connection: {
-          options: {
-            $type: 'WebSocketDirect',
-            webSocket,
-          },
-          messageTransports: { reader, writer },
-        },
-        clientOptions: {
-          documentSelector: ['Cangjie'],
-          workspaceFolder: {
-            index: 0,
-            name: 'workspace',
-            uri: vscode.Uri.parse('/workspace'),
-          },
-          initializationOptions: {
-            modulesHomeOption: '/cangjie',
-            telemetryOption: true,
-            multiModuleOption: {
-              'file:///workspace/src/main.cj': {
-                name: 'workspace',
-                requires: {},
-              },
-            },
-          },
-          errorHandler: {
-            error: () => ({
-              action: ErrorAction.Continue,
-            }),
-            closed: () => ({
-              action: CloseAction.Restart,
-            }),
-          },
-        },
-      },
-    },
+    languageClientConfigs,
     extensions: [
       {
         config: {
