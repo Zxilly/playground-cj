@@ -13,7 +13,7 @@ import (
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
-	"github.com/playground-cj/server"
+	"github.com/Zxilly/playground-cj/server"
 )
 
 const (
