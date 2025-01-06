@@ -1,3 +1,5 @@
+package playground
+
 open class NodeA {
     public NodeA(protected var value: Rune,
         protected let left!: ?NodeA = None,

@@ -3,45 +3,137 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"go.lsp.dev/jsonrpc2"
+	"go.lsp.dev/protocol"
+
 	"github.com/playground-cj/server"
 )
 
 const (
-	LspPath = "/cangjie/tools/bin/LSPServer"
+	LspPath  = "/cangjie/tools/bin/LSPServer"
+	CodeFile = "/playground/src/main.cj"
 )
 
-func runLsp() {
-	err := os.MkdirAll("/workspace", 0755)
+var (
+	fileVersion int32 = 0
+)
+
+func init() {
+	// open /tmp/stderr.log
+	f, err := os.OpenFile("/tmp/stderr.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
 		panic(err)
 	}
+	// redirect stderr to /tmp/stderr.log
+	os.Stderr = f
+}
+
+func trySyncFile(msg jsonrpc2.Message) {
+	resq, ok := msg.(*jsonrpc2.Notification)
+	if !ok {
+		return
+	}
+
+	if resq.Method() != protocol.MethodTextDocumentDidChange && resq.Method() != protocol.MethodTextDocumentDidOpen {
+		return
+	}
+
+	fileContent := Must2(os.ReadFile(CodeFile))
+
+	if resq.Method() == protocol.MethodTextDocumentDidChange {
+		params := protocol.DidChangeTextDocumentParams{}
+		Must(json.Unmarshal(resq.Params(), &params))
+
+		if params.TextDocument.Version < fileVersion {
+			return
+		}
+
+		for _, change := range params.ContentChanges {
+			m := NewMapper(DocumentURI(params.TextDocument.URI), fileContent)
+			start, end, err := m.RangeOffsets(change.Range)
+			if err != nil {
+				panic(err)
+			}
+			if end < start {
+				panic("end < start")
+			}
+			var buf bytes.Buffer
+			buf.Write(fileContent[:start])
+			buf.WriteString(change.Text)
+			buf.Write(fileContent[end:])
+			fileContent = buf.Bytes()
+		}
+
+		fileVersion = params.TextDocument.Version
+	} else if resq.Method() == protocol.MethodTextDocumentDidOpen {
+		params := protocol.DidOpenTextDocumentParams{}
+		Must(json.Unmarshal(resq.Params(), &params))
+
+		fileContent = []byte(params.TextDocument.Text)
+		fileVersion = params.TextDocument.Version
+	}
+
+	Must(os.WriteFile(CodeFile, fileContent, 0644))
+}
+
+func runLsp() {
+	err := os.MkdirAll("/playground", 0755)
+	if err != nil {
+		panic(err)
+	}
+
+	ctx := context.Background()
+
 	cmd := exec.Command("cjpm", "init")
-	cmd.Dir = "/workspace"
+	cmd.Dir = "/playground"
 	Must(cmd.Run())
 
-	cmd = exec.Command(LspPath, "src", "-V")
-	cmd.Dir = "/workspace"
+	cmd = exec.CommandContext(ctx, LspPath, "src", "--disableAutoImport", "-V")
 
 	stdout := Must2(cmd.StdoutPipe())
 	stderr := Must2(cmd.StderrPipe())
 	stdin := Must2(cmd.StdinPipe())
 
 	go func() {
-		_, _ = io.Copy(os.Stderr, stderr)
+		Must2(io.Copy(os.Stderr, stderr))
+	}()
+
+	c := &mixedReadWriteCloser{r: stdout, w: stdin}
+	stream := jsonrpc2.NewStream(c)
+
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			data := scanner.Bytes()
+
+			rpcMsg := Must2(jsonrpc2.DecodeMessage(data))
+
+			trySyncFile(rpcMsg)
+
+			//if msg := tryRewriteInit(rpcMsg); msg != nil {
+			//	rpcMsg = msg
+			//}
+
+			Must2(stream.Write(ctx, rpcMsg))
+		}
 	}()
 
 	go func() {
-		_, _ = io.Copy(stdin, os.Stdin)
-	}()
-
-	go func() {
-		_, _ = io.Copy(os.Stdout, stdout)
+		for {
+			msg, _, err := stream.Read(ctx)
+			if err != nil {
+				panic(err)
+			}
+			data := Must2(json.Marshal(msg))
+			Report(data)
+		}
 	}()
 
 	Must(cmd.Run())

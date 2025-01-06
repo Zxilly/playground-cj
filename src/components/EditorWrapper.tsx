@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import React, { useCallback, useEffect, useRef } from 'react'
 import type { WrapperConfig } from 'monaco-editor-wrapper'
 import { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
+import * as vscode from 'vscode'
 
 export interface MonacoEditorProps {
   style?: CSSProperties
@@ -37,6 +38,16 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
 
   const startMonaco = useCallback(async () => {
     if (containerRef.current) {
+      // set workspace
+      const uri = vscode.Uri.parse('file:///playground')
+      // @ts-expect-error not exposed in type
+      uri._fsPath = '/playground'
+
+      vscode.workspace.updateWorkspaceFolders(0, 0, {
+        uri,
+        name: 'playground',
+      })
+
       await wrapperRef.current.start(containerRef.current)
       onLoad?.(wrapperRef.current)
     }

@@ -1,3 +1,5 @@
+package playground
+
 struct Node<T> where T <: ToString {
     public Node(var value: T,
         let left!: ?Node<T> = None,

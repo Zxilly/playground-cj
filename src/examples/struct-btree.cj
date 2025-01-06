@@ -1,3 +1,5 @@
+package playground
+
 struct Node {
     public Node(var value: Rune,
         let left!: ?Node = None,

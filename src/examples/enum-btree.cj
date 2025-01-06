@@ -1,3 +1,5 @@
+package playground
+
 enum Tree {
     Empty | Leaf(Int64) | Node(Int64, Tree, Tree)
 

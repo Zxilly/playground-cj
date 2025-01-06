@@ -1,3 +1,5 @@
+package playground
+
 // 调用 C 标准库中的 rand 和 printf 函数
 foreign func rand(): Int32
 foreign func printf(fmt: CString, ...): Int32

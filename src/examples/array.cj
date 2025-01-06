@@ -1,3 +1,5 @@
+package playground
+
 // 基于数组构造 DFA 状态表，解析出一个字符串中的所有整数和小数
 import std.collection.*
 

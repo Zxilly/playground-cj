@@ -1,3 +1,5 @@
+package playground
+
 enum Expr {
     Num(Float64) |
     Add(Expr, Expr) | Sub(Expr, Expr) | Mul(Expr, Expr) | Div(Expr, Expr)

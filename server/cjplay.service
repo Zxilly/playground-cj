@@ -1,0 +1,15 @@
+[Unit]
+Description=Cangjie Playground
+After=network.target
+
+[Service]
+Type=simple
+User=cjplay
+WorkingDirectory=/opt/cjplay
+ExecStart=/opt/cjplay/server
+Restart=on-failure
+StandardOutput=file:/opt/cjplay/cjplay.log
+StandardError=file:/opt/cjplay/cjplay.log
+
+[Install]
+WantedBy=multi-user.target
