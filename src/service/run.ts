@@ -1,13 +1,5 @@
 import { BACKEND_URL } from '@/const'
 
-interface SandboxResponse {
-  id: string
-  ok: boolean
-  duration: number
-  stdout: string
-  stderr: string
-}
-
 interface FormatMessage {
   formatted: string
   formatter_output: string
