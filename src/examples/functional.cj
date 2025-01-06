@@ -1,3 +1,5 @@
+package playground
+
 // 用给定的分隔符拆分字符串，支持多分隔符
 import std.collection.*
 

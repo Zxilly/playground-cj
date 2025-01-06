@@ -1,3 +1,5 @@
+package playground
+
 extend String {
     operator func >>(n: Int64): String {
         if (n <= 0) {

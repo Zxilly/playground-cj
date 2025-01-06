@@ -1,3 +1,5 @@
+package playground
+
 // 示例场景：蒙特卡洛算法求圆周率
 // 涉及特性：常量，变量，可变性，类型转换，幂运算符
 import std.random.*

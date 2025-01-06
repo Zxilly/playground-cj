@@ -1,9 +1,8 @@
 package main
 
 import (
+	"bufio"
 	"context"
-	"encoding/json"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gorilla/websocket"
-	"go.lsp.dev/jsonrpc2"
 )
 
 const (
@@ -92,24 +90,19 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			return nil
 		})
 
-		stream := jsonrpc2.NewStream(attach.Conn)
 		for {
-			_, msgData, err := ws.ReadMessage()
+			_, data, err := ws.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					log.Printf("Read error: %v", err)
 				}
 				break
 			}
-			msg, err := jsonrpc2.DecodeMessage(msgData)
-			if err != nil {
-				log.Printf("Decode error: %v", err)
-				break
-			}
-
-			_, err = stream.Write(ctx, msg)
+			data = append(data, '\n')
+			_, err = attach.Conn.Write(data)
 			if err != nil {
 				log.Printf("Write error: %v", err)
+				cancel()
 				break
 			}
 		}
@@ -129,25 +122,13 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			in, out := net.Pipe()
 
 			go func() {
-				stream := jsonrpc2.NewStream(out)
-				for {
-					msg, _, err := stream.Read(ctx)
-					if err != nil {
-						if err != io.EOF {
-							log.Printf("Read error: %v", err)
-						}
-						break
-					}
-
-					msgData, err := json.Marshal(msg)
-					if err != nil {
-						log.Printf("Marshal error: %v", err)
-						break
-					}
-
+				scanner := bufio.NewScanner(out)
+				for scanner.Scan() {
+					data := scanner.Bytes()
 					_ = ws.SetWriteDeadline(time.Now().Add(writeWait))
-					if err := ws.WriteMessage(websocket.TextMessage, msgData); err != nil {
+					if err := ws.WriteMessage(websocket.TextMessage, data); err != nil {
 						log.Printf("Write error: %v", err)
+						cancel()
 						break
 					}
 				}

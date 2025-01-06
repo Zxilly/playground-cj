@@ -1,3 +1,5 @@
+package playground
+
 func node(value: Rune,
     left!: () -> Unit = {=>}, right!: () -> Unit = {=>}) {
     return { =>

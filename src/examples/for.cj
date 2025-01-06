@@ -1,3 +1,5 @@
+package playground
+
 main() {
     let metaArray = [r'甲', r'乙', r'丙', r'丁', r'戊',
         r'己', r'庚', r'辛', r'壬', r'癸']

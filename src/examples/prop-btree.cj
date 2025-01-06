@@ -1,3 +1,5 @@
+package playground
+
 class Node {
     private var value: Int64 = 0
     public Node(private var name: Rune,

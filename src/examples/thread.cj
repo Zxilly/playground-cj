@@ -1,3 +1,5 @@
+package playground
+
 import std.collection.*
 import std.random.*
 import std.math.*

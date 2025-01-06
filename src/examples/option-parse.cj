@@ -1,3 +1,5 @@
+package playground
+
 func parseInt(text: String): Option<Int64> {
     if (text.isEmpty() || text == "-") {
         return None

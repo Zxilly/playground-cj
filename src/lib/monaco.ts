@@ -8,7 +8,6 @@ import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
 import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
-import * as vscode from 'vscode'
 import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc'
 import type { WrapperConfig } from 'monaco-editor-wrapper'
@@ -52,7 +51,6 @@ function loadShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOutput: 
         }
         else {
           setToolOutput('分享代码加载失败')
-          setEditorValue(ed, EXAMPLES['hello-world'])
           reject()
         }
       })
@@ -61,9 +59,6 @@ function loadShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOutput: 
       success: '分享代码加载成功',
       error: '分享代码加载失败',
     })
-  }
-  else {
-    setEditorValue(ed, EXAMPLES['hello-world'])
   }
 }
 
@@ -233,6 +228,11 @@ function tryInitWebSocket() {
   }
 
   const iWebSocket = toSocket(webSocket)
+  const oldSend = iWebSocket.send
+  iWebSocket.send = function (content) {
+    // debugger
+    oldSend(content)
+  }
   const reader = new WebSocketMessageReader(iWebSocket)
   const writer = new WebSocketMessageWriter(iWebSocket)
 
@@ -253,20 +253,19 @@ function tryInitWebSocket() {
       },
       clientOptions: {
         documentSelector: ['Cangjie'],
-        workspaceFolder: {
-          index: 0,
-          name: 'workspace',
-          uri: vscode.Uri.parse('/workspace'),
-        },
         initializationOptions: {
-          modulesHomeOption: '/cangjie',
-          telemetryOption: true,
           multiModuleOption: {
-            'file:///workspace/src/main.cj': {
-              name: 'workspace',
+            'file:///playground': {
+              name: 'playground',
               requires: {},
             },
           },
+          modulesHomeOption: '/cangjie',
+          telemetryOption: true,
+          conditionCompileOption: {},
+          conditionCompilePaths: [],
+          targetLib: '/playground/target/debug',
+          singleConditionCompileOption: {},
         },
         errorHandler: {
           error: () => ({
@@ -355,7 +354,7 @@ export function createWrapperConfig(): WrapperConfig {
       codeResources: {
         modified: {
           text: EXAMPLES['hello-world'],
-          uri: vscode.Uri.parse('file:///workspace/src/main.cj').toString(),
+          uri: 'file:///playground/src/main.cj',
         },
       },
       monacoWorkerFactory: () => {
