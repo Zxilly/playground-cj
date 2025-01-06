@@ -65,7 +65,9 @@ export default function Component() {
       setToolOutput,
     })(wrapperRef.current.getEditor()!)
 
-    toast.success('LSP 已连接')
+    if (wrapper.getLanguageClientWrapper('Cangjie') !== undefined) {
+      toast.success('LSP 已连接')
+    }
   }, [addSharePictureAction])
 
   const wrapperConfig = useMemo(() => createWrapperConfig(), [])
