@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMedia } from 'react-use'
 import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
+import { toast } from 'sonner'
 
 const ansiUp = new AnsiUp()
 
@@ -64,7 +65,7 @@ export default function Component() {
       setToolOutput,
     })(wrapperRef.current.getEditor()!)
 
-    console.log(`Loaded ${wrapper.reportStatus().join('\n').toString()}`)
+    toast.success('LSP 已连接')
   }, [addSharePictureAction])
 
   const wrapperConfig = useMemo(() => createWrapperConfig(), [])
