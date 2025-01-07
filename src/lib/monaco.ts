@@ -9,8 +9,7 @@ import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/ser
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
 import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
-import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc'
-import type { WrapperConfig } from 'monaco-editor-wrapper'
+import type { LanguageClientConfig, WrapperConfig } from 'monaco-editor-wrapper'
 import { LogLevel } from 'vscode/services'
 import { useWorkerFactory } from 'monaco-editor-wrapper/workerFactory'
 
@@ -218,38 +217,15 @@ export function createOnMountFunction(deps: OnMountFunctionDependencies) {
 
 function tryInitWebSocket() {
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-  let webSocket: WebSocket
-  try {
-    webSocket = new WebSocket(`${protocol}://${HOST}/ws`)
-  }
-  catch (e) {
-    console.error('Failed to create WebSocket:', e)
-    return {}
-  }
-
-  const iWebSocket = toSocket(webSocket)
-  const oldSend = iWebSocket.send
-  iWebSocket.send = function (content) {
-    // debugger
-    oldSend(content)
-  }
-  const reader = new WebSocketMessageReader(iWebSocket)
-  const writer = new WebSocketMessageWriter(iWebSocket)
-
-  const messageTransports = {
-    reader,
-    writer,
-  }
 
   return {
     Cangjie: {
       name: 'Cangjie Language Client',
       connection: {
         options: {
-          $type: 'WebSocketDirect',
-          webSocket,
+          $type: 'WebSocketUrl',
+          url: `${protocol}://${HOST}/ws`,
         },
-        messageTransports,
       },
       clientOptions: {
         documentSelector: ['Cangjie'],
@@ -276,7 +252,7 @@ function tryInitWebSocket() {
           }),
         },
       },
-    },
+    } satisfies LanguageClientConfig,
   }
 }
 
