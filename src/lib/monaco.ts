@@ -18,11 +18,13 @@ import getConfigurationServiceOverride from '@codingame/monaco-vscode-configurat
 import getThemeServiceOverride from '@codingame/monaco-vscode-theme-service-override'
 import getTextmateServiceOverride from '@codingame/monaco-vscode-textmate-service-override'
 import getKeybindingsServiceOverride from '@codingame/monaco-vscode-keybindings-service-override'
+import getNotificationServiceOverride from '@codingame/monaco-vscode-notifications-service-override'
 import { fontFamily } from '@/app/font'
 
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/lib/Cangjie.tmLanguage.json'
 import isMobile from 'is-mobile'
+import * as vscode from 'vscode'
 
 const remoteLock = new AsyncLock()
 
@@ -243,6 +245,16 @@ function tryInitWebSocket() {
           targetLib: '/playground/target/debug',
           singleConditionCompileOption: {},
         },
+        workspaceFolder: {
+          name: 'playground',
+          index: 0,
+          uri: (() => {
+            const uri = vscode.Uri.parse('file:///playground')
+            // @ts-expect-error not exposed in type
+            uri._fsPath = '/playground'
+            return uri
+          })(),
+        },
         errorHandler: {
           error: () => ({
             action: ErrorAction.Continue,
@@ -302,6 +314,7 @@ export function createWrapperConfig(): WrapperConfig {
         ...getTextmateServiceOverride(),
         ...getKeybindingsServiceOverride(),
         ...getConfigurationServiceOverride(),
+        ...getNotificationServiceOverride(),
       },
       userConfiguration: {
         json: JSON.stringify({
@@ -319,7 +332,6 @@ export function createWrapperConfig(): WrapperConfig {
           'editor.fontLigatures': false,
           'editor.mouseWheelZoom': true,
           'editor.semanticHighlighting.enabled': true,
-          'editor.quickSuggestionsDelay': 200,
         }),
       },
     },

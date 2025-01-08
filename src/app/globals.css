@@ -67,3 +67,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+.codicon-notifications-configure {
+  display: none !important;
+}

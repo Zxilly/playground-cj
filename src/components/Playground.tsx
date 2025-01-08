@@ -17,7 +17,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMedia } from 'react-use'
 import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
-import { toast } from 'sonner'
+import * as vscode from 'vscode'
 
 const ansiUp = new AnsiUp()
 
@@ -66,7 +66,7 @@ export default function Component() {
     })(wrapperRef.current.getEditor()!)
 
     if (wrapper.getLanguageClientWrapper('Cangjie') !== undefined) {
-      toast.success('LSP 已连接')
+      vscode.window.showInformationMessage('LSP 已连接')
     }
   }, [addSharePictureAction])
 
