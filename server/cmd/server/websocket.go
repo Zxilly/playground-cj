@@ -12,6 +12,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gorilla/websocket"
+
+	"github.com/Zxilly/playground-cj/server"
 )
 
 const (
@@ -44,6 +46,8 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
+	name := "cangjie-lsp-" + server.RandomString(5)
+
 	resp, err := dockerClient.ContainerCreate(ctx, &container.Config{
 		Image:        defaultImage,
 		OpenStdin:    true,
@@ -51,7 +55,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		AttachStdin:  true,
 		AttachStdout: true,
 		Cmd:          []string{"lsp"},
-	}, hostConfig, nil, nil, "")
+	}, hostConfig, nil, nil, name)
 	if err != nil {
 		log.Printf("Container creation failed: %v", err)
 		return
