@@ -47,7 +47,7 @@ importers:
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^3.12.1
-        version: 3.12.1(@eslint-react/eslint-plugin@1.23.2(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(@typescript-eslint/utils@8.19.1(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(@vue/compiler-sfc@3.4.38)(eslint-plugin-react-hooks@5.1.0(eslint@9.17.0(jiti@1.21.6)))(eslint-plugin-react-refresh@0.4.16(eslint@9.17.0(jiti@1.21.6)))(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.9.4)(jsdom@25.0.1)(terser@5.36.0))
+        version: 3.12.1(@eslint-react/eslint-plugin@1.23.2(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(@typescript-eslint/utils@8.19.1(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(@vue/compiler-sfc@3.4.38)(eslint-plugin-react-hooks@5.1.0(eslint@9.17.0(jiti@1.21.6)))(eslint-plugin-react-refresh@0.4.18(eslint@9.17.0(jiti@1.21.6)))(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.9.4)(jsdom@25.0.1)(terser@5.36.0))
       '@codingame/monaco-vscode-chat-extensions-notebook-task-terminal-testing-common':
         specifier: ^11.1.2
         version: 11.1.2
@@ -148,8 +148,8 @@ importers:
         specifier: 5.1.0
         version: 5.1.0(eslint@9.17.0(jiti@1.21.6))
       eslint-plugin-react-refresh:
-        specifier: ^0.4.16
-        version: 0.4.16(eslint@9.17.0(jiti@1.21.6))
+        specifier: ^0.4.18
+        version: 0.4.18(eslint@9.17.0(jiti@1.21.6))
       is-mobile:
         specifier: ^5.0.0
         version: 5.0.0
@@ -2668,8 +2668,8 @@ packages:
       typescript:
         optional: true
 
-  eslint-plugin-react-refresh@0.4.16:
-    resolution: {integrity: sha512-slterMlxAhov/DZO8NScf6mEeMBBXodFUolijDvrtTxyezyLoTQaa73FyYus/VbTdftd8wBgBxPMRk3poleXNQ==}
+  eslint-plugin-react-refresh@0.4.18:
+    resolution: {integrity: sha512-IRGEoFn3OKalm3hjfolEWGqoF/jPqeEYFp+C8B0WMzwGwBMvlRDQd06kghDhF0C61uJ6WfSDhEZE/sAQjduKgw==}
     peerDependencies:
       eslint: '>=8.40'
 
@@ -5373,7 +5373,7 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
 
-  '@antfu/eslint-config@3.12.1(@eslint-react/eslint-plugin@1.23.2(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(@typescript-eslint/utils@8.19.1(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(@vue/compiler-sfc@3.4.38)(eslint-plugin-react-hooks@5.1.0(eslint@9.17.0(jiti@1.21.6)))(eslint-plugin-react-refresh@0.4.16(eslint@9.17.0(jiti@1.21.6)))(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.9.4)(jsdom@25.0.1)(terser@5.36.0))':
+  '@antfu/eslint-config@3.12.1(@eslint-react/eslint-plugin@1.23.2(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(@typescript-eslint/utils@8.19.1(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(@vue/compiler-sfc@3.4.38)(eslint-plugin-react-hooks@5.1.0(eslint@9.17.0(jiti@1.21.6)))(eslint-plugin-react-refresh@0.4.18(eslint@9.17.0(jiti@1.21.6)))(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2)(vitest@2.1.8(@types/node@22.9.4)(jsdom@25.0.1)(terser@5.36.0))':
     dependencies:
       '@antfu/install-pkg': 0.5.0
       '@clack/prompts': 0.9.0
@@ -5414,7 +5414,7 @@ snapshots:
     optionalDependencies:
       '@eslint-react/eslint-plugin': 1.23.2(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2)
       eslint-plugin-react-hooks: 5.1.0(eslint@9.17.0(jiti@1.21.6))
-      eslint-plugin-react-refresh: 0.4.16(eslint@9.17.0(jiti@1.21.6))
+      eslint-plugin-react-refresh: 0.4.18(eslint@9.17.0(jiti@1.21.6))
     transitivePeerDependencies:
       - '@eslint/json'
       - '@typescript-eslint/utils'
@@ -7972,6 +7972,16 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.19.1(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(eslint-import-resolver-node@0.3.9)(eslint@9.17.0(jiti@1.21.6)):
+    dependencies:
+      debug: 3.2.7
+    optionalDependencies:
+      '@typescript-eslint/parser': 8.19.1(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2)
+      eslint: 9.17.0(jiti@1.21.6)
+      eslint-import-resolver-node: 0.3.9
+    transitivePeerDependencies:
+      - supports-color
+
   eslint-plugin-antfu@2.7.0(eslint@9.17.0(jiti@1.21.6)):
     dependencies:
       '@antfu/utils': 0.7.10
@@ -8020,7 +8030,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.17.0(jiti@1.21.6)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.17.0(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.1)(eslint@9.17.0(jiti@1.21.6))
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.19.1(eslint@9.17.0(jiti@1.21.6))(typescript@5.7.2))(eslint-import-resolver-node@0.3.9)(eslint@9.17.0(jiti@1.21.6))
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -8199,7 +8209,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-react-refresh@0.4.16(eslint@9.17.0(jiti@1.21.6)):
+  eslint-plugin-react-refresh@0.4.18(eslint@9.17.0(jiti@1.21.6)):
     dependencies:
       eslint: 9.17.0(jiti@1.21.6)
 
