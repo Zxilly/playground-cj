@@ -1,3 +1,5 @@
+#syntax=docker/dockerfile:1-labs
+
 FROM golang:1.23 AS builder
 
 WORKDIR /app
@@ -11,8 +13,12 @@ RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.tuna.tsinghua.edu.cn/d
     apt-get install -y --no-install-recommends binutils libc-dev build-essential openssl libssl-dev && \
     rm -rf /var/lib/apt/lists/*
 
-ADD ./cangjie-0.57.3-linux_x64.tar.gz /
-RUN chmod -R 755 /cangjie
+ADD --exclude=cangjie/lib/windows_x86_64_llvm/* \
+    --exclude=cangjie/modules/windows_x86_64_llvm/* \
+    --exclude=cangjie/modules/windows_x86_64_llvm/*/* \
+    --exclude=cangjie/runtime/windows_x86_64_llvm/* \
+    --exclude=cangjie/third_partry/mingw/*/* \
+    ./cangjie-0.58.3-linux_x64.tar.gz /
 
 COPY --from=builder /app/agent /app/agent
 

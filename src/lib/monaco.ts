@@ -35,7 +35,7 @@ function isBusy() {
 interface OnMountFunctionDependencies {
   setToolOutput: (output: string) => void
   setProgramOutput: (output: string) => void
-  addSharePictureAction: (editor: editor.ICodeEditor) => void
+  ed: editor.IStandaloneCodeEditor
 }
 
 function loadShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
@@ -104,7 +104,8 @@ function getFormatter(setToolOutput: (msg: string) => void) {
       })
 
       // just wait the format to finish
-      await remoteLock.acquire('run', () => {})
+      await remoteLock.acquire('run', () => {
+      })
 
       window.umami?.track('format')
 
@@ -129,92 +130,88 @@ export function setEditorValue(ed: editor.ICodeEditor, code: string) {
   }
 }
 
-export function createOnMountFunction(deps: OnMountFunctionDependencies) {
+export function updateEditor(deps: OnMountFunctionDependencies) {
   const {
     setToolOutput,
     setProgramOutput,
-    addSharePictureAction,
+    ed,
   } = deps
 
-  return (ed: editor.IStandaloneCodeEditor) => {
-    monaco.languages.registerDocumentFormattingEditProvider('Cangjie', getFormatter(setToolOutput))
+  monaco.languages.registerDocumentFormattingEditProvider('Cangjie', getFormatter(setToolOutput))
 
-    ed.addAction({
-      id: 'cangjie.compile.run',
-      label: '编译运行',
-      contextMenuGroupId: 'navigation',
-      contextMenuOrder: 1.5,
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
-      run: async (editor: editor.ICodeEditor) => {
-        if (isBusy()) {
-          return
-        }
+  ed.addAction({
+    id: 'cangjie.compile.run',
+    label: '编译运行',
+    contextMenuGroupId: 'navigation',
+    contextMenuOrder: 1.5,
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
+    run: async (editor: editor.ICodeEditor) => {
+      if (isBusy()) {
+        return
+      }
 
-        toast.promise(async () => {
-          await remoteLock.acquire('run', async () => {
-            await remoteRun(editor.getValue(), {
-              setToolOutput,
-              setProgramOutput,
-            })
+      toast.promise(async () => {
+        await remoteLock.acquire('run', async () => {
+          await remoteRun(editor.getValue(), {
+            setToolOutput,
+            setProgramOutput,
           })
-        }, {
-          success: '运行成功',
-          error: '运行失败',
-          loading: '正在运行...',
         })
+      }, {
+        success: '运行成功',
+        error: '运行失败',
+        loading: '正在运行...',
+      })
 
-        window.umami?.track('run')
-      },
-    })
+      window.umami?.track('run')
+    },
+  })
 
-    ed.addAction({
-      id: 'cangjie.share.url',
-      label: '分享 (URL 方式)',
-      contextMenuGroupId: 'share',
-      contextMenuOrder: 1.5,
-      run: async (editor: editor.ICodeEditor) => {
-        const code = editor.getValue()
-        const url = generateDataShareUrl(code)
-        await navigator.clipboard.writeText(url)
-        toast.info('已复制分享链接')
+  ed.addAction({
+    id: 'cangjie.share.url',
+    label: '分享 (URL 方式)',
+    contextMenuGroupId: 'share',
+    contextMenuOrder: 1.5,
+    run: async (editor: editor.ICodeEditor) => {
+      const code = editor.getValue()
+      const url = generateDataShareUrl(code)
+      await navigator.clipboard.writeText(url)
+      toast.info('已复制分享链接')
 
-        window.umami?.track('share.url')
-      },
-    })
+      window.umami?.track('share.url')
+    },
+  })
 
-    ed.addAction({
-      id: 'cangjie.share.hash',
-      label: '分享 (Hash 方式)',
-      contextMenuGroupId: 'share',
-      contextMenuOrder: 1.5,
-      run: async (editor: editor.ICodeEditor) => {
-        const code = editor.getValue()
-        const url = await generateHashShareUrl(code)
-        await navigator.clipboard.writeText(url)
-        toast.info('已复制分享链接')
+  ed.addAction({
+    id: 'cangjie.share.hash',
+    label: '分享 (Hash 方式)',
+    contextMenuGroupId: 'share',
+    contextMenuOrder: 1.5,
+    run: async (editor: editor.ICodeEditor) => {
+      const code = editor.getValue()
+      const url = await generateHashShareUrl(code)
+      await navigator.clipboard.writeText(url)
+      toast.info('已复制分享链接')
 
-        window.umami?.track('share.hash')
-      },
-    })
+      window.umami?.track('share.hash')
+    },
+  })
 
-    addSharePictureAction(ed)
+  ed.addAction({
+    id: 'cangjie.save',
+    label: '保存代码',
+    contextMenuGroupId: 'navigation',
+    contextMenuOrder: 1.5,
+    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+    run: async (editor: editor.ICodeEditor) => {
+      saveAsFile(editor.getValue())
+      toast.success('已保存代码')
 
-    ed.addAction({
-      id: 'cangjie.save',
-      label: '保存代码',
-      contextMenuGroupId: 'navigation',
-      contextMenuOrder: 1.5,
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-      run: async (editor: editor.ICodeEditor) => {
-        saveAsFile(editor.getValue())
-        toast.success('已保存代码')
+      window.umami?.track('save')
+    },
+  })
 
-        window.umami?.track('save')
-      },
-    })
-
-    loadShareCodeToEditor(ed, setToolOutput)
-  }
+  loadShareCodeToEditor(ed, setToolOutput)
 }
 
 function tryInitWebSocket() {

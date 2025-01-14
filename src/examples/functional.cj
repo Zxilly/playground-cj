@@ -10,15 +10,17 @@ func split_normal(text: String, sep: String): ArrayList<String> {
     for (i in 0..text.size) {
         let current = sep.indexOf(text[i]).isSome()
         if (last != current) {
-            indices.append(i)
+            indices.add(i)
         }
         last = current
     }
-    if (!last) { indices.append(text.size) }
+    if (!last) {
+        indices.add(text.size)
+    }
 
     let result = ArrayList<String>()
-    for (i in 0..indices.size:2) {
-        result.append(text[indices[i]..indices[i + 1]])
+    for (i in 0..indices.size : 2) {
+        result.add(text[indices[i]..indices[i + 1]])
     }
     return result
 }
@@ -26,17 +28,23 @@ func split_normal(text: String, sep: String): ArrayList<String> {
 // 函数式编程实现
 func split(text: String, sep: String): ArrayList<String> {
     let indices = ArrayList<Int64>()
-    text |> enumerate |> fold(false) { state, e =>
+    text |> enumerate |>
+        fold(false) {
+        state, e =>
         let current = sep.indexOf(e[1]).isNone()
-        if (state != current) { indices.append(e[0]) }
+        if (state != current) {
+            indices.add(e[0])
+        }
         current
-    } |> { valid: Bool => if (valid) {
-        indices.append(text.size)
-    }}
+    } |> {
+        valid: Bool => if (valid) {
+            indices.add(text.size)
+        }
+    }
 
     let result = ArrayList<String>()
-    for (i in 0..indices.size:2) {
-        result.append(text[indices[i]..indices[i + 1]])
+    for (i in 0..indices.size : 2) {
+        result.add(text[indices[i]..indices[i + 1]])
     }
     return result
 }

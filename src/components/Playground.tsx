@@ -6,8 +6,7 @@ import ShareButton from '@/components/ShareButton'
 import TrackingScript from '@/components/TrackingScript'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
-import { useCodeShareDialog } from '@/components/useCodeImgShare'
-import { createOnMountFunction, createWrapperConfig } from '@/lib/monaco'
+import { createWrapperConfig, updateEditor } from '@/lib/monaco'
 import { isDarkMode } from '@/lib/utils'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { AnsiUp } from 'ansi_up'
@@ -52,23 +51,21 @@ export default function Component() {
     }
   }, [isMiddle])
 
-  const { DialogComponent, addSharePictureAction } = useCodeShareDialog()
-
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
 
   const onLoad = useCallback((wrapper: MonacoEditorLanguageClientWrapper) => {
     wrapperRef.current = wrapper
-    createOnMountFunction({
-      addSharePictureAction,
+    updateEditor({
       setProgramOutput,
       setToolOutput,
-    })(wrapperRef.current.getEditor()!)
+      ed: wrapper.getEditor()!,
+    })
 
     if (wrapper.getLanguageClientWrapper('Cangjie') !== undefined) {
       vscode.window.showInformationMessage('LSP 已连接')
     }
-  }, [addSharePictureAction])
+  }, [])
 
   const wrapperConfig = useMemo(() => createWrapperConfig(), [])
 
@@ -86,7 +83,9 @@ export default function Component() {
             />
             <h1 className="text-2xl font-bold">仓颉 Playground</h1>
           </div>
-          <div className="flex flex-col justify-between sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto">
+          <div
+            className="flex flex-col justify-between sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto"
+          >
             <div className="w-full sm:w-[200px]">
               <LanguageDropdown action={(nxt) => {
                 wrapperRef.current?.updateCodeResources({
@@ -150,7 +149,7 @@ export default function Component() {
         </div>
       </div>
       <div className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">
-        仓颉版本 0.57.3 |&nbsp;
+        仓颉版本 0.58.3 |&nbsp;
         <a
           href="https://github.com/Zxilly/playground-cj"
           className="hover:underline"
@@ -160,7 +159,6 @@ export default function Component() {
           在 GitHub 查看源代码
         </a>
       </div>
-      {DialogComponent}
       <Toaster richColors position="top-center" />
       <TrackingScript />
       <SpeedInsights />

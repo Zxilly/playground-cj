@@ -10,9 +10,14 @@ import std.collection.*
 
 enum Rotation <: ToString & Hashable & Equatable<Rotation> {
     // 在魔方研究中，通常用 Front/Back/Left/Right/Up/Down 表示六个面以及对应的原子操作，即正对此面顺时针旋转 90 度
-    F | B | L | R | U | D
-      | X(Rotation, Rotation) // 仓颉支持 enum 构造器和递归定义，此处 X 用于组织复合旋转操作
-      | I(Rotation) // I(r) 用于表示 r 的逆变换，即正对 r 面逆时针旋转 90 度
+    F
+    | B
+    | L
+    | R
+    | U
+    | D
+    | X(Rotation, Rotation) // 仓颉支持 enum 构造器和递归定义，此处 X 用于组织复合旋转操作
+    | I(Rotation) // I(r) 用于表示 r 的逆变换，即正对 r 面逆时针旋转 90 度
 
     // enum 中也可以定义成员函数，这里我们重载 * 运算符以实现旋转操作的组合，由此可生成一个置换群
     public operator func *(that: Rotation): Rotation {
@@ -33,10 +38,18 @@ enum Rotation <: ToString & Hashable & Equatable<Rotation> {
 
     // 实现 ToString 接口以便打印和调试此代数系统
     private func text(inv: Bool): String {
-        let exp = if (inv) { "⁻¹" } else { "" }
+        let exp = if (inv) {
+            "⁻¹"
+        } else {
+            ""
+        }
         match (this) {
-            case F => "F${exp}" case B => "B${exp}" case L => "L${exp}"
-            case R => "R${exp}" case U => "U${exp}" case D => "D${exp}"
+            case F => "F${exp}"
+            case B => "B${exp}"
+            case L => "L${exp}"
+            case R => "R${exp}"
+            case U => "U${exp}"
+            case D => "D${exp}"
             case I(r) => r.text(!inv)
             case X(x1, x2) =>
                 if (inv) { // 逆变换需要反序
@@ -66,8 +79,11 @@ enum Rotation <: ToString & Hashable & Equatable<Rotation> {
 }
 
 type Face = Rotation
+
 type Vector = Array<(Face, Int64)>
+
 type Matrix = Array<Vector>
+
 enum Index {
     Row(Int64) | Col(Int64) | Inv(Index)
     // 用于标记向量倒置
@@ -89,16 +105,19 @@ enum Index {
 extend Matrix {
     // 给指定的魔方面创建初始矩阵
     public static func create(face: Face) {
-        Matrix(3, { i =>
-            Vector(3, { j => (face, 3 * i + j + 1)})
-        })
+        Matrix(
+            3,
+            {
+                i => Vector(3, {j => (face, 3 * i + j + 1)})
+            }
+        )
     }
 
     // 获取矩阵的行或列
     public operator func [](index: Index): Vector {
         match (index) {
             case Row(r) => this[r].clone()
-            case Col(c) => Vector(this.size, { i => this[i][c] })
+            case Col(c) => Vector(this.size, {i => this[i][c]})
             case Inv(i) => this[i] // 应用场景需要，取值时忽略符号、不做倒置
         }
     }
@@ -107,10 +126,9 @@ extend Matrix {
     public func set(index: Index, value: Vector): Unit {
         match (index) {
             case Row(r) => this[r] = value
-            case Col(c) =>
-                for (i in 0..value.size) {
-                    this[i][c] = value[i]
-                }
+            case Col(c) => for (i in 0..value.size) {
+                this[i][c] = value[i]
+            }
             case Inv(i) => // 赋值时根据 index 符号做倒置
                 value.reverse()
                 this.set(i, value)
@@ -137,16 +155,21 @@ extend Matrix {
 // 直接用以上 enum 表示行列索引还不够优雅，我们为整型扩展两个属性，让索引数值可以直接标记行列
 extend Int64 {
     public prop r: Index {
-        get() { Index.Row(this) }
+        get() {
+            Index.Row(this)
+        }
     }
     public prop c: Index {
-        get() { Index.Col(this) }
+        get() {
+            Index.Col(this)
+        }
     }
 }
 
 // Permutation 可以表示一个置换序列
 // 如 [(L, 2.c), (U, -0.r)] 表示 L 面第三列和 U 面第一行之间的轮换，且前者在换到后者时需要倒置
 type Permutation = Array<(Face, Index)>
+
 extend Permutation {
     // 获取当前置换的逆变换
     public func inverse() {
@@ -197,9 +220,9 @@ class Cube {
         const N = 3
         let matrix = Matrix.create(face)
         let map = if (inverse) {
-            { i: Int64, j: Int64 => (N - 1 - j, i) }
+            {i: Int64, j: Int64 => (N - 1 - j, i)}
         } else {
-            { i: Int64, j: Int64 => (j, N - 1 - i) }
+            {i: Int64, j: Int64 => (j, N - 1 - i)}
         }
         for (i in 0..N) {
             for (j in 0..N) {
@@ -212,7 +235,11 @@ class Cube {
 
     // 实现各面行/列之间的置换操作，输入是一个置换序列
     private func permute(perm: Permutation, inverse: Bool) {
-        let p = if (inverse) { perm.inverse() } else { perm.clone() }
+        let p = if (inverse) {
+            perm.inverse()
+        } else {
+            perm.clone()
+        }
         p.reverse()
         var (lastFace, lastIndex) = p[0]
         let vector = data[lastFace][lastIndex]
@@ -244,7 +271,7 @@ class Cube {
 
     public func transform(rotation: Rotation) {
         transform(rotation, false)
-        history.append(rotation)
+        history.add(rotation)
         print()
     }
 

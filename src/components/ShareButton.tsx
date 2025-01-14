@@ -3,7 +3,7 @@
 import type * as monaco from 'monaco-editor'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ChevronDown, FileImage, Hash, Link } from 'lucide-react'
+import { ChevronDown, Hash, Link } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -63,22 +63,6 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
           >
             <Hash className="mr-2 h-4 w-4" />
             Hash 方式
-          </Button>
-          <Button
-            variant="ghost"
-            className="justify-start"
-            onClick={() => handleShare('picture')}
-          >
-            <FileImage className="mr-2 h-4 w-4" />
-            图片方式
-          </Button>
-          <Button
-            variant="ghost"
-            className="justify-start"
-            onClick={() => handleShare('picture-compact')}
-          >
-            <FileImage className="mr-2 h-4 w-4" />
-            图片方式（简洁）
           </Button>
         </div>
       </PopoverContent>

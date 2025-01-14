@@ -11,77 +11,13 @@ import (
 	"path/filepath"
 
 	"go.lsp.dev/jsonrpc2"
-	"go.lsp.dev/protocol"
 
 	"github.com/Zxilly/playground-cj/server"
 )
 
 const (
-	LspPath  = "/cangjie/tools/bin/LSPServer"
-	CodeFile = "/playground/src/main.cj"
+	LspPath = "/cangjie/tools/bin/LSPServer"
 )
-
-var (
-	fileVersion int32 = 0
-)
-
-func init() {
-	// open /tmp/stderr.log
-	f, err := os.OpenFile("/tmp/stderr.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		panic(err)
-	}
-	// redirect stderr to /tmp/stderr.log
-	os.Stderr = f
-}
-
-func trySyncFile(msg jsonrpc2.Message) {
-	resq, ok := msg.(*jsonrpc2.Notification)
-	if !ok {
-		return
-	}
-
-	if resq.Method() != protocol.MethodTextDocumentDidChange && resq.Method() != protocol.MethodTextDocumentDidOpen {
-		return
-	}
-
-	fileContent := Must2(os.ReadFile(CodeFile))
-
-	if resq.Method() == protocol.MethodTextDocumentDidChange {
-		params := protocol.DidChangeTextDocumentParams{}
-		Must(json.Unmarshal(resq.Params(), &params))
-
-		if params.TextDocument.Version < fileVersion {
-			return
-		}
-
-		for _, change := range params.ContentChanges {
-			m := NewMapper(DocumentURI(params.TextDocument.URI), fileContent)
-			start, end, err := m.RangeOffsets(change.Range)
-			if err != nil {
-				panic(err)
-			}
-			if end < start {
-				panic("end < start")
-			}
-			var buf bytes.Buffer
-			buf.Write(fileContent[:start])
-			buf.WriteString(change.Text)
-			buf.Write(fileContent[end:])
-			fileContent = buf.Bytes()
-		}
-
-		fileVersion = params.TextDocument.Version
-	} else if resq.Method() == protocol.MethodTextDocumentDidOpen {
-		params := protocol.DidOpenTextDocumentParams{}
-		Must(json.Unmarshal(resq.Params(), &params))
-
-		fileContent = []byte(params.TextDocument.Text)
-		fileVersion = params.TextDocument.Version
-	}
-
-	Must(os.WriteFile(CodeFile, fileContent, 0644))
-}
 
 func runLsp() {
 	err := os.MkdirAll("/playground", 0755)
@@ -112,15 +48,7 @@ func runLsp() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			data := scanner.Bytes()
-
 			rpcMsg := Must2(jsonrpc2.DecodeMessage(data))
-
-			trySyncFile(rpcMsg)
-
-			//if msg := tryRewriteInit(rpcMsg); msg != nil {
-			//	rpcMsg = msg
-			//}
-
 			Must2(stream.Write(ctx, rpcMsg))
 		}
 	}()

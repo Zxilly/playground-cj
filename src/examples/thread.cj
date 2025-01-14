@@ -6,6 +6,7 @@ import std.math.*
 
 const M = 200000
 const N = 16
+
 func task(): Int64 {
     var n: Int64 = 0
     let random = Random()
@@ -22,8 +23,8 @@ func task(): Int64 {
 main() {
     let futures = ArrayList<Future<Int64>>()
     for (_ in 0..N) {
-        let future = spawn { task() }
-        futures.append(future)
+        let future = spawn {task()}
+        futures.add(future)
     }
     var n = 0
     for (future in futures) {
