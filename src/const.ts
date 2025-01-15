@@ -17,7 +17,7 @@ import thread from '@/examples/thread.cj'
 import variables from '@/examples/variables.cj'
 
 export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'
-export const HOST = new URL(BACKEND_URL).host
+export const WS_BACKEND_URL = `${BACKEND_URL.replace('http', 'ws')}/ws`
 
 export const EXAMPLES = {
   'hello-world': helloWorld,

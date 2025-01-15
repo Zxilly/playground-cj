@@ -2,7 +2,7 @@ import '@codingame/monaco-vscode-language-pack-zh-hans'
 
 import type { editor, languages } from 'monaco-editor'
 import * as monaco from 'monaco-editor'
-import { EXAMPLES, HOST } from '@/const'
+import { EXAMPLES, WS_BACKEND_URL } from '@/const'
 import { saveAsFile } from '@/lib/file'
 import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
 import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
@@ -215,15 +215,13 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 }
 
 function tryInitWebSocket() {
-  const protocol = location.protocol === 'https:' ? 'wss' : 'ws'
-
   return {
     Cangjie: {
       name: 'Cangjie Language Client',
       connection: {
         options: {
           $type: 'WebSocketUrl',
-          url: `${protocol}://${HOST}/ws`,
+          url: WS_BACKEND_URL,
         },
       },
       clientOptions: {
