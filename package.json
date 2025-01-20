@@ -67,7 +67,7 @@
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@^11.1.2",
     "monaco-editor-wrapper": "^6.1.0",
     "monaco-languageclient": "9.1.0",
-    "postcss": "^8.5.0",
+    "postcss": "^8.5.1",
     "raw-loader": "^4.0.2",
     "react-use": "^17.6.0",
     "tailwind-merge": "^2.6.0",
