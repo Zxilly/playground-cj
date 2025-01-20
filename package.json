@@ -62,7 +62,7 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "is-mobile": "^5.0.0",
     "jsdom": "^26.0.0",
-    "lucide-react": "^0.471.1",
+    "lucide-react": "^0.473.0",
     "lz-string": "^1.5.0",
     "monaco-editor": "npm:@codingame/monaco-vscode-editor-api@^11.1.2",
     "monaco-editor-wrapper": "^6.1.0",
