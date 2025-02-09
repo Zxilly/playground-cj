@@ -1,13 +1,26 @@
-'use client'
+import 'server-only'
+import Wrapper from '@/components/Wrapper'
 
-import dynamic from 'next/dynamic'
+async function getShareCode(hash?: string) {
+  if (hash) {
+    const response = await fetch(`https://dpaste.com/${hash}.txt`)
+    if (response.ok) {
+      return await response.text()
+    }
+  }
+  return undefined
+}
 
-const Playground = dynamic(() => import('@/components/Playground'), { ssr: false })
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ [_: string]: string | string[] | undefined }>
+}) {
+  const code = await getShareCode((await searchParams).hash as string)
 
-export default function Home() {
   return (
     <main>
-      <Playground />
+      <Wrapper defaultCode={code} />
     </main>
   )
 }

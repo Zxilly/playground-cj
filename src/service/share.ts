@@ -16,6 +16,7 @@ export async function loadShareCode(): Promise<[string, boolean]> {
     return [decompressFromBase64(base64UrlToBase64(base64UrlData)), true]
   }
 
+  // 兼容传统分享链接，新分享链接在服务端处理
   const hash = params.get('hash')
   if (hash) {
     const response = await fetch(`https://dpaste.com/${hash}.txt`)
@@ -61,7 +62,9 @@ export async function generateHashShareUrl(code: string): Promise<string> {
   const dpasteUrl = await dpaste(code)
   const hash = dpasteUrl.split('/')[3].trim()
 
-  const params = new URLSearchParams({ hash })
+  const url = new URL(window.location.href.split('#')[0])
+  url.search = ''
+  url.searchParams.set('hash', hash)
 
-  return constructURLWithHash(params.toString())
+  return url.toString()
 }

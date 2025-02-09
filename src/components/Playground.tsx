@@ -20,7 +20,11 @@ import * as vscode from 'vscode'
 
 const ansiUp = new AnsiUp()
 
-export default function Component() {
+export interface PlaygroundProps {
+  defaultCode?: string
+}
+
+function Component({ defaultCode }: PlaygroundProps) {
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
@@ -67,7 +71,7 @@ export default function Component() {
     }
   }, [])
 
-  const wrapperConfig = useMemo(() => createWrapperConfig(), [])
+  const wrapperConfig = useMemo(() => createWrapperConfig(defaultCode), [defaultCode])
 
   return (
     <div className={`flex flex-col h-screen overflow-hidden bg-background text-foreground ${isDarkMode() && 'dark'}`}>
@@ -165,3 +169,5 @@ export default function Component() {
     </div>
   )
 }
+
+export default Component

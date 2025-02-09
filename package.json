@@ -79,5 +79,6 @@
     "vscode": "npm:@codingame/monaco-vscode-api@^11.1.2",
     "vscode-languageclient": "^9.0.1",
     "vscode-ws-jsonrpc": "^3.4.0"
-  }
+  },
+  "packageManager": "pnpm@10.2.1"
 }

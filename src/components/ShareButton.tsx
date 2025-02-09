@@ -14,7 +14,7 @@ interface ShareButtonProps {
 const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
   const [isOpen, setIsOpen] = useState(false)
 
-  const handleShare = useCallback((type: 'url' | 'hash' | 'picture' | 'picture-compact') => {
+  const handleShare = useCallback((type: 'url' | 'hash') => {
     if (!editor) {
       return
     }

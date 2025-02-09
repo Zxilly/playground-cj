@@ -263,7 +263,7 @@ function tryInitWebSocket() {
   }
 }
 
-export function createWrapperConfig(): WrapperConfig {
+export function createWrapperConfig(shareCode?: string): WrapperConfig {
   let languageClientConfigs = {}
   if (!isMobile({ tablet: true, featureDetect: true })) {
     languageClientConfigs = tryInitWebSocket()
@@ -327,6 +327,7 @@ export function createWrapperConfig(): WrapperConfig {
           'editor.fontLigatures': false,
           'editor.mouseWheelZoom': true,
           'editor.semanticHighlighting.enabled': true,
+          'editor.cursorSmoothCaretAnimation': 'on',
         }),
       },
     },
@@ -336,7 +337,7 @@ export function createWrapperConfig(): WrapperConfig {
       },
       codeResources: {
         modified: {
-          text: EXAMPLES['hello-world'],
+          text: shareCode ?? EXAMPLES['hello-world'],
           uri: 'file:///playground/src/main.cj',
         },
       },
