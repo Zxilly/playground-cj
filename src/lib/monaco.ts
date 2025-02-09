@@ -189,9 +189,15 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     contextMenuOrder: 1.5,
     run: async (editor: editor.ICodeEditor) => {
       const code = editor.getValue()
-      const url = await generateHashShareUrl(code)
-      await navigator.clipboard.writeText(url)
-      toast.info('已复制分享链接')
+
+      toast.promise(async () => {
+        const url = await generateHashShareUrl(code)
+        await navigator.clipboard.writeText(url)
+      }, {
+        loading: '分享中...',
+        success: '分享成功，已复制分享链接',
+        error: '分享失败',
+      })
 
       window.umami?.track('share.hash')
     },
