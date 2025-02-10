@@ -16,6 +16,7 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
 
   const handleShare = useCallback((type: 'url' | 'hash') => {
     if (!editor) {
+      console.warn('No editor found')
       return
     }
 

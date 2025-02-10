@@ -17,6 +17,7 @@ import { useMedia } from 'react-use'
 import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
 import * as vscode from 'vscode'
+import type { editor } from 'monaco-editor'
 
 const ansiUp = new AnsiUp()
 
@@ -31,9 +32,11 @@ function Component({ defaultCode }: PlaygroundProps) {
 
   const wrapperRef = useRef<MonacoEditorLanguageClientWrapper | undefined>(undefined)
 
+  const [editor, setEditor] = useState<editor.IStandaloneCodeEditor | undefined>()
+
   const getAction = useCallback((id: string) => {
-    return wrapperRef.current?.getEditor()?.getAction(id)
-  }, [])
+    return editor?.getAction(id)
+  }, [editor])
 
   const handleRun = useCallback(() => {
     getAction('cangjie.compile.run')?.run()
@@ -65,6 +68,7 @@ function Component({ defaultCode }: PlaygroundProps) {
       setToolOutput,
       ed: wrapper.getEditor()!,
     })
+    setEditor(wrapper.getEditor()!)
 
     if (wrapper.getLanguageClientWrapper('Cangjie') !== undefined) {
       vscode.window.showInformationMessage('LSP 已连接')
@@ -105,7 +109,7 @@ function Component({ defaultCode }: PlaygroundProps) {
             <div className="flex flex-row space-y-0 space-x-2 w-full sm:w-auto">
               <Button onClick={handleRun} className="w-full sm:w-auto">运行</Button>
               <Button onClick={handleFormat} className="w-full sm:w-auto">格式化</Button>
-              <ShareButton editor={wrapperRef.current?.getEditor()} />
+              <ShareButton editor={editor} />
             </div>
           </div>
         </div>
