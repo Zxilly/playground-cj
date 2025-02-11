@@ -29,7 +29,7 @@
     "@codingame/monaco-vscode-chat-extensions-notebook-task-terminal-testing-common": "^11.1.2",
     "@codingame/monaco-vscode-configuration-service-override": "^11.1.2",
     "@codingame/monaco-vscode-files-service-override": "^11.1.2",
-    "@codingame/monaco-vscode-keybindings-service-override": "^11.1.2",
+    "@codingame/monaco-vscode-keybindings-service-override": "^13.1.7",
     "@codingame/monaco-vscode-language-pack-zh-hans": "^11.1.2",
     "@codingame/monaco-vscode-notifications-service-override": "^11.1.2",
     "@codingame/monaco-vscode-textmate-service-override": "^11.1.2",
