@@ -100,7 +100,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                   modified: {
                     text: nxt,
                     enforceLanguageId: 'Cangjie',
-                    uri: wrapperRef.current?.getEditor()!.getModel()!.uri.toString(),
+                    uri: editor!.getModel()!.uri.toString(),
                   },
                 })
               }}

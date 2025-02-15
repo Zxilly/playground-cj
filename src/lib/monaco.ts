@@ -10,11 +10,10 @@ import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
 import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import type { LanguageClientConfig, WrapperConfig } from 'monaco-editor-wrapper'
-import { LogLevel } from 'vscode/services'
-import { useWorkerFactory } from 'monaco-editor-wrapper/workerFactory'
+import { LogLevel } from '@codingame/monaco-vscode-api'
+import { useWorkerFactory } from 'monaco-languageclient/workerFactory'
 
 import '@codingame/monaco-vscode-theme-defaults-default-extension'
-import getConfigurationServiceOverride from '@codingame/monaco-vscode-configuration-service-override'
 import getThemeServiceOverride from '@codingame/monaco-vscode-theme-service-override'
 import getTextmateServiceOverride from '@codingame/monaco-vscode-textmate-service-override'
 import getKeybindingsServiceOverride from '@codingame/monaco-vscode-keybindings-service-override'
@@ -24,7 +23,6 @@ import { fontFamily } from '@/app/font'
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/lib/Cangjie.tmLanguage.json'
 import isMobile from 'is-mobile'
-import * as vscode from 'vscode'
 
 const remoteLock = new AsyncLock()
 
@@ -250,7 +248,7 @@ function tryInitWebSocket() {
           name: 'playground',
           index: 0,
           uri: (() => {
-            const uri = vscode.Uri.parse('file:///playground')
+            const uri = monaco.Uri.parse('file:///playground')
             // @ts-expect-error not exposed in type
             uri._fsPath = '/playground'
             return uri
@@ -277,7 +275,6 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
 
   return {
     $type: 'extended',
-    htmlContainer: document.getElementById('monaco-editor-root')!,
     logLevel: LogLevel.Debug,
     languageClientConfigs,
     extensions: [
@@ -314,7 +311,6 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
         ...getThemeServiceOverride(),
         ...getTextmateServiceOverride(),
         ...getKeybindingsServiceOverride(),
-        ...getConfigurationServiceOverride(),
         ...getNotificationServiceOverride(),
       },
       userConfiguration: {
@@ -338,6 +334,7 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
       },
     },
     editorAppConfig: {
+      overrideAutomaticLayout: true,
       editorOptions: {
         language: 'Cangjie',
       },
@@ -350,12 +347,9 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
       monacoWorkerFactory: () => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         useWorkerFactory({
-          workerOverrides: {
-            ignoreMapping: true,
-            workerLoaders: {
-              TextEditorWorker: () => new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url), { type: 'module' }),
-              TextMateWorker: () => new Worker(new URL('@codingame/monaco-vscode-textmate-service-override/worker', import.meta.url), { type: 'module' }),
-            },
+          workerLoaders: {
+            TextEditorWorker: () => new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url), { type: 'module' }),
+            TextMateWorker: () => new Worker(new URL('@codingame/monaco-vscode-textmate-service-override/worker', import.meta.url), { type: 'module' }),
           },
         })
       },

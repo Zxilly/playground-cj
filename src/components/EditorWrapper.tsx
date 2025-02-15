@@ -37,7 +37,10 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
 
   const startMonaco = useCallback(async () => {
     if (containerRef.current) {
-      await wrapperRef.current.start(containerRef.current)
+      await wrapperRef.current.start({
+        includeLanguageClients: true,
+        htmlContainer: containerRef.current,
+      })
       onLoad?.(wrapperRef.current)
     }
   }, [onLoad])
