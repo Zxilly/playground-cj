@@ -75,7 +75,7 @@
     "tailwindcss": "^4.0.6",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.24.0",
+    "typescript-eslint": "^8.24.1",
     "vitest": "^3.0.5",
     "vscode": "npm:@codingame/monaco-vscode-extension-api@~14.0.4",
     "vscode-languageclient": "^9.0.1",
