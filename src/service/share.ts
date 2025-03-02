@@ -8,13 +8,19 @@ function base64UrlToBase64(base64url: string): string {
   return base64url.replace(/-/g, '+').replace(/_/g, '/')
 }
 
-export async function loadShareCode(): Promise<[string, boolean]> {
+export function loadDataShareCode(): string | undefined {
   const params = new URLSearchParams(window.location.hash.slice(1))
 
   const base64UrlData = params.get('data')
   if (base64UrlData) {
-    return [decompressFromBase64(base64UrlToBase64(base64UrlData)), true]
+    return decompressFromBase64(base64UrlToBase64(base64UrlData))
   }
+
+  return undefined
+}
+
+export async function loadLegacyShareCode(): Promise<[string, boolean]> {
+  const params = new URLSearchParams(window.location.hash.slice(1))
 
   // 兼容传统分享链接，新分享链接在服务端处理
   const hash = params.get('hash')

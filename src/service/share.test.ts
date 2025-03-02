@@ -1,4 +1,4 @@
-import { generateDataShareUrl, loadShareCode } from '@/service/share'
+import { generateDataShareUrl, loadDataShareCode } from '@/service/share'
 import { expect, it } from 'vitest'
 
 it.each([
@@ -10,7 +10,6 @@ it.each([
   expect(url).toBe(expectedUrl)
 
   window.location.href = url
-  const [newCode, success] = await loadShareCode()
+  const newCode = loadDataShareCode()
   expect(newCode).toBe(code)
-  expect(success).toBe(true)
 })

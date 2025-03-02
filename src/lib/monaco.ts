@@ -5,7 +5,7 @@ import * as monaco from 'monaco-editor'
 import { EXAMPLES, WS_BACKEND_URL } from '@/const'
 import { saveAsFile } from '@/lib/file'
 import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
-import { generateDataShareUrl, generateHashShareUrl, loadShareCode } from '@/service/share'
+import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
 import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
@@ -36,13 +36,13 @@ interface OnMountFunctionDependencies {
   ed: editor.IStandaloneCodeEditor
 }
 
-function loadShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
-  if (window.location.hash !== '') {
+function loadLegacyShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
+  if (window.location.hash.includes('hash')) {
     ed.setValue('分享代码加载中...')
 
     toast.promise(new Promise<void>((resolve, reject) => {
       remoteLock.acquire('run', async () => {
-        const [code, success] = await loadShareCode()
+        const [code, success] = await loadLegacyShareCode()
         if (success && code) {
           setToolOutput('分享代码加载成功')
           setEditorValue(ed, code)
@@ -215,7 +215,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     },
   })
 
-  loadShareCodeToEditor(ed, setToolOutput)
+  loadLegacyShareCodeToEditor(ed, setToolOutput)
 }
 
 function tryInitWebSocket() {
