@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.3.0",
-    "@codingame/monaco-vscode-api": "^14.0.4",
+    "@codingame/monaco-vscode-api": "^14.0.6",
     "@codingame/monaco-vscode-configuration-service-override": "^14.0.4",
     "@codingame/monaco-vscode-files-service-override": "^14.0.4",
     "@codingame/monaco-vscode-keybindings-service-override": "^14.0.6",
