@@ -70,8 +70,8 @@ importers:
         specifier: ^14.0.4
         version: 14.0.4
       '@codingame/monaco-vscode-theme-defaults-default-extension':
-        specifier: ^14.0.4
-        version: 14.0.4
+        specifier: ^14.0.6
+        version: 14.0.6
       '@codingame/monaco-vscode-theme-service-override':
         specifier: ^14.0.4
         version: 14.0.4
@@ -923,8 +923,8 @@ packages:
   '@codingame/monaco-vscode-textmate-service-override@14.0.4':
     resolution: {integrity: sha512-qt9Ma7XUwuiZ4FvvnVGJKwFBu5wjzlXZnxHXmaR1wWxUIjpfgB+aHTmflrauAkfEfcKzqm2llaYicM65fjOeOA==}
 
-  '@codingame/monaco-vscode-theme-defaults-default-extension@14.0.4':
-    resolution: {integrity: sha512-Sp3QYolW0H5g3W3jYsSS/tJ2ibS3B9Gu+U8PTJClom146tu0ZZSo4TmhUkfWbgWQ9OfC0ytBYHmjsxAQLgpofA==}
+  '@codingame/monaco-vscode-theme-defaults-default-extension@14.0.6':
+    resolution: {integrity: sha512-4E5ZnN+M0NXF7ebPWk5xzB19CqrxJg3h90wgEggJeYFTEqD8A9rR6OeMsLhMArVw/kNVQ9XEqcTqgP+l1cRhbw==}
 
   '@codingame/monaco-vscode-theme-service-override@14.0.4':
     resolution: {integrity: sha512-d+M6bHeplzrAqa5QiCp2XKMt1y/yuUieRQpFFxy3P50wbZahl15ewZZQiBcORZDJm0rjfBNMcHBNGPnCpOSZwQ==}
@@ -6307,9 +6307,9 @@ snapshots:
       vscode-oniguruma: 1.7.0
       vscode-textmate: 9.2.0
 
-  '@codingame/monaco-vscode-theme-defaults-default-extension@14.0.4':
+  '@codingame/monaco-vscode-theme-defaults-default-extension@14.0.6':
     dependencies:
-      '@codingame/monaco-vscode-api': 14.0.4
+      '@codingame/monaco-vscode-api': 14.0.6
 
   '@codingame/monaco-vscode-theme-service-override@14.0.4':
     dependencies:
@@ -9823,7 +9823,7 @@ snapshots:
       '@codingame/monaco-vscode-language-pack-zh-hant': 14.0.4
       '@codingame/monaco-vscode-monarch-service-override': 14.0.4
       '@codingame/monaco-vscode-textmate-service-override': 14.0.4
-      '@codingame/monaco-vscode-theme-defaults-default-extension': 14.0.4
+      '@codingame/monaco-vscode-theme-defaults-default-extension': 14.0.6
       '@codingame/monaco-vscode-theme-service-override': 14.0.4
       '@codingame/monaco-vscode-views-service-override': 14.0.4
       '@codingame/monaco-vscode-workbench-service-override': 14.0.4
