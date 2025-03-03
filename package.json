@@ -29,7 +29,7 @@
     "@codingame/monaco-vscode-api": "^14.0.4",
     "@codingame/monaco-vscode-configuration-service-override": "^14.0.4",
     "@codingame/monaco-vscode-files-service-override": "^14.0.4",
-    "@codingame/monaco-vscode-keybindings-service-override": "^14.0.4",
+    "@codingame/monaco-vscode-keybindings-service-override": "^14.0.6",
     "@codingame/monaco-vscode-language-pack-zh-hans": "^14.0.4",
     "@codingame/monaco-vscode-notifications-service-override": "^14.0.4",
     "@codingame/monaco-vscode-textmate-service-override": "^14.0.4",
