@@ -18,6 +18,7 @@ import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
 import * as vscode from 'vscode'
 import type { editor } from 'monaco-editor'
+import { loadDataShareCode } from '@/service/share'
 
 const ansiUp = new AnsiUp()
 
@@ -75,7 +76,14 @@ function Component({ defaultCode }: PlaygroundProps) {
     }
   }, [])
 
-  const wrapperConfig = useMemo(() => createWrapperConfig(defaultCode), [defaultCode])
+  const renderedCode = useMemo(() => {
+    if (defaultCode) {
+      return defaultCode
+    }
+    return loadDataShareCode()
+  }, [defaultCode])
+
+  const wrapperConfig = useMemo(() => createWrapperConfig(renderedCode), [renderedCode])
 
   return (
     <div className={`flex flex-col h-screen overflow-hidden bg-background text-foreground ${isDarkMode() && 'dark'}`}>
