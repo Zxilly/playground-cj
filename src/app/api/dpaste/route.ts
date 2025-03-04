@@ -27,10 +27,11 @@ export async function POST(request: Request) {
     const hash = dpasteUrl.split('/')[3].trim()
 
     return NextResponse.json({ hash })
-  } catch (error) {
+  }
+  catch (error) {
     return NextResponse.json(
       { error: 'Failed to create dpaste' },
-      { status: 500 }
+      { status: 500 },
     )
   }
-} 
+}

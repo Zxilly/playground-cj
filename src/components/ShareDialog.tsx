@@ -45,4 +45,4 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ isOpen, onClose, url }) => {
   )
 }
 
-export default ShareDialog 
+export default ShareDialog

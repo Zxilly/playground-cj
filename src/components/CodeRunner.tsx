@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { EVENTS, eventEmitter } from '@/lib/events'
+import { eventEmitter, EVENTS } from '@/lib/events'
 import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
 import { toast } from 'sonner'
 import AsyncLock from 'async-lock'
@@ -57,14 +57,15 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
               onFormatted(resp.formatted)
             }
             eventEmitter.emit(EVENTS.FORMAT_CODE_COMPLETE, resp.formatted)
-          } else {
+          }
+          else {
             throw new Error('格式化失败')
           }
         })
       }, {
         loading: '正在格式化...',
         success: '格式化成功',
-        error: (error) => error instanceof Error ? error.message : '格式化失败',
+        error: error => error instanceof Error ? error.message : '格式化失败',
       })
     }
 
@@ -78,4 +79,4 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
   }, [setToolOutput, setProgramOutput, onFormatted])
 
   return null
-} 
+}

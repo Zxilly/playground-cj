@@ -4,7 +4,7 @@ import type { editor, languages } from 'monaco-editor'
 import * as monaco from 'monaco-editor'
 import { EXAMPLES, WS_BACKEND_URL } from '@/const'
 import { saveAsFile } from '@/lib/file'
-import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
+import { requestRemoteAction, SandboxStatus } from '@/service/run'
 import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
@@ -12,7 +12,7 @@ import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import type { LanguageClientConfig, WrapperConfig } from 'monaco-editor-wrapper'
 import { LogLevel } from '@codingame/monaco-vscode-api'
 import { useWorkerFactory } from 'monaco-languageclient/workerFactory'
-import { EVENTS, eventEmitter } from '@/lib/events'
+import { eventEmitter, EVENTS } from '@/lib/events'
 
 import '@codingame/monaco-vscode-theme-defaults-default-extension'
 import getThemeServiceOverride from '@codingame/monaco-vscode-theme-service-override'
@@ -147,7 +147,8 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
           eventEmitter.off(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
           if (formattedCode === model.getValue()) {
             resolve([])
-          } else {
+          }
+          else {
             resolve([{
               range: model.getFullModelRange(),
               text: formattedCode,

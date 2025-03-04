@@ -8,7 +8,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import ShareDialog from '@/components/ShareDialog'
 import { generateDataShareUrl, generateHashShareUrl } from '@/service/share'
-import { EVENTS, eventEmitter } from '@/lib/events'
+import { eventEmitter, EVENTS } from '@/lib/events'
 
 interface ShareButtonProps {
   editor: monaco.editor.IStandaloneCodeEditor | undefined
@@ -43,13 +43,14 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
     }
 
     const code = editor.getValue()
-    
+
     if (type === 'url') {
       const url = generateDataShareUrl(code)
       setShareUrl(url)
       setIsDialogOpen(true)
       setIsOpen(false)
-    } else {
+    }
+    else {
       toast.promise(async () => {
         const url = await generateHashShareUrl(code)
         setShareUrl(url)
