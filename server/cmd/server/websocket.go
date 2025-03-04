@@ -3,15 +3,19 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/gorilla/websocket"
+	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/Zxilly/playground-cj/server"
 )
@@ -20,6 +24,8 @@ const (
 	writeWait  = 10 * time.Second
 	pongWait   = 10 * time.Second
 	pingPeriod = (pongWait * 4) / 5
+
+	minRequiredMemoryMB = 512
 )
 
 var upgrader = websocket.Upgrader{
@@ -29,22 +35,46 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+func checkSystemResources() error {
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		return fmt.Errorf("failed to get system memory info: %v", err)
+	}
+
+	availableMemoryMB := v.Available / 1024 / 1024
+	if availableMemoryMB < minRequiredMemoryMB {
+		return errors.New("insufficient system memory")
+	}
+
+	return nil
+}
+
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		_ = r.Body.Close()
 	}()
+
+	if err := checkSystemResources(); err != nil {
+		log.Printf("Resource check failed: %v", err)
+		http.Error(w, "System resources insufficient", http.StatusServiceUnavailable)
+		return
+	}
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Websocket upgrade failed: %v", err)
 		return
 	}
-	defer func(ws *websocket.Conn) {
-		_ = ws.Close()
-	}(ws)
 
 	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
+	var wg sync.WaitGroup
+
+	cleanup := func() {
+		cancel()
+		_ = ws.Close()
+		wg.Wait()
+	}
+	defer cleanup()
 
 	name := "cangjie-lsp-" + server.RandomString(5)
 
@@ -74,6 +104,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		}); err != nil {
 			log.Printf("Container stop failed: %v", err)
 		}
+		if err := dockerClient.ContainerRemove(context.Background(), resp.ID, container.RemoveOptions{
+			Force: true,
+		}); err != nil {
+			log.Printf("Container remove failed: %v", err)
+		}
 	}()
 
 	attach, err := dockerClient.ContainerAttach(ctx, resp.ID, container.AttachOptions{
@@ -87,7 +122,9 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer attach.Close()
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		_ = ws.SetReadDeadline(time.Now().Add(pongWait))
 		ws.SetPongHandler(func(string) error {
 			_ = ws.SetReadDeadline(time.Now().Add(pongWait))
@@ -100,40 +137,45 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 					log.Printf("Read error: %v", err)
 				}
-				break
+				cancel()
+				return
 			}
 			data = append(data, '\n')
 			_, err = attach.Conn.Write(data)
 			if err != nil {
 				log.Printf("Write error: %v", err)
 				cancel()
-				break
+				return
 			}
 		}
 	}()
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		ticker := time.NewTicker(pingPeriod)
-		defer func() {
-			log.Printf("Closing websocket")
-			ticker.Stop()
-			_ = ws.Close()
-			cancel()
-		}()
+		defer ticker.Stop()
 
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			stderr := strings.Builder{}
 			in, out := net.Pipe()
 
 			go func() {
 				scanner := bufio.NewScanner(out)
 				for scanner.Scan() {
-					data := scanner.Bytes()
-					_ = ws.SetWriteDeadline(time.Now().Add(writeWait))
-					if err := ws.WriteMessage(websocket.TextMessage, data); err != nil {
-						log.Printf("Write error: %v", err)
-						cancel()
-						break
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						data := scanner.Bytes()
+						_ = ws.SetWriteDeadline(time.Now().Add(writeWait))
+						if err := ws.WriteMessage(websocket.TextMessage, data); err != nil {
+							log.Printf("Write error: %v", err)
+							cancel()
+							return
+						}
 					}
 				}
 			}()
@@ -148,11 +190,17 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			}
 		}()
 
-		for range ticker.C {
-			_ = ws.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-				log.Printf("Ping error: %v", err)
-				break
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				_ = ws.SetWriteDeadline(time.Now().Add(writeWait))
+				if err := ws.WriteMessage(websocket.PingMessage, nil); err != nil {
+					log.Printf("Ping error: %v", err)
+					cancel()
+					return
+				}
 			}
 		}
 	}()
