@@ -19,6 +19,7 @@ import { MonacoEditorReactComp } from '@/components/EditorWrapper'
 import * as vscode from 'vscode'
 import type { editor } from 'monaco-editor'
 import { loadDataShareCode } from '@/service/share'
+import CodeRunner from '@/components/CodeRunner'
 
 const ansiUp = new AnsiUp()
 
@@ -178,6 +179,18 @@ function Component({ defaultCode }: PlaygroundProps) {
       <Toaster richColors position="top-center" />
       <TrackingScript />
       <SpeedInsights />
+      <CodeRunner
+        setToolOutput={setToolOutput}
+        setProgramOutput={setProgramOutput}
+        onFormatted={(code) => {
+          if (editor) {
+            const model = editor.getModel()
+            if (model) {
+              model.setValue(code)
+            }
+          }
+        }}
+      />
     </div>
   )
 }

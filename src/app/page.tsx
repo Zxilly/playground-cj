@@ -16,7 +16,11 @@ export default async function Page({
 }: {
   searchParams: Promise<{ [_: string]: string | string[] | undefined }>
 }) {
-  const code = await getShareCode((await searchParams).hash as string)
+  let code: string | undefined = undefined
+  let sp = await searchParams
+  if (sp.hash) {
+    code = await getShareCode(sp.hash as string)
+  }
 
   return (
     <main>

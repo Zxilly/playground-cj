@@ -12,6 +12,7 @@ import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import type { LanguageClientConfig, WrapperConfig } from 'monaco-editor-wrapper'
 import { LogLevel } from '@codingame/monaco-vscode-api'
 import { useWorkerFactory } from 'monaco-languageclient/workerFactory'
+import { EVENTS, eventEmitter } from '@/lib/events'
 
 import '@codingame/monaco-vscode-theme-defaults-default-extension'
 import getThemeServiceOverride from '@codingame/monaco-vscode-theme-service-override'
@@ -135,12 +136,35 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     ed,
   } = deps
 
-  monaco.languages.registerDocumentFormattingEditProvider('Cangjie', getFormatter(setToolOutput))
+  monaco.languages.registerDocumentFormattingEditProvider('Cangjie', {
+    async provideDocumentFormattingEdits(model) {
+      if (isBusy()) {
+        return
+      }
+
+      return new Promise((resolve) => {
+        const handleFormatted = (formattedCode: string) => {
+          eventEmitter.off(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
+          if (formattedCode === model.getValue()) {
+            resolve([])
+          } else {
+            resolve([{
+              range: model.getFullModelRange(),
+              text: formattedCode,
+            }])
+          }
+        }
+
+        eventEmitter.on(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
+        eventEmitter.emit(EVENTS.FORMAT_CODE, model.getValue())
+      })
+    },
+  })
 
   ed.addAction({
     id: 'cangjie.compile.run',
     label: '编译运行',
-    contextMenuGroupId: 'navigation',
+    contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
     run: async (editor: editor.ICodeEditor) => {
@@ -148,19 +172,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
         return
       }
 
-      toast.promise(async () => {
-        await remoteLock.acquire('run', async () => {
-          await remoteRun(editor.getValue(), {
-            setToolOutput,
-            setProgramOutput,
-          })
-        })
-      }, {
-        success: '运行成功',
-        error: '运行失败',
-        loading: '正在运行...',
-      })
-
+      eventEmitter.emit(EVENTS.RUN_CODE, editor.getValue())
       window.umami?.track('run')
     },
   })
@@ -168,14 +180,12 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
   ed.addAction({
     id: 'cangjie.share.url',
     label: '分享 (URL 方式)',
-    contextMenuGroupId: 'share',
+    contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     run: async (editor: editor.ICodeEditor) => {
       const code = editor.getValue()
       const url = generateDataShareUrl(code)
-      await navigator.clipboard.writeText(url)
-      toast.info('已复制分享链接')
-
+      eventEmitter.emit(EVENTS.SHOW_SHARE_DIALOG, url)
       window.umami?.track('share.url')
     },
   })
@@ -183,17 +193,17 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
   ed.addAction({
     id: 'cangjie.share.hash',
     label: '分享 (Hash 方式)',
-    contextMenuGroupId: 'share',
+    contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     run: async (editor: editor.ICodeEditor) => {
       const code = editor.getValue()
 
       toast.promise(async () => {
         const url = await generateHashShareUrl(code)
-        await navigator.clipboard.writeText(url)
+        eventEmitter.emit(EVENTS.SHOW_SHARE_DIALOG, url)
       }, {
         loading: '分享中...',
-        success: '分享成功，已复制分享链接',
+        success: '分享成功',
         error: '分享失败',
       })
 
@@ -204,7 +214,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
   ed.addAction({
     id: 'cangjie.save',
     label: '保存代码',
-    contextMenuGroupId: 'navigation',
+    contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
     run: async (editor: editor.ICodeEditor) => {

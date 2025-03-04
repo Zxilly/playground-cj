@@ -50,23 +50,20 @@ export function generateDataShareUrl(code: string): string {
   return constructURLWithHash(params.toString())
 }
 
-async function dpaste(content: string) {
-  const query = new URLSearchParams()
-  query.set('content', content)
-  query.set('title', 'Playground Cangjie')
-  query.set('expiry_days', '200')
-
-  const response = await fetch('https://dpaste.com/api/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: query.toString(),
-  })
-  return response.text()
-}
-
 export async function generateHashShareUrl(code: string): Promise<string> {
-  const dpasteUrl = await dpaste(code)
-  const hash = dpasteUrl.split('/')[3].trim()
+  const response = await fetch('/api/dpaste', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ content: code }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to create share URL')
+  }
+
+  const { hash } = await response.json()
 
   const url = new URL(window.location.href.split('#')[0])
   url.search = ''
