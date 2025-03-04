@@ -12,6 +12,7 @@ export default antfu({
   },
 }, {
   ignores: [
+    'src/components/ui/*.*',
     'tailwind.config.ts',
     '**/*.json',
   ],

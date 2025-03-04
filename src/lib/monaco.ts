@@ -1,10 +1,9 @@
 import '@codingame/monaco-vscode-language-pack-zh-hans'
 
-import type { editor, languages } from 'monaco-editor'
+import type { editor } from 'monaco-editor'
 import * as monaco from 'monaco-editor'
 import { EXAMPLES, WS_BACKEND_URL } from '@/const'
 import { saveAsFile } from '@/lib/file'
-import { requestRemoteAction, SandboxStatus } from '@/service/run'
 import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
@@ -62,66 +61,6 @@ function loadLegacyShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOu
   }
 }
 
-function getFormatter(setToolOutput: (msg: string) => void) {
-  return {
-    async provideDocumentFormattingEdits(model) {
-      if (isBusy()) {
-        return
-      }
-
-      let text = model.getValue()
-
-      toast.promise(new Promise((resolve, reject) => {
-        const err = (msg: string) => {
-          setToolOutput(msg)
-          reject(msg)
-        }
-
-        remoteLock.acquire('run', async () => {
-          const [resp, status] = await requestRemoteAction(text, 'format')
-
-          switch (status) {
-            case SandboxStatus.UNKNOWN_ERROR:
-              err('格式化失败，未知错误')
-              return
-          }
-
-          text = resp.formatted
-          setToolOutput(resp.formatter_output)
-
-          if (resp.formatter_code === 0) {
-            resolve('格式化成功')
-          }
-          else {
-            reject('格式化失败')
-          }
-        })
-      }), {
-        success: '格式化成功',
-        error: data => data,
-        loading: '正在格式化...',
-      })
-
-      // just wait the format to finish
-      await remoteLock.acquire('run', () => {
-      })
-
-      window.umami?.track('format')
-
-      if (text === model.getValue()) {
-        return
-      }
-
-      return [
-        {
-          range: model.getFullModelRange(),
-          text,
-        },
-      ]
-    },
-  } satisfies languages.DocumentFormattingEditProvider
-}
-
 export function setEditorValue(ed: editor.ICodeEditor, code: string) {
   const model = ed.getModel()
   if (model) {
@@ -132,7 +71,6 @@ export function setEditorValue(ed: editor.ICodeEditor, code: string) {
 export function updateEditor(deps: OnMountFunctionDependencies) {
   const {
     setToolOutput,
-    setProgramOutput,
     ed,
   } = deps
 
@@ -158,6 +96,8 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
         eventEmitter.on(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
         eventEmitter.emit(EVENTS.FORMAT_CODE, model.getValue())
+
+        window.umami?.track('format')
       })
     },
   })

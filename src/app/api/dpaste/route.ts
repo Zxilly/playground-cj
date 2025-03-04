@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   }
   catch (error) {
     return NextResponse.json(
-      { error: 'Failed to create dpaste' },
+      { error: `Failed to create dpaste: ${error}` },
       { status: 500 },
     )
   }
