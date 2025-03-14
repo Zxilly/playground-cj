@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import type { WrapperConfig } from 'monaco-editor-wrapper'
 import { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
 
@@ -22,18 +22,18 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
 
   const updateEditorLayout = () => {
     if (containerRef.current && wrapperRef.current) {
-      const parent = containerRef.current.parentElement! 
+      const parent = containerRef.current.parentElement!
       const { width: outerWidth, height: outerHeight } = parent.getBoundingClientRect()
-      
+
       const computedStyle = window.getComputedStyle(parent)
-      const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0
-      const paddingRight = parseFloat(computedStyle.paddingRight) || 0
-      const paddingTop = parseFloat(computedStyle.paddingTop) || 0
-      const paddingBottom = parseFloat(computedStyle.paddingBottom) || 0
-      
+      const paddingLeft = Number.parseFloat(computedStyle.paddingLeft) || 0
+      const paddingRight = Number.parseFloat(computedStyle.paddingRight) || 0
+      const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0
+      const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
+
       const width = outerWidth - paddingLeft - paddingRight
       const height = outerHeight - paddingTop - paddingBottom
-      
+
       wrapperRef.current.getEditor()?.layout({ width, height })
     }
   }
@@ -62,17 +62,17 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       if (containerRef.current) {
         await wrapperRef.current.start()
         onLoad?.(wrapperRef.current)
-        
+
         updateEditorLayout()
-        
+
         if (resizeObserverRef.current) {
           resizeObserverRef.current.disconnect()
         }
-        
+
         resizeObserverRef.current = new ResizeObserver(() => {
           updateEditorLayout()
         })
-        
+
         resizeObserverRef.current.observe(containerRef.current.parentElement!)
       }
       else {
@@ -104,7 +104,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
         resizeObserverRef.current.disconnect()
         resizeObserverRef.current = null
       }
-      
+
       (async () => {
         await disposeMonaco()
       })()

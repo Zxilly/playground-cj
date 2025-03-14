@@ -70,7 +70,7 @@ function Component({ defaultCode }: PlaygroundProps) {
       setToolOutput,
       ed: wrapper.getEditor()!,
     })
-    let editor = wrapper.getEditor()!
+    const editor = wrapper.getEditor()!
     setEditor(editor);
 
     (async () => {
