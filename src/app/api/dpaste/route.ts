@@ -8,9 +8,12 @@ async function dpaste(content: string) {
   query.set('title', 'Playground Cangjie')
   query.set('expiry_days', '200')
 
-  const response = await fetch('https://dpaste.com/api/', {
+  const response = await fetch('https://dpaste.com/api/v2/', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'Cangjie Playground/1.0',
+    },
     body: query.toString(),
   })
   return response.text()
@@ -29,6 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ hash })
   }
   catch (error) {
+    console.error(error)
     return NextResponse.json(
       { error: `Failed to create dpaste: ${error}` },
       { status: 500 },
