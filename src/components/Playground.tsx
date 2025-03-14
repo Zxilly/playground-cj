@@ -70,7 +70,8 @@ function Component({ defaultCode }: PlaygroundProps) {
       setToolOutput,
       ed: wrapper.getEditor()!,
     })
-    setEditor(wrapper.getEditor()!);
+    let editor = wrapper.getEditor()!
+    setEditor(editor);
 
     (async () => {
       try {
@@ -130,14 +131,14 @@ function Component({ defaultCode }: PlaygroundProps) {
           </div>
         </div>
         <div className="flex-1 flex flex-col md:flex-row">
-          <div className="flex-1 p-2 md:p-4 flex flex-col">
+          <div className="flex-1 p-2 md:p-4 flex flex-col h-full w-full">
             <MonacoEditorReactComp
               wrapperConfig={wrapperConfig}
-              style={{ height: '100%' }}
+              style={{ position: 'absolute' }}
               onLoad={onLoad}
             />
           </div>
-          <div className="w-full md:w-1/3 p-2 md:p-4 flex flex-col h-auto md:h-full">
+          <div className="w-full md:w-1/3 p-2 md:p-4 flex flex-col h-auto md:h-full overflow-hidden">
             <div className="md:hidden mb-2">
               <Button onClick={toggleOutput} variant="outline" className="w-full flex justify-between items-center">
                 <span>
@@ -148,23 +149,23 @@ function Component({ defaultCode }: PlaygroundProps) {
               </Button>
             </div>
             <div
-              className={`flex-1 overflow-hidden transition-all duration-300 ease-in-out ${
-                isOutputCollapsed ? 'max-h-0 opacity-0' : 'max-h-[100vh] opacity-100'
+              className={`flex-1 overflow-hidden flex flex-col ${
+                isOutputCollapsed ? 'max-h-0 opacity-0' : 'max-h-full opacity-100'
               }`}
             >
-              <div className="flex flex-col h-1/2 pb-1 md:pb-2">
+              <div className="flex flex-col pb-1 md:pb-2 flex-grow-0 flex-shrink-0 h-1/2">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
-                <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
-                  <div className={`${isMiddle ? 'h-full' : 'h-[15vh]'} overflow-auto p-1 md:p-2`}>
-                    <pre style={{ fontFamily }} dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
+                <div className="border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex-1">
+                  <div className={`${isMiddle ? 'h-[calc(50vh-120px)]' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
+                    <pre style={{ fontFamily, margin: 0, whiteSpace: 'pre' }} dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col h-1/2 pt-1 md:pt-2">
+              <div className="flex flex-col pt-1 md:pt-2 flex-grow-0 flex-shrink-0 h-1/2">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
-                <div className="flex-1 border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden">
-                  <div className={`${isMiddle ? 'h-full' : 'h-[15vh]'} overflow-auto p-1 md:p-2`}>
-                    <pre style={{ fontFamily }} dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
+                <div className="border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex-1">
+                  <div className={`${isMiddle ? 'h-[calc(50vh-120px)]' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
+                    <pre style={{ fontFamily, margin: 0, whiteSpace: 'pre' }} dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
                   </div>
                 </div>
               </div>

@@ -103,5 +103,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-.monaco-editor { position: absolute !important; }
