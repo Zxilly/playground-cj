@@ -70,11 +70,18 @@ function Component({ defaultCode }: PlaygroundProps) {
       setToolOutput,
       ed: wrapper.getEditor()!,
     })
-    setEditor(wrapper.getEditor()!)
+    setEditor(wrapper.getEditor()!);
 
-    if (wrapper.getLanguageClientWrapper('Cangjie') !== undefined) {
-      vscode.window.showInformationMessage('LSP 已连接')
-    }
+    (async () => {
+      try {
+        await wrapper.startLanguageClients()
+        vscode.window.showInformationMessage('LSP 已连接')
+      }
+      catch (e) {
+        console.error(e)
+        vscode.window.showErrorMessage('LSP 连接失败')
+      }
+    })()
   }, [])
 
   const renderedCode = useMemo(() => {

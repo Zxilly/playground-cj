@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import type { WrapperConfig } from 'monaco-editor-wrapper'
 import { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
 
@@ -19,52 +19,60 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
   const wrapperRef = useRef<MonacoEditorLanguageClientWrapper>(new MonacoEditorLanguageClientWrapper())
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const destroyMonaco = useCallback(async () => {
-    try {
-      await wrapperRef.current.dispose()
+  useEffect(() => {
+    const disposeMonaco = async () => {
+      try {
+        await wrapperRef.current.dispose()
+      }
+      catch {
+        // The language client may throw an error during disposal, but we want to continue anyway
+      }
     }
-    catch {
-      // The language client may throw an error during disposal.
-      // This should not prevent us from continue working.
+
+    const initMonaco = async () => {
+      if (containerRef.current) {
+        wrapperConfig.htmlContainer = containerRef.current
+        await wrapperRef.current.init(wrapperConfig)
+      }
+      else {
+        throw new Error('No htmlContainer found! Aborting...')
+      }
+    }
+
+    const startMonaco = async () => {
+      if (containerRef.current) {
+        await wrapperRef.current.start()
+        onLoad?.(wrapperRef.current)
+      }
+      else {
+        throw new Error('No htmlContainer found! Aborting...')
+      }
+    };
+
+    (async () => {
+      await disposeMonaco()
+      await initMonaco()
+      await startMonaco()
+    })()
+  }, [wrapperConfig, onLoad])
+
+  useEffect(() => {
+    // exact copy of the above function, to prevent declaration in useCallback
+    const disposeMonaco = async () => {
+      try {
+        await wrapperRef.current.dispose()
+      }
+      catch {
+        // The language client may throw an error during disposal, but we want to continue anyway
+      }
+    }
+
+    return () => {
+      (async () => {
+        await disposeMonaco()
+      })()
     }
   }, [])
-
-  useEffect(() => {
-    return () => {
-      destroyMonaco()
-    }
-  }, [destroyMonaco])
-
-  const startMonaco = useCallback(async () => {
-    if (containerRef.current) {
-      await wrapperRef.current.start({
-        includeLanguageClients: true,
-        htmlContainer: containerRef.current,
-      })
-      onLoad?.(wrapperRef.current)
-    }
-  }, [onLoad])
-
-  const handleReInit = useCallback(async () => {
-    if (wrapperRef.current.isStopping() === undefined) {
-      await destroyMonaco()
-    }
-    else {
-      await wrapperRef.current.isStopping()
-    }
-
-    if (wrapperRef.current.isStarting() === undefined) {
-      await wrapperRef.current.init(wrapperConfig)
-      await startMonaco()
-    }
-    else {
-      await wrapperRef.current.isStarting()
-    }
-  }, [destroyMonaco, startMonaco, wrapperConfig])
-
-  useEffect(() => {
-    handleReInit()
-  }, [handleReInit, wrapperConfig])
 
   return (
     <div

@@ -8,7 +8,7 @@ import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from 
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
 import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
-import type { LanguageClientConfig, WrapperConfig } from 'monaco-editor-wrapper'
+import type { LanguageClientConfig, LanguageClientConfigs, WrapperConfig } from 'monaco-editor-wrapper'
 import { LogLevel } from '@codingame/monaco-vscode-api'
 import { useWorkerFactory } from 'monaco-languageclient/workerFactory'
 import { eventEmitter, EVENTS } from '@/lib/events'
@@ -219,9 +219,15 @@ function tryInitWebSocket() {
 }
 
 export function createWrapperConfig(shareCode?: string): WrapperConfig {
-  let languageClientConfigs = {}
+  const languageClientConfigs = {
+    automaticallyStart: false,
+    automaticallyInit: true,
+    automaticallyDispose: true,
+    automaticallyDisposeWorkers: true,
+    configs: {},
+  } satisfies LanguageClientConfigs
   if (!isMobile({ tablet: true, featureDetect: true })) {
-    languageClientConfigs = tryInitWebSocket()
+    languageClientConfigs.configs = tryInitWebSocket()
   }
 
   return {
