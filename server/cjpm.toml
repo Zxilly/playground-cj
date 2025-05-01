@@ -12,4 +12,4 @@ link-option = ""
 package-configuration = {}
 
 [target.x86_64-unknown-linux-gnu.bin-dependencies]
-path-option = ["/linux_x86_64_llvm/static/stdx"]
+path-option = [ "/linux_x86_64_llvm/static/stdx" ]
