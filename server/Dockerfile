@@ -4,6 +4,7 @@ FROM golang:1.24 AS builder
 
 WORKDIR /app
 COPY . .
+ENV GOPROXY="https://goproxy.cn"
 RUN go build -v -o /app/agent ./cmd/agent
 
 FROM debian:12-slim AS extract

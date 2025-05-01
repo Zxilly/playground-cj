@@ -1,0 +1,15 @@
+[package]
+cjc-version = "0.60.5"
+name = "playground"
+description = "nothing here"
+version = "1.0.0"
+target-dir = ""
+src-dir = ""
+output-type = "executable"
+compile-option = "-ldl"
+override-compile-option = ""
+link-option = ""
+package-configuration = {}
+
+[target.x86_64-unknown-linux-gnu.bin-dependencies]
+path-option = ["/linux_x86_64_llvm/static/stdx"]
