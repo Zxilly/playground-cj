@@ -1,6 +1,6 @@
 'use client'
 
-import type * as monaco from 'monaco-editor'
+import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronDown, Hash, Link } from 'lucide-react'

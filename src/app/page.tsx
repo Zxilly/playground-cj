@@ -1,4 +1,3 @@
-import 'server-only'
 import Wrapper from '@/components/Wrapper'
 
 async function getShareCode(hash?: string) {

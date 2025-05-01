@@ -122,8 +122,8 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer attach.Close()
 
-	wg.Add(1)
 	go func() {
+		wg.Add(1)
 		defer wg.Done()
 		_ = ws.SetReadDeadline(time.Now().Add(pongWait))
 		ws.SetPongHandler(func(string) error {
@@ -150,8 +150,8 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	wg.Add(1)
 	go func() {
+		wg.Add(1)
 		defer wg.Done()
 		ticker := time.NewTicker(pingPeriod)
 		defer ticker.Stop()

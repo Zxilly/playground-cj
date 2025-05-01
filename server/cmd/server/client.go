@@ -44,6 +44,7 @@ func init() {
 	dockerClient, err = client.NewClientWithOpts(
 		client.WithHost(host),
 		client.WithHostFromEnv(),
+		client.WithAPIVersionNegotiation(),
 	)
 	if err != nil {
 		log.Fatalf("Failed to create docker client: %v", err)

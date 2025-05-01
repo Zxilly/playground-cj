@@ -20,18 +20,9 @@ const (
 )
 
 func runLsp() {
-	err := os.MkdirAll("/playground", 0755)
-	if err != nil {
-		panic(err)
-	}
-
 	ctx := context.Background()
-
-	cmd := exec.Command("cjpm", "init")
+	cmd := exec.CommandContext(ctx, LspPath, "src", "--disableAutoImport", "-V")
 	cmd.Dir = "/playground"
-	Must(cmd.Run())
-
-	cmd = exec.CommandContext(ctx, LspPath, "src", "--disableAutoImport", "-V")
 
 	stdout := Must2(cmd.StdoutPipe())
 	stderr := Must2(cmd.StderrPipe())

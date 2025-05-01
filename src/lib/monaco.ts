@@ -1,7 +1,4 @@
-import '@codingame/monaco-vscode-language-pack-zh-hans'
-
-import type { editor } from 'monaco-editor'
-import * as monaco from 'monaco-editor'
+import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { EXAMPLES, WS_BACKEND_URL } from '@/const'
 import { saveAsFile } from '@/lib/file'
 import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
@@ -9,15 +6,9 @@ import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
 import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import type { LanguageClientConfig, LanguageClientConfigs, WrapperConfig } from 'monaco-editor-wrapper'
-import { LogLevel } from '@codingame/monaco-vscode-api'
-import { useWorkerFactory } from 'monaco-languageclient/workerFactory'
+import { configureDefaultWorkerFactory } from 'monaco-editor-wrapper/workers/workerLoaders'
 import { eventEmitter, EVENTS } from '@/lib/events'
 
-import '@codingame/monaco-vscode-theme-defaults-default-extension'
-import getThemeServiceOverride from '@codingame/monaco-vscode-theme-service-override'
-import getTextmateServiceOverride from '@codingame/monaco-vscode-textmate-service-override'
-import getKeybindingsServiceOverride from '@codingame/monaco-vscode-keybindings-service-override'
-import getNotificationServiceOverride from '@codingame/monaco-vscode-notifications-service-override'
 import { fontFamily } from '@/app/font'
 
 import langConf from '@/lib/language-configuration.json'
@@ -33,10 +24,10 @@ function isBusy() {
 interface OnMountFunctionDependencies {
   setToolOutput: (output: string) => void
   setProgramOutput: (output: string) => void
-  ed: editor.IStandaloneCodeEditor
+  ed: monaco.editor.IStandaloneCodeEditor
 }
 
-function loadLegacyShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
+function loadLegacyShareCodeToEditor(ed: monaco.editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
   if (window.location.hash.includes('hash')) {
     ed.setValue('分享代码加载中...')
 
@@ -61,7 +52,7 @@ function loadLegacyShareCodeToEditor(ed: editor.IStandaloneCodeEditor, setToolOu
   }
 }
 
-export function setEditorValue(ed: editor.ICodeEditor, code: string) {
+export function setEditorValue(ed: monaco.editor.ICodeEditor, code: string) {
   const model = ed.getModel()
   if (model) {
     model.setValue(code)
@@ -108,7 +99,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
-    run: async (editor: editor.ICodeEditor) => {
+    run: async (editor: monaco.editor.ICodeEditor) => {
       if (isBusy()) {
         return
       }
@@ -123,7 +114,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     label: '分享 (URL 方式)',
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
-    run: async (editor: editor.ICodeEditor) => {
+    run: async (editor: monaco.editor.ICodeEditor) => {
       const code = editor.getValue()
       const url = generateDataShareUrl(code)
       eventEmitter.emit(EVENTS.SHOW_SHARE_DIALOG, url)
@@ -136,7 +127,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     label: '分享 (Hash 方式)',
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
-    run: async (editor: editor.ICodeEditor) => {
+    run: async (editor: monaco.editor.ICodeEditor) => {
       const code = editor.getValue()
 
       toast.promise(async () => {
@@ -158,7 +149,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-    run: async (editor: editor.ICodeEditor) => {
+    run: async (editor: monaco.editor.ICodeEditor) => {
       saveAsFile(editor.getValue())
       toast.success('已保存代码')
 
@@ -186,6 +177,11 @@ function tryInitWebSocket() {
             'file:///playground': {
               name: 'playground',
               requires: {},
+              package_requires: {
+                path_option: [
+                  'file:///linux_x86_64_llvm/static/stdx',
+                ],
+              },
             },
           },
           modulesHomeOption: '/cangjie',
@@ -232,7 +228,7 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
 
   return {
     $type: 'extended',
-    logLevel: LogLevel.Debug,
+    logLevel: 2,
     languageClientConfigs,
     extensions: [
       {
@@ -264,12 +260,6 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
       },
     ],
     vscodeApiConfig: {
-      serviceOverrides: {
-        ...getThemeServiceOverride(),
-        ...getTextmateServiceOverride(),
-        ...getKeybindingsServiceOverride(),
-        ...getNotificationServiceOverride(),
-      },
       userConfiguration: {
         json: JSON.stringify({
           'editor.wordBasedSuggestions': 'off',
@@ -301,15 +291,7 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
           uri: 'file:///playground/src/main.cj',
         },
       },
-      monacoWorkerFactory: () => {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        useWorkerFactory({
-          workerLoaders: {
-            TextEditorWorker: () => new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url), { type: 'module' }),
-            TextMateWorker: () => new Worker(new URL('@codingame/monaco-vscode-textmate-service-override/worker', import.meta.url), { type: 'module' }),
-          },
-        })
-      },
+      monacoWorkerFactory: configureDefaultWorkerFactory,
     },
   }
 }

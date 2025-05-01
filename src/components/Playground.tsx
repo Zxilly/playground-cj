@@ -12,14 +12,14 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import { AnsiUp } from 'ansi_up'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useMedia } from 'react-use'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
-import * as vscode from 'vscode'
-import type { editor } from 'monaco-editor'
+import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { loadDataShareCode } from '@/service/share'
 import CodeRunner from '@/components/CodeRunner'
+import { useMedia } from 'react-use'
+import { toast } from 'sonner'
 
 const ansiUp = new AnsiUp()
 
@@ -30,11 +30,11 @@ export interface PlaygroundProps {
 function Component({ defaultCode }: PlaygroundProps) {
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
-  const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
+  const [isOutputCollapsed, setIsOutputCollapsed] = useState(!window.matchMedia('(min-width: 768px)').matches)
 
   const wrapperRef = useRef<MonacoEditorLanguageClientWrapper | undefined>(undefined)
 
-  const [editor, setEditor] = useState<editor.IStandaloneCodeEditor | undefined>()
+  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | undefined>()
 
   const getAction = useCallback((id: string) => {
     return editor?.getAction(id)
@@ -54,12 +54,6 @@ function Component({ defaultCode }: PlaygroundProps) {
 
   const isMiddle = useMedia('(min-width: 768px)')
 
-  useEffect(() => {
-    if (isMiddle) {
-      setIsOutputCollapsed(false)
-    }
-  }, [isMiddle])
-
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
 
@@ -76,11 +70,11 @@ function Component({ defaultCode }: PlaygroundProps) {
     (async () => {
       try {
         await wrapper.startLanguageClients()
-        vscode.window.showInformationMessage('LSP 已连接')
+        toast.success('LSP 已连接')
       }
       catch (e) {
         console.error(e)
-        vscode.window.showErrorMessage('LSP 连接失败')
+        toast.error('LSP 连接失败')
       }
     })()
   }, [])
