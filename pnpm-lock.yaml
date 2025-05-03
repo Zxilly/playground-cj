@@ -58,6 +58,9 @@ importers:
       '@codingame/monaco-vscode-extension-api':
         specifier: 16.0.6
         version: 16.0.6
+      '@codingame/monaco-vscode-language-pack-zh-hans':
+        specifier: ^16.0.6
+        version: 16.0.6
       '@eslint-react/eslint-plugin':
         specifier: ^1.48.5
         version: 1.48.5(eslint@9.25.1(jiti@2.4.2))(typescript@5.8.3)

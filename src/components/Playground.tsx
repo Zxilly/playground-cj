@@ -150,7 +150,7 @@ function Component({ defaultCode }: PlaygroundProps) {
               <div className="flex flex-col pb-1 md:pb-2 flex-grow-0 flex-shrink-0 h-1/2">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
                 <div className="border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex-1">
-                  <div className={`${isMiddle ? 'h-[calc(50vh-120px)]' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
+                  <div className={`${isMiddle ? '' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
                     <pre style={{ fontFamily, margin: 0, whiteSpace: 'pre' }} dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
                   </div>
                 </div>
@@ -158,7 +158,7 @@ function Component({ defaultCode }: PlaygroundProps) {
               <div className="flex flex-col pt-1 md:pt-2 flex-grow-0 flex-shrink-0 h-1/2">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
                 <div className="border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex-1">
-                  <div className={`${isMiddle ? 'h-[calc(50vh-120px)]' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
+                  <div className={`${isMiddle ? '' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
                     <pre style={{ fontFamily, margin: 0, whiteSpace: 'pre' }} dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
                   </div>
                 </div>

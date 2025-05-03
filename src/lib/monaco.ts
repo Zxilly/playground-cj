@@ -1,3 +1,4 @@
+import '@codingame/monaco-vscode-language-pack-zh-hans'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { EXAMPLES, WS_BACKEND_URL } from '@/const'
 import { saveAsFile } from '@/lib/file'

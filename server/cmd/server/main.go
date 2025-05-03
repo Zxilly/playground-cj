@@ -33,7 +33,6 @@ func main() {
 		handleWebSocket(ctx.Writer, ctx.Request)
 	})
 
-	r.UseH2C = true
 	server := &http.Server{
 		Addr:    addr,
 		Handler: r.Handler(),
