@@ -50,10 +50,6 @@ func checkSystemResources() error {
 }
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		_ = r.Body.Close()
-	}()
-
 	if err := checkSystemResources(); err != nil {
 		log.Printf("Resource check failed: %v", err)
 		http.Error(w, "System resources insufficient", http.StatusServiceUnavailable)
@@ -71,7 +67,7 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	cleanup := func() {
 		cancel()
-		_ = ws.Close()
+		_ = r.Body.Close()
 		wg.Wait()
 	}
 	defer cleanup()

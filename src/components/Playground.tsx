@@ -20,6 +20,9 @@ import { loadDataShareCode } from '@/service/share'
 import CodeRunner from '@/components/CodeRunner'
 import { useMedia } from 'react-use'
 import { toast } from 'sonner'
+import LabelContainer from '@/components/LabelContainer'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import type { ImperativePanelHandle } from 'react-resizable-panels'
 
 const ansiUp = new AnsiUp()
 
@@ -30,7 +33,7 @@ export interface PlaygroundProps {
 function Component({ defaultCode }: PlaygroundProps) {
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
-  const [isOutputCollapsed, setIsOutputCollapsed] = useState(!window.matchMedia('(min-width: 768px)').matches)
+  const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
 
   const wrapperRef = useRef<MonacoEditorLanguageClientWrapper | undefined>(undefined)
 
@@ -48,11 +51,20 @@ function Component({ defaultCode }: PlaygroundProps) {
     getAction('editor.action.formatDocument')?.run()
   }, [getAction])
 
+  const outputPanel = useRef<ImperativePanelHandle | null>(null)
   const toggleOutput = useCallback(() => {
     setIsOutputCollapsed(!isOutputCollapsed)
+    if (outputPanel.current) {
+      if (outputPanel.current.isCollapsed()) {
+        outputPanel.current.expand()
+      }
+      else {
+        outputPanel.current.collapse()
+      }
+    }
   }, [isOutputCollapsed])
 
-  const isMiddle = useMedia('(min-width: 768px)')
+  const isDesktop = useMedia('(min-width: 768px)')
 
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
@@ -91,7 +103,7 @@ function Component({ defaultCode }: PlaygroundProps) {
   return (
     <div className={`flex flex-col h-screen overflow-hidden bg-background text-foreground ${isDarkMode() && 'dark'}`}>
       <div className="flex flex-col h-full overflow-hidden bg-background text-foreground p-4">
-        <div className="flex-none px-2 md:px-4 pt-2 md:pt-4 flex flex-col md:flex-row justify-between items-center">
+        <div id="header" className="flex-none px-2 md:px-4 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center md:mb-0 mb-2">
             <Image
               src="/icon.png"
@@ -124,46 +136,60 @@ function Component({ defaultCode }: PlaygroundProps) {
             </div>
           </div>
         </div>
-        <div className="flex-1 flex flex-col md:flex-row">
-          <div className="flex-1 p-2 md:p-4 flex flex-col h-full w-full">
-            <MonacoEditorReactComp
-              wrapperConfig={wrapperConfig}
-              onLoad={onLoad}
-            />
-          </div>
-          <div className="w-full md:w-1/3 p-2 md:p-4 md:pl-0 flex flex-col h-auto md:h-full overflow-hidden">
-            <div className="md:hidden mb-2">
-              <Button onClick={toggleOutput} variant="outline" className="w-full flex justify-between items-center">
+        <div id="main" className="flex-1 flex flex-col md:flex-row px-2 md:px-4 pt-2 md:pt-0">
+          <ResizablePanelGroup direction={isDesktop ? 'horizontal' : 'vertical'}>
+            <ResizablePanel defaultSize={65}>
+              <div id="editor" className="flex-1 flex flex-col h-full w-full relative border border-gray-300 rounded-md overflow-hidden">
+                <MonacoEditorReactComp
+                  wrapperConfig={wrapperConfig}
+                  onLoad={onLoad}
+                />
+              </div>
+            </ResizablePanel>
+            {isDesktop && <ResizableHandle withHandle className="md:mx-4" />}
+            {!isDesktop && (
+              <Button onClick={toggleOutput} variant="outline" className="w-full flex justify-between items-center my-2">
                 <span>
                   {isOutputCollapsed ? '显示' : '隐藏'}
                   输出内容
                 </span>
                 {!isOutputCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </Button>
-            </div>
-            <div
-              className={`flex-1 overflow-hidden flex flex-col ${
-                isOutputCollapsed ? 'max-h-0 opacity-0' : 'max-h-full opacity-100'
-              }`}
-            >
-              <div className="flex flex-grow-0 flex-col pb-1 md:pb-2 h-1/2">
-                <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
-                <div className="border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex-1">
-                  <div className={`${isMiddle ? '' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
-                    <pre style={{ fontFamily, margin: 0, whiteSpace: 'pre' }} dangerouslySetInnerHTML={{ __html: toolOutputHtml }} />
+            )}
+            <ResizablePanel defaultSize={35} collapsible ref={outputPanel}>
+              <div id="panel" className="flex flex-col h-full overflow-hidden">
+                {!isOutputCollapsed && (
+                  <div
+                    id="panel-content"
+                    className="flex-1 overflow-hidden flex flex-col"
+                  >
+                    <LabelContainer
+                      title="工具输出"
+                      content={(
+                        <pre
+                          className="whitespace-pre min-h-0 min-w-0"
+                          style={{ fontFamily }}
+                          dangerouslySetInnerHTML={{ __html: toolOutputHtml }}
+                        />
+                      )}
+                      className="flex-1/2 mb-1 md:mb-2"
+                    />
+                    <LabelContainer
+                      title="程序输出"
+                      content={(
+                        <pre
+                          className="whitespace-pre min-h-0 min-w-0"
+                          style={{ fontFamily }}
+                          dangerouslySetInnerHTML={{ __html: programOutputHtml }}
+                        />
+                      )}
+                      className="flex-1/2 mt-1 md:mt-2"
+                    />
                   </div>
-                </div>
+                )}
               </div>
-              <div className="flex flex-grow-0 flex-col pt-1 md:pt-2 h-1/2">
-                <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
-                <div className="border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex-1">
-                  <div className={`${isMiddle ? '' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
-                    <pre style={{ fontFamily, margin: 0, whiteSpace: 'pre' }} dangerouslySetInnerHTML={{ __html: programOutputHtml }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </div>
       <div className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">

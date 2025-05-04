@@ -112,8 +112,10 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
 
   return (
     <div
-      ref={containerRef}
+      className="absolute w-full h-full"
       style={style}
-    />
+    >
+      <div ref={containerRef} />
+    </div>
   )
 }
