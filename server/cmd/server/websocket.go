@@ -103,11 +103,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			Timeout: &timeout,
 		}); err != nil {
 			log.Printf("Container stop failed: %v", err)
-		}
-		if err := dockerClient.ContainerRemove(context.Background(), resp.ID, container.RemoveOptions{
-			Force: true,
-		}); err != nil {
-			log.Printf("Container remove failed: %v", err)
+			if err = dockerClient.ContainerRemove(context.Background(), resp.ID, container.RemoveOptions{
+				Force: true,
+			}); err != nil {
+				log.Printf("Container remove failed: %v", err)
+			}
 		}
 	}()
 

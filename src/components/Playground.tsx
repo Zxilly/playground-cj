@@ -128,11 +128,10 @@ function Component({ defaultCode }: PlaygroundProps) {
           <div className="flex-1 p-2 md:p-4 flex flex-col h-full w-full">
             <MonacoEditorReactComp
               wrapperConfig={wrapperConfig}
-              style={{ position: 'absolute' }}
               onLoad={onLoad}
             />
           </div>
-          <div className="w-full md:w-1/3 p-2 md:p-4 flex flex-col h-auto md:h-full overflow-hidden">
+          <div className="w-full md:w-1/3 p-2 md:p-4 md:pl-0 flex flex-col h-auto md:h-full overflow-hidden">
             <div className="md:hidden mb-2">
               <Button onClick={toggleOutput} variant="outline" className="w-full flex justify-between items-center">
                 <span>
@@ -147,7 +146,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                 isOutputCollapsed ? 'max-h-0 opacity-0' : 'max-h-full opacity-100'
               }`}
             >
-              <div className="flex flex-col pb-1 md:pb-2 flex-grow-0 flex-shrink-0 h-1/2">
+              <div className="flex flex-grow-0 flex-col pb-1 md:pb-2 h-1/2">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">工具输出</h2>
                 <div className="border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex-1">
                   <div className={`${isMiddle ? '' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
@@ -155,7 +154,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col pt-1 md:pt-2 flex-grow-0 flex-shrink-0 h-1/2">
+              <div className="flex flex-grow-0 flex-col pt-1 md:pt-2 h-1/2">
                 <h2 className="text-sm md:text-lg font-semibold mb-1 md:mb-2">程序输出</h2>
                 <div className="border rounded font-mono text-xs md:text-sm bg-muted overflow-hidden flex-1">
                   <div className={`${isMiddle ? '' : 'h-[15vh]'} overflow-y-auto overflow-x-auto p-1 md:p-2`}>
@@ -178,7 +177,7 @@ function Component({ defaultCode }: PlaygroundProps) {
           在 GitHub 查看源代码
         </a>
       </div>
-      <Toaster richColors position="top-center" />
+      <Toaster richColors closeButton position="top-center" />
       <TrackingScript />
       <SpeedInsights />
       <CodeRunner

@@ -34,7 +34,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       const width = outerWidth - paddingLeft - paddingRight
       const height = outerHeight - paddingTop - paddingBottom
 
-      wrapperRef.current.getEditor()?.layout({ width, height })
+      wrapperRef.current.getEditor()?.layout({ width, height }, true)
     }
   }
 
@@ -99,7 +99,6 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
     }
 
     return () => {
-      // 清理ResizeObserver
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect()
         resizeObserverRef.current = null

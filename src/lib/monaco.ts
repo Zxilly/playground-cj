@@ -282,7 +282,7 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
       },
     },
     editorAppConfig: {
-      overrideAutomaticLayout: true,
+      overrideAutomaticLayout: false,
       editorOptions: {
         language: 'Cangjie',
       },
