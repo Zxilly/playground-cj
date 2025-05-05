@@ -101,18 +101,18 @@ function Component({ defaultCode }: PlaygroundProps) {
   const wrapperConfig = useMemo(() => createWrapperConfig(renderedCode), [renderedCode])
 
   return (
-    <div className={`flex flex-col h-screen overflow-hidden bg-background text-foreground ${isDarkMode() && 'dark'}`}>
-      <div className="flex flex-col h-full overflow-hidden bg-background text-foreground p-4">
+    <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() && 'dark'}`}>
+      <div className="flex flex-col h-full bg-background text-foreground p-4">
         <div id="header" className="flex-none px-2 md:px-4 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center md:mb-0 mb-2">
             <Image
               src="/icon.png"
               alt="Logo"
-              width={32}
-              height={32}
-              className="m-4"
+              width={isDesktop ? 32 : 24}
+              height={isDesktop ? 32 : 24}
+              className="md:m-4 m-2"
             />
-            <h1 className="text-2xl font-bold">仓颉 Playground</h1>
+            <h1 className="text-base md:text-2xl font-bold">仓颉 Playground</h1>
           </div>
           <div
             className="flex flex-col justify-between sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto"
@@ -137,9 +137,12 @@ function Component({ defaultCode }: PlaygroundProps) {
           </div>
         </div>
         <div id="main" className="flex-1 flex flex-col md:flex-row px-2 md:px-4 pt-2 md:pt-0">
-          <ResizablePanelGroup direction={isDesktop ? 'horizontal' : 'vertical'}>
-            <ResizablePanel defaultSize={65}>
-              <div id="editor" className="flex-1 flex flex-col h-full w-full relative border border-gray-300 rounded-md overflow-hidden">
+          <ResizablePanelGroup
+            direction={isDesktop ? 'horizontal' : 'vertical'}
+            className="!overflow-visible"
+          >
+            <ResizablePanel defaultSize={65} className="!overflow-visible">
+              <div id="editor" className="flex-1 flex flex-col h-full w-full relative border border-gray-300 rounded-md">
                 <MonacoEditorReactComp
                   wrapperConfig={wrapperConfig}
                   onLoad={onLoad}
