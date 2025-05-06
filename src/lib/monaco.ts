@@ -161,7 +161,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
   loadLegacyShareCodeToEditor(ed, setToolOutput)
 }
 
-function tryInitWebSocket() {
+function buildLanguageConfig() {
   return {
     Cangjie: {
       name: 'Cangjie Language Client',
@@ -224,7 +224,7 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
     configs: {},
   } satisfies LanguageClientConfigs
   if (!isMobile({ tablet: true, featureDetect: true })) {
-    languageClientConfigs.configs = tryInitWebSocket()
+    languageClientConfigs.configs = buildLanguageConfig()
   }
 
   return {

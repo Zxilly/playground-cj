@@ -91,12 +91,12 @@ function Component({ defaultCode }: PlaygroundProps) {
     })()
   }, [])
 
-  const renderedCode = useMemo(() => {
+  const renderedCode = (() => {
     if (defaultCode) {
       return defaultCode
     }
     return loadDataShareCode()
-  }, [defaultCode])
+  })()
 
   return (
     <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() && 'dark'}`}>

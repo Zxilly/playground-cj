@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
 import { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
 import { createWrapperConfig } from '@/lib/monaco'
 
@@ -16,31 +16,33 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
     code,
   } = props
 
-  const wrapperConfig = createWrapperConfig(code)
+  const wrapperConfig = useMemo(() => {
+    return createWrapperConfig(code)
+  }, [code])
 
   const wrapperRef = useRef<MonacoEditorLanguageClientWrapper>(new MonacoEditorLanguageClientWrapper())
   const containerRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
 
-  const updateEditorLayout = () => {
-    if (containerRef.current && wrapperRef.current) {
-      const parent = containerRef.current.parentElement!
-      const { width: outerWidth, height: outerHeight } = parent.getBoundingClientRect()
-
-      const computedStyle = window.getComputedStyle(parent)
-      const paddingLeft = Number.parseFloat(computedStyle.paddingLeft) || 0
-      const paddingRight = Number.parseFloat(computedStyle.paddingRight) || 0
-      const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0
-      const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
-
-      const width = outerWidth - paddingLeft - paddingRight
-      const height = outerHeight - paddingTop - paddingBottom
-
-      wrapperRef.current.getEditor()?.layout({ width, height }, true)
-    }
-  }
-
   useEffect(() => {
+    const updateEditorLayout = () => {
+      if (containerRef.current && wrapperRef.current) {
+        const parent = containerRef.current.parentElement!
+        const { width: outerWidth, height: outerHeight } = parent.getBoundingClientRect()
+
+        const computedStyle = window.getComputedStyle(parent)
+        const paddingLeft = Number.parseFloat(computedStyle.paddingLeft) || 0
+        const paddingRight = Number.parseFloat(computedStyle.paddingRight) || 0
+        const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0
+        const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
+
+        const width = outerWidth - paddingLeft - paddingRight
+        const height = outerHeight - paddingTop - paddingBottom
+
+        wrapperRef.current.getEditor()?.layout({ width, height }, true)
+      }
+    }
+
     const disposeMonaco = async () => {
       try {
         await wrapperRef.current.dispose()
@@ -87,7 +89,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       await initMonaco()
       await startMonaco()
     })()
-  }, [wrapperConfig, onLoad])
+  }, [onLoad, wrapperConfig])
 
   useEffect(() => {
     // exact copy of the above function, to prevent declaration in useCallback
