@@ -1,20 +1,22 @@
 import type { CSSProperties } from 'react'
 import React, { useEffect, useRef } from 'react'
-import type { WrapperConfig } from 'monaco-editor-wrapper'
 import { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
+import { createWrapperConfig } from '@/lib/monaco'
 
 export interface MonacoEditorProps {
   style?: CSSProperties
-  wrapperConfig: WrapperConfig
+  code?: string
   onLoad?: (wrapper: MonacoEditorLanguageClientWrapper) => void
 }
 
 export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
   const {
     style,
-    wrapperConfig,
     onLoad,
+    code,
   } = props
+
+  const wrapperConfig = createWrapperConfig(code)
 
   const wrapperRef = useRef<MonacoEditorLanguageClientWrapper>(new MonacoEditorLanguageClientWrapper())
   const containerRef = useRef<HTMLDivElement>(null)

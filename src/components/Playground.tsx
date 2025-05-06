@@ -6,7 +6,7 @@ import ShareButton from '@/components/ShareButton'
 import TrackingScript from '@/components/TrackingScript'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
-import { createWrapperConfig, updateEditor } from '@/lib/monaco'
+import { updateEditor } from '@/lib/monaco'
 import { isDarkMode } from '@/lib/utils'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { AnsiUp } from 'ansi_up'
@@ -98,8 +98,6 @@ function Component({ defaultCode }: PlaygroundProps) {
     return loadDataShareCode()
   }, [defaultCode])
 
-  const wrapperConfig = useMemo(() => createWrapperConfig(renderedCode), [renderedCode])
-
   return (
     <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() && 'dark'}`}>
       <div className="flex flex-col h-full bg-background text-foreground p-4">
@@ -142,9 +140,9 @@ function Component({ defaultCode }: PlaygroundProps) {
             className="!overflow-visible"
           >
             <ResizablePanel defaultSize={65} className="!overflow-visible">
-              <div id="editor" className="flex-1 flex flex-col h-full w-full relative border border-gray-300 rounded-md">
+              <div id="editor" className="flex-1 flex flex-col h-full w-full relative border border-gray-300">
                 <MonacoEditorReactComp
-                  wrapperConfig={wrapperConfig}
+                  code={renderedCode}
                   onLoad={onLoad}
                 />
               </div>

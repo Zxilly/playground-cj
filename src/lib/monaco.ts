@@ -219,8 +219,8 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
   const languageClientConfigs = {
     automaticallyStart: false,
     automaticallyInit: true,
-    automaticallyDispose: true,
-    automaticallyDisposeWorkers: true,
+    automaticallyDispose: false,
+    automaticallyDisposeWorkers: false,
     configs: {},
   } satisfies LanguageClientConfigs
   if (!isMobile({ tablet: true, featureDetect: true })) {

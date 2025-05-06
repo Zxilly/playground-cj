@@ -181,6 +181,9 @@ importers:
       tailwindcss-animate:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@4.1.5)
+      toml-eslint-parser:
+        specifier: ^0.10.0
+        version: 0.10.0
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
