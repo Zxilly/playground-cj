@@ -77,18 +77,16 @@ function Component({ defaultCode }: PlaygroundProps) {
       ed: wrapper.getEditor()!,
     })
     const editor = wrapper.getEditor()!
-    setEditor(editor);
+    setEditor(editor)
 
-    (async () => {
-      try {
-        await wrapper.startLanguageClients()
+    if (wrapper.getLanguageClient('Cangjie')) {
+      wrapper.startLanguageClients().then(() => {
         toast.success('LSP 已连接')
-      }
-      catch (e) {
+      }).catch((e) => {
         console.error(e)
         toast.error('LSP 连接失败')
-      }
-    })()
+      })
+    }
   }, [])
 
   const renderedCode = (() => {
@@ -140,7 +138,7 @@ function Component({ defaultCode }: PlaygroundProps) {
             className="!overflow-visible"
           >
             <ResizablePanel defaultSize={65} className="!overflow-visible">
-              <div id="editor" className="flex-1 flex flex-col h-full w-full relative border border-gray-300">
+              <div id="editor" className="flex-1 flex flex-col h-full w-full relative border border-border">
                 <MonacoEditorReactComp
                   code={renderedCode}
                   onLoad={onLoad}
@@ -149,7 +147,11 @@ function Component({ defaultCode }: PlaygroundProps) {
             </ResizablePanel>
             {isDesktop && <ResizableHandle withHandle className="md:mx-4" />}
             {!isDesktop && (
-              <Button onClick={toggleOutput} variant="outline" className="w-full flex justify-between items-center my-2">
+              <Button
+                onClick={toggleOutput}
+                variant="outline"
+                className="w-full flex justify-between items-center my-2"
+              >
                 <span>
                   {isOutputCollapsed ? '显示' : '隐藏'}
                   输出内容

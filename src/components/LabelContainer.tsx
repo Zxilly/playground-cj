@@ -12,8 +12,8 @@ const LabelContainer: React.FC<EmbeddedLabelContainerProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`relative border border-gray-300 rounded-md bg-muted ${className}`}>
-      <div className="absolute top-0 right-4 transform bg-white px-1 border-l border-b border-r border-gray-300 text-sm md:text-base">
+    <div className={`relative border border-border rounded-md bg-muted ${className}`}>
+      <div className="absolute top-0 right-4 transform bg-muted px-1 border-border border-l border-b border-r text-sm md:text-base text-muted-foreground">
         {title}
       </div>
       <div className="absolute inset-0 font-mono text-sm p-4 overflow-auto">
