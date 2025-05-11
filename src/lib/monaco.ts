@@ -180,7 +180,7 @@ function buildLanguageConfig() {
               requires: {},
               package_requires: {
                 path_option: [
-                  'file:///linux_x86_64_llvm/static/stdx',
+                  'file:///linux_x86_64_llvm/dynamic/stdx',
                 ],
               },
             },
@@ -218,7 +218,7 @@ function buildLanguageConfig() {
 export function createWrapperConfig(shareCode?: string): WrapperConfig {
   const languageClientConfigs = {
     automaticallyStart: false,
-    automaticallyInit: true,
+    automaticallyInit: false,
     automaticallyDispose: false,
     automaticallyDisposeWorkers: false,
     configs: {},
@@ -276,7 +276,7 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
           'editor.fontFamily': fontFamily,
           'editor.fontLigatures': false,
           'editor.mouseWheelZoom': true,
-          'editor.semanticHighlighting.enabled': true,
+          'editor.semanticHighlighting.enabled': false,
           'editor.cursorSmoothCaretAnimation': 'on',
         }),
       },

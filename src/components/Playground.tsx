@@ -79,8 +79,11 @@ function Component({ defaultCode }: PlaygroundProps) {
     const editor = wrapper.getEditor()!
     setEditor(editor)
 
-    if (wrapper.getLanguageClient('Cangjie')) {
-      wrapper.startLanguageClients().then(() => {
+    wrapper.initLanguageClients()
+
+    const clientWrapper = wrapper.getLanguageClientWrapper('Cangjie')
+    if (clientWrapper) {
+      clientWrapper.start().then(() => {
         toast.success('LSP 已连接')
       }).catch((e) => {
         console.error(e)

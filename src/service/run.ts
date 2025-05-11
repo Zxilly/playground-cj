@@ -52,6 +52,16 @@ export interface Actions {
   setProgramOutput: ContentSetter
 }
 
+function buildOutput(content: string, code: number): string {
+  let ret = content
+  if (!ret.endsWith('\n')) {
+    ret += '\n'
+  }
+  ret += '----------\n'
+  ret += `exit code ${code}`
+  return ret
+}
+
 export async function remoteRun(code: string, actions: Actions): Promise<void> {
   actions.setToolOutput('编译中')
   actions.setProgramOutput('运行中')
@@ -65,13 +75,13 @@ export async function remoteRun(code: string, actions: Actions): Promise<void> {
       throw new Error('未知错误')
   }
 
-  actions.setToolOutput(data.compiler_output)
+  actions.setToolOutput(buildOutput(data.compiler_output, data.compiler_code))
   if (data.compiler_code !== 0) {
     actions.setProgramOutput('')
     throw new Error('编译失败')
   }
 
-  actions.setProgramOutput(data.bin_output)
+  actions.setProgramOutput(buildOutput(data.bin_output, data.compiler_code))
 
   if (data.bin_code !== 0) {
     throw new Error('运行失败')

@@ -30,13 +30,13 @@ ADD --exclude=cangjie/lib/windows_x86_64_llvm/* \
     --exclude=cangjie/third_partry/mingw/*/* \
     ./cangjie-sdk-linux-x64-0.60.5.tar.gz /
 
-COPY --from=extract /linux_x86_64_llvm/static/stdx /linux_x86_64_llvm/static/stdx
+COPY --from=extract /linux_x86_64_llvm/dynamic/stdx /linux_x86_64_llvm/dynamic/stdx
 
 COPY --from=builder /app/agent /app/agent
 
 ENV CANGJIE_HOME="/cangjie"
 ENV PATH="/cangjie/bin:/cangjie/tools/bin:/.cjpm/bin:$PATH"
-ENV LD_LIBRARY_PATH="/cangjie/runtime/lib/linux_x86_64_llvm:/cangjie/tools/lib"
+ENV LD_LIBRARY_PATH="/cangjie/runtime/lib/linux_x86_64_llvm:/cangjie/tools/lib:/linux_x86_64_llvm/dynamic/stdx"
 
 RUN mkdir -p /playground
 
