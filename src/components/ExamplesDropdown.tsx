@@ -11,11 +11,11 @@ import * as React from 'react'
 
 type EXAMPLE_KEY = keyof typeof EXAMPLES
 
-interface LanguageDropdownProps {
+interface ExamplesDropdownProps {
   action: (nextCode: string) => void
 }
 
-export function LanguageDropdown({ action }: LanguageDropdownProps) {
+export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<EXAMPLE_KEY>('hello-world')
 
@@ -43,12 +43,8 @@ export function LanguageDropdown({ action }: LanguageDropdownProps) {
                   key={ex[0]}
                   value={ex[0]}
                   onSelect={(currentValue) => {
-                    const changed = currentValue !== value
-                    if (changed) {
-                      setValue(currentValue as EXAMPLE_KEY)
-                      action(EXAMPLES[currentValue as EXAMPLE_KEY])
-                    }
-
+                    setValue(currentValue as EXAMPLE_KEY)
+                    action(EXAMPLES[currentValue as EXAMPLE_KEY])
                     setOpen(false)
                   }}
                 >

@@ -1,7 +1,7 @@
 'use client'
 
 import { fontFamily } from '@/app/font'
-import { LanguageDropdown } from '@/components/ExamplesDropdown'
+import { ExamplesDropdown } from '@/components/ExamplesDropdown'
 import ShareButton from '@/components/ShareButton'
 import TrackingScript from '@/components/TrackingScript'
 import { Button } from '@/components/ui/button'
@@ -117,7 +117,7 @@ function Component({ defaultCode }: PlaygroundProps) {
             className="flex flex-col justify-between sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto"
           >
             <div className="w-full sm:w-[200px]">
-              <LanguageDropdown action={(nxt) => {
+              <ExamplesDropdown action={(nxt) => {
                 wrapperRef.current?.updateCodeResources({
                   modified: {
                     text: nxt,
