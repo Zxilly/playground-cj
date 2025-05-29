@@ -35,7 +35,7 @@ export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
       <PopoverContent className="w-[300px] p-0">
         <Command>
           <CommandInput placeholder="搜索示例..." />
-          <CommandEmpty>未找到语言。</CommandEmpty>
+          <CommandEmpty>未找到示例。</CommandEmpty>
           <CommandGroup>
             <CommandList>
               {Object.entries(EXAMPLES).map(ex => (
