@@ -103,7 +103,7 @@ func run(fMsg server.ForwardMessage) {
 
 	dataMsg := server.RunMessage{}
 
-	reportFailedCmd := func(err error, cmd *exec.Cmd) {
+	reportFailedCmd := func(err error, cmd *exec.Cmd, out *bytes.Buffer) {
 		command := ""
 		command += cmd.Path
 		command += " "
@@ -113,7 +113,7 @@ func run(fMsg server.ForwardMessage) {
 		}
 		command += "\n"
 
-		dataMsg.CompilerOutput = command + err.Error()
+		dataMsg.CompilerOutput = command + err.Error() + "\n" + out.String()
 		dataMsg.CompilerCode = cmd.ProcessState.ExitCode()
 		b, _ := json.Marshal(dataMsg)
 		Report(b)
@@ -131,14 +131,14 @@ func run(fMsg server.ForwardMessage) {
 		cmd.Stderr = out
 		err = cmd.Run()
 		if err != nil {
-			reportFailedCmd(err, cmd)
+			reportFailedCmd(err, cmd, out)
 			return
 		}
 		depData := out.Bytes()
 		var dep CjcDepRoot
 		err = json.Unmarshal(depData, &dep)
 		if err != nil {
-			reportFailedCmd(err, cmd)
+			reportFailedCmd(err, cmd, out)
 			return
 		}
 
@@ -172,7 +172,7 @@ func run(fMsg server.ForwardMessage) {
 	cmd.Dir = "/playground"
 	err = cmd.Run()
 	if err != nil {
-		reportFailedCmd(err, cmd)
+		reportFailedCmd(err, cmd, compilerOut)
 		return
 	}
 
