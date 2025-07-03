@@ -199,7 +199,7 @@ function Component({ defaultCode }: PlaygroundProps) {
         </div>
       </div>
       <div className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">
-        仓颉版本 0.60.5 | STDX 版本 0.60.5.1 |&nbsp;
+        仓颉版本 1.0.0 | STDX 版本 1.0.0.1 |&nbsp;
         <a
           href="https://github.com/Zxilly/playground-cj"
           className="hover:underline"
