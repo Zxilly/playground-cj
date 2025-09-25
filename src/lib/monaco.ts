@@ -13,7 +13,7 @@ import { eventEmitter, EVENTS } from '@/lib/events'
 import { fontFamily } from '@/app/font'
 
 import langConf from '@/lib/language-configuration.json'
-import textMate from '@/lib/Cangjie.tmLanguage.json'
+import textMate from '@/grammars/Cangjie.tmLanguage.json'
 import isMobile from 'is-mobile'
 
 const remoteLock = new AsyncLock()
