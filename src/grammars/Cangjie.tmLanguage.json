@@ -1,5 +1,4 @@
 {
-  "version": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "Cangjie",
   "scopeName": "source.cj",
   "patterns": [
@@ -67,30 +66,30 @@
     "classlike-declaration": {
       "patterns": [
         {
-          "begin": "(?<=\\b(class|interface|struct|enum|extend|type))\\s+",
-          "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
+          "begin": "\\b(class|interface|struct|enum|extend|type)\\s+",
+          "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[a-zA-Z_][a-zA-Z0-9_]*`|(?=[^\\w\\s])|\\b[a-zA-Z_][a-zA-Z0-9_]*",
           "name": "support.class.Cangjie"
         },
         {
-          "begin": "(?<=\\b(func))\\s+",
-          "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
+          "begin": "\\b(func)\\s+",
+          "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[a-zA-Z_][a-zA-Z0-9_]*`|(?=[^\\w\\s])|\\b[a-zA-Z_][a-zA-Z0-9_]*",
           "name": "support.function.Cangjie"
         },
         {
-          "begin": "(?<=\\b(let|var))\\s+",
-          "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[\\p{XID_Start}][\\p{XID_Continue}]*`|(?=[^\\w\\s])|\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
+          "begin": "\\b(let|var)\\s+",
+          "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[a-zA-Z_][a-zA-Z0-9_]*`|(?=[^\\w\\s])|\\b[a-zA-Z_][a-zA-Z0-9_]*",
           "name": "support.variable.Cangjie"
         },
         {
           "name": "support.class.Cangjie",
-          "match": "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\<[\\*\\<\\,\\w\\s]*\\>)"
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\<[\\*\\<\\,\\w\\s]*\\>)"
         },
         {
-          "match": "(?<=\\b(class|interface|struct|enum|extend)\\s+[\\p{XID_Start}][\\p{XID_Continue}]*\\s*<:[\\s*[\\p{XID_Start}][\\p{XID_Continue}]*\\s*&\\s*]*)[\\p{XID_Start}][\\p{XID_Continue}]*",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*<:[\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*&\\s*]*)",
           "name": "support.class.Cangjie"
         },
         {
-          "begin": "(?<=\\b(case))\\s+",
+          "begin": "\\b(case)\\s+",
           "end": "(?=(\\=\\>))|[\\n\\r]",
           "name": "keyword.operator.Cangjie",
           "patterns": [
@@ -138,11 +137,11 @@
               "include": "#strings"
             },
             {
-              "match": "[\\p{XID_Start}][\\p{XID_Continue}]*\\s*(?=[\\)|\\||\\&|\\n|;])",
+              "match": "[a-zA-Z_][a-zA-Z0-9_]*\\s*(?=[\\)|\\||\\&|\\n|;])",
               "name": "support.variable.Cangjie"
             },
             {
-              "match": "`[\\p{XID_Start}][\\p{XID_Continue}]*`|[\\p{XID_Start}][\\p{XID_Continue}]*",
+              "match": "`[a-zA-Z_][a-zA-Z0-9_]*`|[a-zA-Z_][a-zA-Z0-9_]*",
               "name": "support.class.Cangjie"
             },
             {
@@ -171,11 +170,11 @@
               "include": "#constants"
             },
             {
-              "match": "(?<=,)(\\s*)([\\p{XID_Start}][\\p{XID_Continue}]*)(\\s*)(?=(!?)(\\s*):)",
+              "match": "(?<=,)\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=(!?)\\s*:)",
               "name": "support.variable.Cangjie"
             },
             {
-              "match": "`[\\p{XID_Start}][\\p{XID_Continue}]*`|[\\p{XID_Start}][\\p{XID_Continue}]*",
+              "match": "`[a-zA-Z_][a-zA-Z0-9_]*`|[a-zA-Z_][a-zA-Z0-9_]*",
               "name": "support.class.Cangjie"
             }
           ]
@@ -183,7 +182,7 @@
       ]
     },
     "mark": {
-      "match": "(?<=(\\(|,)(\\s*))(`?\\w+`?)(?=(\\s*):)",
+      "match": "\\b(`?\\w+`?)(?=\\s*:)",
       "name": "support.variable.Cangjie"
     },
     "macro": {
@@ -198,18 +197,18 @@
       "patterns": [
         {
           "name": "support.function.Cangjie",
-          "match": "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\(.*)"
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\(.*)"
         },
         {
           "name": "support.function.Cangjie",
-          "match": "\\b[\\p{XID_Start}][\\p{XID_Continue}]*(?=\\s*\\<[\\*\\<\\,\\w\\s]*\\>\\s*\\(.*)"
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\<[\\*\\<\\,\\w\\s]*\\>\\s*\\(.*)"
         },
         {
-          "match": "(?<=operator\\s+func)\\s+((\\(\\))|(\\[\\])|(\\*\\*)|(\\<\\<)|(\\>\\>)|(\\>\\=)|(\\<\\=)|(\\!\\=)|(\\=\\=)|\\!|\\-|\\*|\\/|\\%|\\+|\\<|\\>|\\&|\\^|\\|)",
+          "match": "\\boperator\\s+func\\s+((\\(\\))|(\\[\\])|(\\*\\*)|(\\<\\<)|(\\>\\>)|(\\>\\=)|(\\<\\=)|(\\!\\=)|(\\=\\=)|\\!|\\-|\\*|\\/|\\%|\\+|\\<|\\>|\\&|\\^|\\|)",
           "name": "support.function.Cangjie"
         },
         {
-          "match": "(?<=(grad|@vjp|adjointOf|valWithGrad)\\()\\b[\\p{XID_Start}][\\p{XID_Continue}]*",
+          "match": "\\b(grad|@vjp|adjointOf|valWithGrad)\\([a-zA-Z_][a-zA-Z0-9_]*",
           "name": "support.function.Cangjie"
         }
       ]
@@ -218,7 +217,7 @@
       "patterns": [
         {
           "name": "support.variable.Cangjie",
-          "match": "\\b([\\p{XID_Start}][\\p{XID_Continue}]*|`[\\p{XID_Start}][\\p{XID_Continue}]*`)"
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*|`[a-zA-Z_][a-zA-Z0-9_]*`)"
         }
       ]
     },
@@ -226,7 +225,7 @@
       "patterns": [
         {
           "name": "support.class.Cangjie",
-          "match": "\\b(([\\p{XID_Start}][\\p{XID_Continue}]*)|(`[\\p{XID_Start}][\\p{XID_Continue}]*`))(?=\\.)"
+          "match": "\\b(([a-zA-Z_][a-zA-Z0-9_]*)|(`[a-zA-Z_][a-zA-Z0-9_]*`))(?=\\.)"
         }
       ]
     },
@@ -595,7 +594,7 @@
       ]
     },
     "quoteToken": {
-      "begin": "(?<=quote)\\(",
+      "begin": "\\bquote\\s*\\(",
       "end": "(?<!\\\\)\\)",
       "patterns": [
         {
