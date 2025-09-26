@@ -1,0 +1,272 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2025-09-27 03:13+0800\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. js-lingui-explicit-id
+#: src/components/ShareButton.tsx:98
+#~ msgid "share.hash.method"
+#~ msgstr "Hash Method"
+
+#. js-lingui-explicit-id
+#: src/components/ShareButton.tsx:90
+#~ msgid "share.url.method"
+#~ msgstr "URL Method"
+
+#. js-lingui-explicit-id
+#: src/components/ShareButton.tsx:77
+#~ msgid "share.button"
+#~ msgstr "Share"
+
+#. js-lingui-explicit-id
+#: src/components/ShareDialog.tsx:31
+#~ msgid "share.dialog.title"
+#~ msgstr "Share Code"
+
+#. placeholder {0}: isOutputCollapsed ? '显示' : '隐藏'
+#: src/components/Playground.tsx:161
+msgid "{0}输出内容"
+msgstr "{0} Output"
+
+#: src/service/run.ts:63
+msgid "exit code {code}"
+msgstr "exit code {code}"
+
+#: src/components/ShareButton.tsx:98
+msgid "Hash 方式"
+msgstr "Hash Method"
+
+#: src/components/ShareButton.tsx:90
+msgid "URL 方式"
+msgstr "URL Method"
+
+#: src/app/layout.tsx:11
+#~ msgid "一个在线的仓颉编程语言 Playground"
+#~ msgstr "An online Cangjie programming language playground"
+
+#: src/const.ts:82
+#~ msgid "二叉树（函数实现）"
+#~ msgstr "Binary Tree (Function Implementation)"
+
+#: src/const.ts:84
+#~ msgid "二叉树（属性实现）"
+#~ msgstr "Binary Tree (Property Implementation)"
+
+#: src/const.ts:81
+#~ msgid "二叉树（枚举实现）"
+#~ msgstr "Binary Tree (Enum Implementation)"
+
+#: src/const.ts:83
+#~ msgid "二叉树（泛型实现）"
+#~ msgstr "Binary Tree (Generic Implementation)"
+
+#: src/const.ts:80
+#~ msgid "二叉树（类实现）"
+#~ msgstr "Binary Tree (Class Implementation)"
+
+#: src/const.ts:85
+#~ msgid "二叉树（结构体实现）"
+#~ msgstr "Binary Tree (Struct Implementation)"
+
+#: src/components/Playground.tsx:109
+msgid "仓颉 Playground"
+msgstr "Cangjie Playground"
+
+#: src/components/Playground.tsx:201
+#~ msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
+#~ msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
+
+#: src/components/Playground.tsx:206
+msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
+msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
+
+#: src/lib/monaco.ts:153
+msgid "保存代码"
+msgstr "Save Code"
+
+#: src/const.ts:87
+#~ msgid "函数式"
+#~ msgstr "Functional"
+
+#: src/components/ShareButton.tsx:77
+msgid "分享"
+msgstr "Share"
+
+#: src/lib/monaco.ts:132
+msgid "分享 (Hash 方式)"
+msgstr "Share (Hash Method)"
+
+#: src/lib/monaco.ts:119
+msgid "分享 (URL 方式)"
+msgstr "Share (URL Method)"
+
+#: src/components/ShareButton.tsx:63
+#: src/lib/monaco.ts:142
+msgid "分享中..."
+msgstr "Sharing..."
+
+#: src/components/ShareDialog.tsx:31
+msgid "分享代码"
+msgstr "Share Code"
+
+#: src/lib/monaco.ts:37
+#: src/lib/monaco.ts:53
+msgid "分享代码加载中..."
+msgstr "Loading shared code..."
+
+#: src/lib/monaco.ts:48
+#: src/lib/monaco.ts:55
+msgid "分享代码加载失败"
+msgstr "Failed to load shared code"
+
+#: src/lib/monaco.ts:43
+#: src/lib/monaco.ts:54
+msgid "分享代码加载成功"
+msgstr "Shared code loaded successfully"
+
+#: src/components/ShareButton.tsx:65
+#: src/lib/monaco.ts:144
+msgid "分享失败"
+msgstr "Share failed"
+
+#: src/components/ShareButton.tsx:64
+#: src/lib/monaco.ts:143
+msgid "分享成功"
+msgstr "Share successful"
+
+#: src/const.ts:78
+#~ msgid "变量"
+#~ msgstr "Variables"
+
+#: src/components/Playground.tsx:215
+msgid "在 GitHub 查看源代码"
+msgstr "View source code on GitHub"
+
+#: src/components/Playground.tsx:177
+msgid "工具输出"
+msgstr "Tool Output"
+
+#: src/lib/monaco.ts:159
+msgid "已保存代码"
+msgstr "Code saved"
+
+#: src/components/ShareDialog.tsx:24
+msgid "已复制分享链接"
+msgstr "Share link copied"
+
+#: src/const.ts:74
+#~ msgid "循环"
+#~ msgstr "Loop"
+
+#: src/const.ts:75
+#~ msgid "扩展"
+#~ msgstr "Extension"
+
+#: src/components/ExamplesDropdown.tsx:44
+msgid "搜索示例..."
+msgstr "Search examples..."
+
+#: src/components/LanguageSelector.tsx:80
+msgid "搜索语言..."
+msgstr "Search languages..."
+
+#: src/const.ts:73
+#~ msgid "数组"
+#~ msgstr "Array"
+
+#: src/components/ExamplesDropdown.tsx:46
+msgid "未找到示例。"
+msgstr "No examples found."
+
+#: src/components/LanguageSelector.tsx:82
+msgid "未找到语言。"
+msgstr "No languages found."
+
+#: src/service/run.ts:75
+#: src/service/run.ts:77
+msgid "未知错误"
+msgstr "Unknown error"
+
+#: src/const.ts:86
+#~ msgid "枚举表达式"
+#~ msgstr "Enum Expression"
+
+#: src/components/Playground.tsx:133
+msgid "格式化"
+msgstr "Format"
+
+#: src/components/CodeRunner.tsx:64
+#: src/components/CodeRunner.tsx:70
+msgid "格式化失败"
+msgstr "Format failed"
+
+#: src/components/CodeRunner.tsx:52
+msgid "格式化失败，未知错误"
+msgstr "Format failed, unknown error"
+
+#: src/components/CodeRunner.tsx:69
+msgid "格式化成功"
+msgstr "Format successful"
+
+#: src/components/CodeRunner.tsx:68
+msgid "正在格式化..."
+msgstr "Formatting..."
+
+#: src/components/CodeRunner.tsx:36
+msgid "正在运行..."
+msgstr "Running..."
+
+#: src/components/Playground.tsx:188
+msgid "程序输出"
+msgstr "Program Output"
+
+#: src/const.ts:79
+#~ msgid "线程"
+#~ msgstr "Thread"
+
+#: src/service/run.ts:68
+msgid "编译中"
+msgstr "Compiling"
+
+#: src/service/run.ts:83
+msgid "编译失败"
+msgstr "Compilation failed"
+
+#: src/lib/monaco.ts:103
+msgid "编译运行"
+msgstr "Compile & Run"
+
+#: src/components/ShareButton.tsx:44
+msgid "请先输入代码"
+msgstr "Please enter code first"
+
+#: src/components/Playground.tsx:130
+msgid "运行"
+msgstr "Run"
+
+#: src/service/run.ts:69
+msgid "运行中"
+msgstr "Running"
+
+#: src/components/CodeRunner.tsx:38
+#: src/service/run.ts:89
+msgid "运行失败"
+msgstr "Run failed"
+
+#: src/components/CodeRunner.tsx:37
+msgid "运行成功"
+msgstr "Run successful"
+
+#: src/const.ts:88
+#~ msgid "魔方"
+#~ msgstr "Cube"

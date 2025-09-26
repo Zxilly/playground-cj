@@ -9,6 +9,7 @@ export interface MonacoEditorProps {
   style?: CSSProperties
   code?: string
   onLoad?: (editorApp: EditorApp) => void
+  locale?: string
 }
 
 export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
@@ -16,13 +17,18 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
     style,
     onLoad,
     code,
+    locale,
   } = props
 
   const vscodeApiConfig = useMemo(() => createMonacoVscodeApiConfig(), [])
   const languageClientConfig = useMemo(() => createLanguageClientConfig(), [])
-  const editorAppConfig = useMemo(() => createEditorAppConfig(code), [code])
+  const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale), [code, locale])
 
-  const vscodeApiWrapperRef = useRef<MonacoVscodeApiWrapper>(new MonacoVscodeApiWrapper(vscodeApiConfig))
+  // Flag to prevent multiple initializations
+  const isInitializingRef = useRef(false)
+  const isInitializedRef = useRef(false)
+
+  const vscodeApiWrapperRef = useRef<MonacoVscodeApiWrapper | null>(null)
   const languageClientsManagerRef = useRef<LanguageClientsManager | null>(null)
   const editorAppRef = useRef<EditorApp | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -52,75 +58,69 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       return envEnhanced.vscodeApiGlobalInitAwait ?? Promise.resolve()
     }
 
-    const disposeAll = async () => {
-      try {
-        if (editorAppRef.current) {
-          await editorAppRef.current.dispose()
-        }
-        if (languageClientsManagerRef.current) {
-          await languageClientsManagerRef.current.dispose()
-        }
-        if (vscodeApiWrapperRef.current) {
-          await vscodeApiWrapperRef.current.dispose()
-        }
-      }
-      catch {
-        // The components may throw errors during disposal, but we want to continue anyway
-      }
-    }
-
     const initAll = async () => {
-      if (!containerRef.current) {
-        throw new Error('No htmlContainer found! Aborting...')
+      if (!containerRef.current || isInitializingRef.current || isInitializedRef.current) {
+        return
       }
 
-      // Wait for global initialization to complete
-      await awaitGlobal()
+      isInitializingRef.current = true
 
-      // Step 1: Initialize and start MonacoVscodeApiWrapper
-      vscodeApiWrapperRef.current.overrideViewsConfig({
-        $type: vscodeApiConfig.viewsConfig.$type,
-        htmlContainer: containerRef.current
-      })
-      await vscodeApiWrapperRef.current.start()
+      try {
+        // Wait for global initialization to complete
+        await awaitGlobal()
 
-      // Step 2: Initialize and start LanguageClientsManager (if config exists)
-      if (languageClientConfig) {
-        languageClientsManagerRef.current = new LanguageClientsManager(vscodeApiWrapperRef.current.getLogger())
-        await languageClientsManagerRef.current.setConfig(languageClientConfig)
-        
-        // don't care about it success or failure
-        languageClientsManagerRef.current.start()
-      }
+        // Step 1: Initialize and start MonacoVscodeApiWrapper
+        vscodeApiWrapperRef.current = new MonacoVscodeApiWrapper(vscodeApiConfig)
+        vscodeApiWrapperRef.current.overrideViewsConfig({
+          $type: vscodeApiConfig.viewsConfig.$type,
+          htmlContainer: containerRef.current
+        })
+        await vscodeApiWrapperRef.current.start()
 
-      // Step 3: Initialize and start EditorApp
-      editorAppRef.current = new EditorApp(editorAppConfig)
-      await editorAppRef.current.start(containerRef.current)
+        // Step 2: Initialize and start LanguageClientsManager (if config exists)
+        if (languageClientConfig) {
+          languageClientsManagerRef.current = new LanguageClientsManager(vscodeApiWrapperRef.current.getLogger())
+          await languageClientsManagerRef.current.setConfig(languageClientConfig)
 
-      onLoad?.(editorAppRef.current)
+          // don't care about it success or failure
+          languageClientsManagerRef.current.start()
+        }
 
-      updateEditorLayout()
+        // Step 3: Initialize and start EditorApp
+        editorAppRef.current = new EditorApp(editorAppConfig)
+        await editorAppRef.current.start(containerRef.current)
 
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect()
-      }
+        onLoad?.(editorAppRef.current)
 
-      resizeObserverRef.current = new ResizeObserver(() => {
         updateEditorLayout()
-      })
 
-      resizeObserverRef.current.observe(containerRef.current.parentElement!)
+        if (resizeObserverRef.current) {
+          resizeObserverRef.current.disconnect()
+        }
+
+        resizeObserverRef.current = new ResizeObserver(() => {
+          updateEditorLayout()
+        })
+
+        resizeObserverRef.current.observe(containerRef.current.parentElement!)
+
+        isInitializedRef.current = true
+      } catch (error) {
+        console.error('Editor initialization failed:', error)
+      } finally {
+        isInitializingRef.current = false
+      }
     };
 
     (async () => {
-      await disposeAll()
       await initAll()
     })()
-  }, [onLoad, vscodeApiConfig, languageClientConfig, editorAppConfig])
+  }, [onLoad]) // Remove config dependencies to prevent re-initialization
 
   useEffect(() => {
     const disposeAll = async () => {
       try {
+        isInitializedRef.current = false
         if (editorAppRef.current) {
           await editorAppRef.current.dispose()
         }

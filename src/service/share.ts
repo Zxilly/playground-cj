@@ -8,6 +8,16 @@ function base64UrlToBase64(base64url: string): string {
   return base64url.replace(/-/g, '+').replace(/_/g, '/')
 }
 
+export async function getShareCode(hash?: string) {
+  if (hash) {
+    const response = await fetch(`https://dpaste.com/${hash}.txt`)
+    if (response.ok) {
+      return await response.text()
+    }
+  }
+  return undefined
+}
+
 export function loadDataShareCode(): string | undefined {
   const params = new URLSearchParams(window.location.hash.slice(1))
 

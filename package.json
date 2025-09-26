@@ -8,9 +8,14 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest"
+    "test": "vitest",
+    "lingui:extract": "lingui extract",
+    "lingui:compile": "lingui compile"
   },
   "dependencies": {
+    "@lingui/conf": "^5.5.0",
+    "@lingui/core": "^5.5.0",
+    "@lingui/react": "^5.5.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-popover": "^1.1.15",
@@ -28,11 +33,16 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^5.4.1",
+    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
     "@codingame/monaco-vscode-api": "21.3.0",
     "@codingame/monaco-vscode-editor-api": "21.3.0",
     "@codingame/monaco-vscode-extension-api": "21.3.0",
     "@codingame/monaco-vscode-language-pack-zh-hans": "21.3.0",
     "@eslint-react/eslint-plugin": "^1.38.4",
+    "@lingui/cli": "^5.5.0",
+    "@lingui/loader": "^5.5.0",
+    "@lingui/macro": "^5.5.0",
+    "@lingui/swc-plugin": "^5.6.1",
     "@tailwindcss/postcss": "^4.1.13",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.0",
@@ -81,6 +91,7 @@
     "onlyBuiltDependencies": [
       "@tailwindcss/oxide",
       "@vercel/speed-insights",
+      "esbuild",
       "sharp",
       "unrs-resolver"
     ]

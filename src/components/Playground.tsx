@@ -2,6 +2,7 @@
 
 import { fontFamily } from '@/app/font'
 import { ExamplesDropdown } from '@/components/ExamplesDropdown'
+import { LanguageSelector } from '@/components/LanguageSelector'
 import ShareButton from '@/components/ShareButton'
 import TrackingScript from '@/components/TrackingScript'
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,10 @@ import { useMedia } from 'react-use'
 import LabelContainer from '@/components/LabelContainer'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import type { ImperativePanelHandle } from 'react-resizable-panels'
+import { Trans } from '@lingui/react/macro'
+import { t } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react'
+import { useLanguage } from '@/components/StaticLanguageProvider'
 
 const ansiUp = new AnsiUp()
 
@@ -33,6 +38,8 @@ function Component({ defaultCode }: PlaygroundProps) {
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
+  const { _ } = useLingui()
+  const { locale } = useLanguage()
 
   const wrapperRef = useRef<EditorApp | undefined>(undefined)
 
@@ -77,8 +84,7 @@ function Component({ defaultCode }: PlaygroundProps) {
     })
     const editor = editorApp.getEditor()!
     setEditor(editor)
-
-    }, [])
+  }, [])
 
   const renderedCode = (() => {
     if (defaultCode) {
@@ -99,7 +105,9 @@ function Component({ defaultCode }: PlaygroundProps) {
               height={isDesktop ? 32 : 24}
               className="md:m-4 m-2"
             />
-            <h1 className="text-base md:text-2xl font-bold">仓颉 Playground</h1>
+            <h1 className="text-base md:text-2xl font-bold">
+              <Trans>仓颉 Playground</Trans>
+            </h1>
           </div>
           <div
             className="flex flex-col justify-between sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto"
@@ -117,8 +125,13 @@ function Component({ defaultCode }: PlaygroundProps) {
               />
             </div>
             <div className="flex flex-row space-y-0 space-x-2 w-full sm:w-auto">
-              <Button onClick={handleRun} className="w-full sm:w-auto">运行</Button>
-              <Button onClick={handleFormat} className="w-full sm:w-auto">格式化</Button>
+              <LanguageSelector />
+              <Button onClick={handleRun} className="w-full sm:w-auto">
+                <Trans>运行</Trans>
+              </Button>
+              <Button onClick={handleFormat} className="w-full sm:w-auto">
+                <Trans>格式化</Trans>
+              </Button>
               <ShareButton editor={editor} />
             </div>
           </div>
@@ -133,6 +146,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                 <MonacoEditorReactComp
                   code={renderedCode}
                   onLoad={onLoad}
+                  locale={locale}
                 />
               </div>
             </ResizablePanel>
@@ -144,8 +158,10 @@ function Component({ defaultCode }: PlaygroundProps) {
                 className="w-full flex justify-between items-center my-2"
               >
                 <span>
-                  {isOutputCollapsed ? '显示' : '隐藏'}
-                  输出内容
+                  <Trans>
+                    {isOutputCollapsed ? '显示' : '隐藏'}
+                    输出内容
+                  </Trans>
                 </span>
                 {!isOutputCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </Button>
@@ -158,7 +174,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                     className="flex-1 overflow-hidden flex flex-col"
                   >
                     <LabelContainer
-                      title="工具输出"
+                      title={_(t`工具输出`)}
                       content={(
                         <pre
                           className="whitespace-pre min-h-0 min-w-0"
@@ -169,7 +185,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                       className="flex-1/2 mb-1 md:mb-2"
                     />
                     <LabelContainer
-                      title="程序输出"
+                      title={_(t`程序输出`)}
                       content={(
                         <pre
                           className="whitespace-pre min-h-0 min-w-0"
@@ -187,14 +203,16 @@ function Component({ defaultCode }: PlaygroundProps) {
         </div>
       </div>
       <div className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">
-        仓颉版本 1.0.0 | STDX 版本 1.0.0.1 |&nbsp;
+        <Trans>
+          仓颉版本 1.0.0 | STDX 版本 1.0.0.1 |&nbsp;
+        </Trans>
         <a
           href="https://github.com/Zxilly/playground-cj"
           className="hover:underline"
           target="_blank"
           rel="noopener noreferrer"
         >
-          在 GitHub 查看源代码
+          <Trans>在 GitHub 查看源代码</Trans>
         </a>
       </div>
       <Toaster richColors closeButton position="top-center" />

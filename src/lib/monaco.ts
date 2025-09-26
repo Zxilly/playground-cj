@@ -1,6 +1,6 @@
 import '@codingame/monaco-vscode-language-pack-zh-hans'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import { EXAMPLES, WS_BACKEND_URL } from '@/const'
+import { EXAMPLES, WS_BACKEND_URL, EXAMPLE_CONTENT_ZH, EXAMPLE_CONTENT_EN } from '@/const'
 import { saveAsFile } from '@/lib/file'
 import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
 import AsyncLock from 'async-lock'
@@ -11,6 +11,8 @@ import type { MonacoVscodeApiConfig } from 'monaco-languageclient/vscodeApiWrapp
 import type { EditorAppConfig } from 'monaco-languageclient/editorApp'
 import { configureDefaultWorkerFactory } from 'monaco-languageclient/workerFactory'
 import { eventEmitter, EVENTS } from '@/lib/events'
+import { i18n } from '@/lib/i18n'
+import { t } from '@lingui/core/macro'
 
 import { fontFamily } from '@/app/font'
 
@@ -32,25 +34,25 @@ interface OnMountFunctionDependencies {
 
 function loadLegacyShareCodeToEditor(ed: monaco.editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
   if (window.location.hash.includes('hash')) {
-    ed.setValue('分享代码加载中...')
+    ed.setValue(i18n._(t`分享代码加载中...`))
 
     toast.promise(new Promise<void>((resolve, reject) => {
       remoteLock.acquire('run', async () => {
         const [code, success] = await loadLegacyShareCode()
         if (success && code) {
-          setToolOutput('分享代码加载成功')
+          setToolOutput(i18n._(t`分享代码加载成功`))
           setEditorValue(ed, code)
           resolve()
         }
         else {
-          setToolOutput('分享代码加载失败')
+          setToolOutput(i18n._(t`分享代码加载失败`))
           reject()
         }
       })
     }), {
-      loading: '分享代码加载中...',
-      success: '分享代码加载成功',
-      error: '分享代码加载失败',
+      loading: i18n._(t`分享代码加载中...`),
+      success: i18n._(t`分享代码加载成功`),
+      error: i18n._(t`分享代码加载失败`),
     })
   }
 }
@@ -98,7 +100,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
   ed.addAction({
     id: 'cangjie.compile.run',
-    label: '编译运行',
+    label: i18n._(t`编译运行`),
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
@@ -114,7 +116,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
   ed.addAction({
     id: 'cangjie.share.url',
-    label: '分享 (URL 方式)',
+    label: i18n._(t`分享 (URL 方式)`),
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     run: async (editor: monaco.editor.ICodeEditor) => {
@@ -127,7 +129,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
   ed.addAction({
     id: 'cangjie.share.hash',
-    label: '分享 (Hash 方式)',
+    label: i18n._(t`分享 (Hash 方式)`),
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     run: async (editor: monaco.editor.ICodeEditor) => {
@@ -137,9 +139,9 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
         const url = await generateHashShareUrl(code)
         eventEmitter.emit(EVENTS.SHOW_SHARE_DIALOG, url)
       }, {
-        loading: '分享中...',
-        success: '分享成功',
-        error: '分享失败',
+        loading: i18n._(t`分享中...`),
+        success: i18n._(t`分享成功`),
+        error: i18n._(t`分享失败`),
       })
 
       window.umami?.track('share.hash')
@@ -148,13 +150,13 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
   ed.addAction({
     id: 'cangjie.save',
-    label: '保存代码',
+    label: i18n._(t`保存代码`),
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
     run: async (editor: monaco.editor.ICodeEditor) => {
       saveAsFile(editor.getValue())
-      toast.success('已保存代码')
+      toast.success(i18n._(t`已保存代码`))
 
       window.umami?.track('save')
     },
@@ -281,7 +283,10 @@ export function createLanguageClientConfig(): LanguageClientConfig | undefined {
   return buildLanguageConfig()
 }
 
-export function createEditorAppConfig(shareCode?: string): EditorAppConfig {
+export function createEditorAppConfig(shareCode?: string, locale?: string): EditorAppConfig {
+  const exampleContent = locale === 'en' ? EXAMPLE_CONTENT_EN : EXAMPLE_CONTENT_ZH
+  const defaultCode = shareCode ?? exampleContent['hello-world']
+
   return {
     overrideAutomaticLayout: true,
     editorOptions: {
@@ -289,7 +294,7 @@ export function createEditorAppConfig(shareCode?: string): EditorAppConfig {
     },
     codeResources: {
       modified: {
-        text: shareCode ?? EXAMPLES['hello-world'],
+        text: defaultCode,
         uri: 'file:///playground/src/main.cj',
       },
     },

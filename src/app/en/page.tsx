@@ -1,7 +1,7 @@
 import Wrapper from '@/components/Wrapper'
 import { getShareCode } from '@/service/share'
 
-export default async function Page({
+export default async function EnglishPage({
   searchParams,
 }: {
   searchParams: Promise<{ [_: string]: string | string[] | undefined }>

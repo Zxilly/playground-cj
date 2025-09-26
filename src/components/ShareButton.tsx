@@ -9,6 +9,9 @@ import { toast } from 'sonner'
 import ShareDialog from '@/components/ShareDialog'
 import { generateDataShareUrl, generateHashShareUrl } from '@/service/share'
 import { eventEmitter, EVENTS } from '@/lib/events'
+import { Trans } from '@lingui/react/macro'
+import { t } from '@lingui/core/macro'
+import { i18n } from '@/lib/i18n'
 
 interface ShareButtonProps {
   editor: monaco.editor.IStandaloneCodeEditor | undefined
@@ -38,7 +41,7 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
     }
 
     if (editor.getValue().trim() === '') {
-      toast.warning('请先输入代码')
+      toast.warning(i18n._(t`请先输入代码`))
       return
     }
 
@@ -57,9 +60,9 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
         setIsDialogOpen(true)
         setIsOpen(false)
       }, {
-        loading: '分享中...',
-        success: '分享成功',
-        error: '分享失败',
+        loading: i18n._(t`分享中...`),
+        success: i18n._(t`分享成功`),
+        error: i18n._(t`分享失败`),
       })
     }
 
@@ -71,7 +74,7 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button className="w-full sm:w-auto">
-            分享
+            <Trans>分享</Trans>
             {' '}
             <ChevronDown className="ml-2 h-4 w-4" />
           </Button>
@@ -84,7 +87,7 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
               onClick={() => handleShare('url')}
             >
               <Link className="mr-2 h-4 w-4" />
-              URL 方式
+              <Trans>URL 方式</Trans>
             </Button>
             <Button
               variant="ghost"
@@ -92,7 +95,7 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
               onClick={() => handleShare('hash')}
             >
               <Hash className="mr-2 h-4 w-4" />
-              Hash 方式
+              <Trans>Hash 方式</Trans>
             </Button>
           </div>
         </PopoverContent>

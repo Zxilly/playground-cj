@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { fontFamily } from '@/app/font'
 import { Analytics } from '@vercel/analytics/react'
+import { StaticLanguageProvider } from '@/components/StaticLanguageProvider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -13,15 +14,17 @@ export default function RootLayout({ children }: Readonly<{
   children: ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh">
       <body
         style={{
           fontFamily,
         }}
       >
-        {children}
+        <StaticLanguageProvider>
+          {children}
+        </StaticLanguageProvider>
+        <Analytics />
       </body>
-      <Analytics />
     </html>
   )
 }

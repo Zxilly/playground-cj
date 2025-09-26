@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     optimizePackageImports: [
       'shiki',
     ],
+    swcPlugins: [
+      ['@lingui/swc-plugin', {}],
+    ],
   },
   reactStrictMode: false,
   eslint: {

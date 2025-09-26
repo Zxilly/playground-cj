@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { EXAMPLES } from '@/const'
+import { getLocalizedExamples } from '@/const'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import * as React from 'react'
-
-type EXAMPLE_KEY = keyof typeof EXAMPLES
+import { Trans } from '@lingui/react/macro'
+import { t } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react'
+import { useLanguage } from '@/components/StaticLanguageProvider'
 
 interface ExamplesDropdownProps {
   action: (nextCode: string) => void
@@ -17,7 +19,12 @@ interface ExamplesDropdownProps {
 
 export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
   const [open, setOpen] = React.useState(false)
-  const [value, setValue] = React.useState<EXAMPLE_KEY>('hello-world')
+  const [value, setValue] = React.useState<string>('Hello World')
+  const { locale } = useLanguage()
+  const { _ } = useLingui()
+
+  // Get localized examples based on current language
+  const examples = React.useMemo(() => getLocalizedExamples(), [locale])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -34,27 +41,29 @@ export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
         <Command>
-          <CommandInput placeholder="搜索示例..." />
-          <CommandEmpty>未找到示例。</CommandEmpty>
+          <CommandInput placeholder={_(t`搜索示例...`)} />
+          <CommandEmpty>
+            <Trans>未找到示例。</Trans>
+          </CommandEmpty>
           <CommandGroup>
             <CommandList>
-              {Object.entries(EXAMPLES).map(ex => (
+              {Object.entries(examples).map(([name, content]) => (
                 <CommandItem
-                  key={ex[0]}
-                  value={ex[0]}
+                  key={name}
+                  value={name}
                   onSelect={(currentValue) => {
-                    setValue(currentValue as EXAMPLE_KEY)
-                    action(EXAMPLES[currentValue as EXAMPLE_KEY])
+                    setValue(currentValue)
+                    action(content)
                     setOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      value === ex[0] ? 'opacity-100' : 'opacity-0',
+                      value === name ? 'opacity-100' : 'opacity-0',
                     )}
                   />
-                  {ex[0]}
+                  {name}
                 </CommandItem>
               ))}
             </CommandList>
