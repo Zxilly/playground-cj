@@ -1,25 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 
 const SUPPORTED_LOCALES = ['zh', 'en'] as const
 const DEFAULT_LOCALE = 'zh'
 const COOKIE_NAME = 'locale'
 
 function getLocaleFromAcceptLanguage(acceptLanguage: string | null): string {
-  if (!acceptLanguage) return DEFAULT_LOCALE
+  if (!acceptLanguage)
+    return DEFAULT_LOCALE
 
   // Parse Accept-Language header
   const languages = acceptLanguage
     .split(',')
-    .map(lang => {
+    .map((lang) => {
       const [locale, quality = '1'] = lang.trim().split(';q=')
-      return { locale: locale.toLowerCase(), quality: parseFloat(quality) }
+      return { locale: locale.toLowerCase(), quality: Number.parseFloat(quality) }
     })
     .sort((a, b) => b.quality - a.quality)
 
   // Find first supported language
   for (const { locale } of languages) {
-    if (locale.startsWith('en')) return 'en'
-    if (locale.startsWith('zh')) return 'zh'
+    if (locale.startsWith('en'))
+      return 'en'
+    if (locale.startsWith('zh'))
+      return 'zh'
   }
 
   return DEFAULT_LOCALE
@@ -36,7 +40,8 @@ function getLocaleFromCookie(request: NextRequest): string | null {
 function getPreferredLocale(request: NextRequest): string {
   // Priority: Cookie > Accept-Language header > Default
   const cookieLocale = getLocaleFromCookie(request)
-  if (cookieLocale) return cookieLocale
+  if (cookieLocale)
+    return cookieLocale
 
   const acceptLanguage = request.headers.get('accept-language')
   return getLocaleFromAcceptLanguage(acceptLanguage)
@@ -47,17 +52,17 @@ export function middleware(request: NextRequest) {
 
   // Skip middleware for API routes, static files, and Next.js internals
   if (
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/favicon.ico') ||
-    pathname.includes('.')
+    pathname.startsWith('/api/')
+    || pathname.startsWith('/_next/')
+    || pathname.startsWith('/favicon.ico')
+    || pathname.includes('.')
   ) {
     return NextResponse.next()
   }
 
   // Check if pathname already has a locale
   const hasLocaleInPath = SUPPORTED_LOCALES.some(locale =>
-    pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+    pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   )
 
   if (hasLocaleInPath) {
@@ -71,7 +76,8 @@ export function middleware(request: NextRequest) {
   if (preferredLocale === DEFAULT_LOCALE) {
     // For default locale (zh), stay on root path
     return NextResponse.next()
-  } else {
+  }
+  else {
     // For non-default locale (en), redirect to localized path
     const redirectUrl = new URL(`/${preferredLocale}${pathname}`, request.url)
     return NextResponse.redirect(redirectUrl)

@@ -19,7 +19,8 @@ export async function initializeI18n(locale: Locale) {
   try {
     const catalog = await import(`../locales/${locale}/messages.mjs`)
     i18n.loadAndActivate({ locale, messages: catalog.messages })
-  } catch (error) {
+  }
+  catch {
     console.warn(`Failed to load locale ${locale}, falling back to ${defaultLocale}`)
     if (locale !== defaultLocale) {
       const catalog = await import(`../locales/${defaultLocale}/messages.mjs`)

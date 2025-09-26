@@ -3,16 +3,17 @@
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { locales, type Locale } from '@/lib/i18n'
+import { locales } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, Globe } from 'lucide-react'
 import * as React from 'react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
-import { useLanguage } from '@/components/StaticLanguageProvider'
+import { useLanguage } from '@/hooks/useLanguage'
 
-const languageNames: Record<Locale, { name: string; nativeName: string }> = {
+const languageNames: Record<Locale, { name: string, nativeName: string }> = {
   zh: { name: 'Chinese', nativeName: '中文' },
   en: { name: 'English', nativeName: 'English' },
 }
@@ -32,14 +33,17 @@ function navigateToLocale(locale: Locale) {
     // For Chinese, use root path
     if (currentPath.startsWith('/en')) {
       newPath = currentPath.replace(/^\/en/, '') || '/'
-    } else {
+    }
+    else {
       newPath = currentPath
     }
-  } else {
+  }
+  else {
     // For English, use /en prefix
     if (currentPath.startsWith('/en')) {
       newPath = currentPath
-    } else {
+    }
+    else {
       newPath = currentPath === '/' ? '/en' : `/en${currentPath}`
     }
   }
@@ -83,7 +87,7 @@ export function LanguageSelector() {
           </CommandEmpty>
           <CommandGroup>
             <CommandList>
-              {locales.map((lang) => (
+              {locales.map(lang => (
                 <CommandItem
                   key={lang}
                   value={lang}

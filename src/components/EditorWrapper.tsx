@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react'
 import React, { useEffect, useMemo, useRef } from 'react'
-import { MonacoVscodeApiWrapper, getEnhancedMonacoEnvironment } from 'monaco-languageclient/vscodeApiWrapper'
+import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
 import { LanguageClientsManager } from 'monaco-languageclient/lcwrapper'
 import { EditorApp } from 'monaco-languageclient/editorApp'
-import { createMonacoVscodeApiConfig, createLanguageClientConfig, createEditorAppConfig } from '@/lib/monaco'
+import { createEditorAppConfig, createLanguageClientConfig, createMonacoVscodeApiConfig } from '@/lib/monaco'
 
 export interface MonacoEditorProps {
   style?: CSSProperties
@@ -73,7 +73,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
         vscodeApiWrapperRef.current = new MonacoVscodeApiWrapper(vscodeApiConfig)
         vscodeApiWrapperRef.current.overrideViewsConfig({
           $type: vscodeApiConfig.viewsConfig.$type,
-          htmlContainer: containerRef.current
+          htmlContainer: containerRef.current,
         })
         await vscodeApiWrapperRef.current.start()
 
@@ -105,9 +105,11 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
         resizeObserverRef.current.observe(containerRef.current.parentElement!)
 
         isInitializedRef.current = true
-      } catch (error) {
+      }
+      catch (error) {
         console.error('Editor initialization failed:', error)
-      } finally {
+      }
+      finally {
         isInitializingRef.current = false
       }
     };
@@ -115,7 +117,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
     (async () => {
       await initAll()
     })()
-  }, [onLoad]) // Remove config dependencies to prevent re-initialization
+  }, [onLoad, editorAppConfig, languageClientConfig, vscodeApiConfig])
 
   useEffect(() => {
     const disposeAll = async () => {

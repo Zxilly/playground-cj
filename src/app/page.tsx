@@ -1,4 +1,4 @@
-import Wrapper from '@/components/Wrapper'
+import Wrapper from '@/components/ChineseWrapper'
 import { getShareCode } from '@/service/share'
 
 export default async function Page({

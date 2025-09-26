@@ -54,29 +54,29 @@ msgstr "URL 方式"
 #~ msgid "一个在线的仓颉编程语言 Playground"
 #~ msgstr "一个在线的仓颉编程语言 Playground"
 
-#: src/const.ts:82
-#~ msgid "二叉树（函数实现）"
-#~ msgstr "二叉树（函数实现）"
+#: src/const.ts:101
+msgid "二叉树（函数实现）"
+msgstr "二叉树（函数实现）"
 
-#: src/const.ts:84
-#~ msgid "二叉树（属性实现）"
-#~ msgstr "二叉树（属性实现）"
+#: src/const.ts:103
+msgid "二叉树（属性实现）"
+msgstr "二叉树（属性实现）"
 
-#: src/const.ts:81
-#~ msgid "二叉树（枚举实现）"
-#~ msgstr "二叉树（枚举实现）"
+#: src/const.ts:100
+msgid "二叉树（枚举实现）"
+msgstr "二叉树（枚举实现）"
 
-#: src/const.ts:83
-#~ msgid "二叉树（泛型实现）"
-#~ msgstr "二叉树（泛型实现）"
+#: src/const.ts:102
+msgid "二叉树（泛型实现）"
+msgstr "二叉树（泛型实现）"
 
-#: src/const.ts:80
-#~ msgid "二叉树（类实现）"
-#~ msgstr "二叉树（类实现）"
+#: src/const.ts:99
+msgid "二叉树（类实现）"
+msgstr "二叉树（类实现）"
 
-#: src/const.ts:85
-#~ msgid "二叉树（结构体实现）"
-#~ msgstr "二叉树（结构体实现）"
+#: src/const.ts:104
+msgid "二叉树（结构体实现）"
+msgstr "二叉树（结构体实现）"
 
 #: src/components/Playground.tsx:109
 msgid "仓颉 Playground"
@@ -90,9 +90,9 @@ msgstr "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 msgid "保存代码"
 msgstr "保存代码"
 
-#: src/const.ts:87
-#~ msgid "函数式"
-#~ msgstr "函数式"
+#: src/const.ts:106
+msgid "函数式"
+msgstr "函数式"
 
 #: src/components/ShareButton.tsx:77
 msgid "分享"
@@ -140,9 +140,9 @@ msgstr "分享失败"
 msgid "分享成功"
 msgstr "分享成功"
 
-#: src/const.ts:78
-#~ msgid "变量"
-#~ msgstr "变量"
+#: src/const.ts:97
+msgid "变量"
+msgstr "变量"
 
 #: src/components/Playground.tsx:215
 msgid "在 GitHub 查看源代码"
@@ -160,31 +160,31 @@ msgstr "已保存代码"
 msgid "已复制分享链接"
 msgstr "已复制分享链接"
 
-#: src/const.ts:74
-#~ msgid "循环"
-#~ msgstr "循环"
+#: src/const.ts:93
+msgid "循环"
+msgstr "循环"
 
-#: src/const.ts:75
-#~ msgid "扩展"
-#~ msgstr "扩展"
+#: src/const.ts:94
+msgid "扩展"
+msgstr "扩展"
 
-#: src/components/ExamplesDropdown.tsx:44
+#: src/components/ExamplesDropdown.tsx:42
 msgid "搜索示例..."
 msgstr "搜索示例..."
 
-#: src/components/LanguageSelector.tsx:80
+#: src/components/LanguageSelector.tsx:84
 msgid "搜索语言..."
 msgstr "搜索语言..."
 
-#: src/const.ts:73
-#~ msgid "数组"
-#~ msgstr "数组"
+#: src/const.ts:92
+msgid "数组"
+msgstr "数组"
 
-#: src/components/ExamplesDropdown.tsx:46
+#: src/components/ExamplesDropdown.tsx:44
 msgid "未找到示例。"
 msgstr "未找到示例。"
 
-#: src/components/LanguageSelector.tsx:82
+#: src/components/LanguageSelector.tsx:86
 msgid "未找到语言。"
 msgstr "未找到语言。"
 
@@ -193,9 +193,9 @@ msgstr "未找到语言。"
 msgid "未知错误"
 msgstr "未知错误"
 
-#: src/const.ts:86
-#~ msgid "枚举表达式"
-#~ msgstr "枚举表达式"
+#: src/const.ts:105
+msgid "枚举表达式"
+msgstr "枚举表达式"
 
 #: src/components/Playground.tsx:133
 msgid "格式化"
@@ -226,9 +226,9 @@ msgstr "正在运行..."
 msgid "程序输出"
 msgstr "程序输出"
 
-#: src/const.ts:79
-#~ msgid "线程"
-#~ msgstr "线程"
+#: src/const.ts:98
+msgid "线程"
+msgstr "线程"
 
 #: src/service/run.ts:68
 msgid "编译中"
@@ -263,6 +263,6 @@ msgstr "运行失败"
 msgid "运行成功"
 msgstr "运行成功"
 
-#: src/const.ts:88
-#~ msgid "魔方"
-#~ msgstr "魔方"
+#: src/const.ts:107
+msgid "魔方"
+msgstr "魔方"

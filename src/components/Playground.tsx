@@ -26,7 +26,7 @@ import type { ImperativePanelHandle } from 'react-resizable-panels'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
-import { useLanguage } from '@/components/StaticLanguageProvider'
+import { useLanguage } from '@/hooks/useLanguage'
 
 const ansiUp = new AnsiUp()
 

@@ -1,5 +1,7 @@
 'use client'
 
+import '@codingame/monaco-vscode-language-pack-zh-hans'
+
 import Playground from '@/components/Playground'
 
 interface WrapperProps {

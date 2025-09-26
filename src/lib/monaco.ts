@@ -1,6 +1,5 @@
-import '@codingame/monaco-vscode-language-pack-zh-hans'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import { EXAMPLES, WS_BACKEND_URL, EXAMPLE_CONTENT_ZH, EXAMPLE_CONTENT_EN } from '@/const'
+import { EXAMPLE_CONTENT_EN, EXAMPLE_CONTENT_ZH, WS_BACKEND_URL } from '@/const'
 import { saveAsFile } from '@/lib/file'
 import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
 import AsyncLock from 'async-lock'

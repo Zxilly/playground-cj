@@ -11,7 +11,6 @@ import * as React from 'react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
-import { useLanguage } from '@/components/StaticLanguageProvider'
 
 interface ExamplesDropdownProps {
   action: (nextCode: string) => void
@@ -20,11 +19,10 @@ interface ExamplesDropdownProps {
 export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<string>('Hello World')
-  const { locale } = useLanguage()
   const { _ } = useLingui()
 
   // Get localized examples based on current language
-  const examples = React.useMemo(() => getLocalizedExamples(), [locale])
+  const examples = React.useMemo(() => getLocalizedExamples(), [])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

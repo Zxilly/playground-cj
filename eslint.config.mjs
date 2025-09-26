@@ -15,5 +15,6 @@ export default antfu({
     'src/components/ui/*.*',
     'tailwind.config.ts',
     '**/*.json',
+    '**/*.mjs',
   ],
 })

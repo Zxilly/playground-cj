@@ -54,29 +54,29 @@ msgstr "URL Method"
 #~ msgid "一个在线的仓颉编程语言 Playground"
 #~ msgstr "An online Cangjie programming language playground"
 
-#: src/const.ts:82
-#~ msgid "二叉树（函数实现）"
-#~ msgstr "Binary Tree (Function Implementation)"
+#: src/const.ts:101
+msgid "二叉树（函数实现）"
+msgstr "Binary Tree (Function Implementation)"
 
-#: src/const.ts:84
-#~ msgid "二叉树（属性实现）"
-#~ msgstr "Binary Tree (Property Implementation)"
+#: src/const.ts:103
+msgid "二叉树（属性实现）"
+msgstr "Binary Tree (Property Implementation)"
 
-#: src/const.ts:81
-#~ msgid "二叉树（枚举实现）"
-#~ msgstr "Binary Tree (Enum Implementation)"
+#: src/const.ts:100
+msgid "二叉树（枚举实现）"
+msgstr "Binary Tree (Enum Implementation)"
 
-#: src/const.ts:83
-#~ msgid "二叉树（泛型实现）"
-#~ msgstr "Binary Tree (Generic Implementation)"
+#: src/const.ts:102
+msgid "二叉树（泛型实现）"
+msgstr "Binary Tree (Generic Implementation)"
 
-#: src/const.ts:80
-#~ msgid "二叉树（类实现）"
-#~ msgstr "Binary Tree (Class Implementation)"
+#: src/const.ts:99
+msgid "二叉树（类实现）"
+msgstr "Binary Tree (Class Implementation)"
 
-#: src/const.ts:85
-#~ msgid "二叉树（结构体实现）"
-#~ msgstr "Binary Tree (Struct Implementation)"
+#: src/const.ts:104
+msgid "二叉树（结构体实现）"
+msgstr "Binary Tree (Struct Implementation)"
 
 #: src/components/Playground.tsx:109
 msgid "仓颉 Playground"
@@ -94,9 +94,9 @@ msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
 msgid "保存代码"
 msgstr "Save Code"
 
-#: src/const.ts:87
-#~ msgid "函数式"
-#~ msgstr "Functional"
+#: src/const.ts:106
+msgid "函数式"
+msgstr "Functional"
 
 #: src/components/ShareButton.tsx:77
 msgid "分享"
@@ -144,9 +144,9 @@ msgstr "Share failed"
 msgid "分享成功"
 msgstr "Share successful"
 
-#: src/const.ts:78
-#~ msgid "变量"
-#~ msgstr "Variables"
+#: src/const.ts:97
+msgid "变量"
+msgstr "Variables"
 
 #: src/components/Playground.tsx:215
 msgid "在 GitHub 查看源代码"
@@ -164,31 +164,31 @@ msgstr "Code saved"
 msgid "已复制分享链接"
 msgstr "Share link copied"
 
-#: src/const.ts:74
-#~ msgid "循环"
-#~ msgstr "Loop"
+#: src/const.ts:93
+msgid "循环"
+msgstr "Loop"
 
-#: src/const.ts:75
-#~ msgid "扩展"
-#~ msgstr "Extension"
+#: src/const.ts:94
+msgid "扩展"
+msgstr "Extension"
 
-#: src/components/ExamplesDropdown.tsx:44
+#: src/components/ExamplesDropdown.tsx:42
 msgid "搜索示例..."
 msgstr "Search examples..."
 
-#: src/components/LanguageSelector.tsx:80
+#: src/components/LanguageSelector.tsx:84
 msgid "搜索语言..."
 msgstr "Search languages..."
 
-#: src/const.ts:73
-#~ msgid "数组"
-#~ msgstr "Array"
+#: src/const.ts:92
+msgid "数组"
+msgstr "Array"
 
-#: src/components/ExamplesDropdown.tsx:46
+#: src/components/ExamplesDropdown.tsx:44
 msgid "未找到示例。"
 msgstr "No examples found."
 
-#: src/components/LanguageSelector.tsx:82
+#: src/components/LanguageSelector.tsx:86
 msgid "未找到语言。"
 msgstr "No languages found."
 
@@ -197,9 +197,9 @@ msgstr "No languages found."
 msgid "未知错误"
 msgstr "Unknown error"
 
-#: src/const.ts:86
-#~ msgid "枚举表达式"
-#~ msgstr "Enum Expression"
+#: src/const.ts:105
+msgid "枚举表达式"
+msgstr "Enum Expression"
 
 #: src/components/Playground.tsx:133
 msgid "格式化"
@@ -230,9 +230,9 @@ msgstr "Running..."
 msgid "程序输出"
 msgstr "Program Output"
 
-#: src/const.ts:79
-#~ msgid "线程"
-#~ msgstr "Thread"
+#: src/const.ts:98
+msgid "线程"
+msgstr "Thread"
 
 #: src/service/run.ts:68
 msgid "编译中"
@@ -267,6 +267,6 @@ msgstr "Run failed"
 msgid "运行成功"
 msgstr "Run successful"
 
-#: src/const.ts:88
-#~ msgid "魔方"
-#~ msgstr "Cube"
+#: src/const.ts:107
+msgid "魔方"
+msgstr "Cube"
