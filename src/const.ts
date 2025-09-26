@@ -118,7 +118,6 @@ export function getLocalizedExamples() {
       const nameTemplate = EXAMPLE_NAME_KEYS[key as keyof typeof EXAMPLE_NAME_KEYS]
       const translatedName = typeof nameTemplate === 'string' ? nameTemplate : i18n._(nameTemplate)
       return [translatedName, content]
-    })
+    }),
   )
 }
-
