@@ -35,7 +35,7 @@ export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {value}
+          <span className="truncate">{value}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

@@ -231,7 +231,7 @@ export function createMonacoVscodeApiConfig(): MonacoVscodeApiConfig {
         'editor.minimap.enabled': false,
         'editor.lightbulb.enabled': 'on',
         'editor.scrollBeyondLastLine': true,
-        'editor.fontSize': 16,
+        'editor.fontSize': 15,
         'editor.fontFamily': fontFamily,
         'editor.fontLigatures': false,
         'editor.mouseWheelZoom': true,
