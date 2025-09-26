@@ -13,13 +13,12 @@ import { AnsiUp } from 'ansi_up'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import type { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
+import type { EditorApp } from 'monaco-languageclient/editorApp'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { loadDataShareCode } from '@/service/share'
 import CodeRunner from '@/components/CodeRunner'
 import { useMedia } from 'react-use'
-import { toast } from 'sonner'
 import LabelContainer from '@/components/LabelContainer'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import type { ImperativePanelHandle } from 'react-resizable-panels'
@@ -35,7 +34,7 @@ function Component({ defaultCode }: PlaygroundProps) {
   const [programOutput, setProgramOutput] = useState('')
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
 
-  const wrapperRef = useRef<MonacoEditorLanguageClientWrapper | undefined>(undefined)
+  const wrapperRef = useRef<EditorApp | undefined>(undefined)
 
   const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | undefined>()
 
@@ -69,28 +68,17 @@ function Component({ defaultCode }: PlaygroundProps) {
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
 
-  const onLoad = useCallback((wrapper: MonacoEditorLanguageClientWrapper) => {
-    wrapperRef.current = wrapper
+  const onLoad = useCallback((editorApp: EditorApp) => {
+    wrapperRef.current = editorApp
     updateEditor({
       setProgramOutput,
       setToolOutput,
-      ed: wrapper.getEditor()!,
+      ed: editorApp.getEditor()!,
     })
-    const editor = wrapper.getEditor()!
+    const editor = editorApp.getEditor()!
     setEditor(editor)
 
-    wrapper.initLanguageClients()
-
-    const clientWrapper = wrapper.getLanguageClientWrapper('Cangjie')
-    if (clientWrapper) {
-      clientWrapper.start().then(() => {
-        toast.success('LSP 已连接')
-      }).catch((e) => {
-        console.error(e)
-        toast.error('LSP 连接失败')
-      })
-    }
-  }, [])
+    }, [])
 
   const renderedCode = (() => {
     if (defaultCode) {

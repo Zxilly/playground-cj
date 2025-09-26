@@ -1,12 +1,14 @@
 import type { CSSProperties } from 'react'
 import React, { useEffect, useMemo, useRef } from 'react'
-import { MonacoEditorLanguageClientWrapper } from 'monaco-editor-wrapper'
-import { createWrapperConfig } from '@/lib/monaco'
+import { MonacoVscodeApiWrapper, getEnhancedMonacoEnvironment } from 'monaco-languageclient/vscodeApiWrapper'
+import { LanguageClientsManager } from 'monaco-languageclient/lcwrapper'
+import { EditorApp } from 'monaco-languageclient/editorApp'
+import { createMonacoVscodeApiConfig, createLanguageClientConfig, createEditorAppConfig } from '@/lib/monaco'
 
 export interface MonacoEditorProps {
   style?: CSSProperties
   code?: string
-  onLoad?: (wrapper: MonacoEditorLanguageClientWrapper) => void
+  onLoad?: (editorApp: EditorApp) => void
 }
 
 export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
@@ -16,17 +18,19 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
     code,
   } = props
 
-  const wrapperConfig = useMemo(() => {
-    return createWrapperConfig(code)
-  }, [code])
+  const vscodeApiConfig = useMemo(() => createMonacoVscodeApiConfig(), [])
+  const languageClientConfig = useMemo(() => createLanguageClientConfig(), [])
+  const editorAppConfig = useMemo(() => createEditorAppConfig(code), [code])
 
-  const wrapperRef = useRef<MonacoEditorLanguageClientWrapper>(new MonacoEditorLanguageClientWrapper())
+  const vscodeApiWrapperRef = useRef<MonacoVscodeApiWrapper>(new MonacoVscodeApiWrapper(vscodeApiConfig))
+  const languageClientsManagerRef = useRef<LanguageClientsManager | null>(null)
+  const editorAppRef = useRef<EditorApp | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
 
   useEffect(() => {
     const updateEditorLayout = () => {
-      if (containerRef.current && wrapperRef.current) {
+      if (containerRef.current && editorAppRef.current) {
         const parent = containerRef.current.parentElement!
         const { width: outerWidth, height: outerHeight } = parent.getBoundingClientRect()
 
@@ -39,66 +43,96 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
         const width = outerWidth - paddingLeft - paddingRight
         const height = outerHeight - paddingTop - paddingBottom
 
-        wrapperRef.current.getEditor()?.layout({ width, height }, true)
+        editorAppRef.current.getEditor()?.layout({ width, height }, true)
       }
     }
 
-    const disposeMonaco = async () => {
+    const awaitGlobal = async () => {
+      const envEnhanced = getEnhancedMonacoEnvironment()
+      return envEnhanced.vscodeApiGlobalInitAwait ?? Promise.resolve()
+    }
+
+    const disposeAll = async () => {
       try {
-        await wrapperRef.current.dispose()
+        if (editorAppRef.current) {
+          await editorAppRef.current.dispose()
+        }
+        if (languageClientsManagerRef.current) {
+          await languageClientsManagerRef.current.dispose()
+        }
+        if (vscodeApiWrapperRef.current) {
+          await vscodeApiWrapperRef.current.dispose()
+        }
       }
       catch {
-        // The language client may throw an error during disposal, but we want to continue anyway
+        // The components may throw errors during disposal, but we want to continue anyway
       }
     }
 
-    const initMonaco = async () => {
-      if (containerRef.current) {
-        wrapperConfig.htmlContainer = containerRef.current
-        await wrapperRef.current.init(wrapperConfig)
-      }
-      else {
+    const initAll = async () => {
+      if (!containerRef.current) {
         throw new Error('No htmlContainer found! Aborting...')
       }
-    }
 
-    const startMonaco = async () => {
-      if (containerRef.current) {
-        await wrapperRef.current.start()
-        onLoad?.(wrapperRef.current)
+      // Wait for global initialization to complete
+      await awaitGlobal()
 
+      // Step 1: Initialize and start MonacoVscodeApiWrapper
+      vscodeApiWrapperRef.current.overrideViewsConfig({
+        $type: vscodeApiConfig.viewsConfig.$type,
+        htmlContainer: containerRef.current
+      })
+      await vscodeApiWrapperRef.current.start()
+
+      // Step 2: Initialize and start LanguageClientsManager (if config exists)
+      if (languageClientConfig) {
+        languageClientsManagerRef.current = new LanguageClientsManager(vscodeApiWrapperRef.current.getLogger())
+        await languageClientsManagerRef.current.setConfig(languageClientConfig)
+        
+        // don't care about it success or failure
+        languageClientsManagerRef.current.start()
+      }
+
+      // Step 3: Initialize and start EditorApp
+      editorAppRef.current = new EditorApp(editorAppConfig)
+      await editorAppRef.current.start(containerRef.current)
+
+      onLoad?.(editorAppRef.current)
+
+      updateEditorLayout()
+
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect()
+      }
+
+      resizeObserverRef.current = new ResizeObserver(() => {
         updateEditorLayout()
+      })
 
-        if (resizeObserverRef.current) {
-          resizeObserverRef.current.disconnect()
-        }
-
-        resizeObserverRef.current = new ResizeObserver(() => {
-          updateEditorLayout()
-        })
-
-        resizeObserverRef.current.observe(containerRef.current.parentElement!)
-      }
-      else {
-        throw new Error('No htmlContainer found! Aborting...')
-      }
+      resizeObserverRef.current.observe(containerRef.current.parentElement!)
     };
 
     (async () => {
-      await disposeMonaco()
-      await initMonaco()
-      await startMonaco()
+      await disposeAll()
+      await initAll()
     })()
-  }, [onLoad, wrapperConfig])
+  }, [onLoad, vscodeApiConfig, languageClientConfig, editorAppConfig])
 
   useEffect(() => {
-    // exact copy of the above function, to prevent declaration in useCallback
-    const disposeMonaco = async () => {
+    const disposeAll = async () => {
       try {
-        await wrapperRef.current.dispose()
+        if (editorAppRef.current) {
+          await editorAppRef.current.dispose()
+        }
+        if (languageClientsManagerRef.current) {
+          await languageClientsManagerRef.current.dispose()
+        }
+        if (vscodeApiWrapperRef.current) {
+          await vscodeApiWrapperRef.current.dispose()
+        }
       }
       catch {
-        // The language client may throw an error during disposal, but we want to continue anyway
+        // The components may throw errors during disposal, but we want to continue anyway
       }
     }
 
@@ -109,7 +143,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       }
 
       (async () => {
-        await disposeMonaco()
+        await disposeAll()
       })()
     }
   }, [])

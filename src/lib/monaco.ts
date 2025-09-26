@@ -6,8 +6,10 @@ import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from 
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
 import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
-import type { LanguageClientConfig, LanguageClientConfigs, WrapperConfig } from 'monaco-editor-wrapper'
-import { configureDefaultWorkerFactory } from 'monaco-editor-wrapper/workers/workerLoaders'
+import type { LanguageClientConfig } from 'monaco-languageclient/lcwrapper'
+import type { MonacoVscodeApiConfig } from 'monaco-languageclient/vscodeApiWrapper'
+import type { EditorAppConfig } from 'monaco-languageclient/editorApp'
+import { configureDefaultWorkerFactory } from 'monaco-languageclient/workerFactory'
 import { eventEmitter, EVENTS } from '@/lib/events'
 
 import { fontFamily } from '@/app/font'
@@ -161,76 +163,85 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
   loadLegacyShareCodeToEditor(ed, setToolOutput)
 }
 
-function buildLanguageConfig() {
+function buildLanguageConfig(): LanguageClientConfig {
   return {
-    Cangjie: {
-      name: 'Cangjie Language Client',
-      connection: {
-        options: {
-          $type: 'WebSocketUrl',
-          url: WS_BACKEND_URL,
-        },
+    languageId: 'Cangjie',
+    connection: {
+      options: {
+        $type: 'WebSocketUrl',
+        url: WS_BACKEND_URL,
       },
-      clientOptions: {
-        documentSelector: ['Cangjie'],
-        initializationOptions: {
-          multiModuleOption: {
-            'file:///playground': {
-              name: 'playground',
-              requires: {},
-              package_requires: {
-                path_option: [
-                  'file:///linux_x86_64_llvm/dynamic/stdx',
-                ],
-              },
+    },
+    clientOptions: {
+      documentSelector: ['Cangjie'],
+      initializationOptions: {
+        multiModuleOption: {
+          'file:///playground': {
+            name: 'playground',
+            requires: {},
+            package_requires: {
+              path_option: [
+                'file:///linux_x86_64_llvm/dynamic/stdx',
+              ],
             },
           },
-          modulesHomeOption: '/cangjie',
-          telemetryOption: true,
-          conditionCompileOption: {},
-          conditionCompilePaths: [],
-          targetLib: '/playground/target/debug',
-          singleConditionCompileOption: {},
         },
-        workspaceFolder: {
-          name: 'playground',
-          index: 0,
-          uri: (() => {
-            const uri = monaco.Uri.parse('file:///playground')
-            // @ts-expect-error not exposed in type
-            uri._fsPath = '/playground'
-            return uri
-          })(),
-        },
-        errorHandler: {
-          error: () => ({
-            action: ErrorAction.Continue,
-          }),
-          closed: () => ({
-            action: CloseAction.Restart,
-          }),
-        },
+        modulesHomeOption: '/cangjie',
+        telemetryOption: true,
+        conditionCompileOption: {},
+        conditionCompilePaths: [],
+        targetLib: '/playground/target/debug',
+        singleConditionCompileOption: {},
       },
-    } satisfies LanguageClientConfig,
+      workspaceFolder: {
+        name: 'playground',
+        index: 0,
+        uri: (() => {
+          const uri = monaco.Uri.parse('file:///playground')
+          // @ts-expect-error not exposed in type
+          uri._fsPath = '/playground'
+          return uri
+        })(),
+      },
+      errorHandler: {
+        error: () => ({
+          action: ErrorAction.Continue,
+        }),
+        closed: () => ({
+          action: CloseAction.Restart,
+        }),
+      },
+    },
   }
 }
 
-export function createWrapperConfig(shareCode?: string): WrapperConfig {
-  const languageClientConfigs = {
-    automaticallyStart: false,
-    automaticallyInit: false,
-    automaticallyDispose: false,
-    automaticallyDisposeWorkers: false,
-    configs: {},
-  } satisfies LanguageClientConfigs
-  if (!isMobile({ tablet: true, featureDetect: true })) {
-    languageClientConfigs.configs = buildLanguageConfig()
-  }
-
+export function createMonacoVscodeApiConfig(): MonacoVscodeApiConfig {
   return {
     $type: 'extended',
-    logLevel: 2,
-    languageClientConfigs,
+    userConfiguration: {
+      json: JSON.stringify({
+        'editor.wordBasedSuggestions': 'off',
+        'editor.experimental.asyncTokenization': true,
+        'window.autoDetectColorScheme': true,
+        'workbench.preferredDarkColorTheme': 'Default Dark Modern',
+        'workbench.preferredLightColorTheme': 'Default Light Modern',
+
+        'editor.minimap.enabled': false,
+        'editor.lightbulb.enabled': 'on',
+        'editor.scrollBeyondLastLine': true,
+        'editor.fontSize': 16,
+        'editor.fontFamily': fontFamily,
+        'editor.fontLigatures': false,
+        'editor.mouseWheelZoom': true,
+        'editor.semanticHighlighting.enabled': false,
+        'editor.cursorSmoothCaretAnimation': 'on',
+      }),
+    },
+    viewsConfig: {
+      $type: 'EditorService',
+      htmlContainer: 'ReactPlaceholder',
+    },
+    monacoWorkerFactory: configureDefaultWorkerFactory,
     extensions: [
       {
         config: {
@@ -260,39 +271,27 @@ export function createWrapperConfig(shareCode?: string): WrapperConfig {
         ]),
       },
     ],
-    vscodeApiConfig: {
-      userConfiguration: {
-        json: JSON.stringify({
-          'editor.wordBasedSuggestions': 'off',
-          'editor.experimental.asyncTokenization': true,
-          'window.autoDetectColorScheme': true,
-          'workbench.preferredDarkColorTheme': 'Default Dark Modern',
-          'workbench.preferredLightColorTheme': 'Default Light Modern',
+  }
+}
 
-          'editor.minimap.enabled': false,
-          'editor.lightbulb.enabled': 'on',
-          'editor.scrollBeyondLastLine': true,
-          'editor.fontSize': 14,
-          'editor.fontFamily': fontFamily,
-          'editor.fontLigatures': false,
-          'editor.mouseWheelZoom': true,
-          'editor.semanticHighlighting.enabled': false,
-          'editor.cursorSmoothCaretAnimation': 'on',
-        }),
-      },
+export function createLanguageClientConfig(): LanguageClientConfig | undefined {
+  if (isMobile({ tablet: true, featureDetect: true })) {
+    return undefined
+  }
+  return buildLanguageConfig()
+}
+
+export function createEditorAppConfig(shareCode?: string): EditorAppConfig {
+  return {
+    overrideAutomaticLayout: true,
+    editorOptions: {
+      language: 'Cangjie',
     },
-    editorAppConfig: {
-      overrideAutomaticLayout: true,
-      editorOptions: {
-        language: 'Cangjie',
+    codeResources: {
+      modified: {
+        text: shareCode ?? EXAMPLES['hello-world'],
+        uri: 'file:///playground/src/main.cj',
       },
-      codeResources: {
-        modified: {
-          text: shareCode ?? EXAMPLES['hello-world'],
-          uri: 'file:///playground/src/main.cj',
-        },
-      },
-      monacoWorkerFactory: configureDefaultWorkerFactory,
     },
   }
 }
