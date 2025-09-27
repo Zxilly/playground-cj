@@ -10,7 +10,7 @@ import { Check, ChevronsUpDown } from 'lucide-react'
 import * as React from 'react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
-import { useLingui } from '@lingui/react'
+import { i18n } from '@/lib/i18n'
 
 interface ExamplesDropdownProps {
   action: (nextCode: string) => void
@@ -19,7 +19,6 @@ interface ExamplesDropdownProps {
 export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<string>('Hello World')
-  const { _ } = useLingui()
 
   // Get localized examples based on current language
   const examples = React.useMemo(() => getLocalizedExamples(), [])
@@ -39,7 +38,7 @@ export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
         <Command>
-          <CommandInput placeholder={_(t`搜索示例...`)} />
+          <CommandInput placeholder={i18n._(t`搜索示例...`)} />
           <CommandEmpty>
             <Trans>未找到示例。</Trans>
           </CommandEmpty>

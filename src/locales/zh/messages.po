@@ -13,12 +13,11 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: isOutputCollapsed ? '显示' : '隐藏'
-#: src/components/Playground.tsx:161
-msgid "{0}输出内容"
-msgstr "{0}输出内容"
+#: src/components/Playground.tsx:162
+msgid "{outputTip}输出内容"
+msgstr "{outputTip}输出内容"
 
-#: src/service/run.ts:63
+#: src/service/run.ts:62
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
@@ -30,60 +29,32 @@ msgstr "Hash 方式"
 msgid "URL 方式"
 msgstr "URL 方式"
 
-#: src/const.ts:101
-msgid "二叉树（函数实现）"
-msgstr "二叉树（函数实现）"
-
-#: src/const.ts:103
-msgid "二叉树（属性实现）"
-msgstr "二叉树（属性实现）"
-
-#: src/const.ts:100
-msgid "二叉树（枚举实现）"
-msgstr "二叉树（枚举实现）"
-
-#: src/const.ts:102
-msgid "二叉树（泛型实现）"
-msgstr "二叉树（泛型实现）"
-
-#: src/const.ts:99
-msgid "二叉树（类实现）"
-msgstr "二叉树（类实现）"
-
-#: src/const.ts:104
-msgid "二叉树（结构体实现）"
-msgstr "二叉树（结构体实现）"
-
-#: src/components/Playground.tsx:109
+#: src/components/Playground.tsx:110
 msgid "仓颉 Playground"
 msgstr "仓颉 Playground"
 
-#: src/components/Playground.tsx:206
+#: src/components/Playground.tsx:207
 msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 msgstr "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 
-#: src/lib/monaco.ts:152
+#: src/lib/monaco.ts:151
 msgid "保存代码"
 msgstr "保存代码"
-
-#: src/const.ts:106
-msgid "函数式"
-msgstr "函数式"
 
 #: src/components/ShareButton.tsx:77
 msgid "分享"
 msgstr "分享"
 
-#: src/lib/monaco.ts:131
+#: src/lib/monaco.ts:130
 msgid "分享 (Hash 方式)"
 msgstr "分享 (Hash 方式)"
 
-#: src/lib/monaco.ts:118
+#: src/lib/monaco.ts:117
 msgid "分享 (URL 方式)"
 msgstr "分享 (URL 方式)"
 
 #: src/components/ShareButton.tsx:63
-#: src/lib/monaco.ts:141
+#: src/lib/monaco.ts:140
 msgid "分享中..."
 msgstr "分享中..."
 
@@ -91,44 +62,40 @@ msgstr "分享中..."
 msgid "分享代码"
 msgstr "分享代码"
 
-#: src/lib/monaco.ts:36
-#: src/lib/monaco.ts:52
+#: src/lib/monaco.ts:35
+#: src/lib/monaco.ts:51
 msgid "分享代码加载中..."
 msgstr "分享代码加载中..."
 
-#: src/lib/monaco.ts:47
-#: src/lib/monaco.ts:54
+#: src/lib/monaco.ts:46
+#: src/lib/monaco.ts:53
 msgid "分享代码加载失败"
 msgstr "分享代码加载失败"
 
-#: src/lib/monaco.ts:42
-#: src/lib/monaco.ts:53
+#: src/lib/monaco.ts:41
+#: src/lib/monaco.ts:52
 msgid "分享代码加载成功"
 msgstr "分享代码加载成功"
 
 #: src/components/ShareButton.tsx:65
-#: src/lib/monaco.ts:143
+#: src/lib/monaco.ts:142
 msgid "分享失败"
 msgstr "分享失败"
 
 #: src/components/ShareButton.tsx:64
-#: src/lib/monaco.ts:142
+#: src/lib/monaco.ts:141
 msgid "分享成功"
 msgstr "分享成功"
 
-#: src/const.ts:97
-msgid "变量"
-msgstr "变量"
-
-#: src/components/Playground.tsx:215
+#: src/components/Playground.tsx:216
 msgid "在 GitHub 查看源代码"
 msgstr "在 GitHub 查看源代码"
 
-#: src/components/Playground.tsx:177
+#: src/components/Playground.tsx:178
 msgid "工具输出"
 msgstr "工具输出"
 
-#: src/lib/monaco.ts:158
+#: src/lib/monaco.ts:157
 msgid "已保存代码"
 msgstr "已保存代码"
 
@@ -136,44 +103,32 @@ msgstr "已保存代码"
 msgid "已复制分享链接"
 msgstr "已复制分享链接"
 
-#: src/const.ts:93
-msgid "循环"
-msgstr "循环"
-
-#: src/const.ts:94
-msgid "扩展"
-msgstr "扩展"
-
-#: src/components/ExamplesDropdown.tsx:42
+#: src/components/ExamplesDropdown.tsx:41
 msgid "搜索示例..."
 msgstr "搜索示例..."
 
-#: src/components/LanguageSelector.tsx:84
+#: src/components/LanguageSelector.tsx:77
 msgid "搜索语言..."
 msgstr "搜索语言..."
 
-#: src/const.ts:92
-msgid "数组"
-msgstr "数组"
+#: src/components/Playground.tsx:95
+msgid "显示"
+msgstr "显示"
 
-#: src/components/ExamplesDropdown.tsx:44
+#: src/components/ExamplesDropdown.tsx:43
 msgid "未找到示例。"
 msgstr "未找到示例。"
 
-#: src/components/LanguageSelector.tsx:86
+#: src/components/LanguageSelector.tsx:79
 msgid "未找到语言。"
 msgstr "未找到语言。"
 
-#: src/service/run.ts:75
-#: src/service/run.ts:77
+#: src/service/run.ts:74
+#: src/service/run.ts:76
 msgid "未知错误"
 msgstr "未知错误"
 
-#: src/const.ts:105
-msgid "枚举表达式"
-msgstr "枚举表达式"
-
-#: src/components/Playground.tsx:133
+#: src/components/Playground.tsx:134
 msgid "格式化"
 msgstr "格式化"
 
@@ -198,23 +153,19 @@ msgstr "正在格式化..."
 msgid "正在运行..."
 msgstr "正在运行..."
 
-#: src/components/Playground.tsx:188
+#: src/components/Playground.tsx:189
 msgid "程序输出"
 msgstr "程序输出"
 
-#: src/const.ts:98
-msgid "线程"
-msgstr "线程"
-
-#: src/service/run.ts:68
+#: src/service/run.ts:67
 msgid "编译中"
 msgstr "编译中"
 
-#: src/service/run.ts:83
+#: src/service/run.ts:82
 msgid "编译失败"
 msgstr "编译失败"
 
-#: src/lib/monaco.ts:102
+#: src/lib/monaco.ts:101
 msgid "编译运行"
 msgstr "编译运行"
 
@@ -222,16 +173,16 @@ msgstr "编译运行"
 msgid "请先输入代码"
 msgstr "请先输入代码"
 
-#: src/components/Playground.tsx:130
+#: src/components/Playground.tsx:131
 msgid "运行"
 msgstr "运行"
 
-#: src/service/run.ts:69
+#: src/service/run.ts:68
 msgid "运行中"
 msgstr "运行中"
 
 #: src/components/CodeRunner.tsx:38
-#: src/service/run.ts:89
+#: src/service/run.ts:88
 msgid "运行失败"
 msgstr "运行失败"
 
@@ -239,6 +190,6 @@ msgstr "运行失败"
 msgid "运行成功"
 msgstr "运行成功"
 
-#: src/const.ts:107
-msgid "魔方"
-msgstr "魔方"
+#: src/components/Playground.tsx:95
+msgid "隐藏"
+msgstr "隐藏"

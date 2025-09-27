@@ -1,37 +1,30 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
+import Negotiator from 'negotiator'
+import { locales, defaultLocale } from '@/lib/i18n'
 
-const SUPPORTED_LOCALES = ['zh', 'en'] as const
-const DEFAULT_LOCALE = 'zh'
 const COOKIE_NAME = 'locale'
 
-function getLocaleFromAcceptLanguage(acceptLanguage: string | null): string {
-  if (!acceptLanguage)
-    return DEFAULT_LOCALE
-
-  // Parse Accept-Language header
-  const languages = acceptLanguage
-    .split(',')
-    .map((lang) => {
-      const [locale, quality = '1'] = lang.trim().split(';q=')
-      return { locale: locale.toLowerCase(), quality: Number.parseFloat(quality) }
-    })
-    .sort((a, b) => b.quality - a.quality)
+function getLocaleFromHeaders(request: NextRequest): string {
+  const acceptLanguage = request.headers.get('accept-language') ?? undefined
+  const headers = { 'accept-language': acceptLanguage }
+  const languages = new Negotiator({ headers }).languages()
 
   // Find first supported language
-  for (const { locale } of languages) {
+  for (const language of languages) {
+    const locale = language.toLowerCase()
     if (locale.startsWith('en'))
       return 'en'
     if (locale.startsWith('zh'))
       return 'zh'
   }
 
-  return DEFAULT_LOCALE
+  return defaultLocale
 }
 
 function getLocaleFromCookie(request: NextRequest): string | null {
   const cookieLocale = request.cookies.get(COOKIE_NAME)?.value
-  if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale as any)) {
+  if (cookieLocale && locales.includes(cookieLocale as any)) {
     return cookieLocale
   }
   return null
@@ -43,8 +36,7 @@ function getPreferredLocale(request: NextRequest): string {
   if (cookieLocale)
     return cookieLocale
 
-  const acceptLanguage = request.headers.get('accept-language')
-  return getLocaleFromAcceptLanguage(acceptLanguage)
+  return getLocaleFromHeaders(request)
 }
 
 export function middleware(request: NextRequest) {
@@ -61,27 +53,29 @@ export function middleware(request: NextRequest) {
   }
 
   // Check if pathname already has a locale
-  const hasLocaleInPath = SUPPORTED_LOCALES.some(locale =>
+  const hasLocaleInPath = locales.some(locale =>
     pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   )
 
   if (hasLocaleInPath) {
     // Path already has locale, just continue
-    return NextResponse.next()
+    const response = NextResponse.next()
+
+    // Extract language from pathname and set it as a header
+    const langMatch = pathname.match(/^\/([a-z]{2})(?:\/|$)/)
+    if (langMatch) {
+      response.headers.set('x-locale', langMatch[1])
+    }
+
+    return response
   }
 
   // No locale in path, determine preferred locale and redirect
   const preferredLocale = getPreferredLocale(request)
 
-  if (preferredLocale === DEFAULT_LOCALE) {
-    // For default locale (zh), stay on root path
-    return NextResponse.next()
-  }
-  else {
-    // For non-default locale (en), redirect to localized path
-    const redirectUrl = new URL(`/${preferredLocale}${pathname}`, request.url)
-    return NextResponse.redirect(redirectUrl)
-  }
+  // Redirect to localized path for all languages
+  const redirectUrl = new URL(`/${preferredLocale}${pathname}`, request.url)
+  return NextResponse.redirect(redirectUrl)
 }
 
 export const config = {

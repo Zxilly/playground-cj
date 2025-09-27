@@ -1,4 +1,5 @@
 import antfu from '@antfu/eslint-config'
+import pluginLingui from 'eslint-plugin-lingui'
 
 export default antfu({
   react: true,
@@ -17,4 +18,4 @@ export default antfu({
     '**/*.json',
     '**/*.mjs',
   ],
-})
+}, pluginLingui.configs['flat/recommended'])

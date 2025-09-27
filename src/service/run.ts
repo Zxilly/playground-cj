@@ -1,6 +1,5 @@
 import { BACKEND_URL } from '@/const'
 import { t } from '@lingui/core/macro'
-import { i18n } from '@/lib/i18n'
 
 interface FormatMessage {
   formatted: string
@@ -60,32 +59,32 @@ function buildOutput(content: string, code: number): string {
     ret += '\n'
   }
   ret += '----------\n'
-  ret += i18n._(t`exit code ${code}`)
+  ret += t`exit code ${code}`
   return ret
 }
 
 export async function remoteRun(code: string, actions: Actions): Promise<void> {
-  actions.setToolOutput(i18n._(t`编译中`))
-  actions.setProgramOutput(i18n._(t`运行中`))
+  actions.setToolOutput(t`编译中`)
+  actions.setProgramOutput(t`运行中`)
 
   const [data, status] = await requestRemoteAction(code, 'run')
 
   switch (status) {
     case SandboxStatus.UNKNOWN_ERROR:
-      actions.setToolOutput(i18n._(t`未知错误`))
+      actions.setToolOutput(t`未知错误`)
       actions.setProgramOutput('')
-      throw new Error(i18n._(t`未知错误`))
+      throw new Error(t`未知错误`)
   }
 
   actions.setToolOutput(buildOutput(data.compiler_output, data.compiler_code))
   if (data.compiler_code !== 0) {
     actions.setProgramOutput('')
-    throw new Error(i18n._(t`编译失败`))
+    throw new Error(t`编译失败`)
   }
 
   actions.setProgramOutput(buildOutput(data.bin_output, data.compiler_code))
 
   if (data.bin_code !== 0) {
-    throw new Error(i18n._(t`运行失败`))
+    throw new Error(t`运行失败`)
   }
 }

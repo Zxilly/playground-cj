@@ -38,86 +38,38 @@ import cubeEn from '@/examples/cube.en.cj'
 import cffiEn from '@/examples/cffi.en.cj'
 
 import { i18n } from '@lingui/core'
-import { t } from '@lingui/core/macro'
 
 export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'
 export const WS_BACKEND_URL = `${BACKEND_URL.replace('http', 'ws')}/ws`
 
-// Define example content mapping for different languages
-export const EXAMPLE_CONTENT_ZH = {
-  'hello-world': helloWorld,
-  'array': array,
-  'for': _for,
-  'extend': extend,
-  'lambda': lambda,
-  'option': optionParse,
-  'variables': variables,
-  'thread': thread,
-  'class-btree': classBTree,
-  'enum-btree': enumBTree,
-  'function-btree': functionBTree,
-  'generic-btree': genericBTree,
-  'prop-btree': propBTree,
-  'struct-btree': structBTree,
-  'enum-expr': enumExpr,
-  'functional': functional,
-  'cube': cube,
-  'cffi': cffi,
-}
+export const examples: [string, { zh: { name: string, content: string }, en: { name: string, content: string } }][] = [
+  ['hello-world', { zh: { name: 'Hello World', content: helloWorld }, en: { name: 'Hello World', content: helloWorldEn } }],
+  ['array', { zh: { name: '数组', content: array }, en: { name: 'Array', content: arrayEn } }],
+  ['for', { zh: { name: '循环', content: _for }, en: { name: 'For Loop', content: forEn } }],
+  ['extend', { zh: { name: '扩展', content: extend }, en: { name: 'Extend', content: extendEn } }],
+  ['lambda', { zh: { name: 'Lambda', content: lambda }, en: { name: 'Lambda', content: lambdaEn } }],
+  ['option', { zh: { name: 'Option', content: optionParse }, en: { name: 'Option', content: optionParseEn } }],
+  ['variables', { zh: { name: '变量', content: variables }, en: { name: 'Variables', content: variablesEn } }],
+  ['thread', { zh: { name: '线程', content: thread }, en: { name: 'Thread', content: threadEn } }],
+  ['class-btree', { zh: { name: '二叉树（类实现）', content: classBTree }, en: { name: 'Binary Tree (Class)', content: classBTreeEn } }],
+  ['enum-btree', { zh: { name: '二叉树（枚举实现）', content: enumBTree }, en: { name: 'Binary Tree (Enum)', content: enumBTreeEn } }],
+  ['function-btree', { zh: { name: '二叉树（函数实现）', content: functionBTree }, en: { name: 'Binary Tree (Function)', content: functionBTreeEn } }],
+  ['generic-btree', { zh: { name: '二叉树（泛型实现）', content: genericBTree }, en: { name: 'Binary Tree (Generic)', content: genericBTreeEn } }],
+  ['prop-btree', { zh: { name: '二叉树（属性实现）', content: propBTree }, en: { name: 'Binary Tree (Property)', content: propBTreeEn } }],
+  ['struct-btree', { zh: { name: '二叉树（结构体实现）', content: structBTree }, en: { name: 'Binary Tree (Struct)', content: structBTreeEn } }],
+  ['enum-expr', { zh: { name: '枚举表达式', content: enumExpr }, en: { name: 'Enum Expression', content: enumExprEn } }],
+  ['functional', { zh: { name: '函数式', content: functional }, en: { name: 'Functional', content: functionalEn } }],
+  ['cube', { zh: { name: '魔方', content: cube }, en: { name: 'Cube', content: cubeEn } }],
+  ['cffi', { zh: { name: 'CFFI', content: cffi }, en: { name: 'CFFI', content: cffiEn } }],
+]
 
-export const EXAMPLE_CONTENT_EN = {
-  'hello-world': helloWorldEn,
-  'array': arrayEn,
-  'for': forEn,
-  'extend': extendEn,
-  'lambda': lambdaEn,
-  'option': optionParseEn,
-  'variables': variablesEn,
-  'thread': threadEn,
-  'class-btree': classBTreeEn,
-  'enum-btree': enumBTreeEn,
-  'function-btree': functionBTreeEn,
-  'generic-btree': genericBTreeEn,
-  'prop-btree': propBTreeEn,
-  'struct-btree': structBTreeEn,
-  'enum-expr': enumExprEn,
-  'functional': functionalEn,
-  'cube': cubeEn,
-  'cffi': cffiEn,
-}
-
-// Define example names mapping - store translation templates
-const EXAMPLE_NAME_KEYS = {
-  'hello-world': 'Hello World',
-  'array': t`数组`,
-  'for': t`循环`,
-  'extend': t`扩展`,
-  'lambda': 'Lambda',
-  'option': 'Option',
-  'variables': t`变量`,
-  'thread': t`线程`,
-  'class-btree': t`二叉树（类实现）`,
-  'enum-btree': t`二叉树（枚举实现）`,
-  'function-btree': t`二叉树（函数实现）`,
-  'generic-btree': t`二叉树（泛型实现）`,
-  'prop-btree': t`二叉树（属性实现）`,
-  'struct-btree': t`二叉树（结构体实现）`,
-  'enum-expr': t`枚举表达式`,
-  'functional': t`函数式`,
-  'cube': t`魔方`,
-  'cffi': 'CFFI',
-} as const
-
-// Generate localized examples object
 export function getLocalizedExamples() {
   const currentLocale = i18n.locale || 'zh'
-  const exampleContent = currentLocale === 'en' ? EXAMPLE_CONTENT_EN : EXAMPLE_CONTENT_ZH
 
   return Object.fromEntries(
-    Object.entries(exampleContent).map(([key, content]) => {
-      const nameTemplate = EXAMPLE_NAME_KEYS[key as keyof typeof EXAMPLE_NAME_KEYS]
-      const translatedName = typeof nameTemplate === 'string' ? nameTemplate : i18n._(nameTemplate)
-      return [translatedName, content]
+    examples.map(([, { zh, en }]) => {
+      const { name, content } = currentLocale === 'en' ? en : zh
+      return [name, content]
     }),
   )
 }

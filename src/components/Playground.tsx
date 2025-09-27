@@ -25,7 +25,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import type { ImperativePanelHandle } from 'react-resizable-panels'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
-import { useLingui } from '@lingui/react'
+import { i18n } from '@/lib/i18n'
 import { useLanguage } from '@/hooks/useLanguage'
 
 const ansiUp = new AnsiUp()
@@ -38,7 +38,6 @@ function Component({ defaultCode }: PlaygroundProps) {
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
-  const { _ } = useLingui()
   const { locale } = useLanguage()
 
   const wrapperRef = useRef<EditorApp | undefined>(undefined)
@@ -92,6 +91,8 @@ function Component({ defaultCode }: PlaygroundProps) {
     }
     return loadDataShareCode()
   })()
+
+  const outputTip = isOutputCollapsed ? i18n._(t`显示`) : i18n._(t`隐藏`)
 
   return (
     <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() && 'dark'}`}>
@@ -159,7 +160,7 @@ function Component({ defaultCode }: PlaygroundProps) {
               >
                 <span>
                   <Trans>
-                    {isOutputCollapsed ? '显示' : '隐藏'}
+                    {outputTip}
                     输出内容
                   </Trans>
                 </span>
@@ -174,7 +175,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                     className="flex-1 overflow-hidden flex flex-col"
                   >
                     <LabelContainer
-                      title={_(t`工具输出`)}
+                      title={i18n._(t`工具输出`)}
                       content={(
                         <pre
                           className="whitespace-pre min-h-0 min-w-0"
@@ -185,7 +186,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                       className="flex-1/2 mb-1 md:mb-2"
                     />
                     <LabelContainer
-                      title={_(t`程序输出`)}
+                      title={i18n._(t`程序输出`)}
                       content={(
                         <pre
                           className="whitespace-pre min-h-0 min-w-0"

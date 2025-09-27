@@ -3,14 +3,13 @@
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { locales } from '@/lib/i18n'
-import type { Locale } from '@/lib/i18n'
+import { locales, type Locale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, Globe } from 'lucide-react'
 import * as React from 'react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
-import { useLingui } from '@lingui/react'
+import { i18n } from '@/lib/i18n'
 import { useLanguage } from '@/hooks/useLanguage'
 
 const languageNames: Record<Locale, { name: string, nativeName: string }> = {
@@ -27,25 +26,20 @@ function navigateToLocale(locale: Locale) {
   const currentSearch = window.location.search
   const currentHash = window.location.hash
 
+  // Extract the current locale from the path
+  const pathSegments = currentPath.split('/').filter(Boolean)
+  const currentLocale = (pathSegments[0] === 'en' || pathSegments[0] === 'zh') ? pathSegments[0] : null
+
   let newPath: string
 
-  if (locale === 'zh') {
-    // For Chinese, use root path
-    if (currentPath.startsWith('/en')) {
-      newPath = currentPath.replace(/^\/en/, '') || '/'
-    }
-    else {
-      newPath = currentPath
-    }
+  if (currentLocale) {
+    // Replace existing locale with new locale
+    pathSegments[0] = locale
+    newPath = `/${pathSegments.join('/')}`
   }
   else {
-    // For English, use /en prefix
-    if (currentPath.startsWith('/en')) {
-      newPath = currentPath
-    }
-    else {
-      newPath = currentPath === '/' ? '/en' : `/en${currentPath}`
-    }
+    // Add locale to path
+    newPath = `/${locale}${currentPath}`
   }
 
   const newUrl = `${newPath}${currentSearch}${currentHash}`
@@ -55,7 +49,6 @@ function navigateToLocale(locale: Locale) {
 export function LanguageSelector() {
   const { locale } = useLanguage()
   const [open, setOpen] = React.useState(false)
-  const { _ } = useLingui()
 
   const handleLanguageChange = (newLocale: Locale) => {
     if (newLocale !== locale) {
@@ -81,7 +74,7 @@ export function LanguageSelector() {
       </PopoverTrigger>
       <PopoverContent className="w-[180px] p-0">
         <Command>
-          <CommandInput placeholder={_(t`搜索语言...`)} />
+          <CommandInput placeholder={i18n._(t`搜索语言...`)} />
           <CommandEmpty>
             <Trans>未找到语言。</Trans>
           </CommandEmpty>

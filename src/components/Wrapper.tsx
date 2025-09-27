@@ -1,11 +1,11 @@
 'use client'
 
-import Playground from '@/components/Playground'
+import dynamic from 'next/dynamic'
 
-interface WrapperProps {
-  defaultCode?: string
-}
+const ChineseWrapper = dynamic(() => import('@/components/ChineseWrapper'), { ssr: false })
+const EnglishWrapper = dynamic(() => import('@/components/EnglishWrapper'), { ssr: false })
 
-export default function Wrapper({ defaultCode }: WrapperProps) {
-  return <Playground defaultCode={defaultCode} />
+export default function Wrapper({ lang, defaultCode }: { lang: string, defaultCode?: string }) {
+  const WrapperComponent = lang === 'zh' ? ChineseWrapper : EnglishWrapper
+  return <WrapperComponent defaultCode={defaultCode} />
 }
