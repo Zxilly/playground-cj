@@ -28,14 +28,22 @@ const (
 	minRequiredMemoryMB = 512
 )
 
-var upgrader = websocket.Upgrader{
-	EnableCompression: true,
-	CheckOrigin: func(_ *http.Request) bool {
-		return true
-	},
-}
+var (
+	upgrader = websocket.Upgrader{
+		EnableCompression: true,
+		CheckOrigin: func(_ *http.Request) bool {
+			return true
+		},
+	}
+
+	// 确保资源检查的原子性
+	resourceMutex sync.Mutex
+)
 
 func checkSystemResources() error {
+	resourceMutex.Lock()
+	defer resourceMutex.Unlock()
+
 	v, err := mem.VirtualMemory()
 	if err != nil {
 		return fmt.Errorf("failed to get system memory info: %v", err)
