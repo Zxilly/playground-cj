@@ -2,9 +2,6 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   experimental: {
-    optimizePackageImports: [
-      'shiki',
-    ],
     swcPlugins: [
       ['@lingui/swc-plugin', {}],
     ],

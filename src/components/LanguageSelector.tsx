@@ -3,13 +3,14 @@
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { locales, type Locale } from '@/lib/i18n'
+import { i18n, locales } from '@/lib/i18n'
+import type { Locale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, Globe } from 'lucide-react'
 import * as React from 'react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
-import { i18n } from '@/lib/i18n'
+
 import { useLanguage } from '@/hooks/useLanguage'
 
 const languageNames: Record<Locale, { name: string, nativeName: string }> = {

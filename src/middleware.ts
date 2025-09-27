@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import Negotiator from 'negotiator'
-import { locales, defaultLocale } from '@/lib/i18n'
+import { defaultLocale, locales } from '@/lib/i18n'
 
 const COOKIE_NAME = 'locale'
 
