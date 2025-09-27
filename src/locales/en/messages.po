@@ -13,26 +13,6 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. js-lingui-explicit-id
-#: src/components/ShareButton.tsx:98
-#~ msgid "share.hash.method"
-#~ msgstr "Hash Method"
-
-#. js-lingui-explicit-id
-#: src/components/ShareButton.tsx:90
-#~ msgid "share.url.method"
-#~ msgstr "URL Method"
-
-#. js-lingui-explicit-id
-#: src/components/ShareButton.tsx:77
-#~ msgid "share.button"
-#~ msgstr "Share"
-
-#. js-lingui-explicit-id
-#: src/components/ShareDialog.tsx:31
-#~ msgid "share.dialog.title"
-#~ msgstr "Share Code"
-
 #. placeholder {0}: isOutputCollapsed ? '显示' : '隐藏'
 #: src/components/Playground.tsx:161
 msgid "{0}输出内容"
@@ -49,10 +29,6 @@ msgstr "Hash Method"
 #: src/components/ShareButton.tsx:90
 msgid "URL 方式"
 msgstr "URL Method"
-
-#: src/app/layout.tsx:11
-#~ msgid "一个在线的仓颉编程语言 Playground"
-#~ msgstr "An online Cangjie programming language playground"
 
 #: src/const.ts:101
 msgid "二叉树（函数实现）"
@@ -82,15 +58,11 @@ msgstr "Binary Tree (Struct Implementation)"
 msgid "仓颉 Playground"
 msgstr "Cangjie Playground"
 
-#: src/components/Playground.tsx:201
-#~ msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
-#~ msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
-
 #: src/components/Playground.tsx:206
 msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
 
-#: src/lib/monaco.ts:153
+#: src/lib/monaco.ts:152
 msgid "保存代码"
 msgstr "Save Code"
 
@@ -102,16 +74,16 @@ msgstr "Functional"
 msgid "分享"
 msgstr "Share"
 
-#: src/lib/monaco.ts:132
+#: src/lib/monaco.ts:131
 msgid "分享 (Hash 方式)"
 msgstr "Share (Hash Method)"
 
-#: src/lib/monaco.ts:119
+#: src/lib/monaco.ts:118
 msgid "分享 (URL 方式)"
 msgstr "Share (URL Method)"
 
 #: src/components/ShareButton.tsx:63
-#: src/lib/monaco.ts:142
+#: src/lib/monaco.ts:141
 msgid "分享中..."
 msgstr "Sharing..."
 
@@ -119,28 +91,28 @@ msgstr "Sharing..."
 msgid "分享代码"
 msgstr "Share Code"
 
-#: src/lib/monaco.ts:37
-#: src/lib/monaco.ts:53
+#: src/lib/monaco.ts:36
+#: src/lib/monaco.ts:52
 msgid "分享代码加载中..."
 msgstr "Loading shared code..."
 
-#: src/lib/monaco.ts:48
-#: src/lib/monaco.ts:55
+#: src/lib/monaco.ts:47
+#: src/lib/monaco.ts:54
 msgid "分享代码加载失败"
 msgstr "Failed to load shared code"
 
-#: src/lib/monaco.ts:43
-#: src/lib/monaco.ts:54
+#: src/lib/monaco.ts:42
+#: src/lib/monaco.ts:53
 msgid "分享代码加载成功"
 msgstr "Shared code loaded successfully"
 
 #: src/components/ShareButton.tsx:65
-#: src/lib/monaco.ts:144
+#: src/lib/monaco.ts:143
 msgid "分享失败"
 msgstr "Share failed"
 
 #: src/components/ShareButton.tsx:64
-#: src/lib/monaco.ts:143
+#: src/lib/monaco.ts:142
 msgid "分享成功"
 msgstr "Share successful"
 
@@ -156,7 +128,7 @@ msgstr "View source code on GitHub"
 msgid "工具输出"
 msgstr "Tool Output"
 
-#: src/lib/monaco.ts:159
+#: src/lib/monaco.ts:158
 msgid "已保存代码"
 msgstr "Code saved"
 
@@ -242,7 +214,7 @@ msgstr "Compiling"
 msgid "编译失败"
 msgstr "Compilation failed"
 
-#: src/lib/monaco.ts:103
+#: src/lib/monaco.ts:102
 msgid "编译运行"
 msgstr "Compile & Run"
 
