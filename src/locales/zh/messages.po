@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/components/Playground.tsx:162
+#: src/components/Playground.tsx:137
 msgid "{outputTip}输出内容"
 msgstr "{outputTip}输出内容"
 
@@ -29,11 +29,12 @@ msgstr "Hash 方式"
 msgid "URL 方式"
 msgstr "URL 方式"
 
-#: src/components/Playground.tsx:110
+#: src/components/DesktopHeader.tsx:32
+#: src/components/MobileHeader.tsx:34
 msgid "仓颉 Playground"
 msgstr "仓颉 Playground"
 
-#: src/components/Playground.tsx:207
+#: src/components/Playground.tsx:182
 msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 msgstr "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 
@@ -87,11 +88,11 @@ msgstr "分享失败"
 msgid "分享成功"
 msgstr "分享成功"
 
-#: src/components/Playground.tsx:216
+#: src/components/Playground.tsx:191
 msgid "在 GitHub 查看源代码"
 msgstr "在 GitHub 查看源代码"
 
-#: src/components/Playground.tsx:178
+#: src/components/Playground.tsx:153
 msgid "工具输出"
 msgstr "工具输出"
 
@@ -107,11 +108,7 @@ msgstr "已复制分享链接"
 msgid "搜索示例..."
 msgstr "搜索示例..."
 
-#: src/components/LanguageSelector.tsx:77
-msgid "搜索语言..."
-msgstr "搜索语言..."
-
-#: src/components/Playground.tsx:95
+#: src/components/Playground.tsx:93
 msgid "显示"
 msgstr "显示"
 
@@ -128,7 +125,8 @@ msgstr "未找到语言。"
 msgid "未知错误"
 msgstr "未知错误"
 
-#: src/components/Playground.tsx:134
+#: src/components/DesktopHeader.tsx:53
+#: src/components/MobileHeader.tsx:59
 msgid "格式化"
 msgstr "格式化"
 
@@ -153,7 +151,7 @@ msgstr "正在格式化..."
 msgid "正在运行..."
 msgstr "正在运行..."
 
-#: src/components/Playground.tsx:189
+#: src/components/Playground.tsx:164
 msgid "程序输出"
 msgstr "程序输出"
 
@@ -173,7 +171,8 @@ msgstr "编译运行"
 msgid "请先输入代码"
 msgstr "请先输入代码"
 
-#: src/components/Playground.tsx:131
+#: src/components/DesktopHeader.tsx:50
+#: src/components/MobileHeader.tsx:56
 msgid "运行"
 msgstr "运行"
 
@@ -190,6 +189,6 @@ msgstr "运行失败"
 msgid "运行成功"
 msgstr "运行成功"
 
-#: src/components/Playground.tsx:95
+#: src/components/Playground.tsx:93
 msgid "隐藏"
 msgstr "隐藏"

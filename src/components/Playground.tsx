@@ -1,9 +1,8 @@
 'use client'
 
 import { fontFamily } from '@/app/font'
-import { ExamplesDropdown } from '@/components/ExamplesDropdown'
-import { LanguageSelector } from '@/components/LanguageSelector'
-import ShareButton from '@/components/ShareButton'
+import { DesktopHeader } from '@/components/DesktopHeader'
+import { MobileHeader } from '@/components/MobileHeader'
 import TrackingScript from '@/components/TrackingScript'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
@@ -12,7 +11,6 @@ import { isDarkMode } from '@/lib/utils'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { AnsiUp } from 'ansi_up'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import Image from 'next/image'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import type { EditorApp } from 'monaco-languageclient/editorApp'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
@@ -69,7 +67,7 @@ function Component({ defaultCode }: PlaygroundProps) {
     }
   }, [isOutputCollapsed])
 
-  const isDesktop = useMedia('(min-width: 768px)')
+  const isDesktop = useMedia('(min-width: 1024px)')
 
   const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
   const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
@@ -97,47 +95,24 @@ function Component({ defaultCode }: PlaygroundProps) {
   return (
     <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() && 'dark'}`}>
       <div className="flex flex-col h-full bg-background text-foreground p-4">
-        <div id="header" className="flex-none px-2 md:px-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center md:mb-0 mb-2">
-            <Image
-              src="/icon.png"
-              alt="Logo"
-              width={isDesktop ? 32 : 24}
-              height={isDesktop ? 32 : 24}
-              className="md:m-4 m-2"
+        <div id="header" className="flex-none px-2 lg:px-4">
+          {isDesktop ? (
+            <DesktopHeader
+              handleRun={handleRun}
+              handleFormat={handleFormat}
+              editor={editor}
+              wrapperRef={wrapperRef}
             />
-            <h1 className="text-base md:text-2xl font-bold">
-              <Trans>仓颉 Playground</Trans>
-            </h1>
-          </div>
-          <div
-            className="flex flex-col justify-between sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto"
-          >
-            <div className="w-full sm:w-[200px]">
-              <ExamplesDropdown action={(nxt) => {
-                wrapperRef.current?.updateCodeResources({
-                  modified: {
-                    text: nxt,
-                    enforceLanguageId: 'Cangjie',
-                    uri: editor!.getModel()!.uri.toString(),
-                  },
-                })
-              }}
-              />
-            </div>
-            <div className="flex flex-row space-y-0 space-x-2 w-full sm:w-auto">
-              <LanguageSelector />
-              <Button onClick={handleRun} className="w-full sm:w-auto">
-                <Trans>运行</Trans>
-              </Button>
-              <Button onClick={handleFormat} className="w-full sm:w-auto">
-                <Trans>格式化</Trans>
-              </Button>
-              <ShareButton editor={editor} />
-            </div>
-          </div>
+          ) : (
+            <MobileHeader
+              handleRun={handleRun}
+              handleFormat={handleFormat}
+              editor={editor}
+              wrapperRef={wrapperRef}
+            />
+          )}
         </div>
-        <div id="main" className="flex-1 flex flex-col md:flex-row px-2 md:px-4 pt-2 md:pt-0">
+        <div id="main" className="flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-2 lg:pt-0">
           <ResizablePanelGroup
             direction={isDesktop ? 'horizontal' : 'vertical'}
             className="!overflow-visible"
@@ -151,7 +126,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                 />
               </div>
             </ResizablePanel>
-            {isDesktop && <ResizableHandle withHandle className="md:mx-4" />}
+            {isDesktop && <ResizableHandle withHandle className="lg:mx-4" />}
             {!isDesktop && (
               <Button
                 onClick={toggleOutput}
@@ -183,7 +158,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                           dangerouslySetInnerHTML={{ __html: toolOutputHtml }}
                         />
                       )}
-                      className="flex-1/2 mb-1 md:mb-2"
+                      className="flex-1/2 mb-1 lg:mb-2"
                     />
                     <LabelContainer
                       title={i18n._(t`程序输出`)}
@@ -194,7 +169,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                           dangerouslySetInnerHTML={{ __html: programOutputHtml }}
                         />
                       )}
-                      className="flex-1/2 mt-1 md:mt-2"
+                      className="flex-1/2 mt-1 lg:mt-2"
                     />
                   </div>
                 )}

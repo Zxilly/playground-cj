@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/components/Playground.tsx:162
+#: src/components/Playground.tsx:137
 msgid "{outputTip}输出内容"
 msgstr "{outputTip} Output"
 
@@ -29,11 +29,12 @@ msgstr "Hash Method"
 msgid "URL 方式"
 msgstr "URL Method"
 
-#: src/components/Playground.tsx:110
+#: src/components/DesktopHeader.tsx:32
+#: src/components/MobileHeader.tsx:34
 msgid "仓颉 Playground"
 msgstr "Cangjie Playground"
 
-#: src/components/Playground.tsx:207
+#: src/components/Playground.tsx:182
 msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
 
@@ -87,11 +88,11 @@ msgstr "Share failed"
 msgid "分享成功"
 msgstr "Share successful"
 
-#: src/components/Playground.tsx:216
+#: src/components/Playground.tsx:191
 msgid "在 GitHub 查看源代码"
 msgstr "View source code on GitHub"
 
-#: src/components/Playground.tsx:178
+#: src/components/Playground.tsx:153
 msgid "工具输出"
 msgstr "Tool Output"
 
@@ -107,11 +108,7 @@ msgstr "Share link copied"
 msgid "搜索示例..."
 msgstr "Search examples..."
 
-#: src/components/LanguageSelector.tsx:77
-msgid "搜索语言..."
-msgstr "Search languages..."
-
-#: src/components/Playground.tsx:95
+#: src/components/Playground.tsx:93
 msgid "显示"
 msgstr "Show"
 
@@ -128,7 +125,8 @@ msgstr "No languages found."
 msgid "未知错误"
 msgstr "Unknown error"
 
-#: src/components/Playground.tsx:134
+#: src/components/DesktopHeader.tsx:53
+#: src/components/MobileHeader.tsx:59
 msgid "格式化"
 msgstr "Format"
 
@@ -153,7 +151,7 @@ msgstr "Formatting..."
 msgid "正在运行..."
 msgstr "Running..."
 
-#: src/components/Playground.tsx:189
+#: src/components/Playground.tsx:164
 msgid "程序输出"
 msgstr "Program Output"
 
@@ -173,7 +171,8 @@ msgstr "Compile & Run"
 msgid "请先输入代码"
 msgstr "Please enter code first"
 
-#: src/components/Playground.tsx:131
+#: src/components/DesktopHeader.tsx:50
+#: src/components/MobileHeader.tsx:56
 msgid "运行"
 msgstr "Run"
 
@@ -190,6 +189,6 @@ msgstr "Run failed"
 msgid "运行成功"
 msgstr "Run successful"
 
-#: src/components/Playground.tsx:95
+#: src/components/Playground.tsx:93
 msgid "隐藏"
 msgstr "Hide"

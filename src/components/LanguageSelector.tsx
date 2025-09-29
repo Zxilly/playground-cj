@@ -66,7 +66,7 @@ export function LanguageSelector() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full sm:w-auto justify-between"
+          className="w-auto justify-between"
         >
           <Globe className="mr-2 h-4 w-4" />
           {languageNames[locale]?.nativeName || locale}
@@ -75,7 +75,6 @@ export function LanguageSelector() {
       </PopoverTrigger>
       <PopoverContent className="w-[180px] p-0">
         <Command>
-          <CommandInput placeholder={i18n._(t`搜索语言...`)} />
           <CommandEmpty>
             <Trans>未找到语言。</Trans>
           </CommandEmpty>
