@@ -96,21 +96,23 @@ function Component({ defaultCode }: PlaygroundProps) {
     <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() && 'dark'}`}>
       <div className="flex flex-col h-full bg-background text-foreground p-4">
         <div id="header" className="flex-none px-2 lg:px-4">
-          {isDesktop ? (
-            <DesktopHeader
-              handleRun={handleRun}
-              handleFormat={handleFormat}
-              editor={editor}
-              wrapperRef={wrapperRef}
-            />
-          ) : (
-            <MobileHeader
-              handleRun={handleRun}
-              handleFormat={handleFormat}
-              editor={editor}
-              wrapperRef={wrapperRef}
-            />
-          )}
+          {isDesktop
+            ? (
+                <DesktopHeader
+                  handleRun={handleRun}
+                  handleFormat={handleFormat}
+                  editor={editor}
+                  wrapperRef={wrapperRef}
+                />
+              )
+            : (
+                <MobileHeader
+                  handleRun={handleRun}
+                  handleFormat={handleFormat}
+                  editor={editor}
+                  wrapperRef={wrapperRef}
+                />
+              )}
         </div>
         <div id="main" className="flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-2 lg:pt-0">
           <ResizablePanelGroup
