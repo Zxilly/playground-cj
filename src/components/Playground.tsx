@@ -3,12 +3,10 @@
 import { fontFamily } from '@/app/font'
 import { DesktopHeader } from '@/components/DesktopHeader'
 import { MobileHeader } from '@/components/MobileHeader'
-import TrackingScript from '@/components/TrackingScript'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { updateEditor } from '@/lib/monaco'
 import { isDarkMode } from '@/lib/utils'
-import { SpeedInsights } from '@vercel/speed-insights/next'
 import { AnsiUp } from 'ansi_up'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
@@ -194,8 +192,6 @@ function Component({ defaultCode }: PlaygroundProps) {
         </a>
       </div>
       <Toaster richColors closeButton position="top-center" />
-      <TrackingScript />
-      <SpeedInsights />
       <CodeRunner
         setToolOutput={setToolOutput}
         setProgramOutput={setProgramOutput}
