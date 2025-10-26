@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import React, { useEffect, useMemo, useRef } from 'react'
 import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
-import { LanguageClientsManager } from 'monaco-languageclient/lcwrapper'
+import type { LanguageClientsManager } from 'monaco-languageclient/lcwrapper'
 import { EditorApp } from 'monaco-languageclient/editorApp'
 import { createEditorAppConfig, createLanguageClientConfig, createMonacoVscodeApiConfig } from '@/lib/monaco'
 
@@ -78,13 +78,14 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
         await vscodeApiWrapperRef.current.start()
 
         // Step 2: Initialize and start LanguageClientsManager (if config exists)
-        if (languageClientConfig) {
-          languageClientsManagerRef.current = new LanguageClientsManager(vscodeApiWrapperRef.current.getLogger())
-          await languageClientsManagerRef.current.setConfig(languageClientConfig)
-
-          // don't care about it success or failure
-          languageClientsManagerRef.current.start()
-        }
+        // TODO: compile cangjie lsp to wasm and enable it again
+        // if (languageClientConfig) {
+        //   languageClientsManagerRef.current = new LanguageClientsManager(vscodeApiWrapperRef.current.getLogger())
+        //   await languageClientsManagerRef.current.setConfig(languageClientConfig)
+        //
+        //   // don't care about it success or failure
+        //   languageClientsManagerRef.current.start()
+        // }
 
         // Step 3: Initialize and start EditorApp
         editorAppRef.current = new EditorApp(editorAppConfig)
