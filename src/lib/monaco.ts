@@ -8,7 +8,7 @@ import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import type { LanguageClientConfig } from 'monaco-languageclient/lcwrapper'
 import type { MonacoVscodeApiConfig } from 'monaco-languageclient/vscodeApiWrapper'
 import type { EditorAppConfig } from 'monaco-languageclient/editorApp'
-import { configureDefaultWorkerFactory } from 'monaco-languageclient/workerFactory'
+import { getEnhancedMonacoEnvironment } from 'monaco-languageclient/vscodeApiWrapper'
 import { eventEmitter, EVENTS } from '@/lib/events'
 import { t } from '@lingui/core/macro'
 
@@ -17,6 +17,27 @@ import { fontFamily } from '@/app/font'
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/grammars/Cangjie.tmLanguage.json'
 import isMobile from 'is-mobile'
+
+// Configure Monaco workers using new URL pattern
+function configureMonacoWorkers() {
+  const env = getEnhancedMonacoEnvironment()
+
+  env.getWorker = (_workerId: string, label: string) => {
+    if (label === 'editorWorkerService') {
+      return new Worker(
+        new URL('./editor.worker.js', import.meta.url),
+        { type: 'module', name: label },
+      )
+    }
+    if (label === 'TextMateWorker') {
+      return new Worker(
+        new URL('./textmate.worker.js', import.meta.url),
+        { type: 'module', name: label },
+      )
+    }
+    throw new Error(`Unknown worker label: ${label}`)
+  }
+}
 
 const remoteLock = new AsyncLock()
 
@@ -215,7 +236,9 @@ function buildLanguageConfig(): LanguageClientConfig {
   }
 }
 
-export function createMonacoVscodeApiConfig(): MonacoVscodeApiConfig {
+export type { MonacoVscodeApiConfig }
+
+export function createMonacoVscodeApiConfig(htmlContainer?: HTMLElement): MonacoVscodeApiConfig {
   return {
     $type: 'extended',
     userConfiguration: {
@@ -239,9 +262,9 @@ export function createMonacoVscodeApiConfig(): MonacoVscodeApiConfig {
     },
     viewsConfig: {
       $type: 'EditorService',
-      htmlContainer: 'ReactPlaceholder',
+      htmlContainer,
     },
-    monacoWorkerFactory: configureDefaultWorkerFactory,
+    monacoWorkerFactory: configureMonacoWorkers,
     extensions: [
       {
         config: {

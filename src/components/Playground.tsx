@@ -18,7 +18,7 @@ import CodeRunner from '@/components/CodeRunner'
 import { useMedia } from 'react-use'
 import LabelContainer from '@/components/LabelContainer'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import type { ImperativePanelHandle } from 'react-resizable-panels'
+import type { PanelImperativeHandle } from 'react-resizable-panels'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { i18n } from '@/lib/i18n'
@@ -52,7 +52,7 @@ function Component({ defaultCode }: PlaygroundProps) {
     getAction('editor.action.formatDocument')?.run()
   }, [getAction])
 
-  const outputPanel = useRef<ImperativePanelHandle | null>(null)
+  const outputPanel = useRef<PanelImperativeHandle | null>(null)
   const toggleOutput = useCallback(() => {
     setIsOutputCollapsed(!isOutputCollapsed)
     if (outputPanel.current) {
@@ -114,7 +114,7 @@ function Component({ defaultCode }: PlaygroundProps) {
         </div>
         <div id="main" className="flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-2 lg:pt-0">
           <ResizablePanelGroup
-            direction={isDesktop ? 'horizontal' : 'vertical'}
+            orientation={isDesktop ? 'horizontal' : 'vertical'}
             className="!overflow-visible"
           >
             <ResizablePanel defaultSize={65} className="!overflow-visible">
@@ -142,7 +142,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                 {!isOutputCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </Button>
             )}
-            <ResizablePanel defaultSize={35} collapsible ref={outputPanel}>
+            <ResizablePanel defaultSize={35} collapsible panelRef={outputPanel}>
               <div id="panel" className="flex flex-col h-full overflow-hidden">
                 {!isOutputCollapsed && (
                   <div

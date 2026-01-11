@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import React, { useEffect, useMemo, useRef } from 'react'
 import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
-import type { LanguageClientsManager } from 'monaco-languageclient/lcwrapper'
+import type { LanguageClientManager } from 'monaco-languageclient/lcwrapper'
 import { EditorApp } from 'monaco-languageclient/editorApp'
 import { createEditorAppConfig, createLanguageClientConfig, createMonacoVscodeApiConfig } from '@/lib/monaco'
 
@@ -20,7 +20,6 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
     locale,
   } = props
 
-  const vscodeApiConfig = useMemo(() => createMonacoVscodeApiConfig(), [])
   const languageClientConfig = useMemo(() => createLanguageClientConfig(), [])
   const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale), [code, locale])
 
@@ -29,7 +28,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
   const isInitializedRef = useRef(false)
 
   const vscodeApiWrapperRef = useRef<MonacoVscodeApiWrapper | null>(null)
-  const languageClientsManagerRef = useRef<LanguageClientsManager | null>(null)
+  const languageClientsManagerRef = useRef<LanguageClientManager | null>(null)
   const editorAppRef = useRef<EditorApp | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
@@ -69,18 +68,15 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
         // Wait for global initialization to complete
         await awaitGlobal()
 
-        // Step 1: Initialize and start MonacoVscodeApiWrapper
+        // Step 1: Create vscode API config with container and initialize MonacoVscodeApiWrapper
+        const vscodeApiConfig = createMonacoVscodeApiConfig(containerRef.current ?? undefined)
         vscodeApiWrapperRef.current = new MonacoVscodeApiWrapper(vscodeApiConfig)
-        vscodeApiWrapperRef.current.overrideViewsConfig({
-          $type: vscodeApiConfig.viewsConfig.$type,
-          htmlContainer: containerRef.current,
-        })
         await vscodeApiWrapperRef.current.start()
 
-        // Step 2: Initialize and start LanguageClientsManager (if config exists)
+        // Step 2: Initialize and start LanguageClientManager (if config exists)
         // TODO: compile cangjie lsp to wasm and enable it again
         // if (languageClientConfig) {
-        //   languageClientsManagerRef.current = new LanguageClientsManager(vscodeApiWrapperRef.current.getLogger())
+        //   languageClientsManagerRef.current = new LanguageClientManager(vscodeApiWrapperRef.current.getLogger())
         //   await languageClientsManagerRef.current.setConfig(languageClientConfig)
         //
         //   // don't care about it success or failure
@@ -118,7 +114,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
     (async () => {
       await initAll()
     })()
-  }, [onLoad, editorAppConfig, languageClientConfig, vscodeApiConfig])
+  }, [onLoad, editorAppConfig, languageClientConfig])
 
   useEffect(() => {
     const disposeAll = async () => {

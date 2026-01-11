@@ -7,29 +7,23 @@ const nextConfig: NextConfig = {
     ],
   },
   reactStrictMode: false,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  webpack: (config) => {
+  turbopack: {},
+  webpack: (config, { isServer }) => {
     config.module.rules.push({
       test: /\.cj$/i,
       use: 'raw-loader',
     })
 
-    config.module.rules.forEach((rule: any) => {
-      if (rule.use) {
-        const loaders = Array.isArray(rule.use) ? rule.use : [rule.use]
-        loaders.forEach((loader: any) => {
-          if (typeof loader === 'object' && loader.options) {
-            loader.dependency = loader.dependency || {}
-            loader.dependency.not = loader.dependency.not || []
-            if (!loader.dependency.not.includes('url')) {
-              loader.dependency.not.push('url')
-            }
-          }
-        })
-      }
-    })
+    if (!isServer) {
+      // Fix ES module resolution for @codingame packages
+      config.module.rules.push({
+        test: /\.m?js$/,
+        include: /node_modules[\\/](@codingame|monaco-languageclient|vscode-languageclient)/,
+        resolve: {
+          fullySpecified: false,
+        },
+      })
+    }
 
     config.module = {
       ...config.module,
