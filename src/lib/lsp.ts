@@ -9,6 +9,8 @@ const CACHE_KEY = 'lsp-v1' // Change this to invalidate all caches (WASM + CJO)
 const CACHE_STORAGE_KEY = 'lsp-cache-version'
 const WASM_CACHE_NAME = `wasm-${CACHE_KEY}`
 const WASM_CACHE_PATHS = [LSP_WASM_PATH, LSP_WASM_BINARY_PATH]
+const CJO_DB_NAME = 'cjo-cache'
+const CJO_STORE_NAME = 'modules'
 
 /**
  * Check if cache version changed and clear if needed
@@ -96,29 +98,28 @@ async function clearWasmCache(): Promise<void> {
 }
 
 /**
- * Clear IDBFS (CJO modules) cache
+ * Clear CJO modules cache from IndexedDB
  */
-async function clearIdbfsCache(): Promise<void> {
-  const dbName = `/cangjie/modules/${TARGET_PATH}`
+async function clearCjoCache(): Promise<void> {
   try {
     await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.deleteDatabase(dbName)
+      const request = indexedDB.deleteDatabase(CJO_DB_NAME)
       request.onsuccess = () => resolve()
       request.onerror = () => reject(request.error)
     })
-    console.log(`[Cache] Cleared IDBFS: ${dbName}`)
+    console.log(`[Cache] Cleared CJO cache: ${CJO_DB_NAME}`)
   }
   catch (e) {
-    console.warn(`[Cache] Failed to clear IDBFS:`, e)
+    console.warn(`[Cache] Failed to clear CJO cache:`, e)
   }
 }
 
 /**
- * Clear all LSP caches (WASM + IDBFS modules)
+ * Clear all LSP caches (WASM + CJO modules)
  */
 export async function clearAllLspCache(): Promise<void> {
   await clearWasmCache()
-  await clearIdbfsCache()
+  await clearCjoCache()
 }
 
 /**
@@ -187,12 +188,64 @@ interface EmscriptenModule {
   processMessage: (message: string) => void
   FS: {
     writeFile: (path: string, data: Uint8Array) => void
-    stat: (path: string) => { size: number }
-    mkdir: (path: string) => void
-    mount: (type: unknown, opts: object, mountpoint: string) => void
-    syncfs: (populate: boolean, callback: (err?: Error) => void) => void
   }
-  IDBFS: unknown
+}
+
+/**
+ * Open IndexedDB for CJO cache
+ */
+function openCjoDatabase(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(CJO_DB_NAME, 1)
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve(request.result)
+    request.onupgradeneeded = () => {
+      const db = request.result
+      if (!db.objectStoreNames.contains(CJO_STORE_NAME)) {
+        db.createObjectStore(CJO_STORE_NAME)
+      }
+    }
+  })
+}
+
+/**
+ * Get cached CJO module from IndexedDB
+ */
+async function getCachedCjo(modulePath: string): Promise<Uint8Array | null> {
+  try {
+    const db = await openCjoDatabase()
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(CJO_STORE_NAME, 'readonly')
+      const store = tx.objectStore(CJO_STORE_NAME)
+      const request = store.get(modulePath)
+      request.onerror = () => reject(request.error)
+      request.onsuccess = () => resolve(request.result || null)
+      tx.oncomplete = () => db.close()
+    })
+  }
+  catch {
+    return null
+  }
+}
+
+/**
+ * Store CJO module in IndexedDB cache
+ */
+async function setCachedCjo(modulePath: string, data: Uint8Array): Promise<void> {
+  try {
+    const db = await openCjoDatabase()
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(CJO_STORE_NAME, 'readwrite')
+      const store = tx.objectStore(CJO_STORE_NAME)
+      const request = store.put(data, modulePath)
+      request.onerror = () => reject(request.error)
+      request.onsuccess = () => resolve()
+      tx.oncomplete = () => db.close()
+    })
+  }
+  catch {
+    // Ignore cache write errors
+  }
 }
 
 interface LspServerCallbacks {
@@ -200,35 +253,6 @@ interface LspServerCallbacks {
   onNotification: (json: object) => void
   onLog: (msg: string) => void
   onError: (err: Error) => void
-}
-
-/**
- * Check if a file exists in the filesystem
- */
-function fileExists(module: EmscriptenModule, path: string): boolean {
-  try {
-    module.FS.stat(path)
-    return true
-  }
-  catch {
-    return false
-  }
-}
-
-/**
- * Sync filesystem with IndexedDB (populate=true to load from IDB)
- */
-function syncFS(module: EmscriptenModule, populate: boolean): Promise<void> {
-  return new Promise((resolve, reject) => {
-    module.FS.syncfs(populate, (err) => {
-      if (err) {
-        reject(err)
-      }
-      else {
-        resolve()
-      }
-    })
-  })
 }
 
 /**
@@ -295,26 +319,9 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   onLog('Initializing LSP server...')
   module.initLSPWithPaths('/cangjie', '/cangjie')
 
-  // Mount IDBFS to modules path with autoPersist for automatic caching
+  // Create directories for modules
   const targetModulesPath = `/cangjie/modules/${TARGET_PATH}`
   module.createDirectory(`${targetModulesPath}/std`)
-
-  onLog('Mounting IDBFS for module cache...')
-  try {
-    module.FS.mount(module.IDBFS, { autoPersist: true }, targetModulesPath)
-    // Load cached files from IndexedDB
-    await syncFS(module, true)
-    onLog('IDBFS mounted with autoPersist')
-  }
-  catch (e) {
-    onLog(`IDBFS mount failed: ${(e as Error).message}`)
-  }
-
-  // Ensure std subdirectory exists after loading from IDBFS
-  try {
-    module.FS.mkdir(`${targetModulesPath}/std`)
-  }
-  catch { /* ignore if exists */ }
 
   // Load standard library modules
   onLog('Loading standard library...')
@@ -327,29 +334,30 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
     const destPath = `${targetModulesPath}/${modulePath}`
 
     try {
-      // Check if file already exists (cached in IDBFS)
-      if (fileExists(module, destPath)) {
-        const stat = module.FS.stat(destPath)
+      // Check IndexedDB cache first
+      const cachedData = await getCachedCjo(modulePath)
+
+      if (cachedData) {
+        // Use cached data
+        module.FS.writeFile(destPath, cachedData)
         loaded++
         cached++
-        onLog(`  [cjo] ${destPath} (${stat.size} bytes, cached)`)
+        onLog(`  [cjo] ${destPath} (${cachedData.length} bytes, cached)`)
       }
       else {
-        // Download and write (autoPersist will save to IndexedDB)
+        // Download from server
         const url = `${LSP_MODULES_PATH}/${TARGET_PATH}/${modulePath}`
         const response = await fetch(url)
         if (response.ok) {
           const buffer = await response.arrayBuffer()
           const data = new Uint8Array(buffer)
 
-          // Ensure directory exists
-          const dir = destPath.substring(0, destPath.lastIndexOf('/'))
-          try {
-            module.FS.mkdir(dir)
-          }
-          catch { /* ignore if exists */ }
-
+          // Write to WASM filesystem
           module.FS.writeFile(destPath, data)
+
+          // Cache to IndexedDB (async, don't wait)
+          setCachedCjo(modulePath, data)
+
           loaded++
           downloaded++
           onLog(`  [cjo] ${destPath} (${data.length} bytes, downloaded)`)
