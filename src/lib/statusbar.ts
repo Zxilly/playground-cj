@@ -81,6 +81,8 @@ export async function createCustomStatusBar(
   container.id = 'custom-statusbar'
   container.className = `statusbar-container ${className}`.trim()
   container.style.cssText = `
+    position: relative;
+    z-index: 1;
     height: ${height}px;
     width: 100%;
     background: var(--vscode-statusBar-background, #007acc);
@@ -89,6 +91,7 @@ export async function createCustomStatusBar(
     align-items: center;
     font-size: 12px;
     overflow: hidden;
+    flex-shrink: 0;
   `
 
   if (position === 'top') {

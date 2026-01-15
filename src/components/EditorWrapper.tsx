@@ -199,7 +199,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       className="absolute w-full h-full flex flex-col"
       style={style}
     >
-      <div ref={containerRef} className="flex-1 min-h-0" />
+      <div ref={containerRef} className="flex-1 min-h-0 relative overflow-hidden" />
     </div>
   )
 }
