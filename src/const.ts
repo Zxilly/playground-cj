@@ -40,7 +40,6 @@ import cffiEn from '@/examples/cffi.en.cj'
 import { i18n } from '@lingui/core'
 
 export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'
-export const WS_BACKEND_URL = `${BACKEND_URL.replace('http', 'ws')}/ws`
 
 export const examples: [string, { zh: { name: string, content: string }, en: { name: string, content: string } }][] = [
   ['hello-world', { zh: { name: 'Hello World', content: helloWorld }, en: { name: 'Hello World', content: helloWorldEn } }],

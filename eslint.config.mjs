@@ -10,10 +10,12 @@ export default antfu({
     'node/prefer-global/process': 'off',
     'antfu/no-top-level-await': 'off',
     'perfectionist/sort-imports': 'off',
+    'no-console': 'off',
   },
 }, {
   ignores: [
     'src/components/ui/*.*',
+    'public/lsp/*.*',
     'tailwind.config.ts',
     '**/*.json',
     '**/*.mjs',

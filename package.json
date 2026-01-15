@@ -13,6 +13,7 @@
     "lingui:compile": "lingui compile"
   },
   "dependencies": {
+    "@codingame/monaco-vscode-view-status-bar-service-override": "24.3.0",
     "@lingui/conf": "^5.7.0",
     "@lingui/core": "^5.7.0",
     "@lingui/react": "^5.7.0",

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@codingame/monaco-vscode-view-status-bar-service-override':
+        specifier: 24.3.0
+        version: 24.3.0
       '@lingui/conf':
         specifier: ^5.7.0
         version: 5.7.0(typescript@5.9.3)

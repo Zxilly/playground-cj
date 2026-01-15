@@ -1,10 +1,11 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import { examples, WS_BACKEND_URL } from '@/const'
+import { getStatusBarServiceOverrides } from '@/lib/statusbar'
+import { examples } from '@/const'
 import { saveAsFile } from '@/lib/file'
 import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
 import AsyncLock from 'async-lock'
 import { toast } from 'sonner'
-import { CloseAction, ErrorAction } from 'vscode-languageclient/browser'
+import { BrowserMessageReader, BrowserMessageWriter, CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import type { LanguageClientConfig } from 'monaco-languageclient/lcwrapper'
 import type { MonacoVscodeApiConfig } from 'monaco-languageclient/vscodeApiWrapper'
 import type { EditorAppConfig } from 'monaco-languageclient/editorApp'
@@ -17,6 +18,7 @@ import { fontFamily } from '@/app/font'
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/grammars/Cangjie.tmLanguage.json'
 import isMobile from 'is-mobile'
+import { getLanguageClientPort } from '@/lib/lsp'
 
 // Configure Monaco workers using new URL pattern
 function configureMonacoWorkers() {
@@ -185,34 +187,27 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 }
 
 function buildLanguageConfig(): LanguageClientConfig {
+  const editorPort = getLanguageClientPort()
+
   return {
     languageId: 'Cangjie',
     connection: {
       options: {
-        $type: 'WebSocketUrl',
-        url: WS_BACKEND_URL,
+        $type: 'WorkerDirect',
+        worker: undefined as unknown as Worker, // Not used when messageTransports is provided
+        messagePort: editorPort,
+      },
+      messageTransports: {
+        reader: new BrowserMessageReader(editorPort),
+        writer: new BrowserMessageWriter(editorPort),
       },
     },
     clientOptions: {
       documentSelector: ['Cangjie'],
       initializationOptions: {
-        multiModuleOption: {
-          'file:///playground': {
-            name: 'playground',
-            requires: {},
-            package_requires: {
-              path_option: [
-                'file:///linux_x86_64_llvm/dynamic/stdx',
-              ],
-            },
-          },
-        },
+        cangjiePath: '/cangjie',
+        cangjieHome: '/cangjie',
         modulesHomeOption: '/cangjie',
-        telemetryOption: true,
-        conditionCompileOption: {},
-        conditionCompilePaths: [],
-        targetLib: '/playground/target/debug',
-        singleConditionCompileOption: {},
       },
       workspaceFolder: {
         name: 'playground',
@@ -241,6 +236,9 @@ export type { MonacoVscodeApiConfig }
 export function createMonacoVscodeApiConfig(htmlContainer?: HTMLElement): MonacoVscodeApiConfig {
   return {
     $type: 'extended',
+    serviceOverrides: {
+      ...getStatusBarServiceOverrides(),
+    },
     userConfiguration: {
       json: JSON.stringify({
         'editor.wordBasedSuggestions': 'off',

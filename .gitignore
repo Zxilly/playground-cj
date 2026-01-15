@@ -40,3 +40,5 @@ next-env.d.ts
 
 .env
 .claude
+
+wasm-dist/

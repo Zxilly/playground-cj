@@ -1,9 +1,12 @@
 import type { CSSProperties } from 'react'
 import React, { useEffect, useMemo, useRef } from 'react'
 import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
-import type { LanguageClientManager } from 'monaco-languageclient/lcwrapper'
+import { LanguageClientManager } from 'monaco-languageclient/lcwrapper'
 import { EditorApp } from 'monaco-languageclient/editorApp'
 import { createEditorAppConfig, createLanguageClientConfig, createMonacoVscodeApiConfig } from '@/lib/monaco'
+import { createCustomStatusBar } from '@/lib/statusbar'
+import type { StatusBarHandle } from '@/lib/statusbar'
+import { getLspStatus } from '@/lib/lsp'
 
 export interface MonacoEditorProps {
   style?: CSSProperties
@@ -30,6 +33,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
   const vscodeApiWrapperRef = useRef<MonacoVscodeApiWrapper | null>(null)
   const languageClientsManagerRef = useRef<LanguageClientManager | null>(null)
   const editorAppRef = useRef<EditorApp | null>(null)
+  const statusBarRef = useRef<StatusBarHandle | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
 
@@ -74,18 +78,58 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
         await vscodeApiWrapperRef.current.start()
 
         // Step 2: Initialize and start LanguageClientManager (if config exists)
-        // TODO: compile cangjie lsp to wasm and enable it again
-        // if (languageClientConfig) {
-        //   languageClientsManagerRef.current = new LanguageClientManager(vscodeApiWrapperRef.current.getLogger())
-        //   await languageClientsManagerRef.current.setConfig(languageClientConfig)
-        //
-        //   // don't care about it success or failure
-        //   languageClientsManagerRef.current.start()
-        // }
+        if (languageClientConfig) {
+          languageClientsManagerRef.current = new LanguageClientManager()
+          languageClientsManagerRef.current.setConfig(languageClientConfig)
+          languageClientsManagerRef.current.start()
+        }
 
         // Step 3: Initialize and start EditorApp
         editorAppRef.current = new EditorApp(editorAppConfig)
         await editorAppRef.current.start(containerRef.current)
+
+        // Step 4: Create custom status bar only if LSP is enabled (non-mobile)
+        if (languageClientConfig) {
+          const parentContainer = containerRef.current.parentElement
+          if (parentContainer) {
+            statusBarRef.current = await createCustomStatusBar(parentContainer, {
+              position: 'bottom',
+              height: 22,
+            })
+
+            // Add LSP status entry
+            const lspStatusEntry = statusBarRef.current.addEntry({
+              id: 'lsp.status',
+              name: 'LSP',
+              text: '$(sync~spin) Cangjie',
+              ariaLabel: 'LSP initializing',
+              tooltip: 'Language Server: Initializing...',
+              alignment: 'right',
+              priority: 100,
+            })
+
+            // Update status when LSP is ready
+            const checkLspStatus = () => {
+              const status = getLspStatus()
+              if (languageClientsManagerRef.current?.isStarted() && status.initialized) {
+                lspStatusEntry.update({
+                  text: '$(check) Cangjie',
+                  ariaLabel: 'LSP ready',
+                  tooltip: `Cangjie Language Server\n\nStatus: Ready\nStdlib modules: ${status.stdlibModulesLoaded}/${status.stdlibModulesTotal}`,
+                })
+              }
+              else {
+                lspStatusEntry.update({
+                  tooltip: `Cangjie Language Server\n\nStatus: Loading...\nStdlib modules: ${status.stdlibModulesLoaded}/${status.stdlibModulesTotal}`,
+                })
+                // Check again after a short delay
+                // eslint-disable-next-line react-web-api/no-leaked-timeout
+                setTimeout(checkLspStatus, 500)
+              }
+            }
+            checkLspStatus()
+          }
+        }
 
         onLoad?.(editorAppRef.current)
 
@@ -120,6 +164,9 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
     const disposeAll = async () => {
       try {
         isInitializedRef.current = false
+        if (statusBarRef.current) {
+          statusBarRef.current.dispose()
+        }
         if (editorAppRef.current) {
           await editorAppRef.current.dispose()
         }
@@ -149,10 +196,10 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
 
   return (
     <div
-      className="absolute w-full h-full"
+      className="absolute w-full h-full flex flex-col"
       style={style}
     >
-      <div ref={containerRef} />
+      <div ref={containerRef} className="flex-1 min-h-0" />
     </div>
   )
 }
