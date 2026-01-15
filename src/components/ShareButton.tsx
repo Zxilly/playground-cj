@@ -10,7 +10,7 @@ import ShareDialog from '@/components/ShareDialog'
 import { generateDataShareUrl, generateHashShareUrl } from '@/service/share'
 import { eventEmitter, EVENTS } from '@/lib/events'
 import { Trans } from '@lingui/react/macro'
-import { t } from '@lingui/core/macro'
+import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 
 interface ShareButtonProps {
@@ -42,7 +42,7 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
     }
 
     if (editor.getValue().trim() === '') {
-      toast.warning(i18n._(t`请先输入代码`))
+      toast.warning(i18n._(msg`请先输入代码`))
       return
     }
 
@@ -61,9 +61,9 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
         setIsDialogOpen(true)
         setIsOpen(false)
       }, {
-        loading: i18n._(t`分享中...`),
-        success: i18n._(t`分享成功`),
-        error: i18n._(t`分享失败`),
+        loading: i18n._(msg`分享中...`),
+        success: i18n._(msg`分享成功`),
+        error: i18n._(msg`分享失败`),
       })
     }
 

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import * as React from 'react'
 import { Trans } from '@lingui/react/macro'
-import { t } from '@lingui/core/macro'
+import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 
 interface ExamplesDropdownProps {
@@ -39,7 +39,7 @@ export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
         <Command>
-          <CommandInput placeholder={i18n._(t`搜索示例...`)} />
+          <CommandInput placeholder={i18n._(msg`搜索示例...`)} />
           <CommandEmpty>
             <Trans>未找到示例。</Trans>
           </CommandEmpty>

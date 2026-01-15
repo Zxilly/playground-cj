@@ -21,7 +21,12 @@ if (isLspDirEmpty()) {
 const nextConfig: NextConfig = {
   experimental: {
     swcPlugins: [
-      ['@lingui/swc-plugin', {}],
+      ['@lingui/swc-plugin', {
+        runtimeModules: {
+          i18n: ['@/lib/i18n', 'i18n'],
+          trans: ['@lingui/react', 'Trans'],
+        },
+      }],
     ],
   },
   reactStrictMode: false,
@@ -32,7 +37,7 @@ const nextConfig: NextConfig = {
         source: '/:path*',
         headers: [
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
-          { key: 'Cross-Origin-Embedder-Policy', value: 'require-corp' },
+          { key: 'Cross-Origin-Embedder-Policy', value: 'credentialless' },
         ],
       },
     ]

@@ -20,7 +20,7 @@ import LabelContainer from '@/components/LabelContainer'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import type { PanelImperativeHandle } from 'react-resizable-panels'
 import { Trans } from '@lingui/react/macro'
-import { t } from '@lingui/core/macro'
+import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import { useLanguage } from '@/hooks/useLanguage'
 
@@ -89,7 +89,7 @@ function Component({ defaultCode }: PlaygroundProps) {
     return loadDataShareCode()
   })()
 
-  const outputTip = isOutputCollapsed ? i18n._(t`显示`) : i18n._(t`隐藏`)
+  const outputTip = isOutputCollapsed ? i18n._(msg`显示`) : i18n._(msg`隐藏`)
 
   return (
     <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() && 'dark'}`}>
@@ -151,7 +151,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                     className="flex-1 overflow-hidden flex flex-col"
                   >
                     <LabelContainer
-                      title={i18n._(t`工具输出`)}
+                      title={i18n._(msg`工具输出`)}
                       content={(
                         <pre
                           className="whitespace-pre min-h-0 min-w-0"
@@ -162,7 +162,7 @@ function Component({ defaultCode }: PlaygroundProps) {
                       className="flex-1/2 mb-1 lg:mb-2"
                     />
                     <LabelContainer
-                      title={i18n._(t`程序输出`)}
+                      title={i18n._(msg`程序输出`)}
                       content={(
                         <pre
                           className="whitespace-pre min-h-0 min-w-0"

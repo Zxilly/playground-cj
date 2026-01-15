@@ -1,7 +1,132 @@
 // LSP WASM module paths
 const LSP_WASM_PATH = '/lsp/LSPServer-wasm.js'
+const LSP_WASM_BINARY_PATH = '/lsp/LSPServer-wasm.wasm'
 const LSP_MODULES_PATH = '/lsp/modules'
 const TARGET_PATH = 'linux_x86_64_cjnative'
+
+// Cache configuration
+const CACHE_KEY = 'lsp-v1' // Change this to invalidate all caches (WASM + CJO)
+const CACHE_STORAGE_KEY = 'lsp-cache-version'
+const WASM_CACHE_NAME = `wasm-${CACHE_KEY}`
+const WASM_CACHE_PATHS = [LSP_WASM_PATH, LSP_WASM_BINARY_PATH]
+
+/**
+ * Check if cache version changed and clear if needed
+ */
+async function checkAndUpdateCacheVersion(): Promise<boolean> {
+  const storedVersion = localStorage.getItem(CACHE_STORAGE_KEY)
+
+  if (storedVersion !== CACHE_KEY) {
+    console.log(`[Cache] Version changed: ${storedVersion} -> ${CACHE_KEY}`)
+    await clearAllLspCache()
+    localStorage.setItem(CACHE_STORAGE_KEY, CACHE_KEY)
+    return true // Cache was cleared
+  }
+
+  return false // No change
+}
+
+/**
+ * Fetch with Cache API support
+ * Tries cache first, falls back to network and caches the response
+ */
+async function cachedFetch(url: string, cacheName: string): Promise<Response> {
+  const cache = await caches.open(cacheName)
+
+  // Try cache first
+  const cached = await cache.match(url)
+  if (cached) {
+    console.log(`[Cache] Hit: ${url}`)
+    return cached
+  }
+
+  // Fetch from network
+  console.log(`[Cache] Miss: ${url}, fetching...`)
+  const response = await fetch(url)
+
+  if (response.ok) {
+    // Cache the response (clone because response can only be consumed once)
+    await cache.put(url, response.clone())
+    console.log(`[Cache] Stored: ${url}`)
+  }
+
+  return response
+}
+
+/**
+ * Preload and cache WASM files
+ */
+async function preloadWasmCache(): Promise<void> {
+  const cache = await caches.open(WASM_CACHE_NAME)
+
+  for (const path of WASM_CACHE_PATHS) {
+    const cached = await cache.match(path)
+    if (!cached) {
+      console.log(`[Cache] Preloading: ${path}`)
+      try {
+        const response = await fetch(path)
+        if (response.ok) {
+          await cache.put(path, response)
+          console.log(`[Cache] Preloaded: ${path}`)
+        }
+      }
+      catch (e) {
+        console.warn(`[Cache] Failed to preload ${path}:`, e)
+      }
+    }
+  }
+}
+
+/**
+ * Clear WASM cache
+ */
+async function clearWasmCache(): Promise<void> {
+  // Clear current version cache
+  const deleted = await caches.delete(WASM_CACHE_NAME)
+  console.log(`[Cache] Cleared WASM: ${WASM_CACHE_NAME}`, deleted)
+
+  // Also try to clear old versioned caches
+  const keys = await caches.keys()
+  for (const key of keys) {
+    if (key.startsWith('wasm-lsp-')) {
+      await caches.delete(key)
+      console.log(`[Cache] Cleared old WASM cache: ${key}`)
+    }
+  }
+}
+
+/**
+ * Clear IDBFS (CJO modules) cache
+ */
+async function clearIdbfsCache(): Promise<void> {
+  const dbName = `/cangjie/modules/${TARGET_PATH}`
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(dbName)
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+    console.log(`[Cache] Cleared IDBFS: ${dbName}`)
+  }
+  catch (e) {
+    console.warn(`[Cache] Failed to clear IDBFS:`, e)
+  }
+}
+
+/**
+ * Clear all LSP caches (WASM + IDBFS modules)
+ */
+export async function clearAllLspCache(): Promise<void> {
+  await clearWasmCache()
+  await clearIdbfsCache()
+}
+
+/**
+ * Get current cache key/version
+ */
+export function getCacheKey(): string {
+  return CACHE_KEY
+}
 
 // Standard library modules
 const STD_MODULES = [
@@ -62,7 +187,12 @@ interface EmscriptenModule {
   processMessage: (message: string) => void
   FS: {
     writeFile: (path: string, data: Uint8Array) => void
+    stat: (path: string) => { size: number }
+    mkdir: (path: string) => void
+    mount: (type: unknown, opts: object, mountpoint: string) => void
+    syncfs: (populate: boolean, callback: (err?: Error) => void) => void
   }
+  IDBFS: unknown
 }
 
 interface LspServerCallbacks {
@@ -73,18 +203,73 @@ interface LspServerCallbacks {
 }
 
 /**
+ * Check if a file exists in the filesystem
+ */
+function fileExists(module: EmscriptenModule, path: string): boolean {
+  try {
+    module.FS.stat(path)
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+/**
+ * Sync filesystem with IndexedDB (populate=true to load from IDB)
+ */
+function syncFS(module: EmscriptenModule, populate: boolean): Promise<void> {
+  return new Promise((resolve, reject) => {
+    module.FS.syncfs(populate, (err) => {
+      if (err) {
+        reject(err)
+      }
+      else {
+        resolve()
+      }
+    })
+  })
+}
+
+/**
  * Initialize the Cangjie LSP WASM module
  */
 async function initializeLspServer(callbacks: LspServerCallbacks): Promise<EmscriptenModule> {
   const { onResponse, onNotification, onLog, onError } = callbacks
 
+  // Check cache version and clear if changed
+  const cacheCleared = await checkAndUpdateCacheVersion()
+  if (cacheCleared) {
+    onLog(`Cache version updated to ${CACHE_KEY}, cleared old caches`)
+  }
+
   onLog('Loading WASM module...')
+
+  // Preload WASM files into cache
+  await preloadWasmCache()
 
   // Dynamic import of the WASM module (must remain dynamic as it's loaded at runtime)
   const WasmModule = await import(/* webpackIgnore: true */ LSP_WASM_PATH)
   const module: EmscriptenModule = await WasmModule.default({
     print: (text: string) => onLog(`[stdout] ${text}`),
     printErr: (text: string) => onLog(`[stderr] ${text}`),
+    // Use cached fetch for .wasm binary
+    instantiateWasm: async (
+      imports: WebAssembly.Imports,
+      successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
+    ) => {
+      try {
+        const response = await cachedFetch(LSP_WASM_BINARY_PATH, WASM_CACHE_NAME)
+        const bytes = await response.arrayBuffer()
+        const result = await WebAssembly.instantiate(bytes, imports)
+        successCallback(result.instance, result.module)
+        return result.instance.exports
+      }
+      catch (e) {
+        onError(new Error(`Failed to instantiate WASM: ${(e as Error).message}`))
+        throw e
+      }
+    },
   })
 
   // Set up message callback for LSP responses
@@ -110,33 +295,73 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   onLog('Initializing LSP server...')
   module.initLSPWithPaths('/cangjie', '/cangjie')
 
-  // Load standard library modules
-  onLog('Loading standard library...')
+  // Mount IDBFS to modules path with autoPersist for automatic caching
   const targetModulesPath = `/cangjie/modules/${TARGET_PATH}`
   module.createDirectory(`${targetModulesPath}/std`)
 
-  let loaded = 0
-  for (const modulePath of STD_MODULES) {
-    const url = `${LSP_MODULES_PATH}/${TARGET_PATH}/${modulePath}`
-    try {
-      const response = await fetch(url)
-      if (response.ok) {
-        const buffer = await response.arrayBuffer()
-        const data = new Uint8Array(buffer)
-        const destPath = `${targetModulesPath}/${modulePath}`
+  onLog('Mounting IDBFS for module cache...')
+  try {
+    module.FS.mount(module.IDBFS, { autoPersist: true }, targetModulesPath)
+    // Load cached files from IndexedDB
+    await syncFS(module, true)
+    onLog('IDBFS mounted with autoPersist')
+  }
+  catch (e) {
+    onLog(`IDBFS mount failed: ${(e as Error).message}`)
+  }
 
-        const dir = destPath.substring(0, destPath.lastIndexOf('/'))
-        module.createDirectory(dir)
-        module.FS.writeFile(destPath, data)
+  // Ensure std subdirectory exists after loading from IDBFS
+  try {
+    module.FS.mkdir(`${targetModulesPath}/std`)
+  }
+  catch { /* ignore if exists */ }
+
+  // Load standard library modules
+  onLog('Loading standard library...')
+
+  let loaded = 0
+  let cached = 0
+  let downloaded = 0
+
+  for (const modulePath of STD_MODULES) {
+    const destPath = `${targetModulesPath}/${modulePath}`
+
+    try {
+      // Check if file already exists (cached in IDBFS)
+      if (fileExists(module, destPath)) {
+        const stat = module.FS.stat(destPath)
         loaded++
-        onLog(`  [cjo] ${destPath} (${data.length} bytes)`)
+        cached++
+        onLog(`  [cjo] ${destPath} (${stat.size} bytes, cached)`)
+      }
+      else {
+        // Download and write (autoPersist will save to IndexedDB)
+        const url = `${LSP_MODULES_PATH}/${TARGET_PATH}/${modulePath}`
+        const response = await fetch(url)
+        if (response.ok) {
+          const buffer = await response.arrayBuffer()
+          const data = new Uint8Array(buffer)
+
+          // Ensure directory exists
+          const dir = destPath.substring(0, destPath.lastIndexOf('/'))
+          try {
+            module.FS.mkdir(dir)
+          }
+          catch { /* ignore if exists */ }
+
+          module.FS.writeFile(destPath, data)
+          loaded++
+          downloaded++
+          onLog(`  [cjo] ${destPath} (${data.length} bytes, downloaded)`)
+        }
       }
     }
     catch (e) {
-      onLog(`  [cjo] FAILED: ${url} - ${(e as Error).message}`)
+      onLog(`  [cjo] FAILED: ${modulePath} - ${(e as Error).message}`)
     }
   }
-  onLog(`Loaded ${loaded}/${STD_MODULES.length} stdlib modules`)
+
+  onLog(`Loaded ${loaded}/${STD_MODULES.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
 
   // Start the background server loop for non-blocking message processing
   onLog('Starting server loop...')

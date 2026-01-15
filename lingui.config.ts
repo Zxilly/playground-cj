@@ -12,6 +12,10 @@ const config: LinguiConfig = {
   ],
   format: 'po',
   compileNamespace: 'es',
+  runtimeConfigModule: {
+    i18n: ['@/lib/i18n', 'i18n'],
+    Trans: ['@lingui/react', 'Trans'],
+  },
 }
 
 export default config

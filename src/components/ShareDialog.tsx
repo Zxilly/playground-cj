@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { Trans } from '@lingui/react/macro'
-import { t } from '@lingui/core/macro'
+import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 
 interface ShareDialogProps {
@@ -23,7 +23,7 @@ const ShareDialog: React.FC<ShareDialogProps> = ({ isOpen, onClose, url }) => {
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(url)
-    toast.success(i18n._(t`已复制分享链接`))
+    toast.success(i18n._(msg`已复制分享链接`))
   }
 
   return (

@@ -3,7 +3,7 @@ import { eventEmitter, EVENTS } from '@/lib/events'
 import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
 import { toast } from 'sonner'
 import AsyncLock from 'async-lock'
-import { t } from '@lingui/core/macro'
+import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 
 const remoteLock = new AsyncLock()
@@ -35,9 +35,9 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
           })
         })
       }, {
-        loading: i18n._(t`正在运行...`),
-        success: i18n._(t`运行成功`),
-        error: i18n._(t`运行失败`),
+        loading: i18n._(msg`正在运行...`),
+        success: i18n._(msg`运行成功`),
+        error: i18n._(msg`运行失败`),
       })
     }
 
@@ -51,7 +51,7 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
           const [resp, status] = await requestRemoteAction(code, 'format')
 
           if (status === SandboxStatus.UNKNOWN_ERROR) {
-            throw new Error(i18n._(t`格式化失败，未知错误`))
+            throw new Error(i18n._(msg`格式化失败，未知错误`))
           }
 
           setToolOutput(resp.formatter_output)
@@ -63,13 +63,13 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
             eventEmitter.emit(EVENTS.FORMAT_CODE_COMPLETE, resp.formatted)
           }
           else {
-            throw new Error(i18n._(t`格式化失败`))
+            throw new Error(i18n._(msg`格式化失败`))
           }
         })
       }, {
-        loading: i18n._(t`正在格式化...`),
-        success: i18n._(t`格式化成功`),
-        error: error => error instanceof Error ? error.message : i18n._(t`格式化失败`),
+        loading: i18n._(msg`正在格式化...`),
+        success: i18n._(msg`格式化成功`),
+        error: error => error instanceof Error ? error.message : i18n._(msg`格式化失败`),
       })
     }
 

@@ -1,8 +1,17 @@
 import { i18n } from '@lingui/core'
+import { messages as zhMessages } from '@/locales/zh/messages.mjs'
+import { messages as enMessages } from '@/locales/en/messages.mjs'
 
 export const locales = ['zh', 'en'] as const
 export type Locale = typeof locales[number]
 export const defaultLocale: Locale = 'zh'
+
+// Pre-load all messages for SSR support
+i18n.load({
+  zh: zhMessages,
+  en: enMessages,
+})
+i18n.activate(defaultLocale)
 
 export function getLocaleFromPath(): Locale {
   if (typeof window !== 'undefined') {
@@ -18,17 +27,7 @@ export function getLocaleFromPath(): Locale {
 }
 
 export async function initializeI18n(locale: Locale) {
-  try {
-    const catalog = await import(`../locales/${locale}/messages.mjs`)
-    i18n.loadAndActivate({ locale, messages: catalog.messages })
-  }
-  catch {
-    console.warn(`Failed to load locale ${locale}, falling back to ${defaultLocale}`)
-    if (locale !== defaultLocale) {
-      const catalog = await import(`../locales/${defaultLocale}/messages.mjs`)
-      i18n.loadAndActivate({ locale: defaultLocale, messages: catalog.messages })
-    }
-  }
+  i18n.activate(locale)
 }
 
 export { i18n }
