@@ -4,7 +4,7 @@ import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
 import { toast } from 'sonner'
 import AsyncLock from 'async-lock'
 import { t } from '@lingui/core/macro'
-import { i18n } from '@/lib/i18n'
+import { useLingui } from '@lingui/react'
 
 const remoteLock = new AsyncLock()
 
@@ -19,6 +19,8 @@ interface CodeRunnerProps {
 }
 
 export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatted }: CodeRunnerProps) {
+  const { i18n } = useLingui()
+
   useEffect(() => {
     const handleRun = async (code: string) => {
       if (isBusy()) {
@@ -78,7 +80,7 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
       eventEmitter.off(EVENTS.RUN_CODE, handleRun)
       eventEmitter.off(EVENTS.FORMAT_CODE, handleFormat)
     }
-  }, [setToolOutput, setProgramOutput, onFormatted])
+  }, [setToolOutput, setProgramOutput, onFormatted, i18n])
 
   return null
 }

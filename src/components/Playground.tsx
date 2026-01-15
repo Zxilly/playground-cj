@@ -21,7 +21,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import type { PanelImperativeHandle } from 'react-resizable-panels'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
-import { i18n } from '@/lib/i18n'
+import { useLingui } from '@lingui/react'
 import { useLanguage } from '@/hooks/useLanguage'
 
 const ansiUp = new AnsiUp()
@@ -31,6 +31,7 @@ export interface PlaygroundProps {
 }
 
 function Component({ defaultCode }: PlaygroundProps) {
+  const { i18n } = useLingui()
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)

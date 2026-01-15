@@ -11,13 +11,14 @@ import { generateDataShareUrl, generateHashShareUrl } from '@/service/share'
 import { eventEmitter, EVENTS } from '@/lib/events'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
-import { i18n } from '@/lib/i18n'
+import { useLingui } from '@lingui/react'
 
 interface ShareButtonProps {
   editor: monaco.editor.IStandaloneCodeEditor | undefined
 }
 
 const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
+  const { i18n } = useLingui()
   const [isOpen, setIsOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [shareUrl, setShareUrl] = useState('')

@@ -10,13 +10,14 @@ import { Check, ChevronsUpDown } from 'lucide-react'
 import * as React from 'react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
-import { i18n } from '@/lib/i18n'
+import { useLingui } from '@lingui/react'
 
 interface ExamplesDropdownProps {
   action: (nextCode: string) => void
 }
 
 export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
+  const { i18n } = useLingui()
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState<string>('Hello World')
 
