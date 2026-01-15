@@ -5,7 +5,7 @@ const LSP_MODULES_PATH = '/lsp/modules'
 const TARGET_PATH = 'linux_x86_64_cjnative'
 
 // Cache configuration
-const CACHE_KEY = 'lsp-v1' // Change this to invalidate all caches (WASM + CJO)
+const CACHE_KEY = 'lsp-v2' // Change this to invalidate all caches (WASM + CJO)
 const CACHE_STORAGE_KEY = 'lsp-cache-version'
 const WASM_CACHE_NAME = `wasm-${CACHE_KEY}`
 const WASM_CACHE_PATHS = [LSP_WASM_PATH, LSP_WASM_BINARY_PATH]
