@@ -184,9 +184,10 @@ interface EmscriptenModule {
   onLSPMessage: (messageStr: string) => void
   initLSPWithPaths: (cangjiePath: string, cangjieHome: string) => void
   startServerLoop: () => void
-  createDirectory: (path: string) => void
   processMessage: (message: string) => void
   FS: {
+    mkdir: (path: string) => void
+    mkdirTree: (path: string) => void
     writeFile: (path: string, data: Uint8Array) => void
   }
 }
@@ -319,9 +320,9 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   onLog('Initializing LSP server...')
   module.initLSPWithPaths('/cangjie', '/cangjie')
 
-  // Create directories for modules
+  // Create directories for modules using FS API
   const targetModulesPath = `/cangjie/modules/${TARGET_PATH}`
-  module.createDirectory(`${targetModulesPath}/std`)
+  module.FS.mkdirTree(`${targetModulesPath}/std`)
 
   // Load standard library modules
   onLog('Loading standard library...')
