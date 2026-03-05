@@ -1,13 +1,11 @@
 'use client'
 
-import { fontFamily } from '@/app/font'
-import { DesktopHeader } from '@/components/DesktopHeader'
-import { MobileHeader } from '@/components/MobileHeader'
+import { PlaygroundHeader } from '@/components/playground/PlaygroundHeader'
+import { OutputPanel } from '@/components/shared/OutputPanel'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { updateEditor } from '@/lib/monaco'
 import { isDarkMode } from '@/lib/utils'
-import { AnsiUp } from 'ansi_up'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { EditorApp } from 'monaco-languageclient/editorApp'
@@ -16,15 +14,12 @@ import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { loadDataShareCode } from '@/service/share'
 import CodeRunner from '@/components/CodeRunner'
 import { useMedia } from 'react-use'
-import LabelContainer from '@/components/LabelContainer'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import type { PanelImperativeHandle } from 'react-resizable-panels'
 import { Trans } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import { useLanguage } from '@/hooks/useLanguage'
-
-const ansiUp = new AnsiUp()
 
 export interface PlaygroundProps {
   defaultCode?: string
@@ -69,9 +64,6 @@ function Playground({ defaultCode }: PlaygroundProps) {
 
   const isDesktop = useMedia('(min-width: 1024px)')
 
-  const toolOutputHtml = useMemo(() => ansiUp.ansi_to_html(toolOutput), [toolOutput])
-  const programOutputHtml = useMemo(() => ansiUp.ansi_to_html(programOutput), [programOutput])
-
   const onLoad = useCallback((editorApp: EditorApp) => {
     wrapperRef.current = editorApp
     updateEditor({
@@ -83,31 +75,24 @@ function Playground({ defaultCode }: PlaygroundProps) {
     setEditor(editor)
   }, [])
 
+  const handleFormatted = useCallback((code: string) => {
+    editor?.getModel()?.setValue(code)
+  }, [editor])
+
   const renderedCode = useMemo(() => defaultCode ?? loadDataShareCode(), [defaultCode])
 
   const outputTip = isOutputCollapsed ? i18n._(msg`显示`) : i18n._(msg`隐藏`)
 
   return (
-    <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() && 'dark'}`}>
+    <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() ? 'dark' : ''}`}>
       <div className="flex flex-col h-full bg-background text-foreground p-4">
         <div id="header" className="flex-none px-2 lg:px-4">
-          {isDesktop
-            ? (
-                <DesktopHeader
-                  handleRun={handleRun}
-                  handleFormat={handleFormat}
-                  editor={editor}
-                  wrapperRef={wrapperRef}
-                />
-              )
-            : (
-                <MobileHeader
-                  handleRun={handleRun}
-                  handleFormat={handleFormat}
-                  editor={editor}
-                  wrapperRef={wrapperRef}
-                />
-              )}
+          <PlaygroundHeader
+            handleRun={handleRun}
+            handleFormat={handleFormat}
+            editor={editor}
+            wrapperRef={wrapperRef}
+          />
         </div>
         <div id="main" className="flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-2 lg:pt-0">
           <ResizablePanelGroup
@@ -142,33 +127,10 @@ function Playground({ defaultCode }: PlaygroundProps) {
             <ResizablePanel defaultSize={35} collapsible panelRef={outputPanel}>
               <div id="panel" className="flex flex-col h-full overflow-hidden">
                 {!isOutputCollapsed && (
-                  <div
-                    id="panel-content"
-                    className="flex-1 overflow-hidden flex flex-col"
-                  >
-                    <LabelContainer
-                      title={i18n._(msg`工具输出`)}
-                      content={(
-                        <pre
-                          className="whitespace-pre min-h-0 min-w-0"
-                          style={{ fontFamily }}
-                          dangerouslySetInnerHTML={{ __html: toolOutputHtml }}
-                        />
-                      )}
-                      className="flex-1/2 mb-1 lg:mb-2"
-                    />
-                    <LabelContainer
-                      title={i18n._(msg`程序输出`)}
-                      content={(
-                        <pre
-                          className="whitespace-pre min-h-0 min-w-0"
-                          style={{ fontFamily }}
-                          dangerouslySetInnerHTML={{ __html: programOutputHtml }}
-                        />
-                      )}
-                      className="flex-1/2 mt-1 lg:mt-2"
-                    />
-                  </div>
+                  <OutputPanel
+                    toolOutput={toolOutput}
+                    programOutput={programOutput}
+                  />
                 )}
               </div>
             </ResizablePanel>
@@ -192,9 +154,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
       <CodeRunner
         setToolOutput={setToolOutput}
         setProgramOutput={setProgramOutput}
-        onFormatted={(code) => {
-          editor?.getModel()?.setValue(code)
-        }}
+        onFormatted={handleFormatted}
       />
     </div>
   )

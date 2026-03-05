@@ -2,15 +2,9 @@ import { useEffect } from 'react'
 import { eventEmitter, EVENTS } from '@/lib/events'
 import { remoteRun, requestRemoteAction } from '@/service/run'
 import { toast } from 'sonner'
-import AsyncLock from 'async-lock'
+import { remoteLock, isBusy } from '@/lib/lock'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
-
-const remoteLock = new AsyncLock()
-
-function isBusy() {
-  return remoteLock.isBusy('run')
-}
 
 interface CodeRunnerProps {
   setToolOutput: (output: string) => void

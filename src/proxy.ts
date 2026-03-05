@@ -52,6 +52,26 @@ export function proxy(request: NextRequest): NextResponse {
     return NextResponse.next()
   }
 
+  // Handle tour.* domain: rewrite URLs to include /tour segment
+  const host = request.headers.get('host') ?? ''
+  if (host.startsWith('tour.')) {
+    const segments = pathname.split('/')
+    const lang = segments[1] ?? ''
+
+    if (lang !== 'zh' && lang !== 'en') {
+      const preferredLocale = getPreferredLocale(request)
+      const url = request.nextUrl.clone()
+      url.pathname = `/${preferredLocale}/tour`
+      return NextResponse.rewrite(url)
+    }
+
+    // /zh/01-basics/... → /zh/tour/01-basics/...
+    segments.splice(2, 0, 'tour')
+    const url = request.nextUrl.clone()
+    url.pathname = segments.join('/')
+    return NextResponse.rewrite(url)
+  }
+
   const hasLocaleInPath = locales.some(locale =>
     pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   )

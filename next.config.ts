@@ -48,6 +48,11 @@ const nextConfig: NextConfig = {
       use: 'raw-loader',
     })
 
+    config.module.rules.push({
+      test: /\.md$/i,
+      use: 'raw-loader',
+    })
+
     if (!isServer) {
       // Fix ES module resolution for @codingame packages
       config.module.rules.push({

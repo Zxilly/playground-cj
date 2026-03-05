@@ -68,12 +68,12 @@ async function preloadWasmCache(): Promise<void> {
  */
 async function clearWasmCache(): Promise<void> {
   const keys = await caches.keys()
-  for (const key of keys) {
-    if (key.startsWith('wasm-')) {
+  await Promise.all(
+    keys.filter(key => key.startsWith('wasm-')).map(async (key) => {
       await caches.delete(key)
       console.log(`[Cache] Cleared WASM cache: ${key}`)
-    }
-  }
+    }),
+  )
 }
 
 /**
@@ -97,8 +97,7 @@ async function clearCjoCache(): Promise<void> {
  * Clear all LSP caches (WASM + CJO modules)
  */
 export async function clearAllLspCache(): Promise<void> {
-  await clearWasmCache()
-  await clearCjoCache()
+  await Promise.all([clearWasmCache(), clearCjoCache()])
 }
 
 // Standard library modules
@@ -284,7 +283,7 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
     // Continue without cache
   }
 
-  for (const modulePath of STD_MODULES) {
+  await Promise.all(STD_MODULES.map(async (modulePath) => {
     const destPath = `${targetModulesPath}/${modulePath}`
 
     try {
@@ -318,7 +317,7 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
     catch (e) {
       onLog(`  [cjo] FAILED: ${modulePath} - ${(e as Error).message}`)
     }
-  }
+  }))
 
   db?.close()
   onLog(`Loaded ${loaded}/${STD_MODULES.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
@@ -416,4 +415,3 @@ export function getLspStatus(): LspStatus {
     stdlibModulesTotal: STD_MODULES.length,
   }
 }
-

@@ -189,6 +189,10 @@ msgstr "运行失败"
 msgid "运行成功"
 msgstr "运行成功"
 
+#: src/components/playground/PlaygroundHeader.tsx
+msgid "教程"
+msgstr "教程"
+
 #: src/components/Playground.tsx:93
 msgid "隐藏"
 msgstr "隐藏"

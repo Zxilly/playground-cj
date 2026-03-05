@@ -2,10 +2,19 @@
 
 import dynamic from 'next/dynamic'
 
-const ChineseWrapper = dynamic(() => import('@/components/ChineseWrapper'), { ssr: false })
-const EnglishWrapper = dynamic(() => import('@/components/EnglishWrapper'), { ssr: false })
+const Playground = dynamic(
+  () => import('@/components/Playground'),
+  { ssr: false },
+)
+
+const ChinesePlayground = dynamic(
+  () => import('@codingame/monaco-vscode-language-pack-zh-hans').then(
+    () => import('@/components/Playground'),
+  ),
+  { ssr: false },
+)
 
 export default function Wrapper({ lang, defaultCode }: { lang: string, defaultCode?: string }) {
-  const WrapperComponent = lang === 'zh' ? ChineseWrapper : EnglishWrapper
-  return <WrapperComponent defaultCode={defaultCode} />
+  const Component = lang === 'zh' ? ChinesePlayground : Playground
+  return <Component defaultCode={defaultCode} />
 }
