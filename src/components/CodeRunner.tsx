@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { eventEmitter, EVENTS } from '@/lib/events'
 import { remoteRun, requestRemoteAction } from '@/service/run'
 import { toast } from 'sonner'
-import { remoteLock, isBusy } from '@/lib/lock'
+import { isBusy, remoteLock } from '@/lib/lock'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 

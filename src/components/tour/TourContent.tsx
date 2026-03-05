@@ -12,7 +12,7 @@ interface TourContentProps {
 export function TourContent({ lang, section }: TourContentProps) {
   const raw = section.markdown[lang] || section.markdown.zh || ''
   // Strip the first heading line (duplicated by the h1 above)
-  const content = raw.replace(/^#\s+.+[\r\n]+/, '')
+  const content = raw.replace(/^#\s+(?:\S.*|[\t\v\f \xA0\u1680\u2000-\u200A\u202F\u205F\u3000\uFEFF])[\r\n]+/, '')
 
   return (
     <ScrollArea className="h-full">

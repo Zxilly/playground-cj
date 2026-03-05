@@ -1,5 +1,5 @@
-export { configureMonacoWorkers } from './workers'
-export { createMonacoVscodeApiConfig, createEditorAppConfig, setEditorValue } from './config'
+export { updateEditor } from './actions'
+export { createEditorAppConfig, createMonacoVscodeApiConfig, setEditorValue } from './config'
 export type { MonacoVscodeApiConfig } from './config'
 export { createLanguageClientConfig } from './language-client'
-export { updateEditor } from './actions'
+export { configureMonacoWorkers } from './workers'

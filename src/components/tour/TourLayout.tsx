@@ -1,6 +1,6 @@
 'use client'
 
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import type { ReactNode } from 'react'
 
 interface TourLayoutProps {

@@ -10,7 +10,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { isDarkMode } from '@/lib/utils'
 import { useMedia } from 'react-use'
 import { useCallback, useMemo, useState } from 'react'
-import type { TourChapterSlim, FlatSection } from '@/tour/types'
+import type { FlatSection, TourChapterSlim } from '@/tour/types'
 import { getTourBasePath } from '@/hooks/useTourHref'
 
 interface TourAppProps {
@@ -36,18 +36,21 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
   }, [allSections, basePath])
 
   const goPrev = useCallback(() => {
-    if (currentIndex > 0) navigate(currentIndex - 1)
+    if (currentIndex > 0)
+      navigate(currentIndex - 1)
   }, [currentIndex, navigate])
 
   const goNext = useCallback(() => {
-    if (currentIndex < allSections.length - 1) navigate(currentIndex + 1)
+    if (currentIndex < allSections.length - 1)
+      navigate(currentIndex + 1)
   }, [currentIndex, allSections.length, navigate])
 
   const goToSection = useCallback((chapterId: string, subChapterId: string, sectionId: string) => {
     const idx = allSections.findIndex(
       s => s.chapterId === chapterId && s.subChapterId === subChapterId && s.sectionId === sectionId,
     )
-    if (idx !== -1) navigate(idx)
+    if (idx !== -1)
+      navigate(idx)
   }, [allSections, navigate])
 
   const sidebarNav = useMemo(() => ({
@@ -70,13 +73,13 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
   return (
     <div className={`h-screen ${isDarkMode() ? 'dark' : ''}`}>
       <TourLayout
-        sidebar={
+        sidebar={(
           <TourSidebar
             lang={lang}
             tourData={tourData}
             {...sidebarNav}
           />
-        }
+        )}
       >
         <div className="flex flex-col h-full bg-background text-foreground">
           <TourHeader lang={lang} section={section} />

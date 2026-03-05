@@ -21,7 +21,10 @@ export function TourNavigation({ lang, hasPrev, hasNext, onPrev, onNext, current
         {lang === 'en' ? 'Prev' : '上一步'}
       </Button>
       <span className="text-xs tabular-nums text-muted-foreground">
-        {currentIndex + 1} / {total}
+        {currentIndex + 1}
+        {' '}
+        /
+        {total}
       </span>
       <Button size="sm" disabled={!hasNext} onClick={onNext}>
         {lang === 'en' ? 'Next' : '下一步'}

@@ -6,8 +6,8 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarRail,
@@ -73,11 +73,11 @@ export function TourSidebar({
                               </CollapsibleTrigger>
                               <CollapsibleContent>
                                 <SidebarMenuSub>
-                                  {sub.sections.map(section => {
-                                    const isActive =
-                                      chapter.id === currentChapter
-                                      && sub.id === currentSubChapter
-                                      && section.id === currentSection
+                                  {sub.sections.map((section) => {
+                                    const isActive
+                                      = chapter.id === currentChapter
+                                        && sub.id === currentSubChapter
+                                        && section.id === currentSection
 
                                     return (
                                       <SidebarMenuSubItem key={section.id}>

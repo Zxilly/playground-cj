@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import type { TourChapterSlim, FlatSection } from '@/tour/types'
+import type { FlatSection, TourChapterSlim } from '@/tour/types'
 
 const TourApp = dynamic(
   () => import('./TourApp'),

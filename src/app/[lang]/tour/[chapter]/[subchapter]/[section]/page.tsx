@@ -1,4 +1,4 @@
-import { loadTourData, flattenSections, getSlimTourData } from '@/tour/loader'
+import { flattenSections, getSlimTourData, loadTourData } from '@/tour/loader'
 import TourWrapper from '@/components/tour/TourWrapper'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'

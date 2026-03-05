@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { loadTourData, flattenSections } from '@/tour/loader'
+import { flattenSections, loadTourData } from '@/tour/loader'
 
 interface PageProps {
   params: Promise<{ lang: string }>

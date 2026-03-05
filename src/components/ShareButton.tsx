@@ -17,7 +17,7 @@ interface ShareButtonProps {
   editor: monaco.editor.IStandaloneCodeEditor | undefined
 }
 
-const ShareButton = memo(function ShareButton({ editor }: ShareButtonProps) {
+const ShareButton = memo(({ editor }: ShareButtonProps) => {
   const { i18n } = useLingui()
   const [isOpen, setIsOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)

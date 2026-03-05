@@ -37,7 +37,8 @@ export function TourEditor({ code, locale }: TourEditorProps) {
 
   // Auto-switch to program tab when output arrives
   useEffect(() => {
-    if (programOutput) setActiveTab('program')
+    if (programOutput)
+      setActiveTab('program')
   }, [programOutput])
 
   const onLoad = useCallback((editorApp: EditorApp) => {

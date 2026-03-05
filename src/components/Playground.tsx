@@ -52,7 +52,8 @@ function Playground({ defaultCode }: PlaygroundProps) {
   const toggleOutput = useCallback(() => {
     setIsOutputCollapsed(prev => !prev)
     const panel = outputPanel.current
-    if (!panel) return
+    if (!panel)
+      return
 
     if (panel.isCollapsed()) {
       panel.expand()

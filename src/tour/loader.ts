@@ -1,17 +1,19 @@
-import { readdirSync, readFileSync, existsSync } from 'fs'
-import { join } from 'path'
-import type { TourChapter, TourSubChapter, TourSection, FlatSection, TourChapterSlim } from './types'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import type { FlatSection, TourChapter, TourChapterSlim, TourSection, TourSubChapter } from './types'
 
 const TOUR_DIR = join(process.cwd(), 'tour')
 
 function readNameJson(dir: string): Record<string, string> {
   const filePath = join(dir, 'name.json')
-  if (!existsSync(filePath)) return { zh: '', en: '' }
+  if (!existsSync(filePath))
+    return { zh: '', en: '' }
   return JSON.parse(readFileSync(filePath, 'utf-8'))
 }
 
 function readFileOrEmpty(filePath: string): string {
-  if (!existsSync(filePath)) return ''
+  if (!existsSync(filePath))
+    return ''
   return readFileSync(filePath, 'utf-8')
 }
 
@@ -55,9 +57,11 @@ let cachedTourData: TourChapter[] | null = null
 let cachedFlatSections: FlatSection[] | null = null
 
 export function loadTourData(): TourChapter[] {
-  if (cachedTourData) return cachedTourData
+  if (cachedTourData)
+    return cachedTourData
 
-  if (!existsSync(TOUR_DIR)) return []
+  if (!existsSync(TOUR_DIR))
+    return []
 
   const entries = readdirSync(TOUR_DIR, { withFileTypes: true })
     .filter(e => e.isDirectory() && e.name.match(/^\d+-/))
@@ -68,7 +72,8 @@ export function loadTourData(): TourChapter[] {
 }
 
 export function flattenSections(data: TourChapter[]): FlatSection[] {
-  if (cachedFlatSections) return cachedFlatSections
+  if (cachedFlatSections)
+    return cachedFlatSections
 
   const flat: FlatSection[] = []
 
@@ -107,4 +112,3 @@ export function getSlimTourData(data: TourChapter[]): TourChapterSlim[] {
     })),
   }))
 }
-
