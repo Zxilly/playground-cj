@@ -2,16 +2,23 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import Negotiator from 'negotiator'
 import type { Locale } from '@/lib/i18n'
-import { defaultLocale, locales } from '@/lib/i18n'
+import { defaultLocale, isLocale, locales } from '@/lib/i18n'
 
 const COOKIE_NAME = 'locale'
+
+type DomainType = 'tour' | 'playground'
+
+interface ParsedPath {
+  lang: Locale | null
+  hasTourSegment: boolean
+  rest: string[]
+}
 
 function getLocaleFromHeaders(request: NextRequest): Locale {
   const acceptLanguage = request.headers.get('accept-language') ?? undefined
   const headers = { 'accept-language': acceptLanguage }
   const languages = new Negotiator({ headers }).languages()
 
-  // Find first supported language
   for (const language of languages) {
     const locale = language.toLowerCase()
     if (locale.startsWith('en'))
@@ -32,14 +39,57 @@ function getLocaleFromCookie(request: NextRequest): Locale | null {
 }
 
 function getPreferredLocale(request: NextRequest): Locale {
-  // Priority: Cookie > Accept-Language header > Default
-  const cookieLocale = getLocaleFromCookie(request)
-  if (cookieLocale)
-    return cookieLocale
-
-  return getLocaleFromHeaders(request)
+  return getLocaleFromCookie(request) ?? getLocaleFromHeaders(request)
 }
 
+function getDomainType(host: string): DomainType {
+  return host.startsWith('tour.') ? 'tour' : 'playground'
+}
+
+function parsePath(pathname: string): ParsedPath {
+  const segments = pathname.split('/').filter(Boolean)
+
+  let lang: Locale | null = null
+  let idx = 0
+
+  if (segments.length > 0 && isLocale(segments[0])) {
+    lang = segments[0] as Locale
+    idx = 1
+  }
+
+  let hasTourSegment = false
+  if (idx < segments.length && segments[idx] === 'tour') {
+    hasTourSegment = true
+    idx += 1
+  }
+
+  return { lang, hasTourSegment, rest: segments.slice(idx) }
+}
+
+function buildPath(lang: Locale, includeTour: boolean, rest: string[]): string {
+  const parts = ['', lang]
+  if (includeTour)
+    parts.push('tour')
+  parts.push(...rest)
+  return parts.join('/')
+}
+
+/**
+ * URL rewriting state machine:
+ *
+ * Tour domain (tour.*):
+ *   External URL: /{lang}/{chapter}/{subchapter}/{section}
+ *   Internal URL: /{lang}/tour/{chapter}/{subchapter}/{section}
+ *
+ *   1. No lang               → rewrite to /{locale}/tour/{rest}
+ *   2. Lang + /tour/ + rest  → redirect to /{lang}/{rest}  (strip /tour/ from browser URL)
+ *   3. Lang + /tour/ only    → rewrite as-is               (index page, no rest to strip)
+ *   4. Lang + no /tour/      → rewrite to /{lang}/tour/{rest}
+ *
+ * Playground domain:
+ *   1. Has lang → pass through
+ *   2. No lang  → redirect to /{locale}/{path}
+ */
 export function proxy(request: NextRequest): NextResponse {
   const pathname = request.nextUrl.pathname
 
@@ -52,36 +102,37 @@ export function proxy(request: NextRequest): NextResponse {
     return NextResponse.next()
   }
 
-  // Handle tour.* domain: rewrite URLs to include /tour segment
   const host = request.headers.get('host') ?? ''
-  if (host.startsWith('tour.')) {
-    const segments = pathname.split('/')
-    const lang = segments[1] ?? ''
+  const domain = getDomainType(host)
+  const parsed = parsePath(pathname)
 
-    if (lang !== 'zh' && lang !== 'en') {
-      const preferredLocale = getPreferredLocale(request)
+  if (domain === 'tour') {
+    const lang = parsed.lang ?? getPreferredLocale(request)
+
+    // Case 1: No locale in URL → rewrite with locale and /tour/
+    if (!parsed.lang) {
       const url = request.nextUrl.clone()
-      url.pathname = `/${preferredLocale}/tour`
+      url.pathname = buildPath(lang, true, parsed.rest)
       return NextResponse.rewrite(url)
     }
 
-    // /zh/01-basics/... → /zh/tour/01-basics/...
-    segments.splice(2, 0, 'tour')
+    // Case 2: /{lang}/tour/{rest} → redirect to /{lang}/{rest} (strip /tour/ from visible URL)
+    if (parsed.hasTourSegment && parsed.rest.length > 0) {
+      const url = request.nextUrl.clone()
+      url.pathname = buildPath(lang, false, parsed.rest)
+      return NextResponse.redirect(url)
+    }
+
+    // Case 3 & 4: rewrite to internal path with /tour/
     const url = request.nextUrl.clone()
-    url.pathname = segments.join('/')
+    url.pathname = buildPath(lang, true, parsed.rest)
     return NextResponse.rewrite(url)
   }
 
-  const hasLocaleInPath = locales.some(locale =>
-    pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
-  )
-
-  if (hasLocaleInPath) {
+  // Playground domain
+  if (parsed.lang) {
     const response = NextResponse.next()
-    const langMatch = pathname.match(/^\/([a-z]{2})(?:\/|$)/)
-    if (langMatch) {
-      response.headers.set('x-locale', langMatch[1])
-    }
+    response.headers.set('x-locale', parsed.lang)
     return response
   }
 
@@ -92,10 +143,6 @@ export function proxy(request: NextRequest): NextResponse {
 
 export const config = {
   matcher: [
-    // Match all pathnames except for
-    // - API routes
-    // - Static files
-    // - Next.js internals
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
