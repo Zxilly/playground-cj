@@ -3,17 +3,15 @@ import { getShareCode } from '@/service/share'
 
 interface PageProps {
   params: Promise<{ lang: string }>
-  searchParams: Promise<{ [_: string]: string | string[] | undefined }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export default async function LangPage({ params, searchParams }: PageProps) {
   const { lang } = await params
-  const sp = await searchParams
+  const { hash } = await searchParams
 
-  let code: string | undefined
-  if (sp.hash) {
-    code = await getShareCode(sp.hash as string)
-  }
+  const code = hash ? await getShareCode(hash as string) : undefined
+
   return (
     <main>
       <Wrapper lang={lang} defaultCode={code} />

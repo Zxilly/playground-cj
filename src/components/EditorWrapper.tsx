@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import React, { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
 import { LanguageClientManager } from 'monaco-languageclient/lcwrapper'
 import { EditorApp } from 'monaco-languageclient/editorApp'
@@ -15,18 +15,10 @@ export interface MonacoEditorProps {
   locale?: string
 }
 
-export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
-  const {
-    style,
-    onLoad,
-    code,
-    locale,
-  } = props
-
+export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEditorProps) {
   const languageClientConfig = useMemo(() => createLanguageClientConfig(), [])
   const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale), [code, locale])
 
-  // Flag to prevent multiple initializations
   const isInitializingRef = useRef(false)
   const isInitializedRef = useRef(false)
 
@@ -36,6 +28,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
   const statusBarRef = useRef<StatusBarHandle | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
+  const lspPollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const updateEditorLayout = () => {
@@ -56,11 +49,6 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       }
     }
 
-    const awaitGlobal = async () => {
-      const envEnhanced = getEnhancedMonacoEnvironment()
-      return envEnhanced.vscodeApiGlobalInitAwait ?? Promise.resolve()
-    }
-
     const initAll = async () => {
       if (!containerRef.current || isInitializingRef.current || isInitializedRef.current) {
         return
@@ -69,26 +57,21 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       isInitializingRef.current = true
 
       try {
-        // Wait for global initialization to complete
-        await awaitGlobal()
+        await getEnhancedMonacoEnvironment().vscodeApiGlobalInitAwait
 
-        // Step 1: Create vscode API config with container and initialize MonacoVscodeApiWrapper
-        const vscodeApiConfig = createMonacoVscodeApiConfig(containerRef.current ?? undefined)
+        const vscodeApiConfig = createMonacoVscodeApiConfig(containerRef.current)
         vscodeApiWrapperRef.current = new MonacoVscodeApiWrapper(vscodeApiConfig)
         await vscodeApiWrapperRef.current.start()
 
-        // Step 2: Initialize and start LanguageClientManager (if config exists)
         if (languageClientConfig) {
           languageClientsManagerRef.current = new LanguageClientManager()
           languageClientsManagerRef.current.setConfig(languageClientConfig)
           languageClientsManagerRef.current.start()
         }
 
-        // Step 3: Initialize and start EditorApp
         editorAppRef.current = new EditorApp(editorAppConfig)
         await editorAppRef.current.start(containerRef.current)
 
-        // Step 4: Create custom status bar only if LSP is enabled (non-mobile)
         if (languageClientConfig) {
           const parentContainer = containerRef.current.parentElement
           if (parentContainer) {
@@ -97,7 +80,6 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
               height: 22,
             })
 
-            // Add LSP status entry
             const lspStatusEntry = statusBarRef.current.addEntry({
               id: 'lsp.status',
               name: 'LSP',
@@ -108,7 +90,6 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
               priority: 100,
             })
 
-            // Update status when LSP is ready
             const checkLspStatus = () => {
               const status = getLspStatus()
               if (languageClientsManagerRef.current?.isStarted() && status.initialized) {
@@ -117,14 +98,13 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
                   ariaLabel: 'LSP ready',
                   tooltip: `Cangjie Language Server\n\nStatus: Ready\nStdlib modules: ${status.stdlibModulesLoaded}/${status.stdlibModulesTotal}`,
                 })
+                lspPollTimerRef.current = null
               }
               else {
                 lspStatusEntry.update({
                   tooltip: `Cangjie Language Server\n\nStatus: Loading...\nStdlib modules: ${status.stdlibModulesLoaded}/${status.stdlibModulesTotal}`,
                 })
-                // Check again after a short delay
-                // eslint-disable-next-line react-web-api/no-leaked-timeout
-                setTimeout(checkLspStatus, 500)
+                lspPollTimerRef.current = setTimeout(checkLspStatus, 500)
               }
             }
             checkLspStatus()
@@ -139,9 +119,7 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
           resizeObserverRef.current.disconnect()
         }
 
-        resizeObserverRef.current = new ResizeObserver(() => {
-          updateEditorLayout()
-        })
+        resizeObserverRef.current = new ResizeObserver(updateEditorLayout)
 
         resizeObserverRef.current.observe(containerRef.current.parentElement!)
 
@@ -153,44 +131,36 @@ export const MonacoEditorReactComp: React.FC<MonacoEditorProps> = (props) => {
       finally {
         isInitializingRef.current = false
       }
-    };
+    }
 
-    (async () => {
-      await initAll()
-    })()
+    void initAll()
   }, [onLoad, editorAppConfig, languageClientConfig])
 
   useEffect(() => {
     const disposeAll = async () => {
       try {
         isInitializedRef.current = false
-        if (statusBarRef.current) {
-          statusBarRef.current.dispose()
-        }
-        if (editorAppRef.current) {
-          await editorAppRef.current.dispose()
-        }
-        if (languageClientsManagerRef.current) {
-          await languageClientsManagerRef.current.dispose()
-        }
-        if (vscodeApiWrapperRef.current) {
-          await vscodeApiWrapperRef.current.dispose()
-        }
+        statusBarRef.current?.dispose()
+        await editorAppRef.current?.dispose()
+        await languageClientsManagerRef.current?.dispose()
+        await vscodeApiWrapperRef.current?.dispose()
       }
       catch {
-        // The components may throw errors during disposal, but we want to continue anyway
+        // Components may throw during disposal
       }
     }
 
     return () => {
+      if (lspPollTimerRef.current) {
+        clearTimeout(lspPollTimerRef.current)
+        lspPollTimerRef.current = null
+      }
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect()
         resizeObserverRef.current = null
       }
 
-      (async () => {
-        await disposeAll()
-      })()
+      void disposeAll()
     }
   }, [])
 

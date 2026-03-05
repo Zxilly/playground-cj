@@ -16,8 +16,6 @@ export interface EventPayload {
 
 type EventCallback<E extends EventType> = EventPayload[E]
 
-type CallbackParameters<T extends (...args: any[]) => any> = Parameters<T>
-
 class EventEmitter {
   private events: { [key: string]: EventCallback<any>[] } = {}
 
@@ -37,14 +35,14 @@ class EventEmitter {
 
   emit<E extends EventType>(
     event: E,
-    ...args: CallbackParameters<EventPayload[E]>
+    ...args: Parameters<EventPayload[E]>
   ): void {
     if (!this.events[event])
       return
 
-    this.events[event].forEach((callback) => {
+    for (const callback of this.events[event]) {
       callback(...args)
-    })
+    }
   }
 }
 

@@ -6,7 +6,6 @@ import ShareButton from '@/components/ShareButton'
 import { Button } from '@/components/ui/button'
 import { Trans } from '@lingui/react/macro'
 import Image from 'next/image'
-import React from 'react'
 import type { EditorApp } from 'monaco-languageclient/editorApp'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 
@@ -20,7 +19,6 @@ interface MobileHeaderProps {
 export function MobileHeader({ handleRun, handleFormat, editor, wrapperRef }: MobileHeaderProps) {
   return (
     <div>
-      {/* Logo + 语言选择器 */}
       <div className="flex flex-row justify-between items-center mb-2">
         <div className="flex items-center">
           <Image
@@ -37,13 +35,12 @@ export function MobileHeader({ handleRun, handleFormat, editor, wrapperRef }: Mo
         <LanguageSelector />
       </div>
 
-      {/* 控件区域 */}
       <div className="flex flex-col space-y-2 mb-2">
         <div className="w-full">
-          <ExamplesDropdown action={(nxt) => {
+          <ExamplesDropdown action={(code) => {
             wrapperRef.current?.updateCodeResources({
               modified: {
-                text: nxt,
+                text: code,
                 enforceLanguageId: 'Cangjie',
                 uri: editor!.getModel()!.uri.toString(),
               },

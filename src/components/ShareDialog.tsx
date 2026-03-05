@@ -1,4 +1,3 @@
-import React from 'react'
 import {
   Dialog,
   DialogContent,
@@ -18,36 +17,32 @@ interface ShareDialogProps {
   url: string
 }
 
-const ShareDialog: React.FC<ShareDialogProps> = ({ isOpen, onClose, url }) => {
+export default function ShareDialog({ isOpen, onClose, url }: ShareDialogProps) {
   const { i18n } = useLingui()
 
-  const handleCopy = async () => {
+  async function handleCopy() {
     await navigator.clipboard.writeText(url)
     toast.success(i18n._(msg`已复制分享链接`))
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => onClose()}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle><Trans>分享代码</Trans></DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center space-x-2">
-            <input
-              type="text"
-              value={url}
-              readOnly
-              className="flex-1 px-3 py-2 border rounded-md bg-muted"
-            />
-            <Button variant="outline" size="icon" onClick={handleCopy}>
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex items-center space-x-2">
+          <input
+            type="text"
+            value={url}
+            readOnly
+            className="flex-1 px-3 py-2 border rounded-md bg-muted"
+          />
+          <Button variant="outline" size="icon" onClick={handleCopy}>
+            <Copy className="h-4 w-4" />
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
   )
 }
-
-export default ShareDialog

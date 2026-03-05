@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { getLocalizedExamples } from '@/const'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown } from 'lucide-react'
-import * as React from 'react'
+import { useMemo, useState } from 'react'
 import { Trans } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
@@ -18,11 +18,10 @@ interface ExamplesDropdownProps {
 
 export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
   const { i18n } = useLingui()
-  const [open, setOpen] = React.useState(false)
-  const [value, setValue] = React.useState<string>('Hello World')
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState('Hello World')
 
-  // Get localized examples based on current language
-  const examples = React.useMemo(() => getLocalizedExamples(), [])
+  const examples = useMemo(() => getLocalizedExamples(), [])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

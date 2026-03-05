@@ -62,7 +62,7 @@ export const examples: [string, { zh: { name: string, content: string }, en: { n
   ['cffi', { zh: { name: 'CFFI', content: cffi }, en: { name: 'CFFI', content: cffiEn } }],
 ]
 
-export function getLocalizedExamples() {
+export function getLocalizedExamples(): Record<string, string> {
   const currentLocale = i18n.locale || 'zh'
 
   return Object.fromEntries(

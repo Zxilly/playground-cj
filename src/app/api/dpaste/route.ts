@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 
 export const runtime = 'edge'
 
-async function dpaste(content: string) {
-  const query = new URLSearchParams()
-  query.set('content', content)
-  query.set('title', 'Playground Cangjie')
-  query.set('expiry_days', '200')
+async function dpaste(content: string): Promise<string> {
+  const body = new URLSearchParams({
+    content,
+    title: 'Playground Cangjie',
+    expiry_days: '200',
+  })
 
   const response = await fetch('https://dpaste.com/api/v2/', {
     method: 'POST',
@@ -14,7 +15,7 @@ async function dpaste(content: string) {
       'Content-Type': 'application/x-www-form-urlencoded',
       'User-Agent': 'Cangjie Playground/1.0',
     },
-    body: query.toString(),
+    body: body.toString(),
   })
   return response.text()
 }

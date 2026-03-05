@@ -19,17 +19,14 @@ export function LinguiClientProvider({
   initialLocale,
   initialMessages,
 }: LinguiClientProviderProps) {
-  // Create a stable i18n instance for this locale
   const [i18n] = useState(() => {
     const instance = setupI18n({
       locale: initialLocale,
       messages: { [initialLocale]: initialMessages },
     })
-
-    // Activate the locale immediately
     instance.activate(initialLocale)
 
-    // Sync with global i18n instance for components using t macro
+    // Sync global i18n instance for components using the t macro
     globalI18n.load({ [initialLocale]: initialMessages })
     globalI18n.activate(initialLocale)
 
@@ -38,7 +35,6 @@ export function LinguiClientProvider({
 
   const languageContextValue = useMemo(() => ({
     locale: initialLocale,
-    isLoading: false,
   }), [initialLocale])
 
   return (

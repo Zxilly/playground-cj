@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { eventEmitter, EVENTS } from '@/lib/events'
-import { remoteRun, requestRemoteAction, SandboxStatus } from '@/service/run'
+import { remoteRun, requestRemoteAction } from '@/service/run'
 import { toast } from 'sonner'
 import AsyncLock from 'async-lock'
 import { msg } from '@lingui/core/macro'
@@ -48,18 +48,12 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
 
       toast.promise(async () => {
         await remoteLock.acquire('run', async () => {
-          const [resp, status] = await requestRemoteAction(code, 'format')
-
-          if (status === SandboxStatus.UNKNOWN_ERROR) {
-            throw new Error(i18n._(msg`格式化失败，未知错误`))
-          }
+          const resp = await requestRemoteAction(code, 'format')
 
           setToolOutput(resp.formatter_output)
 
           if (resp.formatter_code === 0) {
-            if (onFormatted) {
-              onFormatted(resp.formatted)
-            }
+            onFormatted?.(resp.formatted)
             eventEmitter.emit(EVENTS.FORMAT_CODE_COMPLETE, resp.formatted)
           }
           else {

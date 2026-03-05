@@ -15,17 +15,14 @@ const CJO_STORE_NAME = 'modules'
 /**
  * Check if cache version changed and clear if needed
  */
-async function checkAndUpdateCacheVersion(): Promise<boolean> {
+async function checkAndUpdateCacheVersion(): Promise<void> {
   const storedVersion = localStorage.getItem(CACHE_STORAGE_KEY)
 
   if (storedVersion !== CACHE_KEY) {
     console.log(`[Cache] Version changed: ${storedVersion} -> ${CACHE_KEY}`)
     await clearAllLspCache()
     localStorage.setItem(CACHE_STORAGE_KEY, CACHE_KEY)
-    return true // Cache was cleared
   }
-
-  return false // No change
 }
 
 /**
@@ -35,19 +32,16 @@ async function checkAndUpdateCacheVersion(): Promise<boolean> {
 async function cachedFetch(url: string, cacheName: string): Promise<Response> {
   const cache = await caches.open(cacheName)
 
-  // Try cache first
   const cached = await cache.match(url)
   if (cached) {
     console.log(`[Cache] Hit: ${url}`)
     return cached
   }
 
-  // Fetch from network
   console.log(`[Cache] Miss: ${url}, fetching...`)
   const response = await fetch(url)
 
   if (response.ok) {
-    // Cache the response (clone because response can only be consumed once)
     await cache.put(url, response.clone())
     console.log(`[Cache] Stored: ${url}`)
   }
@@ -59,40 +53,25 @@ async function cachedFetch(url: string, cacheName: string): Promise<Response> {
  * Preload and cache WASM files
  */
 async function preloadWasmCache(): Promise<void> {
-  const cache = await caches.open(WASM_CACHE_NAME)
-
-  for (const path of WASM_CACHE_PATHS) {
-    const cached = await cache.match(path)
-    if (!cached) {
-      console.log(`[Cache] Preloading: ${path}`)
-      try {
-        const response = await fetch(path)
-        if (response.ok) {
-          await cache.put(path, response)
-          console.log(`[Cache] Preloaded: ${path}`)
-        }
-      }
-      catch (e) {
-        console.warn(`[Cache] Failed to preload ${path}:`, e)
-      }
+  await Promise.all(WASM_CACHE_PATHS.map(async (path) => {
+    try {
+      await cachedFetch(path, WASM_CACHE_NAME)
     }
-  }
+    catch (e) {
+      console.warn(`[Cache] Failed to preload ${path}:`, e)
+    }
+  }))
 }
 
 /**
- * Clear WASM cache
+ * Clear all WASM caches (current + old versions)
  */
 async function clearWasmCache(): Promise<void> {
-  // Clear current version cache
-  const deleted = await caches.delete(WASM_CACHE_NAME)
-  console.log(`[Cache] Cleared WASM: ${WASM_CACHE_NAME}`, deleted)
-
-  // Also try to clear old versioned caches
   const keys = await caches.keys()
   for (const key of keys) {
-    if (key.startsWith('wasm-lsp-')) {
+    if (key.startsWith('wasm-')) {
       await caches.delete(key)
-      console.log(`[Cache] Cleared old WASM cache: ${key}`)
+      console.log(`[Cache] Cleared WASM cache: ${key}`)
     }
   }
 }
@@ -120,13 +99,6 @@ async function clearCjoCache(): Promise<void> {
 export async function clearAllLspCache(): Promise<void> {
   await clearWasmCache()
   await clearCjoCache()
-}
-
-/**
- * Get current cache key/version
- */
-export function getCacheKey(): string {
-  return CACHE_KEY
 }
 
 // Standard library modules
@@ -210,39 +182,24 @@ function openCjoDatabase(): Promise<IDBDatabase> {
 }
 
 /**
- * Get cached CJO module from IndexedDB
+ * Read a single key from an open IndexedDB connection
  */
-async function getCachedCjo(modulePath: string): Promise<Uint8Array | null> {
-  try {
-    const db = await openCjoDatabase()
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(CJO_STORE_NAME, 'readonly')
-      const store = tx.objectStore(CJO_STORE_NAME)
-      const request = store.get(modulePath)
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => resolve(request.result || null)
-      tx.oncomplete = () => db.close()
-    })
-  }
-  catch {
-    return null
-  }
+function idbGet(db: IDBDatabase, key: string): Promise<Uint8Array | null> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CJO_STORE_NAME, 'readonly')
+    const request = tx.objectStore(CJO_STORE_NAME).get(key)
+    request.onerror = () => reject(request.error)
+    request.onsuccess = () => resolve(request.result || null)
+  })
 }
 
 /**
- * Store CJO module in IndexedDB cache
+ * Write a single key to an open IndexedDB connection (fire-and-forget)
  */
-async function setCachedCjo(modulePath: string, data: Uint8Array): Promise<void> {
+function idbPut(db: IDBDatabase, key: string, data: Uint8Array): void {
   try {
-    const db = await openCjoDatabase()
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(CJO_STORE_NAME, 'readwrite')
-      const store = tx.objectStore(CJO_STORE_NAME)
-      const request = store.put(data, modulePath)
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => resolve()
-      tx.oncomplete = () => db.close()
-    })
+    const tx = db.transaction(CJO_STORE_NAME, 'readwrite')
+    tx.objectStore(CJO_STORE_NAME).put(data, key)
   }
   catch {
     // Ignore cache write errors
@@ -250,8 +207,7 @@ async function setCachedCjo(modulePath: string, data: Uint8Array): Promise<void>
 }
 
 interface LspServerCallbacks {
-  onResponse: (json: object) => void
-  onNotification: (json: object) => void
+  onMessage: (label: 'Response' | 'Notification', json: object) => void
   onLog: (msg: string) => void
   onError: (err: Error) => void
 }
@@ -260,13 +216,9 @@ interface LspServerCallbacks {
  * Initialize the Cangjie LSP WASM module
  */
 async function initializeLspServer(callbacks: LspServerCallbacks): Promise<EmscriptenModule> {
-  const { onResponse, onNotification, onLog, onError } = callbacks
+  const { onMessage, onLog, onError } = callbacks
 
-  // Check cache version and clear if changed
-  const cacheCleared = await checkAndUpdateCacheVersion()
-  if (cacheCleared) {
-    onLog(`Cache version updated to ${CACHE_KEY}, cleared old caches`)
-  }
+  await checkAndUpdateCacheVersion()
 
   onLog('Loading WASM module...')
 
@@ -301,15 +253,8 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   module.onLSPMessage = (messageStr: string) => {
     try {
       const json = JSON.parse(messageStr)
-      if (json.id !== undefined) {
-        onResponse(json)
-      }
-      else if (json.method) {
-        onNotification(json)
-      }
-      else {
-        onResponse(json)
-      }
+      const label = (json.method && json.id === undefined) ? 'Notification' : 'Response'
+      onMessage(label, json)
     }
     catch (e) {
       onError(new Error(`Failed to parse LSP message: ${(e as Error).message}`))
@@ -324,40 +269,45 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   const targetModulesPath = `/cangjie/modules/${TARGET_PATH}`
   module.FS.mkdirTree(`${targetModulesPath}/std`)
 
-  // Load standard library modules
+  // Load standard library modules with a single DB connection
   onLog('Loading standard library...')
 
   let loaded = 0
   let cached = 0
   let downloaded = 0
 
+  let db: IDBDatabase | null = null
+  try {
+    db = await openCjoDatabase()
+  }
+  catch {
+    // Continue without cache
+  }
+
   for (const modulePath of STD_MODULES) {
     const destPath = `${targetModulesPath}/${modulePath}`
 
     try {
       // Check IndexedDB cache first
-      const cachedData = await getCachedCjo(modulePath)
+      const cachedData = db ? await idbGet(db, modulePath) : null
 
       if (cachedData) {
-        // Use cached data
         module.FS.writeFile(destPath, cachedData)
         loaded++
         cached++
         onLog(`  [cjo] ${destPath} (${cachedData.length} bytes, cached)`)
       }
       else {
-        // Download from server
         const url = `${LSP_MODULES_PATH}/${TARGET_PATH}/${modulePath}`
         const response = await fetch(url)
         if (response.ok) {
-          const buffer = await response.arrayBuffer()
-          const data = new Uint8Array(buffer)
-
-          // Write to WASM filesystem
+          const data = new Uint8Array(await response.arrayBuffer())
           module.FS.writeFile(destPath, data)
 
-          // Cache to IndexedDB (async, don't wait)
-          setCachedCjo(modulePath, data)
+          // Cache to IndexedDB (fire-and-forget)
+          if (db) {
+            idbPut(db, modulePath, data)
+          }
 
           loaded++
           downloaded++
@@ -370,6 +320,7 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
     }
   }
 
+  db?.close()
   onLog(`Loaded ${loaded}/${STD_MODULES.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
 
   // Start the background server loop for non-blocking message processing
@@ -379,12 +330,13 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   return module
 }
 
-// Connection instance (singleton)
-let connectionInstance: {
+interface ConnectionInstance {
   editorPort: MessagePort
   initPromise: Promise<EmscriptenModule>
   module: EmscriptenModule | null
-} | null = null
+}
+
+let connectionInstance: ConnectionInstance | null = null
 
 /**
  * Create a MessageChannel-based connection between monaco-languageclient and the LSP server.
@@ -400,55 +352,39 @@ let connectionInstance: {
  * 4. Response sent via serverPort.postMessage() → arrives at editorPort
  * 5. BrowserMessageReader receives response on editorPort
  */
-function createLanguageClientConnection() {
-  const channel = new MessageChannel()
-  const editorPort = channel.port1 // For monaco-languageclient
-  const serverPort = channel.port2 // For LSP server
+function createLanguageClientConnection(): ConnectionInstance {
+  const { port1: editorPort, port2: serverPort } = new MessageChannel()
+
+  const instance: ConnectionInstance = { editorPort, initPromise: null!, module: null }
 
   let wasmModule: EmscriptenModule | null = null
 
-  const result: {
-    editorPort: MessagePort
-    initPromise: Promise<EmscriptenModule>
-    module: EmscriptenModule | null
-  } = {
-    editorPort,
-    initPromise: null!,
-    module: null,
-  }
-
-  result.initPromise = initializeLspServer({
-    onResponse: (json) => {
-      console.log('[LSP Response]', json)
-      serverPort.postMessage(json)
-    },
-    onNotification: (json) => {
-      console.log('[LSP Notification]', json)
+  instance.initPromise = initializeLspServer({
+    onMessage: (label, json) => {
+      console.log(`[LSP ${label}]`, json)
       serverPort.postMessage(json)
     },
     onLog: msg => console.log('[LSP]', msg),
     onError: err => console.error('[LSP Error]', err),
   }).then((module) => {
     wasmModule = module
-    result.module = module
+    instance.module = module
     return module
   })
 
-  // Handle incoming requests from editor
   serverPort.onmessage = async (event) => {
     if (!wasmModule) {
-      await result.initPromise
+      await instance.initPromise
     }
     console.log('[LSP Message]', event.data)
     const message = typeof event.data === 'string' ? event.data : JSON.stringify(event.data)
     wasmModule!.processMessage(message)
   }
 
-  // Start both ports to enable message passing
   serverPort.start()
   editorPort.start()
 
-  return result
+  return instance
 }
 
 /**
@@ -464,7 +400,6 @@ export function getLanguageClientPort(): MessagePort {
 
 export interface LspStatus {
   initialized: boolean
-  loading: boolean
   stdlibModulesLoaded: number
   stdlibModulesTotal: number
 }
@@ -473,31 +408,12 @@ export interface LspStatus {
  * Get the current LSP server status
  */
 export function getLspStatus(): LspStatus {
-  if (!connectionInstance) {
-    return {
-      initialized: false,
-      loading: false,
-      stdlibModulesLoaded: 0,
-      stdlibModulesTotal: STD_MODULES.length,
-    }
-  }
-
-  const isInitialized = connectionInstance.module !== null
+  const initialized = connectionInstance !== null && connectionInstance.module !== null
 
   return {
-    initialized: isInitialized,
-    loading: !isInitialized,
-    stdlibModulesLoaded: isInitialized ? STD_MODULES.length : 0,
+    initialized,
+    stdlibModulesLoaded: initialized ? STD_MODULES.length : 0,
     stdlibModulesTotal: STD_MODULES.length,
   }
 }
 
-/**
- * Wait for LSP to be initialized
- */
-export async function waitForLspReady(): Promise<void> {
-  if (!connectionInstance) {
-    return
-  }
-  await connectionInstance.initPromise
-}

@@ -86,10 +86,7 @@ export function setEditorValue(ed: monaco.editor.ICodeEditor, code: string) {
 }
 
 export function updateEditor(deps: OnMountFunctionDependencies) {
-  const {
-    setToolOutput,
-    ed,
-  } = deps
+  const { setToolOutput, ed } = deps
 
   monaco.languages.registerDocumentFormattingEditProvider('Cangjie', {
     async provideDocumentFormattingEdits(model) {
@@ -125,7 +122,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
-    run: async (editor: monaco.editor.ICodeEditor) => {
+    run: (editor: monaco.editor.ICodeEditor) => {
       if (isBusy()) {
         return
       }
@@ -140,7 +137,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     label: t`分享 (URL 方式)`,
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
-    run: async (editor: monaco.editor.ICodeEditor) => {
+    run: (editor: monaco.editor.ICodeEditor) => {
       const code = editor.getValue()
       const url = generateDataShareUrl(code)
       eventEmitter.emit(EVENTS.SHOW_SHARE_DIALOG, url)
@@ -175,10 +172,9 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-    run: async (editor: monaco.editor.ICodeEditor) => {
+    run: (editor: monaco.editor.ICodeEditor) => {
       saveAsFile(editor.getValue())
       toast.success(t`已保存代码`)
-
       window.umami?.track('save')
     },
   })
@@ -236,9 +232,7 @@ export type { MonacoVscodeApiConfig }
 export function createMonacoVscodeApiConfig(htmlContainer?: HTMLElement): MonacoVscodeApiConfig {
   return {
     $type: 'extended',
-    serviceOverrides: {
-      ...getStatusBarServiceOverrides(),
-    },
+    serviceOverrides: getStatusBarServiceOverrides(),
     userConfiguration: {
       json: JSON.stringify({
         'editor.wordBasedSuggestions': 'off',
@@ -303,8 +297,9 @@ export function createLanguageClientConfig(): LanguageClientConfig | undefined {
 }
 
 export function createEditorAppConfig(shareCode?: string, locale?: string): EditorAppConfig {
-  const helloWorldExample = examples.find(([key]) => key === 'hello-world')
-  const defaultCode = shareCode ?? (locale === 'en' ? helloWorldExample?.[1].en.content : helloWorldExample?.[1].zh.content) ?? ''
+  const helloWorldExample = examples.find(([key]) => key === 'hello-world')?.[1]
+  const localizedContent = locale === 'en' ? helloWorldExample?.en.content : helloWorldExample?.zh.content
+  const defaultCode = shareCode ?? localizedContent ?? ''
 
   return {
     overrideAutomaticLayout: true,

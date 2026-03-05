@@ -1,16 +1,12 @@
-import React from 'react'
+import type { ReactNode } from 'react'
 
-interface EmbeddedLabelContainerProps {
+interface LabelContainerProps {
   title: string
-  content: React.ReactNode
+  content: ReactNode
   className?: string
 }
 
-const LabelContainer: React.FC<EmbeddedLabelContainerProps> = ({
-  title,
-  content,
-  className = '',
-}) => {
+export default function LabelContainer({ title, content, className = '' }: LabelContainerProps) {
   return (
     <div className={`relative border border-border rounded-md bg-muted ${className}`}>
       <div className="absolute top-0 right-4 transform bg-muted px-1 border-border border-l border-b border-r text-sm md:text-base text-muted-foreground">
@@ -22,5 +18,3 @@ const LabelContainer: React.FC<EmbeddedLabelContainerProps> = ({
     </div>
   )
 }
-
-export default LabelContainer

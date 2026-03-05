@@ -8,14 +8,16 @@ function base64UrlToBase64(base64url: string): string {
   return base64url.replace(/-/g, '+').replace(/_/g, '/')
 }
 
-export async function getShareCode(hash?: string) {
-  if (hash) {
-    const response = await fetch(`https://dpaste.com/${hash}.txt`)
-    if (response.ok) {
-      return await response.text()
-    }
+async function fetchDpasteContent(hash: string): Promise<string | undefined> {
+  const response = await fetch(`https://dpaste.com/${hash}.txt`)
+  if (response.ok) {
+    return response.text()
   }
   return undefined
+}
+
+export async function getShareCode(hash: string): Promise<string | undefined> {
+  return fetchDpasteContent(hash)
 }
 
 export function loadDataShareCode(): string | undefined {
@@ -32,32 +34,21 @@ export function loadDataShareCode(): string | undefined {
 export async function loadLegacyShareCode(): Promise<[string, boolean]> {
   const params = new URLSearchParams(window.location.hash.slice(1))
 
-  // 兼容传统分享链接，新分享链接在服务端处理
   const hash = params.get('hash')
   if (hash) {
-    const response = await fetch(`https://dpaste.com/${hash}.txt`)
-    if (response.ok) {
-      return [await response.text(), true]
-    }
-    return ['', false]
+    const content = await fetchDpasteContent(hash)
+    return content ? [content, true] : ['', false]
   }
 
   return ['', true]
 }
 
-function constructURLWithHash(hash: string): string {
-  const url = new URL(window.location.href)
-  url.hash = hash
-
-  return url.toString()
-}
-
 export function generateDataShareUrl(code: string): string {
   const base64UrlData = base64ToBase64Url(compressToBase64(code))
-
   const params = new URLSearchParams({ data: base64UrlData })
-
-  return constructURLWithHash(params.toString())
+  const url = new URL(window.location.href)
+  url.hash = params.toString()
+  return url.toString()
 }
 
 export async function generateHashShareUrl(code: string): Promise<string> {

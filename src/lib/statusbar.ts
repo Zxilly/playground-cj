@@ -1,13 +1,3 @@
-/**
- * Status Bar Hack Module
- *
- * 在 EditorService 模式下手动创建状态栏。
- * 这是一个 hack 解决方案，因为 EditorService 模式下状态栏服务
- * 虽然可以注册，但没有 DOM 容器可以渲染。
- *
- * 此模块通过 createAuxiliaryStatusbarPart 手动创建状态栏部件。
- */
-
 import getStatusbarServiceOverride from '@codingame/monaco-vscode-view-status-bar-service-override'
 import type { IEditorOverrideServices } from '@codingame/monaco-vscode-api'
 
@@ -16,9 +6,7 @@ import type { IEditorOverrideServices } from '@codingame/monaco-vscode-api'
  * 用于 MonacoVscodeApiConfig.serviceOverrides
  */
 export function getStatusBarServiceOverrides(): IEditorOverrideServices {
-  return {
-    ...getStatusbarServiceOverride(),
-  }
+  return getStatusbarServiceOverride()
 }
 
 export interface StatusBarOptions {
@@ -74,8 +62,7 @@ export async function createCustomStatusBar(
   } = options
 
   const { getService } = await import('@codingame/monaco-vscode-api')
-  const { IStatusbarService } = await import('@codingame/monaco-vscode-api/services')
-  const { IInstantiationService } = await import('@codingame/monaco-vscode-api/services')
+  const { IStatusbarService, IInstantiationService } = await import('@codingame/monaco-vscode-api/services')
 
   const container = document.createElement('footer')
   container.id = 'custom-statusbar'

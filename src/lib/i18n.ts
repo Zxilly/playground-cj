@@ -13,20 +13,20 @@ i18n.load({
 })
 i18n.activate(defaultLocale)
 
-export function getLocaleFromPath(): Locale {
-  if (typeof window !== 'undefined') {
-    const path = window.location.pathname
-    const segments = path.split('/').filter(Boolean)
-    const firstSegment = segments[0]
-
-    if (firstSegment === 'en' || firstSegment === 'zh') {
-      return firstSegment as Locale
-    }
-  }
-  return defaultLocale
+export function isLocale(value: string): value is Locale {
+  return (locales as readonly string[]).includes(value)
 }
 
-export async function initializeI18n(locale: Locale) {
+export function getLocaleFromPath(): Locale {
+  if (typeof window === 'undefined') {
+    return defaultLocale
+  }
+
+  const firstSegment = window.location.pathname.split('/').filter(Boolean)[0]
+  return isLocale(firstSegment) ? firstSegment : defaultLocale
+}
+
+export function initializeI18n(locale: Locale): void {
   i18n.activate(locale)
 }
 

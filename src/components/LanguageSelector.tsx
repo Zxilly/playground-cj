@@ -3,11 +3,11 @@
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { locales } from '@/lib/i18n'
+import { isLocale, locales } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, Globe } from 'lucide-react'
-import * as React from 'react'
+import { useState } from 'react'
 import { Trans } from '@lingui/react/macro'
 
 import { useLanguage } from '@/hooks/useLanguage'
@@ -22,33 +22,23 @@ function setLanguageCookie(locale: Locale) {
 }
 
 function navigateToLocale(locale: Locale) {
-  const currentPath = window.location.pathname
-  const currentSearch = window.location.search
-  const currentHash = window.location.hash
+  const { pathname, search, hash } = window.location
+  const pathSegments = pathname.split('/').filter(Boolean)
+  const hasLocalePrefix = isLocale(pathSegments[0])
 
-  // Extract the current locale from the path
-  const pathSegments = currentPath.split('/').filter(Boolean)
-  const currentLocale = (pathSegments[0] === 'en' || pathSegments[0] === 'zh') ? pathSegments[0] : null
-
-  let newPath: string
-
-  if (currentLocale) {
-    // Replace existing locale with new locale
+  if (hasLocalePrefix) {
     pathSegments[0] = locale
-    newPath = `/${pathSegments.join('/')}`
   }
   else {
-    // Add locale to path
-    newPath = `/${locale}${currentPath}`
+    pathSegments.unshift(locale)
   }
 
-  const newUrl = `${newPath}${currentSearch}${currentHash}`
-  window.location.href = newUrl
+  window.location.href = `/${pathSegments.join('/')}${search}${hash}`
 }
 
 export function LanguageSelector() {
   const { locale } = useLanguage()
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = useState(false)
 
   const handleLanguageChange = (newLocale: Locale) => {
     if (newLocale !== locale) {
@@ -91,9 +81,7 @@ export function LanguageSelector() {
                       locale === lang ? 'opacity-100' : 'opacity-0',
                     )}
                   />
-                  <div className="flex items-center">
-                    <span>{languageNames[lang].nativeName}</span>
-                  </div>
+                  {languageNames[lang].nativeName}
                 </CommandItem>
               ))}
             </CommandList>

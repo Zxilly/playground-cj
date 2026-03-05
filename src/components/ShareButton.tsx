@@ -4,7 +4,7 @@ import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronDown, Hash, Link } from 'lucide-react'
-import React, { useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import ShareDialog from '@/components/ShareDialog'
 import { generateDataShareUrl, generateHashShareUrl } from '@/service/share'
@@ -17,7 +17,7 @@ interface ShareButtonProps {
   editor: monaco.editor.IStandaloneCodeEditor | undefined
 }
 
-const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
+const ShareButton = memo(function ShareButton({ editor }: ShareButtonProps) {
   const { i18n } = useLingui()
   const [isOpen, setIsOpen] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -41,12 +41,11 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
       return
     }
 
-    if (editor.getValue().trim() === '') {
+    const code = editor.getValue()
+    if (code.trim() === '') {
       toast.warning(i18n._(msg`请先输入代码`))
       return
     }
-
-    const code = editor.getValue()
 
     if (type === 'url') {
       const url = generateDataShareUrl(code)
@@ -68,7 +67,7 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
     }
 
     window.umami?.track(`share.${type}`)
-  }, [editor])
+  }, [editor, i18n])
 
   return (
     <>
@@ -109,7 +108,5 @@ const ShareButton: React.FC<ShareButtonProps> = React.memo(({ editor }) => {
     </>
   )
 })
-
-ShareButton.displayName = 'ShareButton'
 
 export default ShareButton

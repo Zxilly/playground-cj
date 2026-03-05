@@ -27,9 +27,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
 export default async function LangLayout({ children, params }: LayoutProps) {
   const { lang } = await params
 
-  // Load messages for client-side i18n
-  const catalog = await import(`@/locales/${lang}/messages.mjs`)
-  const messages = catalog.messages
+  const { messages } = await import(`@/locales/${lang}/messages.mjs`)
 
   return (
     <LinguiClientProvider

@@ -9,7 +9,7 @@ import { updateEditor } from '@/lib/monaco'
 import { isDarkMode } from '@/lib/utils'
 import { AnsiUp } from 'ansi_up'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { EditorApp } from 'monaco-languageclient/editorApp'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
@@ -30,7 +30,7 @@ export interface PlaygroundProps {
   defaultCode?: string
 }
 
-function Component({ defaultCode }: PlaygroundProps) {
+function Playground({ defaultCode }: PlaygroundProps) {
   const { i18n } = useLingui()
   const [toolOutput, setToolOutput] = useState('')
   const [programOutput, setProgramOutput] = useState('')
@@ -55,16 +55,17 @@ function Component({ defaultCode }: PlaygroundProps) {
 
   const outputPanel = useRef<PanelImperativeHandle | null>(null)
   const toggleOutput = useCallback(() => {
-    setIsOutputCollapsed(!isOutputCollapsed)
-    if (outputPanel.current) {
-      if (outputPanel.current.isCollapsed()) {
-        outputPanel.current.expand()
-      }
-      else {
-        outputPanel.current.collapse()
-      }
+    setIsOutputCollapsed(prev => !prev)
+    const panel = outputPanel.current
+    if (!panel) return
+
+    if (panel.isCollapsed()) {
+      panel.expand()
     }
-  }, [isOutputCollapsed])
+    else {
+      panel.collapse()
+    }
+  }, [])
 
   const isDesktop = useMedia('(min-width: 1024px)')
 
@@ -82,12 +83,7 @@ function Component({ defaultCode }: PlaygroundProps) {
     setEditor(editor)
   }, [])
 
-  const renderedCode = (() => {
-    if (defaultCode) {
-      return defaultCode
-    }
-    return loadDataShareCode()
-  })()
+  const renderedCode = useMemo(() => defaultCode ?? loadDataShareCode(), [defaultCode])
 
   const outputTip = isOutputCollapsed ? i18n._(msg`显示`) : i18n._(msg`隐藏`)
 
@@ -197,16 +193,11 @@ function Component({ defaultCode }: PlaygroundProps) {
         setToolOutput={setToolOutput}
         setProgramOutput={setProgramOutput}
         onFormatted={(code) => {
-          if (editor) {
-            const model = editor.getModel()
-            if (model) {
-              model.setValue(code)
-            }
-          }
+          editor?.getModel()?.setValue(code)
         }}
       />
     </div>
   )
 }
 
-export default Component
+export default Playground

@@ -1,11 +1,12 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import Negotiator from 'negotiator'
+import type { Locale } from '@/lib/i18n'
 import { defaultLocale, locales } from '@/lib/i18n'
 
 const COOKIE_NAME = 'locale'
 
-function getLocaleFromHeaders(request: NextRequest): string {
+function getLocaleFromHeaders(request: NextRequest): Locale {
   const acceptLanguage = request.headers.get('accept-language') ?? undefined
   const headers = { 'accept-language': acceptLanguage }
   const languages = new Negotiator({ headers }).languages()
@@ -22,15 +23,15 @@ function getLocaleFromHeaders(request: NextRequest): string {
   return defaultLocale
 }
 
-function getLocaleFromCookie(request: NextRequest): string | null {
+function getLocaleFromCookie(request: NextRequest): Locale | null {
   const cookieLocale = request.cookies.get(COOKIE_NAME)?.value
-  if (cookieLocale && locales.includes(cookieLocale as any)) {
-    return cookieLocale
+  if (cookieLocale && locales.includes(cookieLocale as Locale)) {
+    return cookieLocale as Locale
   }
   return null
 }
 
-function getPreferredLocale(request: NextRequest): string {
+function getPreferredLocale(request: NextRequest): Locale {
   // Priority: Cookie > Accept-Language header > Default
   const cookieLocale = getLocaleFromCookie(request)
   if (cookieLocale)
@@ -39,10 +40,9 @@ function getPreferredLocale(request: NextRequest): string {
   return getLocaleFromHeaders(request)
 }
 
-export function proxy(request: NextRequest) {
+export function proxy(request: NextRequest): NextResponse {
   const pathname = request.nextUrl.pathname
 
-  // Skip middleware for API routes, static files, and Next.js internals
   if (
     pathname.startsWith('/api/')
     || pathname.startsWith('/_next/')
@@ -52,28 +52,20 @@ export function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check if pathname already has a locale
   const hasLocaleInPath = locales.some(locale =>
     pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   )
 
   if (hasLocaleInPath) {
-    // Path already has locale, just continue
     const response = NextResponse.next()
-
-    // Extract language from pathname and set it as a header
     const langMatch = pathname.match(/^\/([a-z]{2})(?:\/|$)/)
     if (langMatch) {
       response.headers.set('x-locale', langMatch[1])
     }
-
     return response
   }
 
-  // No locale in path, determine preferred locale and redirect
   const preferredLocale = getPreferredLocale(request)
-
-  // Redirect to localized path for all languages
   const redirectUrl = new URL(`/${preferredLocale}${pathname}`, request.url)
   return NextResponse.redirect(redirectUrl)
 }

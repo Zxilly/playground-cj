@@ -1,34 +1,24 @@
 'use client'
 
 import { createContext, use, useMemo } from 'react'
+import { isLocale } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
 import { usePathname } from 'next/navigation'
 
 interface LanguageContextType {
   locale: Locale
-  isLoading: boolean
 }
 
-export const LanguageContext = createContext<LanguageContextType>({ locale: 'zh', isLoading: false })
+export const LanguageContext = createContext<LanguageContextType>({ locale: 'zh' })
 
-export function useLanguage() {
+export function useLanguage(): LanguageContextType {
   const context = use(LanguageContext)
   const pathname = usePathname()
 
-  // Extract locale from pathname for RSC setup
   const locale = useMemo(() => {
-    const pathSegments = pathname.split('/').filter(Boolean)
-    const firstSegment = pathSegments[0]
-
-    if (firstSegment === 'en' || firstSegment === 'zh') {
-      return firstSegment as Locale
-    }
-
-    return context.locale
+    const firstSegment = pathname.split('/').filter(Boolean)[0]
+    return isLocale(firstSegment) ? firstSegment : context.locale
   }, [pathname, context.locale])
 
-  return {
-    ...context,
-    locale,
-  }
+  return { locale }
 }
