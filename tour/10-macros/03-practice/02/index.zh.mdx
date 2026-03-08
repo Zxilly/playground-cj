@@ -1,0 +1,7 @@
+# 宏调试
+
+使用 `cjc --debug-macro` 编译，将展开后的宏代码写入 `.macrocall` 文件。这样你可以检查宏实际生成的代码。
+
+在宏定义内部，调用 `diagReport(DiagReportLevel.ERROR, tokens, message, hint)` 可在展开时输出编译器风格的错误信息。
+
+运行带有 `@Expect` 的测试，观察输出。

@@ -1,0 +1,7 @@
+# Debug printing macro
+
+A `dprint` macro prints both the expression text and its value. `@dprint(x + y)` outputs `x + y = 5`.
+
+Functions cannot do this -- they only receive the computed value, not the source text. The macro calls `input.toString()` to capture the expression as a string.
+
+The example below simulates `dprint` behavior using `@Assert` for verification.

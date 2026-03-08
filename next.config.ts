@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
     })
 
     config.module.rules.push({
-      test: /\.md$/i,
+      test: /\.mdx?$/i,
       use: 'raw-loader',
     })
 

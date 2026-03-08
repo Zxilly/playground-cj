@@ -67,11 +67,17 @@ export async function createCustomStatusBar(
   const container = document.createElement('footer')
   container.id = 'custom-statusbar'
   container.className = `statusbar-container ${className}`.trim()
+  if (window.getComputedStyle(parentContainer).position === 'static') {
+    parentContainer.style.position = 'relative'
+  }
+
   container.style.cssText = `
-    position: relative;
+    position: absolute;
     z-index: 1;
     height: ${height}px;
     width: 100%;
+    left: 0;
+    right: 0;
     background: var(--vscode-statusBar-background, #007acc);
     color: var(--vscode-statusBar-foreground, #ffffff);
     display: flex;
@@ -82,9 +88,11 @@ export async function createCustomStatusBar(
   `
 
   if (position === 'top') {
+    container.style.top = '0'
     parentContainer.insertBefore(container, parentContainer.firstChild)
   }
   else {
+    container.style.bottom = '0'
     parentContainer.appendChild(container)
   }
 

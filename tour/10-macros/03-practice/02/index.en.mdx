@@ -1,0 +1,7 @@
+# Macro debugging
+
+Compile with `cjc --debug-macro` to write expanded macro code to a `.macrocall` file. This lets you inspect exactly what your macro generates.
+
+Inside a macro definition, call `diagReport(DiagReportLevel.ERROR, tokens, message, hint)` to emit compiler-style errors at expansion time.
+
+Run the test with `@Expect` and observe the output.

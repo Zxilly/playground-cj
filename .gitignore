@@ -41,5 +41,7 @@ next-env.d.ts
 .env
 .claude
 
+cangjie-mcp.log
+
 wasm-dist/
 ref_doc/

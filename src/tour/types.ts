@@ -2,7 +2,8 @@ export interface TourSection {
   id: string
   name: Record<string, string>
   markdown: Record<string, string>
-  code: string
+  code: Record<string, string>
+  mdxSource?: Record<string, any>
 }
 
 export interface TourSubChapter {
@@ -19,13 +20,16 @@ export interface TourChapter {
 
 export interface FlatSection {
   chapterId: string
+  chapterSlug: string
+  chapterStep: string
   chapterName: Record<string, string>
   subChapterId: string
   subChapterName: Record<string, string>
   sectionId: string
   sectionName: Record<string, string>
   markdown: Record<string, string>
-  code: string
+  code: Record<string, string>
+  mdxSource?: Record<string, any>
 }
 
 export interface TourSectionSlim {

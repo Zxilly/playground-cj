@@ -1,0 +1,7 @@
+# Sealed Classes
+
+A `sealed` class restricts subclassing to the same package. No external code can add new subclasses, so the compiler knows all possible subtypes.
+
+In this example, `Result` is sealed with only `Success` and `Failure` as subclasses.
+
+Try adding a `Pending` subclass with no fields that returns `"pending"` from `message()`.

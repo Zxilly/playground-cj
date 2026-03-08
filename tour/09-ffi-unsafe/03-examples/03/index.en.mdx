@@ -1,0 +1,3 @@
+# Safety notes
+
+Always minimize the scope of `unsafe` blocks and validate values returned from C. Memory allocated by C must be freed by C — never free C memory with Cangjie's garbage collector. Use `CPointer.isNull()` to check pointers before dereferencing them.

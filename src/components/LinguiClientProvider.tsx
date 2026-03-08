@@ -2,7 +2,7 @@
 
 import { I18nProvider } from '@lingui/react'
 import { setupI18n } from '@lingui/core'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { LanguageContext } from '@/hooks/useLanguage'
 import type { Locale } from '@/lib/i18n'
@@ -19,7 +19,7 @@ export function LinguiClientProvider({
   initialLocale,
   initialMessages,
 }: LinguiClientProviderProps) {
-  const [i18n] = useState(() => {
+  const i18n = useMemo(() => {
     const instance = setupI18n({
       locale: initialLocale,
       messages: { [initialLocale]: initialMessages },
@@ -31,7 +31,7 @@ export function LinguiClientProvider({
     globalI18n.activate(initialLocale)
 
     return instance
-  })
+  }, [initialLocale, initialMessages])
 
   const languageContextValue = useMemo(() => ({
     locale: initialLocale,

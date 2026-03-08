@@ -1,0 +1,5 @@
+# Caveats
+
+Annotations are erased after compilation unless they are marked to be retained. Reflection has runtime overhead and bypasses compile-time type safety — use it only when the extra flexibility is genuinely needed.
+
+For most use cases, prefer interfaces and generics over reflection.

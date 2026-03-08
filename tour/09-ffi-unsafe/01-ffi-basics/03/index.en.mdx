@@ -1,0 +1,7 @@
+# unsafe
+
+`unsafe { ... }` relaxes Cangjie's safety checks inside the block. All `foreign` and `@C` function calls must occur in an `unsafe` context.
+
+You can also mark an entire function as `unsafe` -- callers must then use `unsafe` as well.
+
+Try moving the `rand()` call on line 10 outside the `unsafe` block and observe the error.

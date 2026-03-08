@@ -1,0 +1,7 @@
+# Trailing Lambda
+
+When the last parameter of a function is a function type, the lambda can be placed outside the parentheses. If the lambda is the only argument, the parentheses can be omitted entirely.
+
+In this example, `myIf(true) { 100 }` and `applyTwice { value => value + 3 }` use trailing lambda syntax.
+
+Try rewriting `applyTwice` on line 18 as `applyTwice({ value => value + 3 })` -- both forms are equivalent.

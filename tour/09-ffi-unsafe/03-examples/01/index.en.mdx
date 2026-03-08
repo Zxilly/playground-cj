@@ -1,0 +1,3 @@
+# Simple C call
+
+To call a C library function like `abs()`, declare it with `foreign` and call it inside `unsafe`. When compiling, link the C runtime with `cjc main.cj -lc`. The `foreign` declaration maps Cangjie types to their C equivalents at link time.

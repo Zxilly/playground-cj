@@ -1,0 +1,11 @@
+# Option Chaining
+
+The `?.` operator accesses a member only when the receiver is `Some`, propagating `None` automatically.
+
+```cangjie
+user?.profile.address?.city ?? "unknown city"
+```
+
+Combined with `??`, a chain safely traverses several levels of optional values without nested `match` blocks.
+
+Change `alice`'s city from `"Shanghai"` to `"Beijing"` and verify the output updates.

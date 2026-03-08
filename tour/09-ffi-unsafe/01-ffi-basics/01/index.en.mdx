@@ -1,0 +1,7 @@
+# foreign
+
+`foreign` declares a C function to call from Cangjie. It has a signature but no body -- the linker resolves it at compile time.
+
+Calling a `foreign` function requires an `unsafe` block.
+
+Try adding `foreign func srand(seed: UInt32): Unit` and calling it before `rand()`.

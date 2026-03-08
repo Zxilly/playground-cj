@@ -1,0 +1,9 @@
+# Package Declaration
+
+Every Cangjie source file begins with a `package` declaration.
+
+The name must match the directory path relative to `src/`, using dots as separators.
+
+Files directly in `src/` may omit the declaration -- the compiler assigns the default package name `default`.
+
+Try removing the `greet` function call and adding a `package myapp` declaration at the top. Observe how the package context changes.

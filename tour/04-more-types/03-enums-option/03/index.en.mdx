@@ -1,0 +1,7 @@
+# Recursive Enums
+
+An enum case can reference the same enum type, forming a recursive data structure. `Num` is the base case; `Add` and `Mul` contain sub-expressions.
+
+Recursive enums are processed with recursive functions and pattern matching.
+
+Add a `Sub(Expr, Expr)` case and handle it in both `eval` and `show`.

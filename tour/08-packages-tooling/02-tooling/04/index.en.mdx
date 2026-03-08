@@ -1,0 +1,5 @@
+# Workspace
+
+A workspace manages multiple modules in a single project. Set `[workspace]` with `members = ["app", "utils"]` in the root `cjpm.toml`.
+
+Running `cjpm build` in a workspace compiles all member modules. The `[workspace]` and `[package]` sections cannot coexist in the same file.

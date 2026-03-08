@@ -1,0 +1,3 @@
+# CPointer
+
+`CPointer<T>` represents a raw C pointer to a value of type `T`, where `T` must satisfy the `CType` constraint. You can create a null pointer with `CPointer<T>()`, check for null with `isNull()`, and perform pointer arithmetic with `+` and `-`. Reading and writing through a `CPointer` are unsafe operations that must occur inside an `unsafe` block.

@@ -1,0 +1,11 @@
+# Multiple Return Values
+
+A function can return multiple values by returning a tuple. The caller can destructure them with `let (a, b) = ...` or access elements by index.
+
+```cangjie
+func minMax(arr: Array<Int64>): (Int64, Int64) {
+    (minVal, maxVal)
+}
+```
+
+Try adding a third return value (e.g., the sum) and destructuring all three at the call site.

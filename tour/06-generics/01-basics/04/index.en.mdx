@@ -1,0 +1,7 @@
+# Generic Interfaces
+
+A generic interface declares a type parameter that implementors must satisfy. `Container<T>` requires a `get` method returning `T`.
+
+Functions can accept `Container<Int64>` or `Container<String>` as parameters, keeping the element type visible at the call site.
+
+Create a second struct implementing `Container<String>` and pass it to a new `showStringBox` function.

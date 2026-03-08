@@ -1,0 +1,5 @@
+# Exhaustiveness
+
+The compiler checks that `match` covers every possible value. For an `enum`, every variant must be listed. For open types like `Int64`, a wildcard `_` or binding pattern is required.
+
+Try removing the `case West` on line 13 and observe the compiler error.

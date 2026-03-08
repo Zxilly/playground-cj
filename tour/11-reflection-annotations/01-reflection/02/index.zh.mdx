@@ -1,0 +1,5 @@
+# 注解
+
+注解将结构化元数据附加到声明上。用 `@Annotation` 和 `const init` 定义注解类，用 `@Name[args]` 应用注解。
+
+此处 `@Version` 存储版本字符串。`ApiV1` 和 `ApiV2` 携带不同版本号，`main` 通过 `findAnnotation<Version>()` 在运行时读取。

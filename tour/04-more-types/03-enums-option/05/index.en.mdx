@@ -1,0 +1,29 @@
+# Option for Null Safety
+
+`Option<T>` (shorthand `?T`) represents a value that may or may not exist. `Some(v)` holds a value; `None` means absent.
+
+```cangjie
+let present: ?Int64 = Some(42)
+present ?? 0          // 42
+missing ?? 0          // 0
+```
+
+The `??` operator provides a fallback value when the option is `None`. `getOrThrow()` unwraps or throws if absent.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java's `Optional<T>` serves the same purpose with `orElse()` instead of `??`. Cangjie's `?T` shorthand is more concise than `Optional<T>`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses pointer types (`*T`) or `(value, bool)` returns for optional values. Cangjie's `?T` is safer because the compiler enforces checking.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `Option<T>` is nearly identical. `unwrap_or(0)` corresponds to Cangjie's `?? 0`.
+</CompareWith>
+
+</CompareGroup>
+
+Call `missing.getOrThrow()` to see the exception it throws.

@@ -1,0 +1,13 @@
+# Reflection
+
+Reflection lets a program inspect type information and access members by name at runtime.
+
+```cangjie
+let info = ClassTypeInfo.of(counter)
+let valueInfo = info.getInstanceVariable("value")
+valueInfo.setValue(counter, 25)
+```
+
+`ClassTypeInfo.of(obj)` returns the type metadata for an object. Instance and static variables on `Counter` are looked up by name, read, modified, and read again -- all through the reflection API.
+
+Change `valueInfo.setValue(counter, 25)` to a different number and predict the "after" output.

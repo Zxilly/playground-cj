@@ -1,0 +1,16 @@
+# Putting It Together
+
+This example combines functions, collections, concurrency, mutex locking, and string interpolation in one pipeline.
+
+```cangjie
+let future = spawn {
+    let result = double(current)
+    synchronized(lock) {
+        outputs.add("${current} -> ${result}")
+    }
+}
+```
+
+Input numbers are dispatched to worker threads, each computes `double`, results are collected into a shared `ArrayList<String>` under a lock, and the main thread prints the summary.
+
+Replace `double` with a `triple` function and add two more inputs to the array.

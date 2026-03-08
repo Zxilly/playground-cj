@@ -1,0 +1,7 @@
+# Closures
+
+A lambda captures variables from the enclosing scope. The captured variable remains accessible even after the enclosing function returns.
+
+In this example, `makeAdder` returns a lambda that captures `offset`. Each call creates an independent closure.
+
+Try calling `makeAdder(20)` and verify the result is independent from `add10`.

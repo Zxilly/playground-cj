@@ -1,0 +1,31 @@
+# Type Annotations
+
+A type annotation is written after the name with `: Type`. The compiler checks that the value matches the declared type.
+
+```cangjie
+let score: Int64 = 25
+let title: String = "hello"
+let ready: Bool = true
+```
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C requires explicit types everywhere (`int score = 25;`). Cangjie annotations are optional when the type can be inferred.
+</CompareWith>
+
+<CompareWith lang="java">
+Java places the type before the name (`int score = 25`). Cangjie places it after with a colon (`let score: Int64 = 25`).
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses the same post-name syntax (`var score int64 = 25`) but without the colon.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses identical syntax: `let score: i64 = 25`.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing a type annotation to a wrong type (e.g., `Bool` instead of `Int64`) and see the error.

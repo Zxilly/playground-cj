@@ -6,7 +6,7 @@ import ShareButton from '@/components/ShareButton'
 import { Button } from '@/components/ui/button'
 import { Trans } from '@lingui/react/macro'
 import Image from 'next/image'
-import type { EditorApp } from 'monaco-languageclient/editorApp'
+import type { MonacoEditorHandle } from '@/components/EditorWrapper'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { useMedia } from 'react-use'
 import { useLanguage } from '@/hooks/useLanguage'
@@ -16,13 +16,13 @@ interface PlaygroundHeaderProps {
   handleRun: () => void
   handleFormat: () => void
   editor: monaco.editor.IStandaloneCodeEditor | undefined
-  wrapperRef: React.RefObject<EditorApp | undefined>
+  wrapperRef: React.RefObject<MonacoEditorHandle | undefined>
 }
 
 function ExamplesAction({ editor, wrapperRef }: Pick<PlaygroundHeaderProps, 'editor' | 'wrapperRef'>) {
   return (
     <ExamplesDropdown action={(code) => {
-      wrapperRef.current?.updateCodeResources({
+      wrapperRef.current?.updateCodeResources?.({
         modified: {
           text: code,
           enforceLanguageId: 'Cangjie',

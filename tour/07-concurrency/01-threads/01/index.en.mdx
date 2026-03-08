@@ -1,0 +1,30 @@
+# Spawn
+
+`spawn` starts a new thread by running a no-argument lambda and returns a `Future<T>` handle.
+
+```cangjie
+let worker = spawn {
+    println("worker: hello")
+}
+worker.get()
+```
+
+`get()` blocks the calling thread until the spawned thread finishes. The print order between threads is nondeterministic.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java uses `new Thread(() -> { ... }).start()` or `ExecutorService.submit()`. Cangjie's `spawn` is more concise and directly returns a typed `Future`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `go func() { ... }()` to launch a goroutine. Unlike Cangjie's `spawn`, goroutines don't return a handle -- you use channels or `sync.WaitGroup` to synchronize.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `std::thread::spawn(|| { ... })` which returns a `JoinHandle`. Calling `.join()` is equivalent to Cangjie's `.get()`.
+</CompareWith>
+
+</CompareGroup>
+
+Run the program three times -- notice the worker print order changes.

@@ -1,0 +1,24 @@
+# let (Immutable)
+
+`let` creates an immutable binding -- once assigned, the value cannot change.
+
+```cangjie
+let name = "Cangjie"
+name = "other"  // compile error
+```
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go has no direct equivalent of `let`. Variables declared with `:=` or `var` are always mutable. Use `const` only for compile-time constants, not general immutability.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `let` is also immutable by default. However, Rust allows shadowing with a second `let x = ...` in the same scope -- Cangjie does not.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Cangjie does not allow variable shadowing in the same scope -- `let x = 1; let x = 2` is a compile error.</Note>
+
+Uncomment line 11 to see the compile error when reassigning a `let` binding.

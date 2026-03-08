@@ -1,0 +1,25 @@
+# Arithmetic Operators
+
+Operator overloading lets a custom type use operator syntax like `+` and unary `-`. An overloaded operator is a method declared with `operator func`.
+
+```cangjie
+public operator func +(right: Point): Point {
+    return Point(x + right.x, y + right.y)
+}
+```
+
+`Point` defines `+` for component-wise addition and unary `-` for negation. `left + right` and `-left` work like operations on a built-in numeric type.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no operator overloading. You must write named functions like `point_add(a, b)` for custom arithmetic.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust overloads operators by implementing traits like `std::ops::Add`. The syntax differs (`impl Add for Point`) but the effect is the same.
+</CompareWith>
+
+</CompareGroup>
+
+Add a `-` (subtraction) operator to `Point` and compute `right - left`.

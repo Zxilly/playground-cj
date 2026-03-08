@@ -1,0 +1,14 @@
+# Shared Data
+
+A common pattern: each thread does local work first, then enters a `synchronized` block only to write the result into a shared collection.
+
+```cangjie
+let message = "worker ${current} finished"
+synchronized(messagesLock) {
+    messages.add(message)
+}
+```
+
+Each worker builds a message string locally and only holds the lock for the `messages.add(...)` call. Keep the critical section as short as possible.
+
+Increase the worker range from `1..4` to `1..10` and observe that the message order varies between runs.

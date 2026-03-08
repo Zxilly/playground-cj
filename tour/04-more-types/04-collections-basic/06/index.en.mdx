@@ -1,0 +1,13 @@
+# Collection Conversions
+
+Data can move between collection types via constructors.
+
+```cangjie
+let idList = ArrayList<Int64>(rawIds)
+let uniqueIds = HashSet<Int64>(idList)
+let scores = HashMap<String, Int64>(pairs)
+```
+
+An `Array` can initialize an `ArrayList`, an `ArrayList` can initialize a `HashSet` to remove duplicates, and an array of tuples can initialize a `HashMap`.
+
+Add a duplicate ID to `rawIds` and confirm that `uniqueIds.size` stays the same.

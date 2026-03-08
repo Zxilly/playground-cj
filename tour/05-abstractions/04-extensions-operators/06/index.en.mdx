@@ -1,0 +1,13 @@
+# Subscript Operator
+
+The `[]` operator is overloaded to give a type array-like read and write access.
+
+```cangjie
+operator func [](row: Int64, col: Int64): Int64 {
+    return this.data[row * this.cols + col]
+}
+```
+
+A read overload returns a value; a write overload takes an extra `value!` parameter. `Grid` stores a 2D table backed by a flat `Array<Int64>`, with `grid[row, col]` for reads and `grid[row, col] = value` for writes.
+
+Change the grid to `4x4`, fill it with multiples of `3`, and display the result.

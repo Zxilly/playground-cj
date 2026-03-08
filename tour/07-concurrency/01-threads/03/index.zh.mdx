@@ -1,0 +1,5 @@
+# 取消
+
+仓颉采用协作式取消。`cancel()` 发出请求，线程通过 `Thread.currentThread.hasPendingCancellation` 检查并自行决定何时停止。
+
+此处主线程在释放 `SyncCounter` 门之前调用 `worker.cancel()`。worker 在门打开后检查标志，若已被取消则提前返回。

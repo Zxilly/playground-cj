@@ -1,0 +1,15 @@
+# Interface Extensions
+
+An extension can make an existing type conform to an interface using `extend<T> Type<T> <: Interface`.
+
+```cangjie
+extend<T> Array<T> <: PrintableSize {
+    public func printSize(): Unit {
+        println("size = ${this.size}")
+    }
+}
+```
+
+After the extension, an array can be used wherever a `PrintableSize` value is expected.
+
+Change the variable type from `PrintableSize` to `Array<Int64>` and confirm `printSize()` still works.

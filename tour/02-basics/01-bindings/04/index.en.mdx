@@ -1,0 +1,22 @@
+# Type Inference
+
+When the type is clear from the value, the compiler infers it automatically. `42` is inferred as `Int64`, `3.14` as `Float64`, `"hello"` as `String`, and `true` as `Bool`.
+
+```cangjie
+let x = 42       // Int64
+let y = 3.14     // Float64
+```
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go infers types with `:=` (`x := 42`). Cangjie infers types for both `let` and `var` when possible.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust also infers types from the right-hand side. Both languages default integer literals to their 64-bit types.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a new binding without a type annotation and predict its inferred type.

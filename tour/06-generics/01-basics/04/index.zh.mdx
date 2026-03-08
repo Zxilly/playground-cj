@@ -1,0 +1,7 @@
+# 泛型接口
+
+泛型接口声明的类型参数需要实现者满足。`Container<T>` 要求提供返回 `T` 的 `get` 方法。
+
+函数可以接受 `Container<Int64>` 或 `Container<String>` 作为参数，元素类型在调用处始终可见。
+
+创建第二个实现 `Container<String>` 的结构体，并将其传给一个新的 `showStringBox` 函数。

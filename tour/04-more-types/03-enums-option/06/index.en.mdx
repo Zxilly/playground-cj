@@ -1,0 +1,15 @@
+# Option Pattern Matching
+
+`match` on an `Option` separates the `Some(v)` and `None` cases explicitly. Each branch can destructure the inner value and apply further conditions with `where` guards.
+
+```cangjie
+match (score) {
+    case Some(s) where s >= 90 => "A"
+    case Some(s) where s >= 80 => "B"
+    case None => "N/A"
+}
+```
+
+This is the most common way to handle an `Option` when the two cases require different logic.
+
+Add a `"D"` grade for scores between 60 and 69.

@@ -1,0 +1,3 @@
+# 简单 C 调用
+
+要调用像 `abs()` 这样的 C 库函数，使用 `foreign` 声明它并在 `unsafe` 中调用。编译时使用 `cjc main.cj -lc` 链接 C 运行时。`foreign` 声明在链接时将仓颉类型映射到对应的 C 类型。

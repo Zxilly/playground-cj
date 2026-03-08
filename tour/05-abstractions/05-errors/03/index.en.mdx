@@ -1,0 +1,13 @@
+# finally
+
+A `finally` block runs whether the `try` block succeeds, throws, or returns early. It is the place for cleanup logic such as closing resources.
+
+```cangjie
+try { ... }
+catch (e: Exception) { ... }
+finally { println("always runs") }
+```
+
+The `finally` block executes after `catch` (if any) but before control leaves the enclosing function.
+
+Remove the `throw` in `riskyOperation` and verify that `finally` still runs on the success path.

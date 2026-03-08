@@ -1,0 +1,5 @@
+# 工作区
+
+工作区在一个项目中管理多个模块。在根 `cjpm.toml` 中设置 `[workspace]`，使用 `members = ["app", "utils"]`。
+
+在工作区中运行 `cjpm build` 会编译所有成员模块。`[workspace]` 和 `[package]` 部分不能在同一个文件中共存。

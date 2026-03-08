@@ -1,21 +1,85 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef } from 'react'
-import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
+import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
 import { LanguageClientManager } from 'monaco-languageclient/lcwrapper'
 import { EditorApp } from 'monaco-languageclient/editorApp'
+import type { CodeResources } from 'monaco-languageclient/editorApp'
 import { createEditorAppConfig, createLanguageClientConfig, createMonacoVscodeApiConfig } from '@/lib/monaco'
+import type { MonacoViewsType } from '@/lib/monaco'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
 import { getLspStatus } from '@/lib/lsp'
+import * as monaco from '@codingame/monaco-vscode-editor-api'
+
+export interface MonacoEditorHandle {
+  getEditor: () => monaco.editor.IStandaloneCodeEditor | undefined
+  dispose: () => Promise<void> | void
+  updateCodeResources?: (codeResources?: CodeResources) => Promise<boolean> | boolean
+}
 
 export interface MonacoEditorProps {
   style?: CSSProperties
   code?: string
-  onLoad?: (editorApp: EditorApp) => void
+  onLoad?: (editorApp: MonacoEditorHandle) => void
   locale?: string
+  viewsType?: MonacoViewsType
 }
 
-export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEditorProps) {
+function createStandaloneEditorHandle(
+  container: HTMLElement,
+  editorAppConfig: ReturnType<typeof createEditorAppConfig>,
+): MonacoEditorHandle {
+  const resource = editorAppConfig.codeResources?.modified
+  const uri = monaco.Uri.parse(resource?.uri ?? 'file:///playground/src/main.cj')
+  const existingModel = monaco.editor.getModel(uri)
+  let model = existingModel ?? monaco.editor.createModel(
+    resource?.text ?? '',
+    editorAppConfig.editorOptions?.language,
+    uri,
+  )
+
+  if (existingModel) {
+    model.setValue(resource?.text ?? '')
+  }
+
+  const editor = monaco.editor.create(container, {
+    ...editorAppConfig.editorOptions,
+    model,
+  })
+
+  return {
+    getEditor: () => editor,
+    updateCodeResources: async (codeResources) => {
+      const nextResource = codeResources?.modified
+      if (!nextResource)
+        return false
+
+      const nextUri = monaco.Uri.parse(nextResource.uri ?? model.uri.toString())
+      const existingNextModel = monaco.editor.getModel(nextUri)
+      let nextModel = existingNextModel ?? monaco.editor.createModel(
+        nextResource.text ?? model.getValue(),
+        nextResource.enforceLanguageId ?? model.getLanguageId(),
+        nextUri,
+      )
+
+      if (existingNextModel && nextResource.text !== undefined) {
+        nextModel.setValue(nextResource.text)
+      }
+
+      if (nextResource.enforceLanguageId)
+        monaco.editor.setModelLanguage(nextModel, nextResource.enforceLanguageId)
+
+      editor.setModel(nextModel)
+      model = nextModel
+      return true
+    },
+    dispose: () => {
+      editor.dispose()
+    },
+  }
+}
+
+export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType = 'EditorService' }: MonacoEditorProps) {
   const languageClientConfig = useMemo(() => createLanguageClientConfig(), [])
   const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale), [code, locale])
 
@@ -24,16 +88,19 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEdi
 
   const vscodeApiWrapperRef = useRef<MonacoVscodeApiWrapper | null>(null)
   const languageClientsManagerRef = useRef<LanguageClientManager | null>(null)
-  const editorAppRef = useRef<EditorApp | null>(null)
+  const editorAppRef = useRef<MonacoEditorHandle | null>(null)
   const statusBarRef = useRef<StatusBarHandle | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const standaloneHostRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
   const lspPollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const updateEditorLayout = () => {
       if (containerRef.current && editorAppRef.current) {
-        const parent = containerRef.current.parentElement!
+        const parent = viewsType === 'EditorService'
+          ? containerRef.current.parentElement!
+          : standaloneHostRef.current ?? containerRef.current.parentElement!
         const { width: outerWidth, height: outerHeight } = parent.getBoundingClientRect()
 
         const computedStyle = window.getComputedStyle(parent)
@@ -43,7 +110,10 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEdi
         const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
 
         const width = outerWidth - paddingLeft - paddingRight
-        const height = outerHeight - paddingTop - paddingBottom
+        const statusBarHeight = viewsType === 'EditorService'
+          ? (statusBarRef.current?.container.offsetHeight ?? 0)
+          : 0
+        const height = outerHeight - paddingTop - paddingBottom - statusBarHeight
 
         editorAppRef.current.getEditor()?.layout({ width, height }, true)
       }
@@ -59,7 +129,11 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEdi
       try {
         await getEnhancedMonacoEnvironment().vscodeApiGlobalInitAwait
 
-        const vscodeApiConfig = createMonacoVscodeApiConfig(containerRef.current)
+        if (viewsType === 'ViewsService' && containerRef.current && !containerRef.current.querySelector('#workbench-container')) {
+          containerRef.current.innerHTML = defaultViewsHtml
+        }
+
+        const vscodeApiConfig = createMonacoVscodeApiConfig(containerRef.current, viewsType)
         vscodeApiWrapperRef.current = new MonacoVscodeApiWrapper(vscodeApiConfig)
         await vscodeApiWrapperRef.current.start()
 
@@ -69,10 +143,22 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEdi
           languageClientsManagerRef.current.start()
         }
 
-        editorAppRef.current = new EditorApp(editorAppConfig)
-        await editorAppRef.current.start(containerRef.current)
+        const editorContainer = viewsType === 'EditorService'
+          ? containerRef.current
+          : standaloneHostRef.current ?? containerRef.current
 
-        if (languageClientConfig) {
+        let editorHandle: MonacoEditorHandle
+        if (viewsType === 'ViewsService') {
+          editorHandle = createStandaloneEditorHandle(editorContainer, editorAppConfig)
+        }
+        else {
+          const editorApp = new EditorApp(editorAppConfig)
+          await editorApp.start(editorContainer)
+          editorHandle = editorApp
+        }
+        editorAppRef.current = editorHandle
+
+        if (languageClientConfig && viewsType === 'EditorService') {
           const parentContainer = containerRef.current.parentElement
           if (parentContainer) {
             statusBarRef.current = await createCustomStatusBar(parentContainer, {
@@ -111,7 +197,7 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEdi
           }
         }
 
-        onLoad?.(editorAppRef.current)
+        onLoad?.(editorHandle)
 
         updateEditorLayout()
 
@@ -134,7 +220,7 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEdi
     }
 
     void initAll()
-  }, [onLoad, editorAppConfig, languageClientConfig])
+  }, [onLoad, editorAppConfig, languageClientConfig, viewsType])
 
   useEffect(() => {
     const disposeAll = async () => {
@@ -169,7 +255,10 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale }: MonacoEdi
       className="absolute w-full h-full flex flex-col"
       style={style}
     >
-      <div ref={containerRef} className="flex-1 min-h-0 relative overflow-hidden" />
+      <div ref={containerRef} className="absolute inset-0 overflow-hidden" />
+      {viewsType === 'ViewsService' && (
+        <div ref={standaloneHostRef} className="absolute inset-0 z-10" />
+      )}
     </div>
   )
 }

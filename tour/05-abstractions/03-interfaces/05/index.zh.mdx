@@ -1,0 +1,5 @@
+# 子类型
+
+接口可以使用 `<:` 扩展其他接口。实现组合接口的类型同时满足所有父接口。
+
+`ReadWrite <: Readable & Writable` 意味着 `ReadWrite` 值可以赋给 `Readable` 或 `Writable` 变量，只暴露对应的方法子集。

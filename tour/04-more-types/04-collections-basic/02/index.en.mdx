@@ -1,0 +1,13 @@
+# HashSet
+
+`HashSet<T>` stores unique elements with no defined order.
+
+```cangjie
+let tags = HashSet<String>()
+tags.add("tour")
+tags.contains("tour")  // true
+```
+
+Adding a duplicate has no effect. `contains` checks membership, and `remove` deletes an element. Use it when you need fast membership tests and automatic deduplication.
+
+Try adding `"tour"` a third time and verify that the size stays the same.

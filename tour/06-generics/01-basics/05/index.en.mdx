@@ -1,0 +1,7 @@
+# Generic Enums
+
+A generic enum carries typed data in its cases. `Result<T, E>` uses `Ok(T)` for success and `Err(E)` for failure, with both types specified by the caller.
+
+Pattern matching extracts the carried value with full type information.
+
+Add a third case `Pending` with no data and handle it in the `show` function.

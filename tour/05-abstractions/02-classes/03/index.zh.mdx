@@ -1,0 +1,7 @@
+# 属性
+
+`prop` 通过 `get()` 和可选的 `set(v)` 定义计算属性。对调用方来说像字段，但读写时会执行逻辑。
+
+示例中，`fahrenheit` 和 `description` 是只读属性，每当 `celsius` 改变时重新计算。
+
+试试给 `fahrenheit` 添加 `set(v)` 块，将华氏度转换回摄氏度：`celsius = (v - 32.0) * 5.0 / 9.0`。

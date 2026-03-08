@@ -78,8 +78,8 @@ function buildPath(lang: Locale, includeTour: boolean, rest: string[]): string {
  * URL rewriting state machine:
  *
  * Tour domain (tour.*):
- *   External URL: /{lang}/{chapter}/{subchapter}/{section}
- *   Internal URL: /{lang}/tour/{chapter}/{subchapter}/{section}
+ *   External URL: /{lang}/{chapter}/{step}
+ *   Internal URL: /{lang}/tour/{chapter}/{step}
  *
  *   1. No lang               → rewrite to /{locale}/tour/{rest}
  *   2. Lang + /tour/ + rest  → redirect to /{lang}/{rest}  (strip /tour/ from browser URL)

@@ -1,0 +1,15 @@
+# Concurrency Example
+
+This example combines `spawn`, `Future`, `Mutex`, and `AtomicInt64` in one program.
+
+```cangjie
+let value = square(current)
+synchronized(resultsLock) {
+    results.add("${current}^2 = ${value}")
+}
+let _ = completed.fetchAdd(1)
+```
+
+Workers compute squares in parallel, collect formatted results into a shared list protected by a mutex, and track completion with an atomic counter. The list uses `Mutex` because it is a complex object; the counter uses `AtomicInt64` because it is a single integer.
+
+Add `10` and `12` to the `jobs` array and verify `completed` reflects the new total.

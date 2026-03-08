@@ -5,11 +5,13 @@ import { fontFamily } from '@/app/font'
 import type { MonacoVscodeApiConfig } from 'monaco-languageclient/vscodeApiWrapper'
 import type { EditorAppConfig } from 'monaco-languageclient/editorApp'
 import { configureMonacoWorkers } from './workers'
+import { initializeMonacoViewsService } from './views'
 
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/grammars/Cangjie.tmLanguage.json'
 
 export type { MonacoVscodeApiConfig }
+export type MonacoViewsType = 'EditorService' | 'ViewsService'
 
 export function setEditorValue(ed: monaco.editor.ICodeEditor, code: string) {
   const model = ed.getModel()
@@ -18,10 +20,17 @@ export function setEditorValue(ed: monaco.editor.ICodeEditor, code: string) {
   }
 }
 
-export function createMonacoVscodeApiConfig(htmlContainer?: HTMLElement): MonacoVscodeApiConfig {
+export function createMonacoVscodeApiConfig(
+  htmlContainer?: HTMLElement,
+  viewsType: MonacoViewsType = 'EditorService',
+): MonacoVscodeApiConfig {
+  const serviceOverrides = viewsType === 'EditorService'
+    ? getStatusBarServiceOverrides()
+    : {}
+
   return {
     $type: 'extended',
-    serviceOverrides: getStatusBarServiceOverrides(),
+    serviceOverrides,
     userConfiguration: {
       json: JSON.stringify({
         'editor.wordBasedSuggestions': 'off',
@@ -42,8 +51,13 @@ export function createMonacoVscodeApiConfig(htmlContainer?: HTMLElement): Monaco
       }),
     },
     viewsConfig: {
-      $type: 'EditorService',
+      $type: viewsType,
       htmlContainer,
+      ...(viewsType === 'ViewsService'
+        ? {
+            viewsInitFunc: initializeMonacoViewsService,
+          }
+        : {}),
     },
     monacoWorkerFactory: configureMonacoWorkers,
     extensions: [

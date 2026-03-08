@@ -1,0 +1,7 @@
+# Function Overloading
+
+Multiple functions can share the same name if their parameter types or count differ. The compiler picks the matching version based on the argument types.
+
+In this example, four `format` functions handle `Int64`, `Float64`, `String`, and a pair of `Int64`.
+
+Try calling `format(true)` -- it won't compile. Add a `format(value: Bool)` overload to fix it.

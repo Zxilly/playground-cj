@@ -7,12 +7,12 @@ interface PageProps {
 
 export default async function TourIndexPage({ params }: PageProps) {
   const { lang } = await params
-  const tourData = loadTourData()
+  const tourData = await loadTourData()
   const flat = flattenSections(tourData)
 
   if (flat.length > 0) {
     const first = flat[0]
-    redirect(`/${lang}/tour/${first.chapterId}/${first.subChapterId}/${first.sectionId}`)
+    redirect(`/${lang}/tour/${first.chapterSlug}/${first.chapterStep}`)
   }
 
   redirect(`/${lang}`)

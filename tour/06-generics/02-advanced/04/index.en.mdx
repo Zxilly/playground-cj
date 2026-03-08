@@ -1,0 +1,12 @@
+# Where Clauses
+
+A `where` clause can require a type parameter to satisfy multiple interfaces using `&`. Both constraints must hold for the function to compile.
+
+```cangjie
+func showMax<T>(a: T, b: T)
+    where T <: Comparable<T> & Displayable { ... }
+```
+
+This lets a single function call methods from several interfaces on the same value.
+
+Add a `Serializable` interface with a `serialize(): String` method, require it in `showMax`, and implement it on `Score`.

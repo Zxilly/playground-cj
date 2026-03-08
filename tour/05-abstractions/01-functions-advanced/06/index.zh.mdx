@@ -1,0 +1,7 @@
+# 尾随 Lambda
+
+当函数的最后一个参数是函数类型时，Lambda 可以写在括号外面。如果 Lambda 是唯一参数，括号可以完全省略。
+
+示例中，`myIf(true) { 100 }` 和 `applyTwice { value => value + 3 }` 都使用了尾随 Lambda 语法。
+
+试试将第 18 行改写为 `applyTwice({ value => value + 3 })` -- 两种写法等价。

@@ -1,0 +1,33 @@
+# Defining Functions
+
+A function is defined with `func`, followed by its name, parameters in parentheses, and an optional return type after `:`.
+
+```cangjie
+func add(a: Int64, b: Int64): Int64 {
+    return a + b
+}
+```
+
+A function with no return type returns `Unit` implicitly.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `int add(int a, int b)` with the return type before the name. Cangjie places it after with `: Int64`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java also places the return type before the name: `int add(int a, int b)`. Cangjie uses `func` and a trailing return type.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `func add(a, b int) int`. Cangjie shares the `func` keyword and post-name return type, but each parameter must declare its own type.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `fn add(a: i64, b: i64) -> i64`. Cangjie uses `func` instead of `fn` and `:` instead of `->`.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a third parameter to `add` and updating the call on line 10.

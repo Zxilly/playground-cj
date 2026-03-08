@@ -1,0 +1,5 @@
+# 综合示例
+
+`Registry<T>` 将类型参数、`where T <: Identifiable` 约束、`HashMap` 存储和 `Option<T>` 查询结果组合在一起。约束确保每个元素都有 `getId` 方法。
+
+这种模式——带约束元素类型的泛型容器——在实际仓颉代码中很常见。

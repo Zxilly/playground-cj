@@ -1,0 +1,12 @@
+# Type Aliases
+
+The `type` keyword creates an alias for an existing type. Aliases are interchangeable with the original type everywhere.
+
+```cangjie
+type NameList = ArrayList<String>
+type ScoreMap = HashMap<String, Int64>
+```
+
+Aliases are useful when a verbose generic instantiation appears repeatedly.
+
+Add a `type IdSet = HashSet<String>` alias and use it to store unique IDs.

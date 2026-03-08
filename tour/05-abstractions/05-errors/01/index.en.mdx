@@ -1,0 +1,28 @@
+# Exception Hierarchy
+
+Exceptions form a hierarchy rooted at `Exception`. Specific types like `IndexOutOfBoundsException` and `ArithmeticException` extend it.
+
+```cangjie
+catch (e: IndexOutOfBoundsException) { ... }
+catch (e: Exception) { ... }
+```
+
+Specific `catch` blocks must come before general ones -- otherwise the general block shadows them.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java has a similar hierarchy with `Exception` at the root and checked/unchecked distinction. Cangjie exceptions are all unchecked.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `error` values instead of exceptions. There is no hierarchy -- errors are compared by value or type assertion. Cangjie's exception hierarchy enables multi-level catch blocks.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust has no exceptions. It uses `Result<T, E>` for recoverable errors and `panic!` for unrecoverable ones. Cangjie offers both exceptions and `Option`/`Result` patterns.
+</CompareWith>
+
+</CompareGroup>
+
+Swap the order of the two `catch` blocks and observe the compile warning.

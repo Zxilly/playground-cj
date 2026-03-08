@@ -1,0 +1,3 @@
+# inout
+
+The `inout` modifier passes a Cangjie variable by reference to a `CFunc`, so the C side receives a `CPointer<T>`. The variable must be declared with `var`, satisfy the `CType` constraint, and must not be `CString` or derived from a `class` instance member. The pointer is only valid for the duration of the call.

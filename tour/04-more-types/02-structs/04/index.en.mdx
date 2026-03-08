@@ -1,0 +1,7 @@
+# Mut Functions
+
+Since structs are value types, ordinary methods cannot modify fields. A `mut func` is allowed to modify the struct's `var` fields in place.
+
+A `mut` method can only be called on a `var` binding. Calling it on a `let` binding is a compile error.
+
+Change `var p` to `let p` and observe the error.

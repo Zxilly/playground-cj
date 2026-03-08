@@ -1,0 +1,14 @@
+# Custom Exceptions
+
+A custom exception extends `Exception` and can carry extra fields like `field` or `statusCode`. This gives the `catch` site structured information about what went wrong.
+
+```cangjie
+class ValidationError <: Exception {
+    let field: String
+    init(field: String, message: String) { ... }
+}
+```
+
+Define separate exception classes for distinct failure categories so each `catch` block handles exactly one kind of problem.
+
+Add a `statusCode` check in the `NetworkError` catch block to print different messages for 400 vs 500.

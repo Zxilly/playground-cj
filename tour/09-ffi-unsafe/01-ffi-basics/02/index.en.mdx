@@ -1,0 +1,7 @@
+# @C
+
+`@C` tells the compiler to use C-compatible calling conventions and name mangling.
+
+Apply it to structs to make their memory layout match C. Apply it to functions to make them callable from C code.
+
+Try removing `@C` from `addPoints` and observe the compile error when calling it in `unsafe`.

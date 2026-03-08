@@ -1,0 +1,3 @@
+# CString
+
+`CString` represents a null-terminated C string corresponding to `char*` in C. Convert a Cangjie `String` to `CString` using `LibC.mallocCString()`, and convert back with the `toString()` method. Since `mallocCString` allocates memory on the C heap, you must free it with `LibC.free()` when done.

@@ -1,0 +1,7 @@
+# public macro
+
+A macro function is declared as `public macro Name(input: Tokens): Tokens`. The `input` parameter receives the tokens at the call site. The returned `Tokens` replace the macro invocation.
+
+When applied to a declaration (like a function or class), the entire declaration becomes the input. Macros must be `public` because they are always used from another package.
+
+Trace what the `testDef` macro returns -- it is an identity macro that passes tokens through unchanged.

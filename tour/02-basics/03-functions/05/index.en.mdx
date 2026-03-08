@@ -1,0 +1,10 @@
+# Default Parameter Values
+
+Named parameters can have default values, specified with `=` after the type. When omitted at the call site, the default value is used.
+
+```cangjie
+func connect(host!: String, port!: Int64 = 8080) { }
+connect(host: "localhost")  // port defaults to 8080
+```
+
+Try calling `connect` with only `host` and observe the default `port` and `secure` values.

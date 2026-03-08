@@ -1,0 +1,7 @@
+# Constructors and Value Semantics
+
+Structs are value types. Assigning a struct to another variable creates an independent copy. Changes to the copy do not affect the original.
+
+A struct can define multiple `init` constructors with different parameter lists.
+
+Assign `a` to `b`, change `b.width` to `999.0`, and print both to verify `a` is unchanged.

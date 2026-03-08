@@ -1,0 +1,7 @@
+# @macro 包
+
+宏定义在单独的 `macro package` 中，而不是普通的 `package`。宏包只能导出宏定义。
+
+需要 `import std.ast.*` 来使用 `Tokens` 类型和 AST 工具。宏包必须先用 `cjc --compile-macro` 单独编译，然后才能被使用宏的代码引用。
+
+注意文件顶部的 `macro package` 声明。

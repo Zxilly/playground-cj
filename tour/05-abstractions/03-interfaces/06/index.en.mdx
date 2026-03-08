@@ -1,0 +1,7 @@
+# Type Casting
+
+`value is Type` tests whether a value is of a specific type. `value as Type` attempts a cast and returns `Option` -- `Some(value)` on success, `None` on failure.
+
+In this example, `animal is Dog` returns `true`. The `as Dog` cast returns `Some(dog)`, giving access to the `fetch()` method.
+
+Change `Dog()` to `Animal()` on line 18 and observe that the `as Dog` cast returns `None`.

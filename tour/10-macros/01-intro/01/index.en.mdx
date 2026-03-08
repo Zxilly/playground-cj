@@ -1,0 +1,7 @@
+# Why macros
+
+Macros transform source code at compile time. Unlike functions, which only see runtime values, macros see the actual source tokens.
+
+The `@Assert` macro checks equality during testing. It is a compile-time transformation -- the macro rewrites your assertion into test framework code.
+
+Run the program, then change `@Assert(a + b, 5)` to `@Assert(a + b, 99)` and observe the test failure.

@@ -1,0 +1,15 @@
+# Annotations
+
+An annotation attaches structured metadata to a declaration. Define an annotation class with `@Annotation` and a `const init`, then apply it with `@Name[args]`.
+
+```cangjie
+@Annotation
+public class Version {
+    let code: String
+    const init(code: String) { this.code = code }
+}
+```
+
+`@Version["1.0"]` and `@Version["2.0"]` tag two classes. `findAnnotation<Version>()` reads the metadata back at runtime.
+
+Add a third class `ApiV3` with `@Version["3.0"]`, append it to the array, and verify it prints.

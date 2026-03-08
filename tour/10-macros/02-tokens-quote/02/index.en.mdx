@@ -1,0 +1,7 @@
+# quote
+
+`quote(...)` captures code as a `Tokens` value without executing it. Inside a macro, you use `quote` to build the code fragment the macro returns.
+
+This is much more convenient than assembling `Token` objects by hand. Unmatched parentheses and `$` must be escaped with `\` inside a `quote` block.
+
+Try adding `println("extra")` inside the `quote(...)` block and observe how the generated code changes.

@@ -1,0 +1,33 @@
+# Mutex
+
+A `Mutex` protects a critical section so that only one thread can enter it at a time.
+
+```cangjie
+synchronized(mtx) {
+    count += 1
+}
+```
+
+The `synchronized(mtx)` block acquires the lock, runs the body, and releases it automatically. Twenty threads each increment a shared `count` inside the lock, guaranteeing a final value of `20`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `pthread_mutex_lock` / `pthread_mutex_unlock` pairs. Forgetting to unlock causes deadlocks. Cangjie's `synchronized` block handles unlock automatically.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `synchronized` keyword works similarly. Cangjie's version takes an explicit `Mutex` object rather than locking on `this`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `sync.Mutex` with explicit `Lock()` / `Unlock()` calls, often deferred with `defer mu.Unlock()`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `Mutex<T>` wraps the data it protects. You must call `.lock()` to access the inner value, which returns a guard that auto-unlocks on drop.
+</CompareWith>
+
+</CompareGroup>
+
+Remove the `synchronized` block (keep `count += 1`) and run multiple times -- the result may no longer be `20`.

@@ -1,0 +1,7 @@
+# Method Override
+
+A method marked `open` in the parent can be overridden in a subclass with `override`. Without `open`, the compiler rejects the override.
+
+In this example, `Circle` and `Square` override `area()` and `label()`. The base `describe()` dispatches to the overridden versions at runtime.
+
+Try removing `open` from `area()` on line 2 and observe the compile error.

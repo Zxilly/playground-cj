@@ -6,6 +6,18 @@
         "shadcn@latest",
         "mcp"
       ]
+    },
+    "cangjie": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "cangjie-mcp",
+        "--server-url",
+        "https://cj-mcp.learningman.top",
+        "--log-file",
+        "cangjie-mcp.log",
+        "--debug"
+      ]
     }
   }
 }

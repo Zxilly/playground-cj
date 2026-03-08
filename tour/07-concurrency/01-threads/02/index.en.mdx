@@ -1,0 +1,29 @@
+# Future
+
+`spawn` returns a `Future<T>`, a handle representing a value that will be available once the thread finishes.
+
+```cangjie
+let left = spawn { sumRange(1, 50) }
+let right = spawn { sumRange(51, 100) }
+let total = left.get() + right.get()
+```
+
+Calling `get()` blocks until the result is ready. The sum of 1..100 is split into two halves computed on separate threads, then combined.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java's `Future<T>` from `ExecutorService.submit()` works the same way. Call `.get()` to block and retrieve the result.
+</CompareWith>
+
+<CompareWith lang="go">
+Go has no built-in future. The equivalent pattern uses a channel: `ch <- result` in the goroutine, `result := <-ch` in the caller.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `JoinHandle<T>` from `thread::spawn` returns `Result<T>` on `.join()`. For async futures, Rust uses `async`/`await` with a runtime.
+</CompareWith>
+
+</CompareGroup>
+
+Split the range into four parts instead of two and verify the total is still `5050`.

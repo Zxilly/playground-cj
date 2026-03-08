@@ -1,0 +1,15 @@
+# Collection Example
+
+A `HashMap<String, Int64>` counts tag frequencies by iterating an array and updating the map.
+
+```cangjie
+if (counts.contains(tag)) {
+    counts[tag] = counts[tag] + 1
+} else {
+    counts.add(tag, 1)
+}
+```
+
+The pattern of "iterate, look up, update" is one of the most common uses of `HashMap`.
+
+Add a new tag `"api"` twice to the input array and verify it appears with count `2` in the output.

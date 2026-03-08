@@ -1,0 +1,28 @@
+# Exceptions vs Option
+
+Use `Option` when absence is a normal outcome -- a lookup that finds no match returns `None`. Use exceptions when the situation is a genuine error the caller must handle.
+
+```cangjie
+func findScore(name: String): ?Int64 { ... }    // absence is normal
+func withdraw(balance: Int64, amount: Int64): Int64 { ... }  // error is exceptional
+```
+
+`findScore` returns `?Int64` because a missing name is expected. `withdraw` throws because insufficient balance is an error condition.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java mixes `Optional` and exceptions similarly. The convention is the same: use `Optional` for expected absence, exceptions for unexpected failures.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `(value, error)` for both cases, relying on convention to distinguish "not found" from real errors. Cangjie's type system makes the distinction explicit.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `Option` for absence and `Result` for errors, matching Cangjie's split between `Option` and exceptions.
+</CompareWith>
+
+</CompareGroup>
+
+Change `withdraw` to return `?Int64` instead of throwing, and update the caller to use `match`.

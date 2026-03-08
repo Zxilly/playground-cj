@@ -1,0 +1,5 @@
+# Subtyping
+
+An interface can extend other interfaces using `<:`. A type implementing the combined interface satisfies all parent interfaces.
+
+`ReadWrite <: Readable & Writable` means a `ReadWrite` value can be assigned to a `Readable` or `Writable` variable. Only the corresponding subset of methods is exposed.

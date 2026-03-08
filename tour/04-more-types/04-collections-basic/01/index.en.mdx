@@ -1,0 +1,29 @@
+# ArrayList
+
+`ArrayList<T>` is a resizable, ordered collection with index access.
+
+```cangjie
+let numbers = ArrayList<Int64>()
+numbers.add(10)
+numbers[0] = 20
+```
+
+It supports `add`, `insert` with `add(value, at: index)`, index assignment `numbers[i] = v`, and `remove(at: i)`. Use it when element order matters and you need dynamic growth.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java's `ArrayList<T>` is similar but uses `get(i)` and `set(i, v)` instead of index operators. Cangjie's `ArrayList` supports direct `list[i]` syntax through operator overloading.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses slices (`[]T`) with `append()` for dynamic arrays. There is no generic `ArrayList` type -- slices are built into the language.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `Vec<T>` is the equivalent. Access with `vec[i]` (panics on out-of-bounds) or `vec.get(i)` (returns `Option`).
+</CompareWith>
+
+</CompareGroup>
+
+Change `numbers.add(25, at: 2)` to `at: 0` and predict how the output changes before running.

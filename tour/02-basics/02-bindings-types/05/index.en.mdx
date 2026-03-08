@@ -1,0 +1,31 @@
+# Integer Types
+
+`Int64` is the default integer type. Integer literals can be written in decimal, hexadecimal (`0x`), or binary (`0b`).
+
+```cangjie
+let decimal = 42
+let hex = 0x2A
+let binary = 0b101010
+```
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C defaults `int` to platform-dependent width. Cangjie's `Int64` is always 64 bits.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `int` is 32 bits, `long` is 64 bits. Cangjie defaults to `Int64`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `int` is platform-dependent. Use `int64` for explicit 64-bit. Cangjie defaults to `Int64`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust defaults integer literals to `i32`. Cangjie defaults to `Int64`.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding an octal literal (`0o52`) and printing it to confirm it equals 42.

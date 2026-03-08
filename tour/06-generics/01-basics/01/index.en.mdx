@@ -1,0 +1,7 @@
+# Generic Functions
+
+Go functions can be written to work on multiple types using type parameters. Cangjie works the same way -- type parameters appear in angle brackets after the function name.
+
+`pickFirst<T>` accepts two values of any type `T` and returns the first. `swap<T, U>` reverses a tuple's element order. The compiler infers or checks concrete types at each call site.
+
+Call `swap` with a `(Bool, String)` tuple and print both elements.

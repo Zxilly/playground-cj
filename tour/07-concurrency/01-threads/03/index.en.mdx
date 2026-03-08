@@ -1,0 +1,19 @@
+# Cancellation
+
+Cangjie uses cooperative cancellation. `cancel()` sends a request; the thread checks `Thread.currentThread.hasPendingCancellation` and decides when to stop.
+
+```cangjie
+worker.cancel()
+// inside worker:
+if (Thread.currentThread.hasPendingCancellation) {
+    return
+}
+```
+
+The main thread calls `worker.cancel()` before releasing a `SyncCounter` gate. The worker checks the flag after the gate opens and returns early if cancelled.
+
+<Note>
+Cancellation is cooperative -- if a thread never checks `hasPendingCancellation`, the cancel request is silently ignored.
+</Note>
+
+Remove the `worker.cancel()` call and observe that the worker prints "running" instead of "cancelled".

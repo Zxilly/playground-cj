@@ -8,7 +8,7 @@ import { updateEditor } from '@/lib/monaco'
 import { isDarkMode } from '@/lib/utils'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import type { EditorApp } from 'monaco-languageclient/editorApp'
+import type { MonacoEditorHandle } from '@/components/EditorWrapper'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { loadDataShareCode } from '@/service/share'
@@ -32,7 +32,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
   const { locale } = useLanguage()
 
-  const wrapperRef = useRef<EditorApp | undefined>(undefined)
+  const wrapperRef = useRef<MonacoEditorHandle | undefined>(undefined)
 
   const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | undefined>()
 
@@ -65,7 +65,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
 
   const isDesktop = useMedia('(min-width: 1024px)')
 
-  const onLoad = useCallback((editorApp: EditorApp) => {
+  const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     wrapperRef.current = editorApp
     updateEditor({
       setProgramOutput,
@@ -95,7 +95,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
             wrapperRef={wrapperRef}
           />
         </div>
-        <div id="main" className="flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-2 lg:pt-0">
+        <div id="main" className="flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-1">
           <ResizablePanelGroup
             orientation={isDesktop ? 'horizontal' : 'vertical'}
             className="!overflow-visible"

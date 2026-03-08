@@ -15,6 +15,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ChevronRight } from 'lucide-react'
+import { Trans } from '@lingui/react/macro'
 import type { TourChapterSlim } from '@/tour/types'
 
 interface TourSidebarProps {
@@ -39,8 +40,8 @@ export function TourSidebar({
       <SidebarContent>
         <ScrollArea className="h-full">
           <SidebarGroup>
-            <SidebarGroupLabel>
-              {lang === 'en' ? 'Cangjie Tour' : '仓颉之旅'}
+            <SidebarGroupLabel className="text-tour-accent-fg font-semibold">
+              <Trans>仓颉之旅</Trans>
             </SidebarGroupLabel>
             <SidebarMenu>
               {tourData.map(chapter => (

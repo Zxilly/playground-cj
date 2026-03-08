@@ -1,0 +1,13 @@
+# Comparison Operators
+
+Comparison operators (`==`, `!=`, `<`, `>`, `<=`, `>=`) are overloaded the same way as arithmetic ones, using `operator func`.
+
+```cangjie
+operator func ==(rhs: Temperature): Bool {
+    return this.celsius == rhs.celsius
+}
+```
+
+`Temperature` defines all six comparison operators by delegating to its `celsius` field. Expressions like `boiling > freezing` and `body == another` work directly.
+
+Remove the `>=` operator and try using `>=` in `main` -- observe the compiler error.

@@ -1,0 +1,14 @@
+# Comprehensive Example
+
+`Registry<T>` combines type parameters, a `where T <: Identifiable` constraint, `HashMap` for storage, and `Option<T>` for lookup results.
+
+```cangjie
+class Registry<T> where T <: Identifiable {
+    public func register(item: T) { ... }
+    public func find(id: String): Option<T> { ... }
+}
+```
+
+The constraint ensures every item has a `getId` method. This pattern -- a generic container with a constrained element type -- is common in real Cangjie code.
+
+Add a `remove(id: String)` method to `Registry` and test it from `main`.

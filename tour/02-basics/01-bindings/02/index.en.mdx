@@ -1,0 +1,26 @@
+# var (Mutable)
+
+`var` creates a mutable binding. The name can be reassigned to a new value at any time.
+
+```cangjie
+var count = 0
+count = 10  // OK
+```
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java variables are mutable by default. Use `final` to make them immutable. Cangjie takes the opposite approach -- immutable by default with `let`, opt-in mutability with `var`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go variables declared with `var` or `:=` are always mutable. There is no way to declare a non-constant immutable variable.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust requires `let mut` for mutable bindings. Cangjie uses a separate keyword `var` instead.
+</CompareWith>
+
+</CompareGroup>
+
+Change `var count` on line 2 to `let count` and observe the compile error on reassignment.

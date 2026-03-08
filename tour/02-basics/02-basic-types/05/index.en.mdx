@@ -1,0 +1,27 @@
+# Strings and Interpolation
+
+Strings are sequences of characters enclosed in double quotes. `${expr}` inside a string evaluates the expression and inserts the result.
+
+```cangjie
+let name = "Cangjie"
+println("Hello, ${name}!")
+println("1 + 1 = ${1 + 1}")
+```
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java uses `+` for string concatenation. Cangjie uses `${expr}` interpolation, similar to Kotlin's `"$variable"` or `"${expression}"`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `fmt.Sprintf("Hello, %s", name)` for formatting. Cangjie embeds expressions directly in the string with `${}`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses the `format!("Hello, {name}")` macro. Cangjie's `${}` interpolation is built into the string literal syntax.
+</CompareWith>
+
+</CompareGroup>
+
+Try replacing a variable in `${}` with an arithmetic expression like `${lessons + 1}`.

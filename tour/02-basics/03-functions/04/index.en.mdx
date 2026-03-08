@@ -1,0 +1,10 @@
+# Named Parameters
+
+A parameter marked with `!` after its name becomes a named parameter. At the call site, named parameters are written as `name: value` and can be passed in any order.
+
+```cangjie
+func greet(who!: String, greeting!: String) { }
+greet(greeting: "Hi", who: "Cangjie")
+```
+
+Try swapping the argument order at the call site on line 12 and verify it still works.

@@ -1,0 +1,7 @@
+# foreign 声明
+
+`foreign` 声明一个可从仓颉调用的 C 函数。它只有签名没有函数体——链接器在编译时解析它。
+
+调用 `foreign` 函数需要在 `unsafe` 块中进行。
+
+试着添加 `foreign func srand(seed: UInt32): Unit`，然后在 `rand()` 之前调用它。

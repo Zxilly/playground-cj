@@ -1,0 +1,5 @@
+# 泛型子类型
+
+`Dog <: Animal` 不会自动使 `Container<Dog>` 成为 `Container<Animal>` 的子类型。带 `where T <: Animal` 约束的泛型函数可以直接接受 `Dog` 和 `Cat`，而 `Array<Animal>` 可以在同一集合中混合存放不同子类型。
+
+应使用泛型参数上的类型约束，而非假设容器间存在子类型关系。

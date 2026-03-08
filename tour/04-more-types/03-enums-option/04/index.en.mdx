@@ -1,0 +1,7 @@
+# Option Type
+
+`Option<T>` represents a value that may or may not exist: `Some(value)` or `None`. Use it instead of sentinel values like `-1` for missing results.
+
+The `??` operator provides a default when the option is `None`.
+
+Replace `??` with a `match` expression that handles `Some` and `None` separately.

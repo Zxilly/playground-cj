@@ -1,0 +1,29 @@
+# Type Constraints
+
+A `where T <: Printable` clause restricts `T` to types that implement `Printable`. Inside the function, methods from `Printable` can be called on values of type `T`.
+
+```cangjie
+func printItem<T>(item: T): Unit where T <: Printable {
+    println(item.display())
+}
+```
+
+Without a constraint, the compiler cannot allow any interface-specific method calls on `T`.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java uses `<T extends Printable>` for bounded type parameters. Cangjie uses `where T <: Printable` after the parameter list.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `[T Printable]` with interface constraints. Cangjie's `where` clause is more flexible for complex multi-constraint scenarios.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `where T: Display` or inline bounds `<T: Display>`. The concept is identical to Cangjie's `where T <: Printable`.
+</CompareWith>
+
+</CompareGroup>
+
+Remove the `where` clause from `printItem` and observe the compile error on `item.display()`.

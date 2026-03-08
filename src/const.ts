@@ -37,8 +37,6 @@ import functionalEn from '@/examples/functional.en.cj'
 import cubeEn from '@/examples/cube.en.cj'
 import cffiEn from '@/examples/cffi.en.cj'
 
-import { i18n } from '@lingui/core'
-
 export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'
 
 export const examples: [string, { zh: { name: string, content: string }, en: { name: string, content: string } }][] = [
@@ -62,13 +60,13 @@ export const examples: [string, { zh: { name: string, content: string }, en: { n
   ['cffi', { zh: { name: 'CFFI', content: cffi }, en: { name: 'CFFI', content: cffiEn } }],
 ]
 
-export function getLocalizedExamples(): Record<string, string> {
-  const currentLocale = i18n.locale || 'zh'
+export function getLocalizedExamples(locale: string = 'zh'): Record<string, { name: string, content: string }> {
+  const currentLocale = locale === 'en' ? 'en' : 'zh'
 
   return Object.fromEntries(
-    examples.map(([, { zh, en }]) => {
-      const { name, content } = currentLocale === 'en' ? en : zh
-      return [name, content]
+    examples.map(([key, { zh, en }]) => {
+      const localizedExample = currentLocale === 'en' ? en : zh
+      return [key, localizedExample]
     }),
   )
 }

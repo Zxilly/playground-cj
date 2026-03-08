@@ -1,0 +1,3 @@
+# CString 字符串
+
+`CString` 表示以空字符结尾的 C 字符串，对应 C 中的 `char*`。使用 `LibC.mallocCString()` 将仓颉 `String` 转换为 `CString`，使用 `toString()` 方法转换回来。由于 `mallocCString` 在 C 堆上分配内存，使用完毕后必须调用 `LibC.free()` 释放。

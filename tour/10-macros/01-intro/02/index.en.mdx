@@ -1,0 +1,7 @@
+# @macro package
+
+Macros live in a separate `macro package`, not a regular `package`. This package can only export macro definitions.
+
+You must `import std.ast.*` to access the `Tokens` type and AST utilities. The macro package is compiled separately with `cjc --compile-macro` before the code that uses it.
+
+Notice the `macro package` declaration at the top of the file.

@@ -1,0 +1,3 @@
+# Struct mapping
+
+To interop with a C struct, define a matching `@C struct` in Cangjie with the same field order and C-compatible types. The memory layout must exactly match the C definition. You can then pass `CPointer` to these structs across the FFI boundary.

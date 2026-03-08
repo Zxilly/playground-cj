@@ -1,0 +1,14 @@
+# Collection Iteration
+
+All standard collections support `for-in` loops. Collections also expose an `iterator()` that returns elements one at a time via `next()`, yielding `Option` values.
+
+```cangjie
+var it = list.iterator()
+while (let Some(v) <- it.next()) {
+    println(v)
+}
+```
+
+`HashMap` iteration produces `(key, value)` tuples that can be destructured directly in the loop header.
+
+Comment out the `for-in` loop and keep only the `iterator` version -- verify the output is identical.

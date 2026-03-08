@@ -1,0 +1,27 @@
+# Direct Extensions
+
+`extend` adds methods to an existing type without modifying its definition.
+
+```cangjie
+extend Int64 {
+    func isEven(): Bool {
+        return this % 2 == 0
+    }
+}
+```
+
+The extended methods are called with normal dot syntax. The value is still an `Int64`; the extension only adds behavior.
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go does not support extending types you don't own. You must define a new named type (`type MyInt int`) and add methods to that instead.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `impl` blocks or trait implementations to add methods. You can add methods to foreign types only by implementing your own trait on them (the orphan rule).
+</CompareWith>
+
+</CompareGroup>
+
+Add an `isOdd()` method to the extension and call it on `-7` to verify it returns `true`.

@@ -1,0 +1,7 @@
+# 类型转换
+
+`value is Type` 测试值是否为特定类型。`value as Type` 尝试转换，返回 `Option` -- 成功时为 `Some(value)`，失败时为 `None`。
+
+本例中，`animal is Dog` 返回 `true`。`as Dog` 转换返回 `Some(dog)`，可以访问 `fetch()` 方法。
+
+将第 18 行的 `Dog()` 改为 `Animal()`，观察 `as Dog` 转换返回 `None`。

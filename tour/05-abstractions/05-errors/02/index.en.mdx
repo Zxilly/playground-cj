@@ -1,0 +1,33 @@
+# throw / try / catch
+
+`throw` creates an exception at the point of failure. `try` marks a block that may throw, and `catch` handles the exception at a suitable boundary.
+
+```cangjie
+if (b == 0) {
+    throw ArithmeticException("b must not be zero")
+}
+```
+
+The throwing function reports the problem; the caller's `catch` block decides the recovery strategy.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no exceptions -- error handling uses return codes. Cangjie's throw/catch separates error signaling from error handling.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's try/catch/throw works identically. Cangjie does not require `throws` declarations on functions.
+</CompareWith>
+
+<CompareWith lang="go">
+Go returns `error` values instead of throwing. Cangjie's exceptions provide automatic stack unwinding that Go's explicit error checking does not.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `Result::Err` and the `?` operator instead of throw/catch. Cangjie exceptions are more implicit but less type-safe at function boundaries.
+</CompareWith>
+
+</CompareGroup>
+
+Change `requireAdult(16)` to `requireAdult(20)` to see the success path.

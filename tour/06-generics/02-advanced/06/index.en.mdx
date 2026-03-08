@@ -1,0 +1,10 @@
+# Const Functions
+
+A `const func` can be evaluated at compile time. When called with constant arguments, the result is computed during compilation rather than at runtime. A struct can provide a `const init` to support compile-time construction.
+
+```cangjie
+const func distance(a: Point, b: Point) { ... }
+const d = distance(a, b)
+```
+
+Try changing `const d` to `let d` -- the function still works at runtime, but the value is no longer computed at compile time.

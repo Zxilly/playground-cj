@@ -1,0 +1,7 @@
+# Option vs Exception
+
+Use `Option<T>` when the absence of a value is a normal and expected outcome — for example, looking up a key that may not exist. Use exceptions for truly exceptional conditions that represent program errors or unrecoverable failures.
+
+A function returning `Option<T>` forces the caller to explicitly handle the missing case. An exception propagates automatically up the call stack until caught.
+
+Change the `divide` function to return `Option<Float64>` instead of throwing, and update the caller to handle `None` with `??`.

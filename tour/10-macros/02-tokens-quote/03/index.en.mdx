@@ -1,0 +1,7 @@
+# Interpolation
+
+Inside `quote(...)`, use `$(expr)` to splice a `Tokens` value into the generated code. This is how macros insert captured code fragments or computed strings into the output.
+
+`$(input)` inserts tokens as code. `$(input.toString())` inserts the string representation.
+
+Change the variable name `inputStr` to something else and verify the macro still works.

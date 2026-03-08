@@ -1,0 +1,5 @@
+# 比较运算符
+
+比较运算符（`==`、`!=`、`<`、`>`、`<=`、`>=`）的重载方式与算术运算符相同，使用 `operator func`。
+
+此处 `Temperature` 通过委托 `celsius` 字段实现了全部六个比较运算符。之后 `boiling > freezing`、`body == another` 等表达式可直接使用。

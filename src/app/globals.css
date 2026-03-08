@@ -38,6 +38,23 @@
   --sidebar-accent-foreground: hsl(240 5.9% 10%);
   --sidebar-border: hsl(220 13% 91%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+  /* ── Tour Design System: Semantic Tokens (light) ── */
+  --tour-bg: #ffffff;
+  --tour-surface: #f8f9fa;
+  --tour-text: #1a1a1a;
+  --tour-heading: #000000;
+  --tour-accent-fg: #2a7a6e;
+  --tour-link: #2a7a6e;
+  --tour-border: #e0e0e0;
+  --tour-border-soft: #e8e8e8;
+  --tour-code-bg: #f3f4f6;
+  --tour-code-text: #1a5c52;
+  --tour-code-border: #d4d4d4;
+  --tour-compare-border: #2a7a6e;
+  --tour-compare-label: #2a7a6e;
+  --tour-compare-bg: #f7faf9;
+  --tour-compare-text: #333333;
 }
 
 .dark {
@@ -54,7 +71,7 @@
   --muted: hsl(0 0% 14.9%);
   --muted-foreground: hsl(0 0% 63.9%);
   --accent: hsl(0 0% 14.9%);
-  --accent-foreground: hsl(0 0% 98%);
+  --accent-foreground: hsl(0 0% 9%);
   --destructive: hsl(0 62.8% 30.6%);
   --destructive-foreground: hsl(0 0% 98%);
   --border: hsl(0 0% 14.9%);
@@ -73,6 +90,23 @@
   --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
   --sidebar-border: hsl(240 3.7% 15.9%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+  /* ── Tour Design System: Semantic Tokens (dark) ── */
+  --tour-bg: #141414;
+  --tour-surface: #1e1e1e;
+  --tour-text: #d4d4d4;
+  --tour-heading: #e5e5e5;
+  --tour-accent-fg: #5ec4b0;
+  --tour-link: #5ec4b0;
+  --tour-border: #333333;
+  --tour-border-soft: #2a2a2a;
+  --tour-code-bg: #1e1e1e;
+  --tour-code-text: #7adfb8;
+  --tour-code-border: #383838;
+  --tour-compare-border: #5ec4b0;
+  --tour-compare-label: #5ec4b0;
+  --tour-compare-bg: #1a2420;
+  --tour-compare-text: #c8c8c8;
 }
 
 @theme inline {
@@ -112,6 +146,33 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+
+  /* ── Tour Design System: Brand Palette (fixed) ── */
+  --color-tour-teal: #369E8F;
+  --color-tour-teal-deep: #2E9585;
+  --color-tour-teal-hover: #2E8A7E;
+  --color-tour-teal-active: #287A70;
+  --color-tour-teal-light: #3DAA96;
+  --color-tour-teal-end: #42B89A;
+  --color-tour-accent: #47C4B0;
+  --color-tour-muted: #5a9e94;
+
+  /* ── Tour Design System: Semantic Tokens (auto light/dark) ── */
+  --color-tour-bg: var(--tour-bg);
+  --color-tour-surface: var(--tour-surface);
+  --color-tour-text: var(--tour-text);
+  --color-tour-heading: var(--tour-heading);
+  --color-tour-accent-fg: var(--tour-accent-fg);
+  --color-tour-link: var(--tour-link);
+  --color-tour-border: var(--tour-border);
+  --color-tour-border-soft: var(--tour-border-soft);
+  --color-tour-code-bg: var(--tour-code-bg);
+  --color-tour-code-text: var(--tour-code-text);
+  --color-tour-code-border: var(--tour-code-border);
+  --color-tour-compare-border: var(--tour-compare-border);
+  --color-tour-compare-label: var(--tour-compare-label);
+  --color-tour-compare-bg: var(--tour-compare-bg);
+  --color-tour-compare-text: var(--tour-compare-text);
 }
 
 @layer base {
@@ -121,4 +182,186 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ═══════════════════════════════════════════════════
+   Tour Design System: Global Styles
+   ═══════════════════════════════════════════════════ */
+
+/* ── Highlight Pulse Animation ── */
+@keyframes tour-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(54, 158, 143, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(54, 158, 143, 0.45); }
+}
+
+.tour-highlight-pulse {
+  animation: tour-pulse 0.8s ease-in-out 3;
+  border-radius: 6px;
+  position: relative;
+  z-index: 50;
+}
+
+/* ── Tour Prose: mdBook-inspired typography ──
+   Use alongside Tailwind `prose` class:
+   <div className="prose dark:prose-invert max-w-none tour-prose">
+   Requires --tour-code-font CSS var set on an ancestor.
+*/
+.tour-prose {
+  font-size: 16px;
+  line-height: 1.45em;
+  overflow-wrap: break-word;
+}
+
+.tour-prose p,
+.tour-prose ol,
+.tour-prose ul,
+.tour-prose li {
+  line-height: 1.45em;
+  color: var(--tour-text);
+}
+
+.tour-prose p {
+  margin: 0 0 1em;
+}
+
+.tour-prose h1,
+.tour-prose h2,
+.tour-prose h3 {
+  color: var(--tour-heading);
+  font-weight: 700;
+}
+
+.tour-prose h1 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.tour-prose h2 {
+  font-size: 1.15rem;
+  margin-top: 2.5em;
+  margin-bottom: 0.75rem;
+}
+
+.tour-prose h3 {
+  font-size: 1rem;
+  margin-top: 2.5em;
+  margin-bottom: 0.5rem;
+}
+
+.tour-prose strong {
+  color: var(--tour-heading);
+  font-weight: 600;
+}
+
+.tour-prose ul,
+.tour-prose ol {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.tour-prose a {
+  color: var(--tour-link);
+  text-decoration: none;
+}
+
+.tour-prose a:hover {
+  text-decoration: underline;
+}
+
+/* Inline code */
+.tour-prose code::before,
+.tour-prose code::after {
+  content: '' !important;
+}
+
+.tour-prose code:not(pre code) {
+  font-family: var(--tour-code-font);
+  display: inline-block;
+  background: var(--tour-code-bg);
+  color: var(--tour-code-text);
+  border: 1px solid var(--tour-code-border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.875em;
+  font-weight: normal;
+  line-height: 1.35;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  vertical-align: baseline;
+}
+
+/* Fenced code blocks */
+.tour-prose pre {
+  font-family: var(--tour-code-font);
+  background: var(--tour-surface);
+  border: 1px solid var(--tour-border);
+  border-radius: 4px;
+  font-size: 0.875em;
+  line-height: 1.45em;
+  margin: 1em 0;
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.tour-prose pre code {
+  font-family: var(--tour-code-font);
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ── CompareWith: left-bordered callout (mdBook blockquote-tag style) ── */
+.tour-compare {
+  margin: 1rem 0;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid var(--tour-compare-border);
+  background: var(--tour-compare-bg);
+  border-radius: 0 4px 4px 0;
+}
+
+.tour-compare-label {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--tour-compare-label);
+  margin: 8px 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tour-compare-body {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--tour-compare-text);
+  padding: 0 12px 8px 0;
+}
+
+.tour-compare-body code {
+  font-family: var(--tour-code-font);
+  background: var(--tour-code-bg);
+  color: var(--tour-code-text);
+  border: 1px solid var(--tour-code-border);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+
+/* ── Note: Amber callout ── */
+.note-content code {
+  font-family: var(--tour-code-font);
+  background: rgba(217, 119, 6, 0.1);
+  color: #92400e;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.875em;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.dark .note-content code {
+  background: rgba(217, 119, 6, 0.15);
+  color: #fbbf24;
+  border-color: rgba(217, 119, 6, 0.25);
 }

@@ -1,0 +1,3 @@
+# inout 参数
+
+`inout` 修饰符将仓颉变量按引用传递给 `CFunc`，C 端接收到的是 `CPointer<T>`。变量必须用 `var` 声明，满足 `CType` 约束，且不能是 `CString` 或来源于 `class` 的实例成员变量。该指针仅在函数调用期间有效。

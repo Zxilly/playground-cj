@@ -1,0 +1,7 @@
+# public macro 声明
+
+宏函数声明为 `public macro Name(input: Tokens): Tokens`。`input` 参数接收调用处的 Token 序列，返回的 `Tokens` 替换源代码中的宏调用。
+
+当宏作用于声明（如函数或类）时，整个声明成为输入。宏必须声明为 `public`，因为它们总是被其他包使用。
+
+跟踪 `testDef` 宏的返回值——它是一个将 Token 原样传递的恒等宏。

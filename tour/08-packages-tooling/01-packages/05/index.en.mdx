@@ -1,0 +1,7 @@
+# Re-export
+
+`public import a.b.foo` makes `foo` available to anyone who imports your package. They don't need to also import `a.b`.
+
+The default modifier on `import` is `private`, meaning the imported name is only usable in the current file.
+
+The example shows how a re-exported `ArrayList` could be used through an intermediate package.

@@ -1,0 +1,5 @@
+# 异常层次结构
+
+异常以 `Exception` 为根形成层次结构。`IndexOutOfBoundsException` 和 `ArithmeticException` 等具体类型继承自它。
+
+`catch` 块优先匹配最具体的异常类型。如果把通用的 `catch (e: Exception)` 放在具体类型之前，后者会被遮蔽，因此具体的 catch 应写在前面。

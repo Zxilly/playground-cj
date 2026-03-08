@@ -11,6 +11,7 @@ import { useMemo, useState } from 'react'
 import { Trans } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface ExamplesDropdownProps {
   action: (nextCode: string) => void
@@ -18,10 +19,12 @@ interface ExamplesDropdownProps {
 
 export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
   const { i18n } = useLingui()
+  const { locale } = useLanguage()
   const [open, setOpen] = useState(false)
-  const [value, setValue] = useState('Hello World')
+  const [selectedKey, setSelectedKey] = useState('hello-world')
 
-  const examples = useMemo(() => getLocalizedExamples(), [])
+  const examples = useMemo(() => getLocalizedExamples(locale), [locale])
+  const selectedExample = examples[selectedKey] ?? examples['hello-world'] ?? Object.values(examples)[0]
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -32,7 +35,7 @@ export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
           aria-expanded={open}
           className="w-full justify-between"
         >
-          <span className="truncate">{value}</span>
+          <span className="truncate">{selectedExample?.name ?? 'Hello World'}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -44,23 +47,23 @@ export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
           </CommandEmpty>
           <CommandGroup>
             <CommandList>
-              {Object.entries(examples).map(([name, content]) => (
+              {Object.entries(examples).map(([key, example]) => (
                 <CommandItem
-                  key={name}
-                  value={name}
-                  onSelect={(currentValue) => {
-                    setValue(currentValue)
-                    action(content)
+                  key={key}
+                  value={example.name}
+                  onSelect={() => {
+                    setSelectedKey(key)
+                    action(example.content)
                     setOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       'mr-2 h-4 w-4',
-                      value === name ? 'opacity-100' : 'opacity-0',
+                      selectedKey === key ? 'opacity-100' : 'opacity-0',
                     )}
                   />
-                  {name}
+                  {example.name}
                 </CommandItem>
               ))}
             </CommandList>

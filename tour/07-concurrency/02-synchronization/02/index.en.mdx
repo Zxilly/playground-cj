@@ -1,0 +1,13 @@
+# Atomic
+
+`AtomicInt64` provides lock-free atomic operations on a single integer.
+
+```cangjie
+let counter = AtomicInt64(0)
+let _ = counter.fetchAdd(1)
+println(counter.load())
+```
+
+`fetchAdd` atomically increments the value; `load` reads it. Atomics suit simple counters. For protecting multiple fields or complex state, use a `Mutex` instead.
+
+Change `fetchAdd(1)` to `fetchAdd(5)` and predict what `counter.load()` will print with 20 threads.

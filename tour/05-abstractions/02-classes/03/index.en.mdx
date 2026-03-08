@@ -1,0 +1,7 @@
+# Properties
+
+A `prop` with `get()` and optional `set(v)` defines a computed property. Properties look like fields to the caller but execute logic when accessed.
+
+In this example, `fahrenheit` and `description` are read-only properties that recompute whenever `celsius` changes.
+
+Try adding a `set(v)` block to `fahrenheit` that converts back to Celsius: `celsius = (v - 32.0) * 5.0 / 9.0`.

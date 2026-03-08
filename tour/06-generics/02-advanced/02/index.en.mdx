@@ -1,0 +1,11 @@
+# Generic Subtyping
+
+`Dog <: Animal` does not automatically make `Container<Dog>` a subtype of `Container<Animal>`. Generic types are invariant by default.
+
+```cangjie
+func makeSpeak<T>(animal: T) where T <: Animal { ... }
+```
+
+A generic function with `where T <: Animal` accepts both `Dog` and `Cat` directly. An `Array<Animal>` can hold mixed subtypes in one collection.
+
+Try passing `Array<Dog>` where `Array<Animal>` is expected to see the type error.

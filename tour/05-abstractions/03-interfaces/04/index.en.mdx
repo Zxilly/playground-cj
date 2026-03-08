@@ -1,0 +1,7 @@
+# Interface Values
+
+An interface variable holds a (value, type) pair. Only the interface's methods are accessible through that variable.
+
+Here, an `Array<Drawable>` stores `Line`, `Circle`, and `Text` objects. The loop calls `draw()` on each without knowing the concrete type.
+
+Add a `Polygon` class implementing `Drawable` and include it in the array.
