@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect } from 'react'
+import type { ReactNode } from 'react'
 
 interface HighlightProps {
   target: string
@@ -10,7 +11,8 @@ interface HighlightProps {
 export function Highlight({ target, children }: HighlightProps) {
   useEffect(() => {
     const el = document.querySelector(`[data-tour-highlight="${target}"]`)
-    if (!el) return
+    if (!el)
+      return
 
     el.classList.add('tour-highlight-pulse')
     const timer = setTimeout(() => {

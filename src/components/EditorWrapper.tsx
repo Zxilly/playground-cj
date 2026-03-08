@@ -56,7 +56,7 @@ function createStandaloneEditorHandle(
 
       const nextUri = monaco.Uri.parse(nextResource.uri ?? model.uri.toString())
       const existingNextModel = monaco.editor.getModel(nextUri)
-      let nextModel = existingNextModel ?? monaco.editor.createModel(
+      const nextModel = existingNextModel ?? monaco.editor.createModel(
         nextResource.text ?? model.getValue(),
         nextResource.enforceLanguageId ?? model.getLanguageId(),
         nextUri,

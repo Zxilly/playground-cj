@@ -29,13 +29,6 @@ function readRequiredFile(filePath: string): string {
   return readFileSync(filePath, 'utf-8')
 }
 
-function readCodeFile(filePath: string): string {
-  if (!existsSync(filePath))
-    return ''
-
-  return readFileSync(filePath, 'utf-8')
-}
-
 function readNameJson(dir: string): Record<string, string> {
   const filePath = join(dir, 'name.json')
   const raw = readRequiredFile(filePath)
@@ -81,9 +74,11 @@ async function loadSection(sectionDir: string, sectionId: string): Promise<TourS
     const localePath = join(sectionDir, `index.${lang}.cj`)
     if (existsSync(localePath)) {
       code[lang] = readFileSync(localePath, 'utf-8')
-    } else if (existsSync(defaultCjPath)) {
+    }
+    else if (existsSync(defaultCjPath)) {
       code[lang] = readFileSync(defaultCjPath, 'utf-8')
-    } else {
+    }
+    else {
       code[lang] = ''
     }
   }

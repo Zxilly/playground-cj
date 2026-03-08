@@ -23,8 +23,7 @@ export function TourContent({ lang, section }: TourContentProps) {
         <div className="prose dark:prose-invert max-w-[750px] tour-prose">
           {source
             ? <MDXRemote {...source} components={tourMdxComponents} />
-            : <Markdown>{(section.markdown[lang] || section.markdown.zh || '').replace(/^#\s+(?:\S.*|[\t\v\f \xA0\u1680\u2000-\u200A\u202F\u205F\u3000\uFEFF])[\r\n]+/, '')}</Markdown>
-          }
+            : <Markdown>{(section.markdown[lang] || section.markdown.zh || '').replace(/^#\s+(?:\S.*|[\t\v\f \xA0\u1680\u2000-\u200A\u202F\u205F\u3000\uFEFF])[\r\n]+/, '')}</Markdown>}
         </div>
       </div>
     </ScrollArea>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useKnownLanguages } from '@/contexts/KnownLanguagesContext'
+import { useKnownLanguages } from '@/contexts/useKnownLanguages'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Settings2 } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'

@@ -9,7 +9,7 @@ import { updateEditor } from '@/lib/monaco'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { Play, RotateCcw } from 'lucide-react'
 import type { MonacoEditorHandle } from '@/components/EditorWrapper'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { AnsiUp } from 'ansi_up'
 
 interface TourEditorProps {
@@ -26,6 +26,54 @@ interface CompilerDiagnostic {
   startColumn: number
   endLineNumber: number
   endColumn: number
+}
+
+type OutputTab = 'program' | 'tool'
+
+interface EditorState {
+  toolOutput: string
+  programOutput: string
+  activeTab: OutputTab
+}
+
+type EditorAction
+  = | { type: 'reset' }
+    | { type: 'set-tool-output', output: string }
+    | { type: 'set-program-output', output: string }
+    | { type: 'set-active-tab', tab: OutputTab }
+
+function createInitialEditorState(): EditorState {
+  return {
+    toolOutput: '',
+    programOutput: '',
+    activeTab: 'program',
+  }
+}
+
+function editorStateReducer(state: EditorState, action: EditorAction): EditorState {
+  switch (action.type) {
+    case 'reset':
+      return createInitialEditorState()
+    case 'set-tool-output':
+      return {
+        ...state,
+        toolOutput: action.output,
+        activeTab: action.output && !state.programOutput ? 'tool' : state.activeTab,
+      }
+    case 'set-program-output':
+      return {
+        ...state,
+        programOutput: action.output,
+        activeTab: action.output ? 'program' : state.activeTab,
+      }
+    case 'set-active-tab':
+      return {
+        ...state,
+        activeTab: action.tab,
+      }
+    default:
+      return state
+  }
 }
 
 function createLocalizedLabels(locale: string) {
@@ -125,9 +173,7 @@ function toMarkerData(diagnostics: CompilerDiagnostic[]): monaco.editor.IMarkerD
 }
 
 export function TourEditor({ code, locale }: TourEditorProps) {
-  const [toolOutput, setToolOutput] = useState('')
-  const [programOutput, setProgramOutput] = useState('')
-  const [activeTab, setActiveTab] = useState<'program' | 'tool'>('program')
+  const [{ toolOutput, programOutput, activeTab }, dispatch] = useReducer(editorStateReducer, undefined, createInitialEditorState)
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
   const codeRef = useRef(code)
   const ansiRef = useRef(new AnsiUp())
@@ -150,8 +196,23 @@ export function TourEditor({ code, locale }: TourEditorProps) {
   }, [])
 
   const resetOutputs = useCallback(() => {
-    setToolOutput('')
-    setProgramOutput('')
+    dispatch({ type: 'reset' })
+  }, [])
+
+  const handleToolOutputChange = useCallback((output: string) => {
+    dispatch({ type: 'set-tool-output', output })
+  }, [])
+
+  const handleProgramOutputChange = useCallback((output: string) => {
+    dispatch({ type: 'set-program-output', output })
+  }, [])
+
+  const handleSelectProgramTab = useCallback(() => {
+    dispatch({ type: 'set-active-tab', tab: 'program' })
+  }, [])
+
+  const handleSelectToolTab = useCallback(() => {
+    dispatch({ type: 'set-active-tab', tab: 'tool' })
   }, [])
 
   const syncCompilerMarkers = useCallback((output: string) => {
@@ -175,18 +236,7 @@ export function TourEditor({ code, locale }: TourEditorProps) {
 
     resetOutputs()
     clearCompilerMarkers()
-    setActiveTab('program')
   }, [clearCompilerMarkers, code, resetOutputs])
-
-  useEffect(() => {
-    if (programOutput) {
-      setActiveTab('program')
-      return
-    }
-
-    if (toolOutput)
-      setActiveTab('tool')
-  }, [programOutput, toolOutput])
 
   useEffect(() => {
     syncCompilerMarkers(toolOutput)
@@ -201,12 +251,12 @@ export function TourEditor({ code, locale }: TourEditorProps) {
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     editorAppRef.current = editorApp
     updateEditor({
-      setProgramOutput,
-      setToolOutput,
+      setProgramOutput: handleProgramOutputChange,
+      setToolOutput: handleToolOutputChange,
       ed: editorApp.getEditor()!,
     })
     syncCompilerMarkers(toolOutput)
-  }, [syncCompilerMarkers, toolOutput])
+  }, [handleProgramOutputChange, handleToolOutputChange, syncCompilerMarkers, toolOutput])
 
   const handleRun = useCallback(() => {
     editorAppRef.current?.getEditor()?.getAction('cangjie.compile.run')?.run()
@@ -271,13 +321,13 @@ export function TourEditor({ code, locale }: TourEditorProps) {
 
               <div className="flex items-center gap-2 text-xs">
                 <button
-                  onClick={() => setActiveTab('program')}
+                  onClick={handleSelectProgramTab}
                   className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'program' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                 >
                   {labels.programOutput}
                 </button>
                 <button
-                  onClick={() => setActiveTab('tool')}
+                  onClick={handleSelectToolTab}
                   className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'tool' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                 >
                   {labels.compilerOutput}
@@ -299,8 +349,8 @@ export function TourEditor({ code, locale }: TourEditorProps) {
       <div className="shrink-0">
         <Toaster richColors closeButton position="top-center" />
         <CodeRunner
-          setToolOutput={setToolOutput}
-          setProgramOutput={setProgramOutput}
+          setToolOutput={handleToolOutputChange}
+          setProgramOutput={handleProgramOutputChange}
           onFormatted={handleFormatted}
         />
       </div>
