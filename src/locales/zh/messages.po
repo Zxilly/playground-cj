@@ -25,6 +25,10 @@ msgstr "exit code {code}"
 msgid "Hash 方式"
 msgstr "Hash 方式"
 
+#: src/components/ui/sidebar.tsx:203
+msgid "侧边栏"
+msgstr "侧边栏"
+
 #: src/components/ShareButton.tsx:90
 msgid "URL 方式"
 msgstr "URL 方式"
@@ -36,6 +40,10 @@ msgstr "上一步"
 #: src/components/tour/TourNavigation.tsx:39
 msgid "下一步"
 msgstr "下一步"
+
+#: src/components/ui/breadcrumb.tsx:12
+msgid "面包屑"
+msgstr "面包屑"
 
 #: src/components/playground/PlaygroundHeader.tsx:53
 #: src/components/playground/PlaygroundHeader.tsx:91
@@ -104,6 +112,10 @@ msgstr "分享成功"
 msgid "在 GitHub 查看源代码"
 msgstr "在 GitHub 查看源代码"
 
+#: src/components/ui/sidebar.tsx:204
+msgid "显示移动端侧边栏。"
+msgstr "显示移动端侧边栏。"
+
 #: src/components/tour/mdx/LanguagePicker.tsx:29
 msgid "对比"
 msgstr "对比"
@@ -133,6 +145,10 @@ msgstr "我了解这些语言"
 msgid "搜索示例..."
 msgstr "搜索示例..."
 
+#: src/components/ui/breadcrumb.tsx:87
+msgid "更多"
+msgstr "更多"
+
 #: src/components/playground/PlaygroundHeader.tsx:60
 #: src/components/playground/PlaygroundHeader.tsx:98
 msgid "教程"
@@ -149,6 +165,11 @@ msgstr "未找到示例。"
 #: src/components/LanguageSelector.tsx:68
 msgid "未找到语言。"
 msgstr "未找到语言。"
+
+#: src/components/ui/dialog.tsx:80
+#: src/components/ui/sheet.tsx:84
+msgid "关闭"
+msgstr "关闭"
 
 #: src/service/run.ts:74
 #: src/service/run.ts:76
@@ -202,6 +223,11 @@ msgstr "编译运行"
 #: src/components/ShareButton.tsx:46
 msgid "请先输入代码"
 msgstr "请先输入代码"
+
+#: src/components/ui/sidebar.tsx:284
+#: src/components/ui/sidebar.tsx:292
+msgid "切换侧边栏"
+msgstr "切换侧边栏"
 
 #: src/components/playground/PlaygroundHeader.tsx:68
 #: src/components/playground/PlaygroundHeader.tsx:111
