@@ -11,7 +11,7 @@ import { KnownLanguagesProvider } from '@/contexts/KnownLanguagesContext'
 import { isDarkMode } from '@/lib/utils'
 import { harmonyFont, jetbrainsFont } from '@/app/font'
 import { useMedia } from 'react-use'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FlatSection, TourChapterSlim } from '@/tour/types'
 import { getTourBasePath } from '@/hooks/useTourHref'
 
@@ -71,6 +71,36 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
     currentIndex,
     total: allSections.length,
   }), [lang, currentIndex, allSections.length, goPrev, goNext])
+
+  useEffect(() => {
+    const isInsideTourEditor = (e: KeyboardEvent): boolean => {
+      for (const node of e.composedPath()) {
+        if (node instanceof Element && node.hasAttribute('data-tour-editor-root'))
+          return true
+      }
+      return false
+    }
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'PageDown' && e.key !== 'PageUp')
+        return
+      if (isInsideTourEditor(e))
+        return
+      if (e.key === 'PageDown') {
+        if (currentIndex >= allSections.length - 1)
+          return
+        e.preventDefault()
+        goNext()
+        return
+      }
+      if (currentIndex <= 0)
+        return
+      e.preventDefault()
+      goPrev()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [currentIndex, allSections.length, goNext, goPrev])
 
   return (
     <KnownLanguagesProvider>

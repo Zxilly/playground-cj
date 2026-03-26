@@ -280,7 +280,7 @@ export function TourEditor({ code, locale }: TourEditorProps) {
   }, [])
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col" data-tour-editor-root>
       <ResizablePanelGroup orientation="vertical" className="h-full">
         <ResizablePanel defaultSize={68} minSize={35}>
           <div className="relative h-full min-h-0 border-b border-border">
