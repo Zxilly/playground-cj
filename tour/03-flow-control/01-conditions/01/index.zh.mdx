@@ -1,7 +1,31 @@
-# If
+# if 语句
 
-仓颉的 `if` 语句和大多数语言类似。条件两边的括号是**必须**的。
+仓颉的 `if` 语句用于根据条件执行不同的代码分支。条件表达式的值必须是 `Bool` 类型，当条件为 `true` 时执行 `if` 分支，为 `false` 时执行 `else` 分支。
 
-花括号 `{ }` 也是必须的。
+与许多语言不同，仓颉要求条件必须用括号 `()` 包围，花括号 `{}` 也是必需的，即使分支内只有一行代码。这些设计避免了常见的编码错误，提高代码可读性。
 
-试着删除第 12 行 `(score >= 90)` 的括号，观察编译错误。
+仓颉不允许用整数或其他类型作为条件。在 C 或 JavaScript 中，`if (number)` 会根据 number 是否为 0 来决定分支，但在仓颉中这会编译报错——条件必须是明确的布尔表达式。
+
+右侧代码演示了基本的 `if-else` 结构和多级条件判断 `if-else if-else`。试着修改 `score` 的值，观察不同分支的执行结果。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `if` 语句要求括号，但花括号对于单语句是可选的。仓颉总是要求花括号。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 同样允许 `if` 条件不带括号（虽然不推荐），但花括号对于单语句是可选的。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `if` 语句同样要求花括号，但条件周围的括号是可选的。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的条件周围不需要括号，但花括号同样必需。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>条件必须是 `Bool` 类型，不能像 C 语言那样用整数作为条件。</Note>

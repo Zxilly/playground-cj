@@ -1,7 +1,33 @@
-# Any Type
+# The Any Type
 
-`Any` is the top type -- every type satisfies it. It is like an empty interface.
+`Any` is Cangjie's top type, and all types implement it by default. `Any` is equivalent to an empty interface—it can hold values of any type, including basic types, custom types, and even other interface types.
 
-Use pattern matching with type patterns to recover the concrete type from an `Any` value.
+You can use type pattern matching to recover concrete types from `Any` values. During matching, each type branch is checked in order, and after a successful match, the variable is bound and the corresponding code block is executed.
 
-Add a `Float64` case to the `match` in `printValue` and call `printValue(3.14)`.
+The `Any` type is suitable for handling dynamic data, heterogeneous collections, or scenarios where types are uncertain at compile time. However, overusing `Any` loses the advantages of type safety—concrete types or generics should be preferred.
+
+In this example, the `printValue` function accepts an `Any` parameter and uses type pattern matching to recover the concrete type and perform different operations. The `Box` class uses `Any` to store arbitrary values.
+
+Add a `Float64` branch to the `match` in `printValue` and test it by calling `printValue(3.14)`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no dynamic types; it cannot directly implement `Any` type functionality. Manual type tags and dispatch logic are required.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `Object` is the base class for all classes and can store any object. However, explicit type casting and `instanceof` checks are needed. Cangjie's `Any` with pattern matching is more concise.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's empty interface `interface{}` (or `any`) is similar to Cangjie's `Any` and can store any value. Both recover concrete types through type assertions or type switch/match.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `Box<dyn Any>` to implement similar functionality, requiring manual conversion and lifetime management. Cangjie's `Any` is more concise, automatically managing memory, and its usage is closer to dynamic languages.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Although `Any` provides flexibility, it should be used cautiously. Prefer generics or interfaces, and only use `Any` when you truly need to handle arbitrary types.</Note>

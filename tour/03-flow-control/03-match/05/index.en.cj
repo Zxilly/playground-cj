@@ -1,10 +1,16 @@
-interface Shape {}
+interface Shape {
+    func area(): Int64
+}
 
 open class Circle <: Shape {
     let radius: Int64
 
     init(radius: Int64) {
         this.radius = radius
+    }
+
+    public func area(): Int64 {
+        radius * radius * 3  // Simplified calculation
     }
 }
 
@@ -16,17 +22,26 @@ class Rectangle <: Shape {
         this.width = width
         this.height = height
     }
+
+    public func area(): Int64 {
+        width * height
+    }
 }
 
 func describe(shape: Shape): String {
     match (shape) {
-        case circle: Circle => "circle radius = ${circle.radius}"
-        case rectangle: Rectangle => "rectangle = ${rectangle.width} x ${rectangle.height}"
-        case _ => "unknown"
+        case c: Circle =>
+            "Circle, radius ${c.radius}, area ${c.area()}"
+        case r: Rectangle =>
+            "Rectangle, width ${r.width} height ${r.height}, area ${r.area()}"
+        case _ =>
+            "Unknown shape"
     }
 }
 
 main() {
-    println(describe(Circle(5)))
-    println(describe(Rectangle(3, 4)))
+    let shapes: Array<Shape> = [Circle(5), Rectangle(3, 4)]
+    for (shape in shapes) {
+        println(describe(shape))
+    }
 }

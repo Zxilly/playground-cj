@@ -1,3 +1,23 @@
 # CPointer
 
-`CPointer<T>` represents a raw C pointer to a value of type `T`, where `T` must satisfy the `CType` constraint. You can create a null pointer with `CPointer<T>()`, check for null with `isNull()`, and perform pointer arithmetic with `+` and `-`. Reading and writing through a `CPointer` are unsafe operations that must occur inside an `unsafe` block.
+`CPointer<T>` is the type in Cangjie that represents C pointers, corresponding to `T*` in C. The generic parameter `T` must satisfy the `CType` constraint, meaning it has a memory layout compatible with C.
+
+You can create a null pointer using `CPointer<T>()` and check if a pointer is null using the `isNull()` method. Cangjie supports pointer arithmetic, allowing you to offset pointers using `+` and `-`. Pointer type conversion uses the `CPointer<NewT>(oldPtr)` form.
+
+Reading and writing data through pointers are unsafe operations and must be performed within an `unsafe` block. Use `read()` to read the value pointed to, and `write()` to write a value. The code on the right demonstrates common operations such as memory allocation, type conversion, reading and writing data, and pointer arithmetic.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, pointers are built-in types, declared directly as `T*`. Cangjie uses the generic type `CPointer<T>` to more explicitly indicate that this is a pointer for C interop.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses raw pointers `*const T` and `*mut T`, similar to Cangjie's `CPointer<T>`, but specifically designed for C FFI scenarios.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Reading and writing through `CPointer` is unsafe; invalid pointers can lead to undefined behavior.</Note>
+
+Try modifying the code to allocate memory for a `Point3D` struct, write data to it, then read it back and print it.

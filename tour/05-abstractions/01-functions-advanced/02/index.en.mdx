@@ -1,7 +1,33 @@
 # Lambda Expressions
 
-The syntax `{ params => body }` creates an anonymous function. Use `{ => body }` when there are no parameters. The last expression is the return value.
+Lambda expressions are anonymous functions used to quickly define short function logic without explicitly declaring a function name. The syntax format is `{ parameter list => function body }`, where `=>` cannot be omitted (unless as a trailing lambda).
 
-In this example, `double` and `abs` are lambdas assigned to variables.
+Parameter types in lambdas can be omitted, and the compiler will infer them from context. The return type of a lambda also doesn't need to be explicitly declared; the compiler automatically deduces it from the expression body. The value of the last expression is the return value.
 
-Try changing the lambda on line 7 to `{ x: Int64 => x * x }` and run.
+The example on the right shows various uses of lambdas: assigning to variables, multi-line lambda bodies, and passing as function parameters. Line 6's `double` uses a single-line lambda, line 10's `abs` uses a multi-line if expression, and line 17 passes a lambda directly in a function call.
+
+<Note>
+Parameterless lambdas must be written as `{ => expression }`, where `=>` cannot be omitted. When returning `void`, lambdas can be used to perform side-effect operations.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no lambda; you must define named functions or use function pointers. Cangjie's lambda syntax greatly simplifies programming.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's lambda expression `x -> x * 2` is more concise than Cangjie's `{ x => x * 2 }`, but with similar functionality.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have special lambda syntax, using anonymous functions `func(x int) int { return x * 2 }`. Cangjie's lambda syntax is more concise.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust closures are written as `|x| x * 2`, with parameter types optional. Cangjie wraps the whole expression in curly braces `{}`, more consistent with ordinary function bodies.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing line 6 to `{ x: Int64 => x * x }` to implement the square function.

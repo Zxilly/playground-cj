@@ -1,5 +1,29 @@
-# var (Mutable)
+# var (Mutable Binding)
 
-The `var` statement declares a mutable binding. The value can be reassigned at any time.
+`var` declares a mutable binding, whose value can be reassigned later. Use `var` when you genuinely need to modify a variable's value.
 
-Change `var count` on line 2 to `let count` and observe the compile error on reassignment.
+Mutability is a choice, not the default behavior. You need to explicitly write `var` to indicate that this variable may change, which helps readers quickly identify where state is modified in the code.
+
+The code on the right demonstrates the use of mutable bindings `count` and `message`. The compiler tracks variable mutability: if you declare with `var` but never reassign, it will suggest using `let` instead. Try changing `var count` on line 2 to `let count` and observe where the compilation error appears after running.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+All C variables are mutable by default with no way to enforce immutability. Cangjie reverses this: default immutable.
+</CompareWith>
+
+<CompareWith lang="java">
+Java variables are mutable by default; immutability requires `final`. Cangjie's design is the opposite.
+</CompareWith>
+
+<CompareWith lang="go">
+In Go, all variables are mutable, with no concept of immutable bindings. Cangjie distinguishes mutability through `let`/`var`, with immutable as the default.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `let mut` to declare mutable variables, while Cangjie uses the more concise `var` keyword, with consistent semantics.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>If a variable is never reassigned after declaration, the compiler may issue a warning suggesting to change it to `let`.</Note>

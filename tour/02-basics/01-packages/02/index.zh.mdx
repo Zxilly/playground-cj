@@ -1,7 +1,31 @@
 # 导入
 
-`import` 将其他包中的声明引入当前文件。
+使用 `import` 语句可以将其他包中的声明引入当前文件。导入语句必须位于包声明之后，其他声明之前。
 
-这个程序从 `std.collection` 包导入了 `ArrayList`。也可以用通配符：`import std.collection.*` 导入该包的所有内容。
+仓颉提供多种导入方式：`import pkg.item` 导入特定项，`import pkg.*` 导入包中所有公开声明，或用 `import pkg.{a, b}` 同时导入多个项。右侧示例通过 `import std.math.sqrt` 和 `import std.math.PI` 从标准库的 `math` 包导入了平方根函数和圆周率常量。
 
-试着把导入改成 `std.collection.*`，看看程序是否仍然正常编译。
+导入后，可以直接使用 `sqrt` 和 `PI`，无需完整路径。这比每次都写 `std.math.sqrt` 更简洁。
+
+<Note>仓颉会自动隐式导入 `core` 包中的所有公开声明，比如 `String`、`Array`、`println` 等常用类型和函数可以直接使用，无需显式导入。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 用 `#include` 预处理指令引入头文件；仓颉的 `import` 更现代，在编译期处理依赖解析。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 用 `import` 引入类，如 `import java.util.ArrayList`；仓颉支持更灵活的导入模式（如 `import pkg.*`）。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用圆括号批量导入：`import ("fmt"; "math")`。仓颉支持更精细的导入，可以只导入需要的函数或常量。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 用 `use std::f64::consts::PI` 导入，用 `::` 分隔。仓颉用 `.` 分隔，路径更符合直觉。
+</CompareWith>
+
+</CompareGroup>
+
+尝试将导入改为 `import std.math.*`，程序仍然可以正常运行。

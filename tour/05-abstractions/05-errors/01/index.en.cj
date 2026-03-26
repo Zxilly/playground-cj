@@ -1,27 +1,30 @@
 func readAt(values: Array<Int64>, index: Int64): Int64 {
-    return values[index]
+    values[index]
 }
 
-main(): Int64 {
+main() {
     let values = [10, 20, 30]
 
+    // Correct order: specific types first, generic types later
     try {
         let item = readAt(values, 10)
         println(item)
     } catch (e: IndexOutOfBoundsException) {
-        println("Caught the specific exception first:")
-        println(e)
+        println("Caught specific exception: ${e.message}")
     } catch (e: Exception) {
-        println("Caught the general exception:")
-        println(e)
+        println("Caught generic exception: ${e.message}")
     }
 
+    // Different exception types can be handled separately
     try {
-        throw ArithmeticException("division by zero is not allowed")
+        throw ArithmeticException("Divisor cannot be zero")
     } catch (e: ArithmeticException) {
-        println("A different exception type can be handled separately:")
-        println(e)
+        println("Arithmetic exception: ${e.message}")
+    } catch (e: IllegalArgumentException) {
+        println("Argument exception: ${e.message}")
+    } catch (e: Exception) {
+        println("Other exception: ${e.message}")
     }
 
-    return 0
+    println("Program continues...")
 }

@@ -1,18 +1,30 @@
 import std.math.*
 
-func sqrt(x: Float64): Option<Float64> {
-    // TODO: return Some(sqrt(x)) if x >= 0, else None
+// TODO: Change this function to return Option<Float64>
+// Return None when divisor is 0, otherwise return Some(result)
+func divide(a: Float64, b: Float64): Option<Float64> {
+    // Implement here
     None
 }
 
-func safeSqrt(x: Float64): Float64 {
-    // TODO: use ?? to return 0.0 for None
+// TODO: Use the ?? operator to return 0.0 when divide returns None
+func safeDivide(a: Float64, b: Float64): Float64 {
+    // Implement here
     0.0
 }
 
-main(): Unit {
-    println(sqrt(4.0))
-    println(sqrt(-1.0))
-    println(safeSqrt(9.0))
-    println(safeSqrt(-1.0))
+main() {
+    // Test divide function
+    println("divide(10.0, 2.0) = ${divide(10.0, 2.0)}")
+    println("divide(10.0, 0.0) = ${divide(10.0, 0.0)}")
+
+    // Test safeDivide function
+    println("safeDivide(10.0, 2.0) = ${safeDivide(10.0, 2.0)}")
+    println("safeDivide(10.0, 0.0) = ${safeDivide(10.0, 0.0)}")
+
+    // Expected output:
+    // divide(10.0, 2.0) = Some(5.000000)
+    // divide(10.0, 0.0) = None
+    // safeDivide(10.0, 2.0) = 5.000000
+    // safeDivide(10.0, 0.0) = 0.000000
 }

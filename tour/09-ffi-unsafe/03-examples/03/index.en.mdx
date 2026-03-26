@@ -1,3 +1,31 @@
-# Safety notes
+# Safe Encapsulation of FFI
 
-Always minimize the scope of `unsafe` blocks and validate values returned from C. Memory allocated by C must be freed by C — never free C memory with Cangjie's garbage collector. Use `CPointer.isNull()` to check pointers before dereferencing them.
+The biggest risk in calling C code lies in pointer operations and memory management. Cangjie's `CPointer` provides an `isNull()` method to check for null pointers, which should always be called before dereferencing. By encapsulating `unsafe` operations inside safe functions, you can minimize the scope of unsafe code.
+
+Memory allocated on the C side (such as via `malloc`) must be freed by the C side (such as via `free`) and cannot be managed by Cangjie's garbage collector. Similarly, Cangjie-side objects cannot be passed to C code to hold pointers (CPointer is only valid during function calls). Following the "who allocates, who frees" principle is key to avoiding memory leaks and dangling pointers.
+
+The code on the right demonstrates the safe encapsulation pattern: the `safeAlloc` function internally handles all `unsafe` operations, including null pointer checks, memory write/read operations, and timely deallocation. External callers only see a clean, safe interface.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C completely relies on developers to manually call `malloc` and `free` for memory management. There is no GC and no automatic cleanup mechanism.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's GC does not manage C memory. JNI developers must manually call corresponding C functions to release memory allocated on the C side.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's Cgo allows managing C memory through `C.malloc` and `C.free`, but Go's GC does not automatically manage C memory. Developers need to manually call `C.free`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `unsafe` blocks also require developers to manually manage memory. Rust encapsulates unsafe resources through the RAII pattern (Drop trait), and Cangjie can implement similar functionality through finalizers.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>The scope of `unsafe` blocks should be as small as possible. Encapsulating unsafe operations inside functions and only exposing safe interfaces is good programming practice.</Note>
+
+Try modifying the `safeAlloc` function to return an Option type, returning None when allocation fails.

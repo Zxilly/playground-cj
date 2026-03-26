@@ -1,20 +1,50 @@
-// HTTP and Socket APIs require network access.
-// Below is the shape of an HTTP client request
-// using stdx.net.http (requires stdx in cjpm.toml).
-//
-//   import stdx.net.http.*
-//
-//   main() {
-//       let client = ClientBuilder().build()
-//       let resp = client.get("http://example.com/hello")
-//       let buf = Array<Byte>(1024, repeat: 0)
-//       let n = resp.body.read(buf)
-//       println(String.fromUtf8(buf[..n]))
-//       client.close()
-//   }
+import std.net.*
+import std.sync.*
+import std.time.*
+
+// TCP Server: bind to port, wait for client connections
+func runServer(port: UInt16): Unit {
+    try (server = TcpServerSocket(bindAt: port)) {
+        server.bind()
+        println("Server listening on port: ${port}")
+
+        // Accept client connection
+        try (client = server.accept()) {
+            println("Client connected")
+
+            // Read data sent by client
+            let buf = Array<Byte>(64, repeat: 0)
+            let count = client.read(buf)
+            let msg = String.fromUtf8(buf[..count])
+            println("Received message: ${msg}")
+
+            // Reply to client
+            client.write("Server received: ${msg}".toArray())
+        }
+    }
+}
 
 main() {
-    println("HTTP: use ClientBuilder / ServerBuilder from stdx.net.http")
-    println("TCP:  use TcpSocket / TcpServerSocket from std.net")
-    println("UDP:  use UdpSocket from std.net")
+    let port: UInt16 = 9999
+
+    // Start server in another thread
+    let serverFuture = spawn {
+        runServer(port)
+    }
+
+    // Wait for server to start
+    sleep(Duration.millisecond * 100)
+
+    // Client connects and sends message
+    try (socket = TcpSocket("127.0.0.1", port)) {
+        socket.connect()
+        socket.write("Hello, Cangjie network programming!".toArray())
+
+        // Read server reply
+        let buf = Array<Byte>(64, repeat: 0)
+        let count = socket.read(buf)
+        println(String.fromUtf8(buf[..count]))
+    }
+
+    serverFuture.get()
 }

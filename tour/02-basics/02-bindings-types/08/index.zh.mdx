@@ -1,5 +1,27 @@
-# Rune
+# Rune 类型
 
-`Rune` 表示单个字符。字符字面量写作 `r'A'`。转义字符如 `r'\n'` 和 `r'\t'` 分别表示换行和制表符。
+`Rune` 表示单个 Unicode 字符，可以表示 Unicode 字符集中的所有字符，包括中文、表情符号等。字符字面量以 `r` 开头，后跟单引号或双引号包围的字符。
 
-试着把字符改成其他字母或表情符号。
+字符字面量有三种形式：单个字符（如 `r'A'`）、转义字符（如 `r'\n'` 表示换行、`r'\t'` 表示制表符、`r'\\'` 表示反斜杠）、通用字符（以 `\u` 开头加花括号中的 1-8 位十六进制数）。`Rune` 可以与 `UInt32` 互相转换，获取或构造字符的 Unicode 码点。
+
+右侧代码展示了各种字符字面量。通用字符 `\u{4f60}` 表示 Unicode 码点为 U+4F60 的字符"你"。试着自己构造一些表情符号的码点，例如 `\u{1F600}` 是笑脸😀。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `char` 仅表示单字节字符，无法原生支持 Unicode；仓颉的 `Rune` 可表示任意 Unicode 字符。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `char` 基于 UTF-16，代表单个代码单元；仓颉的 `Rune` 直接表示完整的 Unicode 码点，更简洁。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `rune` 类型是 `int32` 的别名，用于表示 Unicode 码点，字面量用单引号。仓颉的 `Rune` 是独立类型，需要 `r` 前缀。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `char` 类型同样表示 Unicode 标量值，字面量用单引号 `'A'`。仓颉需要 `r` 前缀，避免与字符串混淆。
+</CompareWith>
+
+</CompareGroup>

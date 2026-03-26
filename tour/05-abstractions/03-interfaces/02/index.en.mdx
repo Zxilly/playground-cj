@@ -1,9 +1,25 @@
 # Implementing Interfaces
 
-A class implements an interface by declaring `<:` and providing all required methods.
+Classes implement interfaces using the `<:` symbol and provide concrete implementations for all required methods. A class can implement multiple interfaces, separated by `&`.
 
-Multiple classes can implement the same interface with different behavior.
+Interfaces enable "contract-based programming": as long as a type satisfies the method signatures defined by an interface, it can be used wherever that interface is required. Multiple different types can implement the same interface with different behaviors.
 
-In this example, both `Dog` and `Athlete` implement `Runner`. The `showRun` function accepts any `Runner`.
+Variables of interface type can only call methods declared in that interface and cannot access type-specific members. This ensures interface abstraction—callers don't need to care about the concrete type.
 
-Add a `Robot` class that implements `Runner` and pass it to `showRun`.
+In this example, both `Dog` and `Athlete` implement the `Runner` interface but provide different implementations of `run()`. The `showRun` function accepts a `Runner` type parameter and can be passed any object that implements this interface.
+
+Add a `Robot` class that implements `Runner` and call `showRun(Robot())` in `main`.
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go uses implicit interface implementation without explicit declaration. Cangjie requires explicit declaration `class Foo <: Interface`, which makes code intent clearer and allows the compiler to provide better error messages.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses the `implements` keyword to explicitly implement interfaces, while Cangjie uses the more concise `<:` symbol. Both support multiple interface implementation—Java uses commas to separate them, Cangjie uses `&`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Methods implementing an interface must use the `public` modifier because interface members are public by default. If you forget to add `public`, the compiler will report an error.</Note>

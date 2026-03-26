@@ -1,5 +1,30 @@
 # 自定义异常
 
-自定义异常继承 `Exception`，可以携带额外字段如 `field` 或 `statusCode`，为 `catch` 处提供结构化的错误信息。
+通过继承 `Exception` 或其子类，可以创建自定义异常类型。自定义异常可以携带额外的字段，比如错误码、字段名等，为错误处理提供更丰富的上下文信息。
 
-为不同的失败类别定义不同的异常类，让每个 `catch` 块只处理一种问题。
+定义自定义异常时，需要：
+- 使用 `open class` 声明（允许进一步继承）
+- 调用父类构造函数 `super(message)` 传递错误消息
+- 重写 `getClassName()` 方法返回异常名称
+
+右侧代码定义了两个异常：`ValidationError` 携带字段名，`NetworkError` 携带状态码。在 `catch` 块中可以访问这些额外信息。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 通常定义错误类型实现 `error` 接口。仓颉的自定义异常是类，可以携带更多结构化信息。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的自定义异常需要选择继承 `Exception`（受检）或 `RuntimeException`（非受检）。仓颉不区分，统一继承 `Exception`。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 为每种错误定义不同的 struct 并实现 `Error` trait。仓颉用继承层次表达错误关系。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>不能继承 `Error` 类。`Error` 表示系统级错误，程序不应该抛出或捕获它。</Note>
+
+修改代码，为 `ValidationError` 添加一个 `value` 字段存储无效值。

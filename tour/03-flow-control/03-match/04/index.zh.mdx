@@ -1,5 +1,29 @@
 # 元组模式
 
-`match` 可以解构元组。`case (0, 0)` 匹配特定值对，`case (x, y)` 将两个元素分别绑定。
+元组模式可以同时匹配和解构元组的多个元素。语法是 `case (模式1, 模式2, ...) =>`，每个位置可以是值模式、绑定模式或通配符。
 
-试着把第 2 行的 `point` 改成 `(0, 5)`，看看会匹配哪个分支。
+你可以混用不同类型的模式。例如 `case (0, 0)` 匹配原点，`case (x, 0)` 匹配 x 轴上的点并将 x 坐标绑定到变量，`case (x, y)` 匹配并绑定两个坐标。
+
+元组模式让代码更简洁，一次匹配就能提取多个值，而不需要先匹配元组再单独访问元素。
+
+尝试将第 2 行的 `point` 改成 `(0, 0)` 或 `(5, 3)`，观察不同的匹配结果。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有元组类型，通常用结构体或多个变量替代。无法在 `switch` 中进行解构匹配。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 也没有原生元组类型（可以用 record 或 Pair 类模拟）。不能在 `switch` 中进行元组解构。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有内置元组类型，通常用 struct 替代。在 switch 中需要单独访问结构体字段。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 同样支持元组解构模式，语法与仓颉一致：`match point { (0, 0) => ..., (x, y) => ... }`。
+</CompareWith>
+
+</CompareGroup>

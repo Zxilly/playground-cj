@@ -1,12 +1,16 @@
 main() {
-    let name = "仓颉"
+    // Immutable binding with initial value
+    let name = "Cangjie"
     let year = 2024
-    let pi = 3.14159
+    
+    // Declare type first, delayed initialization
+    let text: String
+    text = "Cangjie created characters"
+    
+    println("Language: ${name}")
+    println("Year: ${year}")
+    println("Text: ${text}")
 
-    println("语言: ${name}")
-    println("年份: ${year}")
-    println("圆周率: ${pi}")
-
-    // The following would cause a compile error:
-    // name = "其他"  // Error! let bindings cannot be reassigned
+    // The following code will cause a compilation error:
+    // name = "Other"  // Error! let binding cannot be reassigned
 }

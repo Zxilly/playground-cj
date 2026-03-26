@@ -1,5 +1,29 @@
-# 泛型子类型
+# 泛型类型的不变性
 
-`Dog <: Animal` 不会自动使 `Container<Dog>` 成为 `Container<Animal>` 的子类型。带 `where T <: Animal` 约束的泛型函数可以直接接受 `Dog` 和 `Cat`，而 `Array<Animal>` 可以在同一集合中混合存放不同子类型。
+虽然 `Dog` 是 `Animal` 的子类型，但 `Container<Dog>` 并不自动成为 `Container<Animal>` 的子类型。这是因为在仓颉中，用户定义的泛型类型在其类型参数处是**不变（invariant）**的。
 
-应使用泛型参数上的类型约束，而非假设容器间存在子类型关系。
+这种设计避免了类型安全问题。比如，如果 `Array<Dog>` 可以当作 `Array<Animal>` 使用，就可以向其中添加 `Cat`，破坏了类型安全。
+
+解决多态问题的方法有两种：使用泛型参数上的约束，或者使用基类型数组存储不同子类型。右侧代码展示了这两种方式：`makeSpeak` 函数使用 `where T <: Animal` 约束，可以接受任何 `Animal` 子类型；`speakAll` 函数使用 `Array<Animal>`，可以混合存放不同的子类型。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有子类型或泛型概念，必须手动处理类型转换，容易发生错误。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的泛型支持协变通配符 `<? extends T>` 和逆变通配符 `<? super T>`，虽然灵活但也复杂；仓颉的不变性更简单。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的泛型也是不变的，但通过接口类型的切片可以实现类似效果。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的泛型默认也是不变的，使用 trait bound 解决多态问题，逻辑相似。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>内置的元组类型在其元素类型处是协变的，函数类型在其参数处是逆变的、返回类型处是协变的。</Note>

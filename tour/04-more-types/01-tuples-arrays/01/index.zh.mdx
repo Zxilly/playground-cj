@@ -1,7 +1,31 @@
 # 元组
 
-`(Int64, String)` 是一个元组类型。元组将不同类型的值组合成一个复合值。
+元组（Tuple）可以将多个不同类型的值组合成一个复合值。元组类型使用 `(T1, T2, ..., TN)` 表示，其中 T1 到 TN 可以是任意类型，不同类型之间用逗号分隔。
 
-通过索引访问元素：`t[0]`、`t[1]`。元组至少需要两个元素，且不可修改单个元素。
+元组至少需要两个元素。例如，`(Int64, Float64)` 是一个二元组，`(Int64, Float64, String)` 是一个三元组。元组的长度在定义后固定，不能再更改。
 
-尝试赋值 `point[0] = 10`，观察错误信息。
+元组是不可变类型——一旦创建了元组实例，就不能修改其中的单个元素。但用 `var` 声明的元组变量可以被整体重新赋值。通过 `t[index]` 访问元素，索引从 0 开始。
+
+<Note>元组不支持通过字段名访问元素，只能通过索引访问。即使定义了命名参数如 `(name: String, price: Int64)`，`name` 也不能直接作为访问符使用。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有原生元组类型，通常用结构体替代。需要手动定义字段，不如元组灵活。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 直到最近才引入 record（Java 16+）来模拟元组。传统 Java 需要定义类来实现类似功能。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的元组也用索引访问，但 Rust 允许通过 `.` 语法访问（如 `tuple.0`），仓颉只支持 `[]` 语法。
+</CompareWith>
+
+<CompareWith lang="python">
+Python 的元组也是不可变的，但 Python 支持元组解包和切片。仓颉的元组不支持切片操作。
+</CompareWith>
+
+</CompareGroup>
+
+运行右侧代码，观察元组的创建、索引访问和解构操作。尝试给 `point[0]` 赋值，看看会得到什么错误。

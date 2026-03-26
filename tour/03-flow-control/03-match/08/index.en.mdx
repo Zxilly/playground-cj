@@ -1,12 +1,14 @@
 # Exercise: Pattern Matching
 
-As a way to practice pattern matching, implement a `classify` function that describes an `Option<Int64>` value.
+Now let's practice pattern matching. Implement a `classify` function that returns an appropriate description string based on an `Option<Int64>` value.
 
-Given an `Option<Int64>`, return a `String`:
+Requirements:
 
-- `Some(n)` where `n > 0` → `"positive"`
-- `Some(0)` → `"zero"`
-- `Some(n)` where `n < 0` → `"negative"`
-- `None` → `"none"`
+- `Some(n)` where `n > 0` → return `"positive: n"` (showing the specific value)
+- `Some(0)` → return `"zero"`
+- `Some(n)` where `n < 0` → return `"negative: n"` (showing the specific value)
+- `None` → return `"none"`
 
-Implement this in the `func classify` provided.
+You need to use a `match` expression, `enum` patterns (matching `Some` and `None`), and pattern guards. Apply what you've learned to write the complete function body.
+
+<Note>Cangjie's `Option<T>` is a built-in type with two constructors: `Some(T)` and `None`. `Some(x)` can match and bind the inner value to variable `x`.</Note>

@@ -1,3 +1,54 @@
-# Run with cjc
+# Compiling and Running with cjc
 
-Compile a Cangjie source file to a native binary with `cjc main.cj -o main`, then run it with `./main`. Use `cjc -p src/` to compile all source files in a package directory at once. The resulting binary includes the Cangjie runtime, so it is ready to execute on the target platform.
+`cjc` is the compiler for the Cangjie language, responsible for compiling source code into executable files. Cangjie uses ahead-of-time (AOT) compilation, generating binary files that can be executed directly on the target platform without a virtual machine or interpreter.
+
+Use `cjc hello.cj` to compile a single source file, which defaults to outputting an executable named `main`. Use the `-o` option to specify the output filename, such as `cjc hello.cj -o myapp`. If source files are organized as a package structure, you can use `cjc -p src/` to compile the entire package at once.
+
+Optimization is enabled by default during compilation. Use the `-g` option to generate an executable with debug information, which can be used with debugging tools. The generated binary file contains user code and necessary runtime components, and can be deployed and run directly.
+
+The code on the right shows a simple Cangjie program. Compile and run it to observe the output.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `gcc` or `clang` to compile; generating executables requires the `-o` option. Cangjie's compilation process is similar to C.
+</CompareWith>
+
+<CompareWith lang="java">
+Java compilation generates bytecode (`.class` files) that requires the JVM to run. Cangjie's `cjc` generates native executable files directly.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `go build` for compilation, generating an executable with the same name as the directory by default. Cangjie defaults to outputting `main` and requires `-o` to specify the name.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `rustc` or `cargo build` for compilation, generating executables in `target/debug/` by default. Cangjie outputs directly in the current directory.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Make sure the Cangjie SDK is installed and the `CANGJIE_HOME` environment variable is configured correctly for the `cjc` command to work properly.</Note>
+
+Try modifying the output filename by using `-o yourname` to specify a custom name.
+
+CJ:
+// Compile this file: cjc hello.cj -o hello
+// Then run:          ./hello
+
+main() {
+    println("Welcome to Cangjie programming language!")
+    println("This is a program compiled to native binary.")
+    
+    // Simple calculation example
+    let sum = 0
+    for (i in 1..=10) {
+        sum += i
+    }
+    println("Sum from 1 to 10 is: ${sum}")
+    
+    // Demonstrate string interpolation
+    let language = "Cangjie"
+    let year = 2024
+    println("${language} language, year ${year}")
+}

@@ -1,7 +1,31 @@
 # Imports
 
-`import` brings declarations from other packages into the current file.
+Use the `import` statement to bring declarations from other packages into the current file. Import statements must be placed after the package declaration and before other declarations.
 
-This program imports `ArrayList` from the `std.collection` package. You can also use a wildcard: `import std.collection.*` imports everything from that package.
+Cangjie provides multiple import methods: `import pkg.item` to import a specific item, `import pkg.*` to import all public declarations from a package, or `import pkg.{a, b}` to import multiple items at once. The example on the right imports the square root function and the PI constant from the standard library's `math` package using `import std.math.sqrt` and `import std.math.PI`.
 
-Try changing the import to `std.collection.*` and verify the program still compiles.
+After importing, you can use `sqrt` and `PI` directly without the full path. This is more concise than writing `std.math.sqrt` every time.
+
+<Note>Cangjie automatically implicitly imports all public declarations from the `core` package, so commonly used types and functions like `String`, `Array`, `println`, etc. can be used directly without explicit imports.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `#include` preprocessor directives for header files; Cangjie's `import` is more modern, handling dependency resolution at compile time.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `import` to bring in classes like `import java.util.ArrayList`; Cangjie supports more flexible import patterns like `import pkg.*`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses parentheses for batch imports: `import ("fmt"; "math")`. Cangjie supports more fine-grained imports, allowing you to import only the needed functions or constants.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `use std::f64::consts::PI` for imports, with `::` as the separator. Cangjie uses `.` as the separator, making paths more intuitive.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing the import to `import std.math.*`, the program will still run normally.

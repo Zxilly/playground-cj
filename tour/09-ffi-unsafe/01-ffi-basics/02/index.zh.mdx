@@ -1,7 +1,33 @@
 # @C 注解
 
-`@C` 告诉编译器使用 C 兼容的调用约定和名称修饰。
+`@C` 注解告诉编译器使用与 C 兼容的调用约定和内存布局。它主要用于修饰 struct 类型，确保其内存布局与 C 结构体完全一致，从而可以安全地在 C 和仓颉之间传递数据。
 
-用于 struct 使其内存布局与 C 一致。用于函数使其可从 C 代码调用。
+被 `@C` 修饰的 struct 有严格限制：成员类型必须满足 `CType` 约束、不能实现接口、不能有泛型参数、不能被闭包捕获。这些限制确保了与 C 的二进制兼容性。
 
-试着移除 `addPoints` 上的 `@C`，观察在 `unsafe` 中调用它时的编译错误。
+`@C` 也可以修饰顶层函数，使其能被 C 代码调用。这类函数的参数和返回类型同样需要满足 `CType` 约束。调用被 `@C` 修饰的仓颉函数时，同样需要在 `unsafe` 上下文中进行。
+
+<Note>
+用 `@C` 修饰的 struct 自动满足 `CType` 约束，可以作为 `foreign` 函数的参数或返回值类型。
+</Note>
+
+下面的示例定义了一个 `@C` 修饰的 `Point` 结构体和一个 `@C` 修饰的 `addPoints` 函数。试着移除 `addPoints` 上的 `@C`，观察调用时的编译错误。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中结构体默认遵循平台的内存布局规则。无需特殊标记，但需要确保字段顺序与 FFI 另一侧一致。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 不提供直接的 C 兼容结构体机制。JNI 开发者必须手动管理字段对应关系，或使用第三方库。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `#[repr(C)]` 属性确保结构体的 C 兼容内存布局，语法不同但目的一致。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `C.struct_Point` 在 cgo 中访问 C 结构体，不支持直接定义 C 兼容的 Go 结构体。
+</CompareWith>
+
+</CompareGroup>

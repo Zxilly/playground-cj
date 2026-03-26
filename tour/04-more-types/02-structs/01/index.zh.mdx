@@ -1,7 +1,33 @@
 # 定义结构体
 
-`struct` 是一组字段的集合。每个字段有名称和类型。用 `let` 声明的字段不可变，用 `var` 声明的字段可变。
+`struct` 是一组命名字段的集合，用于将相关数据组织在一起。每个字段有名称和类型，用 `let` 声明的字段不可变，用 `var` 声明的字段可变。
 
-通过点语法访问字段：`point.x`。
+使用点语法访问字段，如 `point.x`。字段可以在定义时指定默认值，也可以在构造时传入。
 
-给 `Book` 添加一个 `Int64` 类型的 `year` 字段并打印。
+右侧代码定义了 `Point` 和 `Book` 两个结构体。`Point` 的字段使用 `let` 声明，创建后不可修改；`Book` 的 `title` 是不可变字段，`pages` 是可变字段。
+
+<Note>
+`struct` 只能定义在源文件的顶层作用域，不能嵌套在其他类型或函数内部。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的结构体字段没有可变性修饰符，所有字段都可修改。通常通过 `const` 修饰整个结构体来限制修改。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的字段可用 `final` 修饰来实现不可变，但没有字段级的 `let/var` 区分。可见性用 `public/private/protected` 控制。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 struct 字段没有 `let/var` 区分，字段的可变性由变量绑定决定（指针或值）。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 struct 字段也受变量绑定的 `mut` 影响，但字段级别的可见性需要单独标注 `pub`。
+</CompareWith>
+
+</CompareGroup>
+
+尝试给 `Book` 添加一个 `Int64` 类型的 `year` 字段，并在 `main` 中打印它。

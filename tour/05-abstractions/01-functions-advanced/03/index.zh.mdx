@@ -1,7 +1,33 @@
 # 闭包
 
-Lambda 可以捕获外层作用域的变量。即使外层函数已经返回，被捕获的变量仍然可以访问。
+Lambda 或嵌套函数可以捕获外层作用域的变量，即使外层函数已经返回，被捕获的变量仍然可以访问。这种函数与捕获变量一起称为闭包。
 
-示例中，`makeAdder` 返回一个捕获了 `offset` 的 Lambda。每次调用都会创建独立的闭包。
+变量捕获发生在闭包定义时，被捕获的变量必须已经初始化。捕获的变量会随闭包一起"逃逸"出原本的作用域，因此可以用来创建带状态的函数。
 
-试试调用 `makeAdder(20)` 并验证结果与 `add10` 互相独立。
+右侧示例中，`makeAdder` 返回一个 Lambda，这个 Lambda 捕获了 `base` 参数。每次调用 `makeAdder` 都会创建一个独立的闭包，各自持有不同的捕获值。`makeGreeter` 类似，返回的函数捕获了 `prefix`。
+
+<Note>
+如果闭包捕获了 `var` 声明的可变变量，该闭包不能作为一等公民使用（不能赋值、返回或作为参数），只能直接调用。这是为了防止数据竞争。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有闭包概念，无法捕获局部变量。需要用全局变量或传递指针实现类似功能。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 Lambda 和匿名类可以捕获外层变量，但必须是 `final` 或事实上的常量。仓颉对可变变量有限制以防止数据竞争。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的闭包也能捕获外层变量，且被捕获的变量可以在闭包内修改。Go 对捕获可变变量的闭包没有特殊限制。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的闭包用 `move` 关键字显式移动捕获变量的所有权。仓颉隐式捕获引用，语义更简单但需要注意生命周期。
+</CompareWith>
+
+</CompareGroup>
+
+试试调用 `makeAdder(20)` 创建一个新的加法器，验证它与 `add10` 互相独立。

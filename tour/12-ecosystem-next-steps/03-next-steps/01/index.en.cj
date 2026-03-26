@@ -1,34 +1,25 @@
-import std.collection.ArrayList
-import std.sync.*
+// Save as hello.cj file
+// Compile command: cjc hello.cj
+// Run command: ./main (Linux/macOS) or main.exe (Windows)
 
-func double(n: Int64): Int64 {
-    return n * 2
-}
-
-main(): Int64 {
-    let inputs = [3, 5, 8]
-    let outputs = ArrayList<String>()
-    let lock = Mutex()
-    let futures = ArrayList<Future<Unit>>()
-
-    for (input in inputs) {
-        let current = input
-        let future = spawn {
-            let result = double(current)
-            synchronized(lock) {
-                outputs.add("${current} -> ${result}")
-            }
-        }
-        futures.add(future)
+main() {
+    println("=== Cangjie Tour Graduate ===")
+    println("You have learned:")
+    
+    let skills = [
+        "Basic syntax and type system",
+        "Functions and closures",
+        "Classes, interfaces and generics",
+        "Error handling",
+        "Concurrent programming",
+        "Collections and iterators"
+    ]
+    
+    var count = 1
+    for (skill in skills) {
+        println("  ${count}. ${skill}")
+        count++
     }
-
-    for (future in futures) {
-        future.get()
-    }
-
-    println("tour recap:")
-    for (line in outputs) {
-        println(line)
-    }
-    return 0
+    
+    println("\nNext step: Create your own project, explore the standard library!")
 }

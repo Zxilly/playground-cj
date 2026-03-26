@@ -1,5 +1,33 @@
 # 集合示例
 
-本例通过遍历数组并更新 `HashMap<String, Int64>` 来统计标签出现次数。对每个标签，已存在则递增计数，否则插入 `1`。
+本例演示如何用 `HashMap` 统计标签出现次数。这是"遍历、查找、更新"模式的典型场景。
 
-"遍历、查找、更新"是 `HashMap` 最常见的使用模式之一。
+核心逻辑：对每个标签，先检查 `HashMap` 中是否已存在该键。如果存在，取出当前计数并加一后更新；如果不存在，插入初始值 1。这样遍历完所有标签后，`HashMap` 就记录了每个标签的出现次数。
+
+这种模式在词频统计、投票计数、分组聚合等场景都很常见。`HashMap` 的快速查找特性（平均 O(1)）让这类操作非常高效。
+
+右侧代码统计一个标签数组的出现频次。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 需要手动实现哈希表和计数逻辑，代码复杂且易出错。仓颉的 `HashMap` 和 `contains()` 大幅简化了操作。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `HashMap` 可以用 `getOrDefault()` 或 `merge()` 简洁地实现计数。仓颉的 `contains()` 和更新逻辑同样清晰。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 实现词频统计的代码与仓颉几乎一样，用 `for range` 遍历，`if val, ok := m[key]; ok` 检查键是否存在。仓颉用 `contains(key)` 判断，更直观。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `HashMap` 提供 `entry(key).or_insert(0)` 方法，可以更简洁地实现计数。仓颉的标准库也有类似的便捷方法。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>使用下标访问 `map[key]` 前务必确认键存在，否则会触发运行时错误。</Note>
+
+尝试思考：如果标签数量非常大（百万级），这种方法的性能如何？

@@ -1,9 +1,33 @@
 # Defining Interfaces
 
-An _interface_ declares a set of method signatures.
+Interfaces define a set of method signatures that specify behavioral contracts for types. Interfaces do not contain data—they define "what to do" rather than "how to do it."
 
-Any type that implements those methods satisfies the interface. Interfaces can also provide default implementations.
+Use the `interface` keyword to declare an interface, which can contain member functions, operator overloads, and member properties. Interface members have `public` access level by default, and implementing types must also provide implementations with `public`.
 
-In this example, `Printable` requires `display()`, while `Named` provides a default `name()` that returns `"anonymous"`.
+Interfaces can provide **default implementations** for their members. If a type implements an interface but does not provide a concrete implementation for a method, the default implementation from the interface is used. This provides flexibility in interface design.
 
-Remove the `name()` override from `User` to see the default `"anonymous"` returned.
+In this example, the `Printable` interface requires implementing the `display()` method, while the `Named` interface provides a default implementation for `name()` that returns `"anonymous"`. The `User` class implements both interfaces and provides its own `name()` method to override the default implementation.
+
+Try removing the `name()` method from `User` and observe the use of the interface default value.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no interface concept; similar functionality must be implemented manually using function pointers and structs. Cangjie's interfaces provide clearer abstractions.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's interface is similar to Cangjie's, both defining method signatures and optional default implementations. Java uses `implements`, while Cangjie uses `<:`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go interfaces are implicitly implemented: as long as a type provides all methods required by the interface, it automatically satisfies that interface. Cangjie requires explicitly declaring `<: InterfaceName` to establish the implementation relationship.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust traits are similar to Cangjie interfaces and can provide default implementations for methods. However, Rust uses `impl Trait for Type` syntax for explicit implementation, while Cangjie declares the implementation relationship in the type definition.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Interface members can have no default implementation, in which case the implementing type must provide a concrete implementation. If a type implements multiple interfaces that have default implementations for methods with the same name, it must provide its own implementation to avoid conflicts.</Note>

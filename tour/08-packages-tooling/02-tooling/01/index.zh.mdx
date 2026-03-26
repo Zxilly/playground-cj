@@ -1,7 +1,31 @@
 # cjc 编译器
 
-`cjc` 是仓颉编译器。运行 `cjc hello.cj -o hello` 编译单个文件。
+`cjc` 是仓颉编程语言的编译命令，用于将仓颉源代码编译成可执行文件。
 
-使用 `-p src/` 编译整个包目录。
+最基本的使用方式是直接编译单个文件。不加任何选项时，`cjc` 会将源文件编译成名为 `main` 的可执行文件。你也可以使用 `-o` 选项指定输出文件名，例如 `cjc hello.cj -o hello`。
 
-试着添加第二个 `println` 调用，然后重新运行代码。
+`cjc` 还支持编译整个包目录。使用 `-p` 选项可以指定包路径，例如 `cjc -p src/` 会编译 `src/` 目录下的所有源文件。
+
+<Note>`cjc` 会自动完成前端编译、后端编译和链接，无需手动调用链接器。</Note>
+
+试着修改代码中的字符串，然后点击 <Highlight target="run">运行</Highlight> 查看输出变化。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 通常使用 `gcc` 或 `clang` 编译，也支持 `-o` 指定输出文件名。仓颉的 `cjc` 提供了类似的接口。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `javac` 编译源文件为字节码（`.class` 文件），随后由 JVM 执行。仓颉的 `cjc` 直接生成可执行文件。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `go build` 或 `go run` 编译运行代码。仓颉的 `cjc` 类似于传统 C 编译器，需要手动链接。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `rustc` 直接编译单文件，与 `cjc` 类似。但 Rust 通常用 `cargo` 管理项目，相当于仓颉的 `cjpm`。
+</CompareWith>
+
+</CompareGroup>

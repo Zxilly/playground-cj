@@ -1,7 +1,33 @@
-# unsafe
+# unsafe Blocks
 
-`unsafe { ... }` relaxes Cangjie's safety checks inside the block. All `foreign` and `@C` function calls must occur in an `unsafe` context.
+The `unsafe { ... }` block relaxes safety checks within it, allowing potentially unsafe operations to be performed. All calls to `foreign` functions, `@C` functions, and `CFunc` type variables must be made within an `unsafe` context.
 
-You can also mark an entire function as `unsafe` -- callers must then use `unsafe` as well.
+In addition to `unsafe` blocks, you can also mark an entire function as `unsafe`—this way all operations within the function body are by default in an unsafe context. However, places that call this `unsafe` function also need to be in an `unsafe` context.
 
-Try moving the `rand()` call on line 10 outside the `unsafe` block and observe the error.
+`unsafe` isolates risk within a clearly defined scope, reminding developers that this code requires extra care. C code may cause null pointer dereferences, memory leaks, buffer overflows, and other issues that the Cangjie compiler cannot check.
+
+<Note>
+`unsafe` doesn't turn off all checks, it only allows specific operations related to C interoperability. Other safety mechanisms remain effective.
+</Note>
+
+The example below demonstrates three uses of unsafe: unsafe blocks, unsafe functions, and unsafe blocks containing multiple statements. Try moving the call on line 20 outside the unsafe block to observe the compilation error.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+There is no concept of unsafe in C. All operations are treated as potentially unsafe, and developers must ensure memory safety themselves.
+</CompareWith>
+
+<CompareWith lang="java">
+Java has no unsafe block concept, but the `java.lang.Unsafe` class provides low-level operations. JNI calls are treated as trusted operations.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `unsafe` block and `unsafe fn` mechanism are almost exactly the same as Cangjie's, both used to isolate unsafe code for C interoperability.
+</CompareWith>
+
+<CompareWith lang="go">
+Go provides C interoperability through the cgo tool, and calling C code doesn't require unsafe markers, but using the `unsafe` package for pointer operations is recommended.
+</CompareWith>
+
+</CompareGroup>

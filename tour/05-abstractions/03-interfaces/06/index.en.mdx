@@ -1,7 +1,25 @@
-# Type Casting
+# Type Checking and Casting
 
-`value is Type` tests whether a value is of a specific type. `value as Type` attempts a cast and returns `Option` -- `Some(value)` on success, `None` on failure.
+The `is` operator checks whether an expression's runtime type is the specified type (or a subtype), returning a boolean value. The `as` operator attempts to convert an expression to the specified type, returning `Some(value)` on success and `None` on failure.
 
-In this example, `animal is Dog` returns `true`. The `as Dog` cast returns `Some(dog)`, giving access to the `fetch()` method.
+Variables of interface type can only access interface methods. If you need to access type-specific members, you must first check the type with `is`, then convert with `as`. This is typically used with `match` expressions to handle conversion results.
 
-Change `Dog()` to `Animal()` on line 18 and observe that the `as Dog` cast returns `None`.
+Type conversion is safe: `as` returns an `Option` type that forces handling of failure cases, avoiding runtime exceptions. This differs from forced type casting in some languages that throw exceptions on conversion failure.
+
+In this example, variables of type `Animal` might actually be `Dog` or `Cat`. After using `is` to check the type, we use `as` for safe conversion and access to type-specific methods.
+
+Modify the code to create an `Animal` object (instead of `Dog`) and observe that the `as Dog` conversion returns `None`.
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go uses type assertions `v.(Type)` for type conversion, which can optionally return a boolean value or panic on failure. Cangjie's `as` uniformly returns `Option`, forcing handling of failure cases, which is safer.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `instanceof` to check types and forced casting `(Type) obj` for conversion. Conversion failure throws `ClassCastException`. Cangjie's `as` returns `Option`, making error handling explicit and controllable.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Prefer interface polymorphism over type checking and casting. If you find yourself frequently using `is` and `as` in your code, it may indicate that the interface design needs improvement.</Note>

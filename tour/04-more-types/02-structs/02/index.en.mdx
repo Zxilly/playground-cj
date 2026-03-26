@@ -1,7 +1,33 @@
 # Constructors and Value Semantics
 
-Structs are value types. Assigning a struct to another variable creates an independent copy. Changes to the copy do not affect the original.
+A `struct` is a value type. Assigning a struct to another variable creates an independent copy; modifying the copy does not affect the original value.
 
-A struct can define multiple `init` constructors with different parameter lists.
+A `struct` can define multiple `init` constructors (with different parameters) or define a primary constructor with the same name as the type. Parameters of the primary constructor can be decorated with `let` or `var`, simultaneously defining fields and constructor parameters.
 
-Assign `a` to `b`, change `b.width` to `999.0`, and print both to verify `a` is unchanged.
+The code on the right demonstrates constructor overloading and value semantics copying. `Rectangle` has two `init` constructors that create rectangles and squares, respectively. Variable `b` is an independent copy of `a`; modifying `b` does not affect `a`.
+
+<Note>
+When defining a constructor, all instance member variables without initial values must be initialized, otherwise a compilation error will occur.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C structs have no constructor concept and require manual field initialization. Assignment copies the entire struct by value.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses constructors to initialize objects, and multiple constructors can be defined (overloading). Assignment copies the reference, not the value.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's structs don't have constructor syntax; typically `NewXxx()` functions are defined to create instances. Assignment also copies.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's structs can have multiple `new` methods, and assignment also copies (unless moved).
+</CompareWith>
+
+</CompareGroup>
+
+Try assigning `a` to `b`, then modify `b.width` and print both widths to verify that `a` remains unchanged.

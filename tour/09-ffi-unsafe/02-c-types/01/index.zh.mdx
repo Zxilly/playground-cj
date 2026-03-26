@@ -1,3 +1,23 @@
 # CPointer 指针
 
-`CPointer<T>` 表示指向类型 `T` 的原始 C 指针，其中 `T` 必须满足 `CType` 约束。可以用 `CPointer<T>()` 创建空指针，用 `isNull()` 检查是否为空，用 `+` 和 `-` 进行指针算术。通过 `CPointer` 读写是不安全操作，必须在 `unsafe` 块中进行。
+`CPointer<T>` 是仓颉中表示 C 指针的类型，对应 C 语言中的 `T*`。泛型参数 `T` 必须满足 `CType` 约束，即与 C 语言有对应内存布局的类型。
+
+使用 `CPointer<T>()` 可以创建一个空指针（null），通过 `isNull()` 方法检查指针是否为空。仓颉支持指针算术运算，可以用 `+` 和 `-` 对指针进行偏移。指针的类型转换使用 `CPointer<NewT>(oldPtr)` 形式。
+
+通过指针读取和写入数据是不安全操作，必须在 `unsafe` 块中进行。使用 `read()` 读取指针指向的值，使用 `write()` 写入值。右侧代码演示了分配内存、类型转换、读写数据和指针算术等常见操作。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 语言中指针是内置类型，直接使用 `T*` 声明。仓颉使用泛型类型 `CPointer<T>` 更明确地表示这是与 C 互操作的指针。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用原始指针 `*const T` 和 `*mut T`，仓颉的 `CPointer<T>` 与之类似，但专门用于 C FFI 场景。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>通过 `CPointer` 进行读写是不安全操作，如果指针无效可能导致未定义行为。</Note>
+
+试着修改代码，为 `Point3D` 结构体分配内存并写入数据后，再读取出来打印。

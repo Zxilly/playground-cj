@@ -1,9 +1,23 @@
 # Package Declaration
 
-Every Cangjie source file begins with a `package` declaration.
+Every Cangjie source file begins with a `package` declaration that specifies which package the file belongs to. The package declaration must be the first non-comment line in the file.
 
-The name must match the directory path relative to `src/`, using dots as separators.
+The package name needs to reflect the path of the source file relative to the project's `src` directory. For example, a file located under `src/myapp/utils/` should have the package declaration `package myapp.utils`. Package names are separated by dots, and folder names must match the package name components.
 
-Files directly in `src/` may omit the declaration -- the compiler assigns the default package name `default`.
+Files located in the `src` root directory can omit the package declaration, and the compiler will automatically assign them the default package name `default`. This is convenient for small projects or rapid prototyping.
 
-Try removing the `greet` function call and adding a `package myapp` declaration at the top. Observe how the package context changes.
+The code on the right demonstrates using the default package—since the file is in the root directory, no explicit package declaration is needed.
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go's package names match directory names but don't have dot-separated hierarchical structure. For example, `src/myapp` would have package name `myapp`. Cangjie's package names include the full path.
+</CompareWith>
+
+<CompareWith lang="java">
+Java requires package names to strictly correspond to directory structure, but package declarations can be omitted in files. Cangjie requires package declarations at the beginning of files (except for root directory).
+</CompareWith>
+
+</CompareGroup>
+
+Try adding `package myapp` at the top of the file and observe what changes.

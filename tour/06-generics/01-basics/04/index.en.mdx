@@ -1,7 +1,31 @@
 # Generic Interfaces
 
-A generic interface declares a type parameter that implementors must satisfy. `Container<T>` requires a `get` method returning `T`.
+Generic interfaces define a set of abstract behaviors, with type parameters specified by implementers when used. Member functions in the interface can use type parameters in parameter types and return types, ensuring implementers provide type-safe methods.
 
-Functions can accept `Container<Int64>` or `Container<String>` as parameters, keeping the element type visible at the call site.
+The `Container<T>` interface requires implementers to provide a `get()` method that returns a value of type `T`. Different implementations can store and return values of different types: `Box<Int64>` stores integers, `Box<String>` stores strings. The compiler ensures type consistency so callers always know the exact type of the return value.
 
-Create a second struct implementing `Container<String>` and pass it to a new `showStringBox` function.
+Functions can accept generic interfaces as parameters. The `showContainer` function accepts `Container<Int64>`, and any type that implements this interface can be passed in. This approach provides flexibility while maintaining type safety.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no interface concept; function pointer structs are typically defined to simulate behavior, but generic constraints cannot be enforced.
+</CompareWith>
+
+<CompareWith lang="java">
+Java interfaces don't support type parameters; although wildcards and raw types can be used, generic constraints cannot be expressed at the interface level.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's interfaces don't support type parameters; typically `interface{}` or defining multiple interfaces is used to handle different types.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's generic interface syntax is identical: `trait Container<T> { fn get(&self) -> T; }`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>When implementing generic interfaces, type parameters must match. If the interface declares `Container<T>`, the implementer must also declare the same type parameter.</Note>
+
+Run the example code, then create a new implementation of `Container<String>` and write a function that accepts that type.

@@ -1,7 +1,29 @@
-# Value Patterns
+# Value Patterns and Multi-Value Matching
 
-A value pattern matches when the input equals a specific literal: `case "A" => ...`.
+Value patterns are the simplest patterns—they match values equal to a specific literal. You can use integers, strings, characters, and other literals as patterns.
 
-The `|` operator combines several values in one case: `case 3 | 4 | 5 => "Spring"`.
+Using `|` allows you to match multiple values in one `case`, which is very convenient for handling related values. `case 3 | 4 | 5` means matching any one of 3, 4, or 5.
 
-Try changing `grade` on line 2 to `"D"` and see if it falls through to `_`.
+`_` is the wildcard pattern, which matches any value. It's typically used as the last branch to handle all other cases, ensuring match exhaustiveness.
+
+Change `grade` on line 2 to `"D"` and observe what happens. Then try modifying `month` to different months and see the season matching.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `switch` can direct multiple `case` labels to the same branch (via fall-through), but it's more verbose than Cangjie's `|` syntax.
+</CompareWith>
+
+<CompareWith lang="java">
+Java can also achieve multi-value matching through fall-through, but it's less clear than Cangjie's `|` syntax.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `switch` also supports multi-value matching like `case 1, 2, 3:`, but uses commas instead of `|`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses a single vertical bar `|` to connect multiple patterns, with syntax identical to Cangjie.
+</CompareWith>
+
+</CompareGroup>

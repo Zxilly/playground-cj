@@ -1,11 +1,26 @@
-# Hello, 世界
+# Hello, World
 
-Welcome to a tour of the [Cangjie programming language](https://cangjie-lang.cn).
+Welcome to the [Cangjie Programming Language](https://cangjie-lang.cn) tour. This tutorial will guide you through Cangjie's core features step by step.
 
-The tour is divided into modules you can access from the sidebar. Throughout the tour you will find slides and exercises to complete.
+The tutorial is organized into several modules, with each page containing explanations and an interactive code example. You can learn sequentially or navigate freely using the sidebar.
 
-The tour is interactive. Click the <Highlight target="run">Run</Highlight> button now (or press `Shift` + `Enter`) to compile and run the program on a remote server. The result is displayed below the code.
+Start by clicking the <Highlight target="run">Run</Highlight> button (or pressing `Shift` + `Enter`). The code will be sent to a remote server for compilation and execution, with results displayed below.
 
-Edit the program and run it again.
+In the code on the right, `main()` is the program entry point. Unlike many languages, Cangjie's `main` doesn't require the `func` keyword. We use `let` to declare immutable variables and embed them in strings using the `${...}` syntax.
 
-When you're ready to move on, click the <Highlight target="next">right arrow</Highlight> below, or press `PageDown` for the next page and `PageUp` for the previous page.
+Try changing the variable value to your name, then run it again.
+
+<CompareGroup>
+<CompareWith lang="c">
+C's program entry point is `int main(void)`, requiring `int` return type and `void` parameters; Cangjie's `main` needs no explicit modifiers.
+</CompareWith>
+<CompareWith lang="java">
+Java's entry point is `public static void main(String[] args)`, requiring modifiers and parameters; Cangjie is simpler with just `main()`.
+</CompareWith>
+<CompareWith lang="go">
+Go's `main` must be defined within `package main`; Cangjie's `main` is defined directly at the top level without package declarations.
+</CompareWith>
+<CompareWith lang="rust">
+Rust defines the entry point with `fn main()`; Cangjie omits the `fn` keyword for more concise syntax.
+</CompareWith>
+</CompareGroup>

@@ -1,7 +1,31 @@
-# 可见性
+# 可见性修饰符
 
-`public` 使声明在所有地方可见。`internal`（默认值）限于当前包及子包。`private` 限于当前文件。
+仓颉提供了四种访问修饰符来控制声明的可见范围：`private`、`internal`、`protected` 和 `public`。
 
-还有 `protected`，限于当前模块内可见。
+`private` 使声明仅在当前文件内可见，适合实现细节和辅助函数。`internal` 是默认值，声明在当前包及其子包内可见。`protected` 限制在当前模块内，而 `public` 则对所有包都可见。
 
-试着将 `publicGreet` 从 `public` 改为 `private`，然后从其他文件调用它——会得到编译错误。
+右侧代码演示了四种修饰符的用法。注意，在同一个文件内，所有声明都可以访问，无论使用什么修饰符。可见性的限制只在跨文件或跨包时才会体现。
+
+<Note>`import` 语句的默认修饰符是 `private`，意味着导入的名称仅在当前文件可用。如果希望导入对整个包可见，需要显式声明 `public import`。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有语言级别的访问控制。所有全局符号都是全局可见的，模块隐私靠约定（static 关键字）维护。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 提供 `private`、`package-private`、`protected` 和 `public` 四个级别。默认是 package-private，类似仓颉的 `internal`。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用首字母大小写控制可见性：大写字母开头的标识符公开，小写私有。Go 没有类似 `internal` 或 `protected` 的中间层级。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `pub` 用于公开，默认私有。Rust 有 `pub(crate)` 和 `pub(super)` 等细粒度控制，类似仓颉的 `internal` 和 `protected`。
+</CompareWith>
+
+</CompareGroup>
+
+试着将 `secretHelper` 从 `private` 改为其他修饰符，理解不同可见级别的作用范围。

@@ -1,7 +1,33 @@
 # Closures
 
-A lambda captures variables from the enclosing scope. The captured variable remains accessible even after the enclosing function returns.
+Lambdas or nested functions can capture variables from outer scopes, and even after the outer function has returned, the captured variables remain accessible. This combination of function and captured variables is called a closure.
 
-In this example, `makeAdder` returns a lambda that captures `offset`. Each call creates an independent closure.
+Variable capture occurs when the closure is defined, and captured variables must already be initialized. Captured variables "escape" from their original scope along with the closure, so they can be used to create stateful functions.
 
-Try calling `makeAdder(20)` and verify the result is independent from `add10`.
+In the example on the right, `makeAdder` returns a lambda that captures the `base` parameter. Each call to `makeAdder` creates an independent closure, each holding different captured values. `makeGreeter` is similar, where the returned function captures `prefix`.
+
+<Note>
+If a closure captures a mutable variable declared with `var`, the closure cannot be used as a first-class citizen (cannot be assigned, returned, or passed as parameter), and can only be called directly. This is to prevent data races.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no closure concept; it cannot capture local variables. Global variables or pointer passing are needed to achieve similar functionality.
+</CompareWith>
+
+<CompareWith lang="java">
+Java lambdas and anonymous classes can capture outer variables, but only `final` or effectively final constants. Cangjie restricts mutable variables to prevent data races.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's closures can also capture outer variables, and captured variables can be modified within the closure. Go has no special restrictions on closures that capture mutable variables.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust closures use the `move` keyword to explicitly move ownership of captured variables. Cangjie implicitly captures references, with simpler semantics but requiring attention to lifetimes.
+</CompareWith>
+
+</CompareGroup>
+
+Try calling `makeAdder(20)` to create a new adder and verify that it is independent of `add10`.

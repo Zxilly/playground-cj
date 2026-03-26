@@ -1,7 +1,31 @@
 # 泛型接口
 
-泛型接口声明的类型参数需要实现者满足。`Container<T>` 要求提供返回 `T` 的 `get` 方法。
+泛型接口定义了一组抽象行为，类型参数由实现者在使用时指定。接口中的成员函数可以在参数类型、返回类型中使用类型参数，确保实现者提供类型安全的方法。
 
-函数可以接受 `Container<Int64>` 或 `Container<String>` 作为参数，元素类型在调用处始终可见。
+`Container<T>` 接口要求实现者提供 `get()` 方法返回类型为 `T` 的值。不同的实现可以存储和返回不同类型的值：`Box<Int64>` 存储整数，`Box<String>` 存储字符串。编译器确保类型一致性，调用方总是知道返回值的确切类型。
 
-创建第二个实现 `Container<String>` 的结构体，并将其传给一个新的 `showStringBox` 函数。
+函数可以接受泛型接口作为参数。`showContainer` 函数接受 `Container<Int64>`，任何实现了该接口的类型都可以传入。这种方式提供了灵活性，同时保持了类型安全。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有接口概念，通常定义函数指针结构体来模拟行为，但无法实现泛型约束。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的接口不支持类型参数；虽然可以使用通配符和原始类型，但无法在接口级别表达泛型约束。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的接口不支持类型参数，通常使用 `interface{}` 或定义多个接口来处理不同类型。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的泛型接口语法相同：`trait Container<T> { fn get(&self) -> T; }`。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>实现泛型接口时，类型参数必须匹配。如果接口声明了 `Container<T>`，实现者也需要声明相同的类型参数。</Note>
+
+运行示例代码，然后创建一个 `Container<String>` 的新实现，并编写一个接受该类型的函数。

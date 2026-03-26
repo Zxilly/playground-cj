@@ -5,20 +5,30 @@ enum Direction {
 main() {
     let dir = Direction.North
 
-    // Exhaustively match all enum variants -- no _ branch needed
+    // enum must exhaust all constructors — no need for _ branch
     let label = match (dir) {
-        case North => "北"
-        case South => "南"
-        case East => "东"
-        case West => "西"
+        case North => "North"
+        case South => "South"
+        case East => "East"
+        case West => "West"
     }
-    println("方向: ${label}")
+    println("Direction: ${label}")
 
-    // For types like Int64, use _ or a binding pattern to ensure exhaustiveness
+    // For open types like Int64, must use _ or binding pattern
     let x = 42
     match (x) {
-        case 0 => println("零")
-        case 1 => println("一")
-        case other => println("其他值: ${other}")
+        case 0 => println("Zero")
+        case 1 => println("One")
+        case n => println("Other value: ${n}")  // Binding pattern covers remaining cases
     }
+
+    // Binding patterns also ensure exhaustiveness
+    let code = 404
+    let description = match (code) {
+        case 200 => "Success"
+        case 404 => "Not found"
+        case 500 => "Server error"
+        case other => "Status code: ${other}"  // Handle all other values
+    }
+    println(description)
 }

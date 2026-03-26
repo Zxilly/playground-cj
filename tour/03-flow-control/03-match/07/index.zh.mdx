@@ -1,5 +1,29 @@
-# 穷举检查
+# 穷尽性检查
 
-编译器会检查 `match` 是否覆盖了所有可能的值。对于 `enum`，必须列出每个变体。对于 `Int64` 等开放类型，需要通配符 `_` 或绑定模式兜底。
+仓颉编译器会检查 `match` 表达式是否覆盖了所有可能的情况。对于 `enum` 类型，必须列出所有构造器；对于开放类型如 `Int64`，需要使用通配符 `_` 或绑定模式来处理剩余情况。
 
-试着删掉第 13 行的 `case West`，观察编译器报的错误。
+穷尽性检查有助于避免遗漏边界情况。如果 `match` 不完整，编译器会报错，这能在编译阶段发现潜在的 bug。这是模式匹配相比传统 `switch` 的一个重要优势。
+
+对于 `enum`，列出所有构造器后就不需要 `_` 分支了，因为编译器知道已经覆盖了所有情况。但对于整数、字符串等类型，值域是开放的，必须用 `_` 收尾。
+
+尝试删除第 14 行的 `case West`，观察编译器报告的错误信息，理解穷尽性检查的作用。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `switch` 不强制穷尽，可以只处理部分情况。缺少 `default` 分支是常见的编程错误。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `switch` 也不强制穷尽，虽然有些 IDE 会警告缺少 `default`，但编译器不会报错。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `switch` 默认不强制穷尽，可以只处理部分情况。但对于无 `default` 的 enum match，某些编译器会警告。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 同样强制穷尽性检查，这是函数式语言的标配特性。如果 `match` 不完整，编译器会明确指出缺少的情况。
+</CompareWith>
+
+</CompareGroup>

@@ -1,5 +1,23 @@
-# 注意事项
+# 限制注解的使用位置
 
-注解在编译后会被擦除，除非明确标记为保留。反射有运行时开销，且绕过了编译期类型安全——仅在确实需要额外灵活性时使用。
+默认情况下，自定义注解可以用在类型声明、函数、成员变量、参数等各种位置。但有时我们希望限制注解只能用在特定位置，以减少误用。这可以通过在定义注解时指定 `target` 参数来实现。
 
-在大多数情况下，优先选择接口和泛型，而非反射。
+`target` 参数接受一个 `Array<AnnotationKind>` 数组，其中 `AnnotationKind` 是标准库中的枚举，包含 `Type`、`MemberFunction`、`MemberProperty`、`Parameter` 等值。当限定 target 后，注解只能用在声明的位置列表中。
+
+右侧代码定义了只能用于成员函数的 `@Log` 注解，以及只能用于类型的 `@Entity` 注解，并展示了它们的正确用法。
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java 使用 `@Target` 元注解限制使用位置，如 `@Target(ElementType.METHOD)`。仓颉通过 `target` 参数实现，语义相似。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的属性可以通过 `cfg` 等条件限制应用场景，但编译器不会像注解的 target 那样限制属性的使用位置。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>当没有指定 target 时，注解可以用在所有支持的位置，包括类型、函数、变量、参数等。</Note>
+
+尝试将 `@Log` 注解用到类定义上（第 21 行），看看编译器会报什么错误。

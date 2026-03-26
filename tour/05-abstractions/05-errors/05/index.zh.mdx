@@ -1,7 +1,25 @@
-# Option 与异常
+# Option 与异常的选择
 
-当值的缺失是正常且预期的结果时（例如查找可能不存在的键），使用 `Option<T>`。对于真正意外的情况（表示程序错误或不可恢复的故障），则使用异常。
+当值的缺失是正常业务逻辑的一部分时（如查找键可能不存在），使用 `Option<T>`。对于真正意外、表示程序错误或不可恢复的故障，使用异常。
 
-返回 `Option<T>` 的函数强制调用方显式处理缺失情况。而异常会自动沿调用栈向上传播，直到被捕获。
+返回 `Option<T>` 的函数强制调用方显式处理缺失情况，避免被忽略。异常则会自动沿调用栈向上传播，简化错误传递路径。
 
-将 `divide` 函数改为返回 `Option<Float64>` 而非抛出异常，并用 `??` 处理 `None`。
+右侧展示了两种风格的除法函数：`divideException` 在除零时抛出异常，`divideOption` 返回 `None`。前者用于"除零是程序错误"的场景，后者用于"除零是正常输入可能"的场景。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 惯用返回 `error` 作为第二个返回值。仓颉的 `Option<T>` 类似只有一个返回值的情况，`??` 操作符类似 `if err != nil { return default }`。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 通常用异常处理错误，`Optional<T>` 用于可能缺失的值。仓颉同样区分这两种用法。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 惯用 `Result<T, E>` 处理错误，`Option<T>` 处理可能缺失的值。仓颉的异常 + Option 组合类似 Rust 的设计理念。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`??` 操作符为 `None` 提供默认值。尝试用 `??` 为 `divideOption` 的结果提供默认值 0.0。</Note>

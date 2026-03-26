@@ -1,7 +1,33 @@
-# Mut Functions
+# mut Functions
 
-Since structs are value types, ordinary methods cannot modify fields. A `mut func` is allowed to modify the struct's `var` fields in place.
+A `struct` is a value type, and regular member methods cannot modify instance fields. If you need to modify fields in a method, you must declare a mutable method using `mut func`.
 
-A `mut` method can only be called on a `var` binding. Calling it on a `let` binding is a compile error.
+Inside a `mut` function, `this` has the ability to modify fields in place. `mut` methods can only be called on `var` bindings; calling them on `let` bindings will result in a compilation error.
 
-Change `var p` to `let p` and observe the error.
+The code on the right defines a movable `Point`. `translate`, `scale`, and `reset` are all `mut` methods that can modify the `x` and `y` fields. Note that in `main`, the variable `p` is declared with `var` to be able to call these methods.
+
+<Note>
+`mut` can only decorate instance member functions, not static member functions. Regular methods cannot call `mut` methods internally.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's methods (functions) can modify structs depending on whether pointers and `const` modifiers are used. There's no language-level `mut` concept.
+</CompareWith>
+
+<CompareWith lang="java">
+Java methods can freely modify fields. To prevent modification, typically `private` fields with getters/setters are used, or methods are marked as `final`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's struct methods can freely modify fields without the `mut` concept; whether modification is possible depends on whether the caller holds a pointer.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `&mut self` to indicate mutable methods, requiring `mut` binding from the caller. The logic is similar to Cangjie but with different syntax.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing `var p` to `let p` and observe the error message reported by the compiler.

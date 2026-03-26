@@ -1,5 +1,31 @@
-# 算术运算符
+# 算术运算符重载
 
-运算符重载允许自定义类型使用 `+`、一元 `-` 等运算符语法。重载通过 `operator func` 声明。
+运算符重载让自定义类型能够使用 `+`、`-`、`*` 等运算符语法。重载通过在 `class`、`struct` 或 `extend` 中定义 `operator func` 实现。
 
-此处 `Point` 定义了按分量相加的 `+` 和取反的一元 `-`。`left + right` 和 `-left` 的使用方式与内建数值类型一致。
+右侧代码定义了 `Point` 类表示二维点，重载了二元 `+` 运算符（点相加）和一元 `-` 运算符（取反）。重载后，`p1 + p2` 和 `-p` 的写法自然直观，与内置数值类型的用法一致。
+
+一元运算符函数没有参数，二元运算符函数有一个参数表示右操作数。运算符不改变固有优先级和结合性，乘法仍优先于加法。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 不支持运算符重载，虽然 C++ 支持，但无法改变内置运算符对自定义类型的行为。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 不支持运算符重载；某些库（如 BigDecimal）只能通过 `add()`、`subtract()` 等方法实现，缺乏自然的语法。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持运算符重载，必须定义普通函数如 `Add(a, b Point)`。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 通过实现 `Add`、`Sub` 等 trait 重载运算符，语法更繁琐但有统一规范。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>运算符函数不能用 `static` 修饰，它本质上是实例成员函数，可以使用 `this` 访问当前对象。</Note>
+
+尝试添加 `*` 运算符实现点与标量的乘法。

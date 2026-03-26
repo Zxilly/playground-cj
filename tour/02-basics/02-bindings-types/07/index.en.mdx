@@ -1,10 +1,29 @@
-# Bool
+# Bool Type
 
-`Bool` has two values: `true` and `false`. Logical operators `&&`, `||`, and `!` combine or negate boolean values. Comparison operators like `>` and `==` produce booleans.
+The `Bool` type represents logical truth values, with only two literals: `true` and `false`. Boolean values are commonly used in conditional judgments and logical operations.
 
-```cangjie
-let active = true
-let result = active && (10 > 5)
-```
+Cangjie supports three logical operators: logical NOT `!` (negation), logical AND `&&` (true only when both are true), and logical OR `||` (true when at least one is true). Comparison operators (`>`, `<`, `==`, `!=`, `>=`, `<=`) also produce `Bool` type results. The `Bool` type does not support arithmetic operations.
 
-Try writing a new comparison expression and printing the result.
+The code on the right demonstrates boolean value declarations and logical operations. Logical AND and OR use short-circuit evaluation: when the left operand can already determine the result, the right operand won't be evaluated. Try adding a combined expression like `println(x > y && y > 0)` and observe the effect of short-circuit evaluation.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no native boolean type; uses integers (0 for false, non-zero for true). Cangjie's `Bool` is a distinct type, stricter.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `boolean` is a separate type with only `true` and `false`, identical to Cangjie's `Bool`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's boolean type is named `bool`, also with only `true` and `false` values, and identical logical operators.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's boolean type is named `bool`, with functionality identical to Cangjie's `Bool`, and the same operators.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Logical AND `&&` and logical OR `||` use short-circuit evaluation: when the left operand can already determine the result, the right operand won't be evaluated.</Note>

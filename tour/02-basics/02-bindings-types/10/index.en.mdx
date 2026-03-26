@@ -1,10 +1,29 @@
 # Unit and Nothing
 
-`Unit` is the type of expressions that complete but produce no meaningful value, such as `println`. `Nothing` is the type of expressions that never complete normally, such as `break` or `return`.
+`Unit` represents the type of "no meaningful value," similar to `void` in other languages. `Unit` has only one value, written as `()`. Operations that only care about side effects, such as `println`, assignment expressions, and loop expressions, have `Unit` as their type.
 
-```cangjie
-let result: Unit = println("hello")
-break  // type is Nothing
-```
+`Nothing` is a more special type: it represents "there will be no value," and no expression of any type returns a value of `Nothing` type. Expressions that interrupt program flow—`break`, `continue`, `return`, and `throw`—all have `Nothing` type. After executing these expressions, subsequent code will not be executed.
 
-Run the code and observe that `println` returns `Unit`.
+The code on the right demonstrates usage scenarios for `Unit` and `Nothing`. Code after `break` will never execute because `break` has type `Nothing`. Observe that the `while` loop returns `Unit` type.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `void` for functions with no return value; Cangjie's `Unit` is a real type, more unified.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `void` for no return value; Cangjie's `Unit` is a real type with value `()`, more consistent.
+</CompareWith>
+
+<CompareWith lang="go">
+Go has no direct `Unit` equivalent—functions without return values simply don't write a return type. Go also has no `Nothing` type and cannot express the semantics of "will not return."
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `()` type corresponds to Cangjie's `Unit`, and the `!` type (never type) corresponds to Cangjie's `Nothing`, with identical semantics.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`Nothing` type is a subtype of all types, but currently cannot be explicitly used in type annotation positions.</Note>

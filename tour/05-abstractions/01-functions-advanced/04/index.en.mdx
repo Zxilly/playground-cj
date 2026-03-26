@@ -1,7 +1,33 @@
 # Nested Functions
 
-Functions can be defined inside other functions. The inner function can access the outer function's local variables and is only visible within the enclosing function.
+Functions can be defined inside other functions, which are called nested functions or local functions. Nested functions are scoped only within the outer function and invisible to the outside, but can be returned by the outer function and used in a larger scope.
 
-In this example, `sum` and `average` are defined inside `processNumbers`.
+Nested functions can access the outer function's local variables and parameters. This allows the outer function to break down complex logic into multiple internal helper functions without polluting the external namespace.
 
-Try adding a nested `max` function and returning it as a third value.
+In the example on the right, `processNumbers` defines two nested functions `sum` and `average` internally, both accessing the parameter `numbers`. The outer function calls these nested functions and returns the results. This is a common pattern in functional programming.
+
+<Note>
+The main difference between nested functions and lambdas: nested functions have names, can be called recursively, and have syntax closer to ordinary functions; lambdas are more concise and suitable for simple one-time use scenarios.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't support nested functions; you cannot define functions inside functions. Cangjie's nested functions improve code organization.
+</CompareWith>
+
+<CompareWith lang="java">
+Java supports local classes and anonymous classes that can be defined inside methods, but the syntax is verbose. Cangjie's nested functions are more concise.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't support defining named functions inside functions, only anonymous functions. Cangjie's nested functions provide better readability and recursion capability.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust supports nested functions with similar syntax to Cangjie. Nested functions can also capture outer variables to form closures.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a nested function `max` to find the maximum value in the array and return it as the third element of the tuple.

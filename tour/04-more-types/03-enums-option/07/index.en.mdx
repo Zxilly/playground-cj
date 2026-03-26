@@ -1,11 +1,31 @@
-# Option Chaining
+# Optional Chaining
 
-The `?.` operator accesses a member only when the receiver is `Some`, propagating `None` automatically.
+The `?.` operator (question mark operator) automatically handles the `None` case when accessing members of an optional value. If the receiver is `Some(v)`, it accesses `v`'s member and wraps it as `Some`; if it's `None`, it directly returns `None` without crashing.
 
-```cangjie
-user?.profile.address?.city ?? "unknown city"
-```
+Optional chaining supports multi-level access, such as `user?.profile.address?.city`. If any link in the chain is `None`, the entire expression returns `None` and subsequent accesses are not executed. This avoids multiple layers of `if` or `match` nesting.
 
-Combined with `??`, a chain safely traverses several levels of optional values without nested `match` blocks.
+Combined with the `??` operator, you can safely traverse multiple layers of optional values and provide defaults: `user?.profile.address?.city ?? "Unknown city"`. Such chained calls are concise and safe.
 
-Change `alice`'s city from `"Shanghai"` to `"Beijing"` and verify the output updates.
+`?.` can also be used for method calls `obj?.method()`, subscript access `obj?[index]`, and trailing lambda calls.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no optional chaining; each pointer level must be checked for null manually. Cangjie's `?.` operator greatly simplifies this process.
+</CompareWith>
+
+<CompareWith lang="java">
+Java 10+ offers stream APIs but doesn't directly support optional chaining; explicit `null` checks are still needed. Cangjie's `?.` is more concise and safe.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have optional chaining syntax, requiring continuous checks like `if user != nil && user.Profile != nil ...`, which is verbose and error-prone.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust doesn't have built-in optional chaining syntax, typically using `and_then()` or `map()` method chains, which is less intuitive than `?.`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>The value returned by optional chaining is still an `Option` type, which needs further handling or a default value via `??`.</Note>

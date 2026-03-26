@@ -1,5 +1,31 @@
 # 默认参数值
 
-命名参数可以用 `=` 指定默认值。调用时省略该参数则使用默认值，也可以显式传入来覆盖。
+命名参数可以设置默认值，语法为 `name!: Type = defaultValue`。调用函数时，如果省略了有默认值的参数，就自动使用默认值；也可以显式传值来覆盖默认值。
 
-示例中，`greet` 的 `greeting` 参数默认为 `"Hello"`，`connect` 的 `port` 和 `secure` 参数也带有默认值。
+只有命名参数才能有默认值，普通参数不能设置默认值。默认值表达式在函数定义时求值，不是每次调用时重新计算。有了默认参数，可以减少函数重载，让 API 更简洁。
+
+右侧代码展示了 `greet` 和 `connect` 函数，它们都有默认参数。你可以只传部分参数，其他参数使用默认值。观察不同调用方式的输出结果。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 不支持默认参数，需要定义多个函数或使用宏来实现。仓颉的默认参数让 API 更简洁。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 不支持默认参数，通常通过方法重载实现。仓颉的默认参数可以减少重载方法的数量。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持默认参数值，需要通过函数重载或传递配置结构体来实现。仓颉的默认参数让代码更简洁。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 不支持默认参数，但可以模拟。仓颉的默认参数语法与 Python 类似，更直观易用。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>只有命名参数可以设置默认值。默认值必须是编译时可确定的表达式。</Note>
+
+试着调用 `connect` 只传 `host` 参数，看看端口和安全连接使用什么默认值。

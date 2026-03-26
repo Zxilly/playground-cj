@@ -1,5 +1,29 @@
 # 整数类型
 
-`Int64` 是默认的整数类型。整数字面量可以用十进制、十六进制（`0x`）或二进制（`0b`）书写。
+仓颉提供多种整数类型：有符号整数 `Int8`、`Int16`、`Int32`、`Int64`、`IntNative`，以及无符号整数 `UInt8`、`UInt16`、`UInt32`、`UInt64`、`UIntNative`。`Int64` 是默认整数类型，整数字面量在没有类型上下文时会推断为 `Int64`。
 
-试着加一个八进制字面量（`0o`）并打印。
+整数字面量支持四种进制：十进制（无前缀）、十六进制（`0x` 或 `0X`）、八进制（`0o` 或 `0O`）、二进制（`0b` 或 `0B`）。可以用下划线 `_` 分隔数字，提高可读性。还可以用后缀 `i8`、`i16`、`i32`、`i64`、`u8`、`u16`、`u32`、`u64` 明确指定类型。
+
+右侧代码展示了不同整数类型和进制表示。`0x2A`、`0b101010`、`0o52` 写法不同，但值都是 42。试着添加一个 `let thousand: Int16 = 1000`，然后改成 `let thousand: Int8 = 1000`，观察溢出错误。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的整数类型如 `int`、`long` 等大小不固定，会引起跨平台兼容性问题；仓颉明确固定各类型大小。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的整数类型大小固定（`byte` 8 位、`short` 16 位等）；仓颉的选择更多，包括更多无符号类型。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的整数类型有 `int`、`int8`、`int16`、`int32`、`int64`，其中 `int` 大小取决于平台。仓颉固定用 `Int64` 作为默认，更可预测。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 整数类型命名为 `i8`、`i16`、`i32`、`i64` 等，默认推断为 `i32`。仓颉默认推断为 `Int64`，范围更大。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`IntNative` 和 `UIntNative` 的大小取决于平台（32 位或 64 位），适合与 C 语言交互时使用。</Note>

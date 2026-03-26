@@ -1,7 +1,33 @@
 # 结构体方法
 
-在结构体内部定义的函数是方法，通过 `this` 访问字段。
+在 `struct` 内部定义的函数称为成员方法，可以通过 `this` 访问当前实例的字段。
 
-通过实例的点语法调用方法：`c1.area()`。
+通过实例的点语法调用方法，如 `c1.area()`。方法可以访问实例的所有字段，也可以调用其他方法。静态方法用 `static` 修饰，通过类型名调用。
 
-添加一个 `diameter()` 方法，返回 `2.0 * radius`，并在 `main` 中调用。
+右侧代码的 `Circle` 定义了 `area`、`circumference`、`describe` 和 `isLargerThan` 四个方法，展示不同的方法用法。`isLargerThan` 接受另一个 `Circle` 参数进行比较。
+
+<Note>
+普通方法不能修改 `var` 字段的值。如果需要在方法中修改字段，需使用 `mut func`（下一页讲解）。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有方法的概念，通常定义函数并将结构体指针作为第一个参数。无法访问 `this`。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 在类内定义方法，通过 `this` 访问实例。可以用 `private/public` 控制可见性。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 struct 方法定义在类型外部，通过"接收者"参数区分，没有 `this` 关键字。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 impl 块中定义方法，`&self` 表示借用，`&mut self` 表示可变借用，类似仓颉的普通方法和 mut 方法。
+</CompareWith>
+
+</CompareGroup>
+
+尝试添加一个 `diameter()` 方法返回直径（`2.0 * radius`），并在 `main` 中调用它。

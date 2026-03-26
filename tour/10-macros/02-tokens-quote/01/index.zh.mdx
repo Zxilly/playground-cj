@@ -1,7 +1,31 @@
-# Token 令牌
+# Token 和 Tokens 类型
 
-`Tokens` 是由 `Token` 对象组成的序列，表示一段源代码片段。每个 `Token` 有一个 `kind`（如 `TokenKind.IDENTIFIER` 或 `TokenKind.INTEGER_LITERAL`）和一个字符串 `value`。
+`Tokens` 是仓颉宏操作的基本类型，代表一个程序片段。一个 `Tokens` 由多个 `Token` 组成，每个 `Token` 是一个词法单元：标识符、字面量、关键字或运算符。
 
-可以用 `Token(kind, value)` 构造 Token，用 `+` 拼接。
+每个 `Token` 包含类型（`kind`，取值为 `TokenKind` 枚举值）和内容（`value`）。你可以用 `Token(kind, value)` 手动构造任意 `Token`，例如 `Token(TokenKind.IDENTIFIER, "x")` 构造标识符 `x`。
 
-将第一个 Token 中的 `"1"` 改为 `"42"`，运行程序查看更新后的输出。
+`Tokens` 支持拼接操作：`+` 可以拼接两个 `Tokens`，或拼接 `Tokens` 与 `Token`。右侧代码展示了如何手动构造三个 `Token` 并组合成一个表示 `1 + 2` 的 `Tokens`，然后遍历查看每个 `Token` 的类型和值。
+
+修改 `Token` 的构造参数，将 `"1"` 改为 `"42"`，观察输出变化。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 宏通过文本替换实现，没有 Token 的概念。无法像仓颉这样操作和检查代码片段。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的注解处理器可以访问 AST，但没有 Token 的直接表示，处理代码转换更困难。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有宏系统，无法在编译期操作代码片段作为数据。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的过程宏使用 `TokenStream` 类型，概念类似但 API 不同。仓颉的 `Token` 显式包含 `kind` 和 `value`。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`Token` 还有位置信息（行号、列号），用于编译报错定位。`dump()` 方法可以打印完整的调试信息。</Note>

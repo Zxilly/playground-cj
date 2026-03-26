@@ -1,7 +1,23 @@
 # 带数据的枚举
 
-枚举成员可以携带关联数据，每个成员的值类型和数量可以不同。
+枚举构造器可以携带参数，不同构造器的参数类型和数量可以不同。这使枚举能够表达更丰富的数据结构。
 
-模式匹配 `case Circle(r) =>` 可以提取每个分支的数据。
+参数在构造器名后的括号中声明，如 `Circle(Float64)` 携带一个 Float64 参数，`Rectangle(Float64, Float64)` 携带两个。
 
-添加一个 `Square(Float64)` 成员，并在 `area` 和 `describe` 中处理它。
+在 `match` 表达式中，可以通过模式匹配提取构造器携带的数据。`case Circle(r) =>` 将圆的半径绑定到变量 `r`，在 `=>` 后的代码中可以直接使用。
+
+右侧代码定义了三种形状，每种形状携带不同的参数，`area` 函数通过模式匹配提取参数并计算面积。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 需要定义一个接口和多个结构体来模拟带数据的枚举，远不如仓颉的 `enum` 简洁。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `enum` 成员可以携带数据，但语法较繁琐，且无法在构造器中枚举不同的参数组合。
+</CompareWith>
+
+</CompareGroup>
+
+尝试添加一个 `Square(Float64)` 成员表示正方形，并在 `area` 和 `describe` 函数中处理它。

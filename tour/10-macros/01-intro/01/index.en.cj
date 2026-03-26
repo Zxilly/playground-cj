@@ -1,5 +1,8 @@
-// Built-in macros in action: @Test, @TestCase, @Assert
-// Compile with: cjc --test main.cj
+// Built-in test macro example
+// Compile command: cjc --test main.cj -o main && ./main
+
+import std.unittest.*
+import std.unittest.testmacro.*
 
 @Test
 class AddTest {
@@ -7,16 +10,23 @@ class AddTest {
     func testBasicAdd() {
         let a = 2
         let b = 3
-        @Assert(a + b, 5)
+        @Assert(a + b, 5)  // Check if 2 + 3 equals 5
     }
 
     @TestCase
     func testNegativeAdd() {
+        // Test negative number addition
         @Assert(-1 + 1, 0)
+    }
+
+    @TestCase
+    func testWithExpression() {
+        let x = 10
+        @Assert(x * 2, 20)  // Check if x * 2 equals 20
     }
 }
 
 main() {
-    println("Macros transform code at compile time!")
-    println("@Assert(2 + 3, 5) checks equality during testing.")
+    println("This is a test macro example")
+    println("Use the --test option when compiling in practice")
 }

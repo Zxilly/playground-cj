@@ -1,7 +1,33 @@
 # mut 函数
 
-结构体是值类型，普通方法不能修改字段。`mut func` 可以就地修改结构体的 `var` 字段。
+`struct` 是值类型，普通成员方法无法修改实例的字段。如果需要在方法中修改字段，必须使用 `mut func` 声明可变方法。
 
-`mut` 方法只能在 `var` 绑定上调用，在 `let` 绑定上调用会产生编译错误。
+在 `mut` 函数内部，`this` 拥有原地修改字段的能力。`mut` 方法只能在 `var` 绑定上调用，在 `let` 绑定上调用会产生编译错误。
 
-将 `var p` 改为 `let p`，观察错误信息。
+右侧代码定义了可移动的 `Point`。`translate`、`scale` 和 `reset` 都是 `mut` 方法，可以修改 `x` 和 `y` 字段。注意 `main` 中使用 `var` 声明变量 `p`，才能调用这些方法。
+
+<Note>
+`mut` 只能修饰实例成员函数，不能修饰静态成员函数。普通方法内部不能调用 `mut` 方法。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的方法（函数）是否修改结构体取决于是否使用指针和 `const` 修饰符。没有语言级的 `mut` 概念。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的方法可以自由修改字段。如果需要防止修改，通常用 `private` 字段和 getter/setter，或标记方法为 `final`。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 struct 方法可以自由修改字段，没有 `mut` 概念，是否可修改取决于调用者是否持有指针。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 用 `&mut self` 表示可变方法，调用者需要 `mut` 绑定，逻辑与仓颉相似但语法不同。
+</CompareWith>
+
+</CompareGroup>
+
+尝试将 `var p` 改为 `let p`，观察编译器报告的错误信息。

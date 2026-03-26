@@ -1,11 +1,26 @@
 # Hello, 世界
 
-欢迎来到[仓颉编程语言](https://cangjie-lang.cn)之旅。
+欢迎来到[仓颉编程语言](https://cangjie-lang.cn)之旅。本教程将带你逐步掌握仓颉的核心特性。
 
-本教程分为若干模块，可通过侧边栏访问。你将在教程中找到一系列幻灯片和练习。
+教程分为若干模块，每个页面都包含讲解和一个可交互的代码示例。你可以按顺序学习，也可以通过侧边栏随意跳转。
 
-教程是交互式的。现在点击 <Highlight target="run">运行</Highlight> 按钮（或按 `Shift` + `Enter`），将程序发送到远程服务器编译并运行。结果显示在代码下方。
+先试着点击 <Highlight target="run">运行</Highlight> 按钮（或按 `Shift` + `Enter`），代码会被发送到远程服务器编译执行，结果显示在下方。
 
-修改程序，再运行一次。
+右侧代码中，`main()` 是程序入口。与许多语言不同，仓颉的 `main` 不需要 `func` 关键字修饰。我们用 `let` 声明不可变变量，通过 `${...}` 语法将其嵌入字符串。
 
-准备好继续时，点击下方的 <Highlight target="next">右箭头</Highlight>，或按 `PageDown` 转至下一页、按 `PageUp` 返回上一页。
+尝试把变量值改成你的名字，再运行一次。
+
+<CompareGroup>
+<CompareWith lang="c">
+C 的程序入口为 `int main(void)`，需要 `int` 返回类型和 `void` 参数；仓颉的 `main` 无需显式修饰符。
+</CompareWith>
+<CompareWith lang="java">
+Java 的入口为 `public static void main(String[] args)`，需要修饰符和参数；仓颉更简洁，只需 `main()` 函数。
+</CompareWith>
+<CompareWith lang="go">
+Go 的 `main` 必须在 `package main` 中定义；仓颉的 `main` 直接在顶层定义，无需包声明。
+</CompareWith>
+<CompareWith lang="rust">
+Rust 用 `fn main()` 定义入口；仓颉省略了 `fn` 关键字，语法更简洁。
+</CompareWith>
+</CompareGroup>

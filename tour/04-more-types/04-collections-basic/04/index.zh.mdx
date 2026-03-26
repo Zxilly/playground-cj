@@ -1,5 +1,31 @@
 # 集合迭代
 
-所有标准集合都支持 `for-in` 循环。`ArrayList` 和 `HashMap` 还提供 `iterator()`，通过 `next()` 逐个返回 `Option` 值。
+仓颉的所有集合类型（`ArrayList`、`HashSet`、`HashMap`）都实现了 `Iterable<T>` 接口，因此支持 `for-in` 循环遍历。这是最常用的遍历方式。
 
-`HashMap` 迭代产出 `(key, value)` 元组，可以在循环头部直接解构。
+集合还提供 `iterator()` 方法返回一个迭代器对象，通过调用 `next()` 方法逐个返回 `Option<T>` 值：`Some(element)` 表示还有元素，`None` 表示遍历结束。这种方式常用于需要手动控制遍历过程的场景。
+
+`HashMap` 在遍历时产出 `(key, value)` 元组，可以直接在 `for-in` 或 `while` 循环头部解构，使用 `(k, v)` 形式同时获取键和值。
+
+右侧代码演示了三种遍历方式：传统的 `for-in` 循环、使用迭代器的 `while` 循环（配合模式匹配），以及 `HashMap` 的元组解构遍历。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有迭代器概念，需要手写循环和索引管理。仓颉的 `for-in` 和迭代器提供了更安全的遍历方式。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `for-each` 循环与仓颉的 `for-in` 类似。Java 也有 `Iterator` 接口，用法和仓颉类似。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `for range` 遍历 map 和 slice，不需要显式的迭代器类型。仓颉使用 `for-in` 语法，但也可以通过 `iterator()` 手动控制遍历。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `Iterator` trait 提供 `next()` 方法返回 `Option<T>`，与仓颉的模式完全一致。Rust 还支持丰富的迭代器适配器如 `map`、`filter`。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>使用 `while (let Some(x) <- iterator.next())` 可以在条件中完成模式匹配，代码更简洁。</Note>

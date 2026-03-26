@@ -1,3 +1,23 @@
 # inout 参数
 
-`inout` 修饰符将仓颉变量按引用传递给 `CFunc`，C 端接收到的是 `CPointer<T>`。变量必须用 `var` 声明，满足 `CType` 约束，且不能是 `CString` 或来源于 `class` 的实例成员变量。该指针仅在函数调用期间有效。
+`inout` 关键字用于将仓颉变量按引用传递给 `CFunc`。在 C 端，参数类型是 `CPointer<T>`，仓颉端使用 `inout` 修饰变量即可传递其指针。
+
+使用 `inout` 有几个重要约束。首先，被修饰的变量必须用 `var` 声明，不能是 `let` 常量或字面量。其次，变量的类型必须满足 `CType` 约束，但不能是 `CString`。最后，`inout` 修饰的变量只能用于对 `CFunc` 的调用处。
+
+传递给 C 端的指针仅在函数调用期间有效，C 端不应保存这个指针留作后用。变量可以是顶层变量、局部变量或 `struct` 成员，但不能直接或间接来源于 `class` 的实例成员。右侧代码演示了通过指针修改仓颉变量的值。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 语言中传递指针直接使用 `&` 操作符，如 `func(&n)`。仓颉使用 `inout` 关键字更明确地表示引用传递。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `&mut` 进行可变引用传递。仓颉的 `inout` 类似，但专门用于 C FFI 场景，C 端需要用指针接收。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>通过 `inout` 传递的指针仅在函数调用期间有效，C 端不应该保存这个指针留作后用。</Note>
+
+尝试修改代码，使用 `inout` 同时传递多个变量给一个函数。

@@ -1,3 +1,31 @@
-# Struct mapping
+# Structs and Memory Layout
 
-To interop with a C struct, define a matching `@C struct` in Cangjie with the same field order and C-compatible types. The memory layout must exactly match the C definition. You can then pass `CPointer` to these structs across the FFI boundary.
+To interoperate with C structs, Cangjie uses `struct` decorated with `@C` as the correspondence. The struct's field order, types, and memory layout must exactly match the C-side definition—this is the foundation for passing data across language boundaries.
+
+Structs decorated with `@C` automatically satisfy the `CType` constraint and can serve as parameters or return values for FFI functions. However, such structs have strict restrictions: member types must satisfy the `CType` constraint, cannot implement interfaces, cannot be used as enum associated value types, cannot be captured by closures, and cannot have generic parameters.
+
+Through `CPointer<T>`, struct pointers can be passed across FFI boundaries, combined with `write()` and `read()` methods for read/write operations. Cangjie also provides `sizeOf<T>()` and `alignOf<T>()` functions to query a type's size and alignment values, which are very useful when manually managing memory.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, structs follow platform memory layout rules by default. No special annotation is needed, but field order must match the FFI boundary. Use `#pragma pack` to adjust alignment.
+</CompareWith>
+
+<CompareWith lang="java">
+Java does not provide a direct C-compatible struct mechanism. JNI developers must manually manage field correspondence, typically through byte buffer operations.
+</CompareWith>
+
+<CompareWith lang="go">
+Go accesses C structs through Cgo, but Go's structs themselves don't need special markers. Go automatically handles memory layout conversion.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses the `#[repr(C)]` attribute to mark structs to guarantee C-compatible memory layout. Cangjie's `@C` serves the same purpose.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>The field order of `@C struct` must strictly match the C definition, otherwise it will cause memory layout misalignment and data corruption.</Note>
+
+Run the code on the right and observe the size output of `Point` and `Rect` structs to understand the memory footprint of different types.

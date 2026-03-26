@@ -1,41 +1,47 @@
-func processData(data: String): Unit {
-    println("Opening resource...")
+func processFile(filename: String): Unit {
+    println("打开文件：${filename}")
     try {
-        println("Processing: ${data}")
-        if (data.isEmpty()) {
-            throw Exception("Empty data")
+        if (filename.isEmpty()) {
+            throw Exception("文件名不能为空")
         }
-        println("Processing complete")
+        println("处理文件内容...")
     } catch (e: Exception) {
-        println("Error: ${e.message}")
+        println("处理失败：${e.message}")
     } finally {
-        println("Closing resource (always runs)")
+        // 无论成功或失败，都会执行
+        println("关闭文件：${filename}")
     }
 }
 
 func riskyOperation(): Int64 {
     try {
-        println("Starting risky operation")
-        throw Exception("Something failed")
+        println("开始执行风险操作")
+        throw Exception("操作失败")
+        println("这行不会执行")
         return 1
     } catch (e: Exception) {
-        println("Caught: ${e.message}")
-        return -1
+        println("捕获异常：${e.message}")
+        return -1  // 即使这里返回，finally 也会先执行
     } finally {
-        println("Finally block runs even with return")
+        println("finally 块总是执行")
     }
 }
 
 main() {
-    println("=== Normal case ===")
-    processData("hello")
+    // 情况 1：正常执行
+    println("=== 正常情况 ===")
+    processFile("data.txt")
 
     println("")
-    println("=== Error case ===")
-    processData("")
+
+    // 情况 2：抛出异常
+    println("=== 异常情况 ===")
+    processFile("")
 
     println("")
-    println("=== Return with finally ===")
+
+    // 情况 3：catch 中有 return
+    println("=== 带返回值的情况 ===")
     let result = riskyOperation()
-    println("Result: ${result}")
+    println("返回值：${result}")
 }

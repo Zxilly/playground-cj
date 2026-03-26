@@ -1,13 +1,27 @@
-# finally
+# finally Block
 
-A `finally` block runs whether the `try` block succeeds, throws, or returns early. It is the place for cleanup logic such as closing resources.
+The `finally` block is executed regardless of whether the `try` block ends normally, throws an exception, or returns early. It is typically used for "cleanup" tasks such as releasing resources, closing files, and resetting state.
 
-```cangjie
-try { ... }
-catch (e: Exception) { ... }
-finally { println("always runs") }
-```
+The execution order is: `try` block → `catch` block (if an exception is thrown and caught) → `finally` block. Even if there is a `return` statement in the `catch` block, `finally` will execute before the return.
 
-The `finally` block executes after `catch` (if any) but before control leaves the enclosing function.
+The code on the right demonstrates three scenarios: normal execution, throwing an exception, and early return in the catch block. Note that the `finally` block executes in every case.
 
-Remove the `throw` in `riskyOperation` and verify that `finally` still runs on the success path.
+<CompareGroup>
+
+<CompareWith lang="go">
+Go uses `defer` for deferred execution, which can be placed anywhere and executes in LIFO order. Cangjie's `finally` can only follow `try`, with semantics identical to Java.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `finally` behavior is exactly the same as Cangjie's—both execute before the try block exits.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust automatically releases resources through the `Drop` trait, without needing `finally`. Cangjie also supports the `Resource` interface, see later content.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Avoid throwing exceptions in `finally` blocks, as this will mask the original exception.</Note>
+
+Try commenting out the `throw` statement in `riskyOperation` and observe the behavior of `finally` during normal execution.

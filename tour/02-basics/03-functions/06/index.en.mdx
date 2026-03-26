@@ -1,5 +1,54 @@
 # Congratulations!
 
-You finished this lesson!
+You have completed the Functions lesson. You now have mastered the core concepts of functions in Cangjie:
 
-You can go back to the list of modules to find what to learn next, or continue with the next lesson.
+- Use the `func` keyword to define functions
+- Basic syntax for parameter lists and return types
+- Implicit returns make code more concise
+- Use tuples to implement multiple return values
+- Named parameters improve code readability
+- Default parameter values simplify function calls
+
+Functions are the building blocks of programs, and understanding function definition and usage is the foundation for further learning. In the following chapters, you'll see more application scenarios for functions, including advanced features like higher-order functions and closures.
+
+You can return to the module list to see what to learn next, or continue to the next lesson. Click <Highlight target="next">Next</Highlight> to continue.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's function definitions are relatively simple but lack many modern features. Cangjie supports named parameters, default parameters, and implicit returns, making functions easier to use.
+</CompareWith>
+
+<CompareWith lang="java">
+Java methods require access modifiers and explicit types. Cangjie's named parameters and default parameters reduce the need for method overloading.
+</CompareWith>
+
+<CompareWith lang="go">
+Go and Cangjie have similarities in basic function syntax, both using the `func` keyword. But Cangjie supports named parameters and default parameters, which Go needs to simulate through other means.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust and Cangjie are very similar in function syntax, both supporting implicit returns and tuple multiple return values. Cangjie's named parameter syntax `name!: Type` is its unique feature.
+</CompareWith>
+
+</CompareGroup>
+
+CJ:
+main() {
+    println("Functions lesson complete!")
+    
+    // Write a comprehensive example using what we learned
+    printUserInfo(name: "Xiaoming", age!: 20)
+    printUserInfo(name: "Xiaohong", age!: 22, city!: "Beijing")
+}
+
+// Comprehensive usage: regular parameters, named parameters, default values, tuple returns
+func getUserInfo(name!: String, age!: Int64, city!: String = "Unknown"): (String, Int64) {
+    println("Getting user info: ${name}, ${age} years old, from ${city}")
+    (name, age)
+}
+
+func printUserInfo(name!: String, age!: Int64, city!: String = "Shanghai") {
+    let (n, a) = getUserInfo(name: name, age: age, city: city)
+    println("Saved user: ${n} (${a} years old)")
+}

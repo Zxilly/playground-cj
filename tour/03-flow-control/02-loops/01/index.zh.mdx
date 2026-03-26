@@ -1,7 +1,29 @@
-# While
+# While 循环
 
-`while (condition) { body }` 在条件为真时反复执行代码块。
+`while` 循环在条件为真时反复执行代码块。它先检查条件，再决定是否执行循环体。如果条件一开始就为假，循环体一次也不会执行。
 
-`do { body } while (condition)` 先执行一次循环体，再检查条件。
+`do-while` 循环则先执行一次循环体，再检查条件。这意味着循环体至少会被执行一次，即使条件一开始就为假。
 
-试着把第 5 行的 `i <= 10` 改成 `i <= 5`，看看求和结果有什么变化。
+与许多语言类似，`while` 和 `do-while` 的条件必须是布尔类型表达式。在循环体中，通常需要修改与条件相关的变量，否则可能导致无限循环。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 提供了 `while` 和 `do-while` 关键字，语法与仓颉相似。两者都要求条件表达式用括号包围。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 同样提供 `while` 和 `do-while`，语法与仓颉基本相同。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有专门的 while 关键字，而是用 `for` 模拟 while 循环。仓颉提供了独立的 `while` 和 `do-while` 关键字。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的条件表达式不需要括号，而仓颉的 `while (condition)` 需要括号包裹条件。两者语义相同。
+</CompareWith>
+
+</CompareGroup>
+
+试着修改条件表达式，观察循环次数的变化。

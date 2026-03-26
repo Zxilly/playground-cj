@@ -1,3 +1,21 @@
-main(): Unit {
-    println("Generics complete!")
+main() {
+    println("====================================")
+    println("  泛型进阶 - 学习完成！")
+    println("====================================")
+    println("")
+    println("本章你学习了：")
+    println("  ✓ 类型约束 (where T <: Interface)")
+    println("  ✓ 泛型类型的不变性")
+    println("  ✓ 类型别名 (type alias)")
+    println("  ✓ 多重约束 (T <: A & B)")
+    println("  ✓ 泛型容器设计模式")
+    println("  ✓ const 函数与编译期求值")
+    println("")
+    println("泛型让你的代码更加：")
+    println("  • 通用 - 适用于多种类型")
+    println("  • 安全 - 编译期类型检查")
+    println("  • 高效 - const 函数编译期优化")
+    println("")
+    println("继续学习，探索仓颉的更多精彩特性！")
+    println("======================================")
 }

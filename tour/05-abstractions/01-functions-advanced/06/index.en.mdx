@@ -1,7 +1,33 @@
 # Trailing Lambda
 
-When the last parameter of a function is a function type, the lambda can be placed outside the parentheses. If the lambda is the only argument, the parentheses can be omitted entirely.
+When the last parameter of a function is a function type, the lambda can be written outside the parentheses when calling. This syntax is called trailing lambda, making the code look more like built-in language syntax and improving readability.
 
-In this example, `myIf(true) { 100 }` and `applyTwice { value => value + 3 }` use trailing lambda syntax.
+If a function has only one parameter and that parameter is a function type, the parentheses `()` can even be omitted entirely, writing only the lambda. This is particularly useful when defining DSLs (domain-specific languages) and builder patterns.
 
-Try rewriting `applyTwice` on line 18 as `applyTwice({ value => value + 3 })` -- both forms are equivalent.
+In the example on the right, `myIf`'s second parameter is a function type, and line 20 calls it using trailing lambda syntax. `applyTwice` has only one function parameter, and line 24 omits the parentheses, writing the lambda directly. Both forms are equivalent to the conventional call syntax.
+
+<Note>
+The `=>` of a trailing lambda can be omitted when the function body is a single expression. Compare line 22 and line 25: multi-line lambdas are clearer, while single expressions can be more concise.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no trailing closure concept; function callbacks must explicitly pass function pointers. Cangjie's trailing lambda is more elegant.
+</CompareWith>
+
+<CompareWith lang="java">
+Java lambdas can be placed inside method call parentheses, but don't have Cangjie's trailing lambda syntax. Cangjie is more flexible.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't support trailing closure syntax; function calls must write the closure inside parentheses. Cangjie's trailing lambda makes DSLs more elegant.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's trailing closure syntax is exactly the same as Cangjie, writing closures outside parentheses. This is a common design in modern languages.
+</CompareWith>
+
+</CompareGroup>
+
+Try rewriting line 24 to conventional call syntax `applyTwice({ value => value + 3 })` to understand the equivalence of both forms.

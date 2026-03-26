@@ -1,7 +1,31 @@
-# cjpm 构建与运行
+# cjpm build、run 与 test
 
-`cjpm build` 编译当前项目。`cjpm run` 一步完成编译和运行。
+`cjpm build` 编译当前项目。它会先检查依赖项，然后调用 `cjc` 进行构建，产物默认放在 `target/release/` 目录下。使用 `-V` 选项可以查看详细的编译命令。
 
-`cjpm test` 发现并运行用 `@Test` 和 `@TestCase` 标记的单元测试。
+`cjpm run` 是更便捷的命令，它会先编译项目，然后直接运行，适合开发时快速迭代。
 
-试着将 `add` 函数改为减法，然后运行代码观察变化。
+`cjpm test` 用于运行单元测试。配合 `@Test` 和 `@TestCase` 注解使用，可以自动发现并执行测试用例。
+
+<Note>`cjpm build` 支持增量编译，只重新编译修改过的文件，加快构建速度。</Note>
+
+下面的代码展示了几个工具函数。试着修改 `add` 函数的实现（例如改为减法），然后点击 <Highlight target="run">运行</Highlight> 观察变化。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 通常需要手动使用 `gcc` 编译和链接，没有统一的构建工具。可以使用 `make` 或 `cmake` 管理构建流程。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用构建工具如 Maven（`mvn compile`、`mvn exec:java`、`mvn test`）或 Gradle。Java 没有内置的运行脚本，需要 `java` 命令执行编译后的字节码。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `go build` 编译，`go run` 运行，`go test` 测试，与 `cjpm` 的命令非常相似。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `cargo build`、`cargo run`、`cargo test` 与 `cjpm` 的命令几乎完全对应，使用习惯一致。
+</CompareWith>
+
+</CompareGroup>

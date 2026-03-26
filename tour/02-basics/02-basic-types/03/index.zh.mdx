@@ -1,5 +1,31 @@
-# Bool
+# 布尔类型
 
-`Bool` 有两个值：`true` 和 `false`。逻辑运算符 `&&`、`||`、`!` 用于组合或取反布尔值。比较运算符如 `>` 和 `==` 的结果也是布尔值。
+布尔类型用 `Bool` 表示，用于逻辑判断，只有 `true` 和 `false` 两个值。布尔类型支持三种逻辑操作符：逻辑非 `!`、逻辑与 `&&`、逻辑或 `||`。
 
-试着写一个新的比较表达式并打印结果。
+逻辑与 `&&` 和逻辑或 `||` 采用短路求值策略：计算 `a && b` 时，如果 `a` 为 `false` 则不计算 `b`；计算 `a || b` 时，如果 `a` 为 `true` 则不计算 `b`。这可以避免不必要的计算，甚至防止运行时错误。
+
+比较操作符（如 `==`、`!=`、`<`、`>`）的结果也是 `Bool` 类型。右侧代码展示了布尔值的基本使用、逻辑运算和比较运算。
+
+<Note>布尔类型不支持转为整数类型，与某些语言（如 C/C++）不同，仓颉中 `true` 不能当作 `1` 使用。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有原生布尔类型，通常用整数 0（假）和非零（真）表示；仓颉的 `Bool` 是一个独立类型，更严格。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `boolean` 是独立类型，但不能转换为整数；仓颉的 `Bool` 功能相同。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `bool` 与仓颉的 `Bool` 几乎完全相同，都只有 `true` 和 `false` 两个值，都不支持隐式转换为整数，都采用短路求值。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `bool` 也是 `true` 和 `false`，支持相同的逻辑操作符。但 Rust 可以用 `as` 将 `bool` 转换为整数（`true as i32` 得到 1），仓颉不支持这种转换。
+</CompareWith>
+
+</CompareGroup>
+
+试着写一个新的比较表达式或逻辑表达式并打印结果。

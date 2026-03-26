@@ -1,60 +1,76 @@
-class ValidationError <: Exception {
-    let field: String
+// 验证异常：携带字段名
+open class ValidationError <: Exception {
+    public let field: String
 
-    init(field: String, message: String) {
-        super(message)
+    public init(field: String, message: String) {
         this.field = field
+        super(message)
+    }
+
+    public open override func getClassName(): String {
+        "ValidationError"
     }
 }
 
-class NetworkError <: Exception {
-    let statusCode: Int64
+// 网络异常：携带状态码
+open class NetworkError <: Exception {
+    public let statusCode: Int64
 
-    init(statusCode: Int64, message: String) {
-        super(message)
+    public init(statusCode: Int64, message: String) {
         this.statusCode = statusCode
+        super(message)
+    }
+
+    public open override func getClassName(): String {
+        "NetworkError"
     }
 }
 
 func validateEmail(email: String): Unit {
     if (!email.contains("@")) {
-        throw ValidationError("email", "Invalid email format: ${email}")
+        throw ValidationError("email", "邮箱格式无效：${email}")
     }
 }
 
 func fetchData(url: String): String {
     if (url.isEmpty()) {
-        throw NetworkError(400, "URL cannot be empty")
+        throw NetworkError(400, "URL 不能为空")
     }
-    return "data from ${url}"
+    "来自 ${url} 的数据"
 }
 
 main() {
-    // Handle validation errors
+    // 捕获验证异常
     try {
         validateEmail("alice_at_example.com")
+        println("验证通过")
     } catch (e: ValidationError) {
-        println("Validation failed on '${e.field}': ${e.message}")
+        println("字段 '${e.field}' 验证失败：${e.message}")
     }
 
+    // 正常情况
     try {
         validateEmail("bob@example.com")
-        println("Email is valid")
+        println("邮箱验证通过")
     } catch (e: ValidationError) {
-        println("Validation failed: ${e.message}")
+        println("验证失败：${e.message}")
     }
 
-    // Handle network errors
+    // 捕获网络异常
     try {
-        fetchData("")
+        let data = fetchData("")
+        println("获取数据：${data}")
     } catch (e: NetworkError) {
-        println("Network error (${e.statusCode}): ${e.message}")
+        println("网络错误 (${e.statusCode})：${e.message}")
     }
 
+    // 可以同时捕获两种异常
     try {
         let data = fetchData("https://api.example.com")
-        println("Got: ${data}")
+        println("成功：${data}")
+    } catch (e: ValidationError) {
+        println("验证错误：${e.message}")
     } catch (e: NetworkError) {
-        println("Network error: ${e.message}")
+        println("网络错误：${e.message}")
     }
 }

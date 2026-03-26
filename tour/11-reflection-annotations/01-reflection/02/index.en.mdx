@@ -1,15 +1,75 @@
-# Annotations
+# Custom Annotations
 
-An annotation attaches structured metadata to a declaration. Define an annotation class with `@Annotation` and a `const init`, then apply it with `@Name[args]`.
+Annotations attach structured metadata to declarations that can be read at runtime through reflection. Cangjie defines annotation classes by marking them with `@Annotation`, and annotation classes must provide a `const init` constructor.
 
-```cangjie
+When defining an annotation, use `@Annotation` to decorate the `class` and declare the fields to be stored in the class. Annotation classes cannot be decorated with `abstract`, `open`, or `sealed`. When using annotations, the syntax is `@AnnotationName[arguments]`, where arguments are evaluated at compile time and bound to the type.
+
+Through `TypeInfo.findAnnotation<T>()`, you can retrieve annotation information on a type at runtime, which returns an `Option<T>` type. This allows frameworks to execute different logic at runtime based on annotations, such as version control, permission checking, etc.
+
+<Note>Annotations are not inherited. Subclasses do not obtain annotation metadata from parent classes.</Note>
+
+The code on the right defines a `@Version` annotation and uses it to mark two API classes. At runtime, version numbers are read and printed through reflection.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java annotations are defined through `@interface` and use `@Retention` to control lifecycle. Cangjie annotations must use `const init`, with arguments evaluated at compile time.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses struct tags to implement similar functionality, such as `` `json:"name"` ``. Cangjie's annotations are type-safe and can carry complex structures.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a new annotation type, such as `@Author` to record author information.
+
+CJ:
+import std.reflect.*
+
+// Define version number annotation
 @Annotation
 public class Version {
     let code: String
-    const init(code: String) { this.code = code }
+    
+    const init(code: String) {
+        this.code = code
+    }
 }
-```
 
-`@Version["1.0"]` and `@Version["2.0"]` tag two classes. `findAnnotation<Version>()` reads the metadata back at runtime.
+// Apply annotation to classes
+@Version["1.0"]
+class ApiV1 {
+    public func call(): String {
+        "API Version 1.0"
+    }
+}
 
-Add a third class `ApiV3` with `@Version["3.0"]`, append it to the array, and verify it prints.
+@Version["2.0"]
+class ApiV2 {
+    public func call(): String {
+        "API Version 2.0"
+    }
+}
+
+main() {
+    // Create API objects of different versions
+    let objects = [ApiV1() as Object, ApiV2() as Object]
+    
+    println("Checking API version information:")
+    println()
+    
+    for (obj in objects) {
+        // Get type information of the object
+        let typeInfo = TypeInfo.of(obj)
+        
+        // Find Version annotation
+        let annOpt = typeInfo.findAnnotation<Version>()
+        
+        if (let Some(ann) <- annOpt) {
+            println("  ${typeInfo.name}: version ${ann.code}")
+        } else {
+            println("  ${typeInfo.name}: no version information")
+        }
+    }
+}

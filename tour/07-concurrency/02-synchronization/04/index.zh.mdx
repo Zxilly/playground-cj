@@ -1,5 +1,33 @@
-# 并发示例
+# 组合使用同步机制
 
-本例将 `spawn`、`Future`、`Mutex` 和 `AtomicInt64` 组合在一个程序中。多个 worker 并行计算平方值，将格式化结果写入由 mutex 保护的共享列表，同时用原子计数器追踪完成数。
+在实际的并发程序中，经常需要组合使用多种同步机制。理解何时使用 `Mutex`、何时使用原子操作，是编写高效并发代码的关键。
 
-列表使用 `Mutex`，因为它是复杂对象；计数器使用 `AtomicInt64`，因为它只是一个整数。
+一个实用的经验法则：对于单个整数或布尔值，优先使用原子操作（性能更好）；对于复杂数据结构或需要保护多个变量的场景，使用 `Mutex`（更灵活、更安全）。
+
+右侧代码演示了一个完整的并发计算场景：多个 worker 并行计算平方值，将格式化结果写入共享列表（用 `Mutex` 保护），同时用原子计数器追踪完成数。这是一个典型的生产者-消费者模式的简化版本。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 需要手动为每个共享数据创建互斥锁，并仔细管理生命周期，容易发生同步错误或死锁。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 需要 `synchronize` 保护集合，或使用 `ConcurrentHashMap` 等线程安全类；原子操作与 `Mutex` 的组合相似但 API 不同。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 通常使用 `sync.Mutex` 保护切片，用 `sync/atomic` 操作计数器。仓颉的用法类似，但 `synchronized` 语法更简洁。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 通过 `Arc<Mutex<Vec<T>>>` 共享可变集合，用 `AtomicUsize` 计数。仓颉的全局变量不需要 `Arc`，但需要注意线程安全。
+</CompareWith>
+
+</CompareGroup>
+
+程序输出会显示所有任务完成，以及每个计算结果。
+
+<Note>选择同步机制时，先考虑正确性，再考虑性能。过早优化可能导致难以发现的数据竞争 bug。</Note>
+
+尝试移除某个同步机制（如去掉 `Mutex` 或去掉原子操作），观察程序行为变化。

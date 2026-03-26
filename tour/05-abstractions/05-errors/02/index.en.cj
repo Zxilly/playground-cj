@@ -1,33 +1,41 @@
 func requireAdult(age: Int64): Int64 {
     if (age < 18) {
-        throw Exception("age must be at least 18")
+        throw Exception("Age must be at least 18")
     }
-    return age
+    age
 }
 
 func divide(a: Int64, b: Int64): Int64 {
     if (b == 0) {
-        throw ArithmeticException("b must not be zero")
+        throw ArithmeticException("Divisor cannot be zero")
     }
-    return a / b
+    a / b
 }
 
-main(): Int64 {
+main() {
+    // Handle validation exception
     try {
         let age = requireAdult(16)
-        println("adult age = ${age}")
+        println("Adult age: ${age}")
     } catch (e: Exception) {
-        println("Validation failed:")
-        println(e)
+        println("Validation failed: ${e.message}")
     }
 
+    // Handle arithmetic exception
     try {
         println("20 / 4 = ${divide(20, 4)}")
         println("20 / 0 = ${divide(20, 0)}")
     } catch (e: ArithmeticException) {
-        println("Math failed:")
-        println(e)
+        println("Calculation error: ${e.message}")
     }
 
-    return 0
+    // After the first exception is caught, the program continues
+    try {
+        let age = requireAdult(25)
+        println("Validation passed, age: ${age}")
+    } catch (e: Exception) {
+        println("Validation failed: ${e.message}")
+    }
+
+    println("Program ended normally")
 }

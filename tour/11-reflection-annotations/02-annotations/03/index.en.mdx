@@ -1,5 +1,23 @@
-# Caveats
+# Restricting Annotation Targets
 
-Annotations are erased after compilation unless they are marked to be retained. Reflection has runtime overhead and bypasses compile-time type safety — use it only when the extra flexibility is genuinely needed.
+By default, custom annotations can be used in various positions such as type declarations, functions, member variables, parameters, etc. However, sometimes we want to restrict annotations to specific positions to reduce misuse. This can be achieved by specifying the `target` parameter when defining the annotation.
 
-For most use cases, prefer interfaces and generics over reflection.
+The `target` parameter accepts an `Array<AnnotationKind>` array, where `AnnotationKind` is an enumeration in the standard library containing values such as `Type`, `MemberFunction`, `MemberProperty`, `Parameter`, etc. When target is restricted, the annotation can only be used in the declared list of positions.
+
+The code on the right defines a `@Log` annotation that can only be used on member functions, and an `@Entity` annotation that can only be used on types, demonstrating their correct usage.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java uses the `@Target` meta-annotation to restrict usage locations, such as `@Target(ElementType.METHOD)`. Cangjie achieves this through the `target` parameter with similar semantics.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's attributes can be restricted to application scenarios through conditions like `cfg`, but the compiler doesn't restrict attribute usage locations like annotation targets do.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>When no target is specified, the annotation can be used in all supported positions, including types, functions, variables, parameters, etc.</Note>
+
+Try applying the `@Log` annotation to a class definition (line 21) and see what error the compiler reports.

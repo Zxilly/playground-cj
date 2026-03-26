@@ -1,7 +1,29 @@
 # 别名导入
 
-`import pkg.Name as Alias` 可以重命名导入的声明，用于解决包之间的名称冲突。
+当从不同包导入同名声明时，可以使用 `import ... as` 语法进行重命名，避免命名冲突。即使没有冲突，也可以用别名简化过长的类型名。
 
-重命名后，只能使用别名——原名将不可用。
+重命名后，只能通过新名称访问该声明，原名将不再可用。这是一个安全机制，防止同一声明在代码中以不同名称出现，造成混淆。
 
-试着将 `List` 重命名为 `MyList`，并相应更新使用处。
+右侧代码展示了如何将 `ArrayList` 和 `HashMap` 重命名为更简短的名字 `List` 和 `Map`。这在频繁使用某些集合类型时特别有用。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有正式的包或导入别名机制。开发者通常使用预处理指令或宏来管理名称冲突。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 本身不支持导入别名，但可以使用静态导入 `import static java.lang.Math.sqrt;` 导入方法。不同于仓颉的灵活性。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `import fmt "fmt"` 或 `import . "fmt"` 进行别名或省略包名。Go 的省略包名方式会导入到当前命名空间，可能造成冲突。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `use std::collections::HashMap as Map;` 语法，与仓颉的 `as` 关键字相同。两者机制非常类似。
+</CompareWith>
+
+</CompareGroup>
+
+试着把 `List` 改回 `ArrayList`，观察编译器会报告什么错误。这说明别名导入后原名不再可用。

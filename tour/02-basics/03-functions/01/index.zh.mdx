@@ -1,5 +1,31 @@
 # 定义函数
 
-使用 `func` 关键字定义函数，后跟函数名、参数列表和返回类型。
+仓颉使用 `func` 关键字定义函数，后面依次是函数名、参数列表、可选的返回值类型和函数体。参数列表写在圆括号内，多个参数用逗号分隔；返回值类型与参数列表之间用冒号分隔；函数体用花括号包围。
 
-示例中，`add` 接受两个 `Int64` 参数并返回它们的和。`sayHello` 没有参数，也没有返回值。
+参数的定义形式为 `name: Type`，例如 `a: Int64` 表示一个名为 `a` 的 `Int64` 类型参数。函数参数是不可变的，在函数内不能对其重新赋值。如果函数不需要返回值，可以省略返回值类型，或显式标注为 `Unit`。
+
+右侧代码定义了三个函数：`add` 接受两个整数参数并返回它们的和，`greet` 打印问候语没有返回值，`square` 计算一个数的平方。注意函数调用时只需传递值，不需要写参数名。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 使用 `int add(int a, int b)` 的风格定义函数，返回类型写在函数名前，参数类型在参数名后。C 没有现代的命名参数或默认参数特性。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `public static int add(int a, int b)` 的风格定义方法，需要指定访问修饰符和 static 关键字。Java 也不支持命名参数或默认参数。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `func` 关键字定义函数，参数类型写在参数名之后，如 `func add(a int, b int) int`。仓颉使用冒号分隔参数名和类型，这与 Go 的风格相反。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `fn` 关键字定义函数，参数和返回类型的语法与仓颉相似，都使用冒号分隔。但 Rust 的函数名使用 snake_case，仓颉推荐使用 camelCase。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>函数参数是不可变变量，不能在函数体内重新赋值。</Note>
+
+点击 <Highlight target="run">运行</Highlight> 查看结果，然后尝试修改 `add` 函数让它计算三个数的和。

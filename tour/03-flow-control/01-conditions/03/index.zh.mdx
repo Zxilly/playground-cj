@@ -1,7 +1,31 @@
-# if-let
+# if-let 模式匹配
 
-`if (let Some(v) <- x)` 测试一个 `Option` 是否包含值。如果包含，内部的值会绑定到 `v` 并执行该分支。
+`if-let` 是仓颉提供的一种便捷语法，用于检查和解构 `Option` 类型的值。语法形式为 `if (let Some(v) <- opt)`，当 `opt` 包含值时，内部的值会绑定到变量 `v` 并执行该分支。
 
-可以用 `&&` 追加额外条件，如第 20 行所示。
+这种写法比先用 `if` 判断是否为 `Some`，再手动解包更加简洁和安全。变量 `v` 只在匹配成功的分支内有效，避免在其他地方误用。
 
-试着把第 2 行的 `Some(42)` 改成 `None`，看看会走哪个分支。
+可以在 `let pattern` 后用 `&&` 添加额外条件，形成更复杂的判断。例如 `if (let Some(v) <- opt && v > 0)` 只有当 `opt` 有值且该值满足条件时才执行分支。注意 `||` 连接的模式不能绑定变量。
+
+右侧代码展示了 `if-let` 的基本用法和条件组合。试着将 `Some(42)` 改为 `None`，观察程序的执行路径如何变化。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有 Option 类型，通常使用 NULL 指针检查或错误码。这比 if-let 更容易出错。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 没有内置 Option 类型（Java 8 之后有 Optional，但使用更冗长）。通常用 null 检查或 Optional 的 ifPresent()。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `if let Some(v) = opt` 语法（用 `=` 而非 `<-`），功能相同但操作符不同。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有内置的 Option 类型，通常返回值加错误，用 `if err != nil` 检查，不如 if-let 简洁。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`if-let` 中绑定的变量只在匹配成功的分支内有效，不能在 `else` 分支中使用。</Note>

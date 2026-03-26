@@ -1,5 +1,31 @@
-# 数组操作
+# 数组切片
 
-通过索引赋值修改数组元素：`numbers[1] = 25`。用范围切片获取子数组：`numbers[1..3]`。
+使用 Range 类型可以在下标中一次性获取某一段元素，得到一个新的数组。Range 语法为 `start..end`，表示从 start 开始到 end 结束（不包含 end）。
 
-使用 `for (i in 0..numbers.size)` 按索引遍历数组。
+在下标中可以省略 Range 的起始或结束位置。省略起始位置时，从索引 0 开始；省略结束位置时，延续到数组末尾。切片操作返回的是新数组，修改切片不会影响原数组。
+
+按索引遍历时，可以使用 `for (i in 0..arr.size)` 配合索引访问，也可以使用 `for ((i, v) in arr.enumerate())` 同时获取索引和值。
+
+<Note>切片范围 `start..end` 中，start 和 end 都不能超过数组长度。如果 start 大于 end 或出现负数，会触发运行时错误。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有切片操作，需要手动管理指针和计算范围。仓颉的切片语法更安全便捷。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 没有原生切片操作，需要用 `Arrays.copyOfRange()` 或 `List.subList()` 实现。仓颉的切片语法更直观。
+</CompareWith>
+
+<CompareWith lang="python">
+Python 的切片使用 `arr[1:4]` 语法且支持负索引。仓颉使用 Range 类型 `arr[1..4]`，不支持负索引。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `arr[1:4]` 进行切片，得到的是原数组的视图（修改会影响原数组）。仓颉的切片返回新数组，修改不影响原数组。
+</CompareWith>
+
+</CompareGroup>
+
+运行代码观察切片操作。尝试创建一个切片并修改它，看看原数组是否会变化。

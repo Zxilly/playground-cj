@@ -1,14 +1,78 @@
-# Shared Data
+# Minimizing Critical Sections
 
-A common pattern: each thread does local work first, then enters a `synchronized` block only to write the result into a shared collection.
+When using mutexes, an important principle is to minimize the scope of critical sections. The larger the critical section, the longer other threads have to wait, resulting in worse concurrency performance.
 
-```cangjie
-let message = "worker ${current} finished"
-synchronized(messagesLock) {
-    messages.add(message)
+A good pattern is: first complete time-consuming calculations locally, and only hold the lock for the brief moment when shared data needs to be accessed. This can significantly reduce lock contention and improve the program's concurrency performance.
+
+In the code on the right, each worker thread constructs a message string locally (a relatively time-consuming operation) and only enters the `synchronized` block when adding a message to the shared list. This is much more efficient than holding the lock during the entire message construction period.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, manual lock/unlock management makes it easy to accidentally hold locks over large code ranges, causing performance problems.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `synchronized` on methods locks the entire method body, making it hard to protect only a small portion. Cangjie's block-level `synchronized` is more flexible.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's convention is to only operate on shared data within critical sections, and do time-consuming calculations outside. Cangjie's `synchronized` syntax makes the boundaries of critical sections clearer.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust automatically releases `MutexGuard` through scope, with critical section boundaries determined by variable lifetimes. Cangjie's `synchronized` explicitly marks critical sections through code blocks.
+</CompareWith>
+
+</CompareGroup>
+
+The output will show messages from different workers, and the order may vary due to concurrent scheduling.
+
+<Note>If the critical section is too small (e.g., only protecting partial shared operations), it may not properly protect data. The key is to ensure that complete operations on shared data are within the critical section.</Note>
+
+Try moving message construction inside the `synchronized` block - while the result will be the same, performance will decrease.
+
+CJ:
+import std.sync.Mutex
+import std.collection.ArrayList
+
+let messages = ArrayList<String>()
+let messagesLock = Mutex()
+
+main(): Int64 {
+    let futures = ArrayList<Future<Unit>>()
+    
+    // Start 5 worker threads
+    for (workerId in 1..=5) {
+        let current = workerId
+        let future = spawn {
+            // Perform time-consuming calculations outside critical section
+            let message = "Worker ${current} completed task"
+            
+            // Simulate some computational work
+            var sum = 0
+            for (i in 0..1000) {
+                sum += i
+            }
+            
+            // Only hold lock when accessing shared data
+            synchronized(messagesLock) {
+                messages.add(message)
+            }
+        }
+        futures.add(future)
+    }
+    
+    // Wait for all threads to complete
+    for (future in futures) {
+        future.get()
+    }
+    
+    // Print all messages
+    println("Received ${messages.size} messages:")
+    for (message in messages) {
+        println("  - ${message}")
+    }
+    
+    return 0
 }
-```
-
-Each worker builds a message string locally and only holds the lock for the `messages.add(...)` call. Keep the critical section as short as possible.
-
-Increase the worker range from `1..4` to `1..10` and observe that the message order varies between runs.

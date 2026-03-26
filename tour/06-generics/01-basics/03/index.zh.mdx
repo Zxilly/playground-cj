@@ -1,7 +1,31 @@
 # 泛型类
 
-泛型类使用引用语义，支持可变状态。`Stack<T>` 是经典示例——一份实现即可处理任意元素类型。
+泛型类使用引用语义，支持可变状态和对象标识。类型参数在类名后的尖括号中声明，然后在字段、方法参数和返回类型中使用。泛型类适合实现需要封装状态的数据结构，如容器、栈、队列等。
 
-类型参数贯穿字段、方法参数和返回类型。两个不同类型参数的 `Stack` 实例是完全独立的类型。
+`Stack<T>` 是一个经典的泛型类示例。一份实现可以处理任意元素类型：`Stack<Int64>`、`Stack<String>` 或 `Stack< Pair<Int64, String> >`。类型参数 `T` 出现在字段的初始化表达式、方法参数类型和返回类型中，确保类型安全。
 
-创建一个 `Stack<Int64>`，压入几个数字，再弹出并打印结果。
+泛型类的静态成员不能引用类型参数。因为静态成员的内存是共享的，如果静态成员能引用 `T`，那么 `Stack<Int64>` 和 `Stack<String>` 的静态成员应该有不同类型，这与共享内存的语义矛盾。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中没有类的概念，必须手动管理内存和定义操作函数，如 `Stack_push(stack, value)` 和 `Stack_pop(stack)`，容易出错。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的泛型类中，静态成员可以引用类型参数（虽然类型被擦除），但运行时无法知道具体类型；Cangjie 编译时完全解决了这个问题。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的泛型类型语法不同：`type Stack[T any] struct { items []T }`，类型参数列表放在类型名后。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的泛型类语法相同，但强调所有权：`struct Stack<T> { items: Vec<T> }`。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>两个不同类型参数的类实例是完全独立的类型，`Stack<Int64>` 和 `Stack<String>` 互不兼容。</Note>
+
+运行示例代码，观察栈的压入和弹出操作，然后修改代码创建一个存储字符串的栈。

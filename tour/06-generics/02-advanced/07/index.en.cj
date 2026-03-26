@@ -1,3 +1,21 @@
-main(): Unit {
-    println("Generics complete!")
+main() {
+    println("====================================")
+    println("  Advanced Generics - Complete!")
+    println("====================================")
+    println("")
+    println("In this chapter you learned:")
+    println("  ✓ Type constraints (where T <: Interface)")
+    println("  ✓ Invariance of generic types")
+    println("  ✓ Type aliases")
+    println("  ✓ Multiple constraints (T <: A & B)")
+    println("  ✓ Generic container design patterns")
+    println("  ✓ const functions and compile-time evaluation")
+    println("")
+    println("Generics make your code more:")
+    println("  • Generic - applicable to multiple types")
+    println("  • Safe - compile-time type checking")
+    println("  • Efficient - const function compile-time optimization")
+    println("")
+    println("Keep learning and explore more exciting Cangjie features!")
+    println("======================================")
 }

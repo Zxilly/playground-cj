@@ -1,12 +1,14 @@
 # 练习：模式匹配
 
-来练习一下模式匹配，实现一个 `classify` 函数来描述 `Option<Int64>` 的值。
+现在来练习一下模式匹配。实现一个 `classify` 函数，根据 `Option<Int64>` 的值返回相应的描述字符串。
 
-给定一个 `Option<Int64>`，返回一个 `String`：
+要求：
 
-- `Some(n)` 且 `n > 0` → `"positive"`
-- `Some(0)` → `"zero"`
-- `Some(n)` 且 `n < 0` → `"negative"`
-- `None` → `"none"`
+- `Some(n)` 且 `n > 0` → 返回 `"positive: n"`（显示具体值）
+- `Some(0)` → 返回 `"zero"`
+- `Some(n)` 且 `n < 0` → 返回 `"negative: n"`（显示具体值）
+- `None` → 返回 `"none"`
 
-在下方提供的 `func classify` 中实现它。
+你需要使用 `match` 表达式、`enum` 模式（匹配 `Some` 和 `None`）以及模式守卫来实现。参考前面学到的知识，尝试写出完整的函数体。
+
+<Note>仓颉的 `Option<T>` 是内置类型，有 `Some(T)` 和 `None` 两个构造器。`Some(x)` 可以匹配并绑定内部的值到变量 `x`。</Note>

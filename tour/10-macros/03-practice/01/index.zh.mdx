@@ -1,7 +1,29 @@
 # 调试打印宏
 
-`dprint` 宏同时打印表达式文本和值。`@dprint(x + y)` 输出 `x + y = 5`。
+`@dprint` 宏用于调试时同时打印表达式的文本形式和计算结果。例如，`@dprint(x + y)` 会输出 `x + y = 5`，让你清晰看到表达式和值的对应关系。
 
-普通函数做不到这一点——它们只能获取计算后的值，无法获取源代码文本。宏通过 `input.toString()` 将表达式捕获为字符串。
+这种功能普通函数无法实现。函数只能接收计算后的值，无法获取原始的源代码文本。宏之所以能做到，是因为它在编译期工作，能够访问源代码的 token 序列，通过 `input.toString()` 将表达式捕获为字符串。
 
-下面的示例使用 `@Assert` 验证来模拟 `dprint` 的行为。
+下面的代码模拟了 `@dprint` 的效果。虽然没有实际定义宏，但展示了宏展开后生成的代码形式。宏会将 `@dprint(x + y)` 展开为两行代码：先打印表达式文本，再打印计算结果。
+
+这种调试手段在实际开发中非常实用，可以快速检查多个变量的状态。试试修改表达式，观察输出变化。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 可以通过 `#` 运算符获取宏参数的文本形式，但这是预处理阶段的纯文本操作，没有仓颉的类型安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 没有编译期宏，调试需要手动使用 `System.out.println()` 或日志框架。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的宏也可以通过 `stringify!` 获取表达式文本，但需要显式调用。仓颉的 `@dprint` 将这种模式封装成更简洁的形式。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有宏系统，无法在编译期捕获表达式文本。调试时需要手动打印变量名和值。
+</CompareWith>
+
+</CompareGroup>

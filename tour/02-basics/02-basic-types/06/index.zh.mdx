@@ -1,3 +1,31 @@
 # Unit 与 Nothing
 
-`Unit` 是执行完毕但不产生有意义值的表达式类型，例如 `println`。`Nothing` 是不会正常完成的表达式类型，例如 `break`。
+`Unit` 类型表示"执行完毕但没有有意义的返回值"。它的唯一值是 `()`，诸如 `println`、赋值表达式、循环表达式等副作用操作都是 `Unit` 类型。
+
+`Nothing` 是一种特殊的类型，它不包含任何值，并且是所有类型的子类型。`break`、`continue`、`return` 和 `throw` 表达式的类型都是 `Nothing`——程序执行到这些表达式时，它们之后的代码将不会被执行。
+
+这两个类型主要用于类型系统和控制流的语义表达，帮助编译器进行类型推断和流程分析。右侧代码展示了 `Unit` 和 `Nothing` 的典型使用场景。
+
+<Note>`Nothing` 目前还不能在类型标注中显式使用，它主要用于编译器的类型推断。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 用 `void` 表示函数无返回值；仓颉用 `Unit` 类型更一致，所有表达式都有类型。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 用 `void` 表示无返回值；仓颉的 `Unit` 是一个真实的类型，其值为 `()`，更统一。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 用 `func foo() {}` 表示无返回值的函数，这实际上是返回 `struct{}` 类型。Go 没有 `Nothing` 的等价概念，`panic`、`break` 等不返回但类型系统不体现这一点。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `()` 类型对应仓颉的 `Unit`，表示空元组。Rust 的 `!` 类型（never type）对应仓颉的 `Nothing`，表示永远不会返回的表达式，如 `return`、`panic!` 等。
+</CompareWith>
+
+</CompareGroup>
+
+试着运行代码，观察 `println` 的返回值和 `break` 之后的代码执行情况。

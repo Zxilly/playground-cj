@@ -1,7 +1,31 @@
-# Tokens
+# Token and Tokens Types
 
-`Tokens` is a sequence of `Token` objects representing a fragment of source code. Each `Token` has a `kind` (like `TokenKind.IDENTIFIER` or `TokenKind.INTEGER_LITERAL`) and a string `value`.
+`Tokens` is the fundamental type for Cangjie macro operations, representing a program fragment. A `Tokens` consists of multiple `Token` objects, where each `Token` is a lexical unit: an identifier, literal, keyword, or operator.
 
-You can construct tokens with `Token(kind, value)` and combine them with `+`.
+Each `Token` contains a type (`kind`, taking a `TokenKind` enum value) and content (`value`). You can manually construct any `Token` using `Token(kind, value)`, for example `Token(TokenKind.IDENTIFIER, "x")` constructs the identifier `x`.
 
-Change `"1"` to `"42"` in the first token and run the program to see the updated output.
+`Tokens` supports concatenation operations: `+` can concatenate two `Tokens`, or concatenate `Tokens` with a `Token`. The code on the right demonstrates how to manually construct three `Token` objects and combine them into a `Tokens` representing `1 + 2`, then iterate through to view each `Token`'s type and value.
+
+Modify the `Token` construction parameters by changing `"1"` to `"42"` and observe the output changes.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C macros use text substitution; there is no concept of Token. Cannot manipulate and inspect code fragments like Cangjie.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's Annotation Processors can access the AST but have no direct Token representation, making code transformation more difficult.
+</CompareWith>
+
+<CompareWith lang="go">
+Go does not have a macro system and cannot manipulate code fragments as data at compile time.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's procedural macros use the `TokenStream` type, which is conceptually similar but has a different API. Cangjie's `Token` explicitly includes `kind` and `value`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`Token` also has position information (line number, column number) used for compile error location. The `dump()` method can print complete debug information.</Note>

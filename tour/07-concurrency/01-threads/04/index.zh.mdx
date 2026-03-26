@@ -1,5 +1,29 @@
 # Sleep
 
-`sleep` 让当前线程暂停指定时长，其他线程继续运行。
+`sleep` 函数让当前线程暂停执行指定的时长，期间其他线程可以继续运行。参数类型为 `Duration`，可以使用 `Duration.second`、`Duration.millisecond` 等时间单位。
 
-此处倒计时逐个打印数字，每次休眠 200 毫秒，最后打印 "go"。时间单位为 `Duration.millisecond`。
+`Duration` 支持常见的运算：乘法（如 `200 * Duration.millisecond`）、加法、减法等。如果 `dur <= Duration.Zero`，线程只会让出执行资源，不会真正睡眠。
+
+右侧示例是一个倒计时程序：每次打印剩余秒数后休眠 200 毫秒，最后打印 "go"。通过休眠可以观察到线程的交替执行效果。
+
+<Note>实际休眠时间可能略长于指定时长，因为线程唤醒还需要调度器的参与。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 使用 `sleep()` 或 `usleep()` 函数，参数通常是秒数或微秒数，缺乏统一的时间类型抽象。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `Thread.sleep(milliseconds)`，只接受毫秒数，需要手动计算单位转换；仓颉的 `Duration` 更灵活。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `time.Sleep(duration)`，参数为 `time.Duration` 类型。仓颉的 `sleep(Duration)` 几乎完全一致。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `std::thread::sleep(Duration)`，也是 `Duration` 类型参数。仓颉的时间 API 与 Rust 非常相似。
+</CompareWith>
+
+</CompareGroup>

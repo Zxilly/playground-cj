@@ -1,13 +1,31 @@
-# Collection Conversions
+# Collection Conversion
 
-Data can move between collection types via constructors.
+Cangjie allows converting data between different collection types, choosing the type most suitable for each processing step.
 
-```cangjie
-let idList = ArrayList<Int64>(rawIds)
-let uniqueIds = HashSet<Int64>(idList)
-let scores = HashMap<String, Int64>(pairs)
-```
+`Array` can initialize an `ArrayList` by passing the array to the constructor. `ArrayList` can initialize a `HashSet` for automatic deduplication. An array of tuples can initialize a `HashMap`, for example `[("key1", val1), ("key2", val2)]`.
 
-An `Array` can initialize an `ArrayList`, an `ArrayList` can initialize a `HashSet` to remove duplicates, and an array of tuples can initialize a `HashMap`.
+This flexibility lets you use the most appropriate collection type at different stages: use `ArrayList` during collection to preserve order and duplicates, convert to `HashSet` for deduplication, and use `HashMap` for indexed lookups.
 
-Add a duplicate ID to `rawIds` and confirm that `uniqueIds.size` stays the same.
+The code on the right demonstrates conversions from array to `ArrayList`, from `ArrayList` to `HashSet` (deduplication), and from tuple array to `HashMap`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no collection type conversion; elements must be manually copied. Cangjie's constructors provide automatic conversion mechanisms.
+</CompareWith>
+
+<CompareWith lang="java">
+Java collections can be converted through constructors, like `new HashSet<>(list)`. Cangjie's constructor style is similar and supports multiple conversions.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's collection types require manual conversion between each other, without unified constructors. Cangjie provides convenient type conversion through constructor overloading.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's collections can also convert between each other, such as `Vec::from(slice)` or `HashSet::from_iter(vec)`. Cangjie's constructor style is more unified.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Collection conversion creates a new instance and won't affect the original collection. `HashSet` will automatically remove duplicate elements.</Note>

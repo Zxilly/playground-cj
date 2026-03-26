@@ -1,3 +1,31 @@
-# Simple C call
+# Calling C Standard Library Functions
 
-To call a C library function like `abs()`, declare it with `foreign` and call it inside `unsafe`. When compiling, link the C runtime with `cjc main.cj -lc`. The `foreign` declaration maps Cangjie types to their C equivalents at link time.
+Cangjie uses the `foreign` keyword to declare external C functions, enabling you to directly call C standard library or custom C code. Since C functions may perform unsafe operations, all calls must be wrapped in `unsafe` blocks.
+
+The `foreign` declaration only provides the function signature; the actual implementation resides on the C side. Parameters and return types must follow Cangjie-to-C type mapping rules: for example, `Int32` corresponds to C's `int32_t`, and `UIntNative` corresponds to `size_t`. When using `@C` to decorate `foreign` declarations, it can be omitted since this is the default behavior.
+
+The code on the right declares the `abs` and `rand` functions from the C standard library and calls them within `unsafe` blocks. At compile time, you need to link the C runtime library using `cjc main.cj -lc`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, you directly call functions defined in the same program, such as `printf`, without needing to declare them—just include the correct header file.
+</CompareWith>
+
+<CompareWith lang="java">
+Java loads native libraries through JNI's `System.loadLibrary()`, then declares `native` methods to call them. Type mapping is more complex than Cangjie.
+</CompareWith>
+
+<CompareWith lang="go">
+Go declares C functions through `import "C"` and special comment blocks. Calls don't require `unsafe` blocks, but need to be accessed through the `C.` prefix.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `extern "C"` to declare external functions, and calls also require `unsafe` blocks. Cangjie's `foreign` is similar to this.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`foreign` functions can only have declarations, not implementations. Variadic arguments are represented using `...`, such as `printf(fmt: CString, ...): Int32`.</Note>
+
+Try adding a call to a foreign function on line 16 and see what compilation error occurs.

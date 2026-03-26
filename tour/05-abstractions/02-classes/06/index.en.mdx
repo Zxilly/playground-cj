@@ -1,7 +1,25 @@
 # Abstract Classes
 
-An `abstract class` declares methods without a body. Subclasses must implement all abstract methods. An abstract class cannot be instantiated directly.
+`abstract class` defines abstract classes, which can declare methods without implementations (abstract methods). Abstract classes themselves cannot be instantiated—they are incomplete templates that must be completed by subclasses. Subclasses must implement all abstract methods, otherwise they must also be declared as abstract classes.
 
-In this example, `Shape` declares `area()` and `label()` as abstract. The concrete `describe()` calls them, dispatching to the subclass at runtime.
+Abstract methods are declared with `func` but provide no function body. Abstract classes can also contain concrete methods (with function bodies), and these concrete methods can call abstract methods—runtime will dispatch to the subclass implementation. This design pattern is commonly used to define algorithm frameworks (template method pattern).
 
-Try writing `Shape()` in `main` and observe the compile error.
+The `Shape` below is an abstract class that declares two abstract methods: `area()` and `label()`. Concrete `Circle` and `Rectangle` must implement them. The abstract class's `describe()` method calls these abstract methods, forming a template method.
+
+<Note>
+Attempting to create an instance with `Shape()` will result in a compilation error—abstract classes cannot be instantiated.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java's `abstract class` uses `abstract` to mark abstract methods. Cangjie's abstract methods simply leave the function body empty.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have the concept of abstract classes; it uses interfaces to define behavior. Cangjie's abstract classes can contain concrete methods and member variables.
+</CompareWith>
+
+</CompareGroup>
+
+Try writing `Shape()` in `main()` and observe the compilation error message.

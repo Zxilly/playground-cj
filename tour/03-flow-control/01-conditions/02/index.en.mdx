@@ -1,5 +1,31 @@
-# If as Expression
+# if Expressions
 
-In Cangjie, `if` is an expression -- it returns a value. Both branches must produce a value of the same type.
+In Cangjie, `if` is not only a statement but can also be used as an expression - it can return a value. When an `if` expression with an `else` branch is assigned to a variable, the last expression in each branch's code block becomes that branch's return value.
 
-Try changing `temperature` on line 2 to `35` and see which value gets assigned to `weather`.
+All branches must return values of the same type. If one branch returns a string and another returns an integer, the compiler will report an error - this ensures that `if` expressions always have a definite type.
+
+If an `if` expression is not assigned to a variable, its type is `Unit`, and there's no need to worry about the return types of each branch. An `if` expression without an `else` also has type `Unit`, since it might not execute any branch.
+
+The code on the right shows how to directly assign the result of an `if` expression to a variable. This approach is more concise than declaring a variable first and then assigning it with `if`. Try modifying the value of `temperature` to see how `weather` changes.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `if` is a statement, not an expression, and cannot directly return a value. Usually you need to use the ternary operator `?:` or variable assignment.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `if` is also a statement, not an expression, and cannot be used as an rvalue. Java uses the ternary operator `? :` for conditional assignment.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `if` is also an expression that can directly return a value assigned to a variable, with similar syntax to Cangjie.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `if` is a statement, not an expression, and cannot directly return a value. You need to use variable assignment or other approaches to achieve similar functionality.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>If an `if` expression is used for assignment, all branches must return values of the same type.</Note>

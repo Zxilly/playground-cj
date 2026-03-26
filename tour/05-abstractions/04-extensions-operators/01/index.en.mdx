@@ -1,27 +1,71 @@
 # Direct Extensions
 
-`extend` adds methods to an existing type without modifying its definition.
+Extensions allow you to add new functionality to a type without modifying its original definition. Use the `extend` keyword to declare an extension, followed by the type being extended and the new members enclosed in braces.
 
-```cangjie
-extend Int64 {
-    func isEven(): Bool {
-        return this % 2 == 0
-    }
-}
-```
+Extensions can add member functions, member properties, and operator overloading functions. The code on the right adds three utility functions to the `Int64` type: `isEven()` to check for even numbers, `isPositive()` to check for positive numbers, and `abs()` to calculate absolute values.
 
-The extended methods are called with normal dot syntax. The value is still an `Int64`; the extension only adds behavior.
+Instances of the extended type can call extension functions just like native methods. Extensions only add behavior without changing the type itself or breaking the encapsulation of the original type.
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C has no concept of methods or extensions; you must write standalone functions and explicitly pass object pointers, like `isEven(&number)`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java requires creating utility classes or subclasses to extend functionality. Cangjie's direct extensions are more concise, allowing you to add methods without inheritance.
+</CompareWith>
+
 <CompareWith lang="go">
-Go does not support extending types you don't own. You must define a new named type (`type MyInt int`) and add methods to that instead.
+Go does not support extensions or method additions; you need to use standalone functions or include all methods at definition time.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses `impl` blocks or trait implementations to add methods. You can add methods to foreign types only by implementing your own trait on them (the orphan rule).
+Rust can define "extension traits" for any type, but the syntax is more complex, requiring a trait definition + impl block.
 </CompareWith>
 
 </CompareGroup>
 
-Add an `isOdd()` method to the extension and call it on `-7` to verify it returns `true`.
+<Note>Extensions cannot access `private` members of the extended type, nor can they shadow existing members.</Note>
+
+Click <Highlight target="run">Run</Highlight> to see how the extended `Int64` uses the new methods, and try adding extension functions to `String`.
+
+CJ:
+// Add utility functions to Int64
+extend Int64 {
+    // Check if the number is even
+    func isEven(): Bool {
+        return this % 2 == 0
+    }
+
+    // Check if the number is positive
+    func isPositive(): Bool {
+        return this > 0
+    }
+
+    // Calculate absolute value
+    func abs(): Int64 {
+        if (this < 0) {
+            return -this
+        }
+        return this
+    }
+
+    // Check if within specified range
+    func inRange(low: Int64, high: Int64): Bool {
+        return this >= low && this <= high
+    }
+}
+
+main() {
+    let numbers = [42, -7, 0, 15, -100]
+    
+    for (n in numbers) {
+        println("Number ${n}:")
+        println("  Is even: ${n.isEven()}")
+        println("  Is positive: ${n.isPositive()}")
+        println("  Absolute value: ${n.abs()}")
+        println("  In range 0-50: ${n.inRange(0, 50)}")
+        println()
+    }
+}

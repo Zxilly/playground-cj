@@ -1,3 +1,23 @@
 # CFunc 函数指针
 
-`CFunc<(Params) -> Return>` 是 C 函数指针的类型。创建 `CFunc` 有三种方式：`foreign` 函数、`@C` 注解的仓颉函数，或者不捕获变量的 `CFunc` 类型 lambda。调用 `CFunc` 值需要在 `unsafe` 上下文中进行。
+`CFunc<(Params) -> Return>` 是仓颉中表示 C 函数指针的类型。它对应 C 语言中的函数指针类型，可以用于 C 和仓颉之间的函数传递。
+
+在仓颉中创建 `CFunc` 有三种方式。第一种是 `foreign` 声明的函数，它自动成为 `CFunc` 类型。第二种是用 `@C` 注解修饰的仓颉函数，使其可以被 C 代码调用。第三种是标记为 `CFunc` 类型的 lambda 表达式，但注意它不能捕获任何变量。
+
+调用 `CFunc` 类型的值必须在 `unsafe` 上下文中进行，因为函数指针可能为空或指向无效地址。右侧代码展示了三种创建和使用 `CFunc` 的方式。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 语言使用函数指针类型如 `int (*)(int)`，仓颉使用泛型类型 `CFunc<(Int32) -> Int32>` 更清晰。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不直接支持函数指针与 C 互操作，需要使用 cgo。仓颉的 `CFunc` 设计使得 FFI 更加直观。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`CFunc` 类型的 lambda 不能捕获变量，否则会编译错误。这保证了它可以安全地转换为 C 函数指针。</Note>
+
+试着添加一个新的 `@C` 函数，并在 main 中调用它。

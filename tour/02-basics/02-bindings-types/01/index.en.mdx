@@ -1,7 +1,29 @@
-# let (Immutable)
+# let (Immutable Binding)
 
-The `let` statement declares an immutable binding. Once assigned, the value cannot be changed.
+`let` declares an immutable binding. Once initialized, it cannot be reassigned. This is the default choice for variable declarations in Cangjie—preferring immutable bindings makes code easier to understand and reason about.
 
-Cangjie does not allow variable shadowing in the same scope -- `let x = 1; let x = 2` is a compile error.
+Immutable binding only means that the binding itself cannot point to another value. If it holds a reference to a mutable object, the object's content can still be modified.
 
-Uncomment line 11 to see the compile error when reassigning a `let` binding.
+The code on the right demonstrates three immutable bindings. `text` declares its type first and is assigned later—this is allowed for local variables, but the initialization must be completed before it's referenced. Try uncommenting line 10 to see what error the compiler reports when reassigning a `let` binding.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no native immutable variable support; `const` is compile-time. Cangjie's `let` guarantees immutability at compile and runtime.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `final` for immutable variables, semantics similar to Cangjie's `let`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `:=` short declaration or `var` to declare variables, all variables are mutable by default. Cangjie's `let` is similar to Go's constants, but constants must use `const`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `let` is also immutable by default, but allows shadowing within the same scope. Cangjie does not allow variable shadowing with the same name.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Global variables and static member variables must be initialized at declaration time and cannot be assigned later.</Note>

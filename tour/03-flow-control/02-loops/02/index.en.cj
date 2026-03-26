@@ -1,28 +1,35 @@
 main() {
-    // Iterate over an array
-    let fruits = ["苹果", "香蕉", "橘子"]
+    // Iterate over array
+    let fruits = ["apple", "banana", "orange", "grape"]
     for (fruit in fruits) {
-        println("水果: ${fruit}")
+        println("Fruit: ${fruit}")
     }
-
-    // Iterate over a range
-    print("数字: ")
-    for (i in 0..5) {
+    
+    // Iterate over range and calculate sum
+    var sum = 0
+    for (i in 1..=5) {
+        sum += i
+    }
+    println("Sum of 1 to 5: ${sum}")
+    
+    // Use where to filter odd numbers
+    print("Odd numbers from 0 to 10: ")
+    for (i in 0..10 where i % 2 == 1) {
         print("${i} ")
     }
     println("")
-
-    // Filter with where
-    print("偶数: ")
-    for (i in 0..10 where i % 2 == 0) {
-        print("${i} ")
-    }
-    println("")
-
-    // Wildcard pattern
+    
+    // Use wildcard _ to ignore iteration variable
     var count = 0
     for (_ in 0..5) {
         count++
     }
-    println("循环了 ${count} 次")
+    println("Loop executed ${count} times")
+    
+    // Iterate over array of tuples and destructure
+    let points = [(0, 0), (3, 4), (6, 8)]
+    println("Coordinate points:")
+    for ((x, y) in points) {
+        println("  (${x}, ${y})")
+    }
 }

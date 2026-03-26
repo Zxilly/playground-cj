@@ -1,7 +1,33 @@
-# foreign
+# foreign Declarations
 
-`foreign` declares a C function to call from Cangjie. It has a signature but no body -- the linker resolves it at compile time.
+The `foreign` keyword is used to declare an external C function with only a function signature and no function body—the linker resolves the actual implementation at compile time. Calls to `foreign` functions must be made within an `unsafe` block because C code may perform unsafe operations.
 
-Calling a `foreign` function requires an `unsafe` block.
+Cangjie has explicit type mappings with C basic types: `Int32` corresponds to `int32_t`, `Int64` corresponds to `int64_t`, and `Unit` corresponds to `void`. Parameters and return types must conform to C and Cangjie type mapping requirements.
 
-Try adding `foreign func srand(seed: UInt32): Unit` and calling it before `rand()`.
+Functions declared with `foreign` do not support named parameters and default values, but support variadic parameters (indicated by `...`). The `@C` annotation can be omitted on `foreign` declarations, as the compiler will automatically infer it.
+
+<Note>
+`foreign` can only modify function declarations, not variables, classes, or interfaces. Functions modified by `foreign` cannot have a function body.
+</Note>
+
+The example below declares C standard library functions `rand()`, `abs()`, and `srand()`, and calls them within `unsafe` blocks. Try adding a call to `srand()` to set the random seed.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, declaring external functions only requires a function prototype, such as `int rand();`. There is no concept of unsafe; all C code is treated as external functions by default.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses JNI (Java Native Interface) to declare native methods with the `native` modifier. Calling native code doesn't require an `unsafe` block, but it requires loading a native library.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `extern "C" { fn rand() -> i32; }` to declare external functions, and also requires `unsafe` blocks when calling them.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `//go:linkname` or the cgo tool to call C functions with different syntax, but both emphasize safety isolation.
+</CompareWith>
+
+</CompareGroup>

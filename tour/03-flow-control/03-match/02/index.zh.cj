@@ -6,7 +6,7 @@ main() {
         case "A" => println("优秀")
         case "B" => println("良好")
         case "C" => println("及格")
-        case _ => println("其他")
+        case _ => println("其他等级")
     }
 
     // 使用 | 匹配多个值
@@ -19,4 +19,11 @@ main() {
         case _ => "无效月份"
     }
     println("${month}月是${season}")
+
+    // 多值匹配也可以用于布尔值和其他类型
+    let isWeekend = true
+    match (isWeekend) {
+        case true => println("可以休息了！")
+        case false => println("继续努力工作")
+    }
 }

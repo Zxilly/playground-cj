@@ -1,7 +1,31 @@
 # Interpolation
 
-Inside `quote(...)`, use `$(expr)` to splice a `Tokens` value into the generated code. This is how macros insert captured code fragments or computed strings into the output.
+Inside `quote(...)`, use `$(expr)` to insert an expression into the generated code. This is how macros splice captured code fragments or computed values into the output.
 
-`$(input)` inserts tokens as code. `$(input.toString())` inserts the string representation.
+The interpolation expression type must support conversion to `Tokens` (i.e., implement the `ToTokens` interface). In the standard library, `Token`, `Tokens`, all syntax node types, basic data types (integers, floating-point numbers, `Bool`, `Rune`, `String`), and `Array<T>` and `ArrayList<T>` all support interpolation.
 
-Change the variable name `inputStr` to something else and verify the macro still works.
+The example on the right demonstrates the `dprint` debug macro: `$(inputStr)` inserts the string value (yielding `"x + y"`), while `$(input)` inserts the original Tokens (yielding `x + y` code). This allows printing both the expression itself and its value.
+
+Rename `inputStr` to `exprText` and verify the macro still works correctly.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C macros can perform simple text interpolation but with limited functionality; no true variable support.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's Annotation Processors must manually build code strings; no built-in interpolation mechanism provided.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `fmt.Printf` uses `%v` placeholder, but this is runtime formatting, not compile-time code generation.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `quote!` uses `#variable` for interpolation, same concept but different syntax. Rust also supports `##` for repeated interpolation.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`input.toString()` returns the string representation of the code fragment, suitable for debug output. While `$(input)` directly inserts the code itself, which will be compiled and executed.</Note>

@@ -1,5 +1,31 @@
 # 访问规则
 
-扩展位于原类型定义之外，因此只能访问类型的公开成员，无法触及私有或内部字段。
+扩展位于原类型定义之外，必须遵守访问控制规则。扩展只能访问被扩展类型的 `public` 和 `protected` 成员，无法触及 `private` 修饰的私有字段和方法。
 
-此处对 `Rectangle` 的扩展仅通过公开的 `width` 和 `height` 来计算 `area()`、`perimeter()`、`isSquare()` 和 `describe()`。
+右侧代码中的 `Rectangle` 结构体有私有的 `_tag` 字段和公开的 `width`、`height` 字段。扩展中定义的 `area()`、`perimeter()`、`isSquare()` 等函数只能通过公开字段来计算，无法访问 `_tag`。
+
+扩展不能遮盖被扩展类型的已有成员，也不能遮盖其他扩展中定义的非 `private` 成员。这确保了类型行为的确定性。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有明确的访问控制，通常依赖文件作用域和约定；扩展概念也不存在。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的方法可以通过反射访问私有字段（需反射相关代码），而仓颉通过编译器直接在扩展阶段强制执行访问控制。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 只有大小写约定决定可见性，扩展（如果有的化）只能访问首字母大写的成员。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 trait 实现可以访问所有字段（在同一模块内），跨模块时受可见性约束。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>扩展本身不能使用访问修饰符，但扩展成员可以使用 `public`、`private`、`protected` 等修饰符。</Note>
+
+尝试在扩展中访问私有字段，观察编译器的错误提示。

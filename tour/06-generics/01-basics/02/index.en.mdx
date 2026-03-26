@@ -1,7 +1,31 @@
 # Generic Structs
 
-In addition to generic functions, Cangjie supports generic types. A struct can be parameterized with type parameters, which is useful for reusable data structures.
+Structs can be generalized using type parameters to create reusable data structures. Type parameters are declared in angle brackets after the struct name, and can then be referenced in fields, method parameters, and return types.
 
-`Pair<T, U>` stores two values of potentially different types. Methods on the struct return the exact types the caller specified.
+`Pair<T, U>` stores two values of possibly different types. Type parameters are used throughout the struct definition: the field `first` has type `T`, the field `second` has type `U`, and method return types also use these type parameters. Concrete type arguments must be specified when instantiating.
 
-Change `Pair<String, Int64>` to `Pair<Bool, Float64>` and update the constructor arguments.
+Structs are value types, and instances are copied when assigned or passed as parameters. Two variables of type `Pair<Int64, String>` each have their own independent data, and modifying one does not affect the other. This differs from classes (reference types).
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C requires hand-writing a struct for each type combination, like `struct IntStringPair` and `struct StringBoolPair`, resulting in repetitive and error-prone code.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's generic struct type parameters are erased at runtime, preventing execution of different operations based on specific type values; Cangjie generates code for each type at compile time.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have struct generic syntax sugar; typically `interface{}` or code generation is used to implement similar functionality.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's generic struct syntax is almost identical: `struct Pair<T, U> { first: T, second: U }`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Generic structs with different type arguments are different types; `Pair<Int64, String>` and `Pair<String, Int64>` are incompatible with each other.</Note>
+
+Run the example code, then change `Pair<String, Int64>` to `Pair<Bool, Float64>` and create a new instance.

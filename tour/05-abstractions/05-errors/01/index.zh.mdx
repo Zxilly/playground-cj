@@ -1,5 +1,23 @@
 # 异常层次结构
 
-异常以 `Exception` 为根形成层次结构。`IndexOutOfBoundsException` 和 `ArithmeticException` 等具体类型继承自它。
+仓颉中的异常以 `Exception` 为根形成层次结构。标准库提供了多种异常类型，如 `IndexOutOfBoundsException`（数组越界）、`ArithmeticException`（算术错误）、`IllegalArgumentException`（非法参数）等，它们都继承自 `Exception`。
 
-`catch` 块优先匹配最具体的异常类型。如果把通用的 `catch (e: Exception)` 放在具体类型之前，后者会被遮蔽，因此具体的 catch 应写在前面。
+当 `try` 块中有多个 `catch` 子句时，异常会从上到下依次匹配。一旦某个 `catch` 匹配成功，后面的 `catch` 都会被跳过。因此，更具体的异常类型应该放在更通用的异常类型之前。
+
+如果把通用的 `catch (e: Exception)` 放在具体类型之前，后面的具体异常类型将永远无法被匹配。编译器会对此发出警告。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 使用 `panic` 和 `recover`，没有异常类型层次结构。仓颉的异常机制类似 Java，支持类型层次和多重 catch。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的异常检查机制要求声明受检异常。仓颉的异常都是非受检的，类似 Java 的 RuntimeException。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>异常匹配是运行时行为，编译器只会对明显不可达的 `catch` 块发出警告。</Note>
+
+尝试修改代码，将第一个 catch 块改为捕获 `Exception`，观察编译器的警告信息。

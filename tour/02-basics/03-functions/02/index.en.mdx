@@ -1,11 +1,67 @@
-# Implicit Return
+# Implicit Returns
 
-The last expression in a function body is its return value. No `return` keyword is needed.
+In Cangjie, the last expression in a function body is automatically returned without explicitly writing the `return` keyword. This style makes the code more concise, especially for simple calculation functions.
 
-```cangjie
+The type of the function body depends on the type of the last expression: if the last item is an expression, the function body type is that expression's type; if the last item is a variable definition or function declaration, the function body type is `Unit`. The compiler infers the return value based on the function body type.
+
+The code on the right shows three functions using implicit returns: `multiply` returns the product of two numbers, `isPositive` checks if a number is positive, and `describe` returns a description string. The last expression of each function is the return value.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C requires explicit `return` statements and doesn't support implicit returns. Function bodies typically end with `return value;`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java also requires explicit `return` statements and cannot omit them. Java methods must explicitly specify the return type and don't support implicit returns.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't support implicit returns and requires explicit `return` statements. Cangjie's implicit returns are similar to Rust and Ruby, reducing boilerplate code.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust also supports implicit returns, where the value of the last expression in a function is the return value. The syntax is nearly identical in both, and neither requires a trailing semicolon (adding one turns it into a statement, returning `()`).
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Don't add a semicolon after an implicitly returned expression, or it becomes a statement and the return type becomes `Unit`.</Note>
+
+Click <Highlight target="run">Run</Highlight> to observe the output, then try modifying `isPositive` to check for negative numbers.
+
+CJ:
+// Implicit return: the last expression is the return value
 func multiply(a: Int64, b: Int64): Int64 {
-    a * b
+    a * b  // No return keyword needed
 }
-```
 
-Try adding `return` before `a * b` on line 2 -- both forms are valid.
+// Implicit return of a boolean value
+func isPositive(n: Int64): Bool {
+    n > 0  // The result of this comparison expression is the return value
+}
+
+// Implicit return of a string
+func describe(name: String, age: Int64): String {
+    "${name} is ${age} years old"  // String interpolation expression as return value
+}
+
+// Mixed usage: can use return in the middle, with implicit return at the end
+func abs(n: Int64): Int64 {
+    if (n < 0) {
+        return -n  // Early return
+    }
+    n  // Return value for positive numbers
+}
+
+main() {
+    println("6 × 7 = ${multiply(6, 7)}")
+    
+    println("Is -5 positive? ${isPositive(-5)}")
+    println("Is 10 positive? ${isPositive(10)}")
+    
+    println(describe("Xiaoming", 25))
+    
+    println("|-8| = ${abs(-8)}")
+    println("|15| = ${abs(15)}")
+}

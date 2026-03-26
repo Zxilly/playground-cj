@@ -1,7 +1,25 @@
-# Method Override
+# Method Overriding
 
-A method marked `open` in the parent can be overridden in a subclass with `override`. Without `open`, the compiler rejects the override.
+Methods marked with `open` in the parent class can be overridden by subclasses. When overriding, subclasses must use the `override` keyword, which both clarifies intent and lets the compiler help check for spelling errors. Methods without the `open` marker cannot be overridden; attempting to override will result in a compilation error.
 
-In this example, `Circle` and `Square` override `area()` and `label()`. The base `describe()` dispatches to the overridden versions at runtime.
+Overridden methods maintain the same signature as the parent class (function name, parameters, return type). At runtime, even when called through a parent class reference, it automatically dispatches to the subclass version—this is dynamic dispatch, the core mechanism of object-oriented polymorphism.
 
-Try removing `open` from `area()` on line 2 and observe the compile error.
+The `Circle` and `Square` classes below both override `area()` and `label()`. When the base class's `describe()` calls these methods, the runtime correctly invokes the subclass versions, calculating their respective areas and labels.
+
+<Note>
+The dual constraints of `open` and `override` both ensure clear design intent and prevent accidental overriding of parent class methods.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java methods are overridable by default, requiring `final` to prevent. Cangjie is the opposite: not overridable by default, requiring `open` to allow.
+</CompareWith>
+
+<CompareWith lang="c#">
+C# also requires `virtual` and `override`, similar to Cangjie's `open` and `override` design philosophy.
+</CompareWith>
+
+</CompareGroup>
+
+Try removing the `open` modifier from the `area()` method in the `Shape` class and observe the compilation error.

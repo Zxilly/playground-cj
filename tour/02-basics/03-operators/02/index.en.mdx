@@ -1,9 +1,31 @@
 # Comparison and Logical Operators
 
-`==`, `!=`, `<`, `>=` compare values and produce a `Bool`. `&&` (and), `||` (or), `!` (not) combine boolean values.
+Comparison operators are used to compare two values and return a `Bool` type result. Cangjie supports six comparison operators: equal (`==`), not equal (`!=`), less than (`<`), less than or equal (`<=`), greater than (`>`), and greater than or equal (`>=`). The two operands being compared must be of the same type.
 
-```cangjie
-let canDrive = age >= 18 && hasLicense
-```
+Logical operators are used to combine boolean values: `&&` (logical AND) returns `true` when both operands are `true`; `||` (logical OR) returns `true` when either operand is `true`; `!` (logical NOT) negates a boolean value. Logical operators support short-circuit evaluation: for `a && b`, if `a` is `false`, then `b` will not be evaluated; for `a || b`, if `a` is `true`, then `b` will not be evaluated.
 
-Try changing `&&` to `||` on line 21 and see how the result changes.
+These operators are commonly used in conditional statements to combine multiple conditions into complex logical expressions.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's comparison operators are the same, but any expression can be used in conditional checks (0 is false, non-zero is true). Cangjie strictly requires boolean types.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's comparison and logical operators are identical to Cangjie's, both strictly requiring boolean types for conditional checks.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's comparison and logical operators are identical to Cangjie's, including short-circuit evaluation behavior.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's comparison operators are the same, but the logical operators `&&` and `||` can only be used for boolean types, not for bitwise operations.
+</CompareWith>
+
+</CompareGroup>
+
+The code on the right demonstrates the basic usage of comparison operators and logical operators, and how to combine them for complex conditional judgments. Try changing `&&` to `||` and observe the result changes.
+
+<Highlight target="run">Run</Highlight> to see the output, and try modifying conditional expressions to understand operator behavior.

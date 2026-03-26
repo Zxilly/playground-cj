@@ -1,3 +1,23 @@
-# 读取元数据
+# 通过反射读取注解
 
-在运行时，`TypeInfo` 可以读取附加在类型或成员上的注解元数据。这使框架能够自动发现带注解的元素并对其进行处理。
+定义注解本身没有意义，关键是在运行时能够读取并使用这些元数据。仓颉的 `TypeInfo` 提供了 `findAnnotation` 方法，可以根据注解类型查找附加在类型上的注解实例。
+
+`findAnnotation` 返回一个 `Option` 类型：如果找到对应注解，返回 `Some(注解实例)`；否则返回 `None`。通过模式匹配可以安全地提取和使用注解信息。注解不会被继承——子类不会自动拥有父类的注解元数据。
+
+右侧代码定义了 `@Author` 注解并应用到多个类上，然后通过反射遍历对象数组，读取每个对象的作者信息。
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java 使用 `getAnnotation(Class)` 或 `getAnnotations()` 获取注解。仓颉的 `findAnnotation` 返回 Option 类型，更安全。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有原生的注解机制，通常使用结构体标签（struct tag）配合反射实现类似功能。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>注解不会被子类继承。如果需要查询父类的注解，必须显式地通过反射访问父类型。</Note>
+
+试着为 `PluginA` 添加 `@Author` 注解，或创建新的带注解类，观察输出变化。

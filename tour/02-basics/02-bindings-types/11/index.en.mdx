@@ -1,10 +1,29 @@
-# Arithmetic
+# Arithmetic Operators
 
-Cangjie supports `+`, `-`, `*`, `/`, and `%` (remainder). Parentheses control evaluation order.
+Cangjie provides standard arithmetic operators: unary negation (`-`), addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), modulo (`%`), and exponentiation (`**`). These operators work on integer and floating-point types, though modulo only supports integer types.
 
-```cangjie
-let sum = 17 + 5
-let rem = 17 % 5  // 2
-```
+For binary operators, both operands must have the same type. Integer division rounds the result toward zero, so `7 / 3` results in `2`, and `-7 / 3` results in `-2`. The modulo operation is defined as `a % b = a - b * (a / b)`, so the result's sign matches the dividend.
 
-Try adding parentheses to change the evaluation order and predict the result before running.
+The exponentiation operator `**` calculates powers. When the left operand is `Int64`, the right operand must be `UInt64`; when the left operand is `Float64`, the right operand can be `Int64` or `Float64`. Additionally, the addition operator can be used for string concatenation.
+
+The code on the right demonstrates various arithmetic operations. You can modify operands to observe the results of negative division and modulo, as well as the precedence rules of exponentiation combined with parentheses.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no exponentiation operator; requires `pow()` function, only for floating-point. Cangjie's `**` is native for both integers and floats.
+</CompareWith>
+
+<CompareWith lang="java">
+Java similarly has no exponentiation operator; requires `Math.pow()`; Cangjie's `**` is more concise.
+</CompareWith>
+
+<CompareWith lang="go">
+Go has no `**` exponentiation operator; you need to call `math.Pow()` function, which only supports floating-point exponentiation.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `**` is only for floating-point numbers; integer exponentiation requires calling the `pow()` method, while Cangjie's `**` natively supports integer exponentiation.
+</CompareWith>
+
+</CompareGroup>

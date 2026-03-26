@@ -1,5 +1,33 @@
-# 共享数据
+# 最小化临界区
 
-常见模式：每个线程先在本地完成计算，仅在写入共享集合时进入 `synchronized` 块。
+在使用互斥锁时，一个重要的原则是最小化临界区的范围。临界区越大，其他线程等待的时间就越长，并发性能就越差。
 
-此处每个 worker 在本地构造消息字符串，只在 `messages.add(...)` 时持有锁。临界区应尽量短。
+一个好的模式是：先在本地完成耗时的计算，只在需要访问共享数据的短暂时刻持有锁。这样可以显著减少锁的争用，提高程序的并发性能。
+
+右侧代码中，每个 worker 线程在本地构造消息字符串（这个操作相对耗时），只有在向共享列表添加消息时才进入 `synchronized` 块。这比在整个消息构造期间持有锁要高效得多。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中需要手动管理 lock/unlock，容易不小心在大范围内持有锁，导致性能问题。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `synchronized` 方法会锁定整个方法体，很难只锁定一小部分；仓颉的块级 `synchronized` 更灵活。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的惯例是在临界区内只操作共享数据，临界区外做耗时计算。仓颉的 `synchronized` 语法使得临界区的边界更加清晰。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 通过作用域自动释放 `MutexGuard`，临界区边界由变量生命周期决定。仓颉的 `synchronized` 通过代码块显式标记临界区。
+</CompareWith>
+
+</CompareGroup>
+
+输出会显示不同 worker 完成的消息，顺序可能因并发调度而不同。
+
+<Note>如果临界区太小（如只保护了部分共享操作），可能无法正确保护数据。关键是确保对共享数据的完整操作在临界区内。</Note>
+
+尝试将消息构造移到 `synchronized` 块内部，虽然结果相同，但性能会下降。

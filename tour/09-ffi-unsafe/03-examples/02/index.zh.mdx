@@ -1,3 +1,31 @@
-# 结构体映射
+# 结构体与内存布局
 
-要与 C 结构体互操作，需要在仓颉中定义一个匹配的 `@C struct`，字段顺序和 C 兼容类型必须一致。内存布局必须与 C 定义完全匹配。然后可以通过 `CPointer` 在 FFI 边界传递这些结构体。
+要与 C 结构体互操作，仓颉使用 `@C` 修饰的 `struct` 来对应。结构体的字段顺序、类型和内存布局必须与 C 侧定义完全匹配，这是跨语言边界传递数据的基础。
+
+`@C` 修饰的结构体自动满足 `CType` 约束，可以作为 FFI 函数的参数或返回值。但这类结构体也有严格限制：成员类型必须满足 `CType` 约束、不能实现接口、不能作为枚举的关联值类型、不允许被闭包捕获，且不能具有泛型参数。
+
+通过 `CPointer<T>` 可以在 FFI 边界传递结构体指针，配合 `write()` 和 `read()` 方法进行读写操作。仓颉还提供了 `sizeOf<T>()` 和 `alignOf<T>()` 函数来查询类型的大小和对齐值，这在手动管理内存时非常有用。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中结构体默认遵循平台的内存布局规则。无需特殊标记，但需要确保字段顺序与 FFI 另一侧一致。可使用 `#pragma pack` 调整对齐。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 不提供直接的 C 兼容结构体机制。JNI 开发者必须手动管理字段对应关系，通常通过字节缓冲区操作。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 通过 Cgo 访问 C 结构体，但 Go 的 struct 本身不需要特殊标记。Go 会自动处理内存布局转换。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `#[repr(C)]` 属性标记结构体以保证 C 兼容的内存布局。仓颉的 `@C` 与此作用相同。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`@C struct` 的字段顺序必须与 C 定义严格一致，否则会导致内存布局错位和数据损坏。</Note>
+
+运行右侧代码，观察 `Point` 和 `Rect` 结构体的大小输出，理解不同类型的内存占用。

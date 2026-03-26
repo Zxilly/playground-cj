@@ -1,5 +1,23 @@
-# Annotation Classes
+# Annotation Basics
 
-An annotation is a structured marker that attaches metadata to a declaration. Annotations are defined with `@` and used to drive compile-time or runtime behavior.
+Annotations are structured metadata markers attached to declarations, starting with `@`. They provide additional information for elements such as types, functions, and members, which can be read and used at compile time or runtime.
 
-Built-in annotations like `@Test`, `@TestCase`, and `@Assert` are used by the testing framework. Custom annotation classes let you define your own metadata.
+Cangjie allows developers to define their own annotation classes by marking them with `@Annotation`. A `class` decorated with `@Annotation` must provide at least one `const init` constructor, because annotation instances need to be constructed at compile time. When using annotations, they are attached to declarations using the syntax `@AnnotationName[parameters]`, where parameters must be constant expressions.
+
+For annotations with parameterless constructors, the brackets can be omitted. The code on the right defines a parameterized annotation `@Version` and a parameterless annotation `@Deprecated`, applying them to two classes respectively.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java uses `@interface` to define annotations and retrieves them at runtime via reflection. Cangjie uses `@Annotation` to decorate regular classes, making the structure more unified.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses attributes (such as `#[derive]`) to implement similar functionality, but primarily processes them at compile time through procedural macros. Cangjie annotations can be read at runtime via reflection.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Annotation classes cannot be `abstract`, `open`, or `sealed`.</Note>
+
+Try modifying the parameter value of `@Version`, or add the `@Deprecated` annotation to `ServiceA`, and observe the output changes.

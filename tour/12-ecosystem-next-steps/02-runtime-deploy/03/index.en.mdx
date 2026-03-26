@@ -1,3 +1,79 @@
-# CJNative and CJVM
+# Compilation Backends: CJNative and CJVM
 
-Cangjie supports two compilation backends. CJNative compiles to native machine code for maximum performance, while CJVM compiles to JVM bytecode for Java ecosystem interoperability. The same Cangjie source code can target either backend by selecting the appropriate SDK, and you can use `@When[backend == "cjnative"]` for backend-specific code.
+Cangjie supports two compilation backends: **CJNative** and **CJVM**. The CJNative backend compiles code into native machine code that runs directly on the operating system, offering the best performance and minimal memory footprint. The CJVM backend compiles code into JVM bytecode, enabling seamless interoperability with the Java ecosystem and reuse of Java libraries and frameworks.
+
+The source code syntax for both backends is identical - you only need to select the corresponding SDK to switch between them. Compiling with the CJNative SDK produces native binaries, while using the CJVM SDK produces JVM bytecode (`.class` files). The same code can be ported between different backends.
+
+When writing cross-backend code, you can use the conditional compilation annotation `@When[backend == "cjnative"]` to distinguish implementations for different backends. The backend condition variable `backend` supports `==` and `!=` operations, with current possible values being `cjnative` and `cjvm`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C only compiles to native code. Compiled code is highly coupled to the target platform and cannot run across platforms.
+</CompareWith>
+
+<CompareWith lang="java">
+Java compiles into platform-independent bytecode that requires the JVM for interpretation or compilation execution. Cangjie's CJVM backend attempts to incorporate this feature.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust only compiles to native code with no JVM backend. Cangjie provides two backends, balancing native performance and Java ecosystem compatibility.
+</CompareWith>
+
+<CompareWith lang="go">
+Go only supports native compilation. Kotlin is the one that supports both JVM and Native, similar to Cangjie's dual-backend strategy.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>CJVM backend support is continuously being improved. Please refer to the official documentation for specific functionality scope. This tutorial defaults to using the CJNative backend.</Note>
+
+In the code on the right, backend-specific functions are defined using conditional compilation. Modify the conditions to try compiling code for different backends.
+
+CJ:
+// CJNative backend compilation:
+//   cjc backend_demo.cj -o backend_demo
+//
+// CJVM backend compilation (requires CJVM SDK):
+//   cjc backend_demo.cj -o backend_demo
+
+// Define different functions based on backend type
+@When[backend == "cjnative"]
+func getBackendInfo(): String {
+    "CJNative native backend - compiles directly to machine code"
+}
+
+@When[backend == "cjvm"]
+func getBackendInfo(): String {
+    "CJVM backend - compiles to JVM bytecode"
+}
+
+// Common backend-agnostic code
+func calculateSequence(n: Int64): Int64 {
+    var result = 0
+    for (i in 1..=n) {
+        result += i * i
+    }
+    result
+}
+
+main() {
+    println("=== Compilation Backend Demo ===")
+    
+    // Output the current backend being used
+    println("Current backend: ${getBackendInfo()}")
+    
+    // Execute common calculation
+    let n = 10
+    let sum = calculateSequence(n)
+    println("Sum of 1² to ${n}²: ${sum}")
+    
+    // Display architecture information
+    @When[arch == "x86_64"]
+    println("Running platform: x86_64")
+    
+    @When[arch == "aarch64"]
+    println("Running platform: aarch64")
+    
+    println("Program execution complete!")
+}

@@ -3,29 +3,44 @@ class Person {
     var age: Int64
     var email: String
 
-    // Primary constructor
-    init(name: String, age: Int64, email: String) {
+    // Regular constructor: full parameter list
+    public init(name: String, age: Int64, email: String) {
         this.name = name
         this.age = age
         this.email = email
     }
 
-    // Constructor with default email
-    init(name: String, age: Int64) {
+    // Regular constructor: overloaded, omitting email
+    public init(name: String, age: Int64) {
         this.name = name
         this.age = age
-        this.email = "unknown"
+        this.email = "Not set"
     }
 
-    func describe(): String {
-        "${name} (age: ${age}, email: ${email})"
+    // Member function
+    public func describe(): String {
+        "${name} (Age: ${age}, Email: ${email})"
+    }
+
+    public func celebrateBirthday() {
+        age += 1
+        println("${name} had a birthday! Now ${age} years old")
     }
 }
 
 main() {
-    let p1 = Person("Alice", 30, "alice@example.com")
+    // Create objects using different constructors
+    let p1 = Person("Xiaoming", 25, "xiaoming@example.com")
     println(p1.describe())
 
-    let p2 = Person("Bob", 25)
+    let p2 = Person("Xiaohong", 30)
+    println(p2.describe())
+
+    // Call member functions
+    p1.celebrateBirthday()
+    p2.celebrateBirthday()
+
+    println("Final information:")
+    println(p1.describe())
     println(p2.describe())
 }

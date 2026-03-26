@@ -1,5 +1,31 @@
 # 接口扩展
 
-扩展可以让现有类型实现某个接口，语法为 `extend<T> Type<T> <: Interface`。
+扩展不仅能为类型添加新函数，还能让现有类型实现某个接口。语法为 `extend<T> Type<T> <: Interface`，在扩展中提供接口要求的函数实现。
 
-此处让 `Array<T>` 实现了 `PrintableSize`。扩展之后，数组可以在任何需要 `PrintableSize` 的地方使用。
+右侧代码定义了 `PrintableSize` 接口，然后通过扩展让 `Array<T>` 实现该接口。扩展之后，数组可以赋值给 `PrintableSize` 类型的变量，可以在任何需要该接口的地方使用。
+
+接口扩展让类型系统和现有代码无缝衔接。即使类型定义在第三方库中，也可以通过扩展让它满足你的接口约定。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有接口概念，无法表达对象应实现的协议；开发者只能通过文档约定和手动验证。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `implements` 显式声明，但不支持为外部类型添加接口实现，必须通过适配器模式。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的接口是隐式实现的，定义匹配接口签名的方法即可，无需显式声明实现关系。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 需要显式 `impl Trait for Type`，但不能为外部类型实现外部 trait（孤儿规则）。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>仓颉也有类似的"孤儿规则"：接口扩展必须与接口或被扩展类型在同一个包中。</Note>
+
+尝试修改 `PrintableSize` 接口，添加更多功能并在扩展中实现。

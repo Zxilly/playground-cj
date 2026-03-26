@@ -1,7 +1,33 @@
 # Properties
 
-A `prop` with `get()` and optional `set(v)` defines a computed property. Properties look like fields to the caller but execute logic when accessed.
+`prop` defines computed properties through `get()` and optional `set(v)`. Externally, they are used like regular fields, but read and write operations execute custom logic behind the scenes. Properties can implement access control, data validation, lazy computation, and other features.
 
-In this example, `fahrenheit` and `description` are read-only properties that recompute whenever `celsius` changes.
+Properties without the `mut` modifier can only define `get()` and are read-only properties. Properties with `mut` must define both `get()` and `set(v)` and are read-write properties. Computed properties don't occupy additional storage space; they are dynamically calculated based on other data.
 
-Try adding a `set(v)` block to `fahrenheit` that converts back to Celsius: `celsius = (v - 32.0) * 5.0 / 9.0`.
+The `Temperature` class below uses Celsius as the actual stored field, with Fahrenheit derived through a computed property. When Celsius changes, Fahrenheit automatically updates—because it recalculates on each access.
+
+<Note>
+Accessing the property itself in getter and setter will cause infinite recursion, similar to function recursion.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no property concept; you must hand-write getter and setter functions. Cangjie's `prop` provides a more elegant interface.
+</CompareWith>
+
+<CompareWith lang="java">
+Java has no property syntax and typically defines `getXXX()` and `setXXX()` methods. Cangjie's `prop` syntax is more concise.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have property syntax and typically defines `GetXXX()` and `SetXXX()` methods. Cangjie's `prop` is more concise and intuitive.
+</CompareWith>
+
+<CompareWith lang="c#">
+C#'s property syntax is similar to Cangjie's, also using `get` and `set`. Cangjie requires the `mut` modifier to define a setter.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a `set(v)` to the `fahrenheit` property: convert Fahrenheit back to Celsius for storage.

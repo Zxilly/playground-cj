@@ -1,7 +1,22 @@
-# public macro
+# Macro Declaration and Parameters
 
-A macro function is declared as `public macro Name(input: Tokens): Tokens`. The `input` parameter receives the tokens at the call site. The returned `Tokens` replace the macro invocation.
+Macro functions are declared as `public macro Name(input: Tokens): Tokens`. Macros must be declared as `public` because they are always used by other packages. Both parameter type and return type are `Tokens`, representing Token sequences.
 
-When applied to a declaration (like a function or class), the entire declaration becomes the input. Macros must be `public` because they are always used from another package.
+Macros can be divided into non-attribute macros and attribute macros. Non-attribute macros accept only one parameter, the decorated code fragment, and are invoked using `@MacroName(...)`. When applied to declarations, parentheses can be omitted. Attribute macros accept two parameters: the first is the attribute in `[]`, and the second is the decorated code, invoked using `@MacroName[attr](...)`.
 
-Trace what the `testDef` macro returns -- it is an identity macro that passes tokens through unchanged.
+When invoking a non-attribute macro, the content within parentheses (or the declaration itself) becomes the `input` parameter. When invoking an attribute macro, the content within `[]` becomes the first parameter `attr`, and the decorated code following it becomes the second parameter `input`. The `Tokens` returned by the macro replace the entire macro call in the source code.
+
+In the example on the right, `AddPrefix` is an attribute macro that receives both an attribute and input, concatenates them, and returns the result. When calling `@AddPrefix[public ]struct Data`, `attr` is `"public "`, `input` is `struct Data {...}`, and the return value is `public struct Data {...}`.
+
+<Note>The brackets and content in attribute macros are mandatory; even if empty, you must write `@MacroName[](...)`.</Note>
+
+Observe the expansion results of both macros to understand how parameters are passed for non-attribute and attribute macros.
+
+<CompareGroup>
+<CompareWith lang="rust">
+Rust's declarative macros `macro_rules!` support various matching patterns, and procedural macros also have `#[proc_macro_attribute]` similar to attribute macros. Cangjie's attribute macros are more unified, using `[]` to pass attribute parameters.
+</CompareWith>
+<CompareWith lang="java">
+Java uses annotation processors to handle `@Annotate` at compile time, but the mechanism generates new files rather than replacing code. Cangjie macros directly transform code at compile time, making them more powerful and flexible.
+</CompareWith>
+</CompareGroup>

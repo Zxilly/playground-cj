@@ -1,7 +1,33 @@
 # unsafe 块
 
-`unsafe { ... }` 放宽块内的仓颉安全检查。所有 `foreign` 和 `@C` 函数调用必须在 `unsafe` 上下文中进行。
+`unsafe { ... }` 块放宽了其中的安全检查，允许执行可能不安全的操作。所有对 `foreign` 函数、`@C` 函数和 `CFunc` 类型变量的调用都必须在 `unsafe` 上下文中进行。
 
-也可以将整个函数标记为 `unsafe`——调用方同样需要使用 `unsafe`。
+除了 `unsafe` 块，也可以将整个函数标记为 `unsafe`——这样函数体内的所有操作默认都在 unsafe 上下文中。不过，调用这个 `unsafe` 函数的地方同样需要在 `unsafe` 上下文中。
 
-试着将第 10 行的 `rand()` 调用移到 `unsafe` 块外面，观察错误。
+`unsafe` 把风险隔离在明确定义的范围内，提醒开发者这些代码需要格外小心。C 代码可能产生空指针解引用、内存泄漏、缓冲区溢出等问题，仓颉编译器无法检查这些问题。
+
+<Note>
+`unsafe` 不会关闭所有检查，只是允许执行与 C 互操作相关的特定操作。其他安全机制仍然有效。
+</Note>
+
+下面的示例展示了三种 unsafe 用法：unsafe 块、unsafe 函数以及在 unsafe 块内包含多条语句。试着将第 20 行的调用移到 unsafe 块外面，观察编译错误。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中没有 unsafe 的概念。所有操作都被视为潜在的不安全操作，开发者需要自己确保内存安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 没有 unsafe 块的概念，但 `java.lang.Unsafe` 类提供了低级操作。JNI 调用被视为信任的操作。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `unsafe` 块和 `unsafe fn` 机制与仓颉几乎完全相同，都用于隔离与 C 互操作的不安全代码。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 通过 cgo 工具提供 C 互操作，调用 C 代码时不强制要求 unsafe 标记，但建议使用 `unsafe` 包处理指针操作。
+</CompareWith>
+
+</CompareGroup>

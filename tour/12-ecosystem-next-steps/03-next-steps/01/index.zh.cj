@@ -1,34 +1,25 @@
-import std.collection.ArrayList
-import std.sync.*
+// 保存为 hello.cj 文件
+// 编译命令: cjc hello.cj
+// 运行命令: ./main (Linux/macOS) 或 main.exe (Windows)
 
-func double(n: Int64): Int64 {
-    return n * 2
-}
-
-main(): Int64 {
-    let inputs = [3, 5, 8]
-    let outputs = ArrayList<String>()
-    let lock = Mutex()
-    let futures = ArrayList<Future<Unit>>()
-
-    for (input in inputs) {
-        let current = input
-        let future = spawn {
-            let result = double(current)
-            synchronized(lock) {
-                outputs.add("${current} -> ${result}")
-            }
-        }
-        futures.add(future)
+main() {
+    println("=== 仓颉 Tour 毕业生 ===")
+    println("你已经学会了：")
+    
+    let skills = [
+        "基础语法与类型系统",
+        "函数与闭包",
+        "类、接口与泛型",
+        "错误处理",
+        "并发编程",
+        "集合与迭代器"
+    ]
+    
+    var count = 1
+    for (skill in skills) {
+        println("  ${count}. ${skill}")
+        count++
     }
-
-    for (future in futures) {
-        future.get()
-    }
-
-    println("tour recap:")
-    for (line in outputs) {
-        println(line)
-    }
-    return 0
+    
+    println("\n下一步：创建自己的项目，探索标准库！")
 }

@@ -1,7 +1,33 @@
 # Struct Methods
 
-Functions defined inside a struct are methods. They access the struct's fields through `this`.
+Functions defined inside a `struct` are called member methods, which can access fields of the current instance through `this`.
 
-Methods are called with dot syntax on an instance: `c1.area()`.
+Methods are called using dot notation on an instance, such as `c1.area()`. Methods can access all fields of the instance and can also call other methods. Static methods are decorated with `static` and called through the type name.
 
-Add a `diameter()` method that returns `2.0 * radius` and call it from `main`.
+The `Circle` in the code on the right defines four methods: `area`, `circumference`, `describe`, and `isLargerThan`, demonstrating different method usages. `isLargerThan` accepts another `Circle` parameter for comparison.
+
+<Note>
+Regular methods cannot modify the value of `var` fields. If you need to modify fields in a method, use `mut func` (explained on the next page).
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no concept of methods and typically defines functions with a struct pointer as the first parameter. Cannot access `this`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java defines methods inside classes and accesses instances through `this`. Visibility can be controlled with `private/public`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's struct methods are defined outside the type, distinguished by "receiver" parameters, without a `this` keyword.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust defines methods in impl blocks; `&self` indicates borrowing, `&mut self` indicates mutable borrowing, similar to Cangjie's regular methods and mut methods.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a `diameter()` method that returns the diameter (`2.0 * radius`) and call it in `main`.

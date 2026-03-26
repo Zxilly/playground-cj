@@ -1,7 +1,33 @@
 # 尾随 Lambda
 
-当函数的最后一个参数是函数类型时，Lambda 可以写在括号外面。如果 Lambda 是唯一参数，括号可以完全省略。
+当函数的最后一个参数是函数类型时，调用时可以将 Lambda 写在括号外面。这种语法称为尾随 Lambda（Trailing Lambda），让代码看起来更像语言内置语法，提升可读性。
 
-示例中，`myIf(true) { 100 }` 和 `applyTwice { value => value + 3 }` 都使用了尾随 Lambda 语法。
+如果函数只有一个参数且该参数是函数类型，括号 `()` 甚至可以完全省略，只写 Lambda。这在定义 DSL（领域特定语言）和构建器模式时特别有用。
 
-试试将第 18 行改写为 `applyTwice({ value => value + 3 })` -- 两种写法等价。
+右侧示例中，`myIf` 的第二个参数是函数类型，第 20 行使用尾随 Lambda 语法调用。`applyTwice` 只有一个函数参数，第 24 行省略了括号，直接写 Lambda。两种写法等价于常规调用形式。
+
+<Note>
+尾随 Lambda 的 `=>` 在函数体为单个表达式时可省略。对比第 22 行和 25 行的写法：多行 Lambda 更清晰，单表达式可更简洁。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有尾随闭包的概念，函数回调必须显式传递函数指针。仓颉的尾随 Lambda 更优雅。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 Lambda 可以放在方法调用的括号内，但没有仓颉那样的尾随 Lambda 语法。仓颉更灵活。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持尾随闭包语法，函数调用必须把闭包写在小括号内。仓颉的尾随 Lambda 让 DSL 更优雅。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的尾随闭包语法与仓颉完全一致，将闭包写在括号外。这是现代语言的常见设计。
+</CompareWith>
+
+</CompareGroup>
+
+试试将第 24 行改写为常规调用形式 `applyTwice({ value => value + 3 })`，理解两种写法的等价性。

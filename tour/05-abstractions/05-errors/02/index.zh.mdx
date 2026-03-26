@@ -1,5 +1,25 @@
-# throw / try / catch
+# throw 与 try-catch
 
-`throw` 在出错处创建异常。`try` 标记可能抛出异常的代码块，`catch` 在合适的边界处理异常。
+`throw` 用于抛出异常，终止当前执行流程。`try-catch` 用于捕获并处理异常。抛出异常的函数不需要声明，调用方可以选择捕获或继续向上传播。
 
-抛出异常的函数不负责恢复，它只报告问题。调用方的 `catch` 块决定恢复策略。
+`try` 块中的代码如果抛出异常，会立即跳转到匹配的 `catch` 块。如果异常未被捕获，会继续沿调用栈向上传播，直到被处理或导致程序终止。
+
+右侧代码展示了两个函数：`requireAdult` 检查年龄，`divide` 执行除法，它们都会在条件不满足时抛出异常。调用方用 `try-catch` 处理这些异常。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 使用 `error` 返回值和 `if err != nil` 模式。仓颉的 `throw` 类似 `panic`，但可以被 `catch` 捕获并继续执行。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 要求方法声明可能抛出的受检异常。仓颉不区分受检和非受检异常，都不需要声明。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `Result<T, E>` 和 `?` 操作符。仓颉既支持异常也支持 `Option`，可根据场景选择。
+</CompareWith>
+
+</CompareGroup>
+
+尝试去掉第一个 `try-catch`，观察未捕获异常的效果。

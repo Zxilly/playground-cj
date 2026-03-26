@@ -1,7 +1,28 @@
-# Why macros
+# What is a Macro
 
-Macros transform source code at compile time. Unlike functions, which only see runtime values, macros see the actual source tokens.
+A macro is a compile-time code transformation tool. Unlike functions that process values at runtime, macros take program code itself as both input and output. Macros can read Token sequences from source code, generate new code fragments, which are then compiled and executed.
 
-The `@Assert` macro checks equality during testing. It is a compile-time transformation -- the macro rewrites your assertion into test framework code.
+Functions can only obtain the runtime value of parameters, not the parameter expression itself. For example, a function `f(x + y)` only receives the computed result of `x + y`, not the expression `x + y`. Macros can access the expression itself, enabling capabilities that functions cannot achieve.
 
-Run the program, then change `@Assert(a + b, 5)` to `@Assert(a + b, 99)` and observe the test failure.
+Cangjie provides built-in test macros `@Test`, `@TestCase`, and `@Assert`. The `@Assert` macro checks if two values are equal - if equal, the test passes; otherwise, it reports failure. These macros expand into test framework code at compile time, simplifying test writing.
+
+The code example on the right demonstrates the basic usage of test macros. `@Test` marks test classes, `@TestCase` marks test methods, and `@Assert(a + b, 5)` asserts that the value of `a + b` equals 5.
+
+<Note>Macro invocations use the `@` symbol as a prefix to distinguish them from function calls.</Note>
+
+Run the code, then change `@Assert(a + b, 5)` to `@Assert(a + b, 99)` and observe the test failure effect.
+
+<CompareGroup>
+<CompareWith lang="c">
+C macros are implemented through preprocessor directives like `#define`, supporting only text substitution without type checking. Cangjie's macros work at compile time with type safety.
+</CompareWith>
+<CompareWith lang="java">
+Java has no compile-time macro system. Code generation is implemented through Annotation Processors, with limited functionality.
+</CompareWith>
+<CompareWith lang="rust">
+Rust macros also use the `!` suffix to mark invocations, such as `println!`, and can access the AST. Cangjie uses the `@` prefix, making it clearer to distinguish macro calls from function calls.
+</CompareWith>
+<CompareWith lang="go">
+Go does not have a metaprogramming macro system. Code generation relies on external tools like `go:generate`. Cangjie's macros have built-in support during compilation, making them more concise and safe.
+</CompareWith>
+</CompareGroup>

@@ -1,5 +1,33 @@
-# 排序
+# 集合排序
 
-排序将元素排列成可预测的顺序。示例在 `ArrayList<Int64>` 上实现选择排序：找到剩余最小元素并交换到正确位置。
+排序将集合元素按特定顺序排列。这里在 `ArrayList<Int64>` 上实现选择排序：遍历未排序部分，找到最小元素，交换到正确位置。
 
-反转比较条件即可得到降序。
+算法核心是两层循环：外层循环确定当前位置，内层循环在剩余元素中查找最小值的索引。找到后交换当前位置和最小值位置。完成一轮后，当前位置就是正确的元素。
+
+修改比较条件（将 `<` 改为 `>`），可以实现降序排序。仓颉标准库也提供了更高效的排序函数，这里用基础算法演示排序原理。
+
+右侧代码实现升序排序并展示结果。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `qsort()` 需要传入比较函数指针，较为复杂。仓颉的 `ArrayList` 直接提供排序方法，更简洁。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `Arrays.sort()` 和 `Collections.sort()` 开箱即用。仓颉手动实现排序有助于学习算法原理。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `sort` 包提供 `sort.Ints()`、`sort.Strings()` 等函数。仓颉的 `ArrayList` 也有内置排序方法，但手动实现有助于理解算法。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `Vec<T>` 可以调用 `.sort()` 方法，要求元素实现 `Ord` trait。仓颉的标准库也提供类似方法。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>选择排序的时间复杂度为 O(n²)，适合教学演示。实际应用中应使用标准库提供的高效排序。</Note>
+
+尝试修改代码：将比较条件 `<` 改为 `>`，实现降序排序。

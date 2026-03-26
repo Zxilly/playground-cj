@@ -1,5 +1,31 @@
 # Map、Filter、Reduce
 
-Map 对每个元素做变换，Filter 选出满足条件的元素，Reduce 将所有元素合并为一个值。这三种操作覆盖了大部分集合处理场景。
+Map、Filter、Reduce 是三种最常用的集合处理模式。这里用显式循环演示它们的核心逻辑。
 
-这里用显式循环实现，让每一步逻辑清晰可见。
+**映射（Map）** 对每个元素应用转换函数，产生新集合。例如将每个数字平方。**过滤（Filter）** 选出满足条件的元素。例如只保留偶数。**归约（Reduce）** 将所有元素合并为一个值，通常需要一个初始值和累积函数。
+
+仓颉标准库提供了这些操作的高阶函数形式，后续章节会介绍。这里先用显式循环实现，让每一步逻辑清晰可见，适合初学者理解本质。
+
+右侧代码对一个整数列表分别执行：映射（求平方）、过滤（选偶数）、归约（求和）。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有高阶函数支持，map/filter/reduce 需要全部手写。仓颉的显式循环和标准库高阶函数都更清晰。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的流（Stream）API 提供 `map()`、`filter()`、`reduce()` 等，链式调用更优雅。仓颉的显式循环易于初学者理解。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有内置的 map/filter/reduce 函数，通常用显式循环实现。仓颉的标准库提供这些高阶函数，但显式循环同样清晰。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的迭代器提供 `.map()`、`.filter()`、`.fold()` 等方法，可链式调用。仓颉也支持类似的函数式风格。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>显式循环虽然代码略长，但易于调试和理解，是学习函数式操作的很好起点。</Note>

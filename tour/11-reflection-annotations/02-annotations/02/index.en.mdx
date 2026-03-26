@@ -1,3 +1,23 @@
-# Reading Metadata
+# Reading Annotations via Reflection
 
-At runtime, `TypeInfo` can read annotation metadata attached to a type or its members. This enables frameworks to discover annotated elements and act on them automatically.
+Defining annotations alone is meaningless; the key is being able to read and use this metadata at runtime. Cangjie's `TypeInfo` provides the `findAnnotation` method to find annotation instances attached to types based on annotation type.
+
+`findAnnotation` returns an `Option` type: if the corresponding annotation is found, it returns `Some(annotation instance)`; otherwise, it returns `None`. Pattern matching can be used to safely extract and use annotation information. Annotations are not inherited—subclasses do not automatically have the annotation metadata of their parent class.
+
+The code on the right defines an `@Author` annotation and applies it to multiple classes, then uses reflection to iterate through an array of objects and read the author information for each object.
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java uses `getAnnotation(Class)` or `getAnnotations()` to retrieve annotations. Cangjie's `findAnnotation` returns an Option type, which is safer.
+</CompareWith>
+
+<CompareWith lang="go">
+Go does not have a native annotation mechanism and typically uses struct tags with reflection to implement similar functionality.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Annotations are not inherited by subclasses. If you need to query parent class annotations, you must explicitly access the parent type via reflection.</Note>
+
+Try adding an `@Author` annotation to `PluginA`, or create new annotated classes, and observe the output changes.

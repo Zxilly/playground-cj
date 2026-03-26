@@ -1,10 +1,77 @@
 # Default Parameter Values
 
-Named parameters can have default values, specified with `=` after the type. When omitted at the call site, the default value is used.
+Named parameters can have default values using the syntax `name!: Type = defaultValue`. When calling a function, if you omit a parameter with a default value, the default value is used automatically; you can also explicitly pass a value to override the default.
 
-```cangjie
-func connect(host!: String, port!: Int64 = 8080) { }
-connect(host: "localhost")  // port defaults to 8080
-```
+Only named parameters can have default values; regular parameters cannot have default values. Default value expressions are evaluated at function definition time, not recalculated on each call. Default parameters can reduce function overloading and make APIs cleaner.
 
-Try calling `connect` with only `host` and observe the default `port` and `secure` values.
+The code on the right shows `greet` and `connect` functions, both with default parameters. You can pass only some parameters, while others use default values. Observe the output from different calling styles.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't support default parameters and requires defining multiple functions or using macros. Cangjie's default parameters make APIs more concise.
+</CompareWith>
+
+<CompareWith lang="java">
+Java doesn't support default parameters and typically uses method overloading instead. Cangjie's default parameters can reduce the number of overloaded methods.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't support default parameter values and needs to implement them through function overloading or passing configuration structs. Cangjie's default parameters make code more concise.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust doesn't support default parameters but can simulate them. Cangjie's default parameter syntax is similar to Python, more intuitive and easy to use.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Only named parameters can have default values. Default values must be compile-time determinable expressions.</Note>
+
+Try calling `connect` passing only the `host` parameter to see what default values are used for port and secure connection.
+
+CJ:
+// Define named parameters with default values
+func greet(name!: String, greeting!: String = "Hello") {
+    println("${greeting}, ${name}!")
+}
+
+// Multiple parameters with default values
+func connect(host!: String, port!: Int64 = 8080, secure!: Bool = false) {
+    let protocol = if (secure) { "https" } else { "http" }
+    println("Connecting to ${protocol}://${host}:${port}")
+}
+
+// Default values can be computed expressions
+func repeat(str!: String, times!: Int64 = 3) {
+    var result = ""
+    for (i in 0..times) {
+        result = result + str
+    }
+    println(result)
+}
+
+main() {
+    // Use all default values
+    greet(name: "Cangjie")
+    
+    // Override some default values
+    greet(name: "World", greeting: "Welcome")
+    println("---")
+    
+    // Different combinations using default values
+    connect(host: "example.com")
+    connect(host: "example.com", port: 443)
+    connect(host: "example.com", port: 443, secure: true)
+    connect(host: "localhost", secure: true)
+    println("---")
+    
+    // Use default times parameter
+    repeat(str: "Ha")
+    
+    // Override default times parameter
+    repeat(str: "* ", times: 5)
+    
+    // All parameters passed explicitly
+    repeat(str: "OK ", times: 2)
+}

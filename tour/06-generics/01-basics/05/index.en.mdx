@@ -1,7 +1,31 @@
 # Generic Enums
 
-A generic enum carries typed data in its cases. `Result<T, E>` uses `Ok(T)` for success and `Err(E)` for failure, with both types specified by the caller.
+Generic enum constructors can carry typed data. Type parameters are declared in angle brackets after the enum name, and can then be used in constructor parameter types. This allows enums to carry data of different types in different cases.
 
-Pattern matching extracts the carried value with full type information.
+`Result<T, E>` uses `Ok(T)` to represent success with a value, and `Err(E)` to represent failure with error information. The two type parameters correspond to the success value type and error value type respectively, giving callers the freedom to choose. `Option<T>` is also a classic example of generic enum: `Some(T)` or `None`.
 
-Add a third case `Pending` with no data and handle it in the `show` function.
+When pattern matching on generic enums, you can extract the carried values while retaining complete type information. Variables in match branches are inferred to be the corresponding types without manual conversion. This design makes error handling both type-safe and expressive.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, unions cannot carry type information; an extra tag field is usually needed to distinguish data types, and generics are not supported.
+</CompareWith>
+
+<CompareWith lang="java">
+Java doesn't have true generic enums; while you can use generic classes to wrap enums, generic constraints cannot be implemented at the enum level.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have built-in generic enums; typically `interface{}` or custom types are used to simulate them.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's generic enum syntax is identical: `enum Result<T, E> { Ok(T), Err(E) }`, which is a core type in the standard library.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Each constructor of a generic enum can optionally carry data; some constructors can carry typed data while others may not.</Note>
+
+Run the code to observe how `Result` is used, then add a `Pending` constructor without data and handle it in pattern matching.

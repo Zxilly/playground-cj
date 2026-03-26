@@ -1,12 +1,29 @@
-# Where Clauses
+# Multiple Constraints
 
-A `where` clause can require a type parameter to satisfy multiple interfaces using `&`. Both constraints must hold for the function to compile.
+The `where` clause can use `&` to connect multiple constraints, requiring the type parameter to satisfy all interfaces simultaneously. `where T <: Comparable<T> & Displayable` means `T` must implement both `Comparable` and `Displayable` interfaces.
 
-```cangjie
-func showMax<T>(a: T, b: T)
-    where T <: Comparable<T> & Displayable { ... }
-```
+Multiple constraints allow you to perform various operations on the same value. For example, constraining `T` to be both comparable and displayable allows for both size comparison and formatted output without losing type safety.
 
-This lets a single function call methods from several interfaces on the same value.
+The code on the right defines a `Score` class that implements two interfaces, then uses the `showMax` function with double constraints: it can find the larger value and format the output. Note that `showMax` internally calls the `findMax` function that only requires `Comparable`; constraints can be stacked as needed.
 
-Add a `Serializable` interface with a `serialize(): String` method, require it in `showMax`, and implement it on `Score`.
+<CompareGroup>
+
+<CompareWith lang="c">
+C cannot express multiple constraints; you must manually verify each operation's feasibility, which is error-prone and lacks compile-time guarantees.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's multiple constraints use `<T extends Comparable & Displayable>`, but only one class is allowed in the inheritance chain; the rest must be interfaces.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `interface { Comparable; Displayable }` to combine multiple interfaces as constraints.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `where T: Comparable + Displayable` syntax, also using `+` to connect multiple traits.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Multiple constraints have an "AND" relationship; the type parameter must implement all constrained interfaces.</Note>

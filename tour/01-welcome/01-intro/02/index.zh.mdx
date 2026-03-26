@@ -1,9 +1,21 @@
 # 已知语言
 
-如果你了解 Java、Go、Kotlin 或 Swift，仓颉会让你感到熟悉。它使用相同的核心概念——函数、类、泛型和接口——但有自己的语法，以及一些新想法，如模式匹配和轻量级线程。
+如果你熟悉 Java、Go、Rust 或 Swift，仓颉会让你感到亲切。它同样具备函数、类、泛型、接口等核心概念，同时引入了模式匹配、轻量级线程（spawn）等现代特性。
 
-如果你已经掌握其中一门语言，可以在 <Highlight target="langpicker">顶部的语言切换按钮</Highlight> 中选择它。教程中会出现对比标签页，展示同一概念在仓颉与你熟悉的语言中的写法差异。
+仓颉的语法设计在保持类型安全的同时减少样板代码。例如，变量声明区分不可变（`let`）与可变（`var`），类型推断让代码更简洁。
 
-如果你没有相关语言背景，直接按顺序阅读即可——本教程完全自洽。
+如果你有相关语言背景，可以点击 <Highlight target="langpicker">顶部的语言切换按钮</Highlight> 选择你熟悉的语言。教程中会出现对比标签页，展示同一概念在不同语言中的差异。
 
-点击 <Highlight target="next">下一步</Highlight> 继续。
+<CompareGroup>
+<CompareWith lang="go">
+Go 使用 `:=` 短声明，变量默认可变；仓颉用 `let`/`var` 显式区分，鼓励优先使用不可变绑定。
+</CompareWith>
+<CompareWith lang="rust">
+Rust 的 `let` 默认不可变，但允许变量遮蔽（shadowing）；仓颉同样默认不可变，但禁止同作用域遮蔽。
+</CompareWith>
+<CompareWith lang="java">
+Java 需要显式类型声明（`String s = "Hello"`）；仓颉支持类型推断，`let s = "Hello"` 即可。
+</CompareWith>
+</CompareGroup>
+
+<Note>如果你没有相关语言背景，也不必担心——本教程完全自洽，按顺序阅读即可。</Note>

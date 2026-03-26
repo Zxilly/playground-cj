@@ -1,7 +1,33 @@
 # 函数重载
 
-多个同名函数可以共存，只要参数类型或数量不同。编译器根据实参类型自动选择匹配的版本。
+在仓颉中，同一个作用域内可以有多个同名函数，只要它们的参数类型或参数个数不同。这称为函数重载。编译器会根据调用时传入的实参类型自动选择匹配的函数版本。
 
-示例中定义了四个 `format` 函数，分别处理 `Int64`、`Float64`、`String` 和一对 `Int64`。
+函数重载让你可以用同一个名字处理不同类型的数据，提高代码的可读性。例如，你可以定义多个 `print` 函数分别处理整数、浮点数和字符串。
 
-试试调用 `format(true)` -- 编译不通过。添加一个 `format(value: Bool)` 重载来修复它。
+右侧示例定义了四个 `format` 函数，分别接受 `Int64`、`Float64`、`String` 和两个 `Int64` 参数。在第 22-25 行调用时，编译器根据实参类型决定调用哪个版本。
+
+<Note>
+只有参数类型或个数不同才算重载。仅返回类型不同的函数不能重载，会报重复定义错误。另外，变量和函数不能同名。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 不支持函数重载，需要使用不同的函数名或手动类型分派。仓颉的函数重载通过名字自动选择。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 支持函数重载（方法重载），基于参数类型和个数自动选择。仓颉的重载机制与 Java 类似。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持函数重载。通常通过不同函数名（如 `printInt`、`printFloat`）或类型断言来处理不同类型。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 不支持传统函数重载，但可以通过 trait 实现类似效果，或使用泛型函数配合 trait bound。
+</CompareWith>
+
+</CompareGroup>
+
+试试添加一个 `format(value: Bool): String` 的重载来处理布尔值，然后调用 `format(true)` 看看效果。

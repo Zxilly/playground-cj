@@ -1,7 +1,33 @@
 # 接口值
 
-接口变量持有一个（值，类型）对。通过该变量只能访问接口的方法。
+接口类型的变量像一个"容器"，可以存储任何实现了该接口的值。接口值内部持有一个（值，类型）对，但通过接口变量只能访问接口声明的方法。
 
-这里 `Array<Drawable>` 存储了 `Line`、`Circle` 和 `Text` 对象。循环对每个元素调用 `draw()`，无需知道具体类型。
+这种设计带来了极大灵活性：可以在同一数组中存储不同类型对象，可以对异构集合执行统一操作。调用者无需关心具体类型，只需关心对象能做什么。
 
-添加一个实现 `Drawable` 的 `Polygon` 类，并将其加入数组。
+接口变量可以随时赋值为不同的实现类型对象，只要新类型满足接口要求。这允许在运行时动态切换行为。
+
+本例中，`Array<Drawable>` 存储了 `Line`、`Circle` 和 `Rectangle` 三种不同类型的对象。循环遍历时，每个元素都调用 `draw()` 和 `area()` 方法，但实际执行的代码各不相同。
+
+添加一个实现 `Drawable` 的 `Triangle`（三角形）类，并将其加入数组。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有接口值或多态的原生支持，需要手动使用虚表指针或函数指针数组。仓颉的接口值提供了更高层的抽象。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的接口类型可以存储实现该接口的任何对象，与仓颉的接口值概念相同。两者都支持动态分派。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的接口值内部存储（value, concrete type）对，仓颉采用类似设计。两者都能在数组中存储不同具体类型，通过接口统一操作。Go 的空接口 `interface{}` 可存储任何值，仓颉使用 `Any` 类型实现同样的功能。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 trait object（`dyn Trait`）类似仓颉的接口类型，存储具体值和虚表指针。Rust 需要显式标注 `dyn` 表示动态分派，仓颉的接口类型默认就是动态分派。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>接口值的动态特性带来灵活性，但也有少量运行时开销。在性能敏感场景，可以考虑泛型静态分派来获得更好的性能。</Note>

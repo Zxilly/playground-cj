@@ -1,15 +1,87 @@
-# Concurrency Example
+# Combining Synchronization Mechanisms
 
-This example combines `spawn`, `Future`, `Mutex`, and `AtomicInt64` in one program.
+In real concurrent programs, it's often necessary to combine multiple synchronization mechanisms. Understanding when to use `Mutex` and when to use atomic operations is key to writing efficient concurrent code.
 
-```cangjie
-let value = square(current)
-synchronized(resultsLock) {
-    results.add("${current}^2 = ${value}")
+A practical rule of thumb: for single integers or booleans, prefer atomic operations (better performance); for complex data structures or scenarios requiring protection of multiple variables, use `Mutex` (more flexible and safer).
+
+The code on the right demonstrates a complete concurrent computing scenario: multiple workers calculate squares in parallel, write formatted results to a shared list (protected by `Mutex`), while using an atomic counter to track completion count. This is a simplified version of the classic producer-consumer pattern.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C requires manually creating mutexes for each shared data and carefully managing their lifetimes, making synchronization errors and deadlocks easy to introduce.
+</CompareWith>
+
+<CompareWith lang="java">
+Java requires `synchronized` to protect collections or uses thread-safe classes like `ConcurrentHashMap`; the combination of atomic operations and `Mutex` is similar but with different APIs.
+</CompareWith>
+
+<CompareWith lang="go">
+Go typically uses `sync.Mutex` to protect slices and `sync/atomic` to operate on counters. Cangjie's usage is similar, but the `synchronized` syntax is more concise.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust shares mutable collections through `Arc<Mutex<Vec<T>>>` and uses `AtomicUsize` for counting. Cangjie's global variables don't need `Arc`, but you need to pay attention to thread safety.
+</CompareWith>
+
+</CompareGroup>
+
+The program output will show all tasks completed and each calculation result.
+
+<Note>When choosing synchronization mechanisms, consider correctness first, then performance. Premature optimization may lead to hard-to-detect data race bugs.</Note>
+
+Try removing a synchronization mechanism (such as removing `Mutex` or atomic operations) and observe the change in program behavior.
+
+CJ:
+import std.sync.*
+import std.collection.ArrayList
+
+// Function to calculate square value
+func square(n: Int64): Int64 {
+    return n * n
 }
-let _ = completed.fetchAdd(1)
-```
 
-Workers compute squares in parallel, collect formatted results into a shared list protected by a mutex, and track completion with an atomic counter. The list uses `Mutex` because it is a complex object; the counter uses `AtomicInt64` because it is a single integer.
-
-Add `10` and `12` to the `jobs` array and verify `completed` reflects the new total.
+main(): Int64 {
+    // Define task list
+    let jobs = [2, 4, 6, 8, 10]
+    
+    // Shared data structures
+    let results = ArrayList<String>()
+    let resultsLock = Mutex()
+    let completed = AtomicInt64(0)
+    
+    // Store all Futures
+    let futures = ArrayList<Future<Unit>>()
+    
+    // Start a thread for each task
+    for (job in jobs) {
+        let current = job
+        let future = spawn {
+            // Execute calculation (no synchronization needed)
+            let value = square(current)
+            
+            // Write result to shared list (Mutex required)
+            synchronized(resultsLock) {
+                results.add("${current}² = ${value}")
+            }
+            
+            // Update completion count (use atomic operation)
+            let _ = completed.fetchAdd(1)
+        }
+        futures.add(future)
+    }
+    
+    // Wait for all threads to complete
+    for (future in futures) {
+        future.get()
+    }
+    
+    // Output results
+    println("Completion count: ${completed.load()}")
+    println("Calculation results:")
+    for (line in results) {
+        println("  ${line}")
+    }
+    
+    return 0
+}

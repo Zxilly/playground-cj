@@ -1,5 +1,29 @@
 # 类型模式
 
-`case x: Type =>` 在值是 `Type` 实例时匹配，并绑定到 `x`。这使得可以根据接口背后的具体类型进行分支。
+类型模式用于匹配接口或抽象类型背后的具体类型。语法是 `case 变量名: 类型 =>`，当值的运行时类型是指定类型的子类型时，匹配成功并将值绑定到变量。
 
-试着添加一个新类 `Triangle <: Shape`，并在 `describe` 中增加对应的 `case` 分支。
+这在处理接口类型时特别有用。你可以根据实际类型选择不同的处理逻辑，同时安全地访问类型特有的成员。类型模式让运行时类型判断变得安全且简洁。
+
+<Note>类型模式只能用于匹配接口或开放类（`open class`）的子类型。由于仓颉的类型系统，编译器无法预知所有可能的子类型，通常最后用通配符 `_` 作为兜底。</Note>
+
+尝试删除第 27 行的 `case _ => "unknown"`，看看编译器会给出什么错误提示。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有类型模式的概念，也没有多态机制。无法进行类型检查和类型转换。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 可以用 `instanceof` 进行类型检查（Java 16+ 支持模式匹配）。传统 Java 需要显式强制类型转换。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的类型 switch 使用 `switch v := i.(type)`，分支中使用 `case Circle:` 直接写类型名。仓颉的 `case c: Circle` 更接近模式匹配风格。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 没有类型模式，而是为每种情况定义不同的 enum 变体，通过 enum 模式匹配处理。这是面向对象与代数数据类型的设计差异。
+</CompareWith>
+
+</CompareGroup>

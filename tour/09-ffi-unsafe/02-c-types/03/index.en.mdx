@@ -1,3 +1,23 @@
 # CFunc
 
-`CFunc<(Params) -> Return>` is the type for C function pointers. There are three ways to create a `CFunc`: a `foreign` function, a `@C`-annotated Cangjie function, or a `CFunc`-typed lambda that does not capture variables. Calling a `CFunc` value requires an `unsafe` context.
+`CFunc<(Params) -> Return>` is the type in Cangjie that represents C function pointers. It corresponds to function pointer types in C and can be used for passing functions between C and Cangjie.
+
+There are three ways to create a `CFunc` in Cangjie. The first is through `foreign` declared functions, which automatically become `CFunc` types. The second is by annotating Cangjie functions with `@C`, making them callable from C code. The third is using lambda expressions marked as `CFunc` type, but note that they cannot capture any variables.
+
+Calling a `CFunc` value must be done within an `unsafe` context because the function pointer may be null or point to an invalid address. The code on the right demonstrates three ways to create and use `CFunc`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses function pointer types like `int (*)(int)`, while Cangjie uses the generic type `CFunc<(Int32) -> Int32>` for more clarity.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't directly support function pointer interop with C, requiring cgo. Cangjie's `CFunc` design makes FFI more intuitive.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Lambdas of `CFunc` type cannot capture variables, otherwise it will cause a compilation error. This ensures they can be safely converted to C function pointers.</Note>
+
+Try adding a new `@C` function and calling it in main.

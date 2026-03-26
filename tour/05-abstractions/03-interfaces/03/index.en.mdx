@@ -1,9 +1,25 @@
-# Polymorphism
+# Interface Polymorphism
 
-A variable of interface type can hold any implementing object.
+Variables of interface type can hold any object that implements that interface. When calling a method, the actual implementation executed is that of the runtime type, not the declared type. This is the core mechanism of interface polymorphism.
 
-The actual method called depends on the runtime type, not the declared type.
+Through interface polymorphism, you can write generic functions and algorithms that don't depend on concrete types, only on the behaviors defined by interfaces. This greatly improves code reusability and extensibility.
 
-Here, `launch` takes a `Flyable`. Passing a `Bird` or `Airplane` produces different output from the same function call.
+Variables of interface type can only access methods declared in the interface at compile time. If you need to access type-specific members, you must use `as` for type conversion.
 
-Add a `Drone` class that implements `Flyable` and pass it to `launch`.
+In this example, the `launch` function accepts a `Flyable` type parameter. When passed a `Bird` or `Airplane`, although the declared type is the same, the actual methods called produce different outputs, demonstrating runtime polymorphism.
+
+Add a `Drone` class that implements `Flyable` and call `launch(Drone("DJI"))`.
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go's interface polymorphism is identical: interface type variables hold concrete values, and method calls are dynamically dispatched at runtime. Go calls this "duck typing," while Cangjie's explicit interface implementation provides stronger compile-time type checking.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's interface polymorphism is similar to Cangjie's, both using runtime dynamic binding for methods. Java's dynamic dispatch is based on virtual method tables (vtable), and Cangjie employs a similar implementation mechanism.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Polymorphism is one of the core features of object-oriented programming. Code implemented through interfaces can be easily extended—new types only need to implement the interface without modifying existing code.</Note>

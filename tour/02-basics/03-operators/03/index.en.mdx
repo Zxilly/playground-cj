@@ -1,10 +1,31 @@
-# Assignment
+# Assignment Operators
 
-`=` assigns a new value to a `var` binding. Compound operators like `+=` and `*=` update the value in place.
+The assignment operator `=` is used to assign a new value to a variable declared with `var`. Unlike many languages, the type of an assignment expression in Cangjie is `Unit`, and its value is `()`. This means assignment expressions cannot be used as conditions, and the compiler helps you avoid the common mistake of writing `=` instead of `==`.
 
-```cangjie
-var score = 10
-score += 5  // equivalent to score = score + 5
-```
+Cangjie supports compound assignment operators that combine arithmetic operations with assignment: `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, etc. For example, `score += 5` is equivalent to `score = score + 5`, but more concise. Compound assignment operators require both operands to be of the same type.
 
-Try rewriting `score += 5` as `score = score + 5` and verify the result is the same.
+Cangjie also supports multi-assignment expressions, allowing you to assign tuple values to multiple variables at once. For example, `(a, b) = (b, a)` can conveniently swap the values of two variables.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's assignment expressions have a return value (the value after assignment), which can be used in conditional statements. This can easily lead to the common mistake of writing `=` instead of `==`. Cangjie's design is safer.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's assignment also has a return value and can be used in conditions, similarly prone to confusing `=` with `==`. Java supports compound assignment operators like `+=`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's assignment expressions also have a return value, but using assignment in conditional statements results in a compilation error. Go also supports compound assignment operators like `+=`. Go doesn't have multi-assignment syntax, but supports `a, b = b, a` for multiple return value assignment.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's assignment expressions return `()`, just like Cangjie. Rust also supports compound assignment operators, but doesn't support tuple destructuring assignment like `(a, b) = (b, a)`; you need to use `std::mem::swap` or a temporary variable.
+</CompareWith>
+
+</CompareGroup>
+
+The code on the right demonstrates basic usage of assignment operators and the convenience of compound assignment operators. Try rewriting `score += 5` in full form to appreciate the equivalence of both styles.
+
+<Highlight target="run">Run</Highlight> to see the output and observe how variable values change during the process.

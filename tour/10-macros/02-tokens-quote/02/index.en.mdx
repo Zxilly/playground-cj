@@ -1,7 +1,31 @@
-# quote
+# Quote Expression
 
-`quote(...)` captures code as a `Tokens` value without executing it. Inside a macro, you use `quote` to build the code fragment the macro returns.
+Manually constructing each `Token` is tedious and error-prone. Cangjie provides the `quote(...)` expression, allowing you to easily build `Tokens` using code templates.
 
-This is much more convenient than assembling `Token` objects by hand. Unmatched parentheses and `$` must be escaped with `\` inside a `quote` block.
+`quote` captures a code fragment as a `Tokens` value without executing it. Inside a macro, you use `quote` to construct the code that the macro returns. In the example on the right, the `PrintExpr` macro receives input `Tokens`, wraps them with `quote` into a `println(...)` call, and returns it.
 
-Try adding `println("extra")` inside the `quote(...)` block and observe how the generated code changes.
+When a `quote` expression contains certain special symbols, they need to be escaped: unmatched parentheses are escaped with `\(` or `\)`; when `$` represents a literal character rather than interpolation, use `\$` to escape it.
+
+Try adding a second line `println("extra")` in the `quote(...)` block, then run to see the output changes after macro expansion.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no quote mechanism. Macros use simple text substitution, cannot perform complex code generation.
+</CompareWith>
+
+<CompareWith lang="java">
+Java has no quote concept. Annotation Processors generate code by manually building strings or using code generation libraries.
+</CompareWith>
+
+<CompareWith lang="go">
+Go does not have a macro system, so there is no quote concept. Template strings require using the `text/template` package.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `quote!` macro has similar functionality, using `#variable` for interpolation. Cangjie uses `$(variable)` syntax.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Macro definition files need to be declared with `macro package` and compiled with the `--compile-macro` option.</Note>

@@ -1,13 +1,24 @@
-// 包声明必须与目录路径匹配。
-// 对于 src/myapp/ 下的文件，使用：package myapp
-// src/ 根目录下的文件可以省略声明。
+// 位于 src/ 根目录的文件可以省略包声明
+// 编译器会自动指定包名为 "default"
 
-// 此文件位于根目录，因此无需包声明。
+// 定义一个简单的问候函数
+func greet(name: String): String {
+    return "你好, ${name}!"
+}
 
-func greet(): String {
-    "Hello from the default package!"
+// 定义一个计算函数
+func add(a: Int64, b: Int64): Int64 {
+    return a + b
 }
 
 main(): Unit {
-    println(greet())
+    // 调用本地函数
+    println(greet("仓颉"))
+    
+    // 演示数值计算
+    let result = add(10, 20)
+    println("计算结果: ${result}")
+    
+    // 输出当前上下文信息
+    println("这是默认包中的代码")
 }

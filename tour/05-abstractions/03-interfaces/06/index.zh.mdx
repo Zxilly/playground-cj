@@ -1,7 +1,25 @@
-# 类型转换
+# 类型判断与转换
 
-`value is Type` 测试值是否为特定类型。`value as Type` 尝试转换，返回 `Option` -- 成功时为 `Some(value)`，失败时为 `None`。
+`is` 操作符判断表达式的运行时类型是否是指定类型（或其子类型），返回布尔值。`as` 操作符尝试将表达式转换为指定类型，成功返回 `Some(value)`，失败返回 `None`。
 
-本例中，`animal is Dog` 返回 `true`。`as Dog` 转换返回 `Some(dog)`，可以访问 `fetch()` 方法。
+通过接口类型的变量只能访问接口方法。如果需要访问类型特有的成员，必须先用 `is` 检查类型，再用 `as` 进行转换。通常配合 `match` 表达式处理转换结果。
 
-将第 18 行的 `Dog()` 改为 `Animal()`，观察 `as Dog` 转换返回 `None`。
+类型转换是安全的：`as` 返回 `Option` 类型强制处理失败情况，避免运行时异常。这与某些语言的强制类型转换不同，后者转换失败会抛出异常。
+
+本例中，`Animal` 类型的变量实际可能是 `Dog` 或 `Cat`。使用 `is` 判断类型后，通过 `as` 安全转换并访问特有方法。
+
+将创建 `Animal` 对象（而非 `Dog`）的代码修改，观察 `as Dog` 转换返回 `None`。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 使用类型断言 `v.(Type)` 进行类型转换，失败时可选择返回布尔值或 panic。仓颉的 `as` 统一返回 `Option`，强制处理失败情况，更加安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `instanceof` 判断类型，使用强制转换 `(Type) obj`。转换失败会抛 `ClassCastException`。仓颉的 `as` 返回 `Option`，让错误处理显式且可控。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>优先使用接口多态而非类型判断和转换。如果发现代码中大量使用 `is` 和 `as`，可能说明接口设计需要改进。</Note>

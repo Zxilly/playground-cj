@@ -1,5 +1,31 @@
 # 命名参数
 
-在参数名后加 `!` 可将其标记为命名参数。调用时需要写出参数名，形如 `name: value`。
+在仓颉中，可以用 `name!: Type` 的语法定义命名参数。调用函数时，命名参数需要写出参数名，格式为 `name: value`。命名参数可以按任意顺序传递，这能让代码更易读，也减少了传参错误。
 
-命名参数可以按任意顺序传递。示例中，`createUser` 使用了 `name!`、`age!` 和 `email!` 三个命名参数。
+命名参数必须用 `!` 标记，这是仓颉的独特语法。参数列表可以同时包含普通参数和命名参数，但命名参数必须放在普通参数之后。调用时，普通参数按顺序传递，命名参数按名字传递。
+
+右侧代码定义了 `createUser` 和 `sendEmail` 函数，它们都使用命名参数。注意调用时参数顺序可以与定义顺序不同，这在大参数列表时特别有用。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 不支持命名参数，只能按位置顺序传参。对于参数多的函数，容易传参错误。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 也不支持命名参数，只能按位置传参。某些 Java 框架（如 Lombok）提供了 Builder 模式来改进这一点，但比仓颉的内置支持复杂。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持命名参数语法，只能按位置传参。仓颉的命名参数让函数调用更清晰，类似于 Python 的 `func(name=value)` 语法。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 不支持命名参数，但可以通过结构体或 `#[derive(Builder)]` 模式模拟。仓颉的命名参数是语言内置特性，更简洁直观。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>命名参数必须在普通参数之后定义。调用时命名参数的顺序可以任意调整。</Note>
+
+点击 <Highlight target="run">运行</Highlight> 看看命名参数的效果，然后尝试修改函数调用，改变参数顺序。

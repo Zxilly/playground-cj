@@ -1,3 +1,23 @@
-# inout
+# inout Parameters
 
-The `inout` modifier passes a Cangjie variable by reference to a `CFunc`, so the C side receives a `CPointer<T>`. The variable must be declared with `var`, satisfy the `CType` constraint, and must not be `CString` or derived from a `class` instance member. The pointer is only valid for the duration of the call.
+The `inout` keyword is used to pass Cangjie variables by reference to `CFunc`. On the C side, the parameter type is `CPointer<T>`, while on the Cangjie side, you can pass a pointer by using `inout` to modify the variable.
+
+There are several important constraints when using `inout`. First, the modified variable must be declared with `var`, not `let` constants or literals. Second, the variable's type must satisfy the `CType` constraint, but cannot be `CString`. Finally, variables modified with `inout` can only be used in calls to `CFunc`.
+
+The pointer passed to the C side is only valid during the function call; the C side should not save this pointer for later use. Variables can be top-level variables, local variables, or `struct` members, but cannot directly or indirectly come from instance members of a `class`. The code on the right demonstrates modifying Cangjie variable values through pointers.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, passing a pointer directly uses the `&` operator, like `func(&n)`. Cangjie uses the `inout` keyword to more explicitly indicate pass-by-reference.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `&mut` for mutable reference passing. Cangjie's `inout` is similar but designed specifically for C FFI scenarios, where the C side needs to receive a pointer.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Pointers passed via `inout` are only valid during the function call; the C side should not save this pointer for later use.</Note>
+
+Try modifying the code to use `inout` to pass multiple variables to a function simultaneously.

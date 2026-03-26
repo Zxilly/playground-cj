@@ -7,7 +7,7 @@ class Address {
 }
 
 class Profile {
-    public var address: ?Address
+    public var address: ?Address  // 地址可能不存在
 
     public init(address: ?Address) {
         this.address = address
@@ -22,18 +22,34 @@ class User {
     }
 }
 
-func shippingLabel(user: ?User): String {
-    let city = user?.profile.address?.city ?? "unknown city"
-    return "Ship to ${city}"
+// 使用可选链安全访问嵌套属性
+func getCity(user: ?User): String {
+    // user?.profile.address?.city 会自动处理链中的 None
+    // 任何一环是 None 就返回 None，用 ?? 提供默认值
+    return user?.profile.address?.city ?? "未知城市"
 }
 
-main(): Int64 {
-    let alice = Some(User(Profile(Some(Address("Shanghai")))))
-    let guest: ?User = None
-    let visitor = Some(User(Profile(None)))
+main() {
+    // 完整的用户信息
+    let alice = Some(User(
+        Profile(Some(Address("上海")))
+    ))
 
-    println(shippingLabel(alice))
-    println(shippingLabel(visitor))
-    println(shippingLabel(guest))
-    return 0
+    // 用户存在，但地址缺失
+    let bob = Some(User(
+        Profile(None)
+    ))
+
+    // 用户不存在
+    let guest: ?User = None
+
+    // 使用可选链安全获取城市
+    println("Alice 的城市: ${getCity(alice)}")
+    println("Bob 的城市: ${getCity(bob)}")
+    println("访客的城市: ${getCity(guest)}")
+
+    // 直接在表达式中使用可选链
+    let visitor = Some(User(Profile(Some(Address("北京")))))
+    let city = visitor?.profile.address?.city ?? "无数据"
+    println("访客的城市: ${city}")
 }

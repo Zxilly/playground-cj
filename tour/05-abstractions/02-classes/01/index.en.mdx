@@ -1,7 +1,33 @@
-# Classes
+# Class Definition
 
-A `class` defines a reference type. Assigning a class instance to another variable does not copy the data -- both variables point to the same object.
+`class` defines reference types. Unlike `struct`, class instances do not copy data when assigned or passed as parameters—two variables will point to the same object. This behavior makes classes suitable for representing data that needs to be shared or mutated.
 
-In this example, `cat` and `sameCat` refer to the same `Animal`. Changing `sameCat.name` also changes `cat.name`.
+Classes are defined using the `class` keyword and can contain member variables, constructors, member functions, etc. Member variables must be initialized by default or assigned in constructors. Use `let` to declare immutable members and `var` to declare mutable members.
 
-Try changing `sameCat.name` to a different value and verify that `cat.name` reflects the change.
+The `Counter` class below defines two member variables and one member function. Note that after assigning `counter` to `sameCounter`, modifying fields of `sameCounter` also affects `counter` because both point to the same object.
+
+<Note>
+All instance member variables of a class must be initialized in the constructor, otherwise the compiler will report an error.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C lacks native classes; you must manage pointers and memory manually. Cangjie's class provides safe object-oriented abstractions.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's class is similar to Cangjie's, both are reference types supporting member variables and methods. Both OOP models are fundamentally the same.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have classes; it uses structs and methods to implement object-oriented programming. Cangjie's class is closer to traditional OOP languages.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's structs are value types by default and require references or wrapper types for sharing. Cangjie's classes are reference types by nature.
+</CompareWith>
+
+</CompareGroup>
+
+Try modifying the value of `sameCounter.count` and observe whether `counter.count` changes synchronously.

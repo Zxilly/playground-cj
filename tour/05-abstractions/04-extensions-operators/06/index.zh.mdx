@@ -1,5 +1,31 @@
-# 下标运算符
+# 下标运算符重载
 
-重载 `[]` 运算符可以让类型支持类似数组的读写访问。读取重载返回值；写入重载额外接收一个 `value!` 参数。
+重载 `[]` 运算符可以让自定义类型支持类似数组的索引访问语法。下标运算符有两种形式：取值形式 `arr[i]` 和赋值形式 `arr[i] = value`，它们通过是否存在命名参数 `value!` 来区分。
 
-此处 `Grid` 存储二维表格。`grid[row, col]` 读取单元格，`grid[row, col] = value` 写入单元格，底层使用一维 `Array<Int64>`。
+右侧代码定义了 `Grid` 类表示二维表格。取值形式 `operator func [](row, col)` 返回单元格值；赋值形式 `operator func [](row, col, value!)` 接收一个特殊的命名参数 `value!`（注意感叹号），返回类型必须是 `Unit`。
+
+下标运算符支持多个索引参数，不限于单维数组。调用时不需要写成 `grid[row, col, value: v]` 的命名参数形式，直接使用 `grid[row, col] = v` 即可。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中的 `[]` 只适用于数组指针，无法为自定义类型重载；通常使用 `grid_get()` 和 `grid_set()` 函数代替。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 不支持运算符重载，必须用 `get()` 和 `set()` 方法；集合框架提供了这些方法但不能改变语法。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持下标运算符重载，但可以为类型定义 `At(i, j)` 等方法来模拟索引访问。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 通过 `Index` 和 `IndexMut` trait 实现下标访问，分离了不可变和可变访问。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>赋值形式的 `value` 是特殊标记，调用时不需要传入命名参数，直接用 `arr[i] = value` 语法即可。</Note>
+
+尝试添加边界检查，当索引越界时打印错误信息而不是崩溃。

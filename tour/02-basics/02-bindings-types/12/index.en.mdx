@@ -1,9 +1,29 @@
 # Comparison and Logical Operators
 
-`==`, `!=`, `<`, `>=` compare values and produce a `Bool`. `&&` (and), `||` (or), `!` (not) combine boolean values.
+Relational operators include equality (`==`), inequality (`!=`), less than (`<`), less than or equal (`<=`), greater than (`>`), and greater than or equal (`>=`). These operators require both operands to have the same type, and produce `Bool` type results with values `true` or `false`.
 
-```cangjie
-let canDrive = age >= 18 && hasLicense
-```
+Logical operators include logical NOT (`!`), logical AND (`&&`), and logical OR (`||`). Logical AND and OR use short-circuit evaluation: when the first operand can already determine the entire expression's result, the second operand is not evaluated. For example, `false && expr` directly returns `false` without evaluating `expr`.
 
-Try changing `&&` to `||` on line 21 and see how the result changes.
+Regarding operator precedence, `&&` has higher precedence than `||`. When combining complex conditions, it's recommended to use parentheses to clarify logical relationships and avoid unexpected results due to precedence issues. Cangjie's strong typing ensures that erroneous code like `if (a = 5)` will result in a compile-time error.
+
+The code on the right demonstrates the use of comparison and logical operators. You can modify conditional expressions to observe the effects of short-circuit evaluation and the impact of precedence when combining conditions.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's logical operators are similar but allow assignment expressions in conditions, prone to errors. Cangjie avoids this by returning `Unit`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's logical operators match Cangjie's, also using short-circuit evaluation, same compile error for `if (a = 5)`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's operators are basically the same as Cangjie's, also using short-circuit evaluation. However, Go uses `!` for both logical NOT and bitwise NOT, requiring context to distinguish.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's logical operators are identical to Cangjie's, also using short-circuit evaluation with the same operator precedence rules.
+</CompareWith>
+
+</CompareGroup>

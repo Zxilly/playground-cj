@@ -1,12 +1,13 @@
 main() {
-    let name = "仓颉"
+    // Define immutable bindings, types are automatically inferred from initial values
+    let name = "Cangjie"
     let year = 2024
     let pi = 3.14159
-
-    println("语言: ${name}")
-    println("年份: ${year}")
-    println("圆周率: ${pi}")
-
-    // The following would cause a compile error:
-    // name = "其他"  // Error! let bindings cannot be reassigned
+    
+    println("Language: ${name}")
+    println("Year: ${year}")
+    println("Pi: ${pi}")
+    
+    // The following code would cause a compilation error:
+    // name = "Other"  // Error! let bindings cannot be modified
 }

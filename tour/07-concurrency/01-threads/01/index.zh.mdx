@@ -1,5 +1,29 @@
 # Spawn
 
-`spawn` 接收一个无参 lambda 并在新线程中执行，返回一个可通过 `get()` 等待的 `Future<T>` 句柄。
+`spawn` 关键字用于创建一个新的仓颉线程，它接收一个无形参的 lambda 表达式，该 lambda 中的代码将在新线程中并发执行。
 
-线程之间的打印顺序是不确定的。此处主线程启动两个 worker，并在退出前等待两者完成。
+仓颉采用 M:N 线程模型，仓颉线程是用户态的轻量级线程，由底层 native 线程调度执行，比操作系统线程更轻量。当主线程结束时，所有未完成的新线程也会一起停止。
+
+右侧代码创建了三个线程：主线程和两个 worker 线程。由于线程执行顺序不确定，每次运行可能看到不同的输出顺序。
+
+<Note>新线程可能在主线程结束前还未执行任何代码，因此主线程需要等待子线程完成。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 使用 `pthread_create()` 创建线程，需要传递函数指针和手动管理线程 ID，容易出错且缺乏类型安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 需要创建 `Thread` 子类或实现 `Runnable` 接口，然后调用 `start()`；比仓颉的 `spawn` 更繁琐。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `go func() { ... }()` 启动 goroutine，语法更简洁但无法直接返回值。仓颉的 `spawn` 返回 `Future<T>` 可获取结果。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `std::thread::spawn(|| { ... })` 创建线程，返回 `JoinHandle<T>`。仓颉的 `Future<T>` 功能类似但命名不同。
+</CompareWith>
+
+</CompareGroup>

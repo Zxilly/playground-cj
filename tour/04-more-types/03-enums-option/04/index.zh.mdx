@@ -1,7 +1,31 @@
 # Option 类型
 
-`Option<T>` 表示一个可能存在也可能不存在的值：`Some(value)` 或 `None`。用它代替 `-1` 等特殊值来表示缺失结果。
+`Option<T>` 类型表示一个值可能存在也可能不存在。它有两个构造器：`Some(value)` 表示有值，`None` 表示无值。这比用特殊值（如 `-1` 或空字符串）表示缺失更安全。
 
-`??` 运算符在值为 `None` 时提供默认值。
+`Option<T>` 可以简写为 `?T`。例如，`Option<Int64>` 和 `?Int64` 是等价的。
 
-将 `??` 替换为 `match` 表达式，分别处理 `Some` 和 `None`。
+当函数可能无法返回有效结果时，应该返回 `Option` 类型。例如，查找函数在找不到目标时返回 `None`，除法函数在除数为零时返回 `None`。
+
+右侧的 `findIndex` 函数在数组中查找目标值，找到时返回 `Some(index)`，否则返回 `None`。`divide` 函数在除数非零时返回 `Some(result)`，否则返回 `None`。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 通常使用 `-1` 或 `NULL` 指针表示缺失值，容易引发 bug。仓颉的 `Option` 类型显式表示可能的缺失。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `null` 表示缺失，容易导致 `NullPointerException`。仓颉的 `Option` 强制处理缺失情况，更安全。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用多返回值 `(value, error)` 或 `(value, ok)` 模式，需要检查第二个返回值。仓颉的 `Option` 类型将这两种情况统一为一个值。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `Option<T>` 与仓颉几乎完全相同，都有 `Some` 和 `None` 两个构造器，都支持 `?T` 简写（Rust 用 `Option<T>` 而非 `?T`）。
+</CompareWith>
+
+</CompareGroup>
+
+尝试为 `findIndex` 添加一个参数，让它从指定位置开始查找。

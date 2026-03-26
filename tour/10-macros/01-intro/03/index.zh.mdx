@@ -1,7 +1,22 @@
-# public macro 声明
+# 宏的声明与参数
 
-宏函数声明为 `public macro Name(input: Tokens): Tokens`。`input` 参数接收调用处的 Token 序列，返回的 `Tokens` 替换源代码中的宏调用。
+宏函数声明为 `public macro Name(input: Tokens): Tokens`。宏必须声明为 `public`，因为它们总是被其他包使用。参数类型和返回类型都是 `Tokens`，表示 Token 序列。
 
-当宏作用于声明（如函数或类）时，整个声明成为输入。宏必须声明为 `public`，因为它们总是被其他包使用。
+宏可以分为非属性宏和属性宏两种。非属性宏只接受一个参数，即被修饰的代码片段，调用时使用 `@MacroName(...)`，作用于声明时可省略括号。属性宏接受两个参数：第一个是 `[]` 中的属性，第二个是被修饰的代码，调用时使用 `@MacroName[attr](...)`。
 
-跟踪 `testDef` 宏的返回值——它是一个将 Token 原样传递的恒等宏。
+非属性宏调用时，括号内的内容（或声明本身）成为 `input` 参数。属性宏调用时，`[]` 内的内容成为第一个参数 `attr`，后面修饰的代码成为第二个参数 `input`。宏返回的 `Tokens` 会替换源代码中的整个宏调用。
+
+右侧示例中，`AddPrefix` 是一个属性宏，接收属性和输入两部分，将它们拼接后返回。当调用 `@AddPrefix[public ]struct Data` 时，`attr` 是 `"public "`，`input` 是 `struct Data {...}`，返回值是 `public struct Data {...}`。
+
+<Note>属性宏的中括号和内容是强制的，即使为空也必须写 `@MacroName[](...)`。</Note>
+
+观察两个宏的展开结果，理解非属性宏和属性宏的参数传递方式。
+
+<CompareGroup>
+<CompareWith lang="rust">
+Rust 的声明宏 `macro_rules!` 支持多种匹配模式，过程宏也有 `#[proc_macro_attribute]` 类似属性宏。仓颉的属性宏更统一，用 `[]` 传递属性参数。
+</CompareWith>
+<CompareWith lang="java">
+Java 使用注解处理器在编译期处理 `@Annotate`，但机制是生成新文件而非替换代码。仓颉宏直接在编译期转换代码，更强大灵活。
+</CompareWith>
+</CompareGroup>

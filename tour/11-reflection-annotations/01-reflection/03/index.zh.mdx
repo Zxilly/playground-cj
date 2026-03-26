@@ -1,7 +1,25 @@
-# 调用方法
+# 反射调用方法
 
-`TypeInfo` 允许在运行时访问类型的方法。你可以按名称查找方法并动态调用，而无需在编译期知道具体类型。
+反射不仅限于读写变量，还可以在运行时动态调用方法。通过 `TypeInfo` 的 `getStaticFunction` 和 `getInstanceFunction` 可以按名称和参数类型查找方法，然后使用 `apply` 调用它。
 
-这使得通用框架（如序列化器或测试运行器）能够发现并调用任意对象的方法。
+静态方法通过 `getStaticFunction("方法名", 参数类型...)` 获取，实例方法通过 `getInstanceFunction("方法名", 参数类型...)` 获取。参数类型需要传入相应的 `TypeInfo` 对象。调用时，静态方法传入类型信息和参数数组，实例方法还需传入接收者对象。
 
-试着调用一个不存在的方法名，观察运行时错误。
+动态方法调用是框架开发的重要工具。例如，测试框架可以扫描带有特定注解的测试方法并执行它们，序列化框架可以自动调用 getter/setter 方法。
+
+<Note>反射调用方法时需要正确匹配参数类型。类型不匹配会导致运行时错误。</Note>
+
+右侧代码定义了包含实例方法和静态方法的 `Calculator` 类，然后通过反射动态调用这些方法。注意参数类型信息的获取方式：`TypeInfo.of<Int64>()`。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 通过 `reflect.Value.MethodByName()` 获取方法，调用时使用 `Call()`。仓颉需要显式指定参数类型，更严格但类型安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 反射使用 `getMethod()` 和 `invoke()`。仓颉的 `apply()` 类似，但返回 `Option` 要求显式处理错误。
+</CompareWith>
+
+</CompareGroup>
+
+试着添加一个新方法，并通过反射调用它。

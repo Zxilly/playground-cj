@@ -1,7 +1,27 @@
 # Type Annotations
 
-A type annotation is written after the name with `: Type`.
+Adding `: Type` after a variable name explicitly annotates the variable's type. Type annotations tell the compiler what type of data this variable should hold.
 
-The compiler checks that the value matches the declared type. If you omit the annotation, the type is inferred.
+If type annotation is omitted, the compiler will automatically infer the type based on the initial value. Both approaches have their advantages: explicit annotation makes type relationships clearer, while type inference makes code more concise. When the type context is clear, omitting annotation is recommended.
 
-Try changing a type annotation to a wrong type (e.g., `Bool` instead of `Int64`) and see the error.
+The code on the right shows three variable declarations with type annotations. Type annotation affects the type inference of literals: `95` would normally be inferred as `Int64`, but when annotated as `Int32`, it becomes an `Int32` value. Try changing `Int64` on line 2 to `Bool` and see what error the compiler reports.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C places type annotation before the variable name, `int score`, opposite to Cangjie's postfix style.
+</CompareWith>
+
+<CompareWith lang="java">
+Java also uses prefix type annotation, `int score`, different from Cangjie's postfix syntax.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's type annotation comes before the variable name: `var score int`. Cangjie uses postfix type annotation `let score: Int64`, which is easier to read.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust also uses postfix type annotation `let score: i64`, with syntax similar to Cangjie, though type naming conventions differ.
+</CompareWith>
+
+</CompareGroup>

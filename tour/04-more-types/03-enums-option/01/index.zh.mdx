@@ -1,7 +1,33 @@
-# 基本枚举
+# 枚举类型
 
-`enum` 定义一个由固定命名成员组成的类型，成员用 `|` 声明。
+`enum` 类型通过列举所有可能的取值来定义一个类型，这些取值称为构造器（constructor）。构造器之间用 `|` 分隔，可以是无参的，也可以携带参数。
 
-通过枚举名访问成员：`Direction.North`。使用 `match` 处理每种情况。
+构造枚举值时使用 `类型名.构造器` 的形式，如 `Direction.North`。也可以直接使用构造器名，当没有命名冲突时。
 
-添加一个 `Northeast` 成员，并在 `match` 表达式中处理它。
+`match` 表达式用于处理枚举的所有可能情况。每个 `case` 分支匹配一种构造器，`=>` 后面是该情况的处理代码。`match` 要求穷尽所有可能，可以用通配符 `_` 兜底。
+
+右侧代码定义了四个方向的枚举，并用 `match` 为每个方向返回对应的描述。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有原生枚举类型，通常使用 `enum` 但只能是整数值，无法携带数据。仓颉的 `enum` 是完整的代数数据类型，功能远强于 C。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `enum` 可以定义常量，但添加字段和方法需要较多样板代码。仓颉的 `enum` 构造器更简洁自然。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `iota` 枚举只是整数常量，无法携带数据。仓颉的 `enum` 是代数数据类型，功能更强大。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `enum` 与仓颉类似，都支持携带数据的构造器。两者的模式匹配语法也很接近。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>枚举只能定义在源文件的顶层作用域，不能定义在函数内部。</Note>
+
+尝试添加一个 `Southeast` 成员，并在 `describe` 函数中处理它。

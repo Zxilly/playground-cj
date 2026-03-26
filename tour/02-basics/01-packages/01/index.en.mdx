@@ -1,7 +1,31 @@
-# Packages and main
+# Packages
 
-Every Cangjie program starts running in the `main` function.
+Every Cangjie program consists of packages. Packages are the basic unit of compilation. Each package has its own namespace and can contain multiple source files.
 
-`package` declares which package a file belongs to. This program belongs to the `playground` package.
+Program execution starts from the `main` function. Cangjie's `main` function doesn't require the `func` keyword, making it more concise than other languages. The `main` function can have no parameters or accept command-line arguments of type `Array<String>`; the return type can be `Unit` (no return value) or an integer type (such as `Int64`, representing an exit code).
 
-Try adding a `println` call inside `main` before `return 0`.
+The `package` declaration must be on the first non-empty, non-comment line of the source file. If the source file is located in the project's source root directory (default is `src`), the package declaration can be omitted, and the compiler will use the default package name `default`. The example code on the right is in the root directory, so the `package` declaration is omitted.
+
+<Note>Returning `0` indicates normal program exit, while a non-zero value indicates abnormal exit. This is consistent with Unix/Linux conventions.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `main` returns `int` indicating exit code; Cangjie's `main` can return `Unit` or an integer, more flexible.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `main` is `public static void`, fixed with no return value; Cangjie's `main` supports optional integer return values.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `main` function has no parameters and no return value. Cangjie's `main` is more flexible, supporting parameters and return values.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `main` also supports return values, but requires the `fn` keyword. Cangjie omits this keyword for more concise syntax.
+</CompareWith>
+
+</CompareGroup>
+
+Click <Highlight target="run">Run</Highlight> to execute the program. Try changing the return value to `1` and observe the change in exit code.

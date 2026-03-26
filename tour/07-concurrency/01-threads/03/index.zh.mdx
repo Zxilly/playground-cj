@@ -1,5 +1,29 @@
-# 取消
+# 线程取消
 
-仓颉采用协作式取消。`cancel()` 发出请求，线程通过 `Thread.currentThread.hasPendingCancellation` 检查并自行决定何时停止。
+仓颉采用协作式取消机制。`Future<T>` 的 `cancel()` 方法向目标线程发送取消请求，但不会强制停止线程执行。线程通过 `Thread.currentThread.hasPendingCancellation` 属性检查是否存在取消请求，并自行决定如何响应。
 
-此处主线程在释放 `SyncCounter` 门之前调用 `worker.cancel()`。worker 在门打开后检查标志，若已被取消则提前返回。
+这种设计让开发者可以控制取消的时机和清理逻辑：线程可以在完成关键操作后再退出，或者直接忽略取消请求继续执行。如果线程不检查取消标志，它将一直运行到正常结束。
+
+右侧示例中，主线程先发送取消请求，然后释放 SyncCounter 门。worker 线程在门打开后检查取消标志，发现已被取消则提前返回。
+
+<Note>`SyncCounter` 是一个同步原语，`waitUntilZero()` 会阻塞直到计数器归零，`dec()` 将计数器减 1。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中没有标准的线程取消机制，通常使用全局信号量或互斥锁来模拟，繁琐且容易出错。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `Thread.stop()` 已弃用，通常用 `volatile boolean` 标志位轮询检查；仓颉的 `hasPendingCancellation` 更精简。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 通过 `context.Context` 实现取消，需要显式传递 context 并在 goroutine 中检查 `ctx.Done()`。仓颉的取消使用 `Thread` 静态属性，无需传递参数。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 没有内置的线程取消机制，通常通过 `AtomicBool` 或 `mpsc::channel` 手动实现。仓颉提供了语言级的取消支持。
+</CompareWith>
+
+</CompareGroup>

@@ -1,7 +1,29 @@
 # Pattern Guards
 
-`case n where n > 0 =>` adds a condition after the pattern. The branch runs only when both the pattern matches and the guard is true.
+Pattern guards allow you to add additional conditional checks after pattern matching. The syntax is `case pattern where condition =>`. The branch only executes when both the pattern matches and the condition is `true`.
 
-Note: Cangjie uses `where` for guards, not `if`.
+Pattern guards let you handle different cases under the same pattern. For example, after matching a number, you can handle it differently based on whether it's positive, negative, or zero. This is clearer than writing multiple `if-else` statements with complex conditions.
 
-Try changing the guard on line 5 to `where n > 0` and see which branch runs.
+<Note>Cangjie uses the `where` keyword rather than `if` to define guard conditions, which is a common style in pattern matching.</Note>
+
+Try changing `number` on line 2 to different values (like `-7`, `0`, `12`) and observe how different guard conditions affect the matching result.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `switch` has no guard syntax and requires `if` statements inside cases to handle conditions.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `switch` traditionally had no guard syntax (Java 17+ pattern matching added guard support). Usually you need to use `if` inside cases.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `switch case` has no built-in guard syntax—you need to write `if` statements inside cases, or use the `switch true { case x > 0: ... }` trick.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's pattern guards use `if` instead of `where`: `match x { n if n > 0 => ... }`. The functionality is the same, but the syntax differs slightly.
+</CompareWith>
+
+</CompareGroup>

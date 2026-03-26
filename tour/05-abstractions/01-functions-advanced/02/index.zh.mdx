@@ -1,7 +1,33 @@
 # Lambda 表达式
 
-`{ 参数 => 函数体 }` 创建一个匿名函数。没有参数时写作 `{ => 函数体 }`。最后一个表达式就是返回值。
+Lambda 表达式是一种匿名函数，用于快速定义简短的函数逻辑，无需显式声明函数名。语法格式为 `{ 参数列表 => 函数体 }`，其中 `=>` 不可省略（除非作为尾随 Lambda）。
 
-示例中，`double` 和 `abs` 是赋值给变量的 Lambda。
+Lambda 的参数类型可以省略，编译器会根据上下文推断。Lambda 的返回类型也不需要显式声明，由编译器根据表达式体自动推导。最后一个表达式的值就是返回值。
 
-试试将第 7 行的 Lambda 改为 `{ x: Int64 => x * x }`，然后运行。
+右侧展示了 Lambda 的多种用法：赋值给变量、多行 Lambda 体、作为函数参数传递。第 6 行的 `double` 使用单行 Lambda，第 10 行的 `abs` 使用多行 if 表达式，第 17 行直接在函数调用中传入 Lambda。
+
+<Note>
+无参数 Lambda 必须写成 `{ => 表达式 }`，`=>` 不能省略。`void` 返回时，Lambda 可以用于执行副作用操作。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有 Lambda，必须定义有名函数或使用函数指针。仓颉的 Lambda 语法大幅简化了编程。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 Lambda 表达式 `x -> x * 2` 比仓颉的 `{ x => x * 2 }` 更简洁，但功能相似。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有专门的 Lambda 语法，使用匿名函数 `func(x int) int { return x * 2 }`。仓颉的 Lambda 语法更简洁。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的闭包写成 `|x| x * 2`，参数类型可省略。仓颉用花括号 `{}` 包裹整体，与普通函数体更一致。
+</CompareWith>
+
+</CompareGroup>
+
+试试将第 6 行改为 `{ x: Int64 => x * x }`，实现平方功能。

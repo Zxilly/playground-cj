@@ -1,13 +1,31 @@
 # HashSet
 
-`HashSet<T>` stores unique elements with no defined order.
+`HashSet<T>` is a collection that stores unique elements, automatically removing duplicates. It does not guarantee element order, and the element type `T` must implement the `Hashable` and `Equatable<T>` interfaces.
 
-```cangjie
-let tags = HashSet<String>()
-tags.add("tour")
-tags.contains("tour")  // true
-```
+Use `add` to add elements (no effect if already exists), `contains` to check if an element exists, and `remove` to delete a specific element. `HashSet` is an ideal choice when you need fast membership testing or automatic deduplication.
 
-Adding a duplicate has no effect. `contains` checks membership, and `remove` deletes an element. Use it when you need fast membership tests and automatic deduplication.
+The code on the right creates a tag set, demonstrating the behavior of adding duplicate elements, membership checking, element deletion, and iteration. Note that the iteration order may differ from the insertion order.
 
-Try adding `"tour"` a third time and verify that the size stays the same.
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no built-in Set type; it must be manually implemented using arrays or linked lists, which is inefficient. Cangjie's `HashSet` provides efficient set operations.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `HashSet<T>` is similar to Cangjie's and also automatically deduplicates. Cangjie requires elements to implement `Hashable` and `Equatable<T>`, while Java requires `hashCode()` and `equals()`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have a built-in Set type, typically using `map[T]struct{}` or `map[T]bool` to simulate one. Cangjie provides a dedicated `HashSet` type with a more intuitive API.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `HashSet<T>` is similar to Cangjie's, both requiring elements to implement `Hash` and `Eq` traits. The `contains` method works the same in both.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Adding the same element repeatedly won't cause an error, but won't take effect either - the collection size remains unchanged.</Note>
+
+Try running the code to observe the change in set size after adding the duplicate `tour`, and whether the iteration order matches the insertion order.

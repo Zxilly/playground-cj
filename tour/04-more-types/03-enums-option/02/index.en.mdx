@@ -1,7 +1,23 @@
 # Enums with Data
 
-Enum cases can carry associated data. Each case may hold different types and numbers of values.
+Enum constructors can carry parameters, and different constructors can have different parameter types and counts. This allows enums to express richer data structures.
 
-Pattern matching with `case Circle(r) =>` extracts the data from each case.
+Parameters are declared in parentheses after the constructor name, such as `Circle(Float64)` carrying one Float64 parameter, and `Rectangle(Float64, Float64)` carrying two.
 
-Add a `Square(Float64)` case and handle it in both `area` and `describe`.
+In a `match` expression, you can extract the data carried by constructors through pattern matching. `case Circle(r) =>` binds the circle's radius to variable `r`, which can be used directly in the code after `=>`.
+
+The code on the right defines three shapes, each carrying different parameters. The `area` function extracts parameters through pattern matching and calculates the area.
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go requires defining an interface and multiple structs to simulate enums with data, which is far less concise than Cangjie's `enum`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `enum` members can carry data, but the syntax is verbose and doesn't allow enumerating different parameter combinations in constructors.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a `Square(Float64)` member to represent a square, and handle it in both the `area` and `describe` functions.

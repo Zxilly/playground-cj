@@ -1,10 +1,31 @@
-# Float Types
+# Floating-Point Types
 
-`Float64` is the default floating-point type. It represents numbers with a fractional part. Arithmetic on floats works the same way as on integers.
+Floating-point types are used to represent numbers with fractional parts, including `Float16`, `Float32`, and `Float64`, corresponding to IEEE 754 half-precision, single-precision, and double-precision formats respectively. `Float64` is the default floating-point type, with approximately 15 significant digits of precision.
 
-```cangjie
-let distance = 5.5
-let speed = distance / 2.0
-```
+Floating-point literals support both decimal and hexadecimal forms. Decimal literals must include either an integer part or a fractional part, and can use `e` or `E` to indicate an exponent (base 10). Hexadecimal literals start with `0x` and must include an exponent prefixed with `p` or `P` (base 2).
 
-Try changing a value and observe how the computed result changes.
+You can explicitly specify the type using suffixes: `f16`, `f32`, and `f64` correspond to the three floating-point types. The code on the right demonstrates floating-point operations and different representation styles.
+
+<Note>Floating-point types do not support increment `++` and decrement `--` operators, unlike integer types.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has only `float` and `double` floating-point types; Cangjie provides three: `Float16`, `Float32`, and `Float64` with finer-grained choices.
+</CompareWith>
+
+<CompareWith lang="java">
+Java similarly has only `float` and `double`; Cangjie's `Float16` supports half-precision floats, useful for specific applications.
+</CompareWith>
+
+<CompareWith lang="go">
+Go only has `float32` and `float64` floating-point types, while Cangjie additionally provides `Float16` for memory-constrained scenarios. Go's floating-point literal syntax is similar to Cangjie's.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `f32` and `f64` correspond to Cangjie's `Float32` and `Float64`. Rust defaults to `f64`, same as Cangjie. Both support hexadecimal floating-point literals.
+</CompareWith>
+
+</CompareGroup>
+
+Try modifying the distance and time values to see how the speed calculation changes.

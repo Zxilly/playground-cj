@@ -1,5 +1,29 @@
 # 类型约束
 
-`where T <: Printable` 子句将 `T` 限定为实现了 `Printable` 的类型。在函数体内，可以对 `T` 类型的值调用 `Printable` 中声明的方法。
+泛型参数 `T` 可以代表任意类型，但这带来了一个问题：在函数体内，编译器不知道 `T` 的具体类型，因此无法调用它的任何成员函数或访问属性。例如，无法对 `T` 类型的值进行 `+ 1` 或打印输出。
 
-如果没有约束，编译器只知道 `T` 是某种类型，无法允许除最基本操作以外的成员访问。
+`where` 子句可以约束泛型参数，指定它必须实现的接口或继承的父类。比如 `where T <: ToString` 表示 `T` 必须实现 `ToString` 接口，这样就可以在函数体内安全地调用 `toString()` 方法。
+
+右侧代码定义了一个 `Printable` 接口，然后使用 `where T <: Printable` 约束泛型函数 `printItem` 和 `printAll`。在函数内部，可以调用 `display()` 方法，因为编译器知道所有传入的类型都实现了这个接口。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有泛型和约束机制，必须使用预处理器宏或手动实现多个版本的函数，无法保证类型安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `<T extends SomeClass>` 或 `<T extends Interface>` 来约束泛型参数，但类型擦除导致运行时信息丢失。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的泛型约束使用 `any` 或接口类型，写在函数参数列表后的方括号中，如 `[T Stringer]`。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 trait bound 约束泛型，写法为 `<T: Display>` 或 `where T: Display`。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>如果不指定约束，泛型参数只能进行赋值、传递等最基本操作，无法调用任何方法。</Note>

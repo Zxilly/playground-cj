@@ -1,14 +1,14 @@
 main() {
     var count = 0
-    println("初始值: ${count}")
+    println("Initial value: ${count}")
 
     count = 10
-    println("修改后: ${count}")
+    println("First modification: ${count}")
 
     count = count + 5
-    println("再次修改: ${count}")
+    println("Second modification: ${count}")
 
     var message = "hello"
     message = "world"
-    println(message)
+    println("Message: ${message}")
 }

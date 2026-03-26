@@ -1,7 +1,30 @@
 # Using the Compiler Locally (Optional)
 
-If you want to practice the examples on your own machine, first [download and install the Cangjie compiler](https://cangjie-lang.cn/download), save the code as a `.cj` file, and then compile it with `cjc`:
+If you want to practice on your own machine, you can [download and install the Cangjie SDK](https://cangjie-lang.cn/download).
+
+Save the code as a file with the `.cj` extension, such as `hello.cj`, then compile and run it using the `cjc` command:
 
 ```
 cjc hello.cj -o hello && ./hello
 ```
+
+`cjc` will compile the source file and generate an executable. The `-o` option specifies the output filename; when omitted, it defaults to generating a `main` file.
+
+The code on the right demonstrates the standard program structure. You can create a file locally and try compiling it.
+
+<Note>All examples in this tutorial can be run directly in the browser; local installation is entirely optional.</Note>
+
+<CompareGroup>
+<CompareWith lang="c">
+C typically uses `gcc` or `clang` for compilation; Cangjie uses the `cjc` compiler with higher integration.
+</CompareWith>
+<CompareWith lang="java">
+Java compiles source files to bytecode with `javac`, then runs on the JVM with `java`; Cangjie compiles directly to native executables.
+</CompareWith>
+<CompareWith lang="go">
+Go uses `go build` or `go run` to compile and run; Cangjie uses `cjc` to compile and currently doesn't support single-file direct execution.
+</CompareWith>
+<CompareWith lang="rust">
+Rust uses `rustc` to compile single files or `cargo` to manage projects; Cangjie provides the `cjc` compiler, and package management tools will be introduced later.
+</CompareWith>
+</CompareGroup>

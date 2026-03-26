@@ -1,26 +1,31 @@
-# var (Mutable)
+# var (Mutable Bindings)
 
-`var` creates a mutable binding. The name can be reassigned to a new value at any time.
+The `var` keyword is used to create mutable bindings, where the bound value can be reassigned in subsequent code. When you need to count, accumulate results, or update state, using `var` is the appropriate choice.
 
-```cangjie
-var count = 0
-count = 10  // OK
-```
+Variables modified with `var` can be assigned multiple times, and each assignment changes the value held by the variable. The assignment operator `=` is used to modify the variable's value, requiring the type of the right-hand expression to be a subtype of the left-hand variable's type. Cangjie does not support chained assignment (like `a = b = 0`), which helps avoid common coding errors.
+
+The code on the right demonstrates typical usage of `var`: `count` starts at 0 and is modified multiple times; `message` changes from `"hello"` to `"world"`. After each assignment, we print the variable's new value to observe the changes.
+
+<Note>A good programming practice is: use `let` by default, and only switch to `var` when you're certain you need to modify the variable. This reduces bugs from accidental modifications.</Note>
 
 <CompareGroup>
 
+<CompareWith lang="c">
+All C variables are mutable by default with no way to enforce immutability at compile time. Cangjie explicitly marks mutability with `var` for clarity.
+</CompareWith>
+
 <CompareWith lang="java">
-Java variables are mutable by default. Use `final` to make them immutable. Cangjie takes the opposite approach -- immutable by default with `let`, opt-in mutability with `var`.
+Java variables are mutable by default; immutability requires `final`. Cangjie reverses this: `let` is immutable by default, switch to `var` only when needed.
 </CompareWith>
 
 <CompareWith lang="go">
-Go variables declared with `var` or `:=` are always mutable. There is no way to declare a non-constant immutable variable.
+Go variables are mutable by default, with no syntax support for immutable variables. Cangjie clearly distinguishes between them through `let` and `var`, making intentions more explicit.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust requires `let mut` for mutable bindings. Cangjie uses a separate keyword `var` instead.
+Rust uses `let mut` to declare mutable variables, while Cangjie uses the `var` keyword, with the same semantics but simpler and more intuitive syntax.
 </CompareWith>
 
 </CompareGroup>
 
-Change `var count` on line 2 to `let count` and observe the compile error on reassignment.
+Try changing one of the `var` to `let` and observe what error message the compiler gives. Then think about which variables truly need mutability.

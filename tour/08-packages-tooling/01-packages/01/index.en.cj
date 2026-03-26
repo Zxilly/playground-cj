@@ -1,13 +1,24 @@
-// Package declaration must match the directory path.
-// For a file in src/myapp/, use: package myapp
-// Files in src/ root can omit the declaration.
+// Files in src/ root directory can omit package declaration
+// The compiler automatically assigns package name "default"
 
-// This file is in the root, so no package declaration needed.
+// Define a simple greeting function
+func greet(name: String): String {
+    return "Hello, ${name}!"
+}
 
-func greet(): String {
-    "Hello from the default package!"
+// Define a calculation function
+func add(a: Int64, b: Int64): Int64 {
+    return a + b
 }
 
 main(): Unit {
-    println(greet())
+    // Call local functions
+    println(greet("Cangjie"))
+    
+    // Demonstrate numeric calculation
+    let result = add(10, 20)
+    println("Result: ${result}")
+    
+    // Output current context information
+    println("This is code in the default package")
 }

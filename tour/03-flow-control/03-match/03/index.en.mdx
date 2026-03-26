@@ -1,7 +1,29 @@
 # Binding Patterns
 
-`case n =>` matches any value and binds it to the name `n` for use inside that branch.
+Binding patterns not only match values but also bind the matched value to a variable, allowing you to use that value in the branch. The syntax is `case variable_name =>`, where the variable name can be any identifier you want.
 
-This is useful as a catch-all that still lets you use the matched value.
+Binding patterns are typically used to match and handle remaining cases. Unlike the wildcard `_`, binding patterns let you access the matched value. `case other =>` will match any value and bind it to the `other` variable.
 
-Try changing `code` on line 2 to `500` and see what gets printed.
+<Note>Binding patterns cannot be used with `|`, because each pattern needs to independently bind variables and cannot share them.</Note>
+
+Try changing `code` on line 2 to different values and observe how the binding pattern captures and uses these values.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `switch` has no pattern matching and cannot directly bind and destructure values. You need to declare variables externally.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `switch` traditionally had no binding patterns (Java 16+ improved pattern matching). Cangjie's binding patterns represent a more modern design.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `switch case` has no concept of binding patterns—you need to declare variables in advance outside the switch.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's binding patterns are exactly the same as Cangjie's—`case n =>` will bind the entire value. Variables are immutable by default.
+</CompareWith>
+
+</CompareGroup>

@@ -1,10 +1,31 @@
 # Unit and Nothing
 
-`Unit` is the type of expressions that complete but produce no meaningful value, such as `println`. `Nothing` is the type of expressions that never complete normally, such as `break` or `return`.
+The `Unit` type represents "execution completed but no meaningful return value". Its only value is `()`, and side-effect operations such as `println`, assignment expressions, and loop expressions are all of `Unit` type.
 
-```cangjie
-let result: Unit = println("hello")
-break  // type is Nothing
-```
+`Nothing` is a special type that contains no values and is a subtype of all types. The types of `break`, `continue`, `return`, and `throw` expressions are all `Nothing`—when program execution reaches these expressions, the code after them will not be executed.
 
-Run the code and observe that `println` returns `Unit`.
+These two types are mainly used for expressing type system and control flow semantics, helping the compiler with type inference and flow analysis. The code on the right demonstrates typical use cases for `Unit` and `Nothing`.
+
+<Note>`Nothing` currently cannot be explicitly used in type annotations; it is primarily used by the compiler for type inference.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `void` for functions with no return value; Cangjie's `Unit` type is more consistent, all expressions have types.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `void` for no return value; Cangjie's `Unit` is a real type with value `()`, more unified.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `func foo() {}` for functions with no return value, which actually returns a `struct{}` type. Go has no equivalent concept to `Nothing`; `panic`, `break`, etc. don't return but the type system doesn't reflect this.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `()` type corresponds to Cangjie's `Unit`, representing an empty tuple. Rust's `!` type (never type) corresponds to Cangjie's `Nothing`, representing expressions that never return, such as `return`, `panic!`, etc.
+</CompareWith>
+
+</CompareGroup>
+
+Try running the code and observing the return value of `println` and the execution of code after `break`.

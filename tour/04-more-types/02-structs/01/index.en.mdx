@@ -1,7 +1,33 @@
 # Defining Structs
 
-A `struct` is a collection of fields. Each field has a name and a type. Fields declared with `let` are immutable; fields declared with `var` are mutable.
+A `struct` is a collection of named fields used to organize related data together. Each field has a name and a type. Fields declared with `let` are immutable, while fields declared with `var` are mutable.
 
-Struct fields are accessed using dot syntax: `point.x`.
+Access fields using dot notation, such as `point.x`. Fields can have default values specified at definition time or passed in during construction.
 
-Add a `year` field of type `Int64` to `Book` and print it.
+The code on the right defines two structs: `Point` and `Book`. The fields of `Point` are declared with `let`, so they cannot be modified after creation. For `Book`, `title` is an immutable field, while `pages` is a mutable field.
+
+<Note>
+A `struct` can only be defined at the top level of a source file and cannot be nested inside other types or functions.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's struct fields have no mutability modifiers; all fields are modifiable. Typically, `const` is applied to the entire struct to restrict modifications.
+</CompareWith>
+
+<CompareWith lang="java">
+Java fields can be marked with `final` for immutability, but there's no field-level `let/var` distinction. Visibility is controlled with `public/private/protected`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's struct fields don't have `let/var` distinction; field mutability is determined by variable binding (pointer or value).
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's struct fields are also affected by the `mut` of variable bindings, but field-level visibility requires separate `pub` annotation.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a `year` field of type `Int64` to `Book` and print it in `main`.

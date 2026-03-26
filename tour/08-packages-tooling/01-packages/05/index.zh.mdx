@@ -1,7 +1,31 @@
 # 重新导出
 
-`public import a.b.foo` 使 `foo` 对所有导入你的包的人可用，他们无需再单独导入 `a.b`。
+`public import` 可以将导入的声明重新导出，使其对导入你所在包的代码也可见。这称为"重新导出"或"重导出"。
 
-`import` 的默认修饰符是 `private`，即导入的名称仅在当前文件中可用。
+默认的 `import` 是 `private` 的，导入的名称仅在当前文件可用。使用 `public import` 后，这些名称会成为你所在包的公开 API 的一部分。
 
-示例展示了如何通过中间包使用重新导出的 `ArrayList`。
+重新导出常用于构建库的便捷 API。库作者可以将分散在多个子包中的常用类型汇总到一个入口包，使用者只需导入这一个包即可。这既简化了使用方式，又保留了内部组织的灵活性。
+
+右侧代码展示了重新导出的概念。虽然这里只演示了普通导入，但注释说明了在真实项目中如何使用 `public import` 构建库的 API。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有模块或包的概念，无法进行重新导出。所有导入都是通过预处理指令直接处理。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 不支持重新导出。导入的类只在当前文件可用。如要提供统一 API，需在中间包创建包装类。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持重新导出。如果要提供简化导入，只能手写包装类型或函数。仓颉的 `public import` 更加直接和便捷。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 支持重新导出：`pub use std::collections::HashMap;`。机制与仓颉类似，都用于公开内部依赖或简化 API 面向用户的方式。
+</CompareWith>
+
+</CompareGroup>
+
+试着将 `import std.collection.ArrayList` 改为 `public import`，理解它如何改变导入声明的可见性。

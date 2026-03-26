@@ -1,19 +1,29 @@
-# Cancellation
+# Thread Cancellation
 
-Cangjie uses cooperative cancellation. `cancel()` sends a request; the thread checks `Thread.currentThread.hasPendingCancellation` and decides when to stop.
+Cangjie uses a cooperative cancellation mechanism. The `cancel()` method of `Future<T>` sends a cancellation request to the target thread but does not forcibly stop thread execution. The thread checks whether there is a cancellation request through the `Thread.currentThread.hasPendingCancellation` property and decides how to respond.
 
-```cangjie
-worker.cancel()
-// inside worker:
-if (Thread.currentThread.hasPendingCancellation) {
-    return
-}
-```
+This design allows developers to control the timing of cancellation and cleanup logic: a thread can exit after completing critical operations, or ignore the cancellation request and continue executing. If a thread doesn't check the cancellation flag, it will continue running until normal completion.
 
-The main thread calls `worker.cancel()` before releasing a `SyncCounter` gate. The worker checks the flag after the gate opens and returns early if cancelled.
+In the example on the right, the main thread first sends a cancellation request, then releases the SyncCounter gate. The worker thread checks the cancellation flag after the gate opens and returns early if it finds it has been cancelled.
 
-<Note>
-Cancellation is cooperative -- if a thread never checks `hasPendingCancellation`, the cancel request is silently ignored.
-</Note>
+<Note>`SyncCounter` is a synchronization primitive. `waitUntilZero()` blocks until the counter reaches zero, and `dec()` decrements the counter by 1.</Note>
 
-Remove the `worker.cancel()` call and observe that the worker prints "running" instead of "cancelled".
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no standard thread cancellation mechanism and usually requires global semaphores or mutexes to simulate cancellation, which is verbose and error-prone.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `Thread.stop()` is deprecated; instead, a `volatile boolean` flag is typically polled to check cancellation. Cangjie's `hasPendingCancellation` is more concise.
+</CompareWith>
+
+<CompareWith lang="go">
+Go implements cancellation through `context.Context`, requiring explicit context passing and checking `ctx.Done()` in goroutines. Cangjie's cancellation uses `Thread` static properties without needing to pass parameters.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust has no built-in thread cancellation mechanism and typically requires manual implementation using `AtomicBool` or `mpsc::channel`. Cangjie provides language-level cancellation support.
+</CompareWith>
+
+</CompareGroup>

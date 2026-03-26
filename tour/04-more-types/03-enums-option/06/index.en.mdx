@@ -1,15 +1,33 @@
-# Option Pattern Matching
+# Pattern Matching with Option
 
-`match` on an `Option` separates the `Some(v)` and `None` cases explicitly. Each branch can destructure the inner value and apply further conditions with `where` guards.
+Using `match` with `Option` allows explicit distinction between `Some(v)` and `None` cases, with different handling logic in each branch. This is the most common and clearest way to handle `Option`.
 
-```cangjie
-match (score) {
-    case Some(s) where s >= 90 => "A"
-    case Some(s) where s >= 80 => "B"
-    case None => "N/A"
-}
-```
+`case Some(v)` binds the inner value of `Option` to variable `v`, which can be used in the branch code. `case None` handles the case when the value is empty.
 
-This is the most common way to handle an `Option` when the two cases require different logic.
+The `where` guard can further refine matching conditions. For example, `case Some(s) where s >= 90` only matches `Some` where the inner value is greater than or equal to 90. Guards must be boolean expressions, placed after the pattern and before `=>`.
 
-Add a `"D"` grade for scores between 60 and 69.
+The code on the right demonstrates how to use patterns and guards to convert scores to letter grades, with a default value for missing scores.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `switch` is value-based only and doesn't support pattern matching or guards. Cangjie's `match` with patterns and guards is much more powerful.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `switch` doesn't support guards; handling complex logic requires multiple nested if-else statements. Cangjie's `match` with `where` is more concise and clear.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `switch` doesn't support pattern matching and guards, only `if-else` chains can be used to handle similar logic, resulting in more verbose code.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `match` also supports guards (called match guards), with identical syntax and semantics to Cangjie.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`match` requires exhaustive coverage of all cases. When handling `Option`, both `Some` and `None` branches must be included.</Note>
+
+Try modifying the `getLetterGrade` function to add more score ranges (like A+, A-).

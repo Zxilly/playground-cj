@@ -1,7 +1,29 @@
-# Macro debugging
+# Macro Debugging
 
-Compile with `cjc --debug-macro` to write expanded macro code to a `.macrocall` file. This lets you inspect exactly what your macro generates.
+Macros expand at compile time, and the generated code is invisible, making debugging somewhat difficult. Cangjie provides two important debugging tools: the command-line option `--debug-macro` and the macro-internal function `diagReport`.
 
-Inside a macro definition, call `diagReport(DiagReportLevel.ERROR, tokens, message, hint)` to emit compiler-style errors at expansion time.
+When compiling with `cjc --debug-macro`, the compiler writes the macro-expanded code to a `.macrocall` file. You can view this file to understand what code the macro actually generated, helping to locate problems.
 
-Run the test with `@Expect` and observe the output.
+Inside a macro definition, calling `diagReport(DiagReportLevel.ERROR, tokens, message, hint)` can output formatted error messages at compile time. The errors output by this function are formatted consistently with native compiler errors, including file location, error level, and hint information.
+
+The example below demonstrates the process of using built-in test macros. In actual development, you can first define a problematic macro, use `--debug-macro` to view the expansion result, and then use `diagReport` to report usage errors. Try passing an incorrect expected value to `@Expect` and observe the test framework's output.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's preprocessor has no debugging tools. Errors are reported through the compiler's standard error messages, with no structured diagnostic mechanism.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's Annotation Processors can report errors through the `Messager` interface, but there is no tool like `--debug-macro` to view expanded code.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust macros can also use `compile_error!` to report errors at compile time, but the format is not as flexible as `diagReport`. Rust's `cargo expand` command can view macro expansion, similar to `--debug-macro`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go does not have a macro system and doesn't need macro debugging tools. If code generation tools have errors, you need to check the generator's implementation.
+</CompareWith>
+
+</CompareGroup>

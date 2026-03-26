@@ -1,5 +1,29 @@
 # Break 与 Continue
 
-`break` 立即退出循环。`continue` 跳到下一轮迭代。
+`break` 用于立即终止整个循环，程序跳转到循环之后的代码继续执行。常用于找到目标后提前退出，或在满足特定条件时中止遍历。
 
-试着把第 6 行的 `break` 改成 `continue`，观察输出的变化。
+`continue` 用于跳过当前轮循环的剩余代码，直接进入下一轮迭代。常用于过滤不需要处理的情况，让循环体更专注于真正需要的逻辑。
+
+`break` 和 `continue` 只影响当前所在的那层循环。在嵌套循环中，它们不会影响外层循环的执行。这两个关键字的类型都是 `Nothing`，表示它们不会返回任何值。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `break` 和 `continue` 与仓颉相同，用于退出循环和跳过迭代。C 也不支持标签式跳转。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `break` 和 `continue` 语义相同。Java 支持带标签的 break `break label:`，可以跳出外层循环。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `break` 和 `continue` 与仓颉语义完全相同。Go 可以用标签实现跳出外层循环，仓颉目前不支持标签跳转。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `break` 和 `continue` 也相同。Rust 支持带标签的循环 `break 'label`，用于嵌套循环的精细控制。
+</CompareWith>
+
+</CompareGroup>
+
+试着将 `break` 改成 `continue`，或将条件判断反过来，观察输出结果的变化。

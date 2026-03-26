@@ -1,3 +1,31 @@
-# 简单 C 调用
+# 调用 C 标准库函数
 
-要调用像 `abs()` 这样的 C 库函数，使用 `foreign` 声明它并在 `unsafe` 中调用。编译时使用 `cjc main.cj -lc` 链接 C 运行时。`foreign` 声明在链接时将仓颉类型映射到对应的 C 类型。
+仓颉通过 `foreign` 关键字声明外部 C 函数，使你能够直接调用 C 标准库或自定义 C 代码。由于 C 函数可能执行不安全操作，所有调用必须包裹在 `unsafe` 块中。
+
+`foreign` 声明只提供函数签名，实际实现在 C 侧。参数和返回类型必须符合仓颉与 C 之间的类型映射规则：例如 `Int32` 对应 C 的 `int32_t`，`UIntNative` 对应 `size_t`。使用 `@C` 修饰 `foreign` 声明时可省略，因为这是默认行为。
+
+右侧代码声明了 C 标准库中的 `abs` 和 `rand` 函数，并在 `unsafe` 块中调用它们。编译时需要使用 `cjc main.cj -lc` 链接 C 运行时库。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中直接调用同一程序中定义的函数，如 `printf`。不需要声明，只需包含正确的头文件即可。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 通过 JNI 的 `System.loadLibrary()` 加载本地库，然后声明 `native` 方法调用。返回类型映射比仓颉复杂。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 通过 `import "C"` 和特殊注释块声明 C 函数，调用时不需要 `unsafe` 块，但需要通过 `C.` 前缀访问。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `extern "C"` 声明外部函数，调用同样需要 `unsafe` 块。仓颉的 `foreign` 与此类似。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`foreign` 函数只能有声明不能有实现。变长参数使用 `...` 表示，如 `printf(fmt: CString, ...): Int32`。</Note>
+
+尝试在第 16 行添加对外国函数的调用，看看会发生什么编译错误。

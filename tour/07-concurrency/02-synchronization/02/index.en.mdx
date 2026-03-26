@@ -1,13 +1,60 @@
-# Atomic
+# Atomic Operations
 
-`AtomicInt64` provides lock-free atomic operations on a single integer.
+For simple concurrent access to integers, booleans, or reference types, atomic operations provide a lock-free, efficient solution. Atomic operations are directly supported by hardware and don't require explicit lock mechanisms.
 
-```cangjie
+Cangjie provides various atomic types, such as `AtomicInt64`, `AtomicBool`, and `AtomicReference`. Atomic operations for integer types include `load()` for reading, `store()` for writing, `fetchAdd()` for atomic addition, `compareAndSwap()` for compare-and-swap, and more.
+
+Atomic operations are suitable for simple scenarios like counting and flagging. If you need to protect compound operations on multiple variables, or if the critical section contains complex logic, you should use `Mutex` instead of atomic operations.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C relies on compiler built-in functions like `__sync_` or `__atomic_` for atomic operations, which have inconsistent APIs and are difficult to use.
+</CompareWith>
+
+<CompareWith lang="java">
+Java provides the `java.util.concurrent.atomic` package with types like `AtomicInteger`, with APIs similar to Cangjie, but memory ordering options are complex.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `sync/atomic` package provides functional APIs, such as `atomic.AddInt64(&addr, delta)`. Cangjie's atomic types are object-oriented, with methods bound to atomic objects.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust provides atomic types through the `std::sync::atomic` module, using an `Ordering` parameter to control memory ordering. Cangjie currently only supports sequential consistency, making it simpler to use.
+</CompareWith>
+
+</CompareGroup>
+
+The code on the right uses `AtomicInt64` to implement a thread-safe counter. `fetchAdd(1)` atomically increments the value by 1 and returns the value before modification. This approach is more lightweight and performs better than `Mutex`.
+
+<Note>`fetchAdd` returns the value before modification, not the value after modification. To get the current value, use `load()`.</Note>
+
+Try changing `fetchAdd` to a combination of regular `store` and `load` to see if data races occur.
+
+CJ:
+import std.sync.AtomicInt64
+import std.collection.ArrayList
+
 let counter = AtomicInt64(0)
-let _ = counter.fetchAdd(1)
-println(counter.load())
-```
 
-`fetchAdd` atomically increments the value; `load` reads it. Atomics suit simple counters. For protecting multiple fields or complex state, use a `Mutex` instead.
-
-Change `fetchAdd(1)` to `fetchAdd(5)` and predict what `counter.load()` will print with 20 threads.
+main(): Int64 {
+    let futures = ArrayList<Future<Unit>>()
+    
+    // Create 50 concurrent threads, each incrementing the counter
+    for (_ in 0..50) {
+        let future = spawn {
+            let oldValue = counter.fetchAdd(1)
+            println("Before increment: ${oldValue}")
+        }
+        futures.add(future)
+    }
+    
+    // Wait for all threads to complete
+    for (future in futures) {
+        future.get()
+    }
+    
+    println("Final count: ${counter.load()}")
+    return 0
+}

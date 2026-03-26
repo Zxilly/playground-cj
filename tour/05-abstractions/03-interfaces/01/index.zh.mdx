@@ -1,9 +1,33 @@
 # 定义接口
 
-_接口_ 声明了一组方法签名。
+接口定义了一组方法签名，用于约定类型的行为规范。接口不包含数据，只定义"做什么"而非"如何做"。
 
-任何实现了这些方法的类型都满足该接口。接口也可以提供默认实现。
+使用 `interface` 关键字声明接口，其中可以声明成员函数、操作符重载和成员属性。接口成员默认具有 `public` 访问级别，实现类型也必须使用 `public` 提供实现。
 
-本例中，`Printable` 要求实现 `display()`，而 `Named` 为 `name()` 提供了返回 `"anonymous"` 的默认实现。
+接口可以为其成员提供**默认实现**。如果一个类型实现了接口但未提供某个方法的具体实现，则会使用接口中的默认实现。这为接口设计提供了灵活性。
 
-删除 `User` 中的 `name()` 重写，观察默认值 `"anonymous"` 的返回。
+本例中，`Printable` 接口要求实现 `display()` 方法，而 `Named` 接口为 `name()` 提供了返回 `"anonymous"` 的默认实现。`User` 类同时实现了这两个接口，并提供自己的 `name()` 方法覆盖默认实现。
+
+删除 `User` 中 `name()` 方法，观察接口默认值的使用。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有接口概念，需要通过函数指针和 struct 手动实现类似功能。仓颉的接口提供了更清晰的抽象。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 interface 与仓颉类似，都定义方法签名和可选默认实现。Java 用 `implements` 声明，仓颉用 `<:` 声明。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的接口是隐式实现：只要类型提供了接口要求的所有方法，就自动满足该接口。仓颉需要显式声明 `<: InterfaceName` 来建立实现关系。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 trait 类似仓颉接口，可以为方法提供默认实现。但 Rust 使用 `impl Trait for Type` 语法显式实现，而仓颉在类型定义时声明实现关系。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>接口成员可以没有默认实现，此时实现类型必须提供具体实现。如果一个类型实现多个接口且这些接口有同名方法的默认实现，则必须提供自己的实现以避免冲突。</Note>

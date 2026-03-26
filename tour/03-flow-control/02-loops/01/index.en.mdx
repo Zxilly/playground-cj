@@ -1,7 +1,29 @@
-# While
+# While Loops
 
-`while (condition) { body }` repeats a block as long as the condition is true.
+The `while` loop repeatedly executes a code block as long as the condition is true. It checks the condition first before deciding whether to execute the loop body. If the condition is false from the beginning, the loop body will never execute.
 
-`do { body } while (condition)` executes the body at least once before checking.
+The `do-while` loop executes the loop body first, then checks the condition. This means the loop body will execute at least once, even if the condition is false from the beginning.
 
-Try changing `i <= 10` to `i <= 5` on line 5 and see how the sum changes.
+Similar to many languages, the conditions for `while` and `do-while` must be Boolean expressions. In the loop body, you typically need to modify variables related to the condition, otherwise it may result in an infinite loop.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C provides `while` and `do-while` keywords with syntax similar to Cangjie. Both require parentheses around the condition expression.
+</CompareWith>
+
+<CompareWith lang="java">
+Java similarly provides `while` and `do-while` with syntax essentially identical to Cangjie.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have a dedicated `while` keyword, but uses `for` to simulate while loops. Cangjie provides separate `while` and `do-while` keywords.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's conditional expressions don't require parentheses, while Cangjie's `while (condition)` requires parentheses around the condition. Both have identical semantics.
+</CompareWith>
+
+</CompareGroup>
+
+Try modifying the conditional expression and observe how the number of iterations changes.

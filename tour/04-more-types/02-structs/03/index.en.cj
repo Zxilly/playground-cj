@@ -5,18 +5,22 @@ struct Circle {
         this.radius = radius
     }
 
+    // Calculate area
     func area(): Float64 {
         3.14159 * radius * radius
     }
 
+    // Calculate circumference
     func circumference(): Float64 {
         2.0 * 3.14159 * radius
     }
 
+    // Return description string
     func describe(): String {
         "Circle(r=${radius})"
     }
 
+    // Compare two circles by size
     func isLargerThan(other: Circle): Bool {
         this.area() > other.area()
     }
@@ -30,5 +34,6 @@ main() {
     println("Area: ${c1.area()}")
     println("Circumference: ${c1.circumference()}")
 
-    println("${c1.describe()} larger than ${c2.describe()}? ${c1.isLargerThan(c2)}")
+    let larger = if (c1.isLargerThan(c2)) { "c1" } else { "c2" }
+    println("Larger circle: ${larger}")
 }

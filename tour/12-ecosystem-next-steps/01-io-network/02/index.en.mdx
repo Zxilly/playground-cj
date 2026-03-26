@@ -1,3 +1,31 @@
-# HTTP and Socket Overview
+# Network Programming
 
-The `stdx.net.http` package provides `ClientBuilder` and `ServerBuilder` for HTTP client and server programming. For transport-layer networking, `std.net` offers `TcpSocket`, `TcpServerSocket`, and `UdpSocket`. These networking APIs use blocking I/O on lightweight Cangjie threads, so a blocked thread does not consume a system thread.
+Cangjie supports transport-layer TCP and UDP programming, as well as application-layer HTTP programming. TCP implements reliable connection-oriented communication through `TcpSocket` and `TcpServerSocket`, while UDP implements connectionless datagram transmission through `UdpSocket`. HTTP programming uses `ClientBuilder` and `ServerBuilder` from the `stdx.net.http` package.
+
+Network I/O in Cangjie is blocking—calls to `read`, `accept`, and other methods will wait until data is ready. However, it's Cangjie lightweight threads that are blocked, not system threads. A blocked Cangjie thread will yield the system thread to other ready Cangjie threads. This design lets you write efficient concurrent network programs using a synchronous coding style.
+
+A TCP server needs to first `bind()` to an address, then call `accept()` to wait for client connections. A TCP client calls `connect()` to connect to the server. Once connected, both parties can send and receive data through `read()` and `write()`. The example on the right demonstrates the basic TCP communication flow.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C implements network programming through Berkeley Socket API (`socket`, `bind`, `listen`, etc.), a lower-level, more primitive interface.
+</CompareWith>
+
+<CompareWith lang="java">
+Java provides the `java.net` package with `ServerSocket` and `Socket` classes. The API is similar to Cangjie's, but exception handling differs.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `net.TCPConn` and `net.TCPListener` are similar to Cangjie's Socket API, also using blocking I/O where goroutines are blocked rather than system threads.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `std::net` also provides TCP/UDP APIs, but uses `Result` for error handling. Cangjie uses `try` expressions and exception mechanisms to handle network errors.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>HTTP-related APIs are in the `stdx.net.http` package and require adding the stdx dependency in `cjpm.toml`. Socket APIs are in the `std.net` package and are part of the standard library.</Note>
+
+Running this code will start a TCP server and a client. Observe how data sent by the client is received and printed by the server.

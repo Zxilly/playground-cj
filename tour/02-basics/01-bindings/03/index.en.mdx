@@ -1,31 +1,31 @@
 # Type Annotations
 
-A type annotation is written after the name with `: Type`. The compiler checks that the value matches the declared type.
+In Cangjie, you can explicitly specify a variable's type using `: Type` after the variable name. Type annotations make code intentions clearer, and the compiler checks whether the assigned value matches the declared type, catching type errors at compile time.
 
-```cangjie
-let score: Int64 = 25
-let title: String = "hello"
-let ready: Bool = true
-```
+Cangjie is a statically typed language, where every variable has a definite type. Common basic types include: `Int64` (64-bit integer), `Float64` (64-bit floating-point), `String` (string), `Bool` (boolean, only `true` and `false`). Type names starting with a capital letter is Cangjie's naming convention.
+
+The type annotation comes after the variable name, which differs from the traditional C/Java style (type first). The benefit of this design is that even with type annotations, the variable name remains at the front, highlighting the core information of "name", making it easier to quickly locate variable names when reading code.
+
+<Note>Type annotations are optional. When a variable has an initial value, the compiler can automatically infer the type. However, explicit annotation is useful in certain scenarios: improving code readability, limiting type scope, or helping the compiler handle complex situations.</Note>
 
 <CompareGroup>
 
 <CompareWith lang="c">
-C requires explicit types everywhere (`int score = 25;`). Cangjie annotations are optional when the type can be inferred.
+C places type annotation before the variable name (e.g., `int x`), opposite to Cangjie. Cangjie puts type after to highlight the variable name.
 </CompareWith>
 
 <CompareWith lang="java">
-Java places the type before the name (`int score = 25`). Cangjie places it after with a colon (`let score: Int64 = 25`).
+Java also annotates type before the variable name (e.g., `int score`), differing from Cangjie's postfix style.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses the same post-name syntax (`var score int64 = 25`) but without the colon.
+Go's type annotation also comes after the variable name (e.g., `var x int`), similar to Cangjie's design philosophy, emphasizing variable name priority.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses identical syntax: `let score: i64 = 25`.
+Rust also uses colon syntax for type annotation (e.g., `let x: i32`), consistent with Cangjie's syntax.
 </CompareWith>
 
 </CompareGroup>
 
-Try changing a type annotation to a wrong type (e.g., `Bool` instead of `Int64`) and see the error.
+Try changing a type annotation to an incorrect type (e.g., changing `Int64` to `String`) and observe what error the compiler reports.

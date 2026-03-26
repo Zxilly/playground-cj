@@ -1,7 +1,31 @@
-# Imports
+# Import Declarations
 
-`import std.collection.*` imports everything from a package. `import std.collection.ArrayList` imports a single item.
+The `import` statement is used to import declarations from other packages. Import statements must be placed after the package declaration and before any other code.
 
-The `std.core` package is implicitly imported in every file, so types like `String` and `Array` are always available.
+Cangjie provides multiple import methods: `import std.collection.ArrayList` imports a single type, while `import std.collection.*` imports all visible declarations from the package. Choosing the appropriate import method makes code clearer.
 
-Try changing `import std.collection.ArrayList` to `import std.collection.*` and observe that the code still works.
+Notably, the `std.core` package is automatically implicitly imported, so basic types like `String`, `Array`, `Int64`, etc. can be used directly without manual import. This differs from some languages that require explicit imports for all types.
+
+The code on the right demonstrates importing `ArrayList` and the `sqrt` function. Note that these features from the standard library require explicit import.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses the preprocessor directive `#include` to include header files, with no true package system. C has no implicit imports—all standard library functions require explicit declarations.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `import java.util.ArrayList;` to import individual classes, and `import java.util.*;` to import all visible classes from a package. Similar to Cangjie, but Java implicitly imports the `java.lang` package.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `import "fmt"` to import an entire package, then calls functions via `fmt.Println()`. Cangjie can import both entire packages and selectively import specific declarations.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `use std::collections::ArrayList;` for imports, with similar syntax. However, Rust has no implicit imports—standard library types also need explicit declarations.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing `import std.collection.ArrayList` to `import std.collection.*` and observe whether the code still works correctly.

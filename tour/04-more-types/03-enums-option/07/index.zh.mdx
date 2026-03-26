@@ -1,3 +1,31 @@
 # 可选链
 
-`?.` 运算符仅在接收者为 `Some` 时访问成员，`None` 会自动传播。配合 `??` 使用，`user?.profile.address?.city ?? "unknown city"` 这样的链式调用可以安全地穿越多层可选值，无需嵌套判空。
+`?.` 运算符（问号操作符）在访问可选值的成员时自动处理 `None` 情况。如果接收者是 `Some(v)`，则访问 `v` 的成员并包装为 `Some`；如果是 `None`，则直接返回 `None`，不会崩溃。
+
+可选链支持多层访问，如 `user?.profile.address?.city`。如果链中任何一环是 `None`，整个表达式返回 `None`，后续访问不会执行。这避免了多层 `if` 或 `match` 嵌套。
+
+配合 `??` 运算符，可以安全地穿越多层可选值并提供默认值：`user?.profile.address?.city ?? "未知城市"`。这样的链式调用简洁且安全。
+
+`?.` 也可用于方法调用 `obj?.method()`、下标访问 `obj?[index]` 和尾随 lambda 调用。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有可选链，需要手动检查每一层指针是否为空。仓颉的 `?.` 运算符大幅简化了这一过程。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 10+ 提供流式 API 但不直接支持可选链，仍需显式的 `null` 检查。仓颉的 `?.` 更简洁安全。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有可选链语法，需要连续判断 `if user != nil && user.Profile != nil ...`，代码冗长易错。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 没有内置的可选链语法，通常使用 `and_then()` 或 `map()` 方法链式调用，不如 `?.` 直观。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>可选链返回的值仍然是 `Option` 类型，需要继续处理或用 `??` 提供默认值。</Note>

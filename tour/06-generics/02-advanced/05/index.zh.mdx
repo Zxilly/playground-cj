@@ -1,5 +1,29 @@
-# 综合示例
+# 泛型注册表
 
-`Registry<T>` 将类型参数、`where T <: Identifiable` 约束、`HashMap` 存储和 `Option<T>` 查询结果组合在一起。约束确保每个元素都有 `getId` 方法。
+`Registry<T>` 综合运用了本章所学的多个概念：类型参数 `T`、`where T <: Identifiable` 约束、`HashMap` 存储以及 `Option<T>` 返回值。约束确保每个元素都有 `getId()` 方法用于唯一标识。
 
-这种模式——带约束元素类型的泛型容器——在实际仓颉代码中很常见。
+这种模式——带约束的泛型容器——在实际仓颉代码中很常见。通过约束，泛型类可以安全地操作元素而无需知道具体类型；通过泛型，实例化后的容器又能保持具体的元素类型，避免运行时类型检查。
+
+右侧代码实现了一个用户注册表：它要求存储的元素实现 `Identifiable` 接口，内部用 `HashMap` 存储，查询返回 `Option<T>` 来优雅地处理"未找到"的情况。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中很难实现泛型注册表，通常需要使用 `void*` 指针和手动类型转换，完全没有类型安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 可以实现类似的注册表，但类型擦除导致运行时类型信息丢失；Cangjie 保留完整类型信息。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 通过接口约束 + 泛型实现类似模式，返回值通常用指针的零值表示不存在。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 trait bound 约束，用 `Option<T>` 表示可能不存在的结果，模式相同。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`const init` 构造器支持结构体在编译期构造。更多细节见下一页。</Note>

@@ -1,5 +1,25 @@
-# 注解
+# 自定义注解
 
-注解将结构化元数据附加到声明上。用 `@Annotation` 和 `const init` 定义注解类，用 `@Name[args]` 应用注解。
+注解将结构化元数据附加到声明上，可在运行时通过反射读取。仓颉通过 `@Annotation` 标记定义注解类，注解类必须提供 `const init` 构造函数。
 
-此处 `@Version` 存储版本字符串。`ApiV1` 和 `ApiV2` 携带不同版本号，`main` 通过 `findAnnotation<Version>()` 在运行时读取。
+定义注解时，使用 `@Annotation` 修饰 `class`，并在类中声明需要存储的字段。注解类不能使用 `abstract`、`open` 或 `sealed` 修饰。使用注解时，语法为 `@注解名[参数]`，参数会在编译期求值并绑定到类型上。
+
+通过 `TypeInfo.findAnnotation<T>()` 可以在运行时获取类型上的注解信息，返回 `Option<T>` 类型。这使得框架可以在运行时根据注解执行不同逻辑，例如版本控制、权限检查等。
+
+<Note>注解不会被继承。子类不会获得父类的注解元数据。</Note>
+
+右侧代码定义了 `@Version` 注解，并用它标记两个 API 类。运行时通过反射读取并打印版本号。
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java 注解通过 `@interface` 定义，使用 `@Retention` 控制生命周期。仓颉注解必须使用 `const init`，参数在编译期求值。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用结构体标签（struct tags）实现类似功能，如 `` `json:"name"` ``。仓颉的注解是类型安全的，可以携带复杂结构。
+</CompareWith>
+
+</CompareGroup>
+
+试着添加新的注解类型，如 `@Author` 记录作者信息。

@@ -1,29 +1,29 @@
 # Type Constraints
 
-A `where T <: Printable` clause restricts `T` to types that implement `Printable`. Inside the function, methods from `Printable` can be called on values of type `T`.
+The generic parameter `T` can represent any type, but this creates a problem: inside the function body, the compiler doesn't know the concrete type of `T`, so it cannot call any of its member functions or access properties. For example, you cannot perform `+ 1` on a value of type `T` or print it.
 
-```cangjie
-func printItem<T>(item: T): Unit where T <: Printable {
-    println(item.display())
-}
-```
+The `where` clause can constrain generic parameters, specifying interfaces they must implement or parent classes they must inherit from. For instance, `where T <: ToString` means `T` must implement the `ToString` interface, allowing you to safely call the `toString()` method inside the function body.
 
-Without a constraint, the compiler cannot allow any interface-specific method calls on `T`.
+The code on the right defines a `Printable` interface, then uses `where T <: Printable` to constrain the generic functions `printItem` and `printAll`. Inside these functions, you can call the `display()` method because the compiler knows that all passed types implement this interface.
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C has no generics or constraint mechanisms; you must use preprocessor macros or manually implement multiple versions of functions without type safety guarantees.
+</CompareWith>
+
 <CompareWith lang="java">
-Java uses `<T extends Printable>` for bounded type parameters. Cangjie uses `where T <: Printable` after the parameter list.
+Java uses `<T extends SomeClass>` or `<T extends Interface>` to constrain generic parameters, but type erasure causes runtime information to be lost.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses `[T Printable]` with interface constraints. Cangjie's `where` clause is more flexible for complex multi-constraint scenarios.
+Go's generic constraints use `any` or interface types, written in square brackets after the function parameter list, such as `[T Stringer]`.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses `where T: Display` or inline bounds `<T: Display>`. The concept is identical to Cangjie's `where T <: Printable`.
+Rust uses trait bounds to constrain generics, written as `<T: Display>` or `where T: Display`.
 </CompareWith>
 
 </CompareGroup>
 
-Remove the `where` clause from `printItem` and observe the compile error on `item.display()`.
+<Note>Without specifying a constraint, generic parameters can only perform basic operations like assignment and passing, and cannot call any methods.</Note>

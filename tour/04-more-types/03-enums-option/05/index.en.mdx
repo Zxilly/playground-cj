@@ -1,29 +1,33 @@
-# Option for Null Safety
+# Option and Null Safety
 
-`Option<T>` (shorthand `?T`) represents a value that may or may not exist. `Some(v)` holds a value; `None` means absent.
+Cangjie provides multiple ways to handle `Option` values, making null-safe operations more convenient.
 
-```cangjie
-let present: ?Int64 = Some(42)
-present ?? 0          // 42
-missing ?? 0          // 0
-```
+The `??` operator (coalescing operator) provides a default value when the value is `None`. The expression `opt ?? default` returns `v` when `opt` is `Some(v)`, and returns `default` when `opt` is `None`. This allows safe unwrapping of Optional values.
 
-The `??` operator provides a fallback value when the option is `None`. `getOrThrow()` unwraps or throws if absent.
+The `getOrThrow()` method directly unwraps the value, returning `v` when the value is `Some(v)`, and throwing an exception when it's `None`. This is suitable when you're certain the value must exist.
+
+When the context clearly requires an `Option<T>` type, you can directly pass a `T` type value, and the compiler will automatically wrap it with `Some`. For example, a function returning an `Int64` type value can directly return the number, which will be automatically wrapped as `Some`.
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C doesn't have a coalescing operator; it requires manual ternary operators or if-else for null handling. Cangjie's `??` is more concise.
+</CompareWith>
+
 <CompareWith lang="java">
-Java's `Optional<T>` serves the same purpose with `orElse()` instead of `??`. Cangjie's `?T` shorthand is more concise than `Optional<T>`.
+Java objects can be `null` and require explicit checking. Cangjie's `Option` and `??` operator provide safer null value handling.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses pointer types (`*T`) or `(value, bool)` returns for optional values. Cangjie's `?T` is safer because the compiler enforces checking.
+Go's `if err != nil` pattern is more verbose than Cangjie's `??`, but more explicit. Go doesn't have a similar auto-wrapping mechanism.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust's `Option<T>` is nearly identical. `unwrap_or(0)` corresponds to Cangjie's `?? 0`.
+Rust's `unwrap_or()` method has the same functionality as Cangjie's `??` operator, but `??` syntax is more concise.
 </CompareWith>
 
 </CompareGroup>
 
-Call `missing.getOrThrow()` to see the exception it throws.
+<Note>The `??` operator requires the default value on the right side to have the same type as the inner type of `Option`.</Note>
+
+Try modifying the `findEmail` function to distinguish between "username not found" and "user has no email" cases.

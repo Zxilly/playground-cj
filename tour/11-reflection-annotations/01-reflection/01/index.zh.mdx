@@ -1,5 +1,25 @@
 # 反射
 
-反射允许程序在运行时检查类型信息并按名称访问成员。`ClassTypeInfo.of(obj)` 返回对象的类型元数据。
+反射允许程序在运行时检查类型信息并动态访问成员。仓颉通过 `TypeInfo` 类型提供反射能力，它是反射的核心类型，记录了任意类型的元数据。
 
-此处通过名称查找 `Counter` 的实例变量 `value` 和静态变量 `step`，然后读取、修改、再次读取，全部通过反射 API 完成。
+有三种方式获取 `TypeInfo`：通过实例对象、通过泛型参数或通过类型名称字符串。`TypeInfo.of(obj)` 返回对象的运行时类型信息，`TypeInfo.of<T>()` 返回类型 `T` 的静态类型信息。对于类类型，`TypeInfo.of(obj)` 会返回 `ClassTypeInfo`，它提供了更多类特有的反射接口。
+
+反射可以访问类型的公共成员，包括静态变量、实例变量、属性和方法。通过 `getStaticVariable` 和 `getInstanceVariable` 可以按名称查找成员变量，然后使用 `getValue` 和 `setValue` 读写其值。
+
+<Note>反射只能访问 `public` 成员，`private` 和 `protected` 成员不可见。</Note>
+
+右侧代码演示了通过反射读取和修改 `Counter` 类的实例变量 `value` 和静态变量 `step`。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 使用 `reflect.TypeOf()` 和 `reflect.ValueOf()` 获取类型信息，通过 `CanInterface()` 检查可访问性。仓颉的 `TypeInfo` 提供了更统一的接口。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 反射通过 `Class.forName()` 和 `getField()` 访问成员。仓颉的 `TypeInfo.of()` 更简洁，且类型安全。
+</CompareWith>
+
+</CompareGroup>
+
+试着修改 `setValue` 的参数，观察输出变化。

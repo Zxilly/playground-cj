@@ -1,31 +1,31 @@
 # Integer Types
 
-`Int64` is the default integer type. Integer literals can be written in decimal, hexadecimal (`0x`), or binary (`0b`).
+Integer types are divided into two categories: signed (e.g., `Int8`, `Int64`) and unsigned (e.g., `UInt8`, `UInt64`), where the numeric suffix indicates the bit width. `Int64` is the default integer type—when an integer literal has no type context, the compiler infers it as `Int64`.
 
-```cangjie
-let decimal = 42
-let hex = 0x2A
-let binary = 0b101010
-```
+Integer literals support four numeral systems: decimal (no prefix), binary (`0b` or `0B`), octal (`0o` or `0O`), and hexadecimal (`0x` or `0X`). You can use underscores `_` as separators to improve readability, such as `1_000_000`.
+
+You can explicitly specify the type of a literal using suffixes: `i8` for `Int8`, `u64` for `UInt64`, and so on. The code on the right demonstrates integer literals in different numeral systems and types.
+
+<Note>Using `Int64` is preferred because its range is large enough (-2^63 to 2^63-1), avoiding unnecessary type conversions.</Note>
 
 <CompareGroup>
 
 <CompareWith lang="c">
-C defaults `int` to platform-dependent width. Cangjie's `Int64` is always 64 bits.
+C's integer types like `int` and `long` have non-fixed sizes, causing portability issues; Cangjie's types like `Int8`, `Int64` have fixed sizes.
 </CompareWith>
 
 <CompareWith lang="java">
-Java's `int` is 32 bits, `long` is 64 bits. Cangjie defaults to `Int64`.
+Java's integer types are fixed-size (`int` 32-bit, `long` 64-bit); Cangjie offers more choices including smaller types like `Int8`, `Int16`.
 </CompareWith>
 
 <CompareWith lang="go">
-Go's `int` is platform-dependent. Use `int64` for explicit 64-bit. Cangjie defaults to `Int64`.
+Go's `int` and `uint` sizes are platform-dependent, similar to Cangjie's `IntNative` and `UIntNative`. Go uses `0x` for hexadecimal but has no octal literal prefix (before Go 1.13), while Cangjie explicitly uses the `0o` prefix.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust defaults integer literals to `i32`. Cangjie defaults to `Int64`.
+Rust defaults integers to `i32`, while Cangjie defaults to `Int64`. Both support type suffixes, but Rust uses `0o` while Cangjie allows `0o` or `0O`.
 </CompareWith>
 
 </CompareGroup>
 
-Try adding an octal literal (`0o52`) and printing it to confirm it equals 42.
+Try adding an octal literal and printing the result.

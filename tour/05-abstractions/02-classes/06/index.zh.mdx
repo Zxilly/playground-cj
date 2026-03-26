@@ -1,7 +1,25 @@
 # 抽象类
 
-`abstract class` 声明没有方法体的方法。子类必须实现所有抽象方法。抽象类不能直接实例化。
+`abstract class` 定义抽象类，它可以声明没有实现的方法（抽象方法）。抽象类本身不能实例化——它是一个不完整的模板，必须由子类补全。子类必须实现所有抽象方法，否则也必须声明为抽象类。
 
-示例中，`Shape` 将 `area()` 和 `label()` 声明为抽象方法。具体方法 `describe()` 调用它们，运行时分派到子类实现。
+抽象方法用 `func` 声明但不提供函数体。抽象类还可以包含具体方法（有函数体），这些具体方法可以调用抽象方法——运行时会分派到子类的实现。这种设计模式常用于定义算法框架（模板方法模式）。
 
-试试在 `main` 中写 `Shape()`，观察编译错误。
+下方的 `Shape` 是抽象类，声明了 `area()` 和 `label()` 两个抽象方法。具体的 `Circle` 和 `Rectangle` 必须实现它们。抽象类的 `describe()` 方法调用了这些抽象方法，形成模板方法。
+
+<Note>
+尝试用 `Shape()` 创建实例会编译报错——抽象类不可实例化。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java 的 `abstract class` 用 `abstract` 标记抽象方法。仓颉抽象方法的函数体留空即可。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有抽象类概念，用接口定义行为。仓颉的抽象类可以包含具体方法和成员变量。
+</CompareWith>
+
+</CompareGroup>
+
+试试在 `main()` 中写 `Shape()`，观察编译错误信息。

@@ -1,3 +1,31 @@
-# 部署运行时
+# 部署仓颉运行时
 
-仓颉二进制文件默认动态链接到仓颉运行时库，因此目标机器上必须存在这些库。将 `LD_LIBRARY_PATH`（Linux）或 `PATH`（Windows）指向 SDK 中的 `runtime/lib/` 目录即可。也可以使用 `--static` 编译，生成一个内嵌运行时的完全自包含二进制文件。
+仓颉可执行程序依赖运行时库才能正常运行。运行时提供了内存管理、垃圾回收、异常处理等核心功能。默认情况下，仓颉采用动态链接方式，生成的可执行文件在运行时需要加载仓颉运行时动态库。
+
+部署时，需要确保目标机器上存在运行时库。在 Linux 上，设置 `LD_LIBRARY_PATH` 环境变量指向 SDK 中的 `runtime/lib/linux_x86_64_cjnative/` 目录；在 macOS 上使用 `DYLD_LIBRARY_PATH`；在 Windows 上将 runtime 目录加入 `PATH`。
+
+如果希望生成自包含的可执行文件，可以使用 `--static` 选项（仅限 Linux 平台）。静态链接会将运行时编译进二进制文件中，无需在目标环境额外部署运行时，但会增大文件体积。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 默认动态链接标准库。静态链接需要显式指定 `-static` 选项。仓颉的链接策略类似。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 应用打包为 JAR 文件，需要 JVM 和 Java 运行时。没有静态链接的概念。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 默认静态链接，生成完全独立的二进制文件。仓颉默认动态链接，需要部署运行时或使用 `--static`。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 标准库默认静态链接，生成的二进制文件独立运行。仓颉可以选择动态或静态链接。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>静态链接仅适用于 Linux 平台。macOS 和 Windows 平台目前只支持动态链接。</Note>
+
+尝试运行右侧程序，检查你的运行时环境是否正确配置。如果没有配置运行时，程序会报错提示找不到动态库。

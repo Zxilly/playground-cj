@@ -1,5 +1,31 @@
-# 异常还是 Option
+# Option 还是异常
 
-当缺失是正常结果时使用 `Option`——例如查找未匹配的项时返回 `None`。当情况属于真正的错误且调用方必须处理时使用异常，如余额不足或输入非法。
+选择 `Option` 还是异常取决于错误的性质。当缺失是正常、预期的结果时，使用 `Option`；当情况属于真正的错误，调用方必须处理时，使用异常。
 
-`findScore` 返回 `?Int64`，因为名字不存在是预期情况。`withdraw` 抛出异常，因为负数金额是编程错误。
+查找操作通常返回 `Option`，因为"未找到"是正常的业务情况，调用方可能用默认值替代或忽略。右侧的 `findScore` 返回 `?Int64`，调用方可以优雅地处理不存在的用户名。
+
+相反，非法参数、资源不足等情况应该抛出异常。右侧的 `withdraw` 在余额不足或金额为负时抛出异常，因为这些是编程错误或严重问题，应该向上传播。
+
+`Option` 强制调用方处理缺失情况，而异常可以自动向上传播直到被捕获。根据错误的严重性和处理需求选择合适的机制。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 无法区分"缺失"和"错误"，通常混用返回值和全局 `errno`。仓颉的 `Option` 和异常机制分离更清晰。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 统一使用异常处理错误情况，包括 checked 和 unchecked 异常。仓颉用 `Option` 和异常区分，语义更明确。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 惯用 `(value, error)` 返回值，但错误可以被忽略（不检查 error）。仓颉的 `Option` 强制处理缺失情况，更安全。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `Result<T, E>` 与 `Option<T>` 分离：`Option` 表示可能缺失，`Result` 表示可能失败。仓颉统一用 `Option` 表示缺失，异常表示错误。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>在实际项目中，可以定义自己的异常类型来携带更多错误信息，例如 `InsufficientBalanceException`。</Note>

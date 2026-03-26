@@ -1,7 +1,27 @@
 # Type Inference
 
-When the type is clear from the value, the compiler infers it automatically.
+When a variable has an initial value, the compiler can automatically infer its type without explicit annotation. This makes code more concise while maintaining type safety.
 
-`42` is inferred as `Int64`, `3.14` as `Float64`, `"hello"` as `String`, and `true` as `Bool`.
+Cangjie's inference rules are intuitive: integer literals default to `Int64`, floating-point literals infer as `Float64`, double-quoted strings infer as `String`, and `true` and `false` infer as `Bool`. Inference happens at the variable definition, based on the initial value's type.
 
-Try changing the initial value of `x` to `3.14` and observe how its type changes.
+The four variables in the code on the right have no explicit type annotations, yet the compiler accurately infers their types. Subsequent operations using these variables also depend on the inference results—the type of `sum` is inferred from `x + 10`. Try changing the initial value of `x` from `42` to `3.14` and observe what type error occurs with `sum = x + 10`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C does not support type inference; types must be explicit. Cangjie's inference makes code more concise.
+</CompareWith>
+
+<CompareWith lang="java">
+Java supports type inference from Java 10 via `var`; Cangjie natively supports it everywhere.
+</CompareWith>
+
+<CompareWith lang="go">
+Go also supports type inference. Integers infer as `int` (platform-dependent), floats as `float64`. Cangjie consistently infers as `Int64` and `Float64`, making it more predictable across platforms.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's type inference can span statements and function boundaries, being more aggressive. Cangjie's inference is primarily based on initial values, with stronger locality.
+</CompareWith>
+
+</CompareGroup>

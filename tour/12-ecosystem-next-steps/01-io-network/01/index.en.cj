@@ -1,19 +1,26 @@
 import std.io.*
 
 main() {
-    // Write bytes into an in-memory buffer
-    let buf = ByteBuffer()
-    buf.write("Hello, Cangjie I/O!".toArray())
+    // Create a memory stream and write byte data
+    let buffer = ByteBuffer()
+    buffer.write("Cangjie I/O Stream Example".toArray())
+    buffer.write("\nSecond line of data".toArray())
 
-    // Read the bytes back from the buffer
-    let data = Array<Byte>(64, repeat: 0)
-    let n = buf.read(data)
-    println(String.fromUtf8(data[..n]))
+    // Read data: create buffer, read and convert to string
+    let readBuf = Array<Byte>(64, repeat: 0)
+    let bytesRead = buffer.read(readBuf)
+    println("Read ${bytesRead} bytes:")
+    println(String.fromUtf8(readBuf[..bytesRead]))
 
-    // Use StringReader for line-based reading
-    let buf2 = ByteBuffer()
-    buf2.write("Line 1\nLine 2\nLine 3".toArray())
-    let reader = StringReader(buf2)
-    println(reader.readln() ?? "")
-    println(reader.readln() ?? "")
+    // Use StringReader to read text line by line
+    let buffer2 = ByteBuffer()
+    buffer2.write("First line\nSecond line\nThird line".toArray())
+    let reader = StringReader(buffer2)
+
+    println("\nReading line by line:")
+    var line = reader.readln()
+    while (line != None) {
+        println(line ?? "")
+        line = reader.readln()
+    }
 }

@@ -1,5 +1,29 @@
 # var（可变绑定）
 
-`var` 声明一个可变绑定，值可以随时重新赋值。
+`var` 声明一个可变绑定，值可以在后续被重新赋值。当你确实需要修改变量的值时，就用 `var`。
 
-试着把第 2 行的 `var count` 改成 `let count`，看看重新赋值时会怎样。
+可变性是一种选择，不是默认行为。你需要显式写出 `var` 来表明这个变量可能会改变，这有助于读者快速识别代码中哪些地方会修改状态。
+
+右侧代码展示了可变绑定 `count` 和 `message` 的使用。编译器会追踪变量的可变性：如果你用 `var` 声明却从未重新赋值，它会建议你改用 `let`。试着把第 2 行的 `var count` 改成 `let count`，运行后观察编译错误出现在哪里。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的变量默认可变，无法强制不可变性；仓颉反其道而行之，默认不可变。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 默认所有变量可变，需要用 `final` 修饰才能不可变；仓颉的设计是反过来的。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 中所有变量都是可变的，没有不可变绑定的概念。仓颉通过 `let`/`var` 区分可变性，默认不可变。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `let mut` 声明可变变量，仓颉使用更简洁的 `var` 关键字，语义一致。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>如果变量声明后从未被重新赋值，编译器可能会给出警告，建议将其改为 `let`。</Note>

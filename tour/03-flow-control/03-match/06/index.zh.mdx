@@ -1,7 +1,29 @@
 # 模式守卫
 
-`case n where n > 0 =>` 在模式后追加条件。只有模式匹配且守卫为真时，分支才会执行。
+模式守卫（pattern guard）可以在模式匹配后添加额外的条件判断。语法是 `case 模式 where 条件 =>`，只有模式匹配且条件为 `true` 时，才会执行该分支。
 
-注意：仓颉的守卫用 `where`，不是 `if`。
+模式守卫让你能处理同一模式下的不同情况。例如，匹配一个数字后，再根据它是正数、负数还是零进行不同处理。这比写多个带有复杂条件的 `if-else` 更清晰。
 
-试着把第 5 行的守卫条件改成 `where n > 0`，看看会走哪个分支。
+<Note>仓颉使用 `where` 关键字而不是 `if` 来定义守卫条件，这是模式匹配领域的常见风格。</Note>
+
+尝试将第 2 行的 `number` 改成不同的值（如 `-7`、`0`、`12`），观察不同守卫条件如何影响匹配结果。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `switch` 没有守卫语法，需要在 case 内部用 `if` 语句处理条件。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `switch` 传统上也没有守卫语法（Java 17+ 的模式匹配支持了守卫）。通常需要在 case 内部使用 `if`。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `switch case` 没有内置守卫语法，需要在 case 内部写 `if` 语句，或者直接用 `switch true { case x > 0: ... }` 的技巧。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的模式守卫使用 `if` 而非 `where`：`match x { n if n > 0 => ... }`。功能相同，语法略有差异。
+</CompareWith>
+
+</CompareGroup>

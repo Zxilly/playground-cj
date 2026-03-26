@@ -1,7 +1,31 @@
 # 插值
 
-在 `quote(...)` 中，使用 `$(expr)` 将 `Tokens` 值拼接到生成的代码中。这就是宏将捕获的代码片段或计算出的字符串插入输出的方式。
+在 `quote(...)` 内部，使用 `$(expr)` 将表达式插入到生成的代码中。这就是宏将捕获的代码片段或计算出的值拼接到输出的方式。
 
-`$(input)` 将 Token 作为代码插入。`$(input.toString())` 插入字符串表示。
+插值的表达式类型必须支持转换为 `Tokens`（即实现了 `ToTokens` 接口）。标准库中，`Token`、`Tokens`、所有语法节点类型、基础数据类型（整数、浮点数、`Bool`、`Rune`、`String`）、以及 `Array<T>` 和 `ArrayList<T>` 都支持插值。
 
-将变量名 `inputStr` 改为其他名称，验证宏仍能正常工作。
+右侧示例展示了 `dprint` 调试宏：`$(inputStr)` 插入字符串值（得到 `"x + y"`），而 `$(input)` 插入原始 Tokens（得到 `x + y` 代码）。这样就能同时打印表达式本身和它的值。
+
+将 `inputStr` 重命名为 `exprText`，验证宏仍然正常工作。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 宏可以进行简单的文本插值，但功能有限，没有真正的变量支持。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的注解处理器必须手动构建代码字符串，不提供内置的插值机制。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `fmt.Printf` 使用 `%v` 占位符，但这是运行时格式化，不是编译期代码生成。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `quote!` 使用 `#变量` 插值，概念相同但语法不同。Rust 还支持 `##` 重复插值。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`input.toString()` 返回代码片段的字符串表示，适合用于调试输出。而 `$(input)` 直接插入代码本身，会被编译执行。</Note>

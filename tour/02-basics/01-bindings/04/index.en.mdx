@@ -1,22 +1,31 @@
 # Type Inference
 
-When the type is clear from the value, the compiler infers it automatically. `42` is inferred as `Int64`, `3.14` as `Float64`, `"hello"` as `String`, and `true` as `Bool`.
+When a variable has an initial value, the compiler can automatically infer the variable's type based on the initial value's type, without explicit annotation. This makes code more concise while maintaining type safety. Type inference is one of the features of Cangjie's type system.
 
-```cangjie
-let x = 42       // Int64
-let y = 3.14     // Float64
-```
+In the code on the right, all variables lack type annotations, but the compiler knows their types: integer literals are inferred as `Int64`, floating-point literals as `Float64`, string literals as `String`, and boolean literals as `Bool`. These are Cangjie's default type inference rules. Values computed through expressions also have their types inferred.
+
+Type inference is not dynamic typing—the variable's type is determined at compile time and doesn't change at runtime. If you try to assign a string to a variable inferred as an integer, or assign a floating-point number to a variable inferred as an integer, the compiler will report an error. Cangjie is a statically typed language, and type checking occurs at compile time.
+
+<Note>While type inference is convenient, explicitly annotating types is still valuable in certain cases: improving code readability, avoiding unexpected type inference, or helping the compiler when inference isn't precise enough.</Note>
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C does not support type inference; variables must be explicitly typed at declaration. Cangjie's type inference makes code more concise while maintaining type safety.
+</CompareWith>
+
+<CompareWith lang="java">
+Java only supports type inference in specific contexts (like `var` keyword in Java 10+); Cangjie natively supports inference for any variable with an initial value.
+</CompareWith>
+
 <CompareWith lang="go">
-Go infers types with `:=` (`x := 42`). Cangjie infers types for both `let` and `var` when possible.
+Go also supports type inference (via `:=` syntax), where integer literals are inferred as `int` (typically 64-bit) and floating-point numbers as `float64`, similar to Cangjie's default inference rules.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust also infers types from the right-hand side. Both languages default integer literals to their 64-bit types.
+Rust also supports type inference, but integer literals are inferred as `i32` (32-bit integer) by default, while Cangjie defaults to `Int64` (64-bit integer), which is more suitable for modern 64-bit systems.
 </CompareWith>
 
 </CompareGroup>
 
-Try adding a new binding without a type annotation and predict its inferred type.
+Try adding a new binding without type annotation, such as `let z = 100 + 200` or `let sum = x + y`, and guess what type it will be inferred as.

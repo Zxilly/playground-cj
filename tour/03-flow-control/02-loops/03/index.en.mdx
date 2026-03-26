@@ -1,7 +1,29 @@
 # Ranges
 
-`0..5` is a half-open range (0 through 4). `0..=5` is a closed range (0 through 5).
+Ranges are used to represent an ordered sequence of integers. Cangjie has two types of ranges: the half-open range `start..end` doesn't include end, while the closed range `start..=end` includes end.
 
-A step is written with `: n`, such as `0..10 : 2`.
+You can specify a step with `: step`. For example, `0..10 : 2` means starting from 0, adding 2 each time, until less than 10. The step can be negative for decreasing sequences. When the step is negative, start should be greater than end.
 
-Try changing `..` to `..=` on line 4 and observe the last number printed.
+The step cannot be 0, otherwise it will result in a compilation error. If the step contradicts the direction of the range (e.g., positive step but start > end), it produces an empty range—the loop body will never execute during iteration.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't have range types and requires `for (int i = 0; i < 10; i++)` style explicit control. Cangjie's range syntax is more concise and declarative.
+</CompareWith>
+
+<CompareWith lang="java">
+Java also lacks range types and requires manual loops. Java's IntStream can generate range sequences, but it's not as concise as Cangjie's range syntax.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have a built-in range type and requires `for i := 0; i < 10; i++` to manually manage loop variables. Cangjie's range syntax `0..10` is more declarative.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `0..10` is a half-open range, and `0..=10` is a closed range. Cangjie uses identical syntax, making Rust users feel familiar.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing `..` to `..=`, or modify the step value, and observe how the output sequence changes.

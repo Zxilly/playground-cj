@@ -1,7 +1,31 @@
-# cjc
+# cjc Compiler
 
-`cjc` is the Cangjie compiler. Run `cjc hello.cj -o hello` to compile a single file.
+`cjc` is the compiler command for the Cangjie programming language, used to compile Cangjie source code into executable files.
 
-Use `-p src/` to compile an entire package directory.
+The most basic usage is to directly compile a single file. Without any options, `cjc` compiles the source file into an executable named `main`. You can also use the `-o` option to specify the output filename, for example `cjc hello.cj -o hello`.
 
-Try adding a second `println` call and running the code again.
+`cjc` also supports compiling entire package directories. Use the `-p` option to specify the package path, for example `cjc -p src/` will compile all source files under the `src/` directory.
+
+<Note>`cjc` automatically performs frontend compilation, backend compilation, and linking, without requiring manual linker invocation.</Note>
+
+Try modifying the string in the code, then click <Highlight target="run">Run</Highlight> to see the output change.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C typically uses `gcc` or `clang` to compile, also supporting the `-o` option to specify output filename. Cangjie's `cjc` provides a similar interface.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `javac` to compile source files into bytecode (`.class` files), which are then executed by the JVM. Cangjie's `cjc` generates executable files directly.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `go build` or `go run` to compile and run code. Cangjie's `cjc` is similar to traditional C compilers, requiring manual linking.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `rustc` to directly compile single files, similar to `cjc`. However, Rust typically uses `cargo` to manage projects, which is equivalent to Cangjie's `cjpm`.
+</CompareWith>
+
+</CompareGroup>

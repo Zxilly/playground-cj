@@ -1,14 +1,29 @@
-# Comprehensive Example
+# Generic Registry
 
-`Registry<T>` combines type parameters, a `where T <: Identifiable` constraint, `HashMap` for storage, and `Option<T>` for lookup results.
+`Registry<T>` synthesizes multiple concepts learned in this chapter: type parameter `T`, `where T <: Identifiable` constraint, `HashMap` storage, and `Option<T>` return value. The constraint ensures each element has a `getId()` method for unique identification.
 
-```cangjie
-class Registry<T> where T <: Identifiable {
-    public func register(item: T) { ... }
-    public func find(id: String): Option<T> { ... }
-}
-```
+This pattern—a generic container with constraints—is common in real-world Cangjie code. Through constraints, generic classes can safely manipulate elements without knowing their concrete types; through generics, instantiated containers maintain specific element types, avoiding runtime type checks.
 
-The constraint ensures every item has a `getId` method. This pattern -- a generic container with a constrained element type -- is common in real Cangjie code.
+The code on the right implements a user registry: it requires stored elements to implement the `Identifiable` interface, uses `HashMap` internally for storage, and returns `Option<T>` for queries to elegantly handle "not found" cases.
 
-Add a `remove(id: String)` method to `Registry` and test it from `main`.
+<CompareGroup>
+
+<CompareWith lang="c">
+Implementing a generic registry in C is difficult, typically requiring `void*` pointers and manual type casting with no type safety at all.
+</CompareWith>
+
+<CompareWith lang="java">
+Java can implement similar registries, but type erasure causes runtime type information to be lost; Cangjie preserves complete type information.
+</CompareWith>
+
+<CompareWith lang="go">
+Go achieves similar patterns through interface constraints + generics, usually using pointer zero values to indicate non-existence.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses trait bound constraints and `Option<T>` to represent possibly non-existent results, with the same pattern.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`const init` constructors support struct construction at compile time. See the next page for more details.</Note>

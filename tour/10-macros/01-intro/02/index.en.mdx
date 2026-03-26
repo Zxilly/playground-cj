@@ -1,7 +1,28 @@
-# @macro package
+# Macro Packages
 
-Macros live in a separate `macro package`, not a regular `package`. This package can only export macro definitions.
+Macro definitions must be placed in separate macro packages, declared using the `macro package` keyword. Packages qualified with `macro package` can only export macro definitions; other declarations are only visible within the package.
 
-You must `import std.ast.*` to access the `Tokens` type and AST utilities. The macro package is compiled separately with `cjc --compile-macro` before the code that uses it.
+Macro packages need to import `std.ast.*` to use the `Tokens` type and tools like `quote`. `Tokens` represents Token sequences and is the core type for macro input and output. The `quote` expression is used to construct Token sequences.
 
-Notice the `macro package` declaration at the top of the file.
+The `quote` expression converts code fragments within parentheses into `Tokens`. Inside `quote`, you can use `$(...)` interpolation to insert the value of variables or expressions into the code fragment. For example, `$(input)` will insert the value of `input`.
+
+Macro packages must first be compiled separately using `cjc --compile-macro` to generate a dynamic library file of macro definitions before they can be referenced by code that uses the macros.
+
+The example on the right defines the simplest identity macro `Identity`, which receives input and returns it unchanged without any transformation. A macro is declared as `public macro Name(input: Tokens): Tokens`, where `input` is the Token sequence at the call site, and the return value replaces the macro call.
+
+<Note>Macro packages cannot define externally visible non-macro declarations, such as `public func` or `public class`.</Note>
+
+<CompareGroup>
+<CompareWith lang="c">
+C macro definitions are placed in header files using `#define` directives. There is no true "macro package" concept, just part of the compilation preprocessing.
+</CompareWith>
+<CompareWith lang="java">
+Java's Annotation Processors are defined in regular classes and must implement the `AbstractProcessor` interface. Compared to Cangjie's `macro package`, they are more complex and verbose.
+</CompareWith>
+<CompareWith lang="rust">
+Rust macro definitions use `macro_rules!` or `proc_macro` attribute in regular modules. Cangjie requires macros to be defined in separate `macro package`, providing more thorough isolation.
+</CompareWith>
+<CompareWith lang="go">
+Go does not have a built-in macro system. Code generation is implemented through external tools and `text/template`. Cangjie's macros are natively supported in the compiler.
+</CompareWith>
+</CompareGroup>

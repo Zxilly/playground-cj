@@ -1,31 +1,37 @@
-class Animal {
-    var name: String
-    var age: Int64
+class Counter {
+    var count: Int64
+    var label: String
 
-    init(name: String, age: Int64) {
-        this.name = name
-        this.age = age
+    // Constructor must initialize all member variables
+    init(count: Int64, label: String) {
+        this.count = count
+        this.label = label
     }
 
-    func describe(): String {
-        "${name}, age ${age}"
+    // Member function
+    public func increment() {
+        count += 1
     }
 
-    func birthday() {
-        age += 1
+    public func describe(): String {
+        "${label}: ${count}"
     }
 }
 
 main() {
-    let cat = Animal("Whiskers", 3)
-    println(cat.describe())
+    // Create instance
+    let counter = Counter(0, "Clicks")
+    println(counter.describe())
 
-    cat.birthday()
-    println("After birthday: ${cat.describe()}")
+    // Call member function
+    counter.increment()
+    counter.increment()
+    println("After increment: ${counter.describe()}")
 
-    // Reference type behavior
-    let sameCat = cat
-    sameCat.name = "Mr. Whiskers"
-    println("Original: ${cat.name}")  // also changed
-    println("Reference: ${sameCat.name}")
+    // Reference type behavior: assignment does not copy data
+    let sameCounter = counter
+    sameCounter.label = "Visits"
+    sameCounter.count = 100
+    println("Original variable: ${counter.describe()}")
+    println("New variable: ${sameCounter.describe()}")
 }

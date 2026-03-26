@@ -1,7 +1,31 @@
 # Generic Classes
 
-A generic class uses reference semantics and supports mutable state. `Stack<T>` is a classic example -- one implementation handles any element type.
+Generic classes use reference semantics, supporting mutable state and object identity. Type parameters are declared in angle brackets after the class name, and then used in fields, method parameters, and return types. Generic classes are suitable for implementing data structures that need to encapsulate state, such as containers, stacks, queues, etc.
 
-The type parameter flows through fields, method parameters, and return types. Two `Stack` instances with different type arguments are completely independent types.
+`Stack<T>` is a classic example of a generic class. One implementation can handle any element type: `Stack<Int64>`, `Stack<String>`, or `Stack< Pair<Int64, String> >`. The type parameter `T` appears in field initialization expressions, method parameter types, and return types, ensuring type safety.
 
-Create a `Stack<Int64>`, push several numbers, then pop them and print the results.
+Static members of generic classes cannot reference type parameters. Because static members share memory, if static members could reference `T`, then static members of `Stack<Int64>` and `Stack<String>` would have different types, which contradicts the semantics of shared memory.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no concept of classes; you must manually manage memory and define operation functions like `Stack_push(stack, value)` and `Stack_pop(stack)`, which is error-prone.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's generic class static members can reference type parameters (though types are erased), but at runtime you cannot know the concrete type; Cangjie fully resolves this at compile time.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's generic type syntax is different: `type Stack[T any] struct { items []T }`, with the type parameter list placed after the type name.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's generic class syntax is identical but emphasizes ownership: `struct Stack<T> { items: Vec<T> }`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Class instances with different type parameters are completely independent types; `Stack<Int64>` and `Stack<String>` are incompatible with each other.</Note>
+
+Run the example code, observe the push and pop operations on the stack, then modify the code to create a stack that stores strings.

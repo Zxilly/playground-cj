@@ -1,7 +1,27 @@
 # 类型标注
 
-在变量名后用 `: Type` 写出类型标注。
+在变量名后添加 `: Type` 可以显式标注变量的类型。类型标注告诉编译器这个变量应该持有哪种类型的数据。
 
-编译器会检查值是否与声明的类型一致。如果省略标注，类型会自动推断。
+如果省略类型标注，编译器会根据初始值自动推断类型。两种方式各有优势：显式标注让类型关系更清晰，类型推断让代码更简洁。在类型上下文明确时，推荐省略标注。
 
-试着把某个类型标注改错（比如把 `Int64` 改成 `Bool`），看看报什么错误。
+右侧代码展示了三个带有类型标注的变量声明。类型标注会影响字面量的类型推断：`95` 本来推断为 `Int64`，但标注为 `Int32` 后就是 `Int32` 类型的值。试着把第 2 行的 `Int64` 改成 `Bool`，看看编译器报告什么错误。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的类型标注在变量名之前，`int score`，与仓颉的后置风格相反。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 也采用前置类型标注，`int score`，与仓颉的后置语法不同。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的类型标注放在变量名之前：`var score int`。仓颉采用后置类型标注 `let score: Int64`，更易阅读。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 也采用后置类型标注 `let score: i64`，语法与仓颉类似，类型名风格不同。
+</CompareWith>
+
+</CompareGroup>

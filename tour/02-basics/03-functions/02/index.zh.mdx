@@ -1,5 +1,31 @@
 # 隐式返回
 
-在仓颉中，函数体的最后一个表达式就是返回值，不需要写 `return`。
+在仓颉中，函数体的最后一个表达式会自动作为返回值，不需要显式写 `return` 关键字。这种风格让代码更简洁，尤其适合简单的计算函数。
 
-示例中，`multiply` 的最后一个表达式 `a * b` 就是返回值。`isEven` 和 `describe` 同理。
+函数体的类型取决于最后一个表达式的类型：如果最后一项是表达式，函数体类型就是该表达式的类型；如果最后一项是变量定义或函数声明，函数体类型为 `Unit`。编译器会根据函数体类型推导返回值。
+
+右侧代码展示了三个使用隐式返回的函数：`multiply` 返回两个数的乘积，`isPositive` 判断一个数是否为正数，`describe` 返回一个描述字符串。每个函数的最后一个表达式就是返回值。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 要求显式使用 `return` 语句，不支持隐式返回。函数体通常以 `return value;` 结尾。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 同样要求显式 `return` 语句，不能省略。Java 的方法必须明确指定返回类型，不支持隐式返回。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持隐式返回，必须显式使用 `return` 语句。仓颉的隐式返回与 Rust 和 Ruby 类似，减少了模板代码。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 也支持隐式返回，函数最后一个表达式的值就是返回值。两者语法几乎相同，都不需要分号结尾（加分号会变成语句，返回 `()`）。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>隐式返回的表达式后面不要加分号，否则会变成语句，返回类型变为 `Unit`。</Note>
+
+点击 <Highlight target="run">运行</Highlight> 观察输出，然后尝试把 `isPositive` 改成判断负数。

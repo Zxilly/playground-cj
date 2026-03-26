@@ -1,7 +1,30 @@
 # 本地使用编译器（可选）
 
-如果你想在自己的机器上练习这些示例，可以先[下载并安装仓颉编译器](https://cangjie-lang.cn/download)，再把代码保存为 `.cj` 文件，用 `cjc` 编译并运行：
+如果你想在自己的机器上练习，可以[下载并安装仓颉 SDK](https://cangjie-lang.cn/download)。
+
+将代码保存为扩展名为 `.cj` 的文件，例如 `hello.cj`，然后使用 `cjc` 命令编译并运行：
 
 ```
 cjc hello.cj -o hello && ./hello
 ```
+
+`cjc` 会编译源文件并生成可执行文件。`-o` 选项指定输出文件名；省略时默认生成 `main` 文件。
+
+右侧代码展示了标准的程序结构。你可以在本地创建文件并尝试编译。
+
+<Note>本教程的所有示例均可直接在浏览器中运行，本地安装完全可选。</Note>
+
+<CompareGroup>
+<CompareWith lang="c">
+C 通常用 `gcc` 或 `clang` 编译；仓颉用 `cjc` 编译器，集成化程度更高。
+</CompareWith>
+<CompareWith lang="java">
+Java 用 `javac` 编译源文件为字节码，再用 `java` 虚拟机运行；仓颉直接编译为本地可执行文件。
+</CompareWith>
+<CompareWith lang="go">
+Go 使用 `go build` 或 `go run` 编译运行；仓颉使用 `cjc` 编译，目前不支持单文件直接运行。
+</CompareWith>
+<CompareWith lang="rust">
+Rust 用 `rustc` 编译单文件或 `cargo` 管理项目；仓颉提供 `cjc` 编译器，后续会介绍包管理工具。
+</CompareWith>
+</CompareGroup>

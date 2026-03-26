@@ -1,3 +1,31 @@
-# I/O Overview
+# I/O Stream Abstraction
 
-Cangjie's I/O system is built on streams. `InputStream` and `OutputStream` are the base interfaces for reading and writing byte data. In-memory streams like `ByteBuffer` let you work with byte data without touching the file system. Wrap any input stream with `StringReader` to conveniently read text line by line.
+Cangjie's I/O system is built on the stream abstraction. `InputStream` and `OutputStream` are the two core interfaces for reading and writing byte data, representing input streams and output streams respectively. The input stream provides a `read` method to read data into a buffer, while the output stream provides a `write` method to write data out. This design unifies access to different data sources such as files, networks, and memory.
+
+`ByteBuffer` is a memory stream that lets you read and write byte data in memory without accessing the file system. First call `write` to write data, then call `read` to read it back. Reading and writing share the same position pointer. The example on the right demonstrates writing string byte data to a ByteBuffer, then reading it back and converting it to a string for display.
+
+String streams `StringReader` and `StringWriter` add text processing capabilities to byte streams. `StringReader` provides a `readln()` method to read text line by line, which is more convenient and efficient than manually converting byte data.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's I/O is implemented through `FILE*` structures and functions like `fread` and `fwrite`, with no unified stream abstraction interface.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `InputStream` and `OutputStream` are abstract base classes, with design similar to Cangjie's interfaces, both supporting byte read/write operations.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `io.Reader` and `io.Writer` interfaces are similar to Cangjie's `InputStream` and `OutputStream` design, both using `[]byte` as the data unit.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `Read` and `Write` traits also adopt a similar design, but use `Result` for error handling, while Cangjie's stream interfaces throw exceptions directly.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>The data unit of streams is bytes (`Byte`). Strings need to be converted to byte arrays via `toArray()` for writing, and converted back to strings using `String.fromUtf8()` after reading.</Note>
+
+After running the code, try writing more lines to the ByteBuffer and reading them line by line with StringReader.

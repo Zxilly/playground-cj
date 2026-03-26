@@ -1,5 +1,29 @@
-# const 函数
+# const 函数与编译期求值
 
-`const func` 可以在编译期求值。当参数都是常量时，结果在编译阶段就已经确定，无需等到运行时计算。
+`const func` 是一类可以在编译期求值的特殊函数。当它的所有参数都是编译期常量时，函数会在编译阶段执行，计算结果直接嵌入到程序中。这样可以减少运行时的计算开销。
 
-示例中，`distance` 是一个 `const func`，`a`、`b`、`d` 都是编译期确定的 `const` 值。结构体也可以提供 `const init` 来支持编译期构造。
+`const` 函数体内的表达式必须是 `const` 表达式，不能包含 I/O 操作、修改全局状态等副作用。可以用 `let` 声明局部变量（不能用 `var`），可以使用 `if`、`match`、`try` 等控制流。
+
+结构体和类可以定义 `const init` 构造器来支持编译期构造。右侧代码定义了一个 `Point` 结构体，它的构造器是 `const`，因此可以在编译期创建实例；`distance` 是 `const func`，可以在编译期计算两点距离。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有编译期函数求值，必须使用预处理器宏 `#define` 或运行时计算，丧失灵活性和类型安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 不支持编译期函数求值；虽然有编译时常量（`static final`），但无法执行任意计算，必须硬编码。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有编译期求值机制，所有函数都在运行时执行，但编译器会做常量折叠优化。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `const fn` 功能类似，也支持编译期求值，语法和限制也相似。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`const` 函数不一定都在编译期执行。在非 `const` 上下文中调用时，它会像普通函数一样在运行时执行。</Note>

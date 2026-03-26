@@ -1,7 +1,31 @@
 # 泛型结构体
 
-除了泛型函数，仓颉还支持泛型类型。结构体可以用类型参数进行参数化，适合构建可复用的数据结构。
+结构体可以使用类型参数进行泛化，创建可复用的数据结构。类型参数在结构体名称后的尖括号中声明，然后可以在字段、方法参数和返回类型中引用。
 
-`Pair<T, U>` 存放两个可能不同类型的值。结构体的方法返回调用方指定的确切类型。
+`Pair<T, U>` 存储两个可能不同类型的值。类型参数贯穿整个结构体的定义：字段 `first` 的类型是 `T`，字段 `second` 的类型是 `U`，方法返回类型也使用这些类型参数。实例化时需要指定具体的类型实参。
 
-将 `Pair<String, Int64>` 改为 `Pair<Bool, Float64>` 并更新构造参数。
+结构体是值类型，实例在赋值和传参时会被复制。两个 `Pair<Int64, String>` 类型的变量各自拥有独立的数据，修改其中一个不会影响另一个。这与类（引用类型）的行为不同。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 必须为每个类型组合手写结构体，如 `struct IntStringPair` 和 `struct StringBoolPair`，导致代码重复且容易出错。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的泛型结构体类型参数在运行时被擦除，无法基于类型参数的具体值执行不同操作；Cangjie 在编译时生成针对每个类型的代码。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有结构体泛型语法糖，通常使用 `interface{}` 或生成代码来实现类似功能。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的泛型结构体语法几乎相同：`struct Pair<T, U> { first: T, second: U }`。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>不同类型实参的泛型结构体是不同的类型，`Pair<Int64, String>` 和 `Pair<String, Int64>` 互不兼容。</Note>
+
+运行示例代码，然后将 `Pair<String, Int64>` 改为 `Pair<Bool, Float64>` 并创建新的实例。

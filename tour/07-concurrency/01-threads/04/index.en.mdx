@@ -1,11 +1,29 @@
 # Sleep
 
-`sleep` pauses the current thread for a specified duration while other threads continue running.
+The `sleep` function pauses the current thread for a specified duration, during which other threads can continue running. The parameter type is `Duration`, which can use time units like `Duration.second` and `Duration.millisecond`.
 
-```cangjie
-sleep(200 * Duration.millisecond)
-```
+`Duration` supports common operations: multiplication (e.g., `200 * Duration.millisecond`), addition, subtraction, etc. If `dur <= Duration.Zero`, the thread only yields execution resources without actually sleeping.
 
-`Duration.millisecond` is the time unit. The countdown prints each number, sleeps 200 ms, then prints "go".
+The example on the right is a countdown program: after printing each remaining second, it sleeps for 200 milliseconds, and finally prints "go". Through sleeping, you can observe the effects of alternating thread execution.
 
-Change the sleep duration to `500 * Duration.millisecond` and observe the slower countdown.
+<Note>The actual sleep time may be slightly longer than the specified duration because thread wakeup also requires scheduler involvement.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `sleep()` or `usleep()` functions with parameters typically in seconds or microseconds, lacking a unified time type abstraction.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `Thread.sleep(milliseconds)` accepting only milliseconds, requiring manual unit conversion. Cangjie's `Duration` is more flexible.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `time.Sleep(duration)` with a `time.Duration` type parameter. Cangjie's `sleep(Duration)` is nearly identical.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `std::thread::sleep(Duration)` with a `Duration` type parameter as well. Cangjie's time API is very similar to Rust's.
+</CompareWith>
+
+</CompareGroup>

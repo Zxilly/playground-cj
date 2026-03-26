@@ -1,7 +1,29 @@
-# Match
+# Match Expressions
 
-`match` selects a branch based on the value of an expression. Each `case` specifies a pattern followed by `=>`.
+`match` is Cangjie's pattern matching expression that selects which branch to execute based on a value. Each `case` branch contains a pattern and the code to execute, separated by `=>`.
 
-Cangjie's `match` never falls through -- only the matched branch runs.
+Unlike `switch` in C or Java, Cangjie's `match` has no fallthrough behavior—only the matching branch executes, and no `break` is needed. Once a match succeeds and that branch executes, the entire `match` expression ends.
 
-Try changing `day` on line 2 to `6` and see which case runs.
+`match` expressions can return values. The value of the last line of code after `=>` in each branch is the return value for that branch. The code below assigns the match result to the variable `name`.
+
+<Highlight target="run">Run</Highlight> the code and observe the output. Then try changing `day` on line 2 to `6` and see which branch matches.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `switch` statements with default fall-through behavior, requiring `break` to exit. Cangjie's `match` has no fall-through, making it safer.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `switch` is similar to C with fall-through behavior (Java 12+ introduced switch expressions that improved this). Cangjie's `match` is closer to modern functional style.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `switch` statements, which don't fallthrough by default and automatically exit after matching. Cangjie's `match` is closer to functional pattern matching and can return values.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `match` is very similar to Cangjie's—both are expressions that can return values and must be exhaustive. The syntax is nearly identical.
+</CompareWith>
+
+</CompareGroup>

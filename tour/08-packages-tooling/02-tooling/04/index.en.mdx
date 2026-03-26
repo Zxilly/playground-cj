@@ -1,5 +1,31 @@
 # Workspace
 
-A workspace manages multiple modules in a single project. Set `[workspace]` with `members = ["app", "utils"]` in the root `cjpm.toml`.
+When a project contains multiple modules, you can use a Workspace to manage them uniformly.
 
-Running `cjpm build` in a workspace compiles all member modules. The `[workspace]` and `[package]` sections cannot coexist in the same file.
+Use the `[workspace]` field in the root `cjpm.toml` and specify the member module list through `members`. Each member module has its own `cjpm.toml` configuration file.
+
+The workspace directory structure typically consists of: a workspace configuration file in the root directory, with each subdirectory being an independent module. Running `cjpm build` in the workspace root directory compiles all member modules.
+
+<Note>`[workspace]` and `[package]` cannot coexist in the same `cjpm.toml`. The workspace configuration file only defines members, while specific configurations for each module are in their own `cjpm.toml` files.</Note>
+
+Check the directory structure example in the code comments to understand how workspaces are organized.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no workspace concept. Large projects typically configure compilation of multiple subprojects through Make or CMake.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's Maven or Gradle supports multi-module projects, defining submodules using `<modules>` in `pom.xml` or `include()` in `build.gradle` of the root project.
+</CompareWith>
+
+<CompareWith lang="go">
+Go defines workspaces through `go.work` files, using `directory` to specify module directories. Cangjie uses the `[workspace]` field in `cjpm.toml` for management.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses the `[workspace]` field in `Cargo.toml`, which is almost exactly the same as Cangjie's workspace configuration.
+</CompareWith>
+
+</CompareGroup>

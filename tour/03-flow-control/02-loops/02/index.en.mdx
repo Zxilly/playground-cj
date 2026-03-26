@@ -1,7 +1,29 @@
-# For-in
+# For-in Loops
 
-`for (x in collection)` iterates over each element of any iterable.
+The `for-in` loop is used to iterate over each element in an iterable object. The syntax is `for (element in sequence) { loop body }`. Cangjie's arrays, ranges, and other types all support `for-in` iteration.
 
-A `where` clause filters elements inline: `for (i in 0..10 where i % 2 == 0)`.
+The iteration variable is immutable by default and cannot be modified in the loop body. If you don't need to use the iteration variable, you can replace it with the wildcard `_`, and the compiler won't produce an "unused variable" warning.
 
-Try adding a few more elements to the `fruits` array on line 3 and run again.
+The `where` clause can filter elements during iteration. `for (i in 0..10 where i % 2 == 0)` will only iterate over elements that satisfy the condition, which is more concise than using `if` and `continue` in the loop body.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't have a `for-in` loop and requires manually managing indices. C lacks convenient iterator mechanisms, and filtering requires `if` statements in the loop body.
+</CompareWith>
+
+<CompareWith lang="java">
+Java provides the enhanced `for` loop `for (Type v : collection)`, similar to Cangjie's `for-in`, but doesn't have a `where` filtering clause.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `for _, v := range slice` to iterate, with `_` to ignore the index. Cangjie's `for-in` is more concise, and the `where` filter is a unique convenient feature.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `for i in 0..10` has similar syntax to Cangjie. Rust can use `.filter()` for chained filtering, while Cangjie uses the `where` clause for inline filtering.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding or removing elements from the array and see how the iteration results change.

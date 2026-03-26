@@ -1,7 +1,7 @@
 class Grid {
-    let rows: Int64
-    let cols: Int64
-    let data: Array<Int64>
+    private let rows: Int64
+    private let cols: Int64
+    private var data: Array<Int64>
 
     public init(rows: Int64, cols: Int64) {
         this.rows = rows
@@ -9,21 +9,23 @@ class Grid {
         this.data = Array<Int64>(rows * cols, {_ => 0})
     }
 
-    // Read access: grid[row, col]
-    operator func [](row: Int64, col: Int64): Int64 {
+    // 取值形式：grid[row, col]
+    public operator func [](row: Int64, col: Int64): Int64 {
         return this.data[row * this.cols + col]
     }
 
-    // Write access: grid[row, col] = value
-    operator func [](row: Int64, col: Int64, value!: Int64): Unit {
+    // 赋值形式：grid[row, col] = value
+    public operator func [](row: Int64, col: Int64, value!: Int64): Unit {
         this.data[row * this.cols + col] = value
     }
 
-    func display(): Unit {
-        var r = 0
+    // 显示网格内容
+    public func display(): Unit {
+        println("网格内容 (${this.rows} x ${this.cols}):")
+        var r: Int64 = 0
         while (r < this.rows) {
             var line = ""
-            var c = 0
+            var c: Int64 = 0
             while (c < this.cols) {
                 if (c > 0) {
                     line = line + "\t"
@@ -35,12 +37,22 @@ class Grid {
             r += 1
         }
     }
+
+    // 获取行数
+    public prop numRows: Int64 {
+        get() { this.rows }
+    }
+
+    // 获取列数
+    public prop numCols: Int64 {
+        get() { this.cols }
+    }
 }
 
 main() {
     let grid = Grid(3, 3)
 
-    // Set values using subscript
+    // 使用下标运算符赋值
     grid[0, 0] = 1
     grid[0, 1] = 2
     grid[0, 2] = 3
@@ -51,9 +63,18 @@ main() {
     grid[2, 1] = 8
     grid[2, 2] = 9
 
-    println("Grid contents:")
+    // 显示整个网格
     grid.display()
+    println()
 
-    // Read using subscript
-    println("Center element: ${grid[1, 1]}")
+    // 使用下标运算符取值
+    println("中心元素 grid[1,1] = ${grid[1, 1]}")
+    println("左上角 grid[0,0] = ${grid[0, 0]}")
+    println("右下角 grid[2,2] = ${grid[2, 2]}")
+    println()
+
+    // 修改某个元素
+    println("修改 grid[1,1] 为 99")
+    grid[1, 1] = 99
+    println("修改后 grid[1,1] = ${grid[1, 1]}")
 }

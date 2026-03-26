@@ -1,14 +1,33 @@
-# Sorting
+# Collection Sorting
 
-Sorting arranges elements in a predictable order. The example implements selection sort on an `ArrayList<Int64>`.
+Sorting arranges collection elements in a specific order. Here we implement selection sort on an `ArrayList<Int64>`: iterate through the unsorted portion, find the minimum element, and swap it to the correct position.
 
-```cangjie
-var smallest = i
-if (values[j] < values[smallest]) {
-    smallest = j
-}
-```
+The algorithm's core is two nested loops: the outer loop determines the current position, while the inner loop finds the index of the minimum value among the remaining elements. Once found, swap the current position with the minimum position. After completing one round, the current position holds the correct element.
 
-The algorithm finds the smallest remaining element and swaps it into place on each pass.
+Modifying the comparison condition (changing `<` to `>`) implements descending order sorting. Cangjie's standard library also provides more efficient sorting functions; here we use a basic algorithm to demonstrate sorting principles.
 
-Reverse the `<` comparison to `>` in the inner loop and run -- the output should appear in descending order.
+The code on the right implements ascending order sorting and displays the result.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `qsort()` requires passing a function pointer for comparison, which is more complex. Cangjie's `ArrayList` provides sorting methods directly, more concise.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `Arrays.sort()` and `Collections.sort()` work out of the box. Cangjie's manual sorting implementation helps you learn algorithm principles.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `sort` package provides functions like `sort.Ints()` and `sort.Strings()`. Cangjie's `ArrayList` also has built-in sorting methods, but manual implementation helps understand the algorithm.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `Vec<T>` can call the `.sort()` method, requiring elements to implement the `Ord` trait. Cangjie's standard library provides similar methods.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Selection sort has O(n²) time complexity, suitable for educational purposes. For practical applications, use the efficient sorting provided by the standard library.</Note>
+
+Try modifying the code: change the comparison condition from `<` to `>` to implement descending order sorting.

@@ -1,13 +1,106 @@
-# Comparison Operators
+# Comparison Operator Overloading
 
-Comparison operators (`==`, `!=`, `<`, `>`, `<=`, `>=`) are overloaded the same way as arithmetic ones, using `operator func`.
+Comparison operators (`==`, `!=`, `<`, `>`, `<=`, `>=`) are overloaded the same way as arithmetic operators, using `operator func` definitions. This enables custom types to participate in comparison operations and sorting.
 
-```cangjie
-operator func ==(rhs: Temperature): Bool {
-    return this.celsius == rhs.celsius
+The code on the right defines a `Temperature` type representing Celsius temperature, overloading all six comparison operators. After overloading, expressions like `boiling > freezing` and `body == another` can be used directly, making the code more intuitive and readable.
+
+Comparison operators should typically be implemented in pairs: if you implement `<`, you should implement `>`; if you implement `==`, you should implement `!=`. Maintaining semantic consistency is important to avoid confusing behavior.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, `==` and other comparison operators perform byte-level comparison for custom types and cannot be overloaded; manual comparison functions like `compare()` are usually written instead.
+</CompareWith>
+
+<CompareWith lang="java">
+Java implements comparison by overriding `equals()` and `compareTo()` methods, but `==` still performs reference comparison only, which can be confusing.
+</CompareWith>
+
+<CompareWith lang="go">
+Go requires implementing the `Comparable` interface or defining methods like `Less`; it does not support directly overloading operators like `==`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust implements comparison functionality through traits like `PartialEq`, `Ord`, etc., with stricter specification requirements.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>The return type of comparison operators should be `Bool`, which is a semantic convention.</Note>
+
+Try implementing only `==` and `<`, and see if other comparison operations are automatically derived (hint: they won't be).
+
+CJ:
+struct Temperature {
+    public let celsius: Float64
+
+    public init(celsius: Float64) {
+        this.celsius = celsius
+    }
+
+    // Overload equality operator
+    public operator func ==(rhs: Temperature): Bool {
+        return this.celsius == rhs.celsius
+    }
+
+    // Overload inequality operator
+    public operator func !=(rhs: Temperature): Bool {
+        return this.celsius != rhs.celsius
+    }
+
+    // Overload less than operator
+    public operator func <(rhs: Temperature): Bool {
+        return this.celsius < rhs.celsius
+    }
+
+    // Overload greater than operator
+    public operator func >(rhs: Temperature): Bool {
+        return this.celsius > rhs.celsius
+    }
+
+    // Overload less than or equal operator
+    public operator func <=(rhs: Temperature): Bool {
+        return this.celsius <= rhs.celsius
+    }
+
+    // Overload greater than or equal operator
+    public operator func >=(rhs: Temperature): Bool {
+        return this.celsius >= rhs.celsius
+    }
+
+    // Format output
+    public func toString(): String {
+        return "${this.celsius}°C"
+    }
 }
-```
 
-`Temperature` defines all six comparison operators by delegating to its `celsius` field. Expressions like `boiling > freezing` and `body == another` work directly.
+main() {
+    let boiling = Temperature(100.0)    // Boiling point
+    let freezing = Temperature(0.0)     // Freezing point
+    let body = Temperature(37.0)        // Body temperature
+    let another = Temperature(37.0)     // Another body temperature
 
-Remove the `>=` operator and try using `>=` in `main` -- observe the compiler error.
+    println("Boiling point: ${boiling.toString()}")
+    println("Freezing point: ${freezing.toString()}")
+    println("Body temperature: ${body.toString()}")
+    println()
+
+    // Use overloaded comparison operators
+    println("Boiling > Freezing: ${boiling > freezing}")
+    println("Freezing < Body temp: ${freezing < body}")
+    println("Body temp == Another: ${body == another}")
+    println("Boiling != Freezing: ${boiling != freezing}")
+    println("Body temp <= Boiling: ${body <= boiling}")
+    println("Freezing >= Boiling: ${freezing >= boiling}")
+    println()
+
+    // Find highest temperature
+    let temps = [freezing, body, boiling]
+    var maxTemp = temps[0]
+    for (t in temps) {
+        if (t > maxTemp) {
+            maxTemp = t
+        }
+    }
+    println("Highest temperature: ${maxTemp.toString()}")
+}

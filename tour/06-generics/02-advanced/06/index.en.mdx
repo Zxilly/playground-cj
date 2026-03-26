@@ -1,10 +1,29 @@
-# Const Functions
+# const Functions and Compile-Time Evaluation
 
-A `const func` can be evaluated at compile time. When called with constant arguments, the result is computed during compilation rather than at runtime. A struct can provide a `const init` to support compile-time construction.
+`const func` is a special type of function that can be evaluated at compile time. When all its parameters are compile-time constants, the function executes during the compilation phase, and the result is directly embedded in the program. This reduces runtime computation overhead.
 
-```cangjie
-const func distance(a: Point, b: Point) { ... }
-const d = distance(a, b)
-```
+Expressions in `const` function bodies must be `const` expressions and cannot include I/O operations, modifying global state, or other side effects. You can declare local variables with `let` (not `var`), and use control flow like `if`, `match`, and `try`.
 
-Try changing `const d` to `let d` -- the function still works at runtime, but the value is no longer computed at compile time.
+Structs and classes can define `const init` constructors to support compile-time construction. The code on the right defines a `Point` struct with a `const` constructor, so instances can be created at compile time; `distance` is a `const func` that can calculate the distance between two points at compile time.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no compile-time function evaluation; you must use preprocessor macros `#define` or runtime calculations, sacrificing flexibility and type safety.
+</CompareWith>
+
+<CompareWith lang="java">
+Java does not support compile-time function evaluation; while it has compile-time constants (`static final`), arbitrary computations cannot be executed and must be hard-coded.
+</CompareWith>
+
+<CompareWith lang="go">
+Go does not have compile-time evaluation mechanisms; all functions execute at runtime, though the compiler does constant folding optimization.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `const fn` has similar functionality, also supporting compile-time evaluation with similar syntax and restrictions.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`const` functions don't always execute at compile time. When called in non-`const` contexts, they execute at runtime like normal functions.</Note>

@@ -1,10 +1,27 @@
-# Rune
+# Rune Type
 
-`Rune` represents a single Unicode character. Character literals are written as `r'A'`. Escape characters like `r'\n'` and `r'\t'` represent newline and tab.
+`Rune` represents a single Unicode character, capable of representing all characters in the Unicode character set, including Chinese characters, emojis, and more. Character literals start with `r`, followed by the character enclosed in single or double quotes.
 
-```cangjie
-let letter: Rune = r'A'
-let emoji: Rune = r'🎉'
-```
+Character literals have three forms: single character (e.g., `r'A'`), escape character (e.g., `r'\n'` for newline, `r'\t'` for tab, `r'\\'` for backslash), and universal character (starting with `\u` followed by 1-8 hexadecimal digits in curly braces). `Rune` can be converted to and from `UInt32` to get or construct the Unicode code point of a character.
 
-Try changing a character literal to a different letter or emoji.
+The code on the right demonstrates various character literals. The universal character `\u{4f60}` represents the character "你" (Chinese for "you") with Unicode code point U+4F60. Try constructing some emoji code points yourself, such as `\u{1F600}` which is the smiling face 😀.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `char` only represents single-byte characters; cannot natively handle Unicode. Cangjie's `Rune` supports any Unicode character.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `char` is UTF-16 based, representing BMP characters. Cangjie's `Rune` is simpler, directly representing Unicode code points.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `rune` type is an alias for `int32`, used to represent Unicode code points, with literals in single quotes. Cangjie's `Rune` is a distinct type, requiring the `r` prefix.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `char` type also represents Unicode scalar values, with literals in single quotes `'A'`. Cangjie requires the `r` prefix to avoid confusion with strings.
+</CompareWith>
+
+</CompareGroup>

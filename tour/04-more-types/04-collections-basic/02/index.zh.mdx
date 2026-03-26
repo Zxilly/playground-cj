@@ -1,5 +1,31 @@
 # HashSet
 
-`HashSet<T>` 存储不重复的元素，没有固定顺序。重复添加不会生效。`contains` 检查成员是否存在，`remove` 删除元素。
+`HashSet<T>` 是存储唯一元素的集合，自动去除重复项。它不保证元素的顺序，且元素类型 `T` 必须实现 `Hashable` 和 `Equatable<T>` 接口。
 
-当需要快速判断成员关系和自动去重时，使用 `HashSet`。
+使用 `add` 添加元素（如果已存在则不生效），`contains` 检查元素是否存在，`remove` 删除指定元素。当需要快速判断成员关系或自动去重时，`HashSet` 是理想选择。
+
+右侧代码创建了一个标签集合，展示了添加重复元素的行为、成员检查、删除元素以及遍历操作。注意遍历顺序可能与插入顺序不同。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有内置的 Set 类型，需要用数组或链表手动实现，效率低。仓颉的 `HashSet` 提供高效的集合操作。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `HashSet<T>` 与仓颉类似，都自动去重。仓颉要求元素实现 `Hashable` 和 `Equatable<T>`，而 Java 要求实现 `hashCode()` 和 `equals()`。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有内置的 Set 类型，通常用 `map[T]struct{}` 或 `map[T]bool` 模拟。仓颉提供了专门的 `HashSet` 类型，API 更直观。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `HashSet<T>` 与仓颉类似，都要求元素实现 `Hash` 和 `Eq` trait。两者的 `contains` 方法功能相同。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>重复添加相同元素不会报错，但也不会生效，集合大小保持不变。</Note>
+
+尝试运行代码，观察重复添加 `tour` 后集合大小的变化，以及遍历顺序是否与插入顺序一致。

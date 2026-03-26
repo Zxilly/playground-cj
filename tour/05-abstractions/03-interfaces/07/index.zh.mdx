@@ -1,7 +1,33 @@
 # Any 类型
 
-`Any` 是顶层类型 -- 所有类型都满足它。它相当于一个空接口。
+`Any` 是仓颉的顶层类型，所有类型都默认实现它。`Any` 相当于一个空接口，它可以持有任何类型的值，包括基本类型、自定义类型、甚至其他接口类型。
 
-使用类型模式匹配从 `Any` 值中恢复具体类型。
+使用类型模式匹配可以从 `Any` 值中恢复具体类型。匹配时按顺序检查每个类型分支，成功匹配后绑定变量并执行对应代码块。
 
-在 `printValue` 的 `match` 中添加 `Float64` 分支，并调用 `printValue(3.14)`。
+`Any` 类型适合处理动态数据、异构集合、或者编译时类型不确定的场景。但滥用 `Any` 会失去类型安全的优势，应该优先使用具体类型或泛型。
+
+本例中，`printValue` 函数接受 `Any` 参数，使用类型模式匹配恢复具体类型并执行不同操作。`Box` 类使用 `Any` 存储任意值。
+
+在 `printValue` 的 `match` 中添加 `Float64` 分支，并调用 `printValue(3.14)` 测试。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有动态类型，无法直接实现 `Any` 类型的功能。需要手写类型标签和类型分派逻辑。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `Object` 是所有类的基类，可以存储任何对象。但需要显式类型转换和 `instanceof` 检查。仓颉的 `Any` 通过模式匹配更简洁。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的空接口 `interface{}`（或 `any`）类似仓颉的 `Any`，可以存储任何值。两者都通过类型断言或类型 switch/match 恢复具体类型。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `Box<dyn Any>` 实现类似功能，需要手动转换和管理生命周期。仓颉的 `Any` 更简洁，自动管理内存，使用方式更接近动态语言。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>虽然 `Any` 提供了灵活性，但应谨慎使用。优先考虑泛型或接口，只在真正需要处理任意类型时使用 `Any`。</Note>

@@ -1,7 +1,31 @@
-# cjpm build and run
+# cjpm build, run, and test
 
-`cjpm build` compiles the current project. `cjpm run` compiles and runs it in one step.
+`cjpm build` compiles the current project. It first checks dependencies, then calls `cjc` to build. Artifacts are placed in the `target/release/` directory by default. Use the `-V` option to view detailed compilation commands.
 
-`cjpm test` discovers and runs unit tests marked with `@Test` and `@TestCase`.
+`cjpm run` is a more convenient command that first compiles the project and then runs it directly, suitable for rapid iteration during development.
 
-Try modifying the `add` function to subtract instead, then run the code to see the change.
+`cjpm test` is used to run unit tests. When used with `@Test` and `@TestCase` annotations, it can automatically discover and execute test cases.
+
+<Note>`cjpm build` supports incremental compilation, only recompiling modified files to speed up builds.</Note>
+
+The code below demonstrates several utility functions. Try modifying the implementation of the `add` function (e.g., change it to subtraction), then click <Highlight target="run">Run</Highlight> to observe the changes.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C typically requires manual compilation and linking with `gcc`. No unified build tool exists. Use `make` or `cmake` to manage build processes.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses build tools like Maven (`mvn compile`, `mvn exec:java`, `mvn test`) or Gradle. Java has no built-in run script; use the `java` command to execute compiled bytecode.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `go build` to compile, `go run` to run, and `go test` to test, which is very similar to `cjpm` commands.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `cargo build`, `cargo run`, and `cargo test` correspond almost exactly to `cjpm` commands, with consistent usage patterns.
+</CompareWith>
+
+</CompareGroup>

@@ -1,7 +1,25 @@
 # Constructors
 
-A class uses `init` to define constructors. Multiple `init` blocks with different parameter lists provide different ways to create instances.
+Classes use `init` to define constructors. A class can define multiple constructors as long as their parameter lists differ (constituting overloading). The function body of a constructor must complete the assignment of all uninitialized instance member variables.
 
-In this example, `Person` has two constructors. The second one defaults `email` to `"unknown"`.
+Cangjie also supports primary constructors, whose name is the same as the class name. In the primary constructor's parameter list, you can use `let` or `var` to declare member variable parameters, accomplishing both member variable definition and constructor parameter declaration simultaneously.
 
-Try adding a third constructor that takes only `name` and defaults both `age` to `0` and `email` to `"unknown"`.
+The `Person` class below demonstrates two ways of defining constructors. The first `init` is a regular constructor, and the second is a simplified syntax for primary constructor. Objects created by both approaches behave identically.
+
+<Note>
+If a class has no custom constructor and all member variables have initial values, the compiler will automatically generate a parameterless constructor.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go doesn't have constructors; it typically defines `NewXxx()` factory functions. Cangjie provides native support using `init`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's constructor name is the same as the class name. Cangjie uses the `init` keyword, but also supports same-named primary constructors.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a third constructor that only accepts a `name` parameter and defaults `age` to `0`.

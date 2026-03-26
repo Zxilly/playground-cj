@@ -1,7 +1,31 @@
 # Generic Functions
 
-Go functions can be written to work on multiple types using type parameters. Cangjie works the same way -- type parameters appear in angle brackets after the function name.
+Generic functions can handle multiple types, not just a single fixed type. Type parameters are declared in angle brackets `<T>` after the function name, and can then be used in parameter types, return types, and function bodies.
 
-`pickFirst<T>` accepts two values of any type `T` and returns the first. `swap<T, U>` reverses a tuple's element order. The compiler infers or checks concrete types at each call site.
+Type parameters make functions more versatile. For example, `pickFirst<T>` takes two values of type `T` and returns the first one, regardless of whether `T` is `Int64`, `String`, or any other type. When calling, you can explicitly specify the type argument or let the compiler infer it automatically.
 
-Call `swap` with a `(Bool, String)` tuple and print both elements.
+Cangjie supports multiple type parameters. `swap<T, U>` takes a `(T, U)` tuple and returns `(U, T)`, with two type parameters separated by commas. This is more flexible than hardcoding specific types and avoids writing similar code repeatedly.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no generics; you must use macros or manual code generation to achieve it, resulting in verbose code and lack of type safety.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's generics are erased at compile time; at runtime it cannot distinguish `List<Int>` from `List<String>`. Cangjie's generics are instantiated at compile time, preserving complete type information.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's generic syntax is similar, with type parameters also placed in brackets after the function name: `func pickFirst[T](left, right T) T`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's generic syntax is identical: `fn pickFirst<T>(left: T, _: T) -> T`, also using angle brackets to declare type parameters.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Type parameters are typically named using single uppercase letters, such as `T`, `U`, `K`, `V`, but longer descriptive names can also be used.</Note>
+
+Run the code to observe how `pickFirst` and `swap` work, then modify the call to `swap` to swap a tuple of type `(Int64, Bool)`.

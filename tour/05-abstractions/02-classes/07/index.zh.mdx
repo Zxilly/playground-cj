@@ -1,7 +1,33 @@
 # 密封类
 
-`sealed` 类限制继承只能在同一个包内进行。外部代码无法添加新子类，因此编译器知道所有可能的子类型。
+`sealed` 类限制继承只能在同一个包内进行。包外的代码无法添加新的子类。这让编译器知道所有可能的子类型，便于进行穷尽性检查（如 `match` 表达式）和优化。
 
-示例中，`Result` 是密封类，只有 `Success` 和 `Failure` 两个子类。
+密封类常用于表示有限的状态集合或类型层级。例如网络请求的结果只有成功和失败两种，用密封类可以确保不会有意外的第三种状态。密封类可以与抽象类组合使用：`sealed abstract class`。
 
-试试添加一个没有字段的 `Pending` 子类，让 `message()` 返回 `"pending"`。
+下方的 `Result` 是密封抽象类，只在同一个包内定义了 `Success` 和 `Failure` 两个子类。编译器保证不会有其他子类出现，便于进行分支判断和类型安全处理。
+
+<Note>
+密封类的子类只能定义在同一个包内。包外的任何继承尝试都会编译失败。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有继承或密封类的概念，无法限制类型扩展。仓颉的 `sealed` 提供了更强的类型安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 没有原生的 `sealed` 类（Java 17+ 添加），需要使用其他模式限制继承。仓颉原生支持 `sealed` 类。
+</CompareWith>
+
+<CompareWith lang="kotlin">
+Kotlin 的 `sealed class` 限制子类在同一文件内。仓颉限制在同一个包内。
+</CompareWith>
+
+<CompareWith lang="scala">
+Scala 3 的 `sealed` 同样限制继承。仓颉的语义类似，用于封闭类型层级。
+</CompareWith>
+
+</CompareGroup>
+
+试试添加一个 `Pending` 子类表示待处理状态，让它的 `message()` 返回 `"待处理"`。

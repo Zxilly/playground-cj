@@ -1,5 +1,29 @@
 # Break and Continue
 
-`break` exits the loop immediately. `continue` skips to the next iteration.
+`break` is used to immediately terminate the entire loop, and the program continues executing from the code after the loop. It's commonly used to exit early after finding a target, or to abort iteration when certain conditions are met.
 
-Try changing `break` to `continue` on line 6 and observe how the output changes.
+`continue` is used to skip the remaining code in the current iteration and proceed directly to the next iteration. It's commonly used to filter out cases that don't need processing, making the loop body more focused on the logic that's actually needed.
+
+`break` and `continue` only affect the current loop level. In nested loops, they don't affect the execution of outer loops. Both keywords have the type `Nothing`, indicating they don't return any value.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `break` and `continue` are identical to Cangjie's, used to exit loops and skip iterations. C also doesn't support labeled jumps.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `break` and `continue` have identical semantics. Java supports labeled break `break label:`, which can break out of outer loops.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `break` and `continue` have identical semantics to Cangjie. Go can use labels to break out of outer loops, while Cangjie currently doesn't support labeled jumps.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `break` and `continue` are also the same. Rust supports labeled loops with `break 'label` for fine-grained control of nested loops.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing `break` to `continue`, or reversing the conditional logic, and observe how the output changes.

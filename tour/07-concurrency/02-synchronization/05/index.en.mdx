@@ -1,5 +1,65 @@
 # Exercise: Concurrent Counter
 
-Use a `Mutex` to implement a thread-safe counter. Spawn 10 threads, each incrementing the counter 100 times. Print the final value — it should always be 1000.
+This exercise requires you to implement a thread-safe counter. The program starts 10 threads, each incrementing the counter 100 times, so the final result should be 1000.
 
-Without the mutex, the result is unpredictable. Run it and observe the difference.
+The code already provides the `Mutex` declaration, but the code inside the `synchronized` block has been removed. You need to:
+
+1. Implement the increment operation on `counter` inside the `synchronized` block
+2. Ensure all threads synchronize correctly to avoid data races
+
+<Note>Without the mutex, due to data races, the final result may be less than 1000. Try removing `synchronized` and run multiple times to observe the difference.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C version requires using `pthread_mutex_lock()` and `pthread_mutex_unlock()` with paired calls, and it's easy to forget the unlock.
+</CompareWith>
+
+<CompareWith lang="java">
+Java version can use `synchronized(counter)` or `ReentrantLock`; manual unlock is required, making it easy to forget and cause deadlocks.
+</CompareWith>
+
+<CompareWith lang="go">
+Go version would use `var mu sync.Mutex` and the pattern `mu.Lock(); counter++; mu.Unlock()`, or use `defer mu.Unlock()` to ensure release.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust version would wrap the counter with `Arc<Mutex<i64>>` and operate with `let mut num = counter.lock().unwrap(); *num += 1;`.
+</CompareWith>
+
+</CompareGroup>
+
+Run the program and confirm the output is always "Final count: 1000". Then try different implementation approaches.
+
+CJ:
+import std.sync.Mutex
+import std.collection.ArrayList
+
+var counter: Int64 = 0
+let mu = Mutex()
+
+main(): Int64 {
+    let futures = ArrayList<Future<Unit>>()
+    
+    // Start 10 threads, each incrementing 100 times
+    for (_ in 0..10) {
+        let future = spawn {
+            for (_ in 0..100) {
+                // TODO: Add synchronization code here
+                // Hint: Use synchronized(mu) to protect counter++
+                counter++
+            }
+        }
+        futures.add(future)
+    }
+    
+    // Wait for all threads to complete
+    for (future in futures) {
+        future.get()
+    }
+    
+    println("Final count: ${counter}")
+    println("Expected: 1000")
+    
+    return 0
+}

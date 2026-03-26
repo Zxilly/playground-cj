@@ -1,13 +1,15 @@
+// Define two interfaces
 interface Printable {
     func display(): String
 }
 
 interface Named {
     func name(): String {
-        "anonymous"
+        "anonymous"  // Default implementation
     }
 }
 
+// User class implements both interfaces
 class User <: Printable & Named {
     let username: String
 
@@ -16,16 +18,37 @@ class User <: Printable & Named {
     }
 
     public func display(): String {
-        "user = ${username}"
+        "User: ${username}"
     }
 
     public func name(): String {
-        username
+        username  // Override default implementation
     }
 }
 
+// Student class uses Named's default implementation
+class Student <: Printable & Named {
+    let id: String
+
+    init(id: String) {
+        this.id = id
+    }
+
+    public func display(): String {
+        "Student: ${id}"
+    }
+    // name() not provided, uses default value "anonymous"
+}
+
 main() {
-    let user = User("alice")
+    let user = User("Zhang San")
+    let student = Student("S001")
+
+    println("=== User ===")
     println(user.display())
-    println(user.name())
+    println("name = ${user.name()}")
+
+    println("\n=== Student ===")
+    println(student.display())
+    println("name = ${student.name()}")  // Uses default implementation
 }

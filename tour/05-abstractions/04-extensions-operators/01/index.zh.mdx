@@ -1,5 +1,31 @@
 # 直接扩展
 
-`extend` 可以在不修改原类型定义的情况下为其添加方法。扩展后的方法通过普通点语法调用。
+扩展（extension）允许在不修改原类型定义的情况下为其添加新功能。使用 `extend` 关键字声明扩展，其后是被扩展的类型和大括号包围的新增成员。
 
-此处为 `Int64` 添加了 `isEven()`、`isPositive()` 和 `abs()`。值本身仍然是 `Int64`，扩展只增加行为。
+扩展可以添加成员函数、成员属性和操作符重载函数。右侧代码为 `Int64` 类型添加了三个实用函数：`isEven()` 判断偶数、`isPositive()` 判断正数、`abs()` 求绝对值。
+
+被扩展类型的实例可以像调用原生方法一样调用扩展函数。扩展只增加行为，不改变值本身的类型，也不破坏原有类型的封装性。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有方法或扩展的概念，必须手动编写独立的函数并显式传递对象指针，如 `isEven(&number)`。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 需要为每个类型创建 utility 类或子类来扩展功能。仓颉的直接扩展更简洁，无需继承即可添加新方法。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 不支持扩展或方法添加，需要使用独立函数或在定义时就包含所有方法。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 可以为任何类型定义"扩展 trait"，但语法更复杂，需要 trait 定义 + impl 块。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>扩展不能访问被扩展类型中 `private` 修饰的成员，也不能遮盖已有成员。</Note>
+
+点击 <Highlight target="run">运行</Highlight> 查看扩展后的 `Int64` 如何使用新方法，尝试为 `String` 添加扩展函数。

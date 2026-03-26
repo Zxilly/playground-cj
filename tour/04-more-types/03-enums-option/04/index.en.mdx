@@ -1,7 +1,31 @@
 # Option Type
 
-`Option<T>` represents a value that may or may not exist: `Some(value)` or `None`. Use it instead of sentinel values like `-1` for missing results.
+The `Option<T>` type represents a value that may or may not exist. It has two constructors: `Some(value)` indicates a value exists, and `None` indicates no value. This is safer than using special values (like `-1` or empty string) to represent missing values.
 
-The `??` operator provides a default when the option is `None`.
+`Option<T>` can be abbreviated as `?T`. For example, `Option<Int64>` and `?Int64` are equivalent.
 
-Replace `??` with a `match` expression that handles `Some` and `None` separately.
+When a function may not be able to return a valid result, it should return an `Option` type. For example, a find function returns `None` when the target is not found, and a division function returns `None` when the divisor is zero.
+
+The `findIndex` function on the right searches for a target value in an array, returning `Some(index)` if found, otherwise `None`. The `divide` function returns `Some(result)` when the divisor is non-zero, otherwise `None`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C typically uses `-1` or `NULL` pointers to represent missing values, which is error-prone. Cangjie's `Option` type explicitly represents possible absence.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses `null` to represent absence, easily leading to `NullPointerException`. Cangjie's `Option` forces handling of absence cases, providing more safety.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses multiple return values `(value, error)` or `(value, ok)` pattern, requiring checking the second return value. Cangjie's `Option` type unifies both cases into a single value.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `Option<T>` is almost identical to Cangjie's, both have `Some` and `None` constructors, and both support the `?T` shorthand (Rust uses `Option<T>` instead of `?T`).
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a parameter to `findIndex` to start searching from a specified position.

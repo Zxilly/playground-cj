@@ -1,7 +1,33 @@
 # Function Overloading
 
-Multiple functions can share the same name if their parameter types or count differ. The compiler picks the matching version based on the argument types.
+In Cangjie, multiple functions with the same name can exist in the same scope, as long as their parameter types or parameter counts differ. This is called function overloading. The compiler automatically selects the matching function version based on the argument types passed at the call site.
 
-In this example, four `format` functions handle `Int64`, `Float64`, `String`, and a pair of `Int64`.
+Function overloading allows you to use the same name to handle different types of data, improving code readability. For example, you can define multiple `print` functions to handle integers, floats, and strings separately.
 
-Try calling `format(true)` -- it won't compile. Add a `format(value: Bool)` overload to fix it.
+The example on the right defines four `format` functions, accepting `Int64`, `Float64`, `String`, and two `Int64` parameters respectively. When called on lines 22-25, the compiler decides which version to call based on argument types.
+
+<Note>
+Only different parameter types or counts count as overloading. Functions differing only by return type cannot be overloaded and will cause a duplicate definition error. Also, variables and functions cannot have the same name.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't support function overloading; different function names or manual dispatch is required. Cangjie's overloading automatically selects by name.
+</CompareWith>
+
+<CompareWith lang="java">
+Java supports function overloading (method overloading) based on parameter types and count. Cangjie's overloading mechanism is similar to Java's.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't support function overloading. Usually handled through different function names (like `printInt`, `printFloat`) or type assertions.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust doesn't support traditional function overloading but can achieve similar effects through traits or using generic functions with trait bounds.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding an overload `format(value: Bool): String` to handle boolean values, then call `format(true)` to see the effect.

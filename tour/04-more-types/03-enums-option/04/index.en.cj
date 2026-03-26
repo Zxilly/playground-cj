@@ -1,15 +1,17 @@
+// Find the index of a target value in an array
 func findIndex(arr: Array<Int64>, target: Int64): Option<Int64> {
     for (i in 0..arr.size) {
         if (arr[i] == target) {
-            return Some(i)
+            return Some(i)  // Found, return index
         }
     }
-    None
+    None  // Not found
 }
 
+// Safe division operation
 func divide(a: Float64, b: Float64): Option<Float64> {
     if (b == 0.0) {
-        None
+        None  // Divisor is zero, return None
     } else {
         Some(a / b)
     }
@@ -18,23 +20,35 @@ func divide(a: Float64, b: Float64): Option<Float64> {
 main() {
     let numbers = [10, 20, 30, 40, 50]
 
+    // Search for an existing value
     match (findIndex(numbers, 30)) {
-        case Some(idx) => println("Found 30 at index ${idx}")
-        case None => println("30 not found")
+        case Some(idx) => 
+            println("Found 30 at index ${idx}")
+        case None => 
+            println("30 not found")
     }
 
+    // Search for a non-existent value
     match (findIndex(numbers, 99)) {
-        case Some(idx) => println("Found 99 at index ${idx}")
-        case None => println("99 not found")
+        case Some(idx) => 
+            println("Found 99 at index ${idx}")
+        case None => 
+            println("99 not found")
     }
 
+    // Normal division
     match (divide(10.0, 3.0)) {
-        case Some(result) => println("10 / 3 = ${result}")
-        case None => println("Cannot divide by zero")
+        case Some(result) => 
+            println("10 / 3 = ${result}")
+        case None => 
+            println("Division failed")
     }
 
+    // Division by zero
     match (divide(10.0, 0.0)) {
-        case Some(result) => println("10 / 0 = ${result}")
-        case None => println("Cannot divide by zero")
+        case Some(result) => 
+            println("10 / 0 = ${result}")
+        case None => 
+            println("Cannot divide by zero")
     }
 }

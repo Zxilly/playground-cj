@@ -1,13 +1,63 @@
 # Reflection
 
-Reflection lets a program inspect type information and access members by name at runtime.
+Reflection allows programs to inspect type information at runtime and dynamically access members. Cangjie provides reflection capabilities through the `TypeInfo` type, which is the core type for reflection and records metadata for any type.
 
-```cangjie
-let info = ClassTypeInfo.of(counter)
-let valueInfo = info.getInstanceVariable("value")
-valueInfo.setValue(counter, 25)
-```
+There are three ways to obtain `TypeInfo`: through an instance object, through a generic parameter, or through a type name string. `TypeInfo.of(obj)` returns the runtime type information of an object, while `TypeInfo.of<T>()` returns static type information for type `T`. For class types, `TypeInfo.of(obj)` returns `ClassTypeInfo`, which provides more class-specific reflection interfaces.
 
-`ClassTypeInfo.of(obj)` returns the type metadata for an object. Instance and static variables on `Counter` are looked up by name, read, modified, and read again -- all through the reflection API.
+Reflection can access public members of a type, including static variables, instance variables, properties, and methods. Through `getStaticVariable` and `getInstanceVariable`, you can find member variables by name, then use `getValue` and `setValue` to read and write their values.
 
-Change `valueInfo.setValue(counter, 25)` to a different number and predict the "after" output.
+<Note>Reflection can only access `public` members; `private` and `protected` members are not visible.</Note>
+
+The code on the right demonstrates reading and modifying the instance variable `value` and static variable `step` of the `Counter` class through reflection.
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go uses `reflect.TypeOf()` and `reflect.ValueOf()` to obtain type information and checks accessibility through `CanInterface()`. Cangjie's `TypeInfo` provides a more unified interface.
+</CompareWith>
+
+<CompareWith lang="java">
+Java reflection accesses members through `Class.forName()` and `getField()`. Cangjie's `TypeInfo.of()` is more concise and type-safe.
+</CompareWith>
+
+</CompareGroup>
+
+Try modifying the parameter of `setValue` and observe the output changes.
+
+CJ:
+import std.reflect.*
+
+// Define a simple counter class
+public class Counter {
+    public static var step: Int64 = 2      // Static variable
+    public var value: Int64 = 10           // Instance variable
+}
+
+main(): Unit {
+    // Create an object instance
+    let counter = Counter()
+    
+    // Get type information of the object
+    let info = ClassTypeInfo.of(counter)
+    println("Type name: ${info.name}")
+    println()
+    
+    // Find member variables by name
+    let valueInfo = info.getInstanceVariable("value")
+    let stepInfo = info.getStaticVariable("step")
+    
+    // Read initial values
+    println("Before modification:")
+    println("  value = ${(valueInfo.getValue(counter) as Int64).getOrThrow()}")
+    println("  step = ${(stepInfo.getValue() as Int64).getOrThrow()}")
+    println()
+    
+    // Modify variable values through reflection
+    valueInfo.setValue(counter, 25)
+    stepInfo.setValue(5)
+    
+    // Read modified values
+    println("After modification:")
+    println("  value = ${(valueInfo.getValue(counter) as Int64).getOrThrow()}")
+    println("  step = ${(stepInfo.getValue() as Int64).getOrThrow()}")
+}

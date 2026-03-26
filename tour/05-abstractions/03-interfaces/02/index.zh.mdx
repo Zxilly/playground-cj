@@ -1,9 +1,25 @@
 # 实现接口
 
-类通过声明 `<:` 并提供所有必需方法来实现接口。
+类通过 `<:` 符号声明实现接口，并提供所有必需方法的具体实现。一个类可以实现多个接口，接口之间用 `&` 分隔。
 
-多个类可以用不同的行为实现同一个接口。
+接口实现了"契约式编程"：只要类型满足接口定义的方法签名，就可以在任何需要该接口的地方使用。多个不同类型可以用不同行为实现同一接口。
 
-本例中，`Dog` 和 `Athlete` 都实现了 `Runner`。`showRun` 函数接受任何 `Runner`。
+接口类型的变量只能调用该接口声明的方法，无法访问类型特有的成员。这保证了接口的抽象性，调用者无需关心具体类型。
 
-添加一个实现 `Runner` 的 `Robot` 类，并将其传给 `showRun`。
+本例中，`Dog` 和 `Athlete` 都实现了 `Runner` 接口，但提供了不同的 `run()` 实现。`showRun` 函数接受 `Runner` 类型参数，可以传入任何实现了该接口的对象。
+
+添加一个实现 `Runner` 的 `Robot` 类，并在 `main` 中调用 `showRun(Robot())`。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 使用隐式接口实现，无需显式声明。仓颉要求显式声明 `class Foo <: Interface`，这让代码意图更清晰，编译器也能提供更好的错误提示。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `implements` 关键字显式实现接口，仓颉使用更简洁的 `<:` 符号。两者都支持多接口实现，Java 用逗号分隔，仓颉用 `&` 分隔。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>实现接口的方法必须使用 `public` 修饰符，因为接口成员默认是 public 的。如果忘记加 `public`，编译器会报错。</Note>

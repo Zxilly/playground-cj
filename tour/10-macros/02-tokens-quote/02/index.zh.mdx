@@ -1,7 +1,31 @@
-# quote 引用
+# Quote 表达式
 
-`quote(...)` 将代码捕获为 `Tokens` 值而不执行它。在宏内部，你用 `quote` 构建宏返回的代码片段。
+手动构造每个 `Token` 既繁琐又容易出错。仓颉提供了 `quote(...)` 表达式，让你用代码模板的方式轻松构建 `Tokens`。
 
-这比手动拼装 `Token` 对象方便得多。在 `quote` 块中，不匹配的括号和 `$` 需要用 `\` 转义。
+`quote` 将代码片段捕获为 `Tokens` 值而不执行它。在宏内部，你用 `quote` 来构建宏返回的代码。右侧示例中，`PrintExpr` 宏接收输入 `Tokens`，用 `quote` 包装成 `println(...)` 调用后返回。
 
-试着在 `quote(...)` 块中添加 `println("extra")`，观察生成的代码如何变化。
+当 `quote` 表达式中包含某些特殊符号时需要转义：不匹配的小括号用 `\(` 或 `\)` 转义；当 `$` 表示普通字符而非插值时用 `\$` 转义。
+
+尝试在 `quote(...)` 块中添加第二行 `println("extra")`，然后运行查看宏展开后的输出变化。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有 quote 机制。宏通过简单的文本替换实现，无法进行复杂的代码生成。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 没有 quote 概念。注解处理器生成代码需要手动构建字符串或使用代码生成库。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有宏系统，不存在 quote 概念。模板字符串需使用 `text/template` 包。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `quote!` 宏功能类似，使用 `#变量` 进行插值。仓颉使用 `$(变量)` 语法。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>宏定义文件需用 `macro package` 声明，编译时加上 `--compile-macro` 选项。</Note>

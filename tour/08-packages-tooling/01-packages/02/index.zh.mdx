@@ -1,7 +1,31 @@
-# 导入
+# 导入声明
 
-`import std.collection.*` 导入包中的所有内容。`import std.collection.ArrayList` 只导入单个项。
+`import` 语句用于导入其他包中的声明。导入语句必须放在包声明之后、其他代码之前。
 
-`std.core` 包在每个文件中被隐式导入，因此 `String` 和 `Array` 等类型始终可用。
+仓颉提供了多种导入方式：`import std.collection.ArrayList` 导入单个类型，`import std.collection.*` 导入包中所有可见声明。选择合适的导入方式可以让代码更清晰。
 
-试着将 `import std.collection.ArrayList` 改为 `import std.collection.*`，观察代码仍然正常工作。
+值得注意的是，`std.core` 包会被自动隐式导入，所以 `String`、`Array`、`Int64` 等基础类型无需手动导入即可直接使用。这与某些语言需要显式导入所有类型不同。
+
+右侧代码演示了导入 `ArrayList` 和 `sqrt` 函数的用法。注意这些来自标准库的功能需要显式导入。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 使用预处理指令 `#include` 导入头文件，没有真正的包系统。C 没有隐式导入，所有标准库函数都需显式声明。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 `import java.util.ArrayList;` 导入单个类，`import java.util.*;` 导入包中所有可见类。类似仓颉，但 Java 默认导入 `java.lang` 包。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `import "fmt"` 导入整个包，然后通过 `fmt.Println()` 调用。仓颉既可以导入整个包，也可以选择性导入特定声明。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `use std::collections::ArrayList;` 导入，语法类似。但 Rust 没有隐式导入，标准库类型也需要显式声明。
+</CompareWith>
+
+</CompareGroup>
+
+试着将 `import std.collection.ArrayList` 改为 `import std.collection.*`，观察代码是否仍然正常工作。

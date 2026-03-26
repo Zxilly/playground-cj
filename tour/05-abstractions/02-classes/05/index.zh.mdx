@@ -1,7 +1,25 @@
 # 方法重写
 
-父类中标记为 `open` 的方法可以在子类中用 `override` 重写。没有 `open` 标记，编译器会拒绝重写。
+父类中用 `open` 修饰的方法才能被子类重写。子类重写时必须使用 `override` 关键字，这既是明确意图，也让编译器帮你检查拼写错误。没有 `open` 标记的方法无法重写，尝试重写会编译报错。
 
-示例中，`Circle` 和 `Square` 重写了 `area()` 和 `label()`。基类的 `describe()` 在运行时调用被重写的版本。
+重写的方法与父类保持相同的签名（函数名、参数、返回类型）。运行时，即使通过父类引用调用，也会自动分派到子类的版本——这就是动态分派，面向对象多态的核心机制。
 
-试试删除第 2 行 `area()` 的 `open` 标记，观察编译错误。
+下方的 `Circle` 和 `Square` 都重写了 `area()` 和 `label()`。基类的 `describe()` 调用这两个方法时，运行时会正确调用子类的版本，计算出各自的面积和标签。
+
+<Note>
+`open` 和 `override` 的双重约束既保证设计意图明确，又防止意外重写父类方法。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java 方法默认可重写，需用 `final` 阻止。仓颉相反：默认不可重写，需用 `open` 开放。
+</CompareWith>
+
+<CompareWith lang="c#">
+C# 也需要 `virtual` 和 `override`，与仓颉的 `open` 和 `override` 设计理念相似。
+</CompareWith>
+
+</CompareGroup>
+
+试试删除 `Shape` 类中 `area()` 方法的 `open` 修饰符，观察编译错误。

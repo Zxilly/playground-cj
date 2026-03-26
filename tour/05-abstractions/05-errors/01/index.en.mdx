@@ -1,28 +1,23 @@
 # Exception Hierarchy
 
-Exceptions form a hierarchy rooted at `Exception`. Specific types like `IndexOutOfBoundsException` and `ArithmeticException` extend it.
+Exceptions in Cangjie form a hierarchy with `Exception` as the root. The standard library provides various exception types, such as `IndexOutOfBoundsException` (array index out of bounds), `ArithmeticException` (arithmetic errors), `IllegalArgumentException` (illegal arguments), etc., all inheriting from `Exception`.
 
-```cangjie
-catch (e: IndexOutOfBoundsException) { ... }
-catch (e: Exception) { ... }
-```
+When there are multiple `catch` clauses in a `try` block, exceptions are matched from top to bottom. Once a `catch` matches successfully, all subsequent `catch` clauses are skipped. Therefore, more specific exception types should be placed before more general exception types.
 
-Specific `catch` blocks must come before general ones -- otherwise the general block shadows them.
+If you place a generic `catch (e: Exception)` before specific types, the subsequent specific exception types will never be matched. The compiler will issue a warning about this.
 
 <CompareGroup>
 
-<CompareWith lang="java">
-Java has a similar hierarchy with `Exception` at the root and checked/unchecked distinction. Cangjie exceptions are all unchecked.
-</CompareWith>
-
 <CompareWith lang="go">
-Go uses `error` values instead of exceptions. There is no hierarchy -- errors are compared by value or type assertion. Cangjie's exception hierarchy enables multi-level catch blocks.
+Go uses `panic` and `recover`, without an exception type hierarchy. Cangjie's exception mechanism is similar to Java, supporting type hierarchies and multiple catch blocks.
 </CompareWith>
 
-<CompareWith lang="rust">
-Rust has no exceptions. It uses `Result<T, E>` for recoverable errors and `panic!` for unrecoverable ones. Cangjie offers both exceptions and `Option`/`Result` patterns.
+<CompareWith lang="java">
+Java's checked exception mechanism requires declaring checked exceptions. Cangjie's exceptions are all unchecked, similar to Java's RuntimeException.
 </CompareWith>
 
 </CompareGroup>
 
-Swap the order of the two `catch` blocks and observe the compile warning.
+<Note>Exception matching is a runtime behavior; the compiler only warns about obviously unreachable `catch` blocks.</Note>
+
+Try modifying the code by changing the first catch block to catch `Exception` and observe the compiler's warning message.

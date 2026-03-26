@@ -1,7 +1,29 @@
 # 绑定模式
 
-`case n =>` 匹配任意值，并将其绑定到名字 `n`，供该分支内使用。
+绑定模式不仅匹配值，还将匹配到的值绑定到一个变量上，这样你可以在分支中使用这个值。语法是 `case 变量名 =>`，变量名可以是你想要的任何标识符。
 
-这在做兜底处理时很有用，同时还能使用匹配到的值。
+绑定模式通常用于匹配并处理剩余情况。与通配符 `_` 不同，绑定模式让你能访问匹配到的值。`case other =>` 会匹配任何值，并将值绑定到 `other` 变量。
 
-试着把第 2 行的 `code` 改成 `500`，看看会打印什么。
+<Note>绑定模式不能与 `|` 一起使用，因为每个模式需要独立绑定变量，无法共享。</Note>
+
+尝试将第 2 行的 `code` 改成不同的数值，观察绑定模式如何捕获并使用这些值。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `switch` 没有模式匹配，无法直接绑定和解构值。需要在外部声明变量。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `switch` 传统上也没有绑定模式（Java 16+ 的模式匹配改进了这一点）。仓颉的绑定模式是更现代的设计。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `switch case` 没有绑定模式的概念，需要在外部提前声明变量。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的绑定模式与仓颉完全相同，`case n =>` 会绑定整个值。变量默认是不可变的。
+</CompareWith>
+
+</CompareGroup>

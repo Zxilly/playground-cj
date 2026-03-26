@@ -1,5 +1,31 @@
-# 比较运算符
+# 比较运算符重载
 
-比较运算符（`==`、`!=`、`<`、`>`、`<=`、`>=`）的重载方式与算术运算符相同，使用 `operator func`。
+比较运算符（`==`、`!=`、`<`、`>`、`<=`、`>=`）的重载方式与算术运算符相同，使用 `operator func` 定义。这使得自定义类型可以参与比较操作和排序。
 
-此处 `Temperature` 通过委托 `celsius` 字段实现了全部六个比较运算符。之后 `boiling > freezing`、`body == another` 等表达式可直接使用。
+右侧代码定义了 `Temperature` 类型表示摄氏温度，重载了全部六个比较运算符。重载后，`boiling > freezing`、`body == another` 等表达式可以直接使用，代码更加直观易读。
+
+比较运算符通常成对实现：实现了 `<` 就应该实现 `>`，实现了 `==` 就应该实现 `!=`。保持语义一致性很重要，避免产生令人困惑的行为。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中的 `==` 和其他比较符对自定义类型也是字节级比较，无法重载；通常需要手动编写比较函数如 `compare()`。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 通过覆盖 `equals()` 和 `compareTo()` 方法实现比较，但 `==` 仍只做引用比较，容易混淆。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 需要实现 `Comparable` 接口或定义 `Less` 等方法，不支持直接重载 `==` 等运算符。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 通过 `PartialEq`、`Ord` 等 trait 实现比较功能，有更严格的规范要求。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>比较运算符的返回类型应该是 `Bool`，这是语义上的约定。</Note>
+
+尝试只实现 `==` 和 `<`，看看其他比较操作是否会自动推导（提示：不会）。

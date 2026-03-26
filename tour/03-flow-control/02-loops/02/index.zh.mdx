@@ -1,7 +1,29 @@
-# For-in
+# For-in 循环
 
-`for (x in collection)` 遍历任意可迭代对象的每个元素。
+`for-in` 循环用于遍历可迭代对象的每个元素。语法形式为 `for (元素 in 序列) { 循环体 }`。仓颉的数组、区间等类型都支持 `for-in` 遍历。
 
-`where` 子句可以内联过滤元素：`for (i in 0..10 where i % 2 == 0)`。
+迭代变量默认是不可变的，在循环体中不能对其进行修改。如果不需要使用迭代变量，可以用通配符 `_` 代替，编译器不会产生"未使用变量"的警告。
 
-试着在第 3 行的 `fruits` 数组中多加几个元素再运行。
+`where` 子句可以在遍历时过滤元素。`for (i in 0..10 where i % 2 == 0)` 只会遍历满足条件的元素，这比在循环体中使用 `if` 和 `continue` 更简洁。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有 `for-in` 循环，需要手动管理索引。C 没有方便的迭代器机制，过滤需要在循环体中用 `if` 处理。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 提供了增强的 `for` 循环 `for (Type v : collection)`，与仓颉的 `for-in` 相似，但没有 `where` 过滤子句。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `for _, v := range slice` 遍历，可用 `_` 忽略索引。仓颉的 `for-in` 更简洁，`where` 过滤也是独有的便利特性。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `for i in 0..10` 与仓颉语法相似。Rust 可用 `.filter()` 链式调用过滤，仓颉用 `where` 子句内联过滤。
+</CompareWith>
+
+</CompareGroup>
+
+试着在数组中添加或删除元素，看看遍历结果如何变化。

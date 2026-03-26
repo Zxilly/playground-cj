@@ -1,5 +1,27 @@
-# finally
+# finally 块
 
-`finally` 块无论 `try` 块是成功、抛出异常还是提前返回都会执行，适合放置关闭资源等清理逻辑。
+`finally` 块无论 `try` 块是正常结束、抛出异常还是提前返回，都会被执行。它通常用于释放资源、关闭文件、清理状态等"善后"工作。
 
-`finally` 块在 `catch`（如果有的话）之后执行，但在控制流离开所在函数之前完成。
+执行顺序是：`try` 块 → `catch` 块（如果抛出异常且被捕获）→ `finally` 块。即使 `catch` 块中有 `return` 语句，`finally` 也会在返回之前执行。
+
+右侧代码演示了三种情况：正常执行、抛出异常、以及 catch 块中提前返回。注意 `finally` 块在每种情况下都会执行。
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go 使用 `defer` 延迟执行，不限位置且按 LIFO 顺序执行。仓颉的 `finally` 只能跟在 `try` 后，语义与 Java 相同。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `finally` 行为与仓颉完全相同，都会在 try 块退出前执行。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 通过 `Drop` trait 自动释放资源，不需要 `finally`。仓颉也支持 `Resource` 接口，参见后续内容。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>避免在 `finally` 块中抛出异常，这会掩盖原来的异常。</Note>
+
+尝试注释掉 `riskyOperation` 中的 `throw` 语句，观察正常执行时 `finally` 的行为。

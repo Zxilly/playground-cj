@@ -1,33 +1,25 @@
-# throw / try / catch
+# throw and try-catch
 
-`throw` creates an exception at the point of failure. `try` marks a block that may throw, and `catch` handles the exception at a suitable boundary.
+`throw` is used to throw an exception, terminating the current execution flow. `try-catch` is used to catch and handle exceptions. Functions that throw exceptions do not need to declare them, and callers can choose to catch them or let them propagate upward.
 
-```cangjie
-if (b == 0) {
-    throw ArithmeticException("b must not be zero")
-}
-```
+If code in a `try` block throws an exception, execution immediately jumps to the matching `catch` block. If the exception is not caught, it continues to propagate up the call stack until it is handled or causes the program to terminate.
 
-The throwing function reports the problem; the caller's `catch` block decides the recovery strategy.
+The code on the right demonstrates two functions: `requireAdult` checks age, and `divide` performs division—both throw exceptions when conditions are not met. The caller uses `try-catch` to handle these exceptions.
 
 <CompareGroup>
 
-<CompareWith lang="c">
-C has no exceptions -- error handling uses return codes. Cangjie's throw/catch separates error signaling from error handling.
+<CompareWith lang="go">
+Go uses `error` return values and the `if err != nil` pattern. Cangjie's `throw` is similar to `panic`, but can be caught by `catch` and execution can continue.
 </CompareWith>
 
 <CompareWith lang="java">
-Java's try/catch/throw works identically. Cangjie does not require `throws` declarations on functions.
-</CompareWith>
-
-<CompareWith lang="go">
-Go returns `error` values instead of throwing. Cangjie's exceptions provide automatic stack unwinding that Go's explicit error checking does not.
+Java requires methods to declare potentially thrown checked exceptions. Cangjie does not distinguish between checked and unchecked exceptions; neither needs to be declared.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses `Result::Err` and the `?` operator instead of throw/catch. Cangjie exceptions are more implicit but less type-safe at function boundaries.
+Rust uses `Result<T, E>` and the `?` operator. Cangjie supports both exceptions and `Option`, allowing you to choose based on the scenario.
 </CompareWith>
 
 </CompareGroup>
 
-Change `requireAdult(16)` to `requireAdult(20)` to see the success path.
+Try removing the first `try-catch` and observe the effect of an uncaught exception.

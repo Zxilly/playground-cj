@@ -1,7 +1,33 @@
-# Basic Enums
+# Enum Types
 
-An `enum` defines a type with a fixed set of named cases, declared with `|`.
+An `enum` type defines a type by enumerating all possible values, called constructors. Constructors are separated by `|` and can be either parameterless or carry parameters.
 
-Each case is accessed with the enum name: `Direction.North`. Use `match` to handle each case.
+To construct an enum value, use the form `TypeName.Constructor`, such as `Direction.North`. You can also use the constructor name directly when there is no naming conflict.
 
-Add a `Northeast` case and handle it in the `match` expression.
+The `match` expression is used to handle all possible cases of an enum. Each `case` branch matches one constructor, with the handling code following `=>`. `match` requires exhaustive coverage of all possibilities, and the wildcard `_` can be used as a fallback.
+
+The code on the right defines an enum for four directions and uses `match` to return a description for each direction.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't have native enum types in the traditional sense; it only supports integer enums without data. Cangjie's `enum` is a complete algebraic data type, far more powerful than C.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `enum` can define constants, but adding fields and methods requires substantial boilerplate code. Cangjie's enum constructors are more concise and natural.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `iota` enum is just integer constants and cannot carry data. Cangjie's `enum` is an algebraic data type with more powerful features.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `enum` is similar to Cangjie's, both support constructors that carry data. The pattern matching syntax is also very similar.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Enums can only be defined at the top level of a source file, not inside functions.</Note>
+
+Try adding a `Southeast` member and handle it in the `describe` function.

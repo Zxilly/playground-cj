@@ -1,3 +1,23 @@
 # CString 字符串
 
-`CString` 表示以空字符结尾的 C 字符串，对应 C 中的 `char*`。使用 `LibC.mallocCString()` 将仓颉 `String` 转换为 `CString`，使用 `toString()` 方法转换回来。由于 `mallocCString` 在 C 堆上分配内存，使用完毕后必须调用 `LibC.free()` 释放。
+`CString` 是仓颉中表示 C 风格字符串的类型，对应 C 语言中的 `char*`。C 字符串以空字符（`\0`）结尾，与仓颉的 `String` 类型有不同的内存布局。
+
+要将仓颉的 `String` 转换为 `CString`，使用 `LibC.mallocCString()` 函数，它会在 C 堆上分配内存并复制字符串内容。转换后的 `CString` 可以直接传递给接受 `const char*` 的 C 函数。要将 `CString` 转换回仓颉 `String`，调用 `toString()` 方法。
+
+`CString` 提供了实用的成员函数：`size()` 获取字符串长度，`isEmpty()` 检查是否为空，`equals()` 比较两个字符串。右侧代码展示了与 C 标准库函数 `strlen` 互操作的例子。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 语言中字符串是 `char*` 或 `const char*`，没有长度信息。仓颉的 `CString` 封装了 C 字符串并提供方便的方法。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 C.CString() 转换字符串，需要手动调用 C.free() 释放。仓颉同样需要手动释放 `CString`。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`LibC.mallocCString()` 在 C 堆上分配内存，使用完毕后必须调用 `LibC.free()` 释放，否则会内存泄漏。</Note>
+
+试试看调用其他 C 字符串函数，比如 `strcmp` 或 `strcat`。

@@ -1,9 +1,21 @@
 # Known Languages
 
-Cangjie will feel familiar if you know Java, Go, Kotlin, or Swift. It uses similar concepts — functions, classes, generics, and interfaces — with its own syntax and a few new ideas like pattern matching and lightweight threads.
+If you're familiar with Java, Go, Rust, or Swift, Cangjie will feel natural. It features the same core concepts like functions, classes, generics, and interfaces, while introducing modern features like pattern matching and lightweight threads (spawn).
 
-If you already know one of those languages, select it in <Highlight target="langpicker">the language toggles</Highlight> in the header. Comparison tabs will appear throughout the tour showing how the same concept looks in Cangjie versus the language you know.
+Cangjie's syntax design reduces boilerplate while maintaining type safety. For example, variable declarations distinguish between immutable (`let`) and mutable (`var`), and type inference keeps code concise.
 
-If you don't have a language background, just read straight through — the tour is self-contained.
+If you have a background in related languages, click the <Highlight target="langpicker">language switcher at the top</Highlight> to select your preferred language. Comparison tabs will appear throughout the tutorial, showing how the same concept differs across languages.
 
-Click <Highlight target="next">Next</Highlight> to continue.
+<CompareGroup>
+<CompareWith lang="go">
+Go uses `:=` for short declarations with variables mutable by default; Cangjie uses `let`/`var` for explicit distinction, encouraging immutable bindings by default.
+</CompareWith>
+<CompareWith lang="rust">
+Rust's `let` is immutable by default but allows variable shadowing; Cangjie is also immutable by default but prohibits shadowing within the same scope.
+</CompareWith>
+<CompareWith lang="java">
+Java requires explicit type declarations (`String s = "Hello"`); Cangjie supports type inference, so `let s = "Hello"` suffices.
+</CompareWith>
+</CompareGroup>
+
+<Note>If you don't have a background in these languages, don't worry—this tutorial is self-contained and can be read sequentially.</Note>

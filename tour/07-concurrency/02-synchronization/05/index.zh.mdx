@@ -1,5 +1,32 @@
 # 练习：并发计数器
 
-使用 `Mutex` 实现一个线程安全的计数器。启动 10 个线程，每个线程将计数器递增 100 次，打印最终值——应始终为 1000。
+本练习要求你实现一个线程安全的计数器。程序启动 10 个线程，每个线程将计数器递增 100 次，最终结果应该是 1000。
 
-去掉互斥锁后结果将不可预测。试着运行并观察差异。
+代码中已经提供了 `Mutex` 的声明，但 `synchronized` 块中的代码被移除了。你需要：
+
+1. 在 `synchronized` 块中实现对 `counter` 的递增操作
+2. 确保所有线程正确同步，避免数据竞争
+
+<Note>去掉互斥锁后，由于数据竞争，最终结果可能小于 1000。试着移除 `synchronized` 并多次运行观察差异。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 版本需要使用 `pthread_mutex_lock()` 和 `pthread_mutex_unlock()`，必须手动配对调用，很容易遗漏 unlock。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 版本可以使用 `synchronized(counter)` 或 `ReentrantLock`；必须手动 unlock，容易忘记导致死锁。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 版本会使用 `var mu sync.Mutex` 和 `mu.Lock(); counter++; mu.Unlock()` 的模式，或用 `defer mu.Unlock()` 确保释放。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 版本会使用 `Arc<Mutex<i64>>` 包装计数器，通过 `let mut num = counter.lock().unwrap(); *num += 1;` 操作。
+</CompareWith>
+
+</CompareGroup>
+
+运行程序，确认输出总是 "最终计数: 1000"。然后尝试不同的实现方式。

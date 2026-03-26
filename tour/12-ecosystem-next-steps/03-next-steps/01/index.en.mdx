@@ -1,16 +1,33 @@
-# Putting It Together
+# From Tour to Independent Development
 
-This example combines functions, collections, concurrency, mutex locking, and string interpolation in one pipeline.
+Congratulations on completing the Cangjie language tour! Now that you've mastered core concepts like variables, functions, classes, generics, and concurrency, it's time to start writing programs independently.
 
-```cangjie
-let future = spawn {
-    let result = double(current)
-    synchronized(lock) {
-        outputs.add("${current} -> ${result}")
-    }
-}
-```
+After leaving this interactive environment, you can use the `cjc` compiler or `cjpm` project management tool to build your own programs. `cjc` is suitable for quickly compiling single files, while `cjpm` is better for managing multi-file projects and dependencies.
 
-Input numbers are dispatched to worker threads, each computes `double`, results are collected into a shared `ArrayList<String>` under a lock, and the main thread prints the summary.
+The code below demonstrates how to compile and run a standalone Cangjie program from the command line. Save it as `hello.cj`, then execute `cjc hello.cj && ./main` in your terminal to see the output.
 
-Replace `double` with a `triple` function and add two more inputs to the array.
+<CompareGroup>
+
+<CompareWith lang="c">
+C typically requires manually writing Makefiles or using CMake to manage the build process. Cangjie's `cjc` and `cjpm` provide a more integrated toolchain.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses build tools like Maven or Gradle to manage projects. Cangjie's `cjpm` is similar to Maven or Gradle, but more concise.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `go run` to compile and run directly, or `go build` to generate an executable. Cangjie's `cjpm run` is similar to `go run`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `cargo run` to manage projects, and `rustc` to compile single files directly. Cangjie's `cjpm` is equivalent to Cargo, and `cjc` is equivalent to rustc.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>
+On Windows, the generated executable is named `main.exe` by default, and the run command is `.\main.exe`.
+</Note>
+
+Try saving this code and compiling it locally to experience the real development workflow.

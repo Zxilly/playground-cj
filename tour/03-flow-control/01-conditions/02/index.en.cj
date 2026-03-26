@@ -1,21 +1,28 @@
 main() {
+    // if expression returns value assigned to variable
     let temperature = 28
-
-    // if as an expression, result assigned to a variable
     let weather = if (temperature > 30) {
-        "炎热"
+        "Hot"
     } else if (temperature > 20) {
-        "温暖"
+        "Warm"
     } else {
-        "凉爽"
+        "Cool"
     }
-    println("天气: ${weather}")
+    println("Temperature ${temperature}°C: ${weather}")
 
-    // Used in computation
-    let x = 15
+    // Used to calculate absolute value
+    let x = -15
     let abs = if (x >= 0) { x } else { -x }
-    println("${x} 的绝对值: ${abs}")
+    println("Absolute value of ${x} is ${abs}")
 
-    let max = if (10 > 20) { 10 } else { 20 }
-    println("较大值: ${max}")
+    // Used to find the larger of two numbers
+    let a = 10
+    let b = 20
+    let max = if (a > b) { a } else { b }
+    println("Larger of ${a} and ${b} is ${max}")
+
+    // Used for conditional assignment
+    let score = 75
+    let status = if (score >= 60) { "Pass" } else { "Fail" }
+    println("Score ${score}: ${status}")
 }

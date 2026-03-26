@@ -1,16 +1,31 @@
 # Map, Filter, Reduce
 
-Map transforms each element, filter selects elements matching a condition, and reduce combines all elements into a single value.
+Map, Filter, and Reduce are the three most common collection processing patterns. Here we demonstrate their core logic using explicit loops.
 
-```cangjie
-// map: square each number
-squares.add(number * number)
-// filter: keep evens
-if (number % 2 == 0) { evens.add(number) }
-// reduce: sum all
-sum += number
-```
+**Map** applies a transformation function to each element, producing a new collection. For example, squaring each number. **Filter** selects elements that satisfy a condition. For example, keeping only even numbers. **Reduce** combines all elements into a single value, typically requiring an initial value and an accumulator function.
 
-The three operations are written as explicit loops so the logic is visible step by step.
+Cangjie's standard library provides higher-order function forms of these operations, which will be introduced in later chapters. Here we use explicit loops to make each step's logic clearly visible, suitable for beginners to understand the essence.
 
-Add a fourth loop that builds a list of only odd numbers and print it after `evens`.
+The code on the right executes on an integer list: map (square), filter (select even numbers), and reduce (sum).
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't support higher-order functions; map/filter/reduce must be fully hand-written. Cangjie's explicit loops and standard library higher-order functions are both clearer.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's Stream API provides `map()`, `filter()`, `reduce()`, etc., with more elegant chaining. Cangjie's explicit loops are easier for beginners to understand.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have built-in map/filter/reduce functions, typically implemented with explicit loops. Cangjie's standard library provides these higher-order functions, but explicit loops are equally clear.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's iterators provide methods like `.map()`, `.filter()`, `.fold()`, which can be chained. Cangjie also supports a similar functional style.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Although explicit loops are slightly longer, they are easy to debug and understand, making them a great starting point for learning functional operations.</Note>

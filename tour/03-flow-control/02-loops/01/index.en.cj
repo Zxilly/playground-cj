@@ -1,19 +1,27 @@
 main() {
-    // Basic while loop
+    // while loop: calculate the sum of 1 to 10
     var i = 1
     var sum = 0
     while (i <= 10) {
         sum += i
         i++
     }
-    println("1 到 10 的和: ${sum}")
-
-    // do-while loop
-    var n = 1
+    println("Sum of 1 to 10: ${sum}")
+    
+    // do-while loop: executes at least once
+    var n = 100
+    var count = 0
     do {
-        print("${n} ")
-        n *= 2
-    } while (n <= 100)
-    println("")
-    println("最终 n = ${n}")
+        println("do-while loop execution ${count + 1}")
+        count++
+    } while (n < 10)  // condition is false, but loop body still executes once
+    
+    // Typical application: divide by 2 until 0
+    var num = 100
+    var divisions = 0
+    while (num > 0) {
+        num /= 2
+        divisions++
+    }
+    println("100 needs to be divided by 2 ${divisions} times to become 0")
 }

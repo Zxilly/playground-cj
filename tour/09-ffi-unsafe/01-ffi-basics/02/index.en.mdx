@@ -1,7 +1,33 @@
-# @C
+# @C Annotation
 
-`@C` tells the compiler to use C-compatible calling conventions and name mangling.
+The `@C` annotation tells the compiler to use C-compatible calling convention and memory layout. It is primarily used to modify struct types, ensuring their memory layout is exactly consistent with C structs, so data can be safely passed between C and Cangjie.
 
-Apply it to structs to make their memory layout match C. Apply it to functions to make them callable from C code.
+Structs modified with `@C` have strict restrictions: member types must satisfy the `CType` constraint, cannot implement interfaces, cannot have generic parameters, and cannot be captured by closures. These restrictions ensure binary compatibility with C.
 
-Try removing `@C` from `addPoints` and observe the compile error when calling it in `unsafe`.
+`@C` can also modify top-level functions, making them callable by C code. Parameters and return types of such functions also need to satisfy the `CType` constraint. When calling Cangjie functions modified with `@C`, it also needs to be in an `unsafe` context.
+
+<Note>
+Structs modified with `@C` automatically satisfy the `CType` constraint and can be used as parameter or return types for `foreign` functions.
+</Note>
+
+The example below defines an `@C`-modified `Point` struct and an `@C`-modified `addPoints` function. Try removing the `@C` from `addPoints` to observe the compilation error when calling it.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, struct memory layout follows platform conventions by default. No special annotation is needed, but field order must match the FFI boundary.
+</CompareWith>
+
+<CompareWith lang="java">
+Java does not provide a direct C-compatible struct mechanism. JNI developers must manually manage field correspondence or use third-party libraries.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses the `#[repr(C)]` attribute to ensure C-compatible memory layout for structs, with different syntax but the same purpose.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `C.struct_Point` to access C structs in cgo, and does not support directly defining C-compatible Go structs.
+</CompareWith>
+
+</CompareGroup>

@@ -1,7 +1,29 @@
 # 宏调试
 
-使用 `cjc --debug-macro` 编译，将展开后的宏代码写入 `.macrocall` 文件。这样你可以检查宏实际生成的代码。
+宏在编译期展开，生成的代码不可见，调试起来有一定难度。仓颉提供了两个重要的调试工具：命令行选项 `--debug-macro` 和宏内函数 `diagReport`。
 
-在宏定义内部，调用 `diagReport(DiagReportLevel.ERROR, tokens, message, hint)` 可在展开时输出编译器风格的错误信息。
+使用 `cjc --debug-macro` 编译时，编译器会将宏展开后的代码写入 `.macrocall` 文件。你可以查看这个文件，了解宏实际生成了什么代码，帮助定位问题。
 
-运行带有 `@Expect` 的测试，观察输出。
+在宏定义内部，调用 `diagReport(DiagReportLevel.ERROR, tokens, message, hint)` 可以在编译期输出格式化的错误信息。这个函数输出的错误格式与编译器原生错误一致，包含文件位置、错误级别和提示信息。
+
+下面的示例演示了使用内置测试宏的过程。实际开发中，可以先定义一个有问题的宏，用 `--debug-macro` 查看展开结果，再用 `diagReport` 报告使用错误。试试给 `@Expect` 传入错误的预期值，观察测试框架的输出。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的预处理器没有调试工具。错误通过编译器的标准错误信息报告，没有结构化的诊断机制。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的注解处理器可以通过 `Messager` 接口报告错误，但没有像 `--debug-macro` 这样的查看展开代码的工具。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的宏也可以使用 `compile_error!` 在编译期报错，但格式不如 `diagReport` 灵活。Rust 的 `cargo expand` 命令可以查看宏展开，类似 `--debug-macro`。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有宏系统，不需要宏调试工具。代码生成工具如果出错，需要检查生成器的实现。
+</CompareWith>
+
+</CompareGroup>

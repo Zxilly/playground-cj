@@ -1,7 +1,25 @@
-# Option vs Exception
+# Choosing Between Option and Exceptions
 
-Use `Option<T>` when the absence of a value is a normal and expected outcome — for example, looking up a key that may not exist. Use exceptions for truly exceptional conditions that represent program errors or unrecoverable failures.
+Use `Option<T>` when the absence of a value is a normal part of business logic (e.g., a lookup key might not exist). Use exceptions for truly unexpected situations that indicate program errors or unrecoverable failures.
 
-A function returning `Option<T>` forces the caller to explicitly handle the missing case. An exception propagates automatically up the call stack until caught.
+Functions returning `Option<T>` force callers to explicitly handle the missing case, preventing it from being ignored. Exceptions automatically propagate up the call stack, simplifying error propagation paths.
 
-Change the `divide` function to return `Option<Float64>` instead of throwing, and update the caller to handle `None` with `??`.
+The code on the right shows two styles of division functions: `divideException` throws an exception when dividing by zero, while `divideOption` returns `None`. The former is for scenarios where "division by zero is a program error," while the latter is for "division by zero is a possible normal input."
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go idiomatically returns `error` as a second return value. Cangjie's `Option<T>` is similar to having only one return value, and the `??` operator is similar to `if err != nil { return default }`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java typically uses exceptions for errors and `Optional<T>` for potentially missing values. Cangjie similarly distinguishes between these two uses.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust idiomatically uses `Result<T, E>` for errors and `Option<T>` for potentially missing values. Cangjie's combination of exceptions + Option is similar to Rust's design philosophy.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>The `??` operator provides a default value for `None`. Try using `??` to provide a default value of 0.0 for the result of `divideOption`.</Note>

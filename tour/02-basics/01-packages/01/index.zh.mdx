@@ -1,7 +1,31 @@
-# package 与 main
+# 包
 
-每个仓颉程序都从 `main` 函数开始执行。
+每个仓颉程序都由包组成。包是编译的基本单元，每个包有自己的命名空间，可以包含多个源文件。
 
-`package` 声明文件所属的包。这个程序属于 `playground` 包。
+程序从 `main` 函数开始执行。仓颉的 `main` 函数不需要 `func` 关键字，比其他语言更简洁。`main` 函数可以无参数，也可以接受 `Array<String>` 类型的命令行参数；返回类型可以是 `Unit`（无返回值）或整数类型（如 `Int64`，表示退出码）。
 
-试着在 `main` 里的 `return 0` 前面加一行 `println`。
+`package` 声明必须在源文件的非空非注释的首行。如果源文件位于项目的源码根目录（默认为 `src`），可以省略包声明，编译器会使用默认包名 `default`。右侧的示例代码就位于根目录，因此省略了 `package` 声明。
+
+<Note>返回 `0` 表示程序正常退出，非零值表示异常退出。这与 Unix/Linux 的惯例一致。</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `main` 返回 `int`，表示程序退出码；仓颉的 `main` 可返回 `Unit` 或整数，更灵活。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `main` 为 `public static void`，固定无返回值；仓颉的 `main` 支持可选的整数返回值。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `main` 函数无参数无返回值。仓颉的 `main` 更灵活，支持参数和返回值。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `main` 也支持返回值，但需要 `fn` 关键字。仓颉省去了这个关键字，语法更简洁。
+</CompareWith>
+
+</CompareGroup>
+
+点击 <Highlight target="run">运行</Highlight> 执行程序。尝试将返回值改为 `1`，观察退出码的变化。

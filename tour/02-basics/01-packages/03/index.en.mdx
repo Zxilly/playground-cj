@@ -1,7 +1,31 @@
 # Comments
 
-Cangjie has two kinds of comments. `//` starts a single-line comment. `/* */` wraps a block comment.
+Cangjie supports two forms of comments. `//` starts a single-line comment, where content from `//` to the end of the line is ignored by the compiler. `/* */` surrounds multi-line comments, which can span multiple lines.
 
-Block comments can be nested: `/* outer /* inner */ outer */`.
+Cangjie's multi-line comments support nesting: you can include another multi-line comment within a multi-line comment. This is different from some other languages (like Go), and is very convenient when you need to temporarily comment out a section of code that contains multi-line comments. The example on the right demonstrates the use of nested comments.
 
-Try commenting out a `println` line with `//` and see how the output changes.
+Comments don't affect program execution but can significantly improve code readability. Good commenting habits are key to writing maintainable code.
+
+<Note>Comments should explain "why" rather than "what". The code itself already shows what it's doing; comments should explain design decisions and reasoning.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's multi-line comments `/* */` cannot be nested, making it error-prone when commenting out code containing comments; Cangjie supports nested comments.
+</CompareWith>
+
+<CompareWith lang="java">
+Java similarly supports `//` and `/* */` comments, but `/* */` cannot be nested like Cangjie's.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's multi-line comments cannot be nested, which is an important difference between Cangjie and Go. Cangjie's nested comments are more convenient during debugging.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's comment syntax is identical to Cangjie: `//` for single-line comments, `/* */` for multi-line comments, and both support nesting.
+</CompareWith>
+
+</CompareGroup>
+
+Try using `/* */` to comment out a section of code containing `//` comments and observe the effect.

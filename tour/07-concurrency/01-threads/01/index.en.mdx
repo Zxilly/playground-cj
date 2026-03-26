@@ -1,30 +1,29 @@
 # Spawn
 
-`spawn` starts a new thread by running a no-argument lambda and returns a `Future<T>` handle.
+The `spawn` keyword is used to create a new Cangjie thread. It accepts a lambda expression with no parameters, and the code within this lambda will execute concurrently in the new thread.
 
-```cangjie
-let worker = spawn {
-    println("worker: hello")
-}
-worker.get()
-```
+Cangjie uses an M:N threading model where Cangjie threads are lightweight user-space threads scheduled by underlying native threads, making them lighter than operating system threads. When the main thread ends, all unfinished new threads will also stop together.
 
-`get()` blocks the calling thread until the spawned thread finishes. The print order between threads is nondeterministic.
+The code on the right creates three threads: the main thread and two worker threads. Since thread execution order is indeterminate, you may see different output orders each time you run the program.
+
+<Note>A new thread may not have executed any code before the main thread ends, so the main thread needs to wait for child threads to complete.</Note>
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C uses `pthread_create()` to create threads, requiring function pointers and manual thread ID management, which is error-prone and lacks type safety.
+</CompareWith>
+
 <CompareWith lang="java">
-Java uses `new Thread(() -> { ... }).start()` or `ExecutorService.submit()`. Cangjie's `spawn` is more concise and directly returns a typed `Future`.
+Java requires creating a `Thread` subclass or implementing `Runnable`, then calling `start()`; more verbose than Cangjie's `spawn`.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses `go func() { ... }()` to launch a goroutine. Unlike Cangjie's `spawn`, goroutines don't return a handle -- you use channels or `sync.WaitGroup` to synchronize.
+Go uses `go func() { ... }()` to start a goroutine, with cleaner syntax but no direct way to return values. Cangjie's `spawn` returns `Future<T>` which allows retrieving results.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses `std::thread::spawn(|| { ... })` which returns a `JoinHandle`. Calling `.join()` is equivalent to Cangjie's `.get()`.
+Rust uses `std::thread::spawn(|| { ... })` to create threads and returns `JoinHandle<T>`. Cangjie's `Future<T>` provides similar functionality but with different naming.
 </CompareWith>
 
 </CompareGroup>
-
-Run the program three times -- notice the worker print order changes.

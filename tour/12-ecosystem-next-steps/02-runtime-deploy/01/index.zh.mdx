@@ -1,3 +1,33 @@
-# 使用 cjc 运行
+# 使用 cjc 编译运行
 
-用 `cjc main.cj -o main` 将仓颉源文件编译为原生二进制文件，然后用 `./main` 运行它。使用 `cjc -p src/` 可以一次编译包目录中的所有源文件。生成的二进制文件包含仓颉运行时，可以直接在目标平台上执行。
+`cjc` 是仓颉语言的编译器，负责将源代码编译为可执行文件。仓颉采用提前编译（AOT）模式，生成的二进制文件可以直接在目标平台上执行，无需虚拟机或解释器。
+
+使用 `cjc hello.cj` 可以编译单个源文件，默认输出名为 `main` 的可执行文件。使用 `-o` 选项可以指定输出文件名，如 `cjc hello.cj -o myapp`。如果源文件组织为包结构，可以用 `cjc -p src/` 一次性编译整个包。
+
+编译时默认开启优化。使用 `-g` 选项可以生成带调试信息的可执行文件，配合调试工具使用。生成的二进制文件包含用户代码和必要的运行时组件，可以直接部署运行。
+
+右侧代码展示了一个简单的仓颉程序。编译后运行它，观察输出结果。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 使用 `gcc` 或 `clang` 编译，生成可执行文件需指定 `-o` 选项。仓颉和 C 的编译流程类似。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 编译生成字节码 (`.class` 文件)，需要 JVM 运行。仓颉的 `cjc` 直接生成原生可执行文件。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `go build` 编译，默认生成与目录同名的可执行文件。仓颉默认输出 `main`，需要用 `-o` 指定名称。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `rustc` 或 `cargo build` 编译，默认生成 `target/debug/` 下的可执行文件。仓颉直接在当前目录输出。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>确保已安装仓颉 SDK 并配置好 `CANGJIE_HOME` 环境变量，`cjc` 命令才能正常使用。</Note>
+
+尝试修改输出文件名，用 `-o yourname` 指定自定义名称。

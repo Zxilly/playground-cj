@@ -1,12 +1,29 @@
 # Type Aliases
 
-The `type` keyword creates an alias for an existing type. Aliases are interchangeable with the original type everywhere.
+When a type name is very long or not intuitive in certain contexts, you can use the `type` keyword to define an alias for it. `type NameList = ArrayList<String>` creates a short and meaningful name.
 
-```cangjie
-type NameList = ArrayList<String>
-type ScoreMap = HashMap<String, Int64>
-```
+Type aliases do not create new types; they are just another name for the original type. Aliases and original types can be used interchangeably, and the compiler will completely replace aliases with the original types. When a particular generic instantiation appears repeatedly in code, aliases can significantly improve readability.
 
-Aliases are useful when a verbose generic instantiation appears repeatedly.
+The code on the right defines two type aliases: `NameList` represents a string list, and `ScoreMap` represents a mapping from strings to scores. Using these aliases makes the code's intent clearer while reducing repetitive generic parameters.
 
-Add a `type IdSet = HashSet<String>` alias and use it to store unique IDs.
+<CompareGroup>
+
+<CompareWith lang="c">
+C uses `typedef` to define type aliases but can only alias basic types or pointers; cannot define aliases for complex generic structures.
+</CompareWith>
+
+<CompareWith lang="java">
+Java does not support type aliases; while you can create wrapper classes through inheritance or delegation, this is much more complex than simple aliases.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `type NameList = []string` to define type aliases, which also does not create new types.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `type NameList = Vec<String>;` to define type aliases, with similar syntax.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Type aliases can only be defined at the top level of source files, not inside functions.</Note>

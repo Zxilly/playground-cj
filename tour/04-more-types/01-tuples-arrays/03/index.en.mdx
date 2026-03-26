@@ -1,5 +1,31 @@
-# Array Operations
+# Array Slicing
 
-Array elements can be modified by index: `numbers[1] = 25`. Sub-arrays are obtained with a range slice: `numbers[1..3]`.
+You can use the Range type in subscripts to get a segment of elements at once, resulting in a new array. The Range syntax is `start..end`, meaning from start to end (not including end).
 
-Use `for (i in 0..numbers.size)` to iterate with indices.
+You can omit the start or end position of the Range in the subscript. When the start is omitted, it begins from index 0; when the end is omitted, it continues to the end of the array. Slicing operations return a new array, and modifying the slice does not affect the original array.
+
+When iterating by index, you can use `for (i in 0..arr.size)` with index access, or use `for ((i, v) in arr.enumerate())` to get both the index and value simultaneously.
+
+<Note>In the slice range `start..end`, neither start nor end can exceed the array length. If start is greater than end or negative numbers appear, a runtime error will be triggered.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no slicing operation and requires manual pointer management and range calculation. Cangjie's slicing syntax is safer and more convenient.
+</CompareWith>
+
+<CompareWith lang="java">
+Java has no native slicing operation and requires `Arrays.copyOfRange()` or `List.subList()`. Cangjie's slicing syntax is more intuitive.
+</CompareWith>
+
+<CompareWith lang="python">
+Python slicing uses `arr[1:4]` syntax and supports negative indices. Cangjie uses Range type `arr[1..4]` and does not support negative indices.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `arr[1:4]` for slicing, which returns a view of the original array (modifications affect the original array). Cangjie's slicing returns a new array, and modifications do not affect the original array.
+</CompareWith>
+
+</CompareGroup>
+
+Run the code to observe slicing operations. Try creating a slice and modifying it to see if the original array changes.

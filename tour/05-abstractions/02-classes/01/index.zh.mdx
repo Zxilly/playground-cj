@@ -1,7 +1,33 @@
-# 类
+# 类的定义
 
-`class` 定义引用类型。将类实例赋值给另一个变量不会复制数据 -- 两个变量指向同一个对象。
+`class` 定义引用类型。与 `struct` 不同，类的实例在赋值或传参时不会复制数据——两个变量将指向同一个对象。这种行为使得类适合表示需要共享或可变的数据。
 
-示例中，`cat` 和 `sameCat` 指向同一个 `Animal`。修改 `sameCat.name` 也会改变 `cat.name`。
+类使用 `class` 关键字定义，可以包含成员变量、构造函数、成员函数等。成员变量默认必须初始化或在构造函数中赋值。使用 `let` 声明不可变成员，使用 `var` 声明可变成员。
 
-试试将 `sameCat.name` 改为其他值，验证 `cat.name` 也随之改变。
+下方的 `Counter` 类定义了两个成员变量和一个成员函数。注意将 `counter` 赋值给 `sameCounter` 后，修改 `sameCounter` 的字段也会影响 `counter`，因为两者指向同一对象。
+
+<Note>
+类的所有实例成员变量必须在构造函数中完成初始化，否则编译器会报错。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有原生类的概念，需要自己管理指针和内存。仓颉的 class 提供了安全的面向对象抽象。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 class 与仓颉类似，都是引用类型，支持成员变量和方法。两者的面向对象模型基本相同。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有类的概念，使用 struct 和方法组合实现面向对象。仓颉的 class 更接近传统 OOP 语言。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 struct 默认是值类型，需要用引用或包装类型实现共享。仓颉的 class 天生是引用类型。
+</CompareWith>
+
+</CompareGroup>
+
+试试修改 `sameCounter.count` 的值，观察 `counter.count` 是否同步变化。

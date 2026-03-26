@@ -1,7 +1,31 @@
 # Arrays
 
-`Array<T>` is a fixed-size sequence of elements of the same type. The literal syntax is `[1, 2, 3]`.
+`Array<T>` is a fixed-size sequence of elements of the same type, where T represents the element type. Arrays are created using square brackets `[]` as literals, and the compiler automatically infers the element type.
 
-Elements are accessed by zero-based index. The `.size` property returns the number of elements.
+Array elements are accessed by index, starting from 0. The `.size` property returns the number of elements. You can use a `for-in` loop to iterate through all elements in the array in order.
 
-Try accessing `numbers[10]` and observe the runtime error.
+Although arrays cannot change their length (elements cannot be added or removed), you can modify the values at existing positions. Note that Array is a reference type—assigning or passing as a parameter does not copy the element data; multiple references point to the same data.
+
+<Note>When accessing an array, the index cannot be negative or exceed `size - 1`, otherwise a compile-time or runtime error will occur.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C arrays are fixed-size value types and cannot be resized dynamically. C typically uses pointers for array manipulation, which is more error-prone.
+</CompareWith>
+
+<CompareWith lang="java">
+Java arrays are also fixed-size, but arrays themselves are objects (reference types). Java's ArrayList provides dynamic array functionality.
+</CompareWith>
+
+<CompareWith lang="go">
+Go arrays are value types, and assignment copies the entire array. Cangjie's Array is a reference type, where assignment only copies the reference, and all references share the same data.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `Vec<T>` is a variable-length dynamic array, while Cangjie's `Array<T>` has a fixed length. Cangjie also has `ArrayList<T>` that provides dynamic resizing capabilities.
+</CompareWith>
+
+</CompareGroup>
+
+Run the code to observe array creation, access, and modification. Try declaring a new variable pointing to `numbers`, modify it, and observe whether the original array changes.

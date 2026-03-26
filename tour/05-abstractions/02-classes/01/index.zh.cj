@@ -1,31 +1,37 @@
-class Animal {
-    var name: String
-    var age: Int64
+class Counter {
+    var count: Int64
+    var label: String
 
-    init(name: String, age: Int64) {
-        this.name = name
-        this.age = age
+    // 构造函数必须初始化所有成员变量
+    init(count: Int64, label: String) {
+        this.count = count
+        this.label = label
     }
 
-    func describe(): String {
-        "${name}, age ${age}"
+    // 成员函数
+    public func increment() {
+        count += 1
     }
 
-    func birthday() {
-        age += 1
+    public func describe(): String {
+        "${label}: ${count}"
     }
 }
 
 main() {
-    let cat = Animal("Whiskers", 3)
-    println(cat.describe())
+    // 创建实例
+    let counter = Counter(0, "点击")
+    println(counter.describe())
 
-    cat.birthday()
-    println("After birthday: ${cat.describe()}")
+    // 调用成员函数
+    counter.increment()
+    counter.increment()
+    println("调用后: ${counter.describe()}")
 
-    // Reference type behavior
-    let sameCat = cat
-    sameCat.name = "Mr. Whiskers"
-    println("Original: ${cat.name}")  // also changed
-    println("Reference: ${sameCat.name}")
+    // 引用类型行为：赋值不复制数据
+    let sameCounter = counter
+    sameCounter.label = "访问"
+    sameCounter.count = 100
+    println("原变量: ${counter.describe()}")
+    println("新变量: ${sameCounter.describe()}")
 }

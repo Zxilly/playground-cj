@@ -1,18 +1,28 @@
-class ValidationError <: Exception {
-    let field: String
+// Validation exception: carries field name
+open class ValidationError <: Exception {
+    public let field: String
 
-    init(field: String, message: String) {
-        super(message)
+    public init(field: String, message: String) {
         this.field = field
+        super(message)
+    }
+
+    public open override func getClassName(): String {
+        "ValidationError"
     }
 }
 
-class NetworkError <: Exception {
-    let statusCode: Int64
+// Network exception: carries status code
+open class NetworkError <: Exception {
+    public let statusCode: Int64
 
-    init(statusCode: Int64, message: String) {
-        super(message)
+    public init(statusCode: Int64, message: String) {
         this.statusCode = statusCode
+        super(message)
+    }
+
+    public open override func getClassName(): String {
+        "NetworkError"
     }
 }
 
@@ -26,34 +36,40 @@ func fetchData(url: String): String {
     if (url.isEmpty()) {
         throw NetworkError(400, "URL cannot be empty")
     }
-    return "data from ${url}"
+    "Data from ${url}"
 }
 
 main() {
-    // Handle validation errors
+    // Catch validation exception
     try {
         validateEmail("alice_at_example.com")
+        println("Validation passed")
     } catch (e: ValidationError) {
-        println("Validation failed on '${e.field}': ${e.message}")
+        println("Field '${e.field}' validation failed: ${e.message}")
     }
 
+    // Normal case
     try {
         validateEmail("bob@example.com")
-        println("Email is valid")
+        println("Email validation passed")
     } catch (e: ValidationError) {
         println("Validation failed: ${e.message}")
     }
 
-    // Handle network errors
+    // Catch network exception
     try {
-        fetchData("")
+        let data = fetchData("")
+        println("Retrieved data: ${data}")
     } catch (e: NetworkError) {
         println("Network error (${e.statusCode}): ${e.message}")
     }
 
+    // Can catch both types of exceptions
     try {
         let data = fetchData("https://api.example.com")
-        println("Got: ${data}")
+        println("Success: ${data}")
+    } catch (e: ValidationError) {
+        println("Validation error: ${e.message}")
     } catch (e: NetworkError) {
         println("Network error: ${e.message}")
     }

@@ -1,3 +1,33 @@
-# 下一步
+# 使用 cjpm 管理项目
 
-将示例保存为独立的 `.cj` 文件，用 `cjc` 编译运行。代码规模增长后，使用 `cjpm init` 创建项目。
+当代码规模逐渐增长，单个文件已经无法满足需求时，就该使用 `cjpm`（Cangjie Project Manager）创建正式项目了。`cjpm` 是仓颉的官方项目管理工具，负责依赖管理、编译构建和版本控制。
+
+执行 `cjpm init` 会自动生成标准的项目结构：`cjpm.toml` 配置文件和 `src/` 源码目录。配置文件中声明了模块名称、版本、依赖项等信息，`cjpm` 会自动解析和下载依赖。
+
+执行 `cjpm run` 即可完成编译并运行程序，`cjpm build` 仅编译不运行，`cjpm test` 运行测试用例。这些命令会自动处理增量编译，只重新编译修改过的文件。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有统一的项目管理工具。开发者需要手动管理文件结构、编译命令和依赖。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用 Maven 的 `pom.xml` 或 Gradle 的 `build.gradle` 管理项目。功能更复杂，但更适合大型企业项目。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `go mod init` 创建模块，`go.mod` 管理依赖。Go 的依赖管理更简单，但仓颉的 `cjpm.toml` 提供了更细粒度的编译配置。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 Cargo 与 `cjpm` 非常相似：`cargo init` 对应 `cjpm init`，`Cargo.toml` 对应 `cjpm.toml`。两者都支持工作空间、条件编译和自定义构建流程。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>
+`cjpm.toml` 中的 `dependencies` 字段可以声明第三方依赖，支持本地路径和 Git 仓库两种来源。
+</Note>
+
+试着创建一个真实的仓颉项目，体验完整的开发工作流。

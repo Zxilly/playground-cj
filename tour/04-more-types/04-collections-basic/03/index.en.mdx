@@ -1,29 +1,31 @@
 # HashMap
 
-`HashMap<K, V>` maps keys to values with fast key-based lookup.
+`HashMap<K, V>` maps keys to values, providing fast key-value lookups. The key type `K` must implement the `Hashable` and `Equatable<K>` interfaces, while the value type `V` can be any type.
 
-```cangjie
-let scores = HashMap<String, Int64>()
-scores.add("alice", 95)
-scores["bob"] = 88
-```
+Use `add(key, value)` or subscript assignment `map[key] = value` to add key-value pairs, subscript access `map[key]` to read values, `contains(key)` to check if a key exists, and `remove(key)` to delete key-value pairs. During iteration, it yields `(key, value)` tuples that can be directly destructured in loops.
 
-`add` inserts a pair, subscript `scores[key]` reads or updates a value, `contains` checks for a key, and `remove` deletes an entry. Iteration yields `(key, value)` tuples.
+The code on the right demonstrates creating, querying, updating, and deleting operations on a score table, as well as iterating through all key-value pairs.
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C has no built-in HashMap; you must implement a hash table yourself or use a third-party library. Cangjie's `HashMap` is built-in and efficient, ready to use out of the box.
+</CompareWith>
+
 <CompareWith lang="java">
-Java's `HashMap<K, V>` uses `put(k, v)` and `get(k)`. Cangjie supports subscript syntax `map[k]` directly, making read/write more concise.
+Java's `HashMap<K, V>` is similar to Cangjie's, both using hash tables for key-value storage. Both require keys to implement hashing and equality comparison.
 </CompareWith>
 
 <CompareWith lang="go">
-Go's built-in `map[K]V` is similar. Access is `m[k]`, deletion uses `delete(m, k)`, and iteration uses `for k, v := range m`.
+Go uses `map[K]V` as a hash map, created via `make(map[K]V)`. Cangjie's `HashMap` is created using a constructor, adds key-value pairs with the `add` method, and can also use subscript assignment.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust's `HashMap<K, V>` uses `insert(k, v)` and `get(&k)` (returns `Option`). Cangjie's subscript access is more direct.
+Rust's `HashMap<K, V>` is similar to Cangjie's, but requires `use std::collections::HashMap` to import. Cangjie's `HashMap` is also explicitly imported, and both yield tuples during iteration.
 </CompareWith>
 
 </CompareGroup>
 
-Add a fourth entry `"dave"` with score `77`, then remove `"alice"` -- observe the iteration output.
+<Note>Accessing a non-existent key will trigger a runtime error; you should check with `contains` first or ensure the key exists.</Note>
+
+Try modifying the code: remove the `contains` check and directly access a non-existent key to observe the error message.

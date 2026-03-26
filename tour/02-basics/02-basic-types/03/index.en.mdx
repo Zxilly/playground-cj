@@ -1,10 +1,31 @@
-# Bool
+# Boolean Type
 
-`Bool` has two values: `true` and `false`. Logical operators `&&`, `||`, and `!` combine or negate boolean values. Comparison operators like `>` and `==` produce booleans.
+The boolean type is represented by `Bool`, used for logical judgments, and has only two values: `true` and `false`. The boolean type supports three logical operators: logical NOT `!`, logical AND `&&`, and logical OR `||`.
 
-```cangjie
-let active = true
-let result = active && (10 > 5)
-```
+Logical AND `&&` and logical OR `||` employ short-circuit evaluation: when evaluating `a && b`, if `a` is `false`, then `b` is not evaluated; when evaluating `a || b`, if `a` is `true`, then `b` is not evaluated. This avoids unnecessary computations and can even prevent runtime errors.
 
-Try writing a new comparison expression and printing the result.
+Comparison operators (such as `==`, `!=`, `<`, `>`) also produce `Bool` type results. The code on the right demonstrates basic usage of boolean values, logical operations, and comparison operations.
+
+<Note>The boolean type cannot be converted to integer types. Unlike some languages (such as C/C++), in Cangjie `true` cannot be used as `1`.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no native boolean type; it uses integers where 0 is false and non-zero is true. Cangjie's `Bool` is a separate type, stricter.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `boolean` is a separate type but cannot convert to integers; Cangjie's `Bool` works the same way.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `bool` is almost identical to Cangjie's `Bool`—both have only `true` and `false` values, neither supports implicit conversion to integers, and both use short-circuit evaluation.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `bool` is also `true` and `false`, supporting the same logical operators. However, Rust can use `as` to convert `bool` to integers (`true as i32` yields 1), which Cangjie does not support.
+</CompareWith>
+
+</CompareGroup>
+
+Try writing a new comparison expression or logical expression and print the result.

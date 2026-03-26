@@ -1,7 +1,31 @@
-# cjpm init
+# cjpm init — Create a Project
 
-`cjpm init` creates a new project with a `cjpm.toml` file and `src/main.cj`.
+The `cjpm init` command is used to initialize a new Cangjie project. It creates a standard project structure and configuration files.
 
-The `[package]` section in `cjpm.toml` sets the module name, version, and output type.
+After executing `cjpm init`, the following directory structure is generated: a `cjpm.toml` configuration file, a `src/` source directory, and a default `src/main.cj` entry file. `cjpm.toml` is the core configuration file for the project, used to define project name, version, dependencies, and other information.
 
-Try changing the version in the `cjpm.toml` comment from `"1.0.0"` to `"2.0.0"`.
+The configuration file must contain a `[package]` section, where `name` is the module name, `version` is the module version number, and `output-type` specifies the compilation artifact type (e.g., `executable` for executable files).
+
+<Note>`[package]` and `[workspace]` fields cannot coexist in the same `cjpm.toml` file. Use `[package]` for single modules and `[workspace]` for multi-module projects.</Note>
+
+Check the comments in the code to understand the typical configuration format of `cjpm.toml`. Then try running the code to see the output after project initialization.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no official project initialization tool. Developers typically create directory structures and Makefiles manually.
+</CompareWith>
+
+<CompareWith lang="java">
+Java typically uses Maven (`mvn archetype:generate`) or Gradle to initialize projects, similar to `cjpm init`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `go mod init` to initialize modules, generating a `go.mod` file. Cangjie's `cjpm init` creates a complete directory structure, which is more automated.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `cargo init` is very similar to `cjpm init`, both creating project structures and configuration files (`Cargo.toml`).
+</CompareWith>
+
+</CompareGroup>

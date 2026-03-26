@@ -1,10 +1,31 @@
-# Assignment
+# Assignment Operators
 
-`=` assigns a new value to a `var` binding. Compound operators like `+=` and `*=` update the value in place.
+The assignment operator (`=`) is used to assign new values to mutable variables declared with `var`. An important safety design in Cangjie is that the assignment expression has type `Unit` with value `()`, not the assigned value itself. This effectively prevents the common error of mistyping the equality operator `==` as the assignment operator `=`, for example `if (a = 5)` will result in a compile-time error.
 
-```cangjie
-var score = 10
-score += 5  // equivalent to score = score + 5
-```
+Cangjie does not support chained assignment (like `a = b = 0`). During assignment, the expression on the right side of `=` is always evaluated first, then the expression on the left side, and finally the assignment is performed. This ensures predictable evaluation order.
 
-Try rewriting `score += 5` as `score = score + 5` and verify the result is the same.
+Cangjie provides compound assignment operators, including `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `&&=`, `||=`, etc., which can simplify code. Compound assignment expressions also require operands to have the same type, and the expression type is also `Unit`. Compound assignment operators are also non-associative and cannot be used consecutively.
+
+The code on the right demonstrates the use of basic assignment and compound assignment. You can try rewriting compound assignment as regular assignment to compare the two styles.
+
+<Note>Assignment expressions returning `Unit` is a Cangjie safety feature, avoiding the common `if (a = 5)` error in C/Java. Such errors will directly cause compilation failure in Cangjie.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's assignment expressions return the assigned value; `if (a = 5)` is legal, prone to errors. Cangjie's `Unit` return completely prevents this.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's assignment expressions also return values, with same `if (a = 5)` risk. Cangjie's design is safer.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's assignment statements don't return a value, causing compilation errors when used in `if` conditions, similar to Cangjie's safety. Go also supports compound assignment operators, but not `**=` exponentiation assignment.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's assignment expressions return `()` (unit type), exactly the same as Cangjie, also prohibiting chained assignment and misuse of assignment in conditions.
+</CompareWith>
+
+</CompareGroup>

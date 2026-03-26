@@ -1,7 +1,33 @@
 # Interface Values
 
-An interface variable holds a (value, type) pair. Only the interface's methods are accessible through that variable.
+Variables of interface type act like "containers" that can store any value that implements that interface. Interface values internally hold a (value, type) pair, but only methods declared in the interface can be accessed through the interface variable.
 
-Here, an `Array<Drawable>` stores `Line`, `Circle`, and `Text` objects. The loop calls `draw()` on each without knowing the concrete type.
+This design brings great flexibility: you can store objects of different types in the same array and perform unified operations on heterogeneous collections. Callers don't need to care about concrete types, only what objects can do.
 
-Add a `Polygon` class implementing `Drawable` and include it in the array.
+Interface variables can be reassigned to objects of different implementation types at any time, as long as the new type satisfies the interface requirements. This allows dynamic behavior switching at runtime.
+
+In this example, `Array<Drawable>` stores three different types of objects: `Line`, `Circle`, and `Rectangle`. When iterating through the loop, each element calls the `draw()` and `area()` methods, but the actual code executed is different for each.
+
+Add a `Triangle` class that implements `Drawable` and add it to the array.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no native support for interface values or polymorphism; manual vtable pointers or function pointer arrays are needed. Cangjie's interface values provide a higher-level abstraction.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's interface type can store any object implementing that interface, the same concept as Cangjie's interface values. Both support dynamic dispatch.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's interface values internally store (value, concrete type) pairs, and Cangjie employs a similar design. Both can store different concrete types in arrays and operate uniformly through interfaces. Go's empty interface `interface{}` can store any value, and Cangjie uses the `Any` type to achieve the same functionality.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's trait objects (`dyn Trait`) are similar to Cangjie's interface types, storing concrete values and vtable pointers. Rust requires explicit `dyn` annotation to indicate dynamic dispatch, while Cangjie's interface types are dynamically dispatched by default.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>The dynamic nature of interface values brings flexibility but also has some runtime overhead. In performance-sensitive scenarios, consider using generics with static dispatch for better performance.</Note>

@@ -1,7 +1,33 @@
 # 属性
 
-`prop` 通过 `get()` 和可选的 `set(v)` 定义计算属性。对调用方来说像字段，但读写时会执行逻辑。
+`prop` 通过 `get()` 和可选的 `set(v)` 定义计算属性。对外使用时像普通字段，但读写在背后执行自定义逻辑。属性可以实现访问控制、数据验证、延迟计算等功能。
 
-示例中，`fahrenheit` 和 `description` 是只读属性，每当 `celsius` 改变时重新计算。
+不带 `mut` 修饰符的属性只能定义 `get()`，是只读属性。带 `mut` 的属性必须同时定义 `get()` 和 `set(v)`，是可读写属性。计算属性不占用额外存储空间，它们基于其他数据动态计算。
 
-试试给 `fahrenheit` 添加 `set(v)` 块，将华氏度转换回摄氏度：`celsius = (v - 32.0) * 5.0 / 9.0`。
+下方的 `Temperature` 类将摄氏度作为实际存储字段，华氏度通过计算属性推导。当摄氏度改变时，华氏度自动更新——因为它在每次访问时重新计算。
+
+<Note>
+计算属性在 getter 和 setter 中访问自身会造成无限递归，这与函数递归同理。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有属性概念，需要手写 getter 和 setter 函数。仓颉的 `prop` 提供了更优雅的接口。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 没有属性语法，通常定义 `getXXX()` 和 `setXXX()` 方法。仓颉的 `prop` 语法更简洁。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 没有属性语法，通常定义 `GetXXX()` 和 `SetXXX()` 方法实现。仓颉的 `prop` 更简洁直观。
+</CompareWith>
+
+<CompareWith lang="c#">
+C# 的属性语法与仓颉类似，同样使用 `get` 和 `set`。仓颉需要 `mut` 修饰符才可定义 setter。
+</CompareWith>
+
+</CompareGroup>
+
+试试给 `fahrenheit` 属性添加 `set(v)`：将华氏度转换回摄氏度存储。

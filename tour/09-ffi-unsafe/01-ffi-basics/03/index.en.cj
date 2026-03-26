@@ -1,16 +1,35 @@
 foreign func rand(): Int32
 
-// An entire function can be marked unsafe.
+// Entire function can be marked as unsafe
+// Calling unsafe functions also requires unsafe context
 unsafe func getRandomPair(): (Int32, Int32) {
     return (rand(), rand())
 }
 
-main() {
-    // unsafe block — required to call foreign functions.
-    let n = unsafe { rand() }
-    println("Single: ${n}")
+// unsafe functions can contain multiple unsafe operations
+unsafe func rollDice(): Int32 {
+    let n = rand()
+    // Map random number to 1-6
+    return (n % 6) + 1
+}
 
-    // Calling an unsafe function also requires unsafe context.
+main() {
+    // unsafe block - must use when calling foreign functions
+    let single = unsafe { rand() }
+    println("Single random number: ${single}")
+    
+    // Calling unsafe function also requires unsafe context
     let pair = unsafe { getRandomPair() }
-    println("Pair: (${pair[0]}, ${pair[1]})")
+    println("Random pair: (${pair[0]}, ${pair[1]})")
+    
+    // Simulate dice rolling
+    println("Dice roll result: ${unsafe { rollDice() }}")
+    
+    // unsafe block can contain multiple statements
+    unsafe {
+        let a = rand()
+        let b = rand()
+        let sum = a + b
+        println("Sum calculated in unsafe block: ${sum}")
+    }
 }

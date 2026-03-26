@@ -7,11 +7,12 @@ struct Point {
         this.y = y
     }
 
+    // Regular method: can only read fields
     func display(): String {
         "(${x}, ${y})"
     }
 
-    // mut function can modify fields
+    // mut method: can modify fields
     mut func translate(dx: Float64, dy: Float64) {
         x += dx
         y += dy
@@ -29,15 +30,15 @@ struct Point {
 }
 
 main() {
-    // Must use var for mut methods
+    // Must use var declaration to call mut methods
     var p = Point(1.0, 2.0)
     println("Initial: ${p.display()}")
 
     p.translate(3.0, 4.0)
-    println("After translate(3, 4): ${p.display()}")
+    println("After translation: ${p.display()}")
 
     p.scale(2.0)
-    println("After scale(2): ${p.display()}")
+    println("After scaling: ${p.display()}")
 
     p.reset()
     println("After reset: ${p.display()}")

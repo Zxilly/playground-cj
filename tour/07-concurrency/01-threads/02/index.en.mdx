@@ -1,29 +1,27 @@
 # Future
 
-`spawn` returns a `Future<T>`, a handle representing a value that will be available once the thread finishes.
+The `spawn` expression returns a `Future<T>` type, where `T` is the return type of the lambda expression. Calling the `get()` method blocks the current thread until the target thread finishes execution and returns the result.
 
-```cangjie
-let left = spawn { sumRange(1, 50) }
-let right = spawn { sumRange(51, 100) }
-let total = left.get() + right.get()
-```
+`Future<T>` supports three ways to retrieve results: `get()` waits indefinitely, `get(timeout: Duration)` waits with a timeout, and `tryGet()` is a non-blocking attempt. If the thread throws an exception during execution, `get()` will rethrow that exception.
 
-Calling `get()` blocks until the result is ready. The sum of 1..100 is split into two halves computed on separate threads, then combined.
+The example on the right splits the task of summing 1 to 100 into two parts, computing them in parallel across two threads. The main thread collects the computation results from both threads using `left.get()` and `right.get()`.
 
 <CompareGroup>
 
+<CompareWith lang="c">
+Retrieving thread results in C typically requires global variables or passing pointers, then manual synchronization, which is prone to race conditions.
+</CompareWith>
+
 <CompareWith lang="java">
-Java's `Future<T>` from `ExecutorService.submit()` works the same way. Call `.get()` to block and retrieve the result.
+Java can use `Thread.join()` to wait for threads, but requires separate synchronization mechanisms to retrieve result values; Cangjie's `Future<T>` is more concise.
 </CompareWith>
 
 <CompareWith lang="go">
-Go has no built-in future. The equivalent pattern uses a channel: `ch <- result` in the goroutine, `result := <-ch` in the caller.
+Go's goroutines typically pass results through channels, with no direct equivalent to a Future type. Cangjie's `Future<T>` is similar to Go's combination of `chan T` + `WaitGroup`.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust's `JoinHandle<T>` from `thread::spawn` returns `Result<T>` on `.join()`. For async futures, Rust uses `async`/`await` with a runtime.
+Rust's `JoinHandle<T>` uses the `join()` method to wait for threads and retrieve results, which is nearly identical to Cangjie's `Future.get()`.
 </CompareWith>
 
 </CompareGroup>
-
-Split the range into four parts instead of two and verify the total is still `5050`.

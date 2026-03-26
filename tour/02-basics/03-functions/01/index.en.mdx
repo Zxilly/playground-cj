@@ -1,33 +1,57 @@
 # Defining Functions
 
-A function is defined with `func`, followed by its name, parameters in parentheses, and an optional return type after `:`.
+Cangjie uses the `func` keyword to define functions, followed by the function name, parameter list, optional return type, and function body. The parameter list is enclosed in parentheses, with multiple parameters separated by commas; the return type is separated from the parameter list by a colon; the function body is enclosed in curly braces.
 
-```cangjie
-func add(a: Int64, b: Int64): Int64 {
-    return a + b
-}
-```
+Parameters are defined as `name: Type`, for example `a: Int64` represents a parameter named `a` of type `Int64`. Function parameters are immutable and cannot be reassigned within the function body. If a function doesn't need to return a value, you can omit the return type or explicitly annotate it as `Unit`.
 
-A function with no return type returns `Unit` implicitly.
+The code on the right defines three functions: `add` takes two integer parameters and returns their sum, `greet` prints a greeting without a return value, and `square` calculates the square of a number. Note that when calling a function, you only need to pass values without writing parameter names.
 
 <CompareGroup>
 
 <CompareWith lang="c">
-C uses `int add(int a, int b)` with the return type before the name. Cangjie places it after with `: Int64`.
+C uses the `int add(int a, int b)` style for function definition, with the return type written before the function name and parameter types after parameter names. C lacks modern named parameters or default parameter features.
 </CompareWith>
 
 <CompareWith lang="java">
-Java also places the return type before the name: `int add(int a, int b)`. Cangjie uses `func` and a trailing return type.
+Java uses the `public static int add(int a, int b)` style for method definition, requiring access modifiers and the `static` keyword. Java also doesn't support named parameters or default parameters.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses `func add(a, b int) int`. Cangjie shares the `func` keyword and post-name return type, but each parameter must declare its own type.
+Go uses the `func` keyword to define functions, with parameter types written after parameter names, like `func add(a int, b int) int`. Cangjie uses a colon to separate parameter names and types, which is the opposite of Go's style.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses `fn add(a: i64, b: i64) -> i64`. Cangjie uses `func` instead of `fn` and `:` instead of `->`.
+Rust uses the `fn` keyword to define functions, and the syntax for parameters and return types is similar to Cangjie, both using colons as separators. However, Rust function names use snake_case, while Cangjie recommends camelCase.
 </CompareWith>
 
 </CompareGroup>
 
-Try adding a third parameter to `add` and updating the call on line 10.
+<Note>Function parameters are immutable variables and cannot be reassigned within the function body.</Note>
+
+Click <Highlight target="run">Run</Highlight> to see the result, then try modifying the `add` function to calculate the sum of three numbers.
+
+CJ:
+// Define a function that takes two parameters and returns their sum
+func add(a: Int64, b: Int64): Int64 {
+    return a + b
+}
+
+// Define a function with no return value (return type is Unit)
+func greet(name: String) {
+    println("Hello, ${name}!")
+}
+
+// Define a function to calculate the square
+func square(n: Int64): Int64 {
+    return n * n
+}
+
+main() {
+    let sum = add(10, 20)
+    println("10 + 20 = ${sum}")
+    
+    greet("Cangjie")
+    
+    let result = square(7)
+    println("The square of 7 is ${result}")
+}

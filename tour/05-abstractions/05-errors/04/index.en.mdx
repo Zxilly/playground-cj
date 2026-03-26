@@ -1,14 +1,30 @@
 # Custom Exceptions
 
-A custom exception extends `Exception` and can carry extra fields like `field` or `statusCode`. This gives the `catch` site structured information about what went wrong.
+By inheriting from `Exception` or its subclasses, you can create custom exception types. Custom exceptions can carry additional fields, such as error codes, field names, etc., providing richer context information for error handling.
 
-```cangjie
-class ValidationError <: Exception {
-    let field: String
-    init(field: String, message: String) { ... }
-}
-```
+When defining custom exceptions, you need to:
+- Use `open class` declaration (allows further inheritance)
+- Call the parent constructor `super(message)` to pass the error message
+- Override the `getClassName()` method to return the exception name
 
-Define separate exception classes for distinct failure categories so each `catch` block handles exactly one kind of problem.
+The code on the right defines two exceptions: `ValidationError` carries a field name, and `NetworkError` carries a status code. You can access this additional information in `catch` blocks.
 
-Add a `statusCode` check in the `NetworkError` catch block to print different messages for 400 vs 500.
+<CompareGroup>
+
+<CompareWith lang="go">
+Go typically defines error types implementing the `error` interface. Cangjie's custom exceptions are classes that can carry more structured information.
+</CompareWith>
+
+<CompareWith lang="java">
+Java custom exceptions require choosing to inherit from `Exception` (checked) or `RuntimeException` (unchecked). Cangjie makes no distinction—all uniformly inherit from `Exception`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust defines different structs for each error and implements the `Error` trait. Cangjie uses inheritance hierarchies to express error relationships.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>You cannot inherit from the `Error` class. `Error` represents system-level errors that programs should not throw or catch.</Note>
+
+Modify the code to add a `value` field to `ValidationError` to store the invalid value.

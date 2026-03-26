@@ -1,5 +1,29 @@
 # Type Patterns
 
-`case x: Type =>` matches when the value is an instance of `Type` and binds it to `x`. This enables branching on the concrete type behind an interface.
+Type patterns are used to match concrete types behind interfaces or abstract types. The syntax is `case variable_name: Type =>`. When the value's runtime type is a subtype of the specified type, the match succeeds and the value is bound to the variable.
 
-Try adding a new class `Triangle <: Shape` and a matching `case` branch in `describe`.
+This is especially useful when working with interface types. You can choose different handling logic based on the actual type while safely accessing type-specific members. Type patterns make runtime type checking safe and concise.
+
+<Note>Type patterns can only match subtypes of interfaces or open classes (`open class`). Due to Cangjie's type system, the compiler cannot predict all possible subtypes, so typically a wildcard `_` is used as a fallback at the end.</Note>
+
+Try deleting `case _ => "unknown"` on line 27 and see what error message the compiler gives.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no concept of type patterns and no polymorphism mechanism. Cannot perform type checking and casting.
+</CompareWith>
+
+<CompareWith lang="java">
+Java can use `instanceof` for type checking (Java 16+ supports pattern matching). Traditional Java requires explicit type casting.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's type switch uses `switch v := i.(type)`, with type names written directly in cases like `case Circle:`. Cangjie's `case c: Circle` is closer to the pattern matching style.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust doesn't have type patterns; instead, it defines different enum variants for each case and handles them through enum pattern matching. This reflects the design difference between object-oriented and algebraic data types.
+</CompareWith>
+
+</CompareGroup>

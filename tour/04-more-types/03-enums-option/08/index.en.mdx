@@ -1,28 +1,31 @@
-# Exceptions vs Option
+# Option or Exception
 
-Use `Option` when absence is a normal outcome -- a lookup that finds no match returns `None`. Use exceptions when the situation is a genuine error the caller must handle.
+Choosing between `Option` and exception depends on the nature of the error. Use `Option` when absence is a normal, expected result; use exceptions when the situation is a genuine error that the caller must handle.
 
-```cangjie
-func findScore(name: String): ?Int64 { ... }    // absence is normal
-func withdraw(balance: Int64, amount: Int64): Int64 { ... }  // error is exceptional
-```
+Lookup operations typically return `Option` because "not found" is a normal business scenario, and the caller might substitute a default value or ignore it. The `findScore` on the right returns `?Int64`, allowing the caller to gracefully handle non-existent usernames.
 
-`findScore` returns `?Int64` because a missing name is expected. `withdraw` throws because insufficient balance is an error condition.
+Conversely, illegal arguments, insufficient resources, etc. should throw exceptions. The `withdraw` on the right throws an exception when balance is insufficient or the amount is negative, because these are programming errors or serious problems that should propagate upward.
+
+`Option` forces the caller to handle the absence case, while exceptions can automatically propagate upward until caught. Choose the appropriate mechanism based on the severity of the error and handling requirements.
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C cannot distinguish between "missing" and "error"; it typically mixes return values with the global `errno`. Cangjie's separation of `Option` and exceptions is clearer.
+</CompareWith>
+
 <CompareWith lang="java">
-Java mixes `Optional` and exceptions similarly. The convention is the same: use `Optional` for expected absence, exceptions for unexpected failures.
+Java uses exceptions to handle all error situations, including checked and unchecked exceptions. Cangjie uses `Option` and exceptions separately, providing clearer semantics.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses `(value, error)` for both cases, relying on convention to distinguish "not found" from real errors. Cangjie's type system makes the distinction explicit.
+Go idiomatic `(value, error)` return values, but errors can be ignored (not checking error). Cangjie's `Option` forces handling of absence cases, making it safer.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses `Option` for absence and `Result` for errors, matching Cangjie's split between `Option` and exceptions.
+Rust's `Result<T, E>` is separate from `Option<T>`: `Option` represents possible absence, `Result` represents possible failure. Cangjie uses `Option` for absence and exceptions for errors.
 </CompareWith>
 
 </CompareGroup>
 
-Change `withdraw` to return `?Int64` instead of throwing, and update the caller to use `match`.
+<Note>In real projects, you can define your own exception types to carry more error information, such as `InsufficientBalanceException`.</Note>

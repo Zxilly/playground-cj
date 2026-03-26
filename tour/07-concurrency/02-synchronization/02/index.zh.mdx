@@ -1,5 +1,33 @@
-# 原子操作
+# 原子操作 Atomic
 
-`AtomicInt64` 提供对单个整数的无锁原子操作。`fetchAdd` 原子地递增值，`load` 读取值。
+对于简单的整数、布尔值或引用类型的并发访问，原子操作提供了一种无锁的高效方案。原子操作由硬件直接支持，不需要显式的锁机制。
 
-原子变量适合简单计数场景。若需保护多个字段或复杂状态，应使用 `Mutex`。
+仓颉提供了多种原子类型，如 `AtomicInt64`、`AtomicBool` 和 `AtomicReference`。整数类型的原子操作包括 `load()` 读取、`store()` 写入、`fetchAdd()` 原子加法、`compareAndSwap()` 比较并交换等。
+
+原子操作适合简单的计数、标志位等场景。如果需要保护多个变量的复合操作，或者临界区包含复杂逻辑，应该使用 `Mutex` 而不是原子操作。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 依赖编译器的 `__sync_` 或 `__atomic_` 内置函数来实现原子操作，API 不统一且难以使用。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 提供 `java.util.concurrent.atomic` 包，如 `AtomicInteger`，API 与仓颉相似，但内存顺序选项复杂。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `sync/atomic` 包提供函数式 API，如 `atomic.AddInt64(&addr, delta)`。仓颉的原子类型是面向对象的，方法绑定在原子对象上。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 通过 `std::sync::atomic` 模块提供原子类型，使用 `Ordering` 参数控制内存顺序。仓颉目前只支持顺序一致性，使用更简单。
+</CompareWith>
+
+</CompareGroup>
+
+右侧代码使用 `AtomicInt64` 实现线程安全的计数器。`fetchAdd(1)` 原子地将值加 1，并返回修改前的值。这种方式比 `Mutex` 更轻量，性能更好。
+
+<Note>`fetchAdd` 返回的是修改前的值，不是修改后的值。要获取当前值应使用 `load()`。</Note>
+
+尝试将 `fetchAdd` 改为普通的 `store` 和 `load` 组合，看看是否会出现数据竞争。

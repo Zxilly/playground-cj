@@ -1,10 +1,31 @@
-# Rune
+# Character Type
 
-`Rune` represents a single Unicode character. Character literals are written as `r'A'`. Escape characters like `r'\n'` and `r'\t'` represent newline and tab.
+The character type is represented by `Rune`, which can represent any character in the Unicode character set. A `Rune` literal starts with the character `r`, followed by a character enclosed in single or double quotes.
 
-```cangjie
-let letter: Rune = r'A'
-let emoji: Rune = r'🎉'
-```
+Character literals have three forms: single character (e.g., `r'A'`), escape character (e.g., `r'\n'`, `r'\t'`), and universal character (e.g., `r'\u{4f60}'`, followed by 1-8 hexadecimal digits representing a Unicode code point). Escape characters include newline `\n`, tab `\t`, backslash `\\`, etc.
 
-Try changing a character literal to a different letter or emoji.
+The character type supports relational operators for comparison, comparing the Unicode code point values of the characters. `Rune` can be converted to `UInt32`, and integer types can also be converted to `Rune` (must fall within the valid Unicode range). The code on the right demonstrates basic character usage and escape characters.
+
+<Note>`Rune` represents a single Unicode character, different from the string type `String`. A Unicode character may consist of multiple UTF-16 encoding units, but `Rune` always represents a complete code point.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `char` represents single-byte characters only; cannot handle Unicode. Cangjie's `Rune` natively supports any Unicode character.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `char` is UTF-16 based, representing BMP characters; Cangjie's `Rune` is simpler, directly representing Unicode code points.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `rune` is an alias for `int32`, representing a Unicode code point. Cangjie's `Rune` is a distinct character type, requiring an `r` prefix. Go uses single quotes `'x'` for rune, while Cangjie uses `r'x'`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `char` type also represents a Unicode code point, occupying 4 bytes. Cangjie's `Rune` is similar, but the literal syntax differs (Rust uses single quotes `'字'`, while Cangjie uses `r'字'`).
+</CompareWith>
+
+</CompareGroup>
+
+Try changing the character to another letter, Chinese character, or emoji, or use the universal character `\u{...}` notation.

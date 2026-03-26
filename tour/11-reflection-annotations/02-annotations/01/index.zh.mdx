@@ -1,5 +1,23 @@
-# 注解类
+# 注解基础
 
-注解是附加在声明上的结构化元数据标记。注解以 `@` 开头，用于驱动编译期或运行时行为。
+注解是附加在声明上的结构化元数据标记，以 `@` 开头。它为类型、函数、成员等元素提供了额外的信息，这些信息可以在编译期或运行时被读取和使用。
 
-内置注解如 `@Test`、`@TestCase` 和 `@Assert` 由测试框架使用。自定义注解类让你定义自己的元数据。
+仓颉允许开发者通过标记 `@Annotation` 来定义自己的注解类。被 `@Annotation` 修饰的 `class` 必须提供至少一个 `const init` 构造函数，因为注解实例需要在编译期构造完成。注解在使用时通过 `@注解名[参数]` 的语法附加到声明上，参数必须是常量表达式。
+
+对于无参构造函数的注解，使用时可以省略中括号。右侧代码定义了一个带参数的注解 `@Version` 和一个无参注解 `@Deprecated`，并分别应用到两个类上。
+
+<CompareGroup>
+
+<CompareWith lang="java">
+Java 使用 `@interface` 定义注解，运行时通过反射获取。仓颉使用 `@Annotation` 修饰普通 class，结构更统一。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用属性（如 `#[derive]`）实现类似功能，但主要通过过程宏在编译期处理。仓颉注解可在运行时通过反射读取。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>注解类不能是 `abstract`、`open` 或 `sealed` 的。</Note>
+
+试着修改 `@Version` 的参数值，或者为 `ServiceA` 添加 `@Deprecated` 注解，观察输出变化。

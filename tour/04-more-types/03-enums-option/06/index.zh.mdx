@@ -1,5 +1,33 @@
-# Option 的模式匹配
+# 模式匹配处理 Option
 
-对 `Option` 使用 `match` 可以显式区分 `Some(v)` 和 `None` 两种情况。每个分支都可以解构内部值，并用 `where` 守卫附加条件。
+对 `Option` 使用 `match` 可以显式区分 `Some(v)` 和 `None` 两种情况，并在每个分支中编写不同的处理逻辑。这是处理 `Option` 最常用和最清晰的方式。
 
-当两种情况需要不同处理逻辑时，模式匹配是处理 `Option` 最常见的方式。
+`case Some(v)` 会将 `Option` 内部的值绑定到变量 `v`，可以在分支代码中使用。`case None` 处理值为空的情况。
+
+`where` 守卫可以进一步细化匹配条件。例如，`case Some(s) where s >= 90` 只匹配内部值大于等于 90 的 `Some`。守卫必须是布尔表达式，放在模式之后、`=>` 之前。
+
+右侧代码展示了如何用模式和守卫将分数转换为字母等级，并对缺失分数的情况提供默认值。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 `switch` 只基于值比较，不支持模式匹配或守卫。仓颉的 `match` 结合模式和守卫更强大。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `switch` 不支持守卫，需要多个嵌套 if-else 处理复杂逻辑。仓颉的 `match` 和 `where` 更简洁清晰。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `switch` 不支持模式匹配和守卫，只能使用 `if-else` 链来处理类似逻辑，代码更冗长。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `match` 也支持守卫（称为 match guard），语法和语义与仓颉相同。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`match` 要求穷尽所有情况，处理 `Option` 时必须同时包含 `Some` 和 `None` 分支。</Note>
+
+尝试修改 `getLetterGrade` 函数，添加更多的分数区间（如 A+、A-）。

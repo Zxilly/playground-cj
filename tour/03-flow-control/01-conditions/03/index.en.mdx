@@ -1,7 +1,31 @@
-# if-let
+# if-let Pattern Matching
 
-`if (let Some(v) <- x)` tests whether an `Option` contains a value. If it does, the inner value is bound to `v` and the branch executes.
+`if-let` is a convenient syntax provided by Cangjie for checking and destructuring values of `Option` type. The syntax is `if (let Some(v) <- opt)`, and when `opt` contains a value, the inner value is bound to variable `v` and that branch executes.
 
-You can add an extra condition with `&&`, as shown on line 20.
+This approach is more concise and safer than first using `if` to check if it's `Some`, then manually unpacking. The variable `v` is only valid within the successfully matched branch, preventing misuse elsewhere.
 
-Try changing `Some(42)` to `None` on line 2 and see which branch runs.
+You can add additional conditions after `let pattern` using `&&` to form more complex judgments. For example, `if (let Some(v) <- opt && v > 0)` only executes the branch when `opt` has a value and that value satisfies the condition. Note that patterns connected with `||` cannot bind variables.
+
+The code on the right demonstrates basic usage of `if-let` and condition combinations. Try changing `Some(42)` to `None` and observe how the program's execution path changes.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't have an Option type and typically uses NULL pointer checks or error codes. This is more error-prone than if-let.
+</CompareWith>
+
+<CompareWith lang="java">
+Java lacks a built-in Option type (Optional exists since Java 8 but is more verbose). Usually null checks or Optional's ifPresent() method are used.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `if let Some(v) = opt` syntax (using `=` instead of `<-`), with the same functionality but a different operator.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have a built-in Option type, typically returning a value plus error and checking with `if err != nil`, which is less concise than if-let.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Variables bound in `if-let` are only valid within the successfully matched branch and cannot be used in the `else` branch.</Note>

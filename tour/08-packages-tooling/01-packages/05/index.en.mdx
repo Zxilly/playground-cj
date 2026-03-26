@@ -1,7 +1,31 @@
-# Re-export
+# Re-exports
 
-`public import a.b.foo` makes `foo` available to anyone who imports your package. They don't need to also import `a.b`.
+`public import` can re-export imported declarations, making them visible to code that imports your package. This is called "re-exporting."
 
-The default modifier on `import` is `private`, meaning the imported name is only usable in the current file.
+Default `import` is `private`, meaning imported names are only available in the current file. With `public import`, these names become part of your package's public API.
 
-The example shows how a re-exported `ArrayList` could be used through an intermediate package.
+Re-exports are commonly used to build convenient APIs for libraries. Library authors can aggregate commonly used types from multiple subpackages into a single entry package, so users only need to import that one package. This simplifies usage while preserving flexibility in internal organization.
+
+The code on the right demonstrates the concept of re-exports. Although it only shows regular imports here, the comments explain how to use `public import` to build a library's API in real projects.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no concept of modules or packages, making re-exports impossible. All imports are handled directly through preprocessor directives.
+</CompareWith>
+
+<CompareWith lang="java">
+Java does not support re-exports. Imported classes are only available in the current file. To provide a unified API, you need to create wrapper classes in an intermediate package.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't support re-exports. To provide simplified imports, you can only write wrapper types or functions manually. Cangjie's `public import` is more direct and convenient.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust supports re-exports: `pub use std::collections::HashMap;`. The mechanism is similar to Cangjie's, both used to expose internal dependencies or simplify APIs for users.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing `import std.collection.ArrayList` to `public import` to understand how it changes the visibility of imported declarations.

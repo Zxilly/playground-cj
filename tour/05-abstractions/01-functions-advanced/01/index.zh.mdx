@@ -1,7 +1,33 @@
 # 函数作为值
 
-仓颉中函数有类型，如 `(Int64) -> Int64`。函数可以赋值给变量，也可以作为参数传递给其他函数。
+在仓颉中，函数是一等公民（first-class citizens），可以像普通值一样传递和使用。函数本身有类型，称为函数类型，由参数类型和返回类型组成，如 `(Int64) -> Int64`。
 
-示例中，`double` 和 `square` 被传递给 `apply`，由它来调用。
+函数类型可以作为变量类型、函数参数类型或返回类型。你可以将函数赋值给变量，作为参数传递给其他函数，或从函数中返回。这让函数式编程成为可能。
 
-试试将第 14 行的 `fn` 赋值为 `square`，然后运行程序。
+右侧示例中，`double` 和 `square` 是普通函数，`apply` 接受一个函数参数 `f` 并调用它。注意第 14 行将函数 `double` 赋值给变量 `fn`，之后 `fn(5)` 就相当于调用 `double(5)`。
+
+<Note>
+当重载函数作为表达式使用时，可能产生歧义。此时需要显式指定变量类型来消除歧义，如 `let fn: (Int64) -> Int64 = double`。
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的函数指针语法复杂，`int (*fn)(int)` 书写冗长。仓颉的函数类型 `(Int64) -> Int64` 更清晰简洁。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 没有函数指针，需要创建方法引用或函数式接口实现。仓颉的一等函数更简洁自然。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 中函数也是一等公民，语法类似。但 Go 没有函数重载，因此不会出现歧义问题。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `fn` 类型表示函数指针，闭包则用 `Fn`、`FnMut`、`FnOnce` trait。仓颉的函数类型更简洁统一。
+</CompareWith>
+
+</CompareGroup>
+
+试试修改第 16 行的 `fn` 赋值为 `square`，观察输出变化。

@@ -1,7 +1,31 @@
 # Tuples
 
-`(Int64, String)` is a tuple type. A tuple groups values of different types into one compound value.
+A tuple can combine multiple values of different types into a single compound value. Tuple types are represented as `(T1, T2, ..., TN)`, where T1 through TN can be any type, separated by commas.
 
-Access elements by index: `t[0]`, `t[1]`. Tuples must have at least two elements. They are immutable -- you cannot modify individual elements after creation.
+A tuple must have at least two elements. For example, `(Int64, Float64)` is a 2-tuple (pair), and `(Int64, Float64, String)` is a 3-tuple (triple). The length of a tuple is fixed after definition and cannot be changed.
 
-Try to assign `point[0] = 10` and observe the error.
+Tuples are immutable types—once a tuple instance is created, individual elements cannot be modified. However, tuple variables declared with `var` can be reassigned as a whole. Elements are accessed via `t[index]`, with indexing starting from 0.
+
+<Note>Tuples do not support element access via field names; they can only be accessed by index. Even if named parameters are defined like `(name: String, price: Int64)`, `name` cannot be used directly as an accessor.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no native tuple type and typically uses structs instead. You need to manually define fields, which is less flexible than tuples.
+</CompareWith>
+
+<CompareWith lang="java">
+Java only recently introduced record (Java 16+) to simulate tuples. Traditional Java requires defining classes to achieve similar functionality.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust tuples also use index access, but Rust allows access via `.` syntax (e.g., `tuple.0`), while Cangjie only supports `[]` syntax.
+</CompareWith>
+
+<CompareWith lang="python">
+Python tuples are also immutable, but Python supports tuple unpacking and slicing. Cangjie tuples do not support slicing operations.
+</CompareWith>
+
+</CompareGroup>
+
+Run the code on the right to observe tuple creation, index access, and destructuring. Try assigning a value to `point[0]` to see what error you get.

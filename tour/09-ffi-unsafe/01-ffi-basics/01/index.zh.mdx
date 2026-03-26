@@ -1,7 +1,33 @@
 # foreign 声明
 
-`foreign` 声明一个可从仓颉调用的 C 函数。它只有签名没有函数体——链接器在编译时解析它。
+`foreign` 关键字用于声明一个外部 C 函数，它只有函数签名而没有函数体——链接器会在编译时解析实际的实现。调用 `foreign` 函数时必须在 `unsafe` 块中进行，因为 C 代码可能产生不安全操作。
 
-调用 `foreign` 函数需要在 `unsafe` 块中进行。
+仓颉与 C 的基本类型有明确的映射关系：`Int32` 对应 `int32_t`，`Int64` 对应 `int64_t`，`Unit` 对应 `void`。参数和返回类型必须符合 C 和仓颉类型映射的要求。
 
-试着添加 `foreign func srand(seed: UInt32): Unit`，然后在 `rand()` 之前调用它。
+`foreign` 声明的函数不支持命名参数和默认值，但支持变长参数（使用 `...` 表示）。在 `foreign` 声明上可以省略 `@C` 注解，编译器会自动推断。
+
+<Note>
+`foreign` 只能修饰函数声明，不能修饰变量、类或接口。被 `foreign` 修饰的函数不能有函数体。
+</Note>
+
+下面的示例声明了 C 标准库函数 `rand()`、`abs()` 和 `srand()`，并在 `unsafe` 块中调用它们。试着添加对 `srand()` 的调用来设置随机种子。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中，声明外部函数只需提供函数原型，如 `int rand();`。没有 unsafe 的概念，所有 C 代码默认被视为外部函数。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 通过 JNI（Java Native Interface）声明本地方法，使用 `native` 修饰符。调用本地代码时不需要 `unsafe` 块，但需要加载本地库。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `extern "C" { fn rand() -> i32; }` 声明外部函数，调用时同样需要 `unsafe` 块。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `//go:linkname` 或 cgo 工具调用 C 函数，语法不同但都强调安全隔离。
+</CompareWith>
+
+</CompareGroup>

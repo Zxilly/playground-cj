@@ -1,11 +1,36 @@
 main() {
-    // This is a single-line comment
-    println("单行注释以 // 开头")
-
-    /* This is a multi-line comment
-       that can span multiple lines */
-    println("多行注释用 /* */ 包围")
-
-    /* Multi-line comments can be /* nested */ */
-    println("注释不影响程序运行")
+    // Single-line comment: this line of code will print a message
+    println("Comments don't affect program execution")
+    
+    // Single-line comments can follow code
+    let x = 100  // Define variable x
+    
+    /* 
+     * Multi-line comments can span multiple lines
+     * Commonly used to describe complex logic
+     * Or temporarily disable code blocks
+     */
+    let y = 200
+    println("x = ${x}, y = ${y}")
+    
+    /* 
+     * Calculate sum and product of two numbers
+     */
+    let sum = x + y
+    let product = x * y
+    println("${x} + ${y} = ${sum}")
+    println("${x} * ${y} = ${product}")
+    
+    /* Cangjie's multi-line comments support /* nested usage */ */
+    println("Nested comments are one of Cangjie's features")
+    
+    // Temporarily commented out code:
+    // let z = 300
+    // println("z = ${z}")
+    
+    // Note: Good comments explain "why", not "what"
+    let divisor = 1024  // Use 1024 as KB conversion factor
+    let bytes = 2048
+    let kb = bytes / divisor
+    println("${bytes} bytes = ${kb} KB")
 }

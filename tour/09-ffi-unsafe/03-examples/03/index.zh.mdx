@@ -1,3 +1,31 @@
-# 安全注意事项
+# 安全封装 FFI
 
-始终将 `unsafe` 块的范围最小化，并验证从 C 返回的值。C 分配的内存必须由 C 释放——不要用仓颉的垃圾回收器释放 C 内存。在解引用指针之前，使用 `CPointer.isNull()` 检查指针是否为空。
+调用 C 代码最大的风险在于指针操作和内存管理。仓颉的 `CPointer` 提供了 `isNull()` 方法检查空指针，应当在解引用前始终调用。通过将 `unsafe` 操作封装在安全函数内部，可以最小化不安全代码的范围。
+
+C 侧分配的内存（如 `malloc`）必须由 C 侧释放（如 `free`），不能用仓颉的垃圾回收器管理。同样，仓颉侧的对象也不能传递给 C 代码让其持有指针（CPointer 仅在函数调用期间有效）。遵循"谁分配谁释放"的原则是避免内存泄漏和野指针的关键。
+
+右侧代码演示了安全封装模式：`safeAlloc` 函数内部处理所有 `unsafe` 操作，包括空指针检查、内存写入读取、以及及时释放。外部调用者看到的只是一个干净安全的接口。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 完全依赖开发者手动调用 `malloc` 和 `free` 管理内存。没有 GC，也没有自动清理机制。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 GC 不管理 C 内存。JNI 开发者必须手动调用对应的 C 函数释放 C 侧分配的内存。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 Cgo 允许通过 `C.malloc` 和 `C.free` 管理 C 内存，但 Go 的 GC 不会自动管理 C 内存。开发者需要手动调用 `C.free`。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `unsafe` 块同样要求开发者手动管理内存。Rust 通过 RAII 模式（Drop trait）封装不安全资源，仓颉可以通过终结器实现类似功能。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`unsafe` 块的范围应该尽可能小。将不安全操作封装在函数内部，只暴露安全的接口，这是良好的编程习惯。</Note>
+
+尝试修改 `safeAlloc` 函数，让它返回一个 Option 类型，在分配失败时返回 None。

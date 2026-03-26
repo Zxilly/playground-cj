@@ -1,10 +1,74 @@
 # Named Parameters
 
-A parameter marked with `!` after its name becomes a named parameter. At the call site, named parameters are written as `name: value` and can be passed in any order.
+In Cangjie, you can define named parameters using the `name!: Type` syntax. When calling a function, named parameters require writing the parameter name in the format `name: value`. Named parameters can be passed in any order, which makes code more readable and reduces parameter passing errors.
 
-```cangjie
-func greet(who!: String, greeting!: String) { }
-greet(greeting: "Hi", who: "Cangjie")
-```
+Named parameters must be marked with `!`, which is Cangjie's unique syntax. Parameter lists can contain both regular parameters and named parameters, but named parameters must come after regular parameters. When calling, regular parameters are passed by position, while named parameters are passed by name.
 
-Try swapping the argument order at the call site on line 12 and verify it still works.
+The code on the right defines `createUser` and `sendEmail` functions, both using named parameters. Note that the parameter order at call site can differ from the definition order, which is especially useful for large parameter lists.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't support named parameters and requires positional argument passing. For functions with many parameters, it's easy to pass arguments incorrectly.
+</CompareWith>
+
+<CompareWith lang="java">
+Java also doesn't support named parameters and requires positional argument passing. Some Java frameworks (like Lombok) provide the Builder pattern to improve this, but it's more complex than Cangjie's built-in support.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't support named parameter syntax and can only pass arguments by position. Cangjie's named parameters make function calls clearer, similar to Python's `func(name=value)` syntax.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust doesn't support named parameters but can simulate them through structs or the `#[derive(Builder)]` pattern. Cangjie's named parameters are a built-in language feature, more concise and intuitive.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Named parameters must be defined after regular parameters. When calling, named parameters can be in any order.</Note>
+
+Click <Highlight target="run">Run</Highlight> to see the effect of named parameters, then try modifying the function calls to change the parameter order.
+
+CJ:
+// Define a function using named parameters
+// Note: Named parameters use the form name!: Type
+func createUser(name!: String, age!: Int64, email!: String) {
+    println("Creating user:")
+    println("  Name: ${name}")
+    println("  Age: ${age}")
+    println("  Email: ${email}")
+}
+
+// Mix regular parameters and named parameters
+// Named parameters must come after regular parameters
+func sendEmail(to: String, subject!: String, body!: String) {
+    println("Sending email to ${to}:")
+    println("  Subject: ${subject}")
+    println("  Body: ${body}")
+}
+
+main() {
+    // Must write named parameter names when calling
+    createUser(name: "Li Hua", age: 28, email: "lihua@example.com")
+    println("---")
+    
+    // Named parameters can be passed in any order
+    createUser(email: "wang@demo.com", name: "Wang Fang", age: 35)
+    println("---")
+    
+    // Regular parameters passed by position, named parameters by name
+    sendEmail(
+        "admin@example.com",
+        subject: "System Notification",
+        body: "Your account has been activated"
+    )
+    println("---")
+    
+    // Named parameter order can be adjusted for better readability
+    sendEmail(
+        "user@test.com",
+        body: "This is a test email",
+        subject: "Test"
+    )
+}

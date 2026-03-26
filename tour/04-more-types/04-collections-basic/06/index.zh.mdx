@@ -1,5 +1,31 @@
 # 集合转换
 
-数据可以在集合类型之间转移。`Array` 可以初始化 `ArrayList`，`ArrayList` 可以初始化 `HashSet` 以去重，元组数组可以初始化 `HashMap`。
+仓颉允许在不同集合类型之间转换数据，选择最适合当前处理步骤的类型。
 
-选择最适合当前处理步骤的集合类型。
+`Array` 可以初始化 `ArrayList`，通过构造函数传入数组即可。`ArrayList` 初始化 `HashSet` 可以自动去重。元组数组可以初始化 `HashMap`，例如 `[("key1", val1), ("key2", val2)]`。
+
+这种灵活性让你可以在不同阶段使用最合适的集合类型：收集阶段用 `ArrayList` 保留顺序和重复，去重阶段转为 `HashSet`，索引查询阶段用 `HashMap`。
+
+右侧代码演示了从数组到 `ArrayList`、从 `ArrayList` 到 `HashSet`（去重）、从元组数组到 `HashMap` 的转换。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有集合类型的转换，需要手动复制元素。仓颉的构造函数提供了自动转换机制。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的集合可以通过构造函数转换，如 `new HashSet<>(list)`。仓颉的构造函数风格类似，支持多种转换。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的集合类型之间需要手动转换，没有统一的构造函数。仓颉通过构造函数重载提供了便捷的类型转换。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的集合也可以互相转换，例如 `Vec::from(slice)` 或 `HashSet::from_iter(vec)`。仓颉的构造函数风格更统一。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>集合转换会创建新实例，不会影响原集合。`HashSet` 会自动去除重复元素。</Note>

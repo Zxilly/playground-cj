@@ -1,12 +1,33 @@
-# What's Next
+# Using cjpm for Project Management
 
-Save an example as a standalone `.cj` file and compile it with `cjc`. When the code grows, use `cjpm init` to start a project.
+When your codebase grows and a single file no longer meets your needs, it's time to use `cjpm` (Cangjie Project Manager) to create a formal project. `cjpm` is Cangjie's official project management tool, responsible for dependency management, compilation builds, and version control.
 
-```cangjie
-cjc hello.cj -o hello
-cjpm init myproject
-```
+Running `cjpm init` automatically generates a standard project structure: a `cjpm.toml` configuration file and a `src/` source directory. The configuration file declares the module name, version, dependencies, and other information. `cjpm` automatically resolves and downloads dependencies.
 
-The tour covered variables, types, control flow, functions, data shapes, classes, generics, error handling, collections, extensions, concurrency, and reflection. Each topic is a building block for real programs.
+Running `cjpm run` compiles and runs the program, `cjpm build` compiles without running, and `cjpm test` runs test cases. These commands automatically handle incremental compilation, only recompiling modified files.
 
-Pick one example from the tour, save it as a `.cj` file, and compile it locally.
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no unified project management tool. Developers must manually manage file structure, build commands, and dependencies.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses Maven's `pom.xml` or Gradle's `build.gradle` for project management. More complex but better suited for large enterprise projects.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `go mod init` to create modules and `go.mod` to manage dependencies. Go's dependency management is simpler, but Cangjie's `cjpm.toml` provides more fine-grained compilation configuration.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's Cargo is very similar to `cjpm`: `cargo init` corresponds to `cjpm init`, and `Cargo.toml` corresponds to `cjpm.toml`. Both support workspaces, conditional compilation, and custom build processes.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>
+The `dependencies` field in `cjpm.toml` can declare third-party dependencies, supporting both local paths and Git repositories as sources.
+</Note>
+
+Try creating a real Cangjie project to experience the complete development workflow.

@@ -1,7 +1,29 @@
-# Import as
+# Aliased Imports
 
-`import pkg.Name as Alias` renames an imported declaration. This resolves name conflicts between packages.
+When importing declarations with the same name from different packages, you can use the `import ... as` syntax to rename them and avoid naming conflicts. Even without conflicts, aliases can simplify overly long type names.
 
-After renaming, only the alias is available -- the original name cannot be used.
+After renaming, the declaration can only be accessed through the new name; the original name is no longer available. This is a safety mechanism to prevent the same declaration from appearing with different names in the code, causing confusion.
 
-Try renaming `List` to `MyList` and updating the usage to match.
+The code on the right shows how to rename `ArrayList` and `HashMap` to the shorter names `List` and `Map`. This is particularly useful when frequently using certain collection types.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no formal package or import alias mechanism. Developers typically use preprocessor directives or macros to manage naming conflicts.
+</CompareWith>
+
+<CompareWith lang="java">
+Java itself does not support import aliases, but can use static imports `import static java.lang.Math.sqrt;` to import methods. Less flexible than Cangjie.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `import fmt "fmt"` or `import . "fmt"` for aliasing or omitting package names. Go's omit-package-name approach imports into the current namespace, which may cause conflicts.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `use std::collections::HashMap as Map;` syntax, same as Cangjie's `as` keyword. Both mechanisms are very similar.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing `List` back to `ArrayList` and observe what error the compiler reports. This shows that the original name is no longer available after aliasing.

@@ -1,3 +1,31 @@
-# HTTP 与 Socket 概览
+# 网络编程
 
-`stdx.net.http` 包提供了 `ClientBuilder` 和 `ServerBuilder`，用于 HTTP 客户端和服务端编程。在传输层网络方面，`std.net` 提供了 `TcpSocket`、`TcpServerSocket` 和 `UdpSocket`。这些网络 API 使用仓颉轻量线程上的阻塞 I/O，因此被阻塞的线程不会占用系统线程。
+仓颉支持传输层的 TCP 和 UDP 编程，以及应用层的 HTTP 编程。TCP 通过 `TcpSocket` 和 `TcpServerSocket` 实现可靠的连接式通信，UDP 通过 `UdpSocket` 实现无连接的数据报传输。HTTP 编程则使用 `stdx.net.http` 包中的 `ClientBuilder` 和 `ServerBuilder`。
+
+网络 I/O 在仓颉中是阻塞式的——调用 `read`、`accept` 等方法会等待直到数据就绪。但阻塞的是仓颉轻量线程而非系统线程，被阻塞的仓颉线程会将系统线程让渡给其他就绪的仓颉线程使用。这种设计让你能用同步的编码风格写出高效的并发网络程序。
+
+TCP 服务端需要先 `bind()` 绑定地址，然后调用 `accept()` 等待客户端连接。TCP 客户端调用 `connect()` 连接服务端。连接成功后，双方就可以通过 `read()` 和 `write()` 收发数据。右侧示例展示了基本的 TCP 通信流程。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 通过 Berkeley Socket API（`socket`、`bind`、`listen` 等）进行网络编程，是底层的、更原始的接口。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 提供 `java.net` 包，包含 `ServerSocket` 和 `Socket` 类。API 与仓颉类似，但异常处理方式不同。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `net.TCPConn` 和 `net.TCPListener` 与仓颉的 Socket API 类似，同样使用阻塞 I/O，阻塞的是 goroutine 而非系统线程。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `std::net` 也提供 TCP/UDP API，但使用 `Result` 处理错误。仓颉使用 `try` 表达式和异常机制处理网络错误。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>HTTP 相关的 API 在 `stdx.net.http` 包中，需要在 `cjpm.toml` 中添加 stdx 依赖。Socket API 在 `std.net` 包中，属于标准库。</Note>
+
+运行此代码会启动一个 TCP 服务端和一个客户端，观察客户端发送的数据如何被服务端接收并打印。

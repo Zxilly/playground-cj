@@ -1,10 +1,29 @@
-# Float Types
+# Floating-Point Types
 
-`Float64` is the default floating-point type. It represents numbers with a fractional part. Arithmetic on floats works the same way as on integers.
+Cangjie provides three floating-point types: `Float16`, `Float32`, and `Float64`, corresponding to IEEE 754 half-precision, single-precision, and double-precision floating-point numbers. `Float64` is the default floating-point type—floating-point literals are inferred as `Float64`.
 
-```cangjie
-let distance = 5.5
-let speed = distance / 2.0
-```
+Floating-point literals can be expressed in decimal or hexadecimal. Decimal floating-point numbers must include a decimal point or exponent part (`e` or `E`, base 10). Hexadecimal floating-point numbers start with `0x`, with exponent using `p` or `P` (base 2). Types can be explicitly specified using suffixes `f16`, `f32`, `f64`.
 
-Try changing a value and observe how the computed result changes.
+The code on the right demonstrates floating-point operations and different representations. `2.5e10` means 2.5 × 10¹⁰, and `0x1.5p2` means 1.3125 × 2² = 5.25. Try modifying the values of `price` or `quantity` to calculate different totals.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has only `float` and `double` floating-point types; Cangjie provides three options for finer-grained control.
+</CompareWith>
+
+<CompareWith lang="java">
+Java similarly has only `float` and `double`; Cangjie's `Float16` supports half-precision, useful for specific scenarios.
+</CompareWith>
+
+<CompareWith lang="go">
+Go provides two floating-point types `float32` and `float64`, defaulting to `float64`. Cangjie additionally provides `Float16` for space-saving scenarios.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's floating-point types are `f16` (newly added), `f32`, and `f64`, defaulting to `f64`, corresponding to Cangjie's `Float64`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`Float64` has approximately 15 significant digits of precision, while `Float32` has about 6. For scenarios requiring high precision, prefer using `Float64`.</Note>

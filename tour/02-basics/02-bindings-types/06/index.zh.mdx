@@ -1,5 +1,29 @@
 # 浮点类型
 
-`Float64` 是默认的浮点类型，用于表示带小数部分的数值。浮点数的算术运算和整数一样。
+仓颉提供三种浮点类型：`Float16`、`Float32` 和 `Float64`，分别对应 IEEE 754 的半精度、单精度和双精度浮点数。`Float64` 是默认的浮点类型，浮点数字面量会推断为 `Float64`。
 
-试着改一个值，看看计算结果如何变化。
+浮点字面量可以用十进制或十六进制表示。十进制浮点数必须包含小数点或指数部分（`e` 或 `E`，底数为 10）。十六进制浮点数以 `0x` 开头，指数部分用 `p` 或 `P`（底数为 2）。可用后缀 `f16`、`f32`、`f64` 明确指定类型。
+
+右侧代码演示了浮点运算和不同表示法。`2.5e10` 表示 2.5 × 10¹⁰，`0x1.5p2` 表示 1.3125 × 2² = 5.25。试着修改 `price` 或 `quantity` 的值，计算不同的总价。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 仅有 `float` 和 `double` 两种浮点类型；仓颉提供 `Float16`、`Float32`、`Float64` 三种，更灵活。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 同样仅有 `float` 和 `double`；仓颉的 `Float16` 支持半精度，适合某些场景。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 提供两种浮点类型 `float32` 和 `float64`，默认推断为 `float64`。仓颉额外提供 `Float16` 用于需要节省空间的场景。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的浮点类型为 `f16`（新增）、`f32` 和 `f64`，默认推断为 `f64`，与仓颉的 `Float64` 对应。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`Float64` 的精度约为 15 位有效数字，`Float32` 约为 6 位。在精度要求高的场景下，优先使用 `Float64`。</Note>

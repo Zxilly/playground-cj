@@ -1,3 +1,31 @@
-# I/O 概览
+# I/O 流抽象
 
-仓颉的 I/O 系统建立在流之上。`InputStream` 和 `OutputStream` 是读写字节数据的基础接口。内存流如 `ByteBuffer` 让你无需访问文件系统即可操作字节数据。用 `StringReader` 包装任意输入流，可以方便地逐行读取文本。
+仓颉的 I/O 系统建立在流（Stream）抽象之上。`InputStream` 和 `OutputStream` 是读写字节数据的两个核心接口，分别代表输入流和输出流。输入流提供 `read` 方法将数据读入缓冲区，输出流提供 `write` 方法将数据写出，这种设计统一了文件、网络、内存等不同数据源的访问方式。
+
+`ByteBuffer` 是一个内存流，让你无需访问文件系统即可在内存中读写字节数据。先调用 `write` 写入数据，再调用 `read` 读取，读写共享同一个位置指针。右侧示例展示了向 ByteBuffer 写入字符串的字节数据，再读回并转换为字符串显示。
+
+字符串流 `StringReader` 和 `StringWriter` 为字节流添加了文本处理能力。`StringReader` 提供 `readln()` 方法逐行读取文本，比手动转换字节数据更便捷高效。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 的 I/O 通过 `FILE*` 结构和 `fread`、`fwrite` 等函数实现，没有统一的流抽象接口。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `InputStream` 和 `OutputStream` 是抽象基类，与仓颉的接口设计类似，都支持字节读写。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `io.Reader` 和 `io.Writer` 接口与仓颉的 `InputStream`、`OutputStream` 设计相似，都采用 `[]byte` 作为数据单元。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `Read` 和 `Write` trait 也采用类似设计，但使用 `Result` 处理错误，仓颉的流接口会直接抛出异常。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>流的数据单元是字节（`Byte`），字符串需要通过 `toArray()` 转换为字节数组写入，读出后用 `String.fromUtf8()` 转回字符串。</Note>
+
+运行代码后，尝试在 ByteBuffer 中写入更多行，并用 StringReader 逐行读取。

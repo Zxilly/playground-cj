@@ -1,14 +1,31 @@
 # Collection Iteration
 
-All standard collections support `for-in` loops. Collections also expose an `iterator()` that returns elements one at a time via `next()`, yielding `Option` values.
+All collection types in Cangjie (`ArrayList`, `HashSet`, `HashMap`) implement the `Iterable<T>` interface, thus supporting `for-in` loop iteration. This is the most common way to traverse collections.
 
-```cangjie
-var it = list.iterator()
-while (let Some(v) <- it.next()) {
-    println(v)
-}
-```
+Collections also provide an `iterator()` method that returns an iterator object, calling `next()` to return `Option<T>` values one by one: `Some(element)` indicates there's still an element, `None` indicates the end of iteration. This approach is commonly used when you need manual control over the iteration process.
 
-`HashMap` iteration produces `(key, value)` tuples that can be destructured directly in the loop header.
+`HashMap` yields `(key, value)` tuples during iteration, which can be directly destructured in the `for-in` or `while` loop header using the `(k, v)` form to get both the key and value simultaneously.
 
-Comment out the `for-in` loop and keep only the `iterator` version -- verify the output is identical.
+The code on the right demonstrates three iteration methods: traditional `for-in` loop, `while` loop with an iterator (combined with pattern matching), and tuple destructuring iteration for `HashMap`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C lacks an iterator concept; you must manually write loops and manage indices. Cangjie's `for-in` and iterators provide safer iteration.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `for-each` loop is similar to Cangjie's `for-in`. Java also has the `Iterator` interface with similar usage to Cangjie.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `for range` to iterate over maps and slices, without explicit iterator types. Cangjie uses `for-in` syntax, but also allows manual iteration control via `iterator()`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `Iterator` trait provides a `next()` method that returns `Option<T>`, exactly matching Cangjie's pattern. Rust also supports rich iterator adapters like `map` and `filter`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Using `while (let Some(x) <- iterator.next())` allows pattern matching in the condition, making the code more concise.</Note>

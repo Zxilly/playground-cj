@@ -1,7 +1,29 @@
-# Match
+# Match 表达式
 
-`match` 根据表达式的值选择分支。每个 `case` 指定一个模式，后跟 `=>`。
+`match` 是仓颉的模式匹配表达式，它根据一个值选择执行哪个分支。每个 `case` 分支包含一个模式和要执行的代码，使用 `=>` 分隔。
 
-仓颉的 `match` 没有穿透行为——只有匹配的分支会执行。
+与 C 或 Java 的 `switch` 不同，仓颉的 `match` 没有穿透行为——只有匹配的分支会执行，不需要 `break`。一旦匹配成功并执行该分支，整个 `match` 表达式就结束了。
 
-试着把第 2 行的 `day` 改成 `6`，看看会走哪个分支。
+`match` 表达式可以返回值，每个分支中 `=>` 后最后一行代码的值就是该分支的返回值。下面的代码将匹配结果赋给变量 `name`。
+
+<Highlight target="run">运行</Highlight>代码，观察输出结果。然后尝试将第 2 行的 `day` 改成 `6`，看看会匹配到哪个分支。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 使用 `switch` 语句，默认有穿透行为，需要 `break` 来退出。仓颉的 `match` 没有穿透，更安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的 `switch` 与 C 类似，也有穿透行为（Java 12+ 引入的新语法 `switch` 表达式改进了这一点）。仓颉的 `match` 更接近现代函数式风格。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `switch` 语句，默认不穿透，匹配后自动退出。仓颉的 `match` 更接近函数式的模式匹配，可返回值。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `match` 与仓颉非常相似，都是表达式，可返回值，且必须穷尽所有可能。两者语法几乎一致。
+</CompareWith>
+
+</CompareGroup>

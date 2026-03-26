@@ -1,5 +1,29 @@
 # 类型别名
 
-`type` 关键字为已有类型创建别名。`type NameList = ArrayList<String>` 提供了一个更短、更具描述性的名称，但不会定义新类型。
+当某个类型名称很长或在特定场景不够直观时，可以使用 `type` 关键字为其定义一个别名。`type NameList = ArrayList<String>` 创建了一个简短而有意义的名字。
 
-别名与原类型在任何地方都可以互换使用。当某个泛型实例化在代码中反复出现时，别名尤其有用。
+类型别名不会创建新类型，它只是原类型的另一个名字。别名与原类型可以完全互换使用，编译器会将别名完全替换为原类型。当某个泛型实例化在代码中反复出现时，别名能显著提高可读性。
+
+右侧代码定义了两个类型别名：`NameList` 表示字符串列表，`ScoreMap` 表示从字符串到分数的映射。使用这些别名可以让代码意图更加清晰，同时减少重复的泛型参数。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 使用 `typedef` 定义类型别名，但只能别名基本类型或指针；无法为复杂的泛型结构定义别名。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 不支持类型别名；虽然可以用继承或委托创建包装类，但这比简单的别名复杂得多。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `type NameList = []string` 定义类型别名，同样不会创建新类型。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `type NameList = Vec<String>;` 定义类型别名，语法相似。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>类型别名只能在源文件顶层定义，不能在函数内部定义。</Note>

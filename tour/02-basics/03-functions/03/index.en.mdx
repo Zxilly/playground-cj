@@ -1,11 +1,74 @@
 # Multiple Return Values
 
-A function can return multiple values by returning a tuple. The caller can destructure them with `let (a, b) = ...` or access elements by index.
+Cangjie functions can achieve a "multiple return values" effect by returning tuples. Tuples use the notation `(T1, T2, ...)` to combine multiple values of different types together. Callers can access elements via indexing `tuple[0]`, `tuple[1]`, or use destructuring syntax `let (a, b) = tuple` to extract them directly into independent variables.
 
-```cangjie
+Tuples have a fixed length that cannot be changed once created. Tuples are immutable, and individual element values cannot be modified after creation. You can name each position in a tuple, such as `(name: String, age: Int64)`, but these are just type annotations and cannot be accessed via `.name`.
+
+The code on the right defines a `minMax` function that returns the minimum and maximum values in an array. It demonstrates two ways to receive return values: access via indexing and destructuring assignment.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't support multiple return values; you typically return a struct or use output parameters (pointers). This is more complex than tuple unpacking.
+</CompareWith>
+
+<CompareWith lang="java">
+Java also doesn't support multiple return values and requires defining a wrapper class or using arrays to return multiple values. Cangjie's tuples are more concise in this regard.
+</CompareWith>
+
+<CompareWith lang="go">
+Go natively supports multiple return values with syntax `func minMax() (int, int)`, received at call site as `min, max := minMax()`. Cangjie uses tuples to achieve a similar effect.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust also uses tuples to return multiple values, with syntax nearly identical to Cangjie. Both support tuple destructuring `let (a, b) = tuple` and index access `tuple.0`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Tuples must have at least two elements. If you only need one value, just return that type directly.</Note>
+
+Try adding an `average` function that returns a triple: (minimum, maximum, average).
+
+CJ:
+// Return a tuple: returning both minimum and maximum values
 func minMax(arr: Array<Int64>): (Int64, Int64) {
-    (minVal, maxVal)
+    var minVal = arr[0]
+    var maxVal = arr[0]
+    
+    for (v in arr) {
+        if (v < minVal) {
+            minVal = v
+        }
+        if (v > maxVal) {
+            maxVal = v
+        }
+    }
+    
+    (minVal, maxVal)  // Implicitly return the tuple
 }
-```
 
-Try adding a third return value (e.g., the sum) and destructuring all three at the call site.
+// Return a tuple with names (only for documentation, not for access)
+func getPerson(): (name: String, age: Int64) {
+    ("Zhang San", 30)
+}
+
+main() {
+    let numbers = [5, 2, 8, 1, 9, 3, 7]
+    
+    // Method 1: Access tuple elements via index
+    let result1 = minMax(numbers)
+    println("Minimum: ${result1[0]}, Maximum: ${result1[1]}")
+    
+    // Method 2: Use destructuring to extract into independent variables
+    let (minVal, maxVal) = minMax(numbers)
+    println("Range: ${minVal} to ${maxVal}")
+    
+    // Can use _ to ignore unneeded values during destructuring
+    let (_, max) = minMax(numbers)
+    println("Only care about maximum: ${max}")
+    
+    // Tuple with names
+    let person = getPerson()
+    println("Name: ${person[0]}, Age: ${person[1]}")
+}

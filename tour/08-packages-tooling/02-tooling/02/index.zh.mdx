@@ -1,7 +1,31 @@
-# cjpm 初始化
+# cjpm init — 创建项目
 
-`cjpm init` 创建一个新项目，包含 `cjpm.toml` 文件和 `src/main.cj`。
+`cjpm init` 命令用于初始化一个新的仓颉项目。它会创建标准的项目结构和配置文件。
 
-`cjpm.toml` 中的 `[package]` 部分设置模块名称、版本和输出类型。
+执行 `cjpm init` 后，会生成以下目录结构：一个 `cjpm.toml` 配置文件，一个 `src/` 源码目录，以及一个默认的 `src/main.cj` 入口文件。`cjpm.toml` 是项目的核心配置文件，用于定义项目名称、版本、依赖等信息。
 
-试着将注释中 `cjpm.toml` 的版本从 `"1.0.0"` 改为 `"2.0.0"`。
+配置文件中必须包含 `[package]` 部分，其中 `name` 是模块名，`version` 是模块版本号，`output-type` 指定编译产物类型（如 `executable` 表示可执行文件）。
+
+<Note>`[package]` 和 `[workspace]` 字段不能在同一个 `cjpm.toml` 文件中共存。单模块用 `[package]`，多模块用 `[workspace]`。</Note>
+
+查看代码中的注释，了解 `cjpm.toml` 的典型配置格式。然后试着运行代码看看项目初始化后的输出。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有官方的项目初始化工具。开发者通常手动创建目录结构和 Makefile。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 通常使用 Maven（`mvn archetype:generate`）或 Gradle 初始化项目，与 `cjpm init` 类似。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `go mod init` 初始化模块，生成 `go.mod` 文件。仓颉的 `cjpm init` 会创建完整的目录结构，更加自动化。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `cargo init` 与 `cjpm init` 非常相似，都会创建项目结构和 `Cargo.toml` 配置文件。
+</CompareWith>
+
+</CompareGroup>

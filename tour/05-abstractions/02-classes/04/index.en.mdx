@@ -1,7 +1,25 @@
 # Inheritance
 
-A class marked `open` can be inherited. Use `<:` (not `:`) to extend a parent class, and call `super(...)` to invoke the parent constructor.
+Classes marked with `open` can be inherited. Use the `<:` symbol (note, not `:`) to declare inheritance relationships. Subclass constructors must call the parent class constructor through `super(...)` to complete initialization of parent class members.
 
-In this example, `Dog` and `Cat` inherit from `Animal` and override `speak()`. Both can be stored in `Array<Animal>`.
+Cangjie uses single inheritance: a class can only have one direct parent class. Inheritance forms an "is-a" relationship—subclass objects can be used as parent class objects. This allows us to store multiple subclass objects in an `Array<ParentClass>` and automatically call the correct implementation at runtime (polymorphism).
 
-Try adding a `Fish` subclass that returns `"blub"` from `speak()`.
+The `Dog` and `Cat` classes below inherit from `Animal` and both override the `speak()` method. Two subclass objects are stored in the same array, each exhibiting different behavior when iterated.
+
+<Note>
+Subclass constructors must call the parent class constructor. If `super(...)` is not explicitly called, the compiler will attempt to call the parent class's parameterless constructor.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go doesn't support inheritance; it uses composition and interfaces for code reuse. Cangjie provides traditional single inheritance mechanism.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses the `extends` keyword for inheritance. Cangjie uses the `<:` symbol, which is more concise.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a `Fish` subclass and make its `speak()` return `"Blub blub"`.

@@ -1,27 +1,29 @@
-# Strings and Interpolation
+# String and Interpolation
 
-Strings are sequences of characters enclosed in double quotes. `${expr}` inside a string evaluates the expression and inserts the result.
+`String` represents a text sequence composed of Unicode characters. String literals are enclosed in double or single quotes, and can also use triple quotes `"""` or `'''` for multi-line strings. Multi-line raw strings start with `#`, where escape characters are not interpreted.
 
-```cangjie
-let name = "Cangjie"
-println("Hello, ${name}!")
-println("1 + 1 = ${1 + 1}")
-```
+Interpolated strings allow embedding expressions within strings using `${expr}` syntax. The curly braces can contain one or more declarations or expressions, and the value of the last item is converted to a string and inserted. This makes string concatenation simple and intuitive.
+
+The code on the right demonstrates string declarations and the use of interpolation. In the multi-line raw string `###"..."###`, `\n` is not escaped. Try putting more complex expressions in `${}`, such as ternary conditions or function calls.
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C has no native `String` type; uses `char[]` arrays and string library functions. Cangjie's `String` is first-class with built-in interpolation.
+</CompareWith>
+
 <CompareWith lang="java">
-Java uses `+` for string concatenation. Cangjie uses `${expr}` interpolation, similar to Kotlin's `"$variable"` or `"${expression}"`.
+Java's `String` is immutable; concatenation uses `+` or `StringBuilder`. Cangjie's `${expr}` is more concise, avoiding temporary objects.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses `fmt.Sprintf("Hello, %s", name)` for formatting. Cangjie embeds expressions directly in the string with `${}`.
+Go uses `fmt.Sprintf` or `+` to concatenate strings, without native string interpolation. Cangjie's `${expr}` syntax is more concise and intuitive.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses the `format!("Hello, {name}")` macro. Cangjie's `${}` interpolation is built into the string literal syntax.
+Rust's `format!` macro uses `{}` placeholders rather than embedded expressions. Cangjie's `${expr}` allows direct expression writing, making it more flexible.
 </CompareWith>
 
 </CompareGroup>
 
-Try replacing a variable in `${}` with an arithmetic expression like `${lessons + 1}`.
+<Note>Interpolation expressions can be any expression, including declaration statements. The value of the last item in curly braces is converted to a string.</Note>

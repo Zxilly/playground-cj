@@ -1,19 +1,26 @@
 import std.io.*
 
 main() {
-    // Write bytes into an in-memory buffer
-    let buf = ByteBuffer()
-    buf.write("Hello, Cangjie I/O!".toArray())
+    // 创建内存流并写入字节数据
+    let buffer = ByteBuffer()
+    buffer.write("仓颉 I/O 流示例".toArray())
+    buffer.write("\n第二行数据".toArray())
 
-    // Read the bytes back from the buffer
-    let data = Array<Byte>(64, repeat: 0)
-    let n = buf.read(data)
-    println(String.fromUtf8(data[..n]))
+    // 读取数据：创建缓冲区，读取并转换为字符串
+    let readBuf = Array<Byte>(64, repeat: 0)
+    let bytesRead = buffer.read(readBuf)
+    println("读到 ${bytesRead} 字节:")
+    println(String.fromUtf8(readBuf[..bytesRead]))
 
-    // Use StringReader for line-based reading
-    let buf2 = ByteBuffer()
-    buf2.write("Line 1\nLine 2\nLine 3".toArray())
-    let reader = StringReader(buf2)
-    println(reader.readln() ?? "")
-    println(reader.readln() ?? "")
+    // 使用 StringReader 逐行读取文本
+    let buffer2 = ByteBuffer()
+    buffer2.write("第一行\n第二行\n第三行".toArray())
+    let reader = StringReader(buffer2)
+
+    println("\n逐行读取:")
+    var line = reader.readln()
+    while (line != None) {
+        println(line ?? "")
+        line = reader.readln()
+    }
 }

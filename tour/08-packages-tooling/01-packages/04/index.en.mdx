@@ -1,7 +1,31 @@
-# Visibility
+# Visibility Modifiers
 
-`public` makes a declaration visible everywhere. `internal` (the default) limits it to the current package and subpackages. `private` restricts it to the current file.
+Cangjie provides four access modifiers to control the visibility of declarations: `private`, `internal`, `protected`, and `public`.
 
-There is also `protected`, which limits visibility to the current module.
+`private` makes declarations visible only within the current file, suitable for implementation details and helper functions. `internal` is the default value, making declarations visible within the current package and its subpackages. `protected` restricts visibility to the current module, while `public` makes declarations visible to all packages.
 
-Try changing `publicGreet` from `public` to `private` and calling it from another file -- you will get a compile error.
+The code on the right demonstrates the usage of all four modifiers. Note that within the same file, all declarations are accessible regardless of the modifier used. Visibility restrictions only apply across files or packages.
+
+<Note>The default modifier for `import` statements is `private`, meaning imported names are only available in the current file. If you want imports to be visible throughout the package, you need to explicitly declare `public import`.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no language-level access control. All global symbols are globally visible; module privacy is maintained by convention (using the `static` keyword).
+</CompareWith>
+
+<CompareWith lang="java">
+Java provides four levels: `private`, `package-private`, `protected`, and `public`. The default is package-private, similar to Cangjie's `internal`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses capitalization to control visibility: identifiers starting with uppercase letters are public, lowercase are private. Go doesn't have intermediate levels like `internal` or `protected`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses `pub` for public access, with private as default. Rust has fine-grained controls like `pub(crate)` and `pub(super)`, similar to Cangjie's `internal` and `protected`.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing `secretHelper` from `private` to other modifiers to understand the scope of different visibility levels.

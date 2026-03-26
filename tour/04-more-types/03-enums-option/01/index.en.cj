@@ -1,3 +1,4 @@
+// Define an enum type representing directions
 enum Direction {
     | North
     | South
@@ -5,16 +6,25 @@ enum Direction {
     | West
 }
 
+// Use match expression to handle all enum cases
 func describe(dir: Direction): String {
     match (dir) {
-        case North => "向北走"
-        case South => "向南走"
-        case East => "向东走"
-        case West => "向西走"
+        case North => "Go north"
+        case South => "Go south"
+        case East => "Go east"
+        case West => "Go west"
     }
 }
 
 main() {
-    println(describe(Direction.North))
-    println(describe(Direction.West))
+    // Create enum values via TypeName.Constructor
+    let dir1 = Direction.North
+    let dir2 = Direction.West
+    
+    // Use constructor name directly (when no naming conflict)
+    let dir3 = South
+    
+    println("Direction 1: ${describe(dir1)}")
+    println("Direction 2: ${describe(dir2)}")
+    println("Direction 3: ${describe(dir3)}")
 }

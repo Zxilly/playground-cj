@@ -1,41 +1,47 @@
-func processData(data: String): Unit {
-    println("Opening resource...")
+func processFile(filename: String): Unit {
+    println("Opening file: ${filename}")
     try {
-        println("Processing: ${data}")
-        if (data.isEmpty()) {
-            throw Exception("Empty data")
+        if (filename.isEmpty()) {
+            throw Exception("Filename cannot be empty")
         }
-        println("Processing complete")
+        println("Processing file content...")
     } catch (e: Exception) {
-        println("Error: ${e.message}")
+        println("Processing failed: ${e.message}")
     } finally {
-        println("Closing resource (always runs)")
+        // Always executes, whether successful or failed
+        println("Closing file: ${filename}")
     }
 }
 
 func riskyOperation(): Int64 {
     try {
         println("Starting risky operation")
-        throw Exception("Something failed")
+        throw Exception("Operation failed")
+        println("This line will not execute")
         return 1
     } catch (e: Exception) {
-        println("Caught: ${e.message}")
-        return -1
+        println("Caught exception: ${e.message}")
+        return -1  // Even with return here, finally executes first
     } finally {
-        println("Finally block runs even with return")
+        println("finally block always executes")
     }
 }
 
 main() {
-    println("=== Normal case ===")
-    processData("hello")
+    // Case 1: Normal execution
+    println("=== Normal Case ===")
+    processFile("data.txt")
 
     println("")
-    println("=== Error case ===")
-    processData("")
+
+    // Case 2: Exception thrown
+    println("=== Exception Case ===")
+    processFile("")
 
     println("")
-    println("=== Return with finally ===")
+
+    // Case 3: Return in catch
+    println("=== Case with Return Value ===")
     let result = riskyOperation()
-    println("Result: ${result}")
+    println("Return value: ${result}")
 }

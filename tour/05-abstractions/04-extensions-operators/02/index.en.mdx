@@ -1,15 +1,86 @@
 # Interface Extensions
 
-An extension can make an existing type conform to an interface using `extend<T> Type<T> <: Interface`.
+Extensions can not only add new functions to types but also make existing types implement an interface. The syntax is `extend<T> Type<T> <: Interface`, providing the required function implementations in the extension.
 
-```cangjie
+The code on the right defines a `PrintableSize` interface, then makes `Array<T>` implement this interface through an extension. After the extension, arrays can be assigned to variables of type `PrintableSize` and used anywhere that interface is required.
+
+Interface extensions enable seamless integration between the type system and existing code. Even if a type is defined in a third-party library, you can make it satisfy your interface contract through extensions.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no interface concept; you cannot express protocols that objects must implement and rely only on documentation and manual verification.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses explicit `implements` declarations but does not support adding interface implementations to external types; you must use the adapter pattern instead.
+</CompareWith>
+
+<CompareWith lang="go">
+Go interfaces are implicitly implemented; defining methods that match the interface signature is sufficient without explicitly declaring the implementation relationship.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust requires explicit `impl Trait for Type`, but cannot implement external traits for external types (orphan rule).
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Cangjie has a similar "orphan rule": interface extensions must be in the same package as either the interface or the extended type.</Note>
+
+Try modifying the `PrintableSize` interface to add more functionality and implement it in the extension.
+
+CJ:
+// Define interface
+interface PrintableSize {
+    func printSize(): Unit
+    func printInfo(): Unit
+}
+
+// Make Array implement the interface through extension
 extend<T> Array<T> <: PrintableSize {
     public func printSize(): Unit {
-        println("size = ${this.size}")
+        println("Array size: ${this.size}")
+    }
+
+    public func printInfo(): Unit {
+        println("This is an array containing ${this.size} elements")
     }
 }
-```
 
-After the extension, an array can be used wherever a `PrintableSize` value is expected.
+// Another interface example
+interface Summable {
+    func sum(): Int64
+}
 
-Change the variable type from `PrintableSize` to `Array<Int64>` and confirm `printSize()` still works.
+// Implement summable interface for Array<Int64>
+extend Array<Int64> <: Summable {
+    public func sum(): Int64 {
+        var total: Int64 = 0
+        for (item in this) {
+            total += item
+        }
+        return total
+    }
+}
+
+main() {
+    // Use as interface type
+    let arr1: PrintableSize = [1, 2, 3, 4, 5]
+    arr1.printSize()
+    arr1.printInfo()
+
+    println()
+
+    // Another array
+    let arr2: PrintableSize = ["hello", "world", "Cangjie"]
+    arr2.printSize()
+    arr2.printInfo()
+
+    println()
+
+    // Use as Summable
+    let numbers: Array<Int64> = [10, 20, 30, 40]
+    let s = numbers.sum()
+    println("Sum of array [10, 20, 30, 40]: ${s}")
+}

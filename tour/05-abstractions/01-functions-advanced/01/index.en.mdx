@@ -1,7 +1,33 @@
 # Functions as Values
 
-Functions in Cangjie have types, like `(Int64) -> Int64`. They can be assigned to variables and passed as arguments to other functions.
+In Cangjie, functions are first-class citizens that can be passed and used like ordinary values. Functions themselves have types, called function types, composed of parameter types and return types, such as `(Int64) -> Int64`.
 
-In this example, `double` and `square` are passed to `apply`, which calls them.
+Function types can be used as variable types, function parameter types, or return types. You can assign functions to variables, pass them as parameters to other functions, or return them from functions. This makes functional programming possible.
 
-Try assigning `square` to `fn` on line 14 and run the program.
+In the example on the right, `double` and `square` are ordinary functions, and `apply` accepts a function parameter `f` and calls it. Note that line 14 assigns the function `double` to variable `fn`, after which `fn(5)` is equivalent to calling `double(5)`.
+
+<Note>
+When overloaded functions are used as expressions, ambiguity may arise. In such cases, you need to explicitly specify the variable type to resolve the ambiguity, such as `let fn: (Int64) -> Int64 = double`.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's function pointer syntax is complex; `int (*fn)(int)` is verbose. Cangjie's function type `(Int64) -> Int64` is clearer and more concise.
+</CompareWith>
+
+<CompareWith lang="java">
+Java doesn't have function pointers; you need to create method references or functional interfaces. Cangjie's first-class functions are simpler and more natural.
+</CompareWith>
+
+<CompareWith lang="go">
+In Go, functions are also first-class citizens with similar syntax. However, Go doesn't have function overloading, so ambiguity issues don't occur.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust uses the `fn` type to represent function pointers, while closures use the `Fn`, `FnMut`, and `FnOnce` traits. Cangjie's function type is more concise and unified.
+</CompareWith>
+
+</CompareGroup>
+
+Try changing the assignment of `fn` on line 16 to `square` and observe the output change.

@@ -1,5 +1,29 @@
-# Exhaustiveness
+# Exhaustiveness Checking
 
-The compiler checks that `match` covers every possible value. For an `enum`, every variant must be listed. For open types like `Int64`, a wildcard `_` or binding pattern is required.
+The Cangjie compiler checks whether `match` expressions cover all possible cases. For `enum` types, all constructors must be listed; for open types like `Int64`, a wildcard `_` or binding pattern is needed to handle remaining cases.
 
-Try removing the `case West` on line 13 and observe the compiler error.
+Exhaustiveness checking helps avoid missing edge cases. If a `match` is incomplete, the compiler will report an error, catching potential bugs at compile time. This is an important advantage of pattern matching over traditional `switch`.
+
+For `enum`, after listing all constructors, no `_` branch is needed because the compiler knows all cases are covered. But for integers, strings, and similar types where the value domain is open, `_` must be used to close the match.
+
+Try deleting `case West` on line 14 and observe the error message the compiler reports to understand how exhaustiveness checking works.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `switch` doesn't enforce exhaustiveness and can handle only some cases. Missing a `default` branch is a common programming error.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `switch` also doesn't enforce exhaustiveness; while some IDEs warn about missing `default`, the compiler won't error.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `switch` doesn't enforce exhaustiveness by default—you can handle only some cases. However, some compilers warn about enum matches without `default`.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust also enforces exhaustiveness checking—a standard feature in functional languages. If a `match` is incomplete, the compiler will clearly indicate the missing cases.
+</CompareWith>
+
+</CompareGroup>

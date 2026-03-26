@@ -1,33 +1,62 @@
 # Mutex
 
-A `Mutex` protects a critical section so that only one thread can enter it at a time.
+When multiple threads simultaneously access and modify shared data, data races can occur, leading to unpredictable results. Mutex solves this problem by ensuring that only one thread can enter a critical section at a time.
 
-```cangjie
-synchronized(mtx) {
-    count += 1
-}
-```
+Cangjie uses the `Mutex` type as a reentrant mutex. Reentrant means that the same thread can acquire the same lock multiple times without causing a deadlock. Basic operations on `Mutex` include `lock()` to acquire the lock and `unlock()` to release the lock.
 
-The `synchronized(mtx)` block acquires the lock, runs the body, and releases it automatically. Twenty threads each increment a shared `count` inside the lock, guaranteeing a final value of `20`.
+To simplify lock management, Cangjie provides the `synchronized` keyword. `synchronized(mtx)` automatically acquires the lock when entering a code block and releases it when exiting, ensuring proper release even if an exception occurs or an early return happens.
 
 <CompareGroup>
 
 <CompareWith lang="c">
-C uses `pthread_mutex_lock` / `pthread_mutex_unlock` pairs. Forgetting to unlock causes deadlocks. Cangjie's `synchronized` block handles unlock automatically.
+C requires using `pthread_mutex_t` and manually calling `pthread_mutex_lock()` and `pthread_mutex_unlock()`, making it easy to forget unlock and cause deadlocks.
 </CompareWith>
 
 <CompareWith lang="java">
-Java's `synchronized` keyword works similarly. Cangjie's version takes an explicit `Mutex` object rather than locking on `this`.
+Java can use the `synchronized` keyword or explicit `ReentrantLock`, but `ReentrantLock` requires manual `lock()` and `unlock()` calls. Cangjie's `synchronized` manages automatically.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses `sync.Mutex` with explicit `Lock()` / `Unlock()` calls, often deferred with `defer mu.Unlock()`.
+Go uses the `Lock()` and `Unlock()` methods of `sync.Mutex`, typically combined with `defer` to ensure release. Cangjie's `synchronized` is similar to Java's usage, automatically managing the lock's lifecycle.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust's `Mutex<T>` wraps the data it protects. You must call `.lock()` to access the inner value, which returns a guard that auto-unlocks on drop.
+Rust's `Mutex<T>` wraps data and lock together, returning a `MutexGuard` through `lock()`, using RAII for automatic release. Cangjie's `Mutex` is a standalone lock object that doesn't encapsulate data.
 </CompareWith>
 
 </CompareGroup>
 
-Remove the `synchronized` block (keep `count += 1`) and run multiple times -- the result may no longer be `20`.
+The code on the right creates 20 threads, each performing an increment operation on the shared variable `count`. Using `synchronized(mtx)` protects the critical section, ensuring the final result is correct.
+
+<Note>`synchronized` automatically releases the lock without requiring a manual `unlock()` call, which is safer than explicit `lock()/unlock()`.</Note>
+
+Try removing the `synchronized` block and run the program multiple times to observe whether the results are consistent.
+
+CJ:
+import std.sync.Mutex
+import std.collection.ArrayList
+
+var count: Int64 = 0
+let mtx = Mutex()
+
+main(): Int64 {
+    let futures = ArrayList<Future<Unit>>()
+    
+    // Create 20 concurrent threads
+    for (_ in 0..20) {
+        let future = spawn {
+            synchronized(mtx) {
+                count += 1
+            }
+        }
+        futures.add(future)
+    }
+    
+    // Wait for all threads to complete
+    for (future in futures) {
+        future.get()
+    }
+    
+    println("Final count: ${count}")
+    return 0
+}

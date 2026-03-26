@@ -1,23 +1,28 @@
 main() {
     let score = 85
 
-    // Basic if-else
+    // Basic if-else judgment
     if (score >= 60) {
-        println("及格")
+        println("Score: ${score} - Pass")
     } else {
-        println("不及格")
+        println("Score: ${score} - Fail")
     }
 
-    // Multi-level conditions
+    // Multi-level conditional judgment
     if (score >= 90) {
-        println("等级: A")
+        println("Grade: A (Excellent)")
     } else if (score >= 80) {
-        println("等级: B")
+        println("Grade: B (Good)")
     } else if (score >= 70) {
-        println("等级: C")
+        println("Grade: C (Average)")
     } else if (score >= 60) {
-        println("等级: D")
+        println("Grade: D (Pass)")
     } else {
-        println("等级: F")
+        println("Grade: F (Fail)")
+    }
+
+    // else branch can be omitted
+    if (score == 100) {
+        println("Perfect score!")
     }
 }

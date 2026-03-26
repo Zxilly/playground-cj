@@ -1,7 +1,31 @@
-# If
+# if Statements
 
-Cangjie's `if` statements work like most languages. The expression need not be surrounded by parentheses... just kidding -- parentheses around the condition are **required**.
+Cangjie's `if` statement is used to execute different code branches based on conditions. The condition expression must be of type `Bool` - when the condition is `true`, the `if` branch executes; when `false`, the `else` branch executes.
 
-The braces `{ }` are also required.
+Unlike many languages, Cangjie requires conditions to be wrapped in parentheses `()`, and curly braces `{}` are also mandatory, even when a branch contains only one line of code. These design choices prevent common coding errors and improve code readability.
 
-Try removing the parentheses around `(score >= 90)` on line 12 and observe the compiler error.
+Cangjie does not allow integers or other types to be used as conditions. In C or JavaScript, `if (number)` would determine the branch based on whether number is 0, but in Cangjie this results in a compilation error - conditions must be explicit boolean expressions.
+
+The code on the right demonstrates basic `if-else` structures and multi-level conditional judgment with `if-else if-else`. Try modifying the value of `score` to observe the execution results of different branches.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C's `if` statement requires parentheses, but curly braces are optional for single statements. Cangjie always requires curly braces.
+</CompareWith>
+
+<CompareWith lang="java">
+Java similarly allows `if` conditions without parentheses (though not recommended), but curly braces are optional for single statements.
+</CompareWith>
+
+<CompareWith lang="go">
+Go's `if` statement also requires curly braces, but parentheses around the condition are optional.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust does not require parentheses around conditions, but curly braces are equally mandatory.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Conditions must be of type `Bool`. You cannot use integers as conditions like in C.</Note>

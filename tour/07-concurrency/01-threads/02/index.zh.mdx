@@ -1,5 +1,27 @@
 # Future
 
-`spawn` 返回 `Future<T>`，表示线程完成后才可用的值。调用 `get()` 会阻塞当前线程直到结果就绪。
+`spawn` 表达式返回 `Future<T>` 类型，其中 `T` 是 lambda 表达式的返回类型。调用 `get()` 方法会阻塞当前线程，直到目标线程执行完成并返回结果。
 
-此处将 1..100 的求和拆成两半分别在不同线程计算，主线程通过 `left.get()` 和 `right.get()` 收集结果。
+`Future<T>` 支持三种方式获取结果：`get()` 无限期等待、`get(timeout: Duration)` 超时等待、`tryGet()` 非阻塞尝试。如果线程在执行过程中抛出异常，`get()` 会重新抛出该异常。
+
+右侧示例将 1 到 100 的求和任务拆分成两部分，分别在两个线程中并行计算。主线程通过 `left.get()` 和 `right.get()` 收集两个线程的计算结果。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 中获取线程结果通常需要全局变量或传递指针，然后手动同步，容易产生竞态条件。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 可以用 `Thread.join()` 等待线程，但需要单独的同步机制来获取结果值；仓颉的 `Future<T>` 更简洁。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 goroutine 通常通过 channel 传递结果，没有直接等价的 Future 类型。仓颉的 `Future<T>` 类似于 Go 的 `chan T` + `WaitGroup` 组合。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `JoinHandle<T>` 通过 `join()` 方法等待线程并获取结果，与仓颉的 `Future.get()` 几乎一致。
+</CompareWith>
+
+</CompareGroup>

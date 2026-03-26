@@ -1,7 +1,9 @@
-# Exercise: Errors
+# Exercise: Safe Division
 
-Implement a `sqrt` function that returns `Option<Float64>`:
-- Return `Some(result)` when the input is non-negative
-- Return `None` when the input is negative
+Change the `divide` function from throwing an exception to returning `Option<Float64>`:
+- When the divisor is non-zero, return `Some(result)`
+- When the divisor is zero, return `None`
 
-Then write a `safeSqrt` function that uses `??` to return `0.0` as the default for `None`.
+Then implement the `safeDivide` function, using the `??` operator to return a default value of 0.0 when encountering `None`.
+
+<Note>The `??` operator can handle the `None` case, making code more concise. For example, `opt ?? default` returns `default` when `opt` is `None`.</Note>

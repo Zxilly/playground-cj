@@ -1,29 +1,31 @@
 # ArrayList
 
-`ArrayList<T>` is a resizable, ordered collection with index access.
+`ArrayList<T>` is a dynamically growing ordered collection where elements are accessed by index. It supports inserting, modifying, and deleting elements at any position.
 
-```cangjie
-let numbers = ArrayList<Int64>()
-numbers.add(10)
-numbers[0] = 20
-```
+Unlike `Array`, an `ArrayList` can change size at runtime, making it suitable for scenarios with frequent element additions and removals. Use `add` to append elements at the end, `add(value, at: index)` to insert at a specific position, and `remove(at: index)` to delete elements.
 
-It supports `add`, `insert` with `add(value, at: index)`, index assignment `numbers[i] = v`, and `remove(at: i)`. Use it when element order matters and you need dynamic growth.
+The code on the right demonstrates core operations of `ArrayList`: creating an empty list, adding elements, inserting at a specific position, reading and modifying by index, deleting elements, and iterating through all elements.
 
 <CompareGroup>
 
+<CompareWith lang="c">
+C requires manual memory management and array resizing. Cangjie's `ArrayList` handles memory and capacity automatically.
+</CompareWith>
+
 <CompareWith lang="java">
-Java's `ArrayList<T>` is similar but uses `get(i)` and `set(i, v)` instead of index operators. Cangjie's `ArrayList` supports direct `list[i]` syntax through operator overloading.
+Java's `ArrayList<T>` is similar to Cangjie's `ArrayList<T>`, using the same methods like `add`, `remove`, and `get`. Both provide dynamic array functionality.
 </CompareWith>
 
 <CompareWith lang="go">
-Go uses slices (`[]T`) with `append()` for dynamic arrays. There is no generic `ArrayList` type -- slices are built into the language.
+Go uses slices to implement dynamic arrays, adding elements via the `append` function. Cangjie's `ArrayList` is a dedicated type providing methods like `add`, `insert`, and `remove`.
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust's `Vec<T>` is the equivalent. Access with `vec[i]` (panics on out-of-bounds) or `vec.get(i)` (returns `Option`).
+Rust's `Vec<T>` is similar to Cangjie's `ArrayList<T>`, but Rust uses `push` and `remove` methods. Cangjie uses named parameters `at:` to specify positions.
 </CompareWith>
 
 </CompareGroup>
 
-Change `numbers.add(25, at: 2)` to `at: 0` and predict how the output changes before running.
+<Note>`ArrayList` is a reference type; assignment does not create a copy, and multiple references share the same data.</Note>
+
+Try modifying the code: change the insertion position to 0 and see how the output changes.

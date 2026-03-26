@@ -1,7 +1,33 @@
 # Sealed Classes
 
-A `sealed` class restricts subclassing to the same package. No external code can add new subclasses, so the compiler knows all possible subtypes.
+`sealed` classes restrict inheritance to within the same package. Code outside the package cannot add new subclasses. This allows the compiler to know all possible subtypes, enabling exhaustiveness checking (such as in `match` expressions) and optimizations.
 
-In this example, `Result` is sealed with only `Success` and `Failure` as subclasses.
+Sealed classes are commonly used to represent finite state sets or type hierarchies. For example, a network request result has only two possibilities: success and failure. Using a sealed class ensures there won't be an unexpected third state. Sealed classes can be combined with abstract classes: `sealed abstract class`.
 
-Try adding a `Pending` subclass with no fields that returns `"pending"` from `message()`.
+The `Result` below is a sealed abstract class that defines only two subclasses, `Success` and `Failure`, within the same package. The compiler guarantees no other subclasses will appear, making branch decisions and type-safe processing easier.
+
+<Note>
+Subclasses of sealed classes can only be defined within the same package. Any inheritance attempt from outside the package will fail to compile.
+</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no inheritance or sealed class concept; type extension cannot be restricted. Cangjie's `sealed` provides stronger type safety.
+</CompareWith>
+
+<CompareWith lang="java">
+Java doesn't have native `sealed` classes (added in Java 17+); other patterns are needed to restrict inheritance. Cangjie natively supports `sealed` classes.
+</CompareWith>
+
+<CompareWith lang="kotlin">
+Kotlin's `sealed class` restricts subclasses to the same file. Cangjie restricts them to the same package.
+</CompareWith>
+
+<CompareWith lang="scala">
+Scala 3's `sealed` also restricts inheritance. Cangjie's semantics are similar, used to close type hierarchies.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a `Pending` subclass to represent a pending state, and make its `message()` return `"Pending"`.

@@ -1,6 +1,7 @@
 main() {
     let day = 3
 
+    // match 返回值，赋给变量
     let name = match (day) {
         case 1 => "星期一"
         case 2 => "星期二"
@@ -13,9 +14,10 @@ main() {
     }
     println("今天是${name}")
 
-    // match 也可以不赋值，直接执行
+    // match 也可以作为语句，不返回值
     match (day) {
-        case 6 | 7 => println("周末休息")
-        case _ => println("工作日加油")
+        case 1 | 2 | 3 | 4 | 5 => println("工作日")
+        case 6 | 7 => println("周末")
+        case _ => println("无效")
     }
 }

@@ -1,15 +1,91 @@
 # Access Rules
 
-An extension lives outside the original type definition, so it can only access the type's public members.
+Extensions are located outside the original type definition and must comply with access control rules. Extensions can only access `public` and `protected` members of the extended type; they cannot access `private` fields and methods.
 
-```cangjie
+The `Rectangle` struct in the code on the right has a private `_tag` field and public `width`, `height` fields. Functions defined in the extension like `area()`, `perimeter()`, `isSquare()` can only calculate through public fields and cannot access `_tag`.
+
+Extensions cannot shadow existing members of the extended type, nor can they shadow non-`private` members defined in other extensions. This ensures deterministic type behavior.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no explicit access control and relies on file scope and conventions; the concept of extensions doesn't exist.
+</CompareWith>
+
+<CompareWith lang="java">
+Java methods can access private fields through reflection (with special code), while Cangjie enforces access control directly at the compiler level during the extension phase.
+</CompareWith>
+
+<CompareWith lang="go">
+Go only has capitalization conventions for visibility; extensions (if they existed) could only access members starting with capital letters.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust trait implementations can access all fields (within the same module), subject to visibility constraints across modules.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Extensions themselves cannot use access modifiers, but extension members can use modifiers like `public`, `private`, `protected`.</Note>
+
+Try accessing private fields in the extension and observe the compiler's error messages.
+
+CJ:
+struct Rectangle {
+    public let width: Float64
+    public let height: Float64
+    private let _tag: String  // Private field, inaccessible to extensions
+
+    public init(width: Float64, height: Float64) {
+        this.width = width
+        this.height = height
+        this._tag = "rectangle"
+    }
+
+    public func tag(): String {
+        return this._tag
+    }
+}
+
+// Extension calculates geometric properties through public members
 extend Rectangle {
+    // Calculate area
     func area(): Float64 {
         return this.width * this.height
     }
+
+    // Calculate perimeter
+    func perimeter(): Float64 {
+        return 2.0 * (this.width + this.height)
+    }
+
+    // Check if it's a square
+    func isSquare(): Bool {
+        return this.width == this.height
+    }
+
+    // Get description
+    func describe(): String {
+        let shape = if (this.isSquare()) { "Square" } else { "Rectangle" }
+        return "${shape}: ${this.width} x ${this.height}"
+    }
+
+    // Calculate diagonal length
+    func diagonal(): Float64 {
+        return (this.width * this.width + this.height * this.height).sqrt()
+    }
 }
-```
 
-It cannot reach private or internal fields. All four methods here (`area`, `perimeter`, `isSquare`, `describe`) use only the public `width` and `height`.
+main() {
+    let rect1 = Rectangle(5.0, 3.0)
+    println(rect1.describe())
+    println("  Area: ${rect1.area()}")
+    println("  Perimeter: ${rect1.perimeter()}")
+    println("  Diagonal: ${rect1.diagonal()}")
+    println()
 
-Try adding a private field to `Rectangle` and accessing it from the extension -- the compiler will reject it.
+    let rect2 = Rectangle(4.0, 4.0)
+    println(rect2.describe())
+    println("  Area: ${rect2.area()}")
+    println("  Is square: ${rect2.isSquare()}")
+}

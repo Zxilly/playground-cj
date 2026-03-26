@@ -1,7 +1,28 @@
-# @macro 包
+# 宏包
 
-宏定义在单独的 `macro package` 中，而不是普通的 `package`。宏包只能导出宏定义。
+宏定义必须放在单独的宏包中，使用 `macro package` 关键字声明。被 `macro package` 限定的包只能导出宏定义，其他声明仅在包内可见。
 
-需要 `import std.ast.*` 来使用 `Tokens` 类型和 AST 工具。宏包必须先用 `cjc --compile-macro` 单独编译，然后才能被使用宏的代码引用。
+宏包需要导入 `std.ast.*` 来使用 `Tokens` 类型和 `quote` 等工具。`Tokens` 表示 Token 序列，是宏输入输出的核心类型。`quote` 表达式用于构建 Token 序列。
 
-注意文件顶部的 `macro package` 声明。
+`quote` 表达式将括号内的代码片段转换为 `Tokens`。在 `quote` 内部，可以使用 `$(...)` 插值将变量或表达式的值插入到代码片段中。例如 `$(input)` 会将 `input` 的值插入。
+
+宏包必须先用 `cjc --compile-macro` 单独编译，生成宏定义的动态库文件，然后才能被使用宏的代码引用。
+
+右侧定义了一个最简单的恒等宏 `Identity`，它接收输入并原样返回，不做任何转换。宏声明为 `public macro Name(input: Tokens): Tokens`，其中 `input` 是调用处的 Token 序列，返回值会替换宏调用。
+
+<Note>宏包中不允许定义外部可见的非宏声明，如 `public func` 或 `public class`。</Note>
+
+<CompareGroup>
+<CompareWith lang="c">
+C 宏定义在头文件中，通过 `#define` 指令定义。没有真正的"宏包"概念，只是编译预处理的一部分。
+</CompareWith>
+<CompareWith lang="java">
+Java 的注解处理器定义在普通类中，必须实现 `AbstractProcessor` 接口。相比仓颉的 `macro package`，更复杂更冗长。
+</CompareWith>
+<CompareWith lang="rust">
+Rust 宏定义在普通模块中使用 `macro_rules!` 或 `proc_macro` 属性。仓颉要求宏必须定义在独立的 `macro package` 中，隔离更彻底。
+</CompareWith>
+<CompareWith lang="go">
+Go 没有内置宏系统。代码生成通过外部工具和 `text/template` 实现。仓颉的宏在编译器中原生支持。
+</CompareWith>
+</CompareGroup>

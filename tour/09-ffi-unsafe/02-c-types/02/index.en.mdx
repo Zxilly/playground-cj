@@ -1,3 +1,23 @@
 # CString
 
-`CString` represents a null-terminated C string corresponding to `char*` in C. Convert a Cangjie `String` to `CString` using `LibC.mallocCString()`, and convert back with the `toString()` method. Since `mallocCString` allocates memory on the C heap, you must free it with `LibC.free()` when done.
+`CString` is the type in Cangjie that represents C-style strings, corresponding to `char*` in C. C strings are null-terminated (ending with `\0`) and have a different memory layout from Cangjie's `String` type.
+
+To convert a Cangjie `String` to `CString`, use the `LibC.mallocCString()` function, which allocates memory on the C heap and copies the string contents. The converted `CString` can be passed directly to C functions that accept `const char*`. To convert a `CString` back to a Cangjie `String`, call the `toString()` method.
+
+`CString` provides practical member functions: `size()` gets the string length, `isEmpty()` checks if it's empty, and `equals()` compares two strings. The code on the right demonstrates interoperating with the C standard library function `strlen`.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+In C, strings are `char*` or `const char*` with no length information. Cangjie's `CString` wraps C strings and provides convenient methods.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses C.CString() to convert strings, requiring manual calls to C.free() for deallocation. Cangjie similarly requires manual deallocation of `CString`.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`LibC.mallocCString()` allocates memory on the C heap; you must call `LibC.free()` to release it after use, otherwise it will cause a memory leak.</Note>
+
+Try calling other C string functions, such as `strcmp` or `strcat`.

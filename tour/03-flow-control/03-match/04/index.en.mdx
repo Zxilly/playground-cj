@@ -1,5 +1,29 @@
 # Tuple Patterns
 
-`match` can destructure tuples. `case (0, 0)` matches a specific pair, while `case (x, y)` binds both elements.
+Tuple patterns can simultaneously match and destructure multiple elements of a tuple. The syntax is `case (pattern1, pattern2, ...) =>`, where each position can be a value pattern, binding pattern, or wildcard.
 
-Try changing `point` on line 2 to `(0, 5)` and see which branch matches.
+You can mix different types of patterns. For example, `case (0, 0)` matches the origin, `case (x, 0)` matches points on the x-axis and binds the x coordinate to a variable, and `case (x, y)` matches and binds both coordinates.
+
+Tuple patterns make code more concise—extracting multiple values in a single match without needing to match the tuple first and then access elements separately.
+
+Try changing `point` on line 2 to `(0, 0)` or `(5, 3)` and observe the different matching results.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't have tuple types and typically uses structs or multiple variables instead. Cannot perform tuple destructuring in `switch`.
+</CompareWith>
+
+<CompareWith lang="java">
+Java also lacks native tuple types (can simulate with record or Pair class). Cannot perform tuple destructuring in `switch`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go doesn't have a built-in tuple type and typically uses structs instead. In switch statements, struct fields need to be accessed separately.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust also supports tuple destructuring patterns, with syntax identical to Cangjie: `match point { (0, 0) => ..., (x, y) => ... }`.
+</CompareWith>
+
+</CompareGroup>

@@ -1,15 +1,33 @@
 # Collection Example
 
-A `HashMap<String, Int64>` counts tag frequencies by iterating an array and updating the map.
+This example demonstrates how to use `HashMap` to count tag occurrences. This is a typical scenario of the "iterate, lookup, update" pattern.
 
-```cangjie
-if (counts.contains(tag)) {
-    counts[tag] = counts[tag] + 1
-} else {
-    counts.add(tag, 1)
-}
-```
+Core logic: for each tag, first check if the key already exists in the `HashMap`. If it exists, retrieve the current count, increment it, and update; if it doesn't exist, insert an initial value of 1. After iterating through all tags, the `HashMap` records the occurrence count of each tag.
 
-The pattern of "iterate, look up, update" is one of the most common uses of `HashMap`.
+This pattern is common in scenarios like word frequency counting, vote counting, and group aggregation. `HashMap`'s fast lookup characteristic (average O(1)) makes such operations very efficient.
 
-Add a new tag `"api"` twice to the input array and verify it appears with count `2` in the output.
+The code on the right counts the frequency of occurrences in a tag array.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C requires manual hash table implementation and counting logic, which is complex and error-prone. Cangjie's `HashMap` and `contains()` greatly simplify the operation.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `HashMap` can use `getOrDefault()` or `merge()` for concise counting. Cangjie's `contains()` and update logic are equally clear.
+</CompareWith>
+
+<CompareWith lang="go">
+The code for implementing word frequency counting in Go is almost identical to Cangjie, using `for range` to iterate and `if val, ok := m[key]; ok` to check key existence. Cangjie uses `contains(key)` for checking, which is more intuitive.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `HashMap` provides the `entry(key).or_insert(0)` method for more concise counting implementation. Cangjie's standard library also has similar convenience methods.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Before accessing with subscript `map[key]`, make sure the key exists, otherwise a runtime error will be triggered.</Note>
+
+Think about it: if the number of tags is very large (millions), how would this method perform?

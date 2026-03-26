@@ -1,7 +1,9 @@
+// Define a printable interface
 interface Printable {
     func display(): String
 }
 
+// Student class implements Printable interface
 class Student <: Printable {
     let name: String
     let grade: Int64
@@ -12,10 +14,11 @@ class Student <: Printable {
     }
 
     public func display(): String {
-        return "${name} (Grade ${grade})"
+        "${name} (Grade ${grade})"
     }
 }
 
+// Course class implements Printable interface
 class Course <: Printable {
     let title: String
 
@@ -24,28 +27,36 @@ class Course <: Printable {
     }
 
     public func display(): String {
-        return "Course: ${title}"
+        "Course: ${title}"
     }
 }
 
-// T must implement Printable
+// Generic function, T must implement Printable interface
 func printItem<T>(item: T): Unit where T <: Printable {
     println(item.display())
 }
 
+// Generic function that processes arrays, each element must implement Printable
 func printAll<T>(items: Array<T>): Unit where T <: Printable {
+    println("List contents:")
     for (item in items) {
-        println("- ${item.display()}")
+        println("  - ${item.display()}")
     }
 }
 
 main() {
-    let s = Student("Alice", 3)
-    printItem(s)
+    // Can pass any type that implements Printable
+    let student = Student("Zhang San", 3)
+    printItem(student)
 
-    let c = Course("Cangjie Programming")
-    printItem(c)
+    let course = Course("Cangjie Programming Language")
+    printItem(course)
 
-    let students = [Student("Bob", 1), Student("Carol", 2)]
+    // Arrays can also be processed
+    let students = [
+        Student("Li Si", 1),
+        Student("Wang Wu", 2),
+        Student("Zhao Liu", 3)
+    ]
     printAll(students)
 }

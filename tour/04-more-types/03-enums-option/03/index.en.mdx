@@ -1,7 +1,31 @@
 # Recursive Enums
 
-An enum case can reference the same enum type, forming a recursive data structure. `Num` is the base case; `Add` and `Mul` contain sub-expressions.
+Enum constructor parameters can be the enum type itself, forming recursive data structures. Such enums are often used to represent tree structures, expressions, etc.
 
-Recursive enums are processed with recursive functions and pattern matching.
+The `Expr` enum on the right represents an arithmetic expression: `Num` is a leaf node (basic value), while `Add` and `Mul` are branch nodes containing two sub-expressions.
 
-Add a `Sub(Expr, Expr)` case and handle it in both `eval` and `show`.
+Processing recursive enums typically requires recursive functions. The `eval` function recursively calculates the value of an expression: when encountering `Num`, it returns the value directly; when encountering `Add` or `Mul`, it recursively calculates the sub-expressions and then adds or multiplies them.
+
+The `show` function converts an expression to a readable string form, also using recursive processing.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C doesn't support direct representation of recursive data structures; manual pointer and memory management is needed. Cangjie's recursive enums are concise and safe.
+</CompareWith>
+
+<CompareWith lang="java">
+Java has no recursive enum version; it typically uses class hierarchies and polymorphism instead. Cangjie's recursive enums are simpler and more intuitive.
+</CompareWith>
+
+<CompareWith lang="go">
+Go cannot directly define recursive enums, typically requiring a combination of interfaces and structs, resulting in more verbose code.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust recursive enums require `Box` wrapping before constructor parameters because enum size must be fixed. Cangjie handles this automatically with cleaner syntax.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a `Sub(Expr, Expr)` member to represent subtraction, and handle it in both the `eval` and `show` functions.

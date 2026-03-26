@@ -1,7 +1,31 @@
 # 泛型函数
 
-泛型函数在函数名后的尖括号中声明类型参数，使同一个函数可以处理多种类型。
+泛型函数可以处理多种类型，而不仅仅是某一种固定类型。类型参数在函数名后的尖括号 `<T>` 中声明，然后可以在参数类型、返回类型和函数体中使用。
 
-`pickFirst<T>` 接受两个任意类型 `T` 的值并返回第一个。`swap<T, U>` 翻转元组的元素顺序。编译器在每个调用处推断或检查具体类型。
+类型参数让函数更加通用。例如，`pickFirst<T>` 接受两个类型为 `T` 的值并返回第一个，无论 `T` 是 `Int64`、`String` 还是其他类型。调用时可以显式指定类型实参，也可以让编译器自动推断。
 
-用 `(Bool, String)` 元组调用 `swap` 并打印两个元素。
+仓颉支持多个类型参数。`swap<T, U>` 接受一个 `(T, U)` 元组并返回 `(U, T)`，两个类型参数用逗号分隔。这比硬编码特定类型更灵活，避免了重复编写相似的代码。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有泛型，必须使用宏或手动代码生成来实现，导致代码臃肿且缺乏类型安全。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的泛型在编译时会被擦除，运行时无法区分 `List<Int>` 和 `List<String>`；Cangjie 的泛型在编译时实例化，保留完整类型信息。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的泛型语法类似，类型参数也放在函数名后的方括号中：`func pickFirst[T](left, right T) T`。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的泛型语法相同：`fn pickFirst<T>(left: T, _: T) -> T`，也使用尖括号声明类型参数。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>类型参数的命名通常使用单个大写字母，如 `T`、`U`、`K`、`V`，但也可以使用更长的描述性名称。</Note>
+
+运行代码观察 `pickFirst` 和 `swap` 的工作方式，然后修改 `swap` 的调用，交换一个 `(Int64, Bool)` 类型的元组。

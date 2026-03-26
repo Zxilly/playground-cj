@@ -1,5 +1,33 @@
 # Option 与空安全
 
-`Option<T>`（简写 `?T`）表示一个可能存在也可能不存在的值。`Some(v)` 持有值，`None` 表示缺失。
+仓颉提供了多种处理 `Option` 值的方式，让空安全操作更加便捷。
 
-`??` 运算符提供默认值：`present ?? 0` 在有值时返回内部值，`None` 时返回 `0`。`getOrThrow()` 解包值，缺失时抛出异常。
+`??` 运算符（coalescing 操作符）在值为 `None` 时提供默认值。表达式 `opt ?? default` 当 `opt` 是 `Some(v)` 时返回 `v`，是 `None` 时返回 `default`。这样可以安全地解包 Optional 值。
+
+`getOrThrow()` 方法直接解包值，当值是 `Some(v)` 时返回 `v`，是 `None` 时抛出异常。适合在确定值一定存在时使用。
+
+当上下文明确需要 `Option<T>` 类型时，可以直接传入 `T` 类型的值，编译器会自动用 `Some` 包装。例如，返回 `Int64` 类型值的函数可以直接返回数值，它会自动包装成 `Some`。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 没有 coalescing 运算符，需要手动使用三元运算符或 if-else 处理空值。仓颉的 `??` 更简洁。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 的对象可能为 `null`，需要显式检查。仓颉的 `Option` 和 `??` 运算符提供更安全的缺失值处理。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 的 `if err != nil` 模式比仓颉的 `??` 更冗长，但更明确。Go 没有类似的自动包装机制。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 的 `unwrap_or()` 方法与仓颉的 `??` 运算符功能相同，但 `??` 语法更简洁。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>`??` 运算符要求右侧默认值的类型与 `Option` 内部类型一致。</Note>
+
+尝试修改 `findEmail` 函数，让它区分"用户名不存在"和"用户无邮箱"两种情况。

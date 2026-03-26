@@ -1,5 +1,23 @@
-# Subtyping
+# Interface Inheritance
 
-An interface can extend other interfaces using `<:`. A type implementing the combined interface satisfies all parent interfaces.
+Interfaces can use `<:` to inherit from one or more interfaces, forming an interface hierarchy. A child interface inherits all members from its parent interfaces and can add new members.
 
-`ReadWrite <: Readable & Writable` means a `ReadWrite` value can be assigned to a `Readable` or `Writable` variable. Only the corresponding subset of methods is exposed.
+Types implementing a child interface must implement members required by both the child interface and all parent interfaces. That type becomes a subtype of both the child interface and all parent interfaces, and can be assigned to variables of any parent interface type.
+
+This "compositional" interface design allows building complex interfaces from simple ones. A type can implement only basic interfaces to satisfy partial functionality, or implement composite interfaces to provide complete functionality.
+
+In this example, `ReadWrite` inherits from both `Readable` and `Writable` interfaces. After `FileBuffer` implements `ReadWrite`, it can be assigned to `Readable` or `Writable` variables, but can only access methods from the corresponding interface.
+
+<CompareGroup>
+
+<CompareWith lang="go">
+Go does not support interface inheritance but has interface embedding, which can compose other interfaces. Cangjie's interface inheritance is more explicit, using the `<:` symbol to make inheritance relationships clear at a glance.
+</CompareWith>
+
+<CompareWith lang="java">
+Java interfaces use `extends` to inherit from other interfaces, while Cangjie uses the `<:` symbol for syntactic consistency. Both support multiple interface inheritance, allowing functionality to be composed from multiple parent interfaces.
+</CompareWith>
+
+</CompareGroup>
+
+<Note>Interface inheritance emphasizes an "is-a" relationship (readable and writable is ReadWrite), while multiple interface implementation emphasizes "can-do" (simultaneously readable and writable). The choice depends on semantic requirements.</Note>

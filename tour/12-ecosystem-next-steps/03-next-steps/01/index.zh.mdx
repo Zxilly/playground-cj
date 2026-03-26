@@ -1,5 +1,33 @@
-# 综合回顾
+# 从 Tour 到独立开发
 
-本例将函数、集合、并发、互斥锁和字符串插值组合在一个小型流水线中。
+恭喜你完成了仓颉语言之旅！现在你已经掌握了变量、函数、类、泛型、并发等核心概念，是时候开始独立编写程序了。
 
-输入数字被分发到各 worker 线程，每个线程计算 `double`，结果在锁保护下收集到共享 `ArrayList<String>`，最后由主线程统一打印。
+离开这个交互式环境后，你可以使用 `cjc` 编译器或 `cjpm` 项目管理工具来构建自己的程序。`cjc` 适合快速编译单个文件，而 `cjpm` 更适合管理多文件项目和依赖。
+
+下面的代码展示了如何使用命令行编译并运行一个独立的仓颉程序。将它保存为 `hello.cj`，然后在终端执行 `cjc hello.cj && ./main` 即可看到输出。
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C 通常需要手动编写 Makefile 或使用 CMake 来管理编译流程。仓颉的 `cjc` 和 `cjpm` 提供了更集成的工具链。
+</CompareWith>
+
+<CompareWith lang="java">
+Java 使用构建工具如 Maven 或 Gradle 管理项目。仓颉的 `cjpm` 类似于 Maven 或 Gradle，但更简洁。
+</CompareWith>
+
+<CompareWith lang="go">
+Go 使用 `go run` 直接编译运行，或 `go build` 生成可执行文件。仓颉的 `cjpm run` 类似于 `go run`。
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust 使用 `cargo run` 管理项目，`rustc` 直接编译单文件。仓颉的 `cjpm` 相当于 Cargo，`cjc` 相当于 rustc。
+</CompareWith>
+
+</CompareGroup>
+
+<Note>
+在 Windows 平台上，生成的可执行文件默认名为 `main.exe`，运行命令为 `.\main.exe`。
+</Note>
+
+动手保存这段代码并在本地编译运行，体验真实的开发流程。

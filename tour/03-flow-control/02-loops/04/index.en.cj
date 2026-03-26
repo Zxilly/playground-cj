@@ -1,37 +1,53 @@
 main() {
-    // break: find the first number divisible by 7
+    // break example: find the first number divisible by 7
+    print("Finding first number divisible by 7: ")
     for (i in 1..100) {
         if (i % 7 == 0) {
-            println("第一个能被 7 整除的数: ${i}")
-            break
+            println("${i}")
+            break  // exit loop immediately after finding
         }
     }
-
-    // continue: skip even numbers, print only odd
-    print("奇数: ")
+    
+    // continue example: print odd numbers
+    print("Odd numbers from 0 to 10: ")
     for (i in 0..10) {
         if (i % 2 == 0) {
-            continue
+            continue  // skip even numbers
         }
         print("${i} ")
     }
     println("")
-
-    // Combined: print the first 5 positive integers not divisible by 3
+    
+    // Comprehensive example: find first 5 positive integers not divisible by 3
     var count = 0
-    print("前5个不能被3整除的正整数: ")
+    print("First 5 positive integers not divisible by 3: ")
     var n = 1
     while (true) {
         if (n % 3 == 0) {
             n++
-            continue
+            continue  // skip numbers divisible by 3
         }
         print("${n} ")
         count++
         n++
         if (count >= 5) {
-            break
+            break  // exit after finding 5
         }
     }
     println("")
+    
+    // break and continue in nested loops
+    println("Nested loop example (only print first 2 iterations of inner loop):")
+    for (i in 1..=3) {
+        print("Outer ${i}: ")
+        var innerCount = 0
+        for (j in 1..=5) {
+            print("${j} ")
+            innerCount++
+            if (innerCount >= 2) {
+                break  // only affects inner loop
+            }
+        }
+        println("")
+    }
 }
