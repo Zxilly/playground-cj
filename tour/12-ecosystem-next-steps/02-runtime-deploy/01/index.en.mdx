@@ -31,24 +31,3 @@ Rust uses `rustc` or `cargo build` for compilation, generating executables in `t
 <Note>Make sure the Cangjie SDK is installed and the `CANGJIE_HOME` environment variable is configured correctly for the `cjc` command to work properly.</Note>
 
 Try modifying the output filename by using `-o yourname` to specify a custom name.
-
-CJ:
-// Compile this file: cjc hello.cj -o hello
-// Then run:          ./hello
-
-main() {
-    println("Welcome to Cangjie programming language!")
-    println("This is a program compiled to native binary.")
-    
-    // Simple calculation example
-    let sum = 0
-    for (i in 1..=10) {
-        sum += i
-    }
-    println("Sum from 1 to 10 is: ${sum}")
-    
-    // Demonstrate string interpolation
-    let language = "Cangjie"
-    let year = 2024
-    println("${language} language, year ${year}")
-}
