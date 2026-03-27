@@ -4,6 +4,9 @@ import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const LSP_DIR = join(process.cwd(), 'public', 'lsp')
+const CJ_RE = /\.cj$/i
+const MJS_RE = /\.m?js$/
+const CODINGAME_RE = /node_modules[\\/](@codingame|monaco-languageclient|vscode-languageclient)/
 
 function isLspDirEmpty() {
   if (!existsSync(LSP_DIR)) {
@@ -44,15 +47,15 @@ const nextConfig: NextConfig = {
   },
   webpack: (config, { isServer }) => {
     config.module.rules.push({
-      test: /\.cj$/i,
+      test: CJ_RE,
       type: 'asset/source',
     })
 
     if (!isServer) {
       // Fix ES module resolution for @codingame packages
       config.module.rules.push({
-        test: /\.m?js$/,
-        include: /node_modules[\\/](@codingame|monaco-languageclient|vscode-languageclient)/,
+        test: MJS_RE,
+        include: CODINGAME_RE,
         resolve: {
           fullySpecified: false,
         },

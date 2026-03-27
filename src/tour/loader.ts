@@ -7,9 +7,12 @@ import type { FlatSection, TourChapter, TourChapterSlim, TourSection, TourSubCha
 const TOUR_DIR = join(process.cwd(), 'tour')
 const TOP_LEVEL_DIR_RE = /^\d+-[a-z0-9-]+$/
 const SECTION_DIR_RE = /^\d+$/
+const ORDER_PREFIX_RE = /^\d+-/
+const BOM_RE = /^\uFEFF/
+const NEWLINE_RE = /\r?\n/
 
 function stripOrderPrefix(id: string): string {
-  return id.replace(/^\d+-/, '')
+  return id.replace(ORDER_PREFIX_RE, '')
 }
 
 function compareIds(a: string, b: string): number {
@@ -43,7 +46,7 @@ function readNameJson(dir: string): Record<string, string> {
 }
 
 function readMarkdownTitle(markdown: string, filePath: string): string {
-  const [firstLine = ''] = markdown.replace(/^\uFEFF/, '').split(/\r?\n/, 1)
+  const [firstLine = ''] = markdown.replace(BOM_RE, '').split(NEWLINE_RE, 1)
   if (!firstLine.startsWith('# '))
     throw new Error(`Missing top-level markdown heading in ${filePath}`)
 

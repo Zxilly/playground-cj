@@ -48,10 +48,10 @@ function Playground({ defaultCode }: PlaygroundProps) {
     getAction('editor.action.formatDocument')?.run()
   }, [getAction])
 
-  const outputPanel = useRef<PanelImperativeHandle | null>(null)
+  const outputPanelRef = useRef<PanelImperativeHandle | null>(null)
   const toggleOutput = useCallback(() => {
     setIsOutputCollapsed(prev => !prev)
-    const panel = outputPanel.current
+    const panel = outputPanelRef.current
     if (!panel)
       return
 
@@ -125,7 +125,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
                 {!isOutputCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </Button>
             )}
-            <ResizablePanel defaultSize={35} collapsible panelRef={outputPanel}>
+            <ResizablePanel defaultSize={35} collapsible panelRef={outputPanelRef}>
               <div id="panel" className="flex flex-col h-full overflow-hidden">
                 {!isOutputCollapsed && (
                   <OutputPanel

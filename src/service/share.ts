@@ -1,11 +1,17 @@
 import { compressToBase64, decompressFromBase64 } from 'lz-string'
 
+const PLUS_RE = /\+/g
+const SLASH_RE = /\//g
+const TRAILING_EQ_RE = /=+$/
+const DASH_RE = /-/g
+const UNDERSCORE_RE = /_/g
+
 function base64ToBase64Url(base64: string): string {
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return base64.replace(PLUS_RE, '-').replace(SLASH_RE, '_').replace(TRAILING_EQ_RE, '')
 }
 
 function base64UrlToBase64(base64url: string): string {
-  return base64url.replace(/-/g, '+').replace(/_/g, '/')
+  return base64url.replace(DASH_RE, '+').replace(UNDERSCORE_RE, '/')
 }
 
 async function fetchDpasteContent(hash: string): Promise<string | undefined> {

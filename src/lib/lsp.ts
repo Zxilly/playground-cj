@@ -226,7 +226,7 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
 
   // Dynamic import of the WASM module (must remain dynamic as it's loaded at runtime)
   const WasmModule = await import(/* webpackIgnore: true */ LSP_WASM_PATH)
-  const module: EmscriptenModule = await WasmModule.default({
+  const wasmMod: EmscriptenModule = await WasmModule.default({
     print: (text: string) => onLog(`[stdout] ${text}`),
     printErr: (text: string) => onLog(`[stderr] ${text}`),
     // Use cached fetch for .wasm binary
@@ -249,7 +249,7 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   })
 
   // Set up message callback for LSP responses
-  module.onLSPMessage = (messageStr: string) => {
+  wasmMod.onLSPMessage = (messageStr: string) => {
     try {
       const json = JSON.parse(messageStr)
       const label = (json.method && json.id === undefined) ? 'Notification' : 'Response'
@@ -262,11 +262,11 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
 
   // Initialize LSP server
   onLog('Initializing LSP server...')
-  module.initLSPWithPaths('/cangjie', '/cangjie')
+  wasmMod.initLSPWithPaths('/cangjie', '/cangjie')
 
   // Create directories for modules using FS API
   const targetModulesPath = `/cangjie/modules/${TARGET_PATH}`
-  module.FS.mkdirTree(`${targetModulesPath}/std`)
+  wasmMod.FS.mkdirTree(`${targetModulesPath}/std`)
 
   // Load standard library modules with a single DB connection
   onLog('Loading standard library...')
@@ -291,7 +291,7 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
       const cachedData = db ? await idbGet(db, modulePath) : null
 
       if (cachedData) {
-        module.FS.writeFile(destPath, cachedData)
+        wasmMod.FS.writeFile(destPath, cachedData)
         loaded++
         cached++
         onLog(`  [cjo] ${destPath} (${cachedData.length} bytes, cached)`)
@@ -301,7 +301,7 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
         const response = await fetch(url)
         if (response.ok) {
           const data = new Uint8Array(await response.arrayBuffer())
-          module.FS.writeFile(destPath, data)
+          wasmMod.FS.writeFile(destPath, data)
 
           // Cache to IndexedDB (fire-and-forget)
           if (db) {
@@ -324,9 +324,9 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
 
   // Start the background server loop for non-blocking message processing
   onLog('Starting server loop...')
-  module.startServerLoop()
+  wasmMod.startServerLoop()
 
-  return module
+  return wasmMod
 }
 
 interface ConnectionInstance {

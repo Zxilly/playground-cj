@@ -18,6 +18,14 @@ interface TourEditorProps {
 }
 
 const TOUR_RUN_MARKER_OWNER = 'tour-run'
+const EXIT_CODE_RE = /\n?-{10}\nexit code\s+-?\d+\s*$/i
+const NEWLINE_RE = /\r?\n/
+const LOCATION_PATTERNS = [
+  /(?:^|[\s(])([^()\s]+\.cj):(\d+):(\d+)(?:[):\s]|$)/,
+  / at ([^()\s]+\.cj):(\d+):(\d+)/,
+]
+const WARNING_RE = /\bwarning\b/i
+const SEPARATOR_RE = /^-{3,}$/
 
 interface CompilerDiagnostic {
   severity: monaco.MarkerSeverity
@@ -89,7 +97,7 @@ function createLocalizedLabels(locale: string) {
 }
 
 function stripExitCodeFooter(output: string): string {
-  return output.replace(/\n?-{10}\nexit code\s+-?\d+\s*$/i, '').trim()
+  return output.replace(EXIT_CODE_RE, '').trim()
 }
 
 function parseCompilerDiagnostics(output: string, model: monaco.editor.ITextModel): CompilerDiagnostic[] {
@@ -97,12 +105,8 @@ function parseCompilerDiagnostics(output: string, model: monaco.editor.ITextMode
   if (!source)
     return []
 
-  const lines = source.split(/\r?\n/)
+  const lines = source.split(NEWLINE_RE)
   const diagnostics: CompilerDiagnostic[] = []
-  const locationPatterns = [
-    /(?:^|[\s(])([^()\s]+\.cj):(\d+):(\d+)(?:[):\s]|$)/,
-    / at ([^()\s]+\.cj):(\d+):(\d+)/,
-  ]
 
   for (let index = 0; index < lines.length; index++) {
     const lineText = lines[index].trim()
@@ -110,7 +114,7 @@ function parseCompilerDiagnostics(output: string, model: monaco.editor.ITextMode
       continue
 
     let locationMatch: RegExpMatchArray | null = null
-    for (const pattern of locationPatterns) {
+    for (const pattern of LOCATION_PATTERNS) {
       locationMatch = lineText.match(pattern)
       if (locationMatch)
         break
@@ -128,7 +132,7 @@ function parseCompilerDiagnostics(output: string, model: monaco.editor.ITextMode
     const lineMaxColumn = model.getLineMaxColumn(safeLineNumber)
     const safeColumn = Math.min(Math.max(column, 1), lineMaxColumn)
 
-    const severity = /\bwarning\b/i.test(lineText)
+    const severity = WARNING_RE.test(lineText)
       ? monaco.MarkerSeverity.Warning
       : monaco.MarkerSeverity.Error
 
@@ -138,9 +142,9 @@ function parseCompilerDiagnostics(output: string, model: monaco.editor.ITextMode
       const nextLine = lines[nextIndex].trim()
       if (!nextLine)
         break
-      if (locationPatterns.some(pattern => pattern.test(nextLine)))
+      if (LOCATION_PATTERNS.some(pattern => pattern.test(nextLine)))
         break
-      if (/^-{3,}$/.test(nextLine))
+      if (SEPARATOR_RE.test(nextLine))
         break
       messageParts.push(nextLine)
       nextIndex++

@@ -8,6 +8,8 @@ import { LanguagePicker } from './mdx/LanguagePicker'
 import { usePathname } from 'next/navigation'
 import type { FlatSection } from '@/tour/types'
 
+const LOCALE_PREFIX_RE = /^\/(en|zh)/
+
 interface TourHeaderProps {
   lang: string
   section: FlatSection
@@ -39,7 +41,7 @@ export function TourHeader({ lang, section }: TourHeaderProps) {
         <LanguagePicker />
         <Separator orientation="vertical" className="!h-5 !bg-white/30 mx-1" />
         <a
-          href={`/${otherLang}${pathname?.replace(/^\/(en|zh)/, '') || ''}`}
+          href={`/${otherLang}${pathname?.replace(LOCALE_PREFIX_RE, '') || ''}`}
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-white hover:bg-white/15 rounded transition-colors"
         >
           <Globe className="size-4" />
