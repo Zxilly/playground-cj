@@ -45,12 +45,7 @@ const nextConfig: NextConfig = {
   webpack: (config, { isServer }) => {
     config.module.rules.push({
       test: /\.cj$/i,
-      use: 'raw-loader',
-    })
-
-    config.module.rules.push({
-      test: /\.mdx?$/i,
-      use: 'raw-loader',
+      type: 'asset/source',
     })
 
     if (!isServer) {

@@ -3,6 +3,7 @@ import pluginLingui from 'eslint-plugin-lingui'
 
 export default antfu({
   react: true,
+  nextjs: true,
   rules: {
     'react-dom/no-dangerously-set-innerhtml': 'off',
     'no-template-curly-in-string': 'off',

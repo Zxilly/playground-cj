@@ -46,10 +46,11 @@
     "@codingame/monaco-vscode-language-pack-zh-hans": "25.1.2",
     "@codingame/monaco-vscode-textmate-service-override": "25.1.2",
     "@codingame/monaco-vscode-view-status-bar-service-override": "25.1.2",
-    "@eslint-react/eslint-plugin": "^3.0.0",
+    "@eslint-react/eslint-plugin": "^2.13.0",
     "@lingui/cli": "^5.9.3",
     "@lingui/loader": "^5.9.3",
     "@lingui/macro": "^5.9.3",
+    "@next/eslint-plugin-next": "^16.2.1",
     "@tailwindcss/postcss": "^4.2.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
@@ -72,11 +73,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "eslint": "^10.1.0",
-    "eslint-config-next": "16.2.1",
-    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-lingui": "^0.12.0",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "7.0.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "is-mobile": "^5.0.0",
     "jsdom": "^29.0.1",
@@ -84,7 +82,6 @@
     "lz-string": "^1.5.0",
     "monaco-languageclient": "10.7.0",
     "postcss": "^8.5.8",
-    "raw-loader": "^4.0.2",
     "react-use": "^17.6.0",
     "shadcn": "^4.1.0",
     "tailwind-merge": "^3.5.0",
@@ -92,7 +89,6 @@
     "tailwindcss-animate": "^1.0.7",
     "toml-eslint-parser": "^1.0.3",
     "typescript": "^6.0.2",
-    "typescript-eslint": "^8.57.2",
     "vitest": "^4.1.2",
     "vscode": "npm:@codingame/monaco-vscode-extension-api@25.1.2",
     "vscode-languageclient": "^9.0.1",
@@ -106,6 +102,13 @@
       "esbuild",
       "sharp",
       "unrs-resolver"
-    ]
+    ],
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "typescript": ">=6",
+        "eslint": ">=10",
+        "vite": ">=6"
+      }
+    }
   }
 }
