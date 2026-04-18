@@ -5,7 +5,7 @@ import { pipeline } from 'node:stream/promises'
 import * as yauzl from 'yauzl'
 
 const LSP_DIR = join(process.cwd(), 'public', 'lsp')
-const LSP_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-lsp-1.1.0-alpha/lsp.zip'
+const LSP_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-lsp-1.1.0-beta/lsp.zip'
 
 function isLspDirEmpty() {
   if (!existsSync(LSP_DIR)) {
