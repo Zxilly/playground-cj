@@ -1,0 +1,3476 @@
+# ======================================================================
+# sub-project: cangjie_compiler   base: 2e3728f9bdc3e51547571e0446d6ec98ae663ae3
+# ======================================================================
+diff --git a/cangjie_compiler/CMakeLists.txt b/cangjie_compiler/CMakeLists.txt
+index 55796a39..045608b3 100644
+--- a/cangjie_compiler/CMakeLists.txt
++++ b/cangjie_compiler/CMakeLists.txt
+@@ -66,6 +66,38 @@ option(CANGJIE_WRITE_PROFILE "`--profile-compile-time` and `--profile-compile-me
+ option(CANGJIE_ENABLE_ASAN_COV "build with asan and sanitize-coverage, used for cjc_fuzz and lsp_test" OFF)
+ option(CANGJIE_VISIBLE_OPTIONS_ONLY "open CANGJIE_VISIBLE_OPTIONS_ONLY to only build options that are visible to users" ON)
+ option(CANGJIE_USE_OH_LLVM_REPO "use OpenHarmony llvm repo with Cangjie llvm patch instead of cangjie llvm repo for building" OFF)
++
++# WASM 编译选项
++option(BUILD_WASM "Build WebAssembly version using Emscripten" OFF)
++
++if(BUILD_WASM)
++    message(STATUS "Building for WebAssembly target with pthreads and PROXY_TO_PTHREAD")
++
++    # WASM 不支持 CJNATIVE 后端（包含 LLVM 代码生成）
++    set(CANGJIE_CODEGEN_CJNATIVE_BACKEND OFF CACHE BOOL "" FORCE)
++    set(CANGJIE_BUILD_CJC OFF CACHE BOOL "" FORCE)
++    set(CANGJIE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
++    set(CANGJIE_BUILD_STD_SUPPORT ON CACHE BOOL "" FORCE)
++
++    add_definitions(-DBUILD_WASM)
++    add_definitions(-DWASM_TARGET)
++
++    # ========== 编译器标志 (compile-time) ==========
++    # WASM 特性优化
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mbulk-memory")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mreference-types")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -matomics")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
++
++    # Use native WebAssembly exceptions
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions")
++
++    # Size-first optimization with LTO for WASM
++    set(CMAKE_CXX_FLAGS_RELEASE "-Os -flto -DNDEBUG")
++    set(CMAKE_C_FLAGS_RELEASE   "-Os -flto -DNDEBUG")
++endif()
++
+ set(CANGJIE_LLVM_BUILD_TYPE Default CACHE STRING "Build type for llvm")
+ set(CANGJIE_CJDB_BUILD_TYPE Default CACHE STRING "Build type for cjdb")
+ 
+@@ -374,6 +406,10 @@ add_subdirectory(third_party)
+ if(CANGJIE_CODEGEN_CJNATIVE_BACKEND)
+ add_subdirectory(schema)
+ add_subdirectory(src)
++elseif(BUILD_WASM)
++# For WASM build, we need schema for FlatBuffers headers and src for cangjie-lsp-wasm target
++add_subdirectory(schema)
++add_subdirectory(src)
+ endif()
+ if(CANGJIE_BUILD_CJC)
+     add_subdirectory(utils)
+diff --git a/cangjie_compiler/include/cangjie/Basic/Version.h b/cangjie_compiler/include/cangjie/Basic/Version.h
+index 26b82df3..3ad14ac1 100644
+--- a/cangjie_compiler/include/cangjie/Basic/Version.h
++++ b/cangjie_compiler/include/cangjie/Basic/Version.h
+@@ -16,10 +16,8 @@
+ #include <string>
+ 
+ namespace Cangjie {
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+ extern const std::string CANGJIE_VERSION;
+ extern const std::string CANGJIE_COMPILER_VERSION;
+-#endif
+ void PrintVersion();
+ } // namespace Cangjie
+ #endif // CANGJIE_DRIVER_VERSION_H
+diff --git a/cangjie_compiler/include/cangjie/Frontend/CompilerInstance.h b/cangjie_compiler/include/cangjie/Frontend/CompilerInstance.h
+index 9e0681ad..a8285595 100644
+--- a/cangjie_compiler/include/cangjie/Frontend/CompilerInstance.h
++++ b/cangjie_compiler/include/cangjie/Frontend/CompilerInstance.h
+@@ -470,6 +470,7 @@ public:
+      */
+     CHIR::CHIRContext& GetCHIRContext();
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     /**
+      * @brief Get astPkg2chirPkgMap
+      */
+@@ -478,24 +479,15 @@ public:
+         return astPkg2chirPkgMap;
+     }
+ 
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // used only by cjlint
+     const CHIR::ConstAnalysisWrapper& GetConstAnalysisWrapper() const;
+ 
+     std::vector<CHIR::Package*> GetAllCHIRPackages() const;
+ #else
+-    // used only by cjlint
+-    const CHIR::AnalysisWrapper<CHIR::ConstAnalysis, CHIR::ConstDomain>& GetConstAnalysisWrapper() const
+-    {
+-        return constAnalysisWrapper;
+-    }
++    // For non-CJNATIVE builds (e.g., WASM), provide empty implementations
+     std::vector<CHIR::Package*> GetAllCHIRPackages() const
+     {
+-        std::vector<CHIR::Package*> res;
+-        for (auto& it : astPkg2chirPkgMap) {
+-            res.emplace_back(it.second);
+-        }
+-        return res;
++        return {};
+     }
+ #endif
+ 
+diff --git a/cangjie_compiler/include/cangjie/Macro/InvokeUtil.h b/cangjie_compiler/include/cangjie/Macro/InvokeUtil.h
+index fa416647..1c393099 100644
+--- a/cangjie_compiler/include/cangjie/Macro/InvokeUtil.h
++++ b/cangjie_compiler/include/cangjie/Macro/InvokeUtil.h
+@@ -59,6 +59,9 @@ namespace InvokeRuntime {
+     using InitGlobalFuncPtr = void* (*)(void*);
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     using RuntimeInitArg = std::unordered_map<std::string, std::string>;
++#else
++    // For non-CJNATIVE builds (e.g., WASM), define a placeholder type
++    using RuntimeInitArg = std::unordered_map<std::string, std::string>;
+ #endif
+ 
+ #ifdef _WIN32
+diff --git a/cangjie_compiler/include/cangjie/Modules/CjoManager.h b/cangjie_compiler/include/cangjie/Modules/CjoManager.h
+index 65087d01..2596a1c9 100644
+--- a/cangjie_compiler/include/cangjie/Modules/CjoManager.h
++++ b/cangjie_compiler/include/cangjie/Modules/CjoManager.h
+@@ -24,6 +24,11 @@ class ASTLoader;
+ const uint8_t CJO_MAJOR_VERSION = 0;
+ const uint8_t CJO_MINOR_VERSION = 1;
+ const uint8_t CJO_PATCH_VERSION = 0;
++#else
++// For non-CJNATIVE builds (e.g., WASM), use the same version
++const uint8_t CJO_MAJOR_VERSION = 0;
++const uint8_t CJO_MINOR_VERSION = 1;
++const uint8_t CJO_PATCH_VERSION = 0;
+ #endif
+ 
+ class CjoManager {
+diff --git a/cangjie_compiler/include/cangjie/Option/Option.h b/cangjie_compiler/include/cangjie/Option/Option.h
+index aff8521f..e9a50527 100644
+--- a/cangjie_compiler/include/cangjie/Option/Option.h
++++ b/cangjie_compiler/include/cangjie/Option/Option.h
+@@ -795,6 +795,8 @@ public:
+     bool constEvalDebug = false;
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     bool computeAnnotationsDebug{false}; // --debug-annotations
++#else
++    bool computeAnnotationsDebug{false}; // --debug-annotations (disabled for WASM)
+ #endif
+     bool disableCodeGen = false;
+     bool disableDeserializer = false;
+diff --git a/cangjie_compiler/include/cangjie/Utils/SafePointer.h b/cangjie_compiler/include/cangjie/Utils/SafePointer.h
+index 5534c006..dac845d9 100644
+--- a/cangjie_compiler/include/cangjie/Utils/SafePointer.h
++++ b/cangjie_compiler/include/cangjie/Utils/SafePointer.h
+@@ -379,8 +379,23 @@ template <typename T> struct std::hash<const Ptr<T>> {
+     }
+ };
+ 
++// Custom type trait for Ptr<T> to replace std::remove_pointer specialization
++// Emscripten's libc++ forbids specializing std::remove_pointer
++namespace Cangjie {
++template <class T> struct RemovePtrPointer {
++    using type = T;
++};
++template <class T> struct RemovePtrPointer<Ptr<T>> {
++    using type = T;
++};
++template <class T> using RemovePtrPointer_t = typename RemovePtrPointer<T>::type;
++} // namespace Cangjie
++
++#ifndef __EMSCRIPTEN__
++// Only specialize std::remove_pointer for non-Emscripten builds
+ template <class T> struct std::remove_pointer<Ptr<T>> {
+     using type = T;
+ };
++#endif
+ 
+ #endif
+diff --git a/cangjie_compiler/src/AST/ASTTypeValidator.cpp b/cangjie_compiler/src/AST/ASTTypeValidator.cpp
+index ae92d6e2..6bc90a7a 100644
+--- a/cangjie_compiler/src/AST/ASTTypeValidator.cpp
++++ b/cangjie_compiler/src/AST/ASTTypeValidator.cpp
+@@ -58,8 +58,11 @@ public:
+         CJC_ASSERT(valid);
+ 
+         valid = valid && Ty::IsTyCorrect(node.ty) && !node.ty->HasIdealTy() && !node.ty->HasQuestTy();
+-#endif
+         CJC_ASSERT(valid);
++#else
++        // For non-CJNATIVE builds (e.g., WASM), assume validation passes
++        bool valid = true;
++#endif
+ 
+         if (auto fb = DynamicCast<const FuncBody*>(&node); fb) {
+             Ptr<Decl> target = nullptr;
+diff --git a/cangjie_compiler/src/Basic/Version.cpp b/cangjie_compiler/src/Basic/Version.cpp
+index d6356e5e..c8695512 100644
+--- a/cangjie_compiler/src/Basic/Version.cpp
++++ b/cangjie_compiler/src/Basic/Version.cpp
+@@ -16,13 +16,17 @@
+ namespace Cangjie {
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+ const std::string CANGJIE_VERSION = CJ_SDK_VERSION;
+-
+ #ifndef VERSION_TAIL
+ const std::string CANGJIE_COMPILER_VERSION = "Cangjie Compiler: " + CANGJIE_VERSION;
+ #else
+ const std::string CANGJIE_COMPILER_VERSION = "Cangjie Compiler: " + CANGJIE_VERSION + VERSION_TAIL;
+ #endif
++#else
++// For non-CJNATIVE builds (e.g., WASM), use a default version
++const std::string CANGJIE_VERSION = "0.0.0";
++const std::string CANGJIE_COMPILER_VERSION = "Cangjie Compiler: " + CANGJIE_VERSION + " (WASM)";
+ #endif
++
+ void PrintVersion()
+ {
+     Cangjie::Println(CANGJIE_COMPILER_VERSION);
+diff --git a/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateAnnotation.cpp b/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateAnnotation.cpp
+index 0b216a5a..74dd45d5 100644
+--- a/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateAnnotation.cpp
++++ b/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateAnnotation.cpp
+@@ -198,6 +198,8 @@ AnnoInfo Translator::CreateAnnoFactoryFuncSig(const AST::Decl& decl, CustomTypeD
+     const auto& loc = TranslateLocation(*decl.annotationsArray->children[0]);
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     std::string mangledName = CHIRMangling::GenerateAnnotationFuncMangleName(decl.mangledName);
++#else
++    std::string mangledName = "anno_" + decl.identifier.Val();
+ #endif
+     if (opts.chirDebugOptimizer) {
+         std::string ms = "The annotation factory function of " + GetIdentifierToPrint(decl) + " in the line " +
+diff --git a/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateBlock.cpp b/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateBlock.cpp
+index 4150d15a..76d5a5b8 100644
+--- a/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateBlock.cpp
++++ b/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateBlock.cpp
+@@ -72,6 +72,12 @@ Ptr<Value> Translator::Visit(const AST::Block& b)
+     // Since cangjie's block has value, return the value of last block node.
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     std::vector<Ptr<AST::Node>> nodes = CollectBlockBodyNodes(b, gim);
++#else
++    // Collect nodes from block body directly for non-CJNATIVE builds
++    std::vector<Ptr<AST::Node>> nodes;
++    for (auto& node : b.body) {
++        nodes.push_back(node.get());
++    }
+ #endif
+     for (size_t i = 0; i < nodes.size(); ++i) {
+         if (i == nodes.size() - 1) {
+diff --git a/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateForInExpr.cpp b/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateForInExpr.cpp
+index 0b18889a..36828034 100644
+--- a/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateForInExpr.cpp
++++ b/cangjie_compiler/src/CHIR/AST2CHIR/TranslateASTNode/TranslateForInExpr.cpp
+@@ -546,13 +546,8 @@ void Translator::GenerateSignalCheckForThrow()
+     auto throwBB = CreateBlock(); // if throw check is true, rethrow it to outer Exception block
+     auto exception = CreateAndAppendExpression<GetException>(builder.GetType<RefType>(builder.GetObjectTy()), throwBB);
+     auto baseETy = builder.GetType<RefType>(builder.GetObjectTy());
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     IntrisicCallContext callContext{IntrinsicKind::BEGIN_CATCH, {exception->GetResult()}};
+     auto eVal = CreateAndAppendExpression<Intrinsic>(baseETy, callContext, throwBB);
+-#else
+-    auto eVal = CreateAndAppendExpression<Intrinsic>(
+-        baseETy, IntrinsicKind::BEGIN_CATCH, std::vector<Value*>{exception->GetResult()}, throwBB);
+-#endif
+     CreateAndAppendTerminator<RaiseException>(eVal->GetResult(), tryCatchContext.top(), throwBB);
+     auto returnBB = CreateBlock(); // if throw check is false, return from cur func
+     auto br = CreateAndAppendTerminator<Branch>(hasThrow->GetResult(), throwBB, returnBB, currentBlock);
+diff --git a/cangjie_compiler/src/CHIR/CHIR.cpp b/cangjie_compiler/src/CHIR/CHIR.cpp
+index 73bb70d2..8ccd75d0 100644
+--- a/cangjie_compiler/src/CHIR/CHIR.cpp
++++ b/cangjie_compiler/src/CHIR/CHIR.cpp
+@@ -1161,10 +1161,12 @@ bool ToCHIR::Run()
+         CHIRSerializer::Serialize(*chirPkg, fileName, CHIR::ToCHIR::RAW);
+         return true;
+     }
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // 3. run plugin for CHIR
+     if (!PerformPlugin(*chirPkg)) {
+         return false;
+     }
++#endif
+     // 4. Canonicalization, after this pass, the CHIR is ready for analysis and optimization.
+     Canonicalization();
+     if (!opts.enIncrementalCompilation && !RunIRChecker(Phase::RAW)) {
+diff --git a/cangjie_compiler/src/CHIR/Checker/ComputeAnnotations.cpp b/cangjie_compiler/src/CHIR/Checker/ComputeAnnotations.cpp
+index b9bf908d..29514355 100644
+--- a/cangjie_compiler/src/CHIR/Checker/ComputeAnnotations.cpp
++++ b/cangjie_compiler/src/CHIR/Checker/ComputeAnnotations.cpp
+@@ -716,6 +716,7 @@ OwnedPtr<ConstEvalResult> ComputeAnnotations(AST::Package& pkg, CompilerInstance
+     if (!doCompute) {
+         return {};
+     }
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     auto res = MakeOwned<ConstEvalResult>(ci.GetFileNameMap(), ci.invocation.globalOptions.GetJobs());
+     CHIR::ConstAnalysisWrapper constAnalysisWrapper{res->builder};
+     CHIR::ToCHIR convertor(ci, pkg, constAnalysisWrapper, res->builder);
+@@ -739,5 +740,8 @@ OwnedPtr<ConstEvalResult> ComputeAnnotations(AST::Package& pkg, CompilerInstance
+     g_valueMap.clear();
+     g_annoFactoryMap.clear();
+     return res;
++#else
++    return {};
++#endif
+ }
+ } // namespace Cangjie
+diff --git a/cangjie_compiler/src/CMakeLists.txt b/cangjie_compiler/src/CMakeLists.txt
+index ca9f20f6..5584a11a 100644
+--- a/cangjie_compiler/src/CMakeLists.txt
++++ b/cangjie_compiler/src/CMakeLists.txt
+@@ -44,7 +44,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_ID} STREQUA
+     endif()
+ endif()
+ 
+-if(NOT CANGJIE_BUILD_CJC AND CANGJIE_BUILD_STD_SUPPORT)
++if(NOT CANGJIE_BUILD_CJC AND CANGJIE_BUILD_STD_SUPPORT AND NOT BUILD_WASM)
+     add_subdirectory(AST)
+     add_subdirectory(Driver)
+     add_subdirectory(Parse)
+@@ -74,6 +74,58 @@ if(NOT CANGJIE_BUILD_CJC AND CANGJIE_BUILD_STD_SUPPORT)
+     return()
+ endif()
+ 
++# ==============================================================================
++# WASM 构建分支
++# ==============================================================================
++if(BUILD_WASM)
++    message(STATUS "Building cangjie frontend for WebAssembly target")
++
++    # 添加 WASM 构建所需的子目录
++    # 注意：CHIR 模块不需要，LSP 只使用 Parse + Sema，不进行代码生成
++    add_subdirectory(AST)
++    add_subdirectory(Driver)  # For CangjieTempFilesUtil
++    add_subdirectory(Frontend)
++    add_subdirectory(Parse)
++    add_subdirectory(Macro)  # For CangjieAstSerialization
++    add_subdirectory(ConditionalCompilation)
++    add_subdirectory(Lex)
++    add_subdirectory(Utils)
++    add_subdirectory(Basic)
++    add_subdirectory(Option)
++    add_subdirectory(Sema)
++    add_subdirectory(Modules)
++    add_subdirectory(Mangle)
++    # add_subdirectory(CHIR)  # 移除：LSP 不需要 CHIR，可减少约 69MB
++    add_subdirectory(IncrementalCompilation)
++
++    # WASM 版本的 libcangjie-lsp - 只包含前端组件
++    set(FRONTEND_SRC_OBJECTS_WASM
++        $<TARGET_OBJECTS:CangjieASTCommon>
++        $<TARGET_OBJECTS:CangjieASTExtra>
++        $<TARGET_OBJECTS:CangjieFrontend>
++        $<TARGET_OBJECTS:CangjieAstSerialization>
++        $<TARGET_OBJECTS:CangjieSema>
++        $<TARGET_OBJECTS:CangjieModules>
++        $<TARGET_OBJECTS:CangjieParse>
++        $<TARGET_OBJECTS:CangjieConditionalCompilation>
++        $<TARGET_OBJECTS:CangjieLex>
++        $<TARGET_OBJECTS:CangjieUnicodeUtils>
++        $<TARGET_OBJECTS:CangjieOption>
++        $<TARGET_OBJECTS:CangjieCommonUtil>
++        $<TARGET_OBJECTS:CangjieBasic>
++        $<TARGET_OBJECTS:CangjieMangle>
++        $<TARGET_OBJECTS:CangjieTempFilesUtil>
++        # $<TARGET_OBJECTS:CangjieCHIRBase>  # 移除：LSP 不需要 CHIR
++        $<TARGET_OBJECTS:CangjieIncrementalCompilation>
++    )
++
++    add_library(cangjie-lsp-wasm STATIC ${FRONTEND_SRC_OBJECTS_WASM})
++    install(TARGETS cangjie-lsp-wasm DESTINATION "tools/lib")
++    message(STATUS "Building cangjie-lsp-wasm for WebAssembly target")
++
++    return()
++endif()
++
+ set(CANGJIE_SRC_COMMON_OBJECTS_LIST
+     $<TARGET_OBJECTS:CangjieASTCommon>
+     $<TARGET_OBJECTS:CangjieASTExtra>
+diff --git a/cangjie_compiler/src/ConditionalCompilation/CMakeLists.txt b/cangjie_compiler/src/ConditionalCompilation/CMakeLists.txt
+index c207430a..bd58e125 100644
+--- a/cangjie_compiler/src/ConditionalCompilation/CMakeLists.txt
++++ b/cangjie_compiler/src/ConditionalCompilation/CMakeLists.txt
+@@ -4,7 +4,7 @@
+ #
+ # See https://cangjie-lang.cn/pages/LICENSE for license information.
+ 
+-if(CANGJIE_BUILD_CJC)
++if(CANGJIE_BUILD_CJC OR BUILD_WASM)
+     set(CONDITIONALCOMPILATION_SRC
+         ConditionalCompilation.cpp)
+     add_library(CangjieConditionalCompilation OBJECT ${CONDITIONALCOMPILATION_SRC})
+diff --git a/cangjie_compiler/src/Frontend/CompilerInstance.cpp b/cangjie_compiler/src/Frontend/CompilerInstance.cpp
+index 8941ac0f..d76f5a8c 100644
+--- a/cangjie_compiler/src/Frontend/CompilerInstance.cpp
++++ b/cangjie_compiler/src/Frontend/CompilerInstance.cpp
+@@ -13,6 +13,9 @@
+ #include "cangjie/Frontend/CompilerInstance.h"
+ 
+ #include <fstream>
++#ifdef BUILD_WASM
++#include <cstdio>
++#endif
+ 
+ #include "PrintSymbolTable.h"
+ #include "cangjie/Basic/DiagnosticEngine.h"
+@@ -777,7 +780,6 @@ void DoMangling(const BaseMangler& baseMangler, size_t parallelNum, const std::v
+ 
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+ void CompilerInstance::ManglingHelpFunction(const BaseMangler& baseMangler)
+-#endif
+ {
+     // Collect all top-level decls
+     std::unordered_set<DeclAndPackageName, DeclAndPackageNameHasher> topDeclsSet;
+@@ -833,6 +835,7 @@ void CompilerInstance::ManglingHelpFunction(const BaseMangler& baseMangler)
+     std::vector<DeclAndPackageName> topDecls(topDeclsSet.begin(), topDeclsSet.end());
+     DoMangling(baseMangler, invocation.globalOptions.GetJobs(), topDecls);
+ }
++#endif
+ 
+ bool CompilerInstance::PerformMangling()
+ {
+@@ -853,7 +856,6 @@ bool CompilerInstance::PerformMangling()
+         }
+         mangler->CollectLocalDecls(*mangler->manglerCtxTable.at(pkgName), *package->srcPackage);
+     }
+-#endif
+     mangler->lambdaCounter = cachedInfo.lambdaCounter;
+     ManglingHelpFunction(*mangler);
+     cachedInfo.lambdaCounter = mangler->lambdaCounter;
+@@ -861,20 +863,20 @@ bool CompilerInstance::PerformMangling()
+     if (!srcPkgs.empty() && invocation.globalOptions.NeedDumpAST()) {
+         DumpAST(GetSourcePackages(), invocation.globalOptions.output, "mangle", invocation.globalOptions.dumpToScreen);
+     }
++#endif
+     return true;
+ }
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+ bool CompilerInstance::GenerateCHIRForPkg(AST::Package& pkg)
+ {
+     if (pkg.files.empty()) {
+         return true;
+     }
+ 
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // use this result when APILevel check supports arbitrary const expressions
+     (void)CHIR::ComputeAnnotations(pkg, *this);
+     auto& constAnalysisWrapper = chirData->GetConstAnalysisResultRef();
+-#endif
+     CHIR::CHIRBuilder builder1(GetCHIRContext(), invocation.globalOptions.GetJobs());
+     CHIR::ToCHIR convertor(*this, pkg, constAnalysisWrapper, builder1);
+     bool success = convertor.Run();
+@@ -888,7 +890,6 @@ bool CompilerInstance::GenerateCHIRForPkg(AST::Package& pkg)
+     CJC_NULLPTR_CHECK(chirPkg);
+     astPkg2chirPkgMap.emplace(&pkg, chirPkg);
+     chirInfo.optEffectMap = convertor.GetOptEffectMap();
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     chirData->AppendNewPackage(chirPkg);
+     chirData->SetImplicitFuncs(convertor.GetImplicitFuncs());
+     chirData->SetConstVarInitFuncs(convertor.GetConstVarInitFuncs());
+@@ -896,7 +897,6 @@ bool CompilerInstance::GenerateCHIRForPkg(AST::Package& pkg)
+     chirInfo.delVirtFuncWrapForIncr = convertor.GetDeleteVirtualFuncWrapperForIncr();
+     chirInfo.ccOutFuncsRawMangle = convertor.GetCCOutFuncsRawMangle();
+     chirInfo.varInitDepMap = convertor.GetVarInitDepMap();
+-#endif
+ #ifdef SIGNAL_TEST
+     // The interrupt signal triggers the function. In normal cases, this function does not take effect.
+     Cangjie::SignalTest::ExecuteSignalTestCallbackFunc(Cangjie::SignalTest::TriggerPointer::CHIR_POINTER);
+@@ -924,6 +924,7 @@ bool CompilerInstance::PerformCHIRCompilation()
+     diag.EmitCategoryDiagnostics(DiagCategory::CHIR);
+     return ret;
+ }
++#endif
+ 
+ bool CompilerInstance::DumpTokens()
+ {
+@@ -1010,14 +1011,27 @@ bool CompilerInstance::ImportPackages()
+ {
+     // If CANGJIE_HOME not set, detect from executablePath.
+     if (cangjieHome.empty()) {
++#ifdef BUILD_WASM
++        // In WASM mode, if cangjieHome is not provided, skip detection
++        // but still continue to MergePackages for basic functionality.
++#else
+         if (!DetectCangjieHome()) {
+             return false;
+         }
++#endif
+     }
+     if (cangjieModules.empty()) {
++#ifdef BUILD_WASM
++        // In WASM mode, if cangjieModules is not set but cangjieHome is,
++        // try to derive cangjieModules from cangjieHome.
++        if (!cangjieHome.empty()) {
++            (void)DetectCangjieModules();
++        }
++#else
+         if (!DetectCangjieModules()) {
+             return false;
+         }
++#endif
+     }
+     AddSourceToMember();
+ 
+@@ -1031,12 +1045,22 @@ bool CompilerInstance::ImportPackages()
+         return true;
+     }
+ 
++#ifdef BUILD_WASM
++    // In WASM mode, try BuildIndex if cangjieModules is available,
++    // otherwise just call MergePackages for basic functionality.
++    if (!cangjieModules.empty()) {
++        (void)importManager->BuildIndex(cangjieModules, invocation.globalOptions, pkgs);
++    }
++    MergePackages();
++    return true;
++#else
+     if (!importManager->BuildIndex(cangjieModules, invocation.globalOptions, pkgs)) {
+         return false;
+     }
+     MergePackages();
+     ModularizeCompilation();
+     return true;
++#endif
+ }
+ 
+ void CompilerInstance::MergePackages()
+diff --git a/cangjie_compiler/src/FrontendTool/CMakeLists.txt b/cangjie_compiler/src/FrontendTool/CMakeLists.txt
+index 27f9d67f..c5338801 100644
+--- a/cangjie_compiler/src/FrontendTool/CMakeLists.txt
++++ b/cangjie_compiler/src/FrontendTool/CMakeLists.txt
+@@ -10,9 +10,11 @@ add_library(CangjieFrontendTool OBJECT ${FRONTENDTOOL_SRC})
+ add_dependencies(CangjieFrontendTool CangjieFlatbuffersHeaders)
+ target_include_directories(CangjieFrontendTool PRIVATE ${FLATBUFFERS_INCLUDE_DIR})
+ # use llvm
+-if(CANGJIE_CODEGEN_CJNATIVE_BACKEND)
++if(CANGJIE_CODEGEN_CJNATIVE_BACKEND AND NOT BUILD_WASM)
+     add_dependencies(CangjieFrontendTool cjnative)
+ endif()
+-target_include_directories(CangjieFrontendTool PRIVATE ${BOUNDSCHECK}/include)
+-target_include_directories(CangjieFrontendTool PRIVATE ${LLVM_INCLUDE_DIRS})
++if(NOT BUILD_WASM)
++    target_include_directories(CangjieFrontendTool PRIVATE ${BOUNDSCHECK}/include)
++    target_include_directories(CangjieFrontendTool PRIVATE ${LLVM_INCLUDE_DIRS})
++endif()
+ target_compile_options(CangjieFrontendTool PRIVATE ${CJC_WITH_LLVM_EXTRA_WARNINGS})
+diff --git a/cangjie_compiler/src/Modules/ImportManager.cpp b/cangjie_compiler/src/Modules/ImportManager.cpp
+index ef204aba..2ae06a40 100644
+--- a/cangjie_compiler/src/Modules/ImportManager.cpp
++++ b/cangjie_compiler/src/Modules/ImportManager.cpp
+@@ -559,7 +559,7 @@ bool ImportManager::ResolveImportedPackages(const std::vector<Ptr<Package>>& pac
+         }
+     }
+     Utils::ProfileRecorder::Stop("ResolveImportedPackages", "ResolveImportedPackageHeaders");
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
++#if defined(CANGJIE_CODEGEN_CJNATIVE_BACKEND) || defined(BUILD_WASM)
+     cjoManager->LoadPackageDeclsOnDemand(packages);
+ #endif
+     Utils::ProfileRecorder::Start("ResolveImportedPackages", "AddPackageDeclMap");
+diff --git a/cangjie_compiler/src/Option/OptionAction.cpp b/cangjie_compiler/src/Option/OptionAction.cpp
+index 8dbfb91e..ce6e1bc7 100644
+--- a/cangjie_compiler/src/Option/OptionAction.cpp
++++ b/cangjie_compiler/src/Option/OptionAction.cpp
+@@ -846,6 +846,7 @@ std::unordered_map<Options::ID, std::function<bool(GlobalOptions&, OptionArgInst
+     }},
+ 
+     // ---------- COMPILE CONTROL OPTIONS ----------*/
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     { Options::ID::OUTPUT_TYPE, [](GlobalOptions& opts, const OptionArgInstance& arg) {
+         // `--output-type=hotreload` generates DSO as well, except that we need to do more (or less) work on it.
+         // To prevent adding checking everywhere `SharedLib` is checked for newly added hotreload output type,
+@@ -869,6 +870,7 @@ std::unordered_map<Options::ID, std::function<bool(GlobalOptions&, OptionArgInst
+         opts.compileTarget = GlobalOptions::CompileTarget(COMPILE_TARGET_MAP.at(arg.value));
+         return true;
+     }},
++#endif
+      { Options::ID::COMPILE_MACRO, [](GlobalOptions& opts, [[maybe_unused]] const OptionArgInstance& arg) {
+         opts.compileMacroPackage = true;
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+diff --git a/cangjie_compiler/src/Sema/CJMP/CheckCJMP.cpp b/cangjie_compiler/src/Sema/CJMP/CheckCJMP.cpp
+index f683fd4e..7041ac9a 100644
+--- a/cangjie_compiler/src/Sema/CJMP/CheckCJMP.cpp
++++ b/cangjie_compiler/src/Sema/CJMP/CheckCJMP.cpp
+@@ -34,6 +34,8 @@ using namespace Cangjie;
+ using namespace AST;
+ using namespace TypeCheckUtil;
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
++
+ MPTypeCheckerImpl::MPTypeCheckerImpl(const CompilerInstance& ci)
+     : typeManager(*ci.typeManager), diag(ci.diag),
+       compileCommon(ci.invocation.globalOptions.outputMode == GlobalOptions::OutputMode::CHIR),
+@@ -1352,3 +1354,5 @@ void MPTypeCheckerImpl::GetInheritedTypesWithSpecificImpl(
+         }
+     }
+ }
++
++#endif // CANGJIE_CODEGEN_CJNATIVE_BACKEND
+diff --git a/cangjie_compiler/src/Sema/CJMP/CheckCJMPAnnotations.cpp b/cangjie_compiler/src/Sema/CJMP/CheckCJMPAnnotations.cpp
+index 1474fdf2..5ddc66f7 100644
+--- a/cangjie_compiler/src/Sema/CJMP/CheckCJMPAnnotations.cpp
++++ b/cangjie_compiler/src/Sema/CJMP/CheckCJMPAnnotations.cpp
+@@ -36,6 +36,8 @@ using namespace Cangjie;
+ using namespace AST;
+ using namespace TypeCheckUtil;
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
++
+ namespace {
+ // Annotations not serialized in AST are matched via their corresponding attributes
+ // Annotations with parameters MUST be serialized for common/specific matching
+@@ -383,3 +385,5 @@ void MPTypeCheckerImpl::PropagateCJMPDeclAnnotations(const AST::Decl& common, AS
+     PropagateDeprecatedAnnotations(common, specific);
+     PropagateAttributeAnnotations(common, specific);
+ }
++
++#endif // CANGJIE_CODEGEN_CJNATIVE_BACKEND
+diff --git a/cangjie_compiler/src/Sema/CJMP/MPTypeCheckerImpl.h b/cangjie_compiler/src/Sema/CJMP/MPTypeCheckerImpl.h
+index 8536d25f..2f6d78a0 100644
+--- a/cangjie_compiler/src/Sema/CJMP/MPTypeCheckerImpl.h
++++ b/cangjie_compiler/src/Sema/CJMP/MPTypeCheckerImpl.h
+@@ -23,6 +23,12 @@ class MPTypeCheckerImpl {
+ public:
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     explicit MPTypeCheckerImpl(const CompilerInstance& ci);
++#else
++    // For non-CJNATIVE builds, provide a default constructor
++    MPTypeCheckerImpl() = default;
++    explicit MPTypeCheckerImpl(const CompilerInstance&) {}
++#endif
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // PrepareTypeCheck for CJMP
+     void PrepareTypeCheck4CJMP(AST::Package& pkg);
+     void PrepareTypeCheck4CJMPExtension(CompilerInstance& ci, ScopeManager& scopeManager, ASTContext& ctx,
+diff --git a/cangjie_compiler/src/Sema/CJMP/Parameters.cpp b/cangjie_compiler/src/Sema/CJMP/Parameters.cpp
+index 0b16afa5..2e193d7b 100644
+--- a/cangjie_compiler/src/Sema/CJMP/Parameters.cpp
++++ b/cangjie_compiler/src/Sema/CJMP/Parameters.cpp
+@@ -24,6 +24,7 @@
+ using namespace Cangjie;
+ using namespace AST;
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+ namespace {
+ /*
+  * Checks whether the parameter is a named parameter with default argument.
+@@ -239,3 +240,4 @@ void MPTypeCheckerImpl::PropagateDefaultArguments(const FuncDecl& commonFunc, co
+         return true;
+     });
+ }
++#endif // CANGJIE_CODEGEN_CJNATIVE_BACKEND
+diff --git a/cangjie_compiler/src/Sema/GenericInstantiation/GenericInstantiationManagerImpl.cpp b/cangjie_compiler/src/Sema/GenericInstantiation/GenericInstantiationManagerImpl.cpp
+index 617953ab..229f58eb 100644
+--- a/cangjie_compiler/src/Sema/GenericInstantiation/GenericInstantiationManagerImpl.cpp
++++ b/cangjie_compiler/src/Sema/GenericInstantiation/GenericInstantiationManagerImpl.cpp
+@@ -760,9 +760,7 @@ Ptr<Decl> GIM::GenericInstantiationManagerImpl::SelectTypeMatchedImplMember(
+         auto instantiatedDecls = GetInstantiatedDecls(*baseDecl);
+         for (auto decl : instantiatedDecls) {
+             if (typeManager.IsSubtype(&ty, GetDeclTy(*decl), false)) {
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+                 structDecl = decl;
+-#endif
+                 break;
+             }
+         }
+diff --git a/cangjie_compiler/src/Sema/GenericInstantiation/PartialInstantiation.cpp b/cangjie_compiler/src/Sema/GenericInstantiation/PartialInstantiation.cpp
+index 55f78b89..65d1b093 100644
+--- a/cangjie_compiler/src/Sema/GenericInstantiation/PartialInstantiation.cpp
++++ b/cangjie_compiler/src/Sema/GenericInstantiation/PartialInstantiation.cpp
+@@ -12,6 +12,8 @@
+ 
+ #include "PartialInstantiation.h"
+ 
++#include <type_traits>
++
+ #include "ImplUtils.h"
+ #include "cangjie/AST/Create.h"
+ #include "cangjie/Basic/Match.h"
+@@ -1908,6 +1910,10 @@ template <typename SetTy> Ptr<Ty> TyGeneralizer::GetGeneralizedSetTy(SetTy& ty)
+     for (auto it : ty.tys) {
+         tys.emplace(Generalize(it));
+     }
+-    return tyMgr.GetTypeTy<SetTy>(tys);
++    if constexpr (std::is_same_v<SetTy, IntersectionTy>) {
++        return tyMgr.GetIntersectionTy(tys);
++    } else {
++        return tyMgr.GetUnionTy(tys);
++    }
+ }
+ } // namespace Cangjie
+diff --git a/cangjie_compiler/src/Sema/InheritanceChecker/StructInheritanceChecker.cpp b/cangjie_compiler/src/Sema/InheritanceChecker/StructInheritanceChecker.cpp
+index 9075668b..f407252f 100644
+--- a/cangjie_compiler/src/Sema/InheritanceChecker/StructInheritanceChecker.cpp
++++ b/cangjie_compiler/src/Sema/InheritanceChecker/StructInheritanceChecker.cpp
+@@ -584,8 +584,10 @@ std::optional<bool> StructInheritanceChecker::DeterminingSkipExtendByInheritance
+                 GenerateTypeMappingByTy(mappingOfExtended2CurExtend[tyArgGen], mappingOfExtended2Ed[tyArgGen]);
+             curDeclSuperInsTy = typeManager.GetInstantiatedTy(curDeclSuperInsTy, mappingOfCurExtend2Extend);
+         }
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+         Cangjie::MPTypeCheckerImpl::GetInheritedTypesWithSpecificImpl(
+             ed.inheritedTypes, ed.specificImplementation != nullptr, !opts.commonPartCjos.empty());
++#endif
+         for (auto& edSuper : ed.inheritedTypes) {
+             if (edSuper->ty == curDeclSuperInsTy) {
+                 continue;
+@@ -796,7 +798,6 @@ void StructInheritanceChecker::DiagnoseForConflictInheritance(
+     }
+ }
+ 
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+ /**
+  * Check whether the member in the parent class extension can completely overwrite the member in the interface.
+  * eg:
+@@ -875,7 +876,6 @@ void StructInheritanceChecker::CheckIncompleteOverrideOrImplOfExtend(
+         }
+     }
+ }
+-#endif
+ 
+ void StructInheritanceChecker::DiagnoseForInheritedInterfaces(
+     const MemberSignature& interface, const MemberMap& implDecls) const
+@@ -893,9 +893,7 @@ void StructInheritanceChecker::DiagnoseForInheritedInterfaces(
+             CheckPropertyInheritance(interface, *child.decl);
+         } else if (interface.decl->IsFunc()) {
+             if (CheckImplementationRelation(interface, child)) {
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+                 CheckIncompleteOverrideOrImplOfExtend(interface, child);
+-#endif
+                 CheckInheritanceForInterface(interface, child);
+                 CheckMutModifierCompatible(interface, *child.decl);
+             }
+@@ -1122,10 +1120,8 @@ void StructInheritanceChecker::CheckInheritanceAttributes(const MemberSignature&
+         diag.Diagnose(child, DiagKind::sema_func_no_override_or_redefine_modifier, "redef", type, name);
+     } else if (!parentDecl->TestAttr(Attribute::ABSTRACT) && !parentDecl->TestAttr(Attribute::STATIC)) {
+         bool notInInterface = parentDecl->outerDecl->astKind != ASTKind::INTERFACE_DECL;
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+         if ((!parentDecl->TestAttr(Attribute::OPEN) && notInInterface) || TestManager::IsDeclOpenToMock(*parentDecl)) {
+             DiagCannotOverride(diag, child, *parentDecl);
+-#endif
+         } else if (child.TestAttr(Attribute::ABSTRACT) && notInInterface) {
+             diag.Diagnose(child, DiagKind::sema_invalid_override_member_in_class, type, child.identifier.Val(), type);
+         }
+@@ -1166,9 +1162,7 @@ void StructInheritanceChecker::DiagnoseForOverriddenMember(const MemberSignature
+     }
+     auto childDecl = child.decl;
+     std::string type = DeclKindToString(*childDecl);
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     if (childDecl->TestAttr(Attribute::OVERRIDE)) {
+-#endif
+         diag.Diagnose(*childDecl, DiagKind::sema_missing_overridden_func, type, childDecl->identifier.Val(), type);
+     } else if (childDecl->TestAttr(Attribute::REDEF) && childDecl->TestAttr(Attribute::STATIC)) {
+         diag.Diagnose(*childDecl, DiagKind::sema_missing_redefined_func, type, childDecl->identifier.Val(), type);
+@@ -1440,7 +1434,6 @@ void StructInheritanceChecker::CheckMutModifierCompatible(const MemberSignature&
+     }
+ }
+ 
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+ std::vector<Ptr<const ExtendDecl>> StructInheritanceChecker::GetAllNeedCheckExtended()
+ {
+     std::vector<Ptr<const ExtendDecl>> needCheckExtendDecls = {};
+@@ -1479,7 +1472,6 @@ std::vector<Ptr<const ExtendDecl>> StructInheritanceChecker::GetAllNeedCheckExte
+     }
+     return needCheckExtendDecls;
+ }
+-#endif
+ 
+ void StructInheritanceChecker::CheckNativeFFI(
+     [[maybe_unused]] const MemberSignature& parent, [[maybe_unused]] const MemberSignature& child) const
+diff --git a/cangjie_compiler/src/Sema/InheritanceChecker/StructInheritanceChecker.h b/cangjie_compiler/src/Sema/InheritanceChecker/StructInheritanceChecker.h
+index d44ee3c7..3bd11a10 100644
+--- a/cangjie_compiler/src/Sema/InheritanceChecker/StructInheritanceChecker.h
++++ b/cangjie_compiler/src/Sema/InheritanceChecker/StructInheritanceChecker.h
+@@ -63,9 +63,7 @@ private:
+     void DiagnoseForOverriddenMember(const MemberSignature& child) const;
+     void DiagnoseForInheritedMember(const MemberSignature& parent, const MemberSignature& child) const;
+     void DiagnoseForInheritedInterfaces(const MemberSignature& interface, const MemberMap& implDecls) const;
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     void CheckIncompleteOverrideOrImplOfExtend(const MemberSignature& interface, const MemberSignature& child) const;
+-#endif
+     void DiagnoseForUnimplementedInterfaces(const MemberMap& members, const Decl& structDecl);
+     void DiagnoseForConflictInheritance(const InheritableDecl& decl, const MemberMap& members) const;
+     void DiagnoseInheritedInsconsistType(const MemberSignature& member, const Node& node) const;
+@@ -140,9 +138,7 @@ private:
+     {
+         return !pkg.files.empty() && *pkg.files.begin() && importManager.IsExtendAccessible(**pkg.files.begin(), ed);
+     }
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     std::vector<Ptr<const ExtendDecl>> GetAllNeedCheckExtended();
+-#endif
+ 
+     DiagnosticEngine& diag;
+     TypeManager& typeManager;
+diff --git a/cangjie_compiler/src/Sema/LegalityOfUsage/LegalityOfUsage.cpp b/cangjie_compiler/src/Sema/LegalityOfUsage/LegalityOfUsage.cpp
+index f190581d..aec537e8 100644
+--- a/cangjie_compiler/src/Sema/LegalityOfUsage/LegalityOfUsage.cpp
++++ b/cangjie_compiler/src/Sema/LegalityOfUsage/LegalityOfUsage.cpp
+@@ -77,7 +77,9 @@ void TypeChecker::TypeCheckerImpl::CheckLegalityOfUsage(ASTContext& ctx, AST::Pa
+     CheckValueTypeRecursive(pkg);
+     // Check legality of reference usage.
+     CheckLegalityOfReference(ctx, pkg);
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     CheckStaticMembersWithGeneric(pkg);
++#endif
+     CheckUsageOfDeprecated(pkg);
+     // Check initialization.
+     if (!ci->invocation.globalOptions.disableSemaVic) {
+@@ -94,6 +96,7 @@ void TypeChecker::TypeCheckerImpl::CheckLegalityOfUsage(ASTContext& ctx, AST::Pa
+     CheckSubscriptLegality(pkg);
+ }
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+ void TypeChecker::TypeCheckerImpl::CheckStaticMemberWithGeneric(
+     Decl& member, const std::vector<Ptr<Ty>>& outerGenericTys)
+ {
+@@ -155,6 +158,7 @@ void TypeChecker::TypeCheckerImpl::CheckStaticMembersWithGeneric(const Package&
+         }
+     });
+ }
++#endif
+ 
+ void TypeChecker::TypeCheckerImpl::CheckValueTypeRecursive(const Package& pkg)
+ {
+diff --git a/cangjie_compiler/src/Sema/PreCheck.cpp b/cangjie_compiler/src/Sema/PreCheck.cpp
+index 2eb2cb16..69af4823 100644
+--- a/cangjie_compiler/src/Sema/PreCheck.cpp
++++ b/cangjie_compiler/src/Sema/PreCheck.cpp
+@@ -544,6 +544,8 @@ Ptr<Ty> TypeChecker::TypeCheckerImpl::GetTyFromASTType(ASTContext& ctx, VArrayTy
+     auto le = StaticAs<ASTKind::LIT_CONST_EXPR>(expr);
+ #if CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     auto lengthLimitKind = TypeKind::TYPE_INT64;
++#else
++    auto lengthLimitKind = TypeKind::TYPE_INT64;
+ #endif
+     le->constNumValue.asInt.InitIntLiteral(le->stringValue, lengthLimitKind);
+     le->constNumValue.asInt.SetOutOfRange(Cangjie::TypeManager::GetPrimitiveTy(lengthLimitKind));
+@@ -551,6 +553,8 @@ Ptr<Ty> TypeChecker::TypeCheckerImpl::GetTyFromASTType(ASTContext& ctx, VArrayTy
+         (void)diag.DiagnoseRefactor(DiagKindRefactor::sema_exceed_num_value_range, *le, le->stringValue,
+ #if CANGJIE_CODEGEN_CJNATIVE_BACKEND
+             "Int64");
++#else
++            "Int64");
+ #endif
+         return TypeManager::GetInvalidTy();
+     }
+@@ -1672,7 +1676,9 @@ void TypeChecker::TypeCheckerImpl::PreCheckFuncRedefinition(const ASTContext& ct
+             candidates[names] = {fd};
+         }
+     }
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     MPTypeCheckerImpl::FilterOutCommonCandidatesIfSpecificExist(candidates);
++#endif
+     auto candidatesForImport = candidates;
+     for (const auto& [names, funcs] : std::as_const(candidates)) {
+         PreCheckMacroRedefinition(funcs);
+@@ -1836,8 +1842,10 @@ void TypeChecker::TypeCheckerImpl::PreCheckUsage(ASTContext& ctx, const Package&
+     // Build and check extend decls for each type.
+     BuildExtendMap(ctx);
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     mpImpl->UpdateSpecificMemberGenericTy(
+         ctx, [this](ASTContext& ctx, ASTKind kind) { return this->GetSymsByASTKind(ctx, kind); });
++#endif
+     // Check duplicate interface inheritance for nominal decls. NOTE: Should resolve typeAlias first.
+     StructDeclCircleOrDupCheck(ctx);
+     // Check and set member's basic attributes.
+@@ -1859,8 +1867,10 @@ void TypeChecker::TypeCheckerImpl::PreCheckUsage(ASTContext& ctx, const Package&
+     // Check invalid inherit of class, struct, enum, interface.
+     PreCheckInvalidInherit(ctx, pkg);
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // Check for CJMP decls
+     mpImpl->PreCheck4CJMP(pkg);
++#endif
+ }
+ 
+ void TypeChecker::TypeCheckerImpl::PreCheckInvalidInherit(const ASTContext& ctx, const AST::Package& pkg)
+diff --git a/cangjie_compiler/src/Sema/Test/TestManager.cpp b/cangjie_compiler/src/Sema/Test/TestManager.cpp
+index f95c702f..5b0f0990 100644
+--- a/cangjie_compiler/src/Sema/Test/TestManager.cpp
++++ b/cangjie_compiler/src/Sema/Test/TestManager.cpp
+@@ -331,11 +331,13 @@ void TestManager::HandleCreateMock(Package& pkg)
+             return HandleCreateMockCall(*callExpr, pkg);
+         }
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+         if (auto funcDecl = As<ASTKind::FUNC_DECL>(node); funcDecl &&
+             funcDecl->TestAttr(Attribute::CONTAINS_MOCK_CREATION_CALL) && funcDecl->funcBody &&
+             funcDecl->funcBody->generic && !funcDecl->HasAnno(AnnotationKind::FROZEN)) {
+             ReportFrozenRequired(*funcDecl);
+         }
++#endif
+ 
+         return VisitAction::WALK_CHILDREN;
+     }).Walk();
+@@ -789,9 +791,13 @@ bool TestManager::ShouldBeMarkedAsContainingMockCreationCall(
+ 
+ void TestManager::MarkDeclsForTestIfNeeded(std::vector<Ptr<Package>> pkgs) const
+ {
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     HandleDeclsToExportForTest(pkgs);
+     for (auto& pkg : pkgs) {
+         MarkMockCreationContainingGenericFuncs(*pkg);
++#else
++    for (auto& pkg : pkgs) {
++#endif
+         if (mockMode != MockMode::ON && (!mockCompatibleIfNeeded || !IsThereMockUsage(*pkg))) {
+             continue;
+         }
+@@ -860,7 +866,9 @@ void TestManager::PrepareToMock(AST::Package& pkg)
+ 
+         // NOTE: In almost every stage there is a AST walk.
+         // Do it once, collecting all nodes, that needs to be handled in some way
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+         CollectInternalDeclUsages(pkg);
++#endif
+         GenerateAccessors(pkg);
+         PrepareToSpy(pkg);
+         PrepareDecls(pkg);
+diff --git a/cangjie_compiler/src/Sema/TypeCheckCall.cpp b/cangjie_compiler/src/Sema/TypeCheckCall.cpp
+index 06b869d9..a5c32f2f 100644
+--- a/cangjie_compiler/src/Sema/TypeCheckCall.cpp
++++ b/cangjie_compiler/src/Sema/TypeCheckCall.cpp
+@@ -2339,8 +2339,10 @@ bool TypeChecker::TypeCheckerImpl::GetCallBaseCandidates(
+     if (ce.callKind == CallKind::CALL_ANNOTATION) {
+         RemoveNonAnnotationCandidates(candidates);
+     }
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // Add for cjmp
+     mpImpl->RemoveCommonCandidatesIfHasSpecific(candidates);
++#endif
+     auto ds = DiagSuppressor(diag);
+     candidates = FilterCandidatesWithReExport(ctx, candidates, ce);
+     if (expr.astKind == ASTKind::REF_EXPR && candidates.empty() && target->astKind == ASTKind::PACKAGE_DECL) {
+diff --git a/cangjie_compiler/src/Sema/TypeCheckExpr/NameReferenceExpr.cpp b/cangjie_compiler/src/Sema/TypeCheckExpr/NameReferenceExpr.cpp
+index 0a2d280f..a5d294b4 100644
+--- a/cangjie_compiler/src/Sema/TypeCheckExpr/NameReferenceExpr.cpp
++++ b/cangjie_compiler/src/Sema/TypeCheckExpr/NameReferenceExpr.cpp
+@@ -340,8 +340,10 @@ bool TypeChecker::TypeCheckerImpl::ChkRefExpr(ASTContext& ctx, Ty& target, NameR
+     uint32_t matched = 0;
+     CJC_ASSERT(refNode.IsReferenceExpr());
+     RemoveDuplicateElements(targets);
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // Add for cjmp
+     mpImpl->RemoveCommonCandidatesIfHasSpecific(targets);
++#endif
+     auto [genericIgnored, candidates] = CollectValidFuncTys(ctx, targets, refNode, DynamicCast<FuncTy*>(&target));
+     TypeSubst resultMapping;
+     Ptr<FuncDecl> matchedFd = nullptr;
+diff --git a/cangjie_compiler/src/Sema/TypeCheckExtend.cpp b/cangjie_compiler/src/Sema/TypeCheckExtend.cpp
+index 5d2fdf42..edc56bcc 100644
+--- a/cangjie_compiler/src/Sema/TypeCheckExtend.cpp
++++ b/cangjie_compiler/src/Sema/TypeCheckExtend.cpp
+@@ -405,9 +405,11 @@ void TypeChecker::TypeCheckerImpl::BuildExtendMap(ASTContext& ctx)
+             PreCheckExtend(ctx, *ed);
+         }
+     }
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // The matching of `common/specific extend` depends on the resolved symbol type.
+     // Here is the first step after resolving the final symbol type, and also the first step in processing extendDecl.
+     mpImpl->PrepareTypeCheck4CJMPExtension(*ci, scopeManager, ctx, allExtends);
++#endif
+     UpdateExtendMap(typeManager, allExtends);
+ }
+ 
+diff --git a/cangjie_compiler/src/Sema/TypeChecker.cpp b/cangjie_compiler/src/Sema/TypeChecker.cpp
+index e1d13484..c6c7e0c1 100644
+--- a/cangjie_compiler/src/Sema/TypeChecker.cpp
++++ b/cangjie_compiler/src/Sema/TypeChecker.cpp
+@@ -2030,12 +2030,14 @@ std::vector<Ptr<ASTContext>> TypeChecker::TypeCheckerImpl::PreTypeCheck(const st
+     }
+     Utils::ProfileRecorder::Stop("Pre TypeCheck", "CollectDeclsWithMember");
+ 
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     Utils::ProfileRecorder::Start("Pre TypeCheck", "MatchSpecificWithCommon");
+     for (auto pkg : pkgs) {
+         mpImpl->MatchSpecificWithCommon(*pkg);
+         mpImpl->CheckNotAllowedAnnotations(*pkg);
+     }
+     Utils::ProfileRecorder::Stop("Pre TypeCheck", "MatchSpecificWithCommon");
++#endif
+ 
+     return contexts;
+ }
+@@ -2051,11 +2053,13 @@ void TypeChecker::TypeCheckerImpl::PostTypeCheck(std::vector<Ptr<ASTContext>>& c
+         CheckInstDupSuperInterfacesEntry(*ctx->curPackage);
+         // Check legality of usage after sema type completed.
+         CheckLegalityOfUsage(*ctx, *ctx->curPackage);
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+         // Check cjmp match rules.
+         Utils::ProfileRecorder::Start("Post TypeCheck", "CheckCJMPRules");
+         mpImpl->CheckReturnAndVariableTypes(*ctx->curPackage);
+         mpImpl->ValidateMatchedAnnotationsAndModifiers(*ctx->curPackage);
+         Utils::ProfileRecorder::Stop("Post TypeCheck", "CheckCJMPRules");
++#endif
+         AddAttrForDefaultFuncParam(*ctx->curPackage);
+         // Because of the cjlint checking policy, desugar of propDecl should be done in sema stage for now.
+         DesugarForPropDecl(*ctx->curPackage);
+@@ -2080,8 +2084,10 @@ void TypeChecker::TypeCheckerImpl::PrepareTypeCheck(ASTContext& ctx, Package& pk
+     ctx.searcher->InvalidateCache();
+ 
+     CheckPrimaryCtorBeforeMerge(pkg);
++#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     // Merging common classes into specific if any
+     mpImpl->PrepareTypeCheck4CJMP(pkg);
++#endif
+ 
+ #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+     Utils::ProfileRecorder::Start("PrepareTypeCheck", "InteropPrepare");
+diff --git a/cangjie_compiler/src/Sema/TypeManager.cpp b/cangjie_compiler/src/Sema/TypeManager.cpp
+index 1ebdbd59..c55d87a3 100644
+--- a/cangjie_compiler/src/Sema/TypeManager.cpp
++++ b/cangjie_compiler/src/Sema/TypeManager.cpp
+@@ -766,9 +766,7 @@ bool TypeManager::IsClassLikeSubtype(Ty& leaf, Ty& root, bool implicitBoxed, boo
+     }
+     if (leaf.IsClassLike() && root.IsClassLike()) {
+         // Types are class like, only may existing extend boxing relation.
+-#ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+         auto superTys = GetAllSuperTys(leaf, {});
+-#endif
+         auto cs = PData::CommitScope(constraints);
+         for (auto ty : superTys) {
+             if (ty && IsClassTyEqual(*ty, root)) {
+diff --git a/cangjie_compiler/src/Utils/CMakeLists.txt b/cangjie_compiler/src/Utils/CMakeLists.txt
+index aed84bb7..fd5a11d0 100644
+--- a/cangjie_compiler/src/Utils/CMakeLists.txt
++++ b/cangjie_compiler/src/Utils/CMakeLists.txt
+@@ -71,7 +71,7 @@ if(CANGJIE_GENERATE_UNICODE_TABLE)
+     add_dependencies(CangjieUnicodeUtils GenerateWidthData)
+ endif()
+ 
+-if(CANGJIE_BUILD_CJC)
++if(CANGJIE_BUILD_CJC OR BUILD_WASM)
+     add_library(CangjieProfileUtils OBJECT ${PROFILE_SRC})
+     target_compile_options(CangjieProfileUtils PRIVATE ${CJC_EXTRA_WARNINGS})
+ endif()
+diff --git a/cangjie_compiler/src/Utils/FileUtil.cpp b/cangjie_compiler/src/Utils/FileUtil.cpp
+index 3148213a..cf5bbecf 100644
+--- a/cangjie_compiler/src/Utils/FileUtil.cpp
++++ b/cangjie_compiler/src/Utils/FileUtil.cpp
+@@ -38,7 +38,7 @@
+ #ifndef PATH_MAX
+ #define PATH_MAX MAX_PATH
+ #endif
+-#elif defined(__linux__) || defined(__APPLE__)
++#elif defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
+ #include <dirent.h>
+ #endif
+ 
+@@ -54,6 +54,10 @@ constexpr std::string_view TEST_FILE_NAME{"_test.cj"};
+ #ifdef __arm__
+     const size_t FILE_LEN_LIMIT = 2ULL * 1024 * 1024 * 1024; // 2 GB for arm32
+     const std::string FILE_LEN_LIMIT_STR = "2 GB";
++#elif defined(__EMSCRIPTEN__)
++    // For WASM/Emscripten (32-bit), use uint64_t to avoid size_t overflow
++    const uint64_t FILE_LEN_LIMIT = 4ULL * 1024 * 1024 * 1024; // 4 GB
++    const std::string FILE_LEN_LIMIT_STR = "4 GB";
+ #else
+     const size_t FILE_LEN_LIMIT = 4ULL * 1024 * 1024 * 1024; // 4 GB
+     const std::string FILE_LEN_LIMIT_STR = "4 GB";
+@@ -721,6 +725,21 @@ std::optional<std::string> GetAbsPath(const std::string& path)
+     if (path.length() > PATH_MAX) {
+         return {};
+     }
++#ifdef __EMSCRIPTEN__
++    // In WASM mode, realpath() doesn't work correctly with Emscripten's virtual filesystem.
++    // Instead, just normalize the path. If it's already absolute, return it normalized.
++    // If it's relative, we can't resolve it without a current working directory.
++    if (path.empty()) {
++        return {};
++    }
++    std::string normalized = Normalize(path);
++    // Treat all paths starting with / as valid in WASM virtual filesystem
++    if (!normalized.empty() && normalized[0] == '/') {
++        return normalized;
++    }
++    // For relative paths, prefix with / to make them absolute in VFS
++    return "/" + normalized;
++#else
+     char resolvedPath[PATH_MAX] = {0};
+ #ifdef _WIN32
+     int retval = GetFullPathNameA(path.c_str(), PATH_MAX, resolvedPath, NULL);
+@@ -736,6 +755,7 @@ std::optional<std::string> GetAbsPath(const std::string& path)
+     }
+ #endif
+     return Normalize(std::string(resolvedPath));
++#endif // __EMSCRIPTEN__
+ }
+ 
+ std::optional<std::string> GetRelativePath(const std::string& basePath, const std::string& path)
+@@ -1278,7 +1298,7 @@ int32_t CreateDirs(const std::string& directoryPath)
+         tmpDirPath[i] = directoryPath[i];
+ #ifdef _WIN32
+         if (!Utils::In(tmpDirPath[i], {BACKSLASH, SLASH})) {
+-#elif defined(__linux__) || defined(__APPLE__)
++#elif defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
+         if (tmpDirPath[i] != SLASH) {
+ #endif
+             continue;
+# ======================================================================
+# sub-project: cangjie_tools   base: 73e32dc9da5370133aaaf20b54696c404c70d904
+# ======================================================================
+diff --git a/cangjie_tools/cangjie-language-server/CMakeLists.txt b/cangjie_tools/cangjie-language-server/CMakeLists.txt
+index bf43b190..5faea9a8 100644
+--- a/cangjie_tools/cangjie-language-server/CMakeLists.txt
++++ b/cangjie_tools/cangjie-language-server/CMakeLists.txt
+@@ -30,6 +30,91 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (default Debug)" FORCE)
+ endif ()
+ option(MACRO_DYNAMIC "Compile interpreter" ON)
++
++# WASM 编译选项
++option(BUILD_WASM "Build WebAssembly version using Emscripten" OFF)
++
++if(BUILD_WASM)
++    message(STATUS "Building WebAssembly version with pthreads and PROXY_TO_PTHREAD")
++
++    # 禁用不兼容选项
++    set(MACRO_DYNAMIC OFF CACHE BOOL "" FORCE)
++    set(ENABLE_RUNTIME_LOADING OFF CACHE BOOL "" FORCE)
++
++    add_definitions(-DBUILD_WASM -DWASM_TARGET)
++
++    set(CMAKE_EXECUTABLE_SUFFIX ".js")
++
++    # ========== 编译器标志 (compile-time) ==========
++    # WASM 特性优化
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mbulk-memory")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mreference-types")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -matomics")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
++
++    # Use native WebAssembly exceptions
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwasm-exceptions")
++
++    # Size-first optimization with LTO
++    set(CMAKE_CXX_FLAGS_RELEASE "-Os -flto -DNDEBUG")
++    set(CMAKE_C_FLAGS_RELEASE   "-Os -flto -DNDEBUG")
++
++    # ========== 链接器标志 (link-time) ==========
++    set(WASM_LINK_FLAGS "")
++
++    # LTO 链接期间
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -flto")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -Os")
++
++    # 基本 WASM 设置
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sWASM=1")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sMODULARIZE=1")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sEXPORT_ES6=1")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sEXPORT_NAME='CangjieLSP'")
++
++    # 固定内存 1GB（禁用内存增长以提高性能）
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sALLOW_MEMORY_GROWTH=0")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sINITIAL_MEMORY=1073741824")  # 1GB
++
++    # 栈大小：512KB（Cangjie parser 深递归足够）
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sSTACK_SIZE=524288")
++
++    # 文件系统
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sFILESYSTEM=1")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','FS','UTF8ToString','stringToUTF8']")
++
++    # UTF-8 解码器 native 实现（LSP 大量处理 JSON 字符串）
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sTEXTDECODER=2")
++
++    # 禁用动态代码执行（满足严格 CSP，LSP 不用 eval/new Function）
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sDYNAMIC_EXECUTION=0")
++
++    # 使用 mimalloc 替代 emmalloc（长跑进程下碎片更少）
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sMALLOC=mimalloc")
++
++    # 多线程支持 - 使用 PROXY_TO_PTHREAD
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sUSE_PTHREADS=1")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sPTHREAD_POOL_SIZE=16")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sPROXY_TO_PTHREAD=1")
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -pthread")
++
++    # 共享内存支持（原子操作通过 USE_PTHREADS 自动启用）
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sSHARED_MEMORY=1")
++
++    # BigInt 支持 (64位整数)
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -sWASM_BIGINT=1")
++
++    # Closure compiler 压缩 JS 胶水层
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} --closure 1")
++
++    # Embind
++    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -lembind")
++
++    # 存储链接标志供后续使用
++    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${WASM_LINK_FLAGS}")
++endif()
++
+ if(CMAKE_BUILD_TYPE MATCHES Debug)
+     add_definitions(-DDEBUG)
+ endif()
+@@ -40,7 +125,7 @@ if(NO_EXCEPTIONS)
+     add_definitions(-DNO_EXCEPTIONS)
+     add_definitions(-DCANGJIE_ENABLE_GCOV)
+ endif()
+-if (MACRO_DYNAMIC)
++if (MACRO_DYNAMIC AND NOT BUILD_WASM)
+     add_definitions(-DMACRO_DYNAMIC)
+ endif()
+ # Code coverage is disabled by default.
+@@ -65,7 +150,15 @@ if(CROSS_WINDOWS)
+ endif()
+ message("Directory of executable program: " ${EXECUTABLE_OUTPUT_PATH})
+ message("Directory of library: " ${LIBRARY_OUTPUT_PATH})
+-add_definitions(-DCANGJIE_CODEGEN_CJNATIVE_BACKEND)
++# Static linking: Disable runtime library loading to avoid libdl dependency
++option(ENABLE_RUNTIME_LOADING "Enable runtime library loading (requires libdl)" OFF)
++if(ENABLE_RUNTIME_LOADING)
++    add_definitions(-DCANGJIE_CODEGEN_CJNATIVE_BACKEND)
++    message(STATUS "Runtime library loading enabled - will link libdl")
++else()
++    message(STATUS "Runtime library loading disabled - static linking mode")
++endif()
++
+ # language server
+ add_subdirectory(src)
+ # gtest for unit test
+diff --git a/cangjie_tools/cangjie-language-server/build/build.py b/cangjie_tools/cangjie-language-server/build/build.py
+index 2f711933..902679c5 100644
+--- a/cangjie_tools/cangjie-language-server/build/build.py
++++ b/cangjie_tools/cangjie-language-server/build/build.py
+@@ -126,25 +126,35 @@ def prepare_cangjie(args):
+         cangjie_header_dir = os.path.join(cangjie_sdk_path, "include")
+         new_header_dir = os.path.join(LIB_DIR, "cangjie", "include")
+         shutil.copytree(cangjie_header_dir, new_header_dir, dirs_exist_ok=True)
+-        # copy libraries
++        # copy libraries - Static linking: copy .a file instead of .so/.dll/.dylib
+         tools_lib_dir = os.path.join(cangjie_sdk_path, "tools", "lib")
+-        tools_bin_dir = os.path.join(cangjie_sdk_path, "tools", "bin")
+-        file_extension = ""
+-        if IS_WINDOWS or TARGET_SYSTEM == TARGET_SYSTEM_TYPE.WINDOWS_X86_64:
+-            file_extension = "dll"
+-        if IS_LINUX and not TARGET_SYSTEM == TARGET_SYSTEM_TYPE.WINDOWS_X86_64:
+-            file_extension = "so"
+-        if IS_MACOS:
+-            file_extension = "dylib"
+-        cangjie_lib_path = os.path.join(tools_lib_dir, "libcangjie-lsp." + file_extension)
+-        if IS_WINDOWS or TARGET_SYSTEM == TARGET_SYSTEM_TYPE.WINDOWS_X86_64:
+-            cangjie_lib_path = os.path.join(tools_bin_dir, "libcangjie-lsp." + file_extension)
+-        new_lib_path = os.path.join(CANGJIE_LIB_DIR, "libcangjie-lsp." + file_extension)
+-        shutil.copy(cangjie_lib_path, new_lib_path)
+-        if IS_WINDOWS or TARGET_SYSTEM == TARGET_SYSTEM_TYPE.WINDOWS_X86_64:
+-            cangjie_lib_path = os.path.join(tools_lib_dir, "libcangjie-lsp.dll.a")
+-            new_lib_path = os.path.join(CANGJIE_LIB_DIR, "libcangjie-lsp.dll.a")
+-            shutil.copy(cangjie_lib_path, new_lib_path)
++        # Copy static library for static linking
++        cangjie_static_lib = os.path.join(tools_lib_dir, "libcangjie-lsp.a")
++        if os.path.exists(cangjie_static_lib):
++            new_lib_path = os.path.join(CANGJIE_LIB_DIR, "libcangjie-lsp.a")
++            shutil.copy(cangjie_static_lib, new_lib_path)
++            print(f"Copied static library: {cangjie_static_lib} -> {new_lib_path}")
++        else:
++            # Fallback: try to find static lib in other locations
++            print(f"Warning: Static library not found at {cangjie_static_lib}")
++            print("Searching for libcangjie-lsp.a in SDK...")
++            import glob
++            static_libs = glob.glob(os.path.join(cangjie_sdk_path, "**", "libcangjie-lsp.a"), recursive=True)
++            if static_libs:
++                shutil.copy(static_libs[0], os.path.join(CANGJIE_LIB_DIR, "libcangjie-lsp.a"))
++                print(f"Found and copied: {static_libs[0]}")
++            else:
++                # Last resort: check if cangjie_compiler is in the same repo
++                compiler_build = os.path.join(cangjie_sdk_path, "..", "cangjie_compiler", "build")
++                if os.path.exists(compiler_build):
++                    static_libs = glob.glob(os.path.join(compiler_build, "**", "libcangjie-lsp.a"), recursive=True)
++                    if static_libs:
++                        shutil.copy(static_libs[0], os.path.join(CANGJIE_LIB_DIR, "libcangjie-lsp.a"))
++                        print(f"Found and copied from compiler build: {static_libs[0]}")
++                    else:
++                        print("Error: libcangjie-lsp.a not found anywhere. Static linking will fail.")
++                else:
++                    print("Error: libcangjie-lsp.a not found. Please build cangjie_compiler first.")
+ 
+ def prepare_build(args):
+     prepare_cangjie(args)
+diff --git a/cangjie_tools/cangjie-language-server/src/CMakeLists.txt b/cangjie_tools/cangjie-language-server/src/CMakeLists.txt
+index baaa4842..5b3ad437 100644
+--- a/cangjie_tools/cangjie-language-server/src/CMakeLists.txt
++++ b/cangjie_tools/cangjie-language-server/src/CMakeLists.txt
+@@ -4,6 +4,65 @@
+ #
+ # See https://cangjie-lang.cn/pages/LICENSE for license information.
+ 
++# ==============================================================================
++# WASM 编译分支
++# ==============================================================================
++if(BUILD_WASM)
++    message(STATUS "Building LSPServer for WebAssembly target (without SQLite)")
++
++    # Emscripten 有自己的 pthreads 实现，不需要 find_package(Threads)
++    add_compile_definitions(NOT_RELEASE_VERSION_CODE)
++    add_compile_definitions(WASM_NO_SQLITE)  # 禁用 SQLite 相关代码
++    link_directories(${LIBRARY_OUTPUT_PATH})
++
++    # 第三方库头文件
++    include_directories(../third_party/flatbuffers/include)
++    link_directories(../third_party/flatbuffers/build)
++    include_directories(../third_party/json-v3.11.3/include)
++
++    # Cangjie 头文件和库目录
++    set(CANGJIE_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/cangjie/include)
++    set(CANGJIE_LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/cangjie/lib/cjnative)
++    include_directories(${CANGJIE_INCLUDE_DIR})
++    link_directories(${CANGJIE_LIB_DIR})
++
++    # 添加子目录
++    add_subdirectory(wasm)
++    add_subdirectory(languageserver)
++    add_subdirectory(json-rpc)
++
++    # WASM 主程序
++    add_executable(LSPServer-wasm wasm/wasm_main.cpp)
++    target_link_libraries(LSPServer-wasm
++        pthread
++        WasmTransport
++        JsonRPC
++        LSP
++    )
++
++    # 链接 cangjie-lsp-wasm 库（如果存在）
++    if(EXISTS "${CANGJIE_LIB_DIR}/libcangjie-lsp-wasm.a")
++        target_link_libraries(LSPServer-wasm ${CANGJIE_LIB_DIR}/libcangjie-lsp-wasm.a)
++        message(STATUS "Using WASM version of cangjie-lsp library")
++    elseif(EXISTS "${CANGJIE_LIB_DIR}/libcangjie-lsp.a")
++        target_link_libraries(LSPServer-wasm ${CANGJIE_LIB_DIR}/libcangjie-lsp.a)
++        message(STATUS "Using standard cangjie-lsp library")
++    else()
++        message(WARNING "cangjie-lsp library not found in ${CANGJIE_LIB_DIR}")
++    endif()
++
++    # WASM 链接标志 (使用根 CMakeLists.txt 中定义的 WASM_LINK_FLAGS)
++    set_target_properties(LSPServer-wasm PROPERTIES
++        LINK_FLAGS "${WASM_LINK_FLAGS}"
++    )
++
++    return()  # WASM 构建完成，不继续执行下面的代码
++endif()
++
++# ==============================================================================
++# 原有构建逻辑（非 WASM）
++# ==============================================================================
++
+ find_package(Threads REQUIRED)
+ add_compile_definitions(NOT_RELEASE_VERSION_CODE)
+ link_directories(${LIBRARY_OUTPUT_PATH})
+@@ -71,7 +130,6 @@ if (COMPILER_TYPE MATCHES "MINGW")    #Compiling Using the MinGW
+             pthread
+             JsonRPC
+             LSP
+-            ${CMAKE_DL_LIBS}
+             libflatbuffers.a
+             sqlite3
+             -ldbghelp
+@@ -80,20 +138,17 @@ if (COMPILER_TYPE MATCHES "MINGW")    #Compiling Using the MinGW
+     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+         target_link_libraries(LSPServer stdc++fs)
+     endif ()
+-    target_link_libraries(LSPServer -lcangjie-lsp)
+-    add_library(cangjie-lsp SHARED IMPORTED)
+-    set_target_properties(cangjie-lsp PROPERTIES
+-            IMPORTED_LOCATION ${CANGJIE_LIB_DIR}/libcangjie-lsp.dll
+-            )
++    # Static linking: use static cangjie-lsp library
++    target_link_libraries(LSPServer -Wl,-Bstatic -lcangjie-lsp -Wl,-Bdynamic)
++    add_library(cangjie-lsp STATIC IMPORTED)
+     set_target_properties(cangjie-lsp PROPERTIES
+-            IMPORTED_IMPLIB ${CANGJIE_LIB_DIR}/libcangjie-lsp.dll.a
++            IMPORTED_LOCATION ${CANGJIE_LIB_DIR}/libcangjie-lsp.a
+             )
+     add_library(LSPServerlib launcher/main.cpp)
+     target_link_libraries(LSPServerlib
+             pthread
+             JsonRPC
+             LSP
+-            ${CMAKE_DL_LIBS}
+             )
+     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+         target_link_libraries(LSPServerlib stdc++fs)
+@@ -147,8 +202,8 @@ elseif (COMPILER_TYPE MATCHES "Ninja")    #Compiling Using the ninja
+         target_link_libraries(LSPServer stdc++fs)
+     endif ()
+     if (NOT CROSS_WINDOWS)
+-        target_link_libraries(LSPServer ${CMAKE_DL_LIBS}
+-                )
++        # Static linking: no libdl needed when runtime loading is disabled
++        # target_link_libraries(LSPServer ${CMAKE_DL_LIBS})
+     else()
+         target_link_libraries(LSPServer
+                 -ldbghelp
+@@ -156,17 +211,19 @@ elseif (COMPILER_TYPE MATCHES "Ninja")    #Compiling Using the ninja
+                 )
+     endif ()
+     if(APPLE)
+-        target_link_libraries(LSPServer libcangjie-lsp.dylib)
+-        add_library(cangjie-lsp SHARED IMPORTED)
++        # macOS: static link cangjie-lsp (but system frameworks remain dynamic)
++        target_link_libraries(LSPServer -Wl,-Bstatic -lcangjie-lsp -Wl,-Bdynamic)
++        add_library(cangjie-lsp STATIC IMPORTED)
+         set_target_properties(cangjie-lsp PROPERTIES
+-                IMPORTED_LOCATION ${CANGJIE_LIB_DIR}/libcangjie-lsp.dylib
++                IMPORTED_LOCATION ${CANGJIE_LIB_DIR}/libcangjie-lsp.a
+                 )
+         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,@loader_path/../lib")
+     elseif(CROSS_WINDOWS)
+-        target_link_libraries(LSPServer -lcangjie-lsp)
+-        add_library(cangjie-lsp SHARED IMPORTED)
++        # Cross-compile Windows: static link
++        target_link_libraries(LSPServer -Wl,-Bstatic -lcangjie-lsp -Wl,-Bdynamic)
++        add_library(cangjie-lsp STATIC IMPORTED)
+         set_target_properties(cangjie-lsp PROPERTIES
+-                IMPORTED_LOCATION ${CANGJIE_LIB_DIR}/libcangjie-lsp.dll
++                IMPORTED_LOCATION ${CANGJIE_LIB_DIR}/libcangjie-lsp.a
+                 )
+         set_target_properties(cangjie-lsp PROPERTIES
+                 IMPORTED_IMPLIB ${CANGJIE_LIB_DIR}/libcangjie-lsp.dll.a
+@@ -176,6 +233,7 @@ elseif (COMPILER_TYPE MATCHES "Ninja")    #Compiling Using the ninja
+         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-insert-timestamp")
+         set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-insert-timestamp")
+     else()
++        # Linux: fully static linking
+         set(LINK_FLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
+         if (CMAKE_BUILD_TYPE MATCHES "Release")
+             set(STRIP_FLAG "-s")
+@@ -183,11 +241,11 @@ elseif (COMPILER_TYPE MATCHES "Ninja")    #Compiling Using the ninja
+         set(SAFE_EXE_LINK_FLAG "-pie")
+         set(CMAKE_EXE_LINKER_FLAGS "${LINK_FLAGS} ${SAFE_EXE_LINK_FLAG} ${STRIP_FLAG}")
+         set(CMAKE_SHARED_LINKER_FLAGS "${LINK_FLAGS} ${STRIP_FLAG}")
+-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,@loader_path/../lib")
+-        target_link_libraries(LSPServer libcangjie-lsp.so ${CMAKE_DL_LIBS})
+-        add_library(cangjie-lsp SHARED IMPORTED)
++        # Static link cangjie-lsp library
++        target_link_libraries(LSPServer -Wl,--whole-archive -lcangjie-lsp -Wl,--no-whole-archive)
++        add_library(cangjie-lsp STATIC IMPORTED)
+         set_target_properties(cangjie-lsp PROPERTIES
+-                IMPORTED_LOCATION ${CANGJIE_LIB_DIR}/libcangjie-lsp.so
++                IMPORTED_LOCATION ${CANGJIE_LIB_DIR}/libcangjie-lsp.a
+                 )
+     endif()
+ 
+@@ -200,10 +258,10 @@ elseif (COMPILER_TYPE MATCHES "Ninja")    #Compiling Using the ninja
+     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+         target_link_libraries(LSPServerlib stdc++fs)
+     endif ()
+-    if (NOT CROSS_WINDOWS)
+-        target_link_libraries(LSPServerlib ${CMAKE_DL_LIBS}
+-                )
+-    endif ()
++    # Static linking: no libdl needed
++    # if (NOT CROSS_WINDOWS)
++    #     target_link_libraries(LSPServerlib ${CMAKE_DL_LIBS})
++    # endif ()
+ else ()
+     message(WARNING "Use the [cmake -DCOMPILER_TYPE=MSVC/MINGW/Ninja .] command to set the compiler type.")
+ endif ()
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkASTWorker.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/ArkASTWorker.cpp
+index 5d2baf7f..1ee5ddbe 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkASTWorker.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkASTWorker.cpp
+@@ -48,6 +48,12 @@ void ArkASTWorker::Update(const ParseInputs &inputs, NeedDiagnostics needDiag)
+             if (CompilerCangjieProject::GetInstance()->GetCangjieFileKind(realName).first == CangjieFileKind::MISSING) {
+                 return;
+             }
++#ifdef BUILD_WASM
++            // In WASM mode, RemoveDiagOfCurPkg may not work correctly because
++            // GetAllFilesUnderCurrentPath doesn't work with Emscripten's virtual FS.
++            // Clear diagnostics for this specific file before recompilation.
++            callback->ClearDiagnosticsForFile(realName);
++#endif
+             // ast is not in cache, need to compile separately
+             CompilerCangjieProject::GetInstance()->CompilerOneFile(realName, inputs.contents);
+         }
+@@ -180,6 +186,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+             if (this->callback->isRenameDefined && this->callback->NeedReParser(this->callback->path) &&
+                 this->callback->path != file) {
+                 // LCOV_EXCL_START
++#ifdef BUILD_WASM
++                callback->ClearDiagnosticsForFile(this->callback->path);
++#endif
+                 CompilerCangjieProject::GetInstance()->CompilerOneFile(
+                     this->callback->path, this->callback->GetContentsByFile(this->callback->path));
+                 this->callback->UpdateDocNeedReparse(this->callback->path,
+@@ -188,6 +197,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+                 this->callback->path = "";
+                 // LCOV_EXCL_STOP
+             }
++#ifdef BUILD_WASM
++            callback->ClearDiagnosticsForFile(file);
++#endif
+             CompilerCangjieProject::GetInstance()->CompilerOneFile(file, this->callback->GetContentsByFile(file));
+             this->callback->UpdateDocNeedReparse(file, inputs.version, false);
+             std::vector<DiagnosticToken> diagnostics = callback->GetDiagsOfCurFile(file);
+@@ -197,6 +209,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+         if (hierarchyIgnoreRequest.find(name) == hierarchyIgnoreRequest.end() &&
+             (!CompilerCangjieProject::GetInstance()->FileHasSemaCache(file) ||
+                 CompilerCangjieProject::GetInstance()->CheckNeedCompiler(file))) {
++#ifdef BUILD_WASM
++            callback->ClearDiagnosticsForFile(file);
++#endif
+             CompilerCangjieProject::GetInstance()->IncrementOnePkgCompile(file, inputs.contents);
+             std::vector<DiagnosticToken> diagnostics = callback->GetDiagsOfCurFile(file);
+             callback->ReadyForDiagnostics(file, inputs.version, diagnostics);
+@@ -211,12 +226,19 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+         }
+         Logger::Instance().CleanKernelLog(std::this_thread::get_id());
+         if (name == "SemanticTokens") {
++#ifdef BUILD_WASM
++            // In WASM mode, file content comes from didOpen and is stored in virtual FS
++            // Skip FileExist check as it may not work correctly with Emscripten's virtual FS
++            std::vector<DiagnosticToken> diagnostics = callback->GetDiagsOfCurFile(file);
++            callback->ReadyForDiagnostics(file, inputs.version, diagnostics);
++#else
+             if (FileUtil::FileExist(file)) {
+                 std::vector<DiagnosticToken> diagnostics = callback->GetDiagsOfCurFile(file);
+                 callback->ReadyForDiagnostics(file, inputs.version, diagnostics);
+             } else {
+                 callback->ReadyForDiagnostics(file, inputs.version, {});
+             }
++#endif
+         }
+         action(InputsAndAST{inputs, ast, curOnEditName, useASTCache});
+     };
+@@ -297,6 +319,7 @@ bool ArkASTWorker::ParseAndInvokeWithASTCache(const std::string &name,
+     }
+     CompilerCangjieProject::GetInstance()->ClearParseCache(name);
+     // LCOV_EXCL_START
++#ifndef WASM_NO_SQLITE
+     if (CompilerCangjieProject::GetUseDB()) {
+         lsp::BackgroundIndexDB *indexDB = CompilerCangjieProject::GetInstance()->GetBgIndexDB();
+         if (!indexDB) {
+@@ -305,6 +328,7 @@ bool ArkASTWorker::ParseAndInvokeWithASTCache(const std::string &name,
+         auto &dbCache = indexDB->GetIndexDatabase().GetDatabaseCache();
+         dbCache.EraseThreadCache();
+     }
++#endif
+     // LCOV_EXCL_STOP
+     return true;
+ }
+@@ -354,7 +378,7 @@ void AsyncTaskRunner::RunAsync(const std::string &name, std::function<void()> ac
+         std::lock_guard<std::mutex> lock(mutex);
+         ++inFlightTasks;
+     }
+-#ifndef __APPLE__
++#if !defined(__APPLE__)
+     auto task = [name, action = std::move(action), worker, this]() mutable {
+         action();
+         // Make sure function stored by ThreadFunc is destroyed before Cleanup runs.
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
+index 83f877d2..47e74797 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
+@@ -4,6 +4,9 @@
+ //
+ // See https://cangjie-lang.cn/pages/LICENSE for license information.
+ 
++#ifdef BUILD_WASM
++#include "../wasm/WasmTransport.h"
++#endif
+ #include <iostream>
+ #include <map>
+ #include <set>
+@@ -338,6 +341,15 @@ LSPRet ArkLanguageServer::Run() const
+     return transp.Loop(*MsgHandler);
+ }
+ 
++#ifdef BUILD_WASM
++LSPRet ArkLanguageServer::ProcessSingleMessage()
++{
++    // Process a single message synchronously (for WASM)
++    auto &wasmTransp = static_cast<WasmTransport &>(transp);
++    return wasmTransp.ProcessSingleMessage(*MsgHandler);
++}
++#endif
++
+ nlohmann::json GetServerInfo()
+ {
+     nlohmann::json serverInfo;
+@@ -486,9 +498,13 @@ void ArkLanguageServer::OnShutdown(nlohmann::json id)
+ void ArkLanguageServer::OnDocumentDidOpen(const DidOpenTextDocumentParams &params)
+ {
+     std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
++#ifdef BUILD_WASM
++    // WASM mode: file content comes from didOpen, skip file existence check
++#else
+     if (!FileUtil::FileExist(file) || !CheckFileInCangjieProject(file)) {
+         return;
+     }
++#endif
+     DocCache::Doc doc = DocMgr.GetDoc(file);
+     const std::string &contents = params.textDocument.text;
+     bool reBuild = false;
+@@ -527,9 +543,11 @@ void ArkLanguageServer::OnDocumentDidClose(const DidCloseTextDocumentParams &par
+     logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::onDocumentDidClose in");
+ 
+     std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
++#ifndef BUILD_WASM
+     if (!CheckFileInCangjieProject(file)) {
+         return;
+     }
++#endif
+     PublishDiagnosticsParams notification;
+     notification.uri.file = params.textDocument.uri.file;
+     PublishDiagnostics(notification);
+@@ -548,15 +566,24 @@ void ArkLanguageServer::OnDocumentDidChange(const DidChangeTextDocumentParams &p
+     Logger& logger = Logger::Instance();
+     logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::OnDocumentDidChange in");
+     std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
++#ifndef BUILD_WASM
+     if (!CheckFileInCangjieProject(file)) {
+         return;
+     }
++#endif
+     if (!DocMgr.UpdateDoc(file, params.textDocument.version, true, params.contentChanges)) {
+         logger.LogMessage(MessageType::MSG_WARNING, "file:" + file + " not exist");
+         return;
+     }
+     if (!params.contentChanges.empty()) {
+         CompilerCangjieProject::GetInstance()->UpdateBuffCache(file, true);
++#ifdef BUILD_WASM
++        // WASM mode: Trigger recompilation immediately after content change
++        // In desktop mode, this is handled by the worker thread asynchronously
++        DocCache::Doc doc = DocMgr.GetDoc(file);
++        std::string contents = doc.contents;
++        Server->AddDoc(file, contents, params.textDocument.version, ark::NeedDiagnostics::YES, true);
++#endif
+     }
+ }
+ 
+@@ -811,6 +838,12 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
+     Logger& logger = Logger::Instance();
+     logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::OnDidChangeWatchedFiles in.");
+ 
++#ifdef BUILD_WASM
++    // In WASM mode, file watching is not supported.
++    // Files are managed through the virtual filesystem via didOpen/didChange/didClose.
++    (void)params;
++    return;
++#else
+     std::vector<FileWatchedEvent> changes;
+     WrapClientWatchedFiles(changes, params);
+     for (auto &event : changes) {
+@@ -821,6 +854,7 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
+         }
+         Server->ChangeWatchedFiles(file, event.type, &DocMgr);
+     }
++#endif
+ }
+ // LCOV_EXCL_STOP
+ bool ArkLanguageServer::CheckFileInCangjieProject(const std::string &filePath, bool ignoreMacro) const
+@@ -1205,6 +1239,19 @@ std::vector<DiagnosticToken> ArkLanguageServer::GetDiagsOfCurFile(std::string fi
+ void ArkLanguageServer::RemoveDiagOfCurPkg(const std::string& dirName)
+ {
+     std::lock_guard<std::mutex> lock(fixItsMutex);
++#ifdef BUILD_WASM
++    // In WASM mode, GetAllFilesUnderCurrentPath doesn't work with Emscripten's virtual FS.
++    // Instead, iterate through fixItsMap and remove entries that match the directory prefix.
++    std::vector<std::string> keysToRemove;
++    for (const auto &entry : fixItsMap) {
++        if (entry.first.find(dirName) == 0) {
++            keysToRemove.push_back(entry.first);
++        }
++    }
++    for (const auto &key : keysToRemove) {
++        fixItsMap.erase(key);
++    }
++#else
+     std::vector<std::string> files = GetAllFilesUnderCurrentPath(dirName, CANGJIE_FILE_EXTENSION, false);
+     for (auto &iter : files) {
+         LowFileName(iter);
+@@ -1216,6 +1263,7 @@ void ArkLanguageServer::RemoveDiagOfCurPkg(const std::string& dirName)
+         std::string path = JoinPath(dirName, iter);
+         (void) fixItsMap.erase(path);
+     }
++#endif
+ }
+ 
+ void ArkLanguageServer::RemoveDiagOfCurFile(const std::string& filePath)
+@@ -1240,6 +1288,12 @@ void ArkLanguageServer::RemoveDiagnostic(std::string file, DiagnosticToken diagT
+     }
+ }
+ 
++void ArkLanguageServer::ClearDiagnosticsForFile(const std::string &file)
++{
++    std::lock_guard<std::mutex> lock(fixItsMutex);
++    fixItsMap.erase(file);
++}
++
+ void ArkLanguageServer::PublishDiagnostics(const PublishDiagnosticsParams &params)
+ {
+     std::stringstream log;
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.h b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.h
+index bbb3f181..053108d4 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.h
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.h
+@@ -25,7 +25,9 @@
+ #include "common/Utils.h"
+ #include "common/Constants.h"
+ #include "index/IndexDatabase.h"
++#ifndef WASM_NO_SQLITE
+ #include "index/BackgroundIndexDB.h"
++#endif
+ 
+ namespace ark {
+ class ArkLanguageServer : public Callbacks {
+@@ -36,6 +38,11 @@ public:
+ 
+     LSPRet Run() const;
+ 
++#ifdef BUILD_WASM
++    // Process a single message (for WASM synchronous mode)
++    LSPRet ProcessSingleMessage();
++#endif
++
+     void RemoveDiagOfCurPkg(const std::string &dirName) override;
+ 
+     void RemoveDiagOfCurFile(const std::string &filePath) override;
+@@ -46,6 +53,8 @@ public:
+ 
+     void RemoveDiagnostic(std::string file, DiagnosticToken diagToken) override;
+ 
++    void ClearDiagnosticsForFile(const std::string &file) override;
++
+     std::string GetContentsByFile(const std::string &file) override;
+ 
+     std::int64_t GetVersionByFile(const std::string &file) override;
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp
+index f1dceb8a..a611c7cf 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp
+@@ -24,7 +24,7 @@
+ namespace {
+ bool Contains(const Cangjie::StringPart &str, Cangjie::Position pos)
+ {
+-    return str.begin.column < pos.column < str.begin.column + str.value.size();
++    return str.begin.column < pos.column && pos.column < str.begin.column + str.value.size();
+ }
+ };
+ 
+@@ -925,9 +925,11 @@ void ArkServer::ChangeWatchedFiles(const std::string &file, FileChangeType type,
+         if (type == FileChangeType::DELETED) {
+             Logger::Instance().LogMessage(MessageType::MSG_INFO, "delete the file:  " + file);
+             CompilerCangjieProject::GetInstance()->IncrementForFileDelete(file);
++#ifndef WASM_NO_SQLITE
+             if (CompilerCangjieProject::GetUseDB()) {
+                 CompilerCangjieProject::GetInstance()->GetBgIndexDB()->DeleteFiles({file});
+             }
++#endif
+             this->callback->RemoveDocByFile(input.inputs.fileName);
+         }
+         if (!FileUtil::FileExist(input.onEditFile)) {
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/CMakeLists.txt b/cangjie_tools/cangjie-language-server/src/languageserver/CMakeLists.txt
+index 60f310a8..6d4e440d 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/CMakeLists.txt
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/CMakeLists.txt
+@@ -9,6 +9,35 @@ file(GLOB_RECURSE LSP_SRC
+     "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+ )
+ 
++# WASM 构建时排除 SQLite 相关文件
++if(BUILD_WASM)
++    # 排除 sql/wrapper 目录下的所有文件
++    file(GLOB_RECURSE SQL_WRAPPER_FILES
++        "${CMAKE_CURRENT_SOURCE_DIR}/sql/wrapper/*.cpp"
++        "${CMAKE_CURRENT_SOURCE_DIR}/sql/wrapper/*.h"
++    )
++    list(REMOVE_ITEM LSP_SRC ${SQL_WRAPPER_FILES})
++
++    # 排除 IndexDatabase.cpp (依赖 SQLite)
++    list(REMOVE_ITEM LSP_SRC
++        "${CMAKE_CURRENT_SOURCE_DIR}/index/IndexDatabase.cpp"
++    )
++
++    # 排除 IndexStorage.cpp (依赖 flatbuffers)
++    list(REMOVE_ITEM LSP_SRC
++        "${CMAKE_CURRENT_SOURCE_DIR}/index/IndexStorage.cpp"
++    )
++
++    # 排除 BackgroundIndexDB 相关文件 (依赖 IndexDatabase)
++    file(GLOB_RECURSE BACKGROUND_INDEX_FILES
++        "${CMAKE_CURRENT_SOURCE_DIR}/index/BackgroundIndex*.cpp"
++        "${CMAKE_CURRENT_SOURCE_DIR}/index/BackgroundIndex*.h"
++    )
++    list(REMOVE_ITEM LSP_SRC ${BACKGROUND_INDEX_FILES})
++
++    message(STATUS "WASM build: excluded SQL and IndexDatabase files")
++endif()
++
+ message(STATUS "Found source files:")
+ foreach(file ${LSP_SRC})
+     message(STATUS "${file}")
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
+index 19b32f0d..9bd19b79 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
+@@ -18,7 +18,9 @@
+ #include "common/SyscapCheck.h"
+ #include "common/multiModule/ModuleManager.h"
+ #include "index/CjdIndex.h"
++#ifndef WASM_NO_SQLITE
+ #include "index/IndexStorage.h"
++#endif
+ #include "logger/Logger.h"
+ #ifdef __linux__
+ #include <malloc.h>
+@@ -82,10 +84,12 @@ Modifier GetModifilerByAccessLevel(AccessLevel level)
+ 
+ CompilerCangjieProject::CompilerCangjieProject(Callbacks *cb, lsp::IndexDatabase *arkIndexDB) : callback(cb)
+ {
++#ifndef WASM_NO_SQLITE
+     if (useDB) {
+         auto bgIndexDB = std::make_unique<lsp::BackgroundIndexDB>(*arkIndexDB);
+         backgroundIndexDb = std::move(bgIndexDB);
+     }
++#endif
+     InitLRU();
+ }
+ 
+@@ -119,12 +123,18 @@ PkgInfo::PkgInfo(const std::string &pkgPath,
+                                                                GetConditionCompile(targetPackageName, moduleName);
+         compilerInvocation->globalOptions.passedWhenCfgPaths = CompilerCangjieProject::GetInstance()->
+                                                                GetConditionCompilePaths();
++#ifdef BUILD_WASM
++        // WASM mode: Use x86_64 Linux as default target for stdlib compatibility
++        compilerInvocation->globalOptions.target.arch = Cangjie::Triple::ArchType::X86_64;
++        compilerInvocation->globalOptions.target.os = Cangjie::Triple::OSType::LINUX;
++#else
+ #ifdef _WIN32
+         compilerInvocation->globalOptions.target.os = Cangjie::Triple::OSType::WINDOWS;
+ #elif __linux__
+         compilerInvocation->globalOptions.target.os = Cangjie::Triple::OSType::LINUX;
+ #elif __APPLE__
+         compilerInvocation->globalOptions.target.os = Cangjie::Triple::OSType::DARWIN;
++#endif
+ #endif
+         compilerInvocation->globalOptions.enableAddCommentToAst = true;
+         // 2023/05/22 add macro expand with dynamic link library
+@@ -374,9 +384,11 @@ void CompilerCangjieProject::PostCompileProcess(const std::string &fullPkgName,
+     }
+ 
+     // 4. build symbol index
++#ifndef WASM_NO_SQLITE
+     if (CompilerCangjieProject::GetInstance() && CompilerCangjieProject::GetInstance()->GetBgIndexDB()) {
+         CompilerCangjieProject::GetInstance()->GetBgIndexDB()->DeleteFiles({filePath});
+     }
++#endif
+     BuildIndex(ci);
+ }
+ 
+@@ -661,6 +673,15 @@ bool CompilerCangjieProject::ParseAndUpdateNotInSrcDep(const std::string &dirPat
+         return false;
+     }
+     std::string expectedPkgName = packages[0]->fullPackageName;
++
++#ifdef BUILD_WASM
++    // In WASM mode, when no explicit module configuration is provided,
++    // be lenient and accept any valid package declaration from the user.
++    if (moduleManager->multiModuleOption.is_null() && expectedPkgName == DEFAULT_PACKAGE_NAME) {
++        return true;
++    }
++#endif
++
+     for (const auto &file : packages[0]->files) {
+         auto userWrittenPackage = file->package == nullptr ? DEFAULT_PACKAGE_NAME : file->curPackage->fullPackageName;
+         if (userWrittenPackage != expectedPkgName) {
+@@ -1463,13 +1484,23 @@ void CompilerCangjieProject::InitPkgInfoAndParseNotInModule()
+                 return;
+             }
+             std::string expectedPkgName = packages[0]->fullPackageName;
+-            for (const auto &file : packages[0]->files) {
+-                auto userWrittenPackage =
+-                    file->package == nullptr ? DEFAULT_PACKAGE_NAME : file->package->packageName;
+-                if (userWrittenPackage != expectedPkgName) {
+-                    auto errPos = getPackageNameErrPos(*file);
+-                    (void)pkgCompiler->diag.DiagnoseRefactor(
+-                        DiagKindRefactor::package_name_not_identical_lsp, errPos, expectedPkgName);
++#ifdef BUILD_WASM
++            // In WASM mode, when no explicit module configuration is provided,
++            // be lenient and accept any valid package declaration from the user.
++            bool skipPackageCheck = moduleManager->multiModuleOption.is_null() &&
++                                    expectedPkgName == DEFAULT_PACKAGE_NAME;
++#else
++            bool skipPackageCheck = false;
++#endif
++            if (!skipPackageCheck) {
++                for (const auto &file : packages[0]->files) {
++                    auto userWrittenPackage =
++                        file->package == nullptr ? DEFAULT_PACKAGE_NAME : file->package->packageName;
++                    if (userWrittenPackage != expectedPkgName) {
++                        auto errPos = getPackageNameErrPos(*file);
++                        (void)pkgCompiler->diag.DiagnoseRefactor(
++                            DiagKindRefactor::package_name_not_identical_lsp, errPos, expectedPkgName);
++                    }
+                 }
+             }
+             CIMapNotInSrc[item.first] = std::move(pkgCompiler);
+@@ -1540,9 +1571,11 @@ void CompilerCangjieProject::EraseOtherCache(const std::string &fullPkgName)
+ // LCOV_EXCL_STOP
+ void CompilerCangjieProject::FullCompilation()
+ {
++#ifndef BUILD_WASM
+     if (MessageHeaderEndOfLine::GetIsDeveco() && lsp::CjdIndexer::GetInstance() != nullptr) {
+         lsp::CjdIndexer::GetInstance()->Build();
+     }
++#endif
+     // Construct a dummy instance to load the CJO.
+     auto buildCjoTaskId = GenTaskId("buildCjo");
+     auto buildCjoTask = [this, buildCjoTaskId]() {
+@@ -1667,6 +1700,7 @@ void CompilerCangjieProject::FullCompilation()
+ // LCOV_EXCL_START
+ bool CompilerCangjieProject::LoadASTCache(const std::string &package)
+ {
++#ifndef WASM_NO_SQLITE
+     if (!cacheManager->IsStale(package, Digest(GetPathFromPkg(package)))) {
+         auto I = cacheManager->Load(package);
+         CjoData cjoData;
+@@ -1681,6 +1715,9 @@ bool CompilerCangjieProject::LoadASTCache(const std::string &package)
+         cjoManager->SetData(package, cjoData);
+         return true;
+     }
++#else
++    (void)package;
++#endif
+ 
+     return false;
+ }
+@@ -1728,6 +1765,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+     moduleManager->WorkspaceModeParser(moduleUri);
+     moduleManager->SetRequireAllPackages();
+ 
++#ifndef WASM_NO_SQLITE
+     // In DevEco, cache path will be pass to create cache manager
+     std::string cachePath = workspace;
+     if (MessageHeaderEndOfLine::GetIsDeveco() && initializationOptions.contains(CACHE_PATH)) {
+@@ -1737,6 +1775,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+ #ifndef TEST_FLAG
+     cacheManager->InitDir();
+ #endif
++#endif // WASM_NO_SQLITE
+ 
+     // get condition compile from initializationOptions
+     ark::GetConditionCompile(initializationOptions, passedWhenKeyValue);
+@@ -1777,9 +1816,11 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+ #endif
+         cjdCachePathOption = FileStore::NormalizePath(cjdCachePathOption);
+     }
++#ifndef BUILD_WASM
+     if (MessageHeaderEndOfLine::GetIsDeveco()) {
+         lsp::CjdIndexer::InitInstance(callback, stdCjdPathOption, ohosCjdPathOption, cjdCachePathOption);
+     }
++#endif
+     FullCompilation();
+     ReleaseMemoryAsync();
+     Logger::Instance().CleanKernelLog(std::this_thread::get_id());
+@@ -1801,8 +1842,12 @@ void CompilerCangjieProject::ReleaseMemoryAsync() {
+     auto taskId = GenTaskId("delete_cjd_indexer");
+     auto deleteTask = [this, taskId]() {
+         thrdPool->TaskCompleted(taskId);
++#ifndef BUILD_WASM
+         lsp::CjdIndexer::DeleteInstance();
++#endif
++#ifndef WASM_NO_SQLITE
+         lsp::IndexDatabase::ReleaseMemory();
++#endif
+         for (auto& pkgCI: CIMap) {
+             pkgCI.second.reset();
+         }
+@@ -2086,6 +2131,23 @@ void CompilerCangjieProject::CheckPackageNameByAbsName(const File &needCheckedFi
+ 
+     // check whether the package name is reasonable.
+     std::string expectedPkgName = moduleManager->GetExpectedPkgName(needCheckedFile);
++
++#ifdef BUILD_WASM
++    // In WASM mode, when no explicit module configuration is provided (multiModuleOption is null),
++    // be lenient and accept any valid package declaration from the user.
++    // This enables playground-style usage without requiring explicit module configuration.
++    if (moduleManager->multiModuleOption.is_null()) {
++        // If expected is "default" but user declared a custom package, accept it
++        if (expectedPkgName == DEFAULT_PACKAGE_NAME && needCheckedFile.package != nullptr) {
++            return;
++        }
++        // If user didn't declare a package and expected is "default", also accept
++        if (expectedPkgName == DEFAULT_PACKAGE_NAME && needCheckedFile.package == nullptr) {
++            return;
++        }
++    }
++#endif
++
+     if (needCheckedFile.package == nullptr) {
+         if (!expectedPkgName.empty() && expectedPkgName != DEFAULT_PACKAGE_NAME) {
+             if (!pkgInfoMap.count(fullPackageName)) {
+@@ -2302,6 +2364,7 @@ void CompilerCangjieProject::StoreAllPackagesCache()
+ // LCOV_EXCL_START
+ void CompilerCangjieProject::StorePackageCache(const std::string& pkgName)
+ {
++#ifndef WASM_NO_SQLITE
+     if (!useDB) {
+         std::string sourceCodePath = GetPathFromPkg(pkgName);
+         if (sourceCodePath.empty()) {
+@@ -2318,6 +2381,9 @@ void CompilerCangjieProject::StorePackageCache(const std::string& pkgName)
+     }
+     cacheManager->Store(
+         pkgName, Digest(GetPathFromPkg(pkgName)), *cjoManager->GetData(pkgName));
++#else
++    (void)pkgName;
++#endif
+ }
+ // LCOV_EXCL_STOP
+ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstance> &ci, bool isFullCompilation)
+@@ -2389,6 +2455,7 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+     lsp::SymbolCollector sc = lsp::SymbolCollector(*ci->typeManager, *ci->importManager, false);
+     sc.SetArkAstMap(std::move(astMap));
+     sc.Build(*packages[0], pkgPath);
++#ifndef WASM_NO_SQLITE
+     if (useDB) {
+         auto shard = lsp::IndexFileOut();
+         shard.symbols = sc.GetSymbolMap();
+@@ -2398,7 +2465,9 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+         shard.crossSymbos = sc.GetCrossSymbolMap();
+         backgroundIndexDb->UpdateFile(fileMap);
+         backgroundIndexDb->Update(curPkgName, shard);
+-    } else {
++    } else
++#endif
++    {
+         // Merge index to memory
+         std::unique_lock<std::mutex> indexLock(indexMtx);
+         (void) memIndex->pkgSymsMap.insert_or_assign(curPkgName, *sc.GetSymbolMap());
+@@ -2424,13 +2493,18 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+ 
+ void CompilerCangjieProject::UpdateOnDisk(const std::string &path)
+ {
++#ifndef WASM_NO_SQLITE
+     auto found = pathToFullPkgName.find(FileUtil::GetDirPath(path));
+     if (found == pathToFullPkgName.end()) {
+         return;
+     }
+     std::string pkgName = found->second;
+     DataStatus status = cjoManager->GetStatus(pkgName);
++    (void)status;
+     cacheManager->Store(pkgName, Digest(GetPathFromPkg(pkgName)), LSPCompilerInstance::astDataMap[pkgName].first);
++#else
++    (void)path;
++#endif
+ }
+ 
+ Position CompilerCangjieProject::getPackageNameErrPos(const File &file) const
+@@ -2512,6 +2586,7 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+         pkgToModMap.insert_or_assign(cjoPkgName, GetModifilerByAccessLevel(cjoPkg->accessible));
+         bool toUpdateDB = true;
+         std::string digest;
++#ifndef WASM_NO_SQLITE
+         if (useDB) {
+             auto cjoID = GetFileIdForDB(cjoPath);
+             digest = DigestForCjo(cjoPath);
+@@ -2528,7 +2603,9 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+                 toUpdateDB = false;
+           }
+         }
++#endif
+         lsp::SymbolCollector sc = lsp::SymbolCollector(*ci->typeManager, *ci->importManager, true);
++#ifndef WASM_NO_SQLITE
+         if (!useDB || (useDB && toUpdateDB)) {
+             Trace::Log("build for cjo:", cjoPkgName);
+             sc.Build(*cjoPkg);
+@@ -2550,8 +2627,12 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+             (void) memIndex->pkgRelationsMap.insert_or_assign(cjoPkgName, *sc.GetRelations());
+             (void) memIndex->pkgExtendsMap.insert_or_assign(cjoPkgName, *sc.GetSymbolExtendMap());
+             (void) memIndex->pkgCrossSymsMap.insert_or_assign(cjoPkgName, *sc.GetCrossSymbolMap());
+-        } else if (!useDB) {
+-            // Merge index to memory
++        } else if (!useDB)
++#endif
++        {
++            // Merge index to memory (WASM always uses this path)
++            Trace::Log("build for cjo:", cjoPkgName);
++            sc.Build(*cjoPkg);
+             (void) memIndex->pkgSymsMap.insert_or_assign(cjoPkgName, *sc.GetSymbolMap());
+             (void) memIndex->pkgRefsMap.insert_or_assign(cjoPkgName, *sc.GetReferenceMap());
+             (void) memIndex->pkgRelationsMap.insert_or_assign(cjoPkgName, *sc.GetRelations());
+@@ -2559,14 +2640,17 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+             (void) memIndex->pkgCrossSymsMap.insert_or_assign(cjoPkgName, *sc.GetCrossSymbolMap());
+         }
+     }
++#ifndef WASM_NO_SQLITE
+     if (useDB) {
+         Trace::Log("UpdateAll Start");
+         backgroundIndexDb->UpdateAll(fileMap, std::move(memIndex));
+         Trace::Log("UpdateAll End");
+     }
++#endif
+ }
+ // LCOV_EXCL_START
+ void CompilerCangjieProject::BuildIndexFromCache(const std::string &package) {
++#ifndef WASM_NO_SQLITE
+         std::string sourceCodePath = GetPathFromPkg(package);
+         if (sourceCodePath.empty()) {
+             sourceCodePath = package;
+@@ -2584,6 +2668,9 @@ void CompilerCangjieProject::BuildIndexFromCache(const std::string &package) {
+             (void) memIndex->pkgExtendsMap.insert_or_assign(package, indexCache->get()->extends);
+             (void) memIndex->pkgCrossSymsMap.insert_or_assign(package, indexCache->get()->crossSymbos);
+         }
++#else
++        (void)package;
++#endif
+ }
+ // LCOV_EXCL_STOP
+ std::unordered_set<std::string> CompilerCangjieProject::GetOneModuleDeps(const std::string &curModule)
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.h b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.h
+index 63ed0624..2ea0948c 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.h
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.h
+@@ -30,9 +30,13 @@
+ #include "common/Callbacks.h"
+ #include "common/FileStore.h"
+ #include "common/LRUCache/LRUCache.h"
++#ifndef WASM_NO_SQLITE
+ #include "index/BackgroundIndexDB.h"
++#endif
+ #include "index/IndexDatabase.h"
++#ifndef WASM_NO_SQLITE
+ #include "index/IndexStorage.h"
++#endif
+ #include "index/MemIndex.h"
+ #include "logger/Logger.h"
+ 
+@@ -404,9 +408,12 @@ public:
+ 
+     lsp::SymbolIndex *GetIndex() const
+     {
++#ifndef WASM_NO_SQLITE
+         if (useDB) {
+             return backgroundIndexDb.get();
+-        } else {
++        } else
++#endif
++        {
+             return memIndex.get();
+         }
+     }
+@@ -436,10 +443,12 @@ public:
+         return model->UpdateUsageFrequency(item);
+     }
+ 
++#ifndef WASM_NO_SQLITE
+     lsp::BackgroundIndexDB *GetBgIndexDB() const
+     {
+         return backgroundIndexDb.get();
+     };
++#endif
+ 
+     bool CheckNeedCompiler(const std::string &fileName);
+ 
+@@ -669,13 +678,17 @@ private:
+ 
+     std::unique_ptr<ModuleManager> moduleManager;
+     std::unique_ptr<ThrdPool> thrdPool;
++#ifndef WASM_NO_SQLITE
+     std::unique_ptr<lsp::CacheManager> cacheManager;
++#endif
+     std::unique_ptr<CjoManager> cjoManager = std::make_unique<CjoManager>();
+     std::unique_ptr<DependencyGraph> graph = std::make_unique<DependencyGraph>();
+     std::unique_ptr<lsp::MemIndex> memIndex = std::make_unique<lsp::MemIndex>();
+     std::unique_ptr<SortModel> model = std::make_unique<SortModel>();
+ 
++#ifndef WASM_NO_SQLITE
+     std::unique_ptr<lsp::BackgroundIndexDB> backgroundIndexDb;
++#endif
+     std::unordered_map<std::string, std::string> pathToFullPkgName;  // key: package path
+     std::unordered_map<std::string, std::unordered_set<std::string>> realPkgToFullPkgName;
+     std::mutex cimapMtx;
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/LSPCompilerInstance.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/LSPCompilerInstance.cpp
+index 5a0409a3..8992c6d1 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/LSPCompilerInstance.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/LSPCompilerInstance.cpp
+@@ -455,11 +455,17 @@ void LSPCompilerInstance::SetCjoPathInModules(const std::string &cangjieHome,
+     if (cangjieHome.empty()) {
+         return;
+     }
++#ifdef BUILD_WASM
++    // WASM mode: Use x86_64 Linux as default target for stdlib compatibility
++    invocation.globalOptions.target.arch = Triple::ArchType::X86_64;
++    invocation.globalOptions.target.os = Triple::OSType::LINUX;
++#else
+     if (!ark::Options::GetInstance().IsOptionSet("test") && ark::MessageHeaderEndOfLine::GetIsDeveco()) {
+         invocation.globalOptions.target.arch = Triple::ArchType::AARCH64;
+         invocation.globalOptions.target.os = Triple::OSType::LINUX;
+         invocation.globalOptions.target.env = Triple::Environment::OHOS;
+     }
++#endif
+     const auto libPathName = invocation.globalOptions.GetCangjieLibTargetPathName();
+     if (libPathName.empty()) {
+         return;
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/common/Callbacks.h b/cangjie_tools/cangjie-language-server/src/languageserver/common/Callbacks.h
+index 2a9f9045..8d8a2cdd 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/common/Callbacks.h
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/common/Callbacks.h
+@@ -38,6 +38,7 @@ public:
+     virtual void RemoveDiagOfCurPkg(const std::string &dirName) = 0;
+     virtual void RemoveDiagOfCurFile(const std::string &filePath) = 0;
+     virtual void RemoveDiagnostic(std::string, DiagnosticToken) = 0;
++    virtual void ClearDiagnosticsForFile(const std::string &file) = 0;
+     virtual void ReadyForDiagnostics(std::string, int64_t, std::vector <DiagnosticToken>) = 0;
+     virtual std::string GetContentsByFile(const std::string &file) = 0;
+     virtual int64_t GetVersionByFile(const std::string &file) = 0;
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/common/FileStore.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/common/FileStore.cpp
+index 5f1cb351..d98f6627 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/common/FileStore.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/common/FileStore.cpp
+@@ -6,8 +6,10 @@
+ 
+ #include "FileStore.h"
+ 
+-#ifndef __linux__
+ #include <string>
++#include <vector>
++
++#ifndef __linux__
+ #endif
+ 
+ #ifdef _WIN32
+@@ -39,6 +41,53 @@ std::string FileStore::NormalizePath(const std::string &path)
+     if (path.length() >= PATH_MAX) {
+         return path;
+     }
++#ifdef __EMSCRIPTEN__
++    // In WASM mode, realpath() doesn't work with Emscripten's virtual filesystem.
++    // Just normalize the path by removing redundant slashes and resolving . and ..
++    if (path.empty()) {
++        return path;
++    }
++    std::string result;
++    std::vector<std::string> parts;
++    std::string current;
++
++    for (size_t i = 0; i < path.length(); ++i) {
++        char c = path[i];
++        if (c == '/' || c == '\\') {
++            if (!current.empty()) {
++                if (current == "..") {
++                    if (!parts.empty() && parts.back() != "..") {
++                        parts.pop_back();
++                    }
++                } else if (current != ".") {
++                    parts.push_back(current);
++                }
++                current.clear();
++            }
++        } else {
++            current += c;
++        }
++    }
++    if (!current.empty()) {
++        if (current == "..") {
++            if (!parts.empty() && parts.back() != "..") {
++                parts.pop_back();
++            }
++        } else if (current != ".") {
++            parts.push_back(current);
++        }
++    }
++
++    // Build result path
++    if (!path.empty() && (path[0] == '/' || path[0] == '\\')) {
++        result = "/";
++    }
++    for (size_t i = 0; i < parts.size(); ++i) {
++        if (i > 0) result += "/";
++        result += parts[i];
++    }
++    return result.empty() ? "/" : result;
++#else
+     char absPathBuff[PATH_MAX] = {0};
+ #ifdef _WIN32
+     if (_fullpath(absPathBuff, path.c_str(), PATH_MAX) == nullptr) {
+@@ -65,5 +114,6 @@ std::string FileStore::NormalizePath(const std::string &path)
+     }
+ #endif
+     return normalizedPath;
++#endif // __EMSCRIPTEN__
+ }
+ } // namespace ark
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/index/BackgroundIndexDB.h b/cangjie_tools/cangjie-language-server/src/languageserver/index/BackgroundIndexDB.h
+index e83d2447..6804bd40 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/index/BackgroundIndexDB.h
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/index/BackgroundIndexDB.h
+@@ -7,6 +7,8 @@
+ #ifndef LSPSERVER_INDEX_BACKGROUNDDB_H
+ #define LSPSERVER_INDEX_BACKGROUNDDB_H
+ 
++#ifndef WASM_NO_SQLITE
++
+ #include <mutex>
+ #include "IndexDatabase.h"
+ #include "IndexStorage.h"
+@@ -129,4 +131,6 @@ private:
+ } // namespace lsp
+ } // namespace ark
+ 
++#endif // WASM_NO_SQLITE
++
+ #endif // LSPSERVER_INDEX_BACKGROUNDDB_H
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/index/CjdIndex.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/index/CjdIndex.cpp
+index 2753a561..ea7759f8 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/index/CjdIndex.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/index/CjdIndex.cpp
+@@ -7,6 +7,7 @@
+ #include <fstream>
+ #include "CjdIndex.h"
+ 
++#ifndef BUILD_WASM
+ namespace Cangjie {
+ // LCOV_EXCL_START
+ std::string DCompilerInstance::Denoising(std::string candidate)
+@@ -77,9 +78,11 @@ void CjdIndexer::LoadAllCJDResource()
+             }
+         }
+     }
++#ifndef WASM_NO_SQLITE
+     if (CompilerCangjieProject::GetUseDB()) {
+         CompilerCangjieProject::GetInstance()->GetBgIndexDB()->UpdateFile(fileMap);
+     }
++#endif
+     Trace::Log("LoadAllCJDResource end");
+ }
+ 
+@@ -128,6 +131,7 @@ void CjdIndexer::BuildCJDIndex()
+                                                            *ciMap[package]->importManager, false);
+             sc.Build(*packages[0]);
+             pkgSymsMap.insert_or_assign(package, *sc.GetSymbolMap());
++#ifndef WASM_NO_SQLITE
+             auto shardIdentifier = "cjd";
+             auto shard = lsp::IndexFileOut();
+             shard.symbols = sc.GetSymbolMap();
+@@ -136,6 +140,7 @@ void CjdIndexer::BuildCJDIndex()
+             shard.extends = sc.GetSymbolExtendMap();
+             shard.crossSymbos = sc.GetCrossSymbolMap();
+             cacheManager->StoreIndexShard(package, shardIdentifier, shard);
++#endif
+             thrdPool->TaskCompleted(taskId);
+             Trace::Log("finish execute task ", package);
+         };
+@@ -227,12 +232,19 @@ void CjdIndexer::ReadPackagedCjdResource(const std::string& rootPath, const std:
+ void CjdIndexer::BuildIndexFromCache()
+ {
+     Trace::Log("BuildIndexFromCache Start");
++#ifdef BUILD_WASM
++    // In WASM mode, cache loading from filesystem is not supported.
++    // Index will be built from scratch.
++    Trace::Log("BuildIndexFromCache skipped in WASM mode");
++    return;
++#else
+     std::string cjdIndexDir = JoinPath(JoinPath(cjdCachePath, ".cache"), "index");
+     std::map<int, std::vector<std::string>> fileMap;
+     for (auto& idxFile:
+             FileUtil::GetAllFilesUnderCurrentPath(cjdIndexDir, "idx")) {
+         // LCOV_EXCL_START
+         auto package = FileUtil::GetFileBase(FileUtil::GetFileBase(idxFile));
++#ifndef WASM_NO_SQLITE
+         std::string shardIdentifier = "cjd";
+         auto indexCache = cacheManager->LoadIndexShard(package, shardIdentifier);
+         if (!indexCache.has_value()) {
+@@ -281,12 +293,18 @@ void CjdIndexer::BuildIndexFromCache()
+         macroCallFileInfo.emplace_back("");
+         macroCallFileInfo.emplace_back(curMacroCallDigest);
+         fileMap.insert(std::make_pair(macroCallId, macroCallFileInfo));
++#else
++        (void)package;
++#endif
+         // LCOV_EXCL_STOP
+     }
++#ifndef WASM_NO_SQLITE
+     if (CompilerCangjieProject::GetUseDB()) {
+         CompilerCangjieProject::GetInstance()->GetBgIndexDB()->UpdateFile(fileMap);
+     }
++#endif
+     Trace::Log("BuildIndexFromCache End");
++#endif // BUILD_WASM
+ }
+ 
+ void CjdIndexer::Build()
+@@ -315,16 +333,25 @@ bool CjdIndexer::CheckCjdCache()
+ 
+ std::string CjdIndexer::GetValidCode()
+ {
++#ifdef BUILD_WASM
++    // In WASM mode, cache validation is not supported.
++    return "";
++#else
+     std::string contents;
+     std::string reason;
+     for (auto& file: FileUtil::GetAllFilesUnderCurrentPath(cjdCachePath, "idx")) {
+         contents += file + FileUtil::ReadFileContent(file, reason).value_or("");
+     }
+     return std::to_string(std::hash<std::string>{}(contents));
++#endif
+ }
+ 
+ void CjdIndexer::GenerateValidFile()
+ {
++#ifdef BUILD_WASM
++    // In WASM mode, cache file generation is not supported.
++    return;
++#else
+     Trace::Log("Generate Cjd Index Valid Files Start");
+     std::ofstream validFile;
+     validFile.open(Normalize(JoinPath(cjdCachePath, "valid.txt")));
+@@ -337,6 +364,8 @@ void CjdIndexer::GenerateValidFile()
+     }
+     validFile.close();
+     Trace::Log("Generate Cjd Index Valid Files End");
++#endif
+ }
+ } // namespace lsp
+ } // namespace ark
++#endif // BUILD_WASM
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/index/CjdIndex.h b/cangjie_tools/cangjie-language-server/src/languageserver/index/CjdIndex.h
+index 6bb1ccbe..f746e7c9 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/index/CjdIndex.h
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/index/CjdIndex.h
+@@ -16,6 +16,7 @@
+ #include "Symbol.h"
+ #include "cangjie/Basic/Version.h"
+ 
++#ifndef BUILD_WASM
+ namespace Cangjie {
+ // LCOV_EXCL_START
+ class DCompilerInstance final : public LSPCompilerInstance {
+@@ -68,8 +69,10 @@ public:
+         if (CreateDirs(this->cjdCachePath) == -1) {
+             Trace::Log("cjd cache dir build failed");
+         }
++#ifndef WASM_NO_SQLITE
+         cacheManager = std::make_unique<CacheManager>(this->cjdCachePath);
+         cacheManager->InitDir();
++#endif
+     }
+ 
+     ~CjdIndexer() = default;
+@@ -136,7 +139,9 @@ private:
+     std::unique_ptr<DependencyGraph> graph = std::make_unique<DependencyGraph>();
+     std::unique_ptr<CjoManager> cjoManager = std::make_unique<CjoManager>();
+     std::unique_ptr<ThrdPool> thrdPool = std::make_unique<ThrdPool>(6);
++#ifndef WASM_NO_SQLITE
+     std::unique_ptr<CacheManager> cacheManager;
++#endif
+ 
+     std::map<std::string, SymbolSlab> pkgSymsMap{};
+     std::unordered_map<std::string, std::unique_ptr<DPkgInfo>> pkgMap;
+@@ -144,4 +149,6 @@ private:
+ };
+ } // namespace lsp
+ } // namespace ark
++#endif // BUILD_WASM
++
+ #endif // LSPSERVER_INDEX_CJDINDEXER_H
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/index/IndexDatabase.h b/cangjie_tools/cangjie-language-server/src/languageserver/index/IndexDatabase.h
+index 25729837..9cb8274a 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/index/IndexDatabase.h
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/index/IndexDatabase.h
+@@ -14,8 +14,6 @@
+ #include "Ref.h"
+ #include "Relation.h"
+ #include "Symbol.h"
+-#include "../sql/wrapper/Connection.h"
+-#include "../sql/wrapper/Statement.h"
+ #include "Tokenizer.h"
+ #include "ThreadMemoize.h"
+ 
+@@ -29,6 +27,34 @@ constexpr bool RESULT_NEXT = true;
+ constexpr bool RESULT_DONE = false;
+ const unsigned int MUTI_INSERT_MAX_SIZE = 900;
+ 
++#ifdef WASM_NO_SQLITE
++
++// WASM builds don't use SQLite database - provide minimal stub
++class IndexDatabase {
++public:
++    struct Options {
++        bool openReadOnly = false;
++        bool openInMemory = false;
++    };
++
++    IndexDatabase() = default;
++    ~IndexDatabase() = default;
++
++private:
++    IndexDatabase(const IndexDatabase &) = delete;
++    void operator=(const IndexDatabase &) = delete;
++};
++
++inline dberr_no OpenIndexDatabase(IndexDatabase &, const std::string &,
++                                  IndexDatabase::Options = {}) {
++    return 0;
++}
++
++#else // WASM_NO_SQLITE
++
++#include "../sql/wrapper/Connection.h"
++#include "../sql/wrapper/Statement.h"
++
+ class IndexDatabase {
+     class DatabaseConnection;
+ 
+@@ -59,7 +85,7 @@ public:
+     dberr_no GetSymbolsByName(const std::string &name, std::function<bool(const Symbol &sym)> callback);
+ 
+     dberr_no GetPkgSymbols(std::string pkgName, std::function<bool(const Symbol &sym)> callback);
+-    
++
+     dberr_no GetSymbolByID(IDArray id, std::function<bool(const Symbol &sym)> callback);
+ 
+     dberr_no GetCrossSymbolByID(IDArray id, std::function<void(const CrossSymbol &sym)> callback);
+@@ -99,7 +125,7 @@ public:
+                            std::function<bool(const Ref &ref)> callback);
+ 
+     dberr_no GetFileReferences(const std::string &fileUri, RefKind kind,
+-         std::function<bool(const Ref &ref, const SymbolID symId)> callback);                       
++         std::function<bool(const Ref &ref, const SymbolID symId)> callback);
+ 
+     dberr_no GetReferred(const SymbolID &id,
+                          std::function<void(const SymbolID &, const Ref &)> callback);
+@@ -347,6 +373,8 @@ private:
+ dberr_no OpenIndexDatabase(IndexDatabase &db, const std::string &file,
+                            IndexDatabase::Options opts = {});
+ 
++#endif // WASM_NO_SQLITE
++
+ } // namespace lsp
+ } // namespace ark
+ 
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/index/IndexStorage.h b/cangjie_tools/cangjie-language-server/src/languageserver/index/IndexStorage.h
+index 76026259..04f20ef9 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/index/IndexStorage.h
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/index/IndexStorage.h
+@@ -7,6 +7,8 @@
+ #ifndef LSPSERVER_INDEX_INDEXSTORAGE_H
+ #define LSPSERVER_INDEX_INDEXSTORAGE_H
+ 
++#ifndef WASM_NO_SQLITE
++
+ #include <fstream>
+ #include <string>
+ #include <unordered_map>
+@@ -127,4 +129,7 @@ private:
+ };
+ } // namespace lsp
+ } // namespace ark
++
++#endif // WASM_NO_SQLITE
++
+ #endif // LSPSERVER_INDEX_INDEXSTORAGE_H
+\ No newline at end of file
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/index/SymbolCollector.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/index/SymbolCollector.cpp
+index 3d716146..5ebea34d 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/index/SymbolCollector.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/index/SymbolCollector.cpp
+@@ -62,8 +62,13 @@ void GetAliasInImportMulti(std::unordered_map<std::string, std::string> aliasMap
+ 
+ inline bool NeedToObtainCjdDeclPos(bool isCjoPkg)
+ {
++#ifdef BUILD_WASM
++    (void)isCjoPkg;
++    return false;
++#else
+     return ark::MessageHeaderEndOfLine::GetIsDeveco() && ark::lsp::CjdIndexer::GetInstance() != nullptr && isCjoPkg &&
+            !ark::lsp::CjdIndexer::GetInstance()->GetRunningState();
++#endif
+ }
+ 
+ Ptr<const Node> GetCurMacro(const Decl& decl)
+@@ -288,7 +293,12 @@ void SymbolCollector::Preamble(const Package &package)
+ 
+ bool SymbolCollector::ShouldPassInCjdIndexing(Ptr<Node> node)
+ {
++#ifdef BUILD_WASM
++    (void)node;
++    return false;
++#else
+     return CjdIndexer::GetInstance() && CjdIndexer::GetInstance()->GetRunningState() && DynamicCast<FuncDecl *>(node);
++#endif
+ }
+ 
+ void SymbolCollector::Build(const Package &package, const std::string &packagePath)
+@@ -333,9 +343,13 @@ void SymbolCollector::ProcessFile(const File& file, const std::string& packagePa
+ 
+     ProcessMacroCalls(file);
+ 
++#ifdef BUILD_WASM
++    CreateImportRef(file);
++#else
+     if (!CjdIndexer::GetInstance() || !CjdIndexer::GetInstance()->GetRunningState()) {
+         CreateImportRef(file);
+     }
++#endif
+ }
+ 
+ void SymbolCollector::ProcessMacroCalls(const File& file)
+@@ -467,10 +481,12 @@ void SymbolCollector::CreateBaseSymbol(const Decl &decl, const std::string &file
+     SymbolLocation declaration = {.begin = {0, 0}, .end = {0, 0}, .fileUri = ""};
+     CommentGroups comments = GetDeclComments(decl);
+ 
++#ifndef BUILD_WASM
+     if (NeedToObtainCjdDeclPos(isCjoPkg)) {
+         declaration = CjdIndexer::GetInstance()->GetSymbolDeclaration(GetDeclSymbolID(decl), decl.fullPackageName);
+         comments = CjdIndexer::GetInstance()->GetSymbolComments(GetDeclSymbolID(decl), decl.fullPackageName);
+     }
++#endif
+     Symbol declSym;
+     declSym.id = GetDeclSymbolID(decl);
+     declSym.name = identifier;
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/logger/CrashReporter.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/logger/CrashReporter.cpp
+index af286f4e..004c985f 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/logger/CrashReporter.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/logger/CrashReporter.cpp
+@@ -16,11 +16,13 @@
+ 
+ namespace {
+ 
+-#ifdef __linux__
++#if defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(BUILD_WASM)
+ constexpr size_t STACK_SIZE = 50;
+ constexpr size_t SIGNAL_NUM = 3;
+ constexpr int SIGNALS[SIGNAL_NUM] = {SIGABRT, SIGSEGV, SIGPIPE};
+ #endif
++
++#if !defined(__EMSCRIPTEN__) && !defined(BUILD_WASM)
+ // LCOV_EXCL_START
+ void MessageInfoHandler()
+ {
+@@ -52,8 +54,9 @@ void KernelLogHandler(const std::thread::id &threadId)
+     ofs << log.str();
+     ofs.close();
+ }
++#endif // !defined(__EMSCRIPTEN__) && !defined(BUILD_WASM)
+ 
+-#ifdef __linux__
++#if defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(BUILD_WASM)
+ void PrintStackTraceOnSignal(std::ostream &os)
+ {
+     ark::Logger &logger = ark::Logger::Instance();
+@@ -143,7 +146,7 @@ void InitStack(DWORD &dwImageType, STACKFRAME64 &frame, const CONTEXT &context)
+ } // namespace
+ 
+ namespace ark {
+-#ifdef __linux__
++#if defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(BUILD_WASM)
+ 
+ void CrashReporter::SignalHandler(int sig)
+ {
+@@ -246,5 +249,9 @@ void CrashReporter::RegisterHandlers()
+ #elif defined(__APPLE__)
+ void CrashReporter::RegisterHandlers()
+ {}
++#elif defined(__EMSCRIPTEN__) || defined(BUILD_WASM)
++// In WASM mode, signal handling and crash reporting to files are not supported.
++void CrashReporter::RegisterHandlers()
++{}
+ #endif
+ } // namespace ark
+\ No newline at end of file
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/logger/Logger.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/logger/Logger.cpp
+index a6c7f6b5..4472f0cd 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/logger/Logger.cpp
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/logger/Logger.cpp
+@@ -7,6 +7,7 @@
+ #include "Logger.h"
+ #include <chrono>
+ #include <iomanip>
++#include <iostream>
+ #include <mutex>
+ #include <regex>
+ #include "../common/Utils.h"
+@@ -61,6 +62,10 @@ void Logger::LogMessage(MessageType type, const std::string &message)
+     }
+ 
+     std::string logInfo = LogInfo(type, message);
++#ifdef BUILD_WASM
++    // In WASM mode, output to stderr instead of file
++    std::cerr << logInfo << std::endl;
++#else
+     // out to file
+     std::lock_guard<std::mutex> lock(fileWriter);
+     HandleNewLog(logInfo.size());
+@@ -69,6 +74,7 @@ void Logger::LogMessage(MessageType type, const std::string &message)
+     }
+     outToFile << logInfo << std::endl;
+     (void)outToFile.flush();
++#endif
+ }
+ 
+ void Logger::SetPath(const std::string &logPath)
+@@ -133,6 +139,10 @@ void Logger::CleanKernelLog(const std::thread::id &threadId)
+ 
+ void Logger::InitLogQueue()
+ {
++#ifdef BUILD_WASM
++    // In WASM mode, file logging is disabled, so no need to initialize log queue.
++    return;
++#else
+     auto txtFiles = Cangjie::FileUtil::GetAllFilesUnderCurrentPath(pathBuf, "txt");
+     for (auto& txtFile: txtFiles) {
+         if (std::regex_match(txtFile, logFileRegex)) {
+@@ -140,6 +150,7 @@ void Logger::InitLogQueue()
+         }
+     }
+     RemoveRedundantLogFile();
++#endif
+ }
+ 
+ void Logger::RemoveRedundantLogFile()
+@@ -184,6 +195,7 @@ void Logger::HandleNewLog(size_t infoSize)
+ 
+ void Logger::SetLogEnable(bool enable)
+ {
++    // In WASM mode, logging goes to stderr instead of file, so we can enable it
+     enableLog = enable;
+ }
+ } // namespace ark
+diff --git a/cangjie_tools/cangjie-language-server/src/wasm/CMakeLists.txt b/cangjie_tools/cangjie-language-server/src/wasm/CMakeLists.txt
+new file mode 100644
+index 00000000..35163ff9
+--- /dev/null
++++ b/cangjie_tools/cangjie-language-server/src/wasm/CMakeLists.txt
+@@ -0,0 +1,38 @@
++# Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
++# This source file is part of the Cangjie project, licensed under Apache-2.0
++# with Runtime Library Exception.
++#
++# See https://cangjie-lang.cn/pages/LICENSE for license information.
++
++# WASM Transport library for WebAssembly build
++
++if(BUILD_WASM)
++    message(STATUS "Building WASM transport layer")
++
++    # WasmTransport library
++    add_library(WasmTransport STATIC
++        WasmTransport.cpp
++        WasmTransport.h
++        wasm_stubs.cpp
++    )
++
++    # Include directories
++    target_include_directories(WasmTransport PRIVATE
++        ${CMAKE_CURRENT_SOURCE_DIR}
++        ${CMAKE_CURRENT_SOURCE_DIR}/../json-rpc
++        ${CMAKE_CURRENT_SOURCE_DIR}/../languageserver
++        ${CMAKE_CURRENT_SOURCE_DIR}/../../../third_party/json-v3.11.3/include
++    )
++
++    # WASM specific compile definitions
++    target_compile_definitions(WasmTransport PRIVATE
++        BUILD_WASM
++        WASM_TARGET
++    )
++
++    # Link with embind
++    target_compile_options(WasmTransport PRIVATE
++        -fexceptions
++    )
++
++endif()
+diff --git a/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.cpp b/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.cpp
+new file mode 100644
+index 00000000..336894c4
+--- /dev/null
++++ b/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.cpp
+@@ -0,0 +1,231 @@
++// Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
++// This source file is part of the Cangjie project, licensed under Apache-2.0
++// with Runtime Library Exception.
++//
++// See https://cangjie-lang.cn/pages/LICENSE for license information.
++
++#ifdef BUILD_WASM
++
++#include "WasmTransport.h"
++#include "../languageserver/capabilities/shutdown/Shutdown.h"
++#include "../languageserver/logger/Logger.h"
++
++namespace ark {
++
++nlohmann::json WasmTransport::EncodeError(const MessageErrorDetail &errorInfo)
++{
++    nlohmann::json root;
++    root["message"] = errorInfo.message;
++    root["code"] = static_cast<int64_t>(errorInfo.code);
++    return root;
++}
++
++MessageErrorDetail WasmTransport::DecodeError(const nlohmann::json &o)
++{
++    std::string msg = o.contains("message") ? o.value("message", "") : "Unspecified error";
++    ErrorCode code = o.contains("code") ? ErrorCode(o.value("code", -1)) : ErrorCode::UNKNOWN_ERROR_CODE;
++    return {msg, code};
++}
++
++void WasmTransport::Notify(std::string method, ValueOrError params)
++{
++    nlohmann::json root;
++    root["jsonrpc"] = "2.0";
++    root["method"] = method;
++    if (params.type == ValueOrErrorCheck::VALUE) {
++        root["params"] = std::move(params.jsonValue);
++    } else {
++        root["error"] = EncodeError(params.errorInfo);
++    }
++    SendToJS(root);
++}
++
++void WasmTransport::Reply(nlohmann::json id, ValueOrError result)
++{
++    nlohmann::json root;
++    root["jsonrpc"] = "2.0";
++    root["id"] = std::move(id);
++    if (result.type == ValueOrErrorCheck::VALUE) {
++        root["result"] = std::move(result.jsonValue);
++    } else {
++        root["error"] = EncodeError(result.errorInfo);
++    }
++    SendToJS(root);
++}
++
++void WasmTransport::SendToJS(const nlohmann::json &message)
++{
++    std::stringstream log;
++    std::ostringstream os;
++    os << message.dump(-1, ' ', false, nlohmann::json::error_handler_t::ignore);
++
++    std::string msgStr = os.str();
++
++    CleanAndLog(log, "send message body:" + msgStr);
++    Logger::Instance().LogMessage(MessageType::MSG_INFO, log.str());
++
++    // Use the registered callback to send message to JavaScript
++    if (jsCallback) {
++        jsCallback(msgStr.c_str());
++    }
++}
++
++void WasmTransport::ReceiveMessage(const std::string &message)
++{
++    std::lock_guard<std::mutex> lock(queueMutex);
++    messageQueue.push(message);
++    queueCondition.notify_one();
++}
++
++LSPRet WasmTransport::ProcessSingleMessage(MessageHandler &handler)
++{
++    Logger &logger = Logger::Instance();
++    std::stringstream log;
++
++    std::string json;
++    {
++        std::lock_guard<std::mutex> lock(queueMutex);
++        if (messageQueue.empty()) {
++            return LSPRet::SUCCESS;
++        }
++        json = messageQueue.front();
++        messageQueue.pop();
++    }
++
++    if (json.empty()) {
++        return LSPRet::SUCCESS;
++    }
++
++    CleanAndLog(log, "receive message body:" + json);
++    logger.LogMessage(MessageType::MSG_INFO, log.str());
++    logger.CollectMessageInfo(logger.LogInfo(MessageType::MSG_INFO, json));
++
++    nlohmann::json doc;
++#ifndef NO_EXCEPTIONS
++    try {
++#endif
++        doc = nlohmann::json::parse(json);
++#ifndef NO_EXCEPTIONS
++    } catch (nlohmann::detail::parse_error &errs) {
++        CleanAndLog(log, errs.what());
++        logger.LogMessage(MessageType::MSG_WARNING, log.str());
++        return LSPRet::ERR_JSON;
++    }
++#endif
++
++    return HandleMessage(std::move(doc), handler);
++}
++
++LSPRet WasmTransport::Loop(MessageHandler &handler)
++{
++    Logger &logger = Logger::Instance();
++    std::stringstream log;
++
++    while (!exitRequested) {
++        std::string json;
++        {
++            std::unique_lock<std::mutex> lock(queueMutex);
++            queueCondition.wait(lock, [this] {
++                return !messageQueue.empty() || exitRequested;
++            });
++
++            if (exitRequested && messageQueue.empty()) {
++                break;
++            }
++
++            if (!messageQueue.empty()) {
++                json = messageQueue.front();
++                messageQueue.pop();
++            }
++        }
++
++        if (json.empty()) {
++            continue;
++        }
++
++        CleanAndLog(log, "receive message body:" + json);
++        logger.LogMessage(MessageType::MSG_INFO, log.str());
++        logger.CollectMessageInfo(logger.LogInfo(MessageType::MSG_INFO, json));
++
++        nlohmann::json doc;
++#ifndef NO_EXCEPTIONS
++        try {
++#endif
++            doc = nlohmann::json::parse(json);
++#ifndef NO_EXCEPTIONS
++        } catch (nlohmann::detail::parse_error &errs) {
++            CleanAndLog(log, errs.what());
++            logger.LogMessage(MessageType::MSG_WARNING, log.str());
++            continue;
++        }
++#endif
++
++        LSPRet ret = HandleMessage(std::move(doc), handler);
++        if (ret == LSPRet::NORMAL_EXIT || ret == LSPRet::ABNORMAL_EXIT) {
++            return ret;
++        }
++    }
++
++    return LSPRet::NORMAL_EXIT;
++}
++
++LSPRet WasmTransport::HandleMessage(nlohmann::json message, MessageHandler &handler)
++{
++    Logger &logger = Logger::Instance();
++
++    // Message must be an object with "jsonrpc":"2.0".
++    if (message["jsonrpc"].is_null() || message.value("jsonrpc", "") != "2.0") {
++        logger.LogMessage(MessageType::MSG_WARNING, "jsonrpc is null or not 2.0.");
++        return LSPRet::ERR_JSON;
++    }
++
++    nlohmann::json id = nullptr;
++    if (!message["id"].is_null()) {
++        id = std::move(message["id"]);
++    }
++
++    // call or notify
++    if (!message["method"].is_null()) {
++        std::string method = message.value("method", "");
++
++        if (method == "exit") {
++            if (ShutdownRequested()) {
++                return LSPRet::NORMAL_EXIT;
++            }
++            return LSPRet::ABNORMAL_EXIT;
++        }
++
++        nlohmann::json params = nullptr;
++        if (message["params"].is_object()) {
++            params = std::move(message["params"]);
++        }
++
++        if (id.is_null()) {
++            return handler.OnNotify(method, std::move(params));
++        }
++        return handler.OnCall(method, std::move(params), std::move(id));
++    }
++
++    if (id.is_null()) {
++        std::stringstream log;
++        log << "No method and no response ID, message: " << message;
++        logger.LogMessage(MessageType::MSG_WARNING, log.str());
++        return LSPRet::ERR_JSON;
++    }
++
++    // reply
++    if (!message["error"].is_null()) {
++        return handler.OnReply(std::move(id),
++                               ValueOrError(ValueOrErrorCheck::ERR, DecodeError(message["error"])));
++    }
++
++    nlohmann::json jsonValue = nullptr;
++    if (!message["result"].is_null()) {
++        jsonValue = std::move(message["result"]);
++    }
++    return handler.OnReply(std::move(id), ValueOrError(ValueOrErrorCheck::VALUE, jsonValue));
++}
++
++} // namespace ark
++
++#endif // BUILD_WASM
+diff --git a/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.h b/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.h
+new file mode 100644
+index 00000000..dbefbe48
+--- /dev/null
++++ b/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.h
+@@ -0,0 +1,109 @@
++// Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
++// This source file is part of the Cangjie project, licensed under Apache-2.0
++// with Runtime Library Exception.
++//
++// See https://cangjie-lang.cn/pages/LICENSE for license information.
++
++#ifndef LSPSERVER_WASMTRANSPORT_H
++#define LSPSERVER_WASMTRANSPORT_H
++
++#ifdef BUILD_WASM
++
++#include <iostream>
++#include <sstream>
++#include <queue>
++#include <mutex>
++#include <condition_variable>
++
++#include <emscripten.h>
++#include <emscripten/bind.h>
++
++#include "../json-rpc/Transport.h"
++
++namespace ark {
++
++// Callback function type for sending messages to JavaScript
++using JsMessageCallback = void (*)(const char *);
++
++class WasmTransport : public Transport {
++public:
++    static WasmTransport &Instance()
++    {
++        static WasmTransport instance{};
++        return instance;
++    }
++
++    // Transport interface implementation
++    void SetIO(std::FILE *in, std::FILE *out) override
++    {
++        // Not used in WASM - communication is via embind
++    }
++
++    void Notify(std::string method, ValueOrError params) override;
++
++    void Reply(nlohmann::json id, ValueOrError result) override;
++
++    LSPRet Loop(MessageHandler &handler) override;
++
++    // JavaScript interface methods
++    void ReceiveMessage(const std::string &message);
++
++    // Set the callback for sending messages to JavaScript
++    void SetMessageCallback(JsMessageCallback callback)
++    {
++        jsCallback = callback;
++    }
++
++    // Process a single message (non-blocking, for use with embind)
++    LSPRet ProcessSingleMessage(MessageHandler &handler);
++
++    // Check if there are pending messages
++    bool HasPendingMessages() const
++    {
++        std::lock_guard<std::mutex> lock(queueMutex);
++        return !messageQueue.empty();
++    }
++
++    // Request exit from the message loop
++    void RequestExit()
++    {
++        exitRequested = true;
++        queueCondition.notify_all();
++    }
++
++    ~WasmTransport() override {}
++
++private:
++    WasmTransport() : jsCallback(nullptr), exitRequested(false) {}
++    WasmTransport(const WasmTransport &) = delete;
++    const WasmTransport &operator=(const WasmTransport &) = delete;
++
++    // Send a JSON message to JavaScript
++    void SendToJS(const nlohmann::json &message);
++
++    // Handle a parsed JSON message
++    LSPRet HandleMessage(nlohmann::json message, MessageHandler &handler);
++
++    // Encode error to JSON
++    static nlohmann::json EncodeError(const MessageErrorDetail &errorInfo);
++
++    // Decode error from JSON
++    static MessageErrorDetail DecodeError(const nlohmann::json &o);
++
++    // Message queue for receiving messages from JavaScript
++    std::queue<std::string> messageQueue;
++    mutable std::mutex queueMutex;
++    std::condition_variable queueCondition;
++
++    // Callback to send messages to JavaScript
++    JsMessageCallback jsCallback;
++
++    // Flag to request exit from Loop
++    std::atomic<bool> exitRequested;
++};
++
++} // namespace ark
++
++#endif // BUILD_WASM
++
++#endif // LSPSERVER_WASMTRANSPORT_H
+diff --git a/cangjie_tools/cangjie-language-server/src/wasm/wasm_main.cpp b/cangjie_tools/cangjie-language-server/src/wasm/wasm_main.cpp
+new file mode 100644
+index 00000000..7c7ccaad
+--- /dev/null
++++ b/cangjie_tools/cangjie-language-server/src/wasm/wasm_main.cpp
+@@ -0,0 +1,236 @@
++// Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
++// This source file is part of the Cangjie project, licensed under Apache-2.0
++// with Runtime Library Exception.
++//
++// See https://cangjie-lang.cn/pages/LICENSE for license information.
++
++#ifdef BUILD_WASM
++
++#include <emscripten.h>
++#include <emscripten/bind.h>
++#include <memory>
++#include <string>
++#include <thread>
++
++#include <cangjie/Basic/Version.h>
++
++#include "WasmTransport.h"
++#include "../languageserver/ArkLanguageServer.h"
++#include "../languageserver/logger/Logger.h"
++#include "../languageserver/capabilities/shutdown/Shutdown.h"
++#include "../languageserver/common/Utils.h"
++#include "../languageserver/index/IndexDatabase.h"
++
++using namespace Cangjie::FileUtil;
++
++namespace {
++
++// Global LSP server instance
++std::unique_ptr<ark::ArkLanguageServer> g_lspServer;
++std::unique_ptr<ark::lsp::IndexDatabase> g_indexDB;
++ark::Environment g_environment;
++bool g_initialized = false;
++bool g_serverLoopRunning = false;
++std::thread g_serverThread;
++
++// Callback function to send messages to JavaScript (proxied to main thread)
++extern "C" {
++    EMSCRIPTEN_KEEPALIVE
++    void wasmSendMessage(const char *message)
++    {
++        MAIN_THREAD_EM_ASM({
++            if (typeof Module.onLSPMessage === 'function') {
++                Module.onLSPMessage(UTF8ToString($0));
++            } else {
++                console.log('LSP Response:', UTF8ToString($0));
++            }
++        }, message);
++    }
++}
++
++} // anonymous namespace
++
++// Initialize the LSP server
++void initLSP()
++{
++    if (g_initialized) {
++        Trace::Log("LSP already initialized");
++        return;
++    }
++
++    Trace::Log("Initializing WASM LSP Server");
++
++    // Set up environment (WASM has limited environment access)
++    g_environment.cangjiePath = "/cangjie";
++    g_environment.cangjieHome = "/cangjie";
++    g_environment.runtimePath = "";
++
++    // Create index database (in-memory only for WASM)
++    g_indexDB = std::make_unique<ark::lsp::IndexDatabase>();
++    ark::CompilerCangjieProject::SetUseDB(false);
++
++    // Register WasmTransport
++    ark::TransportRegistrar<ark::Transport, ark::WasmTransport> wasmTransportRegistrar("wasm");
++    wasmTransportRegistrar.Regist();
++
++    // Set the message callback
++    ark::WasmTransport::Instance().SetMessageCallback(wasmSendMessage);
++
++    // Create the LSP server
++    g_lspServer = std::make_unique<ark::ArkLanguageServer>(
++        ark::WasmTransport::Instance(), g_environment, g_indexDB.get());
++
++    g_initialized = true;
++    Trace::Log("WASM LSP Server initialized");
++}
++
++// Initialize with custom paths
++void initLSPWithPaths(const std::string &cangjiePath, const std::string &cangjieHome)
++{
++    if (g_initialized) {
++        Trace::Log("LSP already initialized");
++        return;
++    }
++
++    Trace::Log("Initializing WASM LSP Server with custom paths");
++
++    g_environment.cangjiePath = cangjiePath;
++    g_environment.cangjieHome = cangjieHome;
++    g_environment.runtimePath = "";
++
++    g_indexDB = std::make_unique<ark::lsp::IndexDatabase>();
++    ark::CompilerCangjieProject::SetUseDB(false);
++
++    ark::TransportRegistrar<ark::Transport, ark::WasmTransport> wasmTransportRegistrar("wasm");
++    wasmTransportRegistrar.Regist();
++
++    ark::WasmTransport::Instance().SetMessageCallback(wasmSendMessage);
++
++    g_lspServer = std::make_unique<ark::ArkLanguageServer>(
++        ark::WasmTransport::Instance(), g_environment, g_indexDB.get());
++
++    g_initialized = true;
++    Trace::Log("WASM LSP Server initialized with custom paths");
++}
++
++// Process a single message from JavaScript
++// If server loop is running (async mode), just queue the message
++// Otherwise, process synchronously (not recommended, will block UI)
++void processMessage(const std::string &message)
++{
++    if (!g_initialized) {
++        EM_ASM({ console.error("LSP not initialized. Call initLSP() first."); });
++        return;
++    }
++
++    // Put message in queue
++    ark::WasmTransport::Instance().ReceiveMessage(message);
++
++    // If server loop is running, the background thread will process it
++    // Otherwise, process synchronously (blocks UI - not recommended)
++    if (!g_serverLoopRunning && g_lspServer) {
++        g_lspServer->ProcessSingleMessage();
++    }
++}
++
++// Start the LSP server loop in a separate thread (requires pthreads)
++void startServerLoop()
++{
++    if (!g_initialized) {
++        EM_ASM({ console.error("LSP not initialized. Call initLSP() first."); });
++        return;
++    }
++
++    if (g_serverLoopRunning) {
++        Trace::Log("Server loop already running");
++        return;
++    }
++
++    g_serverLoopRunning = true;
++
++    g_serverThread = std::thread([]() {
++        Trace::Log("Starting LSP server loop in background thread");
++        Cangjie::ICE::TriggerPointSetter iceSetter(Cangjie::ICE::LSP_TP);
++        ark::LSPRet exitCode = g_lspServer->Run();
++
++        g_serverLoopRunning = false;
++
++        if (exitCode == ark::LSPRet::NORMAL_EXIT) {
++            Trace::Log("LSP finished normally");
++        } else if (exitCode == ark::LSPRet::ABNORMAL_EXIT) {
++            Trace::Wlog("LSP exited abnormally");
++        }
++    });
++    g_serverThread.detach();
++
++    Trace::Log("Server loop started in background thread");
++}
++
++// Stop the LSP server
++void stopServer()
++{
++    if (!g_initialized) {
++        return;
++    }
++
++    Trace::Log("Stopping WASM LSP Server");
++    ark::WasmTransport::Instance().RequestExit();
++}
++
++// Shutdown and cleanup
++void shutdownLSP()
++{
++    if (!g_initialized) {
++        return;
++    }
++
++    Trace::Log("Shutting down WASM LSP Server");
++    stopServer();
++
++    g_lspServer.reset();
++    g_indexDB.reset();
++    g_initialized = false;
++    g_serverLoopRunning = false;
++}
++
++// Check if the server is initialized
++bool isInitialized()
++{
++    return g_initialized;
++}
++
++// Check if the server loop is running
++bool isServerLoopRunning()
++{
++    return g_serverLoopRunning;
++}
++
++// Get version information
++std::string getVersion()
++{
++    return std::string(Cangjie::CANGJIE_VERSION);
++}
++
++// Emscripten bindings to expose functions to JavaScript
++// Note: For filesystem operations, use Module.FS directly in JavaScript
++EMSCRIPTEN_BINDINGS(cangjie_lsp) {
++    emscripten::function("initLSP", &initLSP);
++    emscripten::function("initLSPWithPaths", &initLSPWithPaths);
++    emscripten::function("processMessage", &processMessage);
++    emscripten::function("startServerLoop", &startServerLoop);
++    emscripten::function("stopServer", &stopServer);
++    emscripten::function("shutdownLSP", &shutdownLSP);
++    emscripten::function("isInitialized", &isInitialized);
++    emscripten::function("isServerLoopRunning", &isServerLoopRunning);
++    emscripten::function("getVersion", &getVersion);
++}
++
++// Main function for WASM (minimal, initialization happens via embind)
++int main()
++{
++    Trace::Log("WASM LSP module loaded");
++
++    return 0;
++}
++
++#endif // BUILD_WASM
+diff --git a/cangjie_tools/cangjie-language-server/src/wasm/wasm_stubs.cpp b/cangjie_tools/cangjie-language-server/src/wasm/wasm_stubs.cpp
+new file mode 100644
+index 00000000..84bb43ef
+--- /dev/null
++++ b/cangjie_tools/cangjie-language-server/src/wasm/wasm_stubs.cpp
+@@ -0,0 +1,107 @@
++// Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
++// WASM stubs for missing symbols in libcangjie-lsp-wasm.a
++// These are placeholder implementations for functions that are not needed in WASM LSP
++
++#include <string>
++#include <vector>
++#include <cstdint>
++
++// C linkage stubs for mangled symbols with proper signatures
++// The mangled names are extracted directly from libcangjie-lsp-wasm.a using llvm-nm
++extern "C" {
++
++// ===== ProfileRecorder stubs =====
++// ProfileRecorder constructor - takes this ptr + 3 string refs
++void* _ZN7Cangjie5Utils15ProfileRecorderC1ERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEESA_SA_(
++    void* thisPtr, const void* s1, const void* s2, const void* s3) {
++    return thisPtr;
++}
++void* _ZN7Cangjie5Utils15ProfileRecorderC2ERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEESA_SA_(
++    void* thisPtr, const void* s1, const void* s2, const void* s3) {
++    return thisPtr;
++}
++
++// ProfileRecorder destructor - takes this ptr, returns this ptr
++void* _ZN7Cangjie5Utils15ProfileRecorderD1Ev(void* thisPtr) {
++    return thisPtr;
++}
++void* _ZN7Cangjie5Utils15ProfileRecorderD2Ev(void* thisPtr) {
++    return thisPtr;
++}
++
++// ProfileRecorder::Start - STATIC method: 3 string refs
++void _ZN7Cangjie5Utils15ProfileRecorder5StartERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEESA_SA_(
++    const void* s1, const void* s2, const void* s3) {}
++
++// ProfileRecorder::Stop - STATIC method: 3 string refs
++void _ZN7Cangjie5Utils15ProfileRecorder4StopERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEESA_SA_(
++    const void* s1, const void* s2, const void* s3) {}
++
++// ProfileRecorder::SetPackageName - STATIC method: 1 string ref
++void _ZN7Cangjie5Utils15ProfileRecorder14SetPackageNameERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(
++    const void* name) {}
++
++// ProfileRecorder::SetOutputDir - STATIC method: 1 string ref
++void _ZN7Cangjie5Utils15ProfileRecorder12SetOutputDirERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEE(
++    const void* path) {}
++
++// ProfileRecorder::RecordCodeInfo - STATIC method: string ref + int64
++void _ZN7Cangjie5Utils15ProfileRecorder14RecordCodeInfoERKNSt3__212basic_stringIcNS2_11char_traitsIcEENS2_9allocatorIcEEEEx(
++    const void* str, int64_t val) {}
++
++// ===== CreateAltSignalStack =====
++void _ZN7Cangjie20CreateAltSignalStackEv() {}
++
++// ===== MacroExpansion::Execute =====
++// Exact mangled name from library: _ZN7Cangjie14MacroExpansion7ExecuteERNSt3__26vectorI8OwnedPtrINS_3AST7PackageEENS1_9allocatorIS6_EEEE
++// Returns void, takes this ptr + vector ref
++void _ZN7Cangjie14MacroExpansion7ExecuteERNSt3__26vectorI8OwnedPtrINS_3AST7PackageEENS1_9allocatorIS6_EEEE(
++    void* thisPtr, void* vecPtr) {
++    // no-op for macro expansion in WASM
++}
++
++// ===== CompilerInstance::PerformCHIRCompilation =====
++// Exact mangled name from library: _ZN7Cangjie16CompilerInstance22PerformCHIRCompilationEv (22 chars in function name)
++bool _ZN7Cangjie16CompilerInstance22PerformCHIRCompilationEv(void* thisPtr) {
++    return true;
++}
++
++// ===== CompilerInstance::PerformGenericInstantiation =====
++bool _ZN7Cangjie16CompilerInstance27PerformGenericInstantiationEv(void* thisPtr) {
++    return true;
++}
++
++// ===== TypeCheckUtil::IsNeedRuntimeCheck =====
++// Exact mangled name: _ZN7Cangjie13TypeCheckUtil18IsNeedRuntimeCheckERNS_11TypeManagerERNS_3AST2TyES5_
++bool _ZN7Cangjie13TypeCheckUtil18IsNeedRuntimeCheckERNS_11TypeManagerERNS_3AST2TyES5_(
++    void* typeMgr, void* ty1, void* ty2) {
++    return false;
++}
++
++// ===== TypeManager::IsFuncDeclSubType =====
++// Exact mangled name: _ZN7Cangjie11TypeManager17IsFuncDeclSubTypeERKNS_3AST8FuncDeclES4_
++bool _ZN7Cangjie11TypeManager17IsFuncDeclSubTypeERKNS_3AST8FuncDeclES4_(
++    void* thisPtr, const void* fd1, const void* fd2) {
++    return false;
++}
++
++// ===== TestEntryConstructor::IsTestRegistrationFunction =====
++// Exact mangled name: _ZN7Cangjie20TestEntryConstructor26IsTestRegistrationFunctionE3PtrINS_3AST4DeclEE
++bool _ZN7Cangjie20TestEntryConstructor26IsTestRegistrationFunctionE3PtrINS_3AST4DeclEE(void* ptr) {
++    return false;
++}
++
++// ===== DeclAttributeChecker::CheckGenericFuncDeclAttributes =====
++// Takes this ptr + FuncDecl const ref - returns void (const method)
++void _ZNK12_GLOBAL__N_120DeclAttributeChecker30CheckGenericFuncDeclAttributesERKN7Cangjie3AST8FuncDeclE(
++    const void* thisPtr, const void* funcDecl) {
++    // no-op
++}
++
++// ===== TypeChecker::TypeCheckerImpl::ChkPointerExpr =====
++int _ZN7Cangjie11TypeChecker15TypeCheckerImpl14ChkPointerExprERNS_10ASTContextERNS_3AST2TyERNS4_11PointerExprE(
++    void* thisPtr, void* ctx, void* ty, void* expr) {
++    return 0;
++}
++
++} // extern "C"
