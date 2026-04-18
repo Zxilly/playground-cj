@@ -153,7 +153,7 @@ const STD_MODULES = [
 // Emscripten module interface (uses proxy pthread for background processing)
 interface EmscriptenModule {
   onLSPMessage: (messageStr: string) => void
-  initLSPWithPaths: (cangjiePath: string, cangjieHome: string) => void
+  initLSP: () => void
   startServerLoop: () => void
   processMessage: (message: string) => void
   FS: {
@@ -262,7 +262,7 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
 
   // Initialize LSP server
   onLog('Initializing LSP server...')
-  wasmMod.initLSPWithPaths('/cangjie', '/cangjie')
+  wasmMod.initLSP()
 
   // Create directories for modules using FS API
   const targetModulesPath = `/cangjie/modules/${TARGET_PATH}`
