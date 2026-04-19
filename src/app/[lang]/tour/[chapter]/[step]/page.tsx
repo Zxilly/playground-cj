@@ -3,6 +3,7 @@ import TourWrapper from '@/components/tour/TourWrapper'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import type { Metadata } from 'next'
+import { getSiteDomain } from '@/lib/siteHref'
 
 interface PageProps {
   params: Promise<{
@@ -58,7 +59,7 @@ export default async function TourStepPage({ params }: PageProps) {
   const slimTourData = getSlimTourData(tourData)
   const headersList = await headers()
   const host = headersList.get('host') ?? ''
-  const isTourDomain = host.startsWith('tour.')
+  const isTourDomain = getSiteDomain(host) === 'tour'
 
   return (
     <main>

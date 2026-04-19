@@ -3,10 +3,9 @@ import { NextResponse } from 'next/server'
 import Negotiator from 'negotiator'
 import type { Locale } from '@/lib/i18n'
 import { defaultLocale, isLocale, locales } from '@/lib/i18n'
+import { getSiteDomain } from '@/lib/siteHref'
 
 const COOKIE_NAME = 'locale'
-
-type DomainType = 'tour' | 'playground'
 
 interface ParsedPath {
   lang: Locale | null
@@ -40,10 +39,6 @@ function getLocaleFromCookie(request: NextRequest): Locale | null {
 
 function getPreferredLocale(request: NextRequest): Locale {
   return getLocaleFromCookie(request) ?? getLocaleFromHeaders(request)
-}
-
-function getDomainType(host: string): DomainType {
-  return host.startsWith('tour.') ? 'tour' : 'playground'
 }
 
 function parsePath(pathname: string): ParsedPath {
@@ -103,7 +98,7 @@ export function proxy(request: NextRequest): NextResponse {
   }
 
   const host = request.headers.get('host') ?? ''
-  const domain = getDomainType(host)
+  const domain = getSiteDomain(host)
   const parsed = parsePath(pathname)
 
   if (domain === 'tour') {

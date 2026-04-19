@@ -3,8 +3,9 @@
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { isLocale, locales } from '@/lib/i18n'
+import { locales } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
+import { getLocaleHref } from '@/lib/siteHref'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, Globe } from 'lucide-react'
 import { useState } from 'react'
@@ -22,18 +23,7 @@ function setLanguageCookie(locale: Locale) {
 }
 
 function navigateToLocale(locale: Locale) {
-  const { pathname, search, hash } = window.location
-  const pathSegments = pathname.split('/').filter(Boolean)
-  const hasLocalePrefix = isLocale(pathSegments[0])
-
-  if (hasLocalePrefix) {
-    pathSegments[0] = locale
-  }
-  else {
-    pathSegments.unshift(locale)
-  }
-
-  window.location.href = `/${pathSegments.join('/')}${search}${hash}`
+  window.location.href = getLocaleHref(locale, window.location)
 }
 
 export function LanguageSelector() {

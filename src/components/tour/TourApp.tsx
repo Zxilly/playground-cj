@@ -13,7 +13,7 @@ import { harmonyFont, jetbrainsFont } from '@/app/font'
 import { useMedia } from 'react-use'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FlatSection, TourChapterSlim } from '@/tour/types'
-import { getTourBasePath } from '@/hooks/useTourHref'
+import { getTourPath } from '@/lib/siteHref'
 
 interface TourAppProps {
   lang: string
@@ -26,7 +26,7 @@ interface TourAppProps {
 export default function TourApp({ lang, tourData, allSections, initialIndex, isTourDomain }: TourAppProps) {
   const isDesktop = useMedia('(min-width: 1024px)')
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
-  const basePath = getTourBasePath(lang, isTourDomain)
+  const basePath = getTourPath(lang, { servingDomain: isTourDomain ? 'tour' : 'playground' })
 
   const section = allSections[currentIndex]
 

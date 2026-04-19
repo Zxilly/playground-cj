@@ -10,6 +10,7 @@ import type { MonacoEditorHandle } from '@/components/EditorWrapper'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { useMedia } from 'react-use'
 import { useLanguage } from '@/hooks/useLanguage'
+import { getTourHref } from '@/lib/siteHref'
 import { BookOpen } from 'lucide-react'
 
 interface PlaygroundHeaderProps {
@@ -37,6 +38,7 @@ function ExamplesAction({ editor, wrapperRef }: Pick<PlaygroundHeaderProps, 'edi
 export function PlaygroundHeader({ handleRun, handleFormat, editor, wrapperRef }: PlaygroundHeaderProps) {
   const isDesktop = useMedia('(min-width: 1024px)')
   const { locale } = useLanguage()
+  const tourHref = getTourHref(locale, { currentOrigin: window.location.origin })
 
   if (isDesktop) {
     return (
@@ -55,7 +57,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, editor, wrapperRef }
         </div>
         <div className="flex flex-row space-x-2">
           <Button variant="outline" asChild>
-            <a href={`/${locale}/tour`}>
+            <a href={tourHref}>
               <BookOpen className="h-4 w-4 mr-1" />
               <Trans>教程</Trans>
             </a>
@@ -93,7 +95,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, editor, wrapperRef }
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
-            <a href={`/${locale}/tour`}>
+            <a href={tourHref}>
               <BookOpen className="h-4 w-4 mr-1" />
               <Trans>教程</Trans>
             </a>
