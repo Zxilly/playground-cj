@@ -579,6 +579,117 @@ index 8dbfb91e..ce6e1bc7 100644
       { Options::ID::COMPILE_MACRO, [](GlobalOptions& opts, [[maybe_unused]] const OptionArgInstance& arg) {
          opts.compileMacroPackage = true;
  #ifdef CANGJIE_CODEGEN_CJNATIVE_BACKEND
+diff --git a/cangjie_compiler/src/Parse/ParseAtom.cpp b/cangjie_compiler/src/Parse/ParseAtom.cpp
+index e7df8ffe..3293abce 100644
+--- a/cangjie_compiler/src/Parse/ParseAtom.cpp
++++ b/cangjie_compiler/src/Parse/ParseAtom.cpp
+@@ -30,11 +30,11 @@ ParserImpl::ExprHandler ParserImpl::LookupExprHandler(TokenKind kind)
+ 
+     // clang-format off
+     static const ExprHandler HANDLERS[ARRAY_SIZE] = {
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseLeftParenExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseLeftParenExpr>,
+         nullptr, // RPAREN
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseArrayLitExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseArrayLitExpr>,
+         nullptr, // RSQUARE
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseLambdaExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseLambdaExpr>,
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // RCURL..INCR
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // DECR..BITOR
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // BITXOR..ASSIGN
+@@ -45,36 +45,36 @@ ParserImpl::ExprHandler ParserImpl::LookupExprHandler(TokenKind kind)
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // INT8..UINT8
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // UINT16..RUNE
+         nullptr, nullptr, // BOOLEAN..NOTHING
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseVArrayExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseVArrayExpr>,
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // THISTYPE..MACRO
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseQuoteExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseQuoteExpr>,
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // DOLLAR..INIT
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseThisOrSuper),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseThisOrSuper),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseIfExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseThisOrSuper>,
++        &ExprHandlerThunk<&ParserImpl::ParseThisOrSuper>,
++        &ExprHandlerThunk<&ParserImpl::ParseIfExpr>,
+         nullptr, nullptr, // ELSE, CASE
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseTryExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseTryExpr>,
+         nullptr, nullptr, // CATCH, FINALLY
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseForInExpr),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseDoWhileExpr),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseWhileExpr),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseThrowExpr),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseReturnExpr),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseContinueJumpExpr),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseBreakJumpExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseForInExpr>,
++        &ExprHandlerThunk<&ParserImpl::ParseDoWhileExpr>,
++        &ExprHandlerThunk<&ParserImpl::ParseWhileExpr>,
++        &ExprHandlerThunk<&ParserImpl::ParseThrowExpr>,
++        &ExprHandlerThunk<&ParserImpl::ParseReturnExpr>,
++        &ExprHandlerThunk<&ParserImpl::ParseContinueJumpExpr>,
++        &ExprHandlerThunk<&ParserImpl::ParseBreakJumpExpr>,
+         nullptr, nullptr, // IN, NOT_IN
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseMatchExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseMatchExpr>,
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // WHERE..OVERRIDE
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // REDEF..MUT
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseUnsafeBlock),
++        &ExprHandlerThunk<&ParserImpl::ParseUnsafeBlock>,
+         nullptr, // OPERATOR
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseSpawnExpr),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseSynchronizedExpr),
++        &ExprHandlerThunk<&ParserImpl::ParseSpawnExpr>,
++        &ExprHandlerThunk<&ParserImpl::ParseSynchronizedExpr>,
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // UPPERBOUND..FLOAT_LITERAL
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // COMMENT..MULTILINE_RAW_STRING
+         nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, // BOOL_LITERAL..PLATFORM
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParsePerformExpr),
+-        reinterpret_cast<ExprHandler>(&ParserImpl::ParseResumeExpr),
++        &ExprHandlerThunk<&ParserImpl::ParsePerformExpr>,
++        &ExprHandlerThunk<&ParserImpl::ParseResumeExpr>,
+     };
+     // clang-format on
+ 
+@@ -99,7 +99,7 @@ OwnedPtr<Expr> ParserImpl::ParseAtom(ExprKind ek)
+             EnterQuoteExprMod();
+         }
+         Next();
+-        auto ret = (this->*handler)(tokenKind);
++        auto ret = handler(this);
+         if (tokenKind == TokenKind::QUOTE) {
+             ExitQuoteExprMod();
+         }
+diff --git a/cangjie_compiler/src/Parse/ParserImpl.h b/cangjie_compiler/src/Parse/ParserImpl.h
+index de4d67e0..f1b6e5d7 100644
+--- a/cangjie_compiler/src/Parse/ParserImpl.h
++++ b/cangjie_compiler/src/Parse/ParserImpl.h
+@@ -207,8 +207,20 @@ private:
+         ScopeKind, const std::set<AST::Modifier>&, std::vector<OwnedPtr<AST::Annotation>>);
+     // lookup declaration handler by token kind
+     static DeclHandler LookupDeclHandler(TokenKind kind);
+-    // expression handler type, use token kind
+-    using ExprHandler = OwnedPtr<AST::Expr> (ParserImpl::*)(TokenKind);
++    // Expression handler: free-function pointer with a uniform signature.
++    // We do NOT store raw member-function pointers of the underlying handlers
++    // in the dispatch table, because those handlers have divergent signatures
++    // (different return types, some take 0 args). Casting them all to a single
++    // member-function-pointer type is undefined behavior, and on WebAssembly
++    // `call_indirect` traps with "function signature mismatch" when the arg
++    // count does not match. Instead each table entry is a small templated
++    // thunk with a uniform (ParserImpl*) -> OwnedPtr<Expr> signature.
++    using ExprHandler = OwnedPtr<AST::Expr> (*)(ParserImpl*);
++    template <auto Method>
++    static OwnedPtr<AST::Expr> ExprHandlerThunk(ParserImpl* self)
++    {
++        return (self->*Method)();
++    }
+     // lookup expression handler by token kind
+     static ExprHandler LookupExprHandler(TokenKind kind);
+     // lookup expression followed commas by expression kind
 diff --git a/cangjie_compiler/src/Sema/CJMP/CheckCJMP.cpp b/cangjie_compiler/src/Sema/CJMP/CheckCJMP.cpp
 index f683fd4e..7041ac9a 100644
 --- a/cangjie_compiler/src/Sema/CJMP/CheckCJMP.cpp
@@ -3121,10 +3232,10 @@ index 00000000..dbefbe48
 +#endif // LSPSERVER_WASMTRANSPORT_H
 diff --git a/cangjie_tools/cangjie-language-server/src/wasm/wasm_main.cpp b/cangjie_tools/cangjie-language-server/src/wasm/wasm_main.cpp
 new file mode 100644
-index 00000000..7c7ccaad
+index 00000000..2a61447a
 --- /dev/null
 +++ b/cangjie_tools/cangjie-language-server/src/wasm/wasm_main.cpp
-@@ -0,0 +1,236 @@
+@@ -0,0 +1,240 @@
 +// Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
 +// This source file is part of the Cangjie project, licensed under Apache-2.0
 +// with Runtime Library Exception.
@@ -3165,9 +3276,13 @@ index 00000000..7c7ccaad
 +    EMSCRIPTEN_KEEPALIVE
 +    void wasmSendMessage(const char *message)
 +    {
++        // NOTE: Use bracket-string property access so Closure Compiler
++        // (--closure 1) does not mangle the user-facing callback name.
++        // Dot access like Module.onLSPMessage gets renamed (e.g. Module.uc),
++        // which breaks consumers that assign Module['onLSPMessage'] = handler.
 +        MAIN_THREAD_EM_ASM({
-+            if (typeof Module.onLSPMessage === 'function') {
-+                Module.onLSPMessage(UTF8ToString($0));
++            if (typeof Module['onLSPMessage'] === 'function') {
++                Module['onLSPMessage'](UTF8ToString($0));
 +            } else {
 +                console.log('LSP Response:', UTF8ToString($0));
 +            }

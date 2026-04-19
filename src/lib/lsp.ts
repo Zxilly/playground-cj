@@ -1,35 +1,69 @@
-// LSP WASM module paths
-const LSP_WASM_PATH = '/lsp/LSPServer-wasm.js'
-const LSP_WASM_BINARY_PATH = '/lsp/LSPServer-wasm.wasm'
+// TODO: switch back to /lsp/LSPServer-wasm.{js,wasm} once the signature
+// mismatch / documentLink crash is diagnosed.
+const LSP_WASM_PATH = '/lsp/LSPServer-wasm-debug.js'
+const LSP_WASM_BINARY_PATH = '/lsp/LSPServer-wasm-debug.wasm'
 const LSP_MODULES_PATH = '/lsp/modules'
-const TARGET_PATH = 'linux_x86_64_cjnative'
 
-// Cache configuration
-const CACHE_KEY = 'lsp-v2' // Change this to invalidate all caches (WASM + CJO)
+// Disable all WASM + CJO caching in dev so a freshly built wasm/cjo is
+// picked up without manually clearing site data.
+const CACHE_ENABLED = process.env.NODE_ENV !== 'development'
+
+// Cache key is derived from the .wasm file's HTTP metadata so a new build
+// auto-invalidates the Cache API + IndexedDB layers without a manual bump.
+const CACHE_KEY_FALLBACK = 'lsp-fallback'
 const CACHE_STORAGE_KEY = 'lsp-cache-version'
-const WASM_CACHE_NAME = `wasm-${CACHE_KEY}`
-const WASM_CACHE_PATHS = [LSP_WASM_PATH, LSP_WASM_BINARY_PATH]
+const WASM_CACHE_NAME_PREFIX = 'wasm-'
 const CJO_DB_NAME = 'cjo-cache'
 const CJO_STORE_NAME = 'modules'
 
-/**
- * Check if cache version changed and clear if needed
- */
-async function checkAndUpdateCacheVersion(): Promise<void> {
-  const storedVersion = localStorage.getItem(CACHE_STORAGE_KEY)
+let currentCacheKey: string = CACHE_KEY_FALLBACK
+let wasmCacheName: string = `${WASM_CACHE_NAME_PREFIX}${CACHE_KEY_FALLBACK}`
 
-  if (storedVersion !== CACHE_KEY) {
-    console.log(`[Cache] Version changed: ${storedVersion} -> ${CACHE_KEY}`)
+// Prefer ETag, then Last-Modified, then Content-Length — any value that
+// changes between builds is sufficient.
+async function detectBuildVersion(): Promise<string> {
+  try {
+    const res = await fetch(LSP_WASM_BINARY_PATH, { method: 'HEAD', cache: 'no-cache' })
+    const etag = res.headers.get('etag')
+    if (etag)
+      return `etag-${etag.replace(/["\s]/g, '').slice(0, 24)}`
+    const lastMod = res.headers.get('last-modified')
+    if (lastMod)
+      return `lm-${Date.parse(lastMod) || lastMod.slice(0, 24)}`
+    const len = res.headers.get('content-length')
+    if (len)
+      return `len-${len}`
+  }
+  catch (e) {
+    console.warn('[Cache] detectBuildVersion HEAD failed, using fallback:', e)
+  }
+  return CACHE_KEY_FALLBACK
+}
+
+async function checkAndUpdateCacheVersion(): Promise<void> {
+  if (!CACHE_ENABLED) {
+    console.log('[Cache] Disabled (dev); clearing any existing entries')
     await clearAllLspCache()
-    localStorage.setItem(CACHE_STORAGE_KEY, CACHE_KEY)
+    return
+  }
+
+  const detected = await detectBuildVersion()
+  currentCacheKey = detected
+  wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${detected}`
+
+  const storedVersion = localStorage.getItem(CACHE_STORAGE_KEY)
+  if (storedVersion !== detected) {
+    console.log(`[Cache] Build version changed: ${storedVersion} -> ${detected}`)
+    await clearAllLspCache()
+    localStorage.setItem(CACHE_STORAGE_KEY, detected)
   }
 }
 
-/**
- * Fetch with Cache API support
- * Tries cache first, falls back to network and caches the response
- */
 async function cachedFetch(url: string, cacheName: string): Promise<Response> {
+  if (!CACHE_ENABLED) {
+    return fetch(url, { cache: 'no-cache' })
+  }
+
   const cache = await caches.open(cacheName)
 
   const cached = await cache.match(url)
@@ -49,23 +83,17 @@ async function cachedFetch(url: string, cacheName: string): Promise<Response> {
   return response
 }
 
-/**
- * Preload and cache WASM files
- */
+// JS glue is not pre-cached — it's dynamically imported with a cache-busting
+// query param, so the browser's module cache handles freshness.
 async function preloadWasmCache(): Promise<void> {
-  await Promise.all(WASM_CACHE_PATHS.map(async (path) => {
-    try {
-      await cachedFetch(path, WASM_CACHE_NAME)
-    }
-    catch (e) {
-      console.warn(`[Cache] Failed to preload ${path}:`, e)
-    }
-  }))
+  try {
+    await cachedFetch(LSP_WASM_BINARY_PATH, wasmCacheName)
+  }
+  catch (e) {
+    console.warn(`[Cache] Failed to preload ${LSP_WASM_BINARY_PATH}:`, e)
+  }
 }
 
-/**
- * Clear all WASM caches (current + old versions)
- */
 async function clearWasmCache(): Promise<void> {
   const keys = await caches.keys()
   await Promise.all(
@@ -76,9 +104,6 @@ async function clearWasmCache(): Promise<void> {
   )
 }
 
-/**
- * Clear CJO modules cache from IndexedDB
- */
 async function clearCjoCache(): Promise<void> {
   try {
     await new Promise<void>((resolve, reject) => {
@@ -93,64 +118,10 @@ async function clearCjoCache(): Promise<void> {
   }
 }
 
-/**
- * Clear all LSP caches (WASM + CJO modules)
- */
 export async function clearAllLspCache(): Promise<void> {
   await Promise.all([clearWasmCache(), clearCjoCache()])
 }
 
-// Standard library modules
-const STD_MODULES = [
-  'std.cjo',
-  'std/std.core.cjo',
-  'std/std.collection.cjo',
-  'std/std.collection.concurrent.cjo',
-  'std/std.io.cjo',
-  'std/std.fs.cjo',
-  'std/std.net.cjo',
-  'std/std.sync.cjo',
-  'std/std.time.cjo',
-  'std/std.math.cjo',
-  'std/std.math.numeric.cjo',
-  'std/std.random.cjo',
-  'std/std.regex.cjo',
-  'std/std.convert.cjo',
-  'std/std.console.cjo',
-  'std/std.process.cjo',
-  'std/std.env.cjo',
-  'std/std.binary.cjo',
-  'std/std.unicode.cjo',
-  'std/std.sort.cjo',
-  'std/std.reflect.cjo',
-  'std/std.ref.cjo',
-  'std/std.overflow.cjo',
-  'std/std.objectpool.cjo',
-  'std/std.runtime.cjo',
-  'std/std.ast.cjo',
-  'std/std.argopt.cjo',
-  'std/std.crypto.cjo',
-  'std/std.crypto.cipher.cjo',
-  'std/std.crypto.digest.cjo',
-  'std/std.database.cjo',
-  'std/std.database.sql.cjo',
-  'std/std.deriving.cjo',
-  'std/std.deriving.api.cjo',
-  'std/std.deriving.builtins.cjo',
-  'std/std.deriving.impl.cjo',
-  'std/std.deriving.resolve.cjo',
-  'std/std.posix.cjo',
-  'std/std.unittest.cjo',
-  'std/std.unittest.common.cjo',
-  'std/std.unittest.diff.cjo',
-  'std/std.unittest.mock.cjo',
-  'std/std.unittest.mock.internal.cjo',
-  'std/std.unittest.mock.mockmacro.cjo',
-  'std/std.unittest.prop_test.cjo',
-  'std/std.unittest.testmacro.cjo',
-]
-
-// Emscripten module interface (uses proxy pthread for background processing)
 interface EmscriptenModule {
   onLSPMessage: (messageStr: string) => void
   initLSP: () => void
@@ -158,14 +129,24 @@ interface EmscriptenModule {
   processMessage: (message: string) => void
   FS: {
     mkdir: (path: string) => void
-    mkdirTree: (path: string) => void
     writeFile: (path: string, data: Uint8Array) => void
+    analyzePath?: (path: string) => { exists: boolean }
+    stat?: (path: string) => unknown
   }
 }
 
-/**
- * Open IndexedDB for CJO cache
- */
+function mkdirP(fs: EmscriptenModule['FS'], path: string): void {
+  const parts = path.split('/').filter(Boolean)
+  let cur = ''
+  for (const p of parts) {
+    cur += `/${p}`
+    try {
+      fs.mkdir(cur)
+    }
+    catch {}
+  }
+}
+
 function openCjoDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(CJO_DB_NAME, 1)
@@ -180,9 +161,6 @@ function openCjoDatabase(): Promise<IDBDatabase> {
   })
 }
 
-/**
- * Read a single key from an open IndexedDB connection
- */
 function idbGet(db: IDBDatabase, key: string): Promise<Uint8Array | null> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(CJO_STORE_NAME, 'readonly')
@@ -192,17 +170,13 @@ function idbGet(db: IDBDatabase, key: string): Promise<Uint8Array | null> {
   })
 }
 
-/**
- * Write a single key to an open IndexedDB connection (fire-and-forget)
- */
+// Fire-and-forget: cache writes are best-effort, failures are non-fatal.
 function idbPut(db: IDBDatabase, key: string, data: Uint8Array): void {
   try {
     const tx = db.transaction(CJO_STORE_NAME, 'readwrite')
     tx.objectStore(CJO_STORE_NAME).put(data, key)
   }
-  catch {
-    // Ignore cache write errors
-  }
+  catch {}
 }
 
 interface LspServerCallbacks {
@@ -211,45 +185,54 @@ interface LspServerCallbacks {
   onError: (err: Error) => void
 }
 
-/**
- * Initialize the Cangjie LSP WASM module
- */
 async function initializeLspServer(callbacks: LspServerCallbacks): Promise<EmscriptenModule> {
   const { onMessage, onLog, onError } = callbacks
 
   await checkAndUpdateCacheVersion()
 
   onLog('Loading WASM module...')
-
-  // Preload WASM files into cache
   await preloadWasmCache()
 
-  // Dynamic import of the WASM module (must remain dynamic as it's loaded at runtime)
-  const WasmModule = await import(/* webpackIgnore: true */ LSP_WASM_PATH)
+  // Cache-bust the JS glue in lockstep with the .wasm binary.
+  // Directories the stdlib loader will write into. Cangjie's static init
+  // (inside the wasm factory) also expects `/cangjie/modules/<target>/` to
+  // exist — create everything in preRun so it's ready before main() runs.
+  const targetModulesPath = `/cangjie/modules/${__CJO_TARGET__}`
+  const moduleDirs = new Set<string>()
+  for (const modulePath of __CJO_MODULES__) {
+    const idx = modulePath.lastIndexOf('/')
+    if (idx > 0) {
+      moduleDirs.add(modulePath.slice(0, idx))
+    }
+  }
+
+  const jsUrl = `${LSP_WASM_PATH}?v=${encodeURIComponent(currentCacheKey)}`
+  const WasmModule = await import(/* webpackIgnore: true */ jsUrl)
   const wasmMod: EmscriptenModule = await WasmModule.default({
     print: (text: string) => onLog(`[stdout] ${text}`),
     printErr: (text: string) => onLog(`[stderr] ${text}`),
-    // Use cached fetch for .wasm binary
-    instantiateWasm: async (
+    preRun: [(mod: EmscriptenModule) => {
+      mkdirP(mod.FS, targetModulesPath)
+      for (const dir of moduleDirs) {
+        mkdirP(mod.FS, `${targetModulesPath}/${dir}`)
+      }
+    }],
+    // Emscripten contract: async path must call successCallback() and
+    // return {} — never return a Promise or exports object.
+    instantiateWasm: (
       imports: WebAssembly.Imports,
       successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
     ) => {
-      try {
-        const response = await cachedFetch(LSP_WASM_BINARY_PATH, WASM_CACHE_NAME)
-        const bytes = await response.arrayBuffer()
-        const result = await WebAssembly.instantiate(bytes, imports)
-        successCallback(result.instance, result.module)
-        return result.instance.exports
-      }
-      catch (e) {
-        onError(new Error(`Failed to instantiate WASM: ${(e as Error).message}`))
-        throw e
-      }
+      cachedFetch(LSP_WASM_BINARY_PATH, wasmCacheName)
+        .then(r => r.arrayBuffer())
+        .then(bytes => WebAssembly.instantiate(bytes, imports))
+        .then(result => successCallback(result.instance, result.module))
+        .catch(e => onError(new Error(`Failed to instantiate WASM: ${(e as Error).message}`)))
+      return {}
     },
   })
 
-  // Set up message callback for LSP responses
-  wasmMod.onLSPMessage = (messageStr: string) => {
+  const lspMessageHandler = (messageStr: string) => {
     try {
       const json = JSON.parse(messageStr)
       const label = (json.method && json.id === undefined) ? 'Notification' : 'Response'
@@ -259,16 +242,17 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
       onError(new Error(`Failed to parse LSP message: ${(e as Error).message}`))
     }
   }
+  // The wasm glue is built with Closure 1, which mangles the
+  // `Module.onLSPMessage` property it checks inside EM_JS to a short name
+  // (currently `uc`). User code isn't processed by the same closure pass,
+  // so setting only `onLSPMessage` doesn't connect. Assign both; if the
+  // mangled name changes on a future wasm build, update the fallback.
+  wasmMod.onLSPMessage = lspMessageHandler
+  ;(wasmMod as unknown as Record<string, unknown>).uc = lspMessageHandler
 
-  // Initialize LSP server
   onLog('Initializing LSP server...')
   wasmMod.initLSP()
 
-  // Create directories for modules using FS API
-  const targetModulesPath = `/cangjie/modules/${TARGET_PATH}`
-  wasmMod.FS.mkdirTree(`${targetModulesPath}/std`)
-
-  // Load standard library modules with a single DB connection
   onLog('Loading standard library...')
 
   let loaded = 0
@@ -276,18 +260,17 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   let downloaded = 0
 
   let db: IDBDatabase | null = null
-  try {
-    db = await openCjoDatabase()
-  }
-  catch {
-    // Continue without cache
+  if (CACHE_ENABLED) {
+    try {
+      db = await openCjoDatabase()
+    }
+    catch {}
   }
 
-  await Promise.all(STD_MODULES.map(async (modulePath) => {
+  await Promise.all(__CJO_MODULES__.map(async (modulePath) => {
     const destPath = `${targetModulesPath}/${modulePath}`
 
     try {
-      // Check IndexedDB cache first
       const cachedData = db ? await idbGet(db, modulePath) : null
 
       if (cachedData) {
@@ -297,13 +280,12 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
         onLog(`  [cjo] ${destPath} (${cachedData.length} bytes, cached)`)
       }
       else {
-        const url = `${LSP_MODULES_PATH}/${TARGET_PATH}/${modulePath}`
+        const url = `${LSP_MODULES_PATH}/${__CJO_TARGET__}/${modulePath}`
         const response = await fetch(url)
         if (response.ok) {
           const data = new Uint8Array(await response.arrayBuffer())
           wasmMod.FS.writeFile(destPath, data)
 
-          // Cache to IndexedDB (fire-and-forget)
           if (db) {
             idbPut(db, modulePath, data)
           }
@@ -320,9 +302,8 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   }))
 
   db?.close()
-  onLog(`Loaded ${loaded}/${STD_MODULES.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
+  onLog(`Loaded ${loaded}/${__CJO_MODULES__.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
 
-  // Start the background server loop for non-blocking message processing
   onLog('Starting server loop...')
   wasmMod.startServerLoop()
 
@@ -337,20 +318,9 @@ interface ConnectionInstance {
 
 let connectionInstance: ConnectionInstance | null = null
 
-/**
- * Create a MessageChannel-based connection between monaco-languageclient and the LSP server.
- *
- * MessageChannel creates two connected ports:
- * - editorPort: Used by monaco-languageclient (BrowserMessageReader/Writer)
- * - serverPort: Used by LSP server to receive requests and send responses
- *
- * Message flow:
- * 1. Editor sends request via editorPort.postMessage() → arrives at serverPort
- * 2. serverPort.onmessage forwards to WASM LSP server
- * 3. LSP server responds via onLSPMessage callback
- * 4. Response sent via serverPort.postMessage() → arrives at editorPort
- * 5. BrowserMessageReader receives response on editorPort
- */
+// editorPort (port1) is consumed by monaco-languageclient's
+// BrowserMessageReader/Writer; serverPort (port2) bridges to the WASM LSP via
+// postMessage ↔ processMessage / onLSPMessage.
 function createLanguageClientConnection(): ConnectionInstance {
   const { port1: editorPort, port2: serverPort } = new MessageChannel()
 
@@ -359,10 +329,7 @@ function createLanguageClientConnection(): ConnectionInstance {
   let wasmModule: EmscriptenModule | null = null
 
   instance.initPromise = initializeLspServer({
-    onMessage: (label, json) => {
-      console.log(`[LSP ${label}]`, json)
-      serverPort.postMessage(json)
-    },
+    onMessage: (_label, json) => serverPort.postMessage(json),
     onLog: msg => console.log('[LSP]', msg),
     onError: err => console.error('[LSP Error]', err),
   }).then((module) => {
@@ -386,10 +353,6 @@ function createLanguageClientConnection(): ConnectionInstance {
   return instance
 }
 
-/**
- * Get the MessagePort for monaco-languageclient to communicate with the LSP server.
- * Creates the connection on first call (singleton pattern).
- */
 export function getLanguageClientPort(): MessagePort {
   if (!connectionInstance) {
     connectionInstance = createLanguageClientConnection()
@@ -403,15 +366,12 @@ export interface LspStatus {
   stdlibModulesTotal: number
 }
 
-/**
- * Get the current LSP server status
- */
 export function getLspStatus(): LspStatus {
   const initialized = connectionInstance !== null && connectionInstance.module !== null
 
   return {
     initialized,
-    stdlibModulesLoaded: initialized ? STD_MODULES.length : 0,
-    stdlibModulesTotal: STD_MODULES.length,
+    stdlibModulesLoaded: initialized ? __CJO_MODULES__.length : 0,
+    stdlibModulesTotal: __CJO_MODULES__.length,
   }
 }
