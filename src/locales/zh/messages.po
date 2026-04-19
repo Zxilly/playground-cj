@@ -13,16 +13,15 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: status.lastError
-#: src/components/LspStatusIndicator.tsx:72
+#: src/components/LspStatusIndicator.tsx:77
 msgid ""
 "\n"
-"错误：{0}"
+"错误：{lastError}"
 msgstr ""
 "\n"
-"错误：{0}"
+"错误：{lastError}"
 
-#: src/components/LspStatusIndicator.tsx:31
+#: src/components/LspStatusIndicator.tsx:36
 msgid "（手动）"
 msgstr "（手动）"
 
@@ -38,31 +37,31 @@ msgstr "exit code {code}"
 msgid "Hash 方式"
 msgstr "Hash 方式"
 
-#: src/components/LspStatusIndicator.tsx:55
+#: src/components/LspStatusIndicator.tsx:60
 msgid "LSP 停止中"
 msgstr "LSP 停止中"
 
-#: src/components/LspStatusIndicator.tsx:43
+#: src/components/LspStatusIndicator.tsx:48
 msgid "LSP 启动中"
 msgstr "LSP 启动中"
 
-#: src/components/LspStatusIndicator.tsx:75
+#: src/components/LspStatusIndicator.tsx:80
 msgid "LSP 崩溃"
 msgstr "LSP 崩溃"
 
-#: src/components/LspStatusIndicator.tsx:65
+#: src/components/LspStatusIndicator.tsx:70
 msgid "LSP 已停止"
 msgstr "LSP 已停止"
 
-#: src/components/LspStatusIndicator.tsx:37
+#: src/components/LspStatusIndicator.tsx:42
 msgid "LSP 已就绪"
 msgstr "LSP 已就绪"
 
-#: src/components/LspStatusIndicator.tsx:64
+#: src/components/LspStatusIndicator.tsx:69
 msgid "LSP 已手动停止"
 msgstr "LSP 已手动停止"
 
-#: src/components/LspStatusIndicator.tsx:49
+#: src/components/LspStatusIndicator.tsx:54
 msgid "LSP 重启中"
 msgstr "LSP 重启中"
 
@@ -75,19 +74,19 @@ msgstr "URL 方式"
 msgid "仓颉 Playground"
 msgstr "仓颉 Playground"
 
-#: src/lib/lsp-commands.ts:58
+#: src/lib/lsp-commands.ts:44
 msgid "仓颉：停止 LSP"
 msgstr "仓颉：停止 LSP"
 
-#: src/lib/lsp-commands.ts:53
+#: src/lib/lsp-commands.ts:39
 msgid "仓颉：启动 LSP"
 msgstr "仓颉：启动 LSP"
 
-#: src/lib/lsp-commands.ts:68
+#: src/lib/lsp-commands.ts:54
 msgid "仓颉：清除缓存并重启 LSP"
 msgstr "仓颉：清除缓存并重启 LSP"
 
-#: src/lib/lsp-commands.ts:63
+#: src/lib/lsp-commands.ts:49
 msgid "仓颉：重启 LSP"
 msgstr "仓颉：重启 LSP"
 
@@ -99,7 +98,7 @@ msgstr "仓颉之旅"
 msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 msgstr "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 
-#: src/components/LspStatusIndicator.tsx:56
+#: src/components/LspStatusIndicator.tsx:61
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -109,7 +108,7 @@ msgstr ""
 "\n"
 "状态：停止中{originSuffix}"
 
-#: src/components/LspStatusIndicator.tsx:44
+#: src/components/LspStatusIndicator.tsx:49
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -121,7 +120,7 @@ msgstr ""
 "状态：启动中{originSuffix}\n"
 "{moduleInfo}"
 
-#: src/components/LspStatusIndicator.tsx:38
+#: src/components/LspStatusIndicator.tsx:43
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -137,7 +136,7 @@ msgstr ""
 "\n"
 "点击查看操作"
 
-#: src/components/LspStatusIndicator.tsx:78
+#: src/components/LspStatusIndicator.tsx:83
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -151,7 +150,7 @@ msgstr ""
 "\n"
 "点击查看操作"
 
-#: src/components/LspStatusIndicator.tsx:77
+#: src/components/LspStatusIndicator.tsx:82
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -165,7 +164,7 @@ msgstr ""
 "\n"
 "点击手动重启"
 
-#: src/components/LspStatusIndicator.tsx:68
+#: src/components/LspStatusIndicator.tsx:73
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -179,7 +178,7 @@ msgstr ""
 "\n"
 "点击查看操作"
 
-#: src/components/LspStatusIndicator.tsx:67
+#: src/components/LspStatusIndicator.tsx:72
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -193,7 +192,7 @@ msgstr ""
 "\n"
 "点击查看操作"
 
-#: src/components/LspStatusIndicator.tsx:50
+#: src/components/LspStatusIndicator.tsx:55
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -213,7 +212,7 @@ msgstr "侧边栏"
 msgid "保存代码"
 msgstr "保存代码"
 
-#: src/components/LspStatusIndicator.tsx:172
+#: src/components/LspStatusIndicator.tsx:177
 msgid "停止"
 msgstr "停止"
 
@@ -274,7 +273,7 @@ msgstr "分享成功"
 msgid "切换侧边栏"
 msgstr "切换侧边栏"
 
-#: src/components/LspStatusIndicator.tsx:166
+#: src/components/LspStatusIndicator.tsx:171
 msgid "启动"
 msgstr "启动"
 
@@ -336,11 +335,9 @@ msgstr "未找到示例。"
 msgid "未找到语言。"
 msgstr "未找到语言。"
 
-#. placeholder {0}: status.stdlibModulesLoaded
-#. placeholder {1}: status.stdlibModulesTotal
-#: src/components/LspStatusIndicator.tsx:29
-msgid "标准库模块：{0}/{1}"
-msgstr "标准库模块：{0}/{1}"
+#: src/components/LspStatusIndicator.tsx:34
+msgid "标准库模块：{loadedModules}/{totalModules}"
+msgstr "标准库模块：{loadedModules}/{totalModules}"
 
 #: src/components/playground/PlaygroundHeader.tsx:71
 #: src/components/playground/PlaygroundHeader.tsx:114
@@ -364,11 +361,11 @@ msgstr "正在格式化..."
 msgid "正在运行..."
 msgstr "正在运行..."
 
-#: src/components/LspStatusIndicator.tsx:186
+#: src/components/LspStatusIndicator.tsx:191
 msgid "清除 WASM 与标准库缓存后重启"
 msgstr "清除 WASM 与标准库缓存后重启"
 
-#: src/components/LspStatusIndicator.tsx:185
+#: src/components/LspStatusIndicator.tsx:190
 msgid "清除缓存并重启"
 msgstr "清除缓存并重启"
 
@@ -410,7 +407,7 @@ msgstr "运行失败"
 msgid "运行成功"
 msgstr "运行成功"
 
-#: src/components/LspStatusIndicator.tsx:178
+#: src/components/LspStatusIndicator.tsx:183
 msgid "重启"
 msgstr "重启"
 

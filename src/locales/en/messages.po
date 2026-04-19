@@ -13,16 +13,13 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: status.lastError
-#: src/components/LspStatusIndicator.tsx:72
+#: src/components/LspStatusIndicator.tsx:77
 msgid ""
 "\n"
-"错误：{0}"
+"错误：{lastError}"
 msgstr ""
-"\n"
-"Error: {0}"
 
-#: src/components/LspStatusIndicator.tsx:31
+#: src/components/LspStatusIndicator.tsx:36
 msgid "（手动）"
 msgstr " (manual)"
 
@@ -38,31 +35,31 @@ msgstr "exit code {code}"
 msgid "Hash 方式"
 msgstr "Hash Method"
 
-#: src/components/LspStatusIndicator.tsx:55
+#: src/components/LspStatusIndicator.tsx:60
 msgid "LSP 停止中"
 msgstr "LSP stopping"
 
-#: src/components/LspStatusIndicator.tsx:43
+#: src/components/LspStatusIndicator.tsx:48
 msgid "LSP 启动中"
 msgstr "LSP starting"
 
-#: src/components/LspStatusIndicator.tsx:75
+#: src/components/LspStatusIndicator.tsx:80
 msgid "LSP 崩溃"
 msgstr "LSP crashed"
 
-#: src/components/LspStatusIndicator.tsx:65
+#: src/components/LspStatusIndicator.tsx:70
 msgid "LSP 已停止"
 msgstr "LSP stopped"
 
-#: src/components/LspStatusIndicator.tsx:37
+#: src/components/LspStatusIndicator.tsx:42
 msgid "LSP 已就绪"
 msgstr "LSP ready"
 
-#: src/components/LspStatusIndicator.tsx:64
+#: src/components/LspStatusIndicator.tsx:69
 msgid "LSP 已手动停止"
 msgstr "LSP stopped (manual)"
 
-#: src/components/LspStatusIndicator.tsx:49
+#: src/components/LspStatusIndicator.tsx:54
 msgid "LSP 重启中"
 msgstr "LSP restarting"
 
@@ -75,19 +72,19 @@ msgstr "URL Method"
 msgid "仓颉 Playground"
 msgstr "Cangjie Playground"
 
-#: src/lib/lsp-commands.ts:58
+#: src/lib/lsp-commands.ts:44
 msgid "仓颉：停止 LSP"
 msgstr "Cangjie: Stop LSP"
 
-#: src/lib/lsp-commands.ts:53
+#: src/lib/lsp-commands.ts:39
 msgid "仓颉：启动 LSP"
 msgstr "Cangjie: Start LSP"
 
-#: src/lib/lsp-commands.ts:68
+#: src/lib/lsp-commands.ts:54
 msgid "仓颉：清除缓存并重启 LSP"
 msgstr "Cangjie: Clear Cache and Restart LSP"
 
-#: src/lib/lsp-commands.ts:63
+#: src/lib/lsp-commands.ts:49
 msgid "仓颉：重启 LSP"
 msgstr "Cangjie: Restart LSP"
 
@@ -99,7 +96,7 @@ msgstr "Cangjie Tour"
 msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
 
-#: src/components/LspStatusIndicator.tsx:56
+#: src/components/LspStatusIndicator.tsx:61
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -109,7 +106,7 @@ msgstr ""
 "\n"
 "Status: Stopping{originSuffix}"
 
-#: src/components/LspStatusIndicator.tsx:44
+#: src/components/LspStatusIndicator.tsx:49
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -121,7 +118,7 @@ msgstr ""
 "Status: Starting{originSuffix}\n"
 "{moduleInfo}"
 
-#: src/components/LspStatusIndicator.tsx:38
+#: src/components/LspStatusIndicator.tsx:43
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -137,7 +134,7 @@ msgstr ""
 "\n"
 "Click for actions"
 
-#: src/components/LspStatusIndicator.tsx:78
+#: src/components/LspStatusIndicator.tsx:83
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -151,7 +148,7 @@ msgstr ""
 "\n"
 "Click for actions"
 
-#: src/components/LspStatusIndicator.tsx:77
+#: src/components/LspStatusIndicator.tsx:82
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -165,7 +162,7 @@ msgstr ""
 "\n"
 "Click to manually restart"
 
-#: src/components/LspStatusIndicator.tsx:68
+#: src/components/LspStatusIndicator.tsx:73
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -179,7 +176,7 @@ msgstr ""
 "\n"
 "Click for actions"
 
-#: src/components/LspStatusIndicator.tsx:67
+#: src/components/LspStatusIndicator.tsx:72
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -193,7 +190,7 @@ msgstr ""
 "\n"
 "Click for actions"
 
-#: src/components/LspStatusIndicator.tsx:50
+#: src/components/LspStatusIndicator.tsx:55
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -213,7 +210,7 @@ msgstr "Sidebar"
 msgid "保存代码"
 msgstr "Save Code"
 
-#: src/components/LspStatusIndicator.tsx:172
+#: src/components/LspStatusIndicator.tsx:177
 msgid "停止"
 msgstr "Stop"
 
@@ -274,7 +271,7 @@ msgstr "Share successful"
 msgid "切换侧边栏"
 msgstr "Toggle Sidebar"
 
-#: src/components/LspStatusIndicator.tsx:166
+#: src/components/LspStatusIndicator.tsx:171
 msgid "启动"
 msgstr "Start"
 
@@ -336,11 +333,9 @@ msgstr "No examples found."
 msgid "未找到语言。"
 msgstr "No languages found."
 
-#. placeholder {0}: status.stdlibModulesLoaded
-#. placeholder {1}: status.stdlibModulesTotal
-#: src/components/LspStatusIndicator.tsx:29
-msgid "标准库模块：{0}/{1}"
-msgstr "Stdlib modules: {0}/{1}"
+#: src/components/LspStatusIndicator.tsx:34
+msgid "标准库模块：{loadedModules}/{totalModules}"
+msgstr ""
 
 #: src/components/playground/PlaygroundHeader.tsx:71
 #: src/components/playground/PlaygroundHeader.tsx:114
@@ -364,11 +359,11 @@ msgstr "Formatting..."
 msgid "正在运行..."
 msgstr "Running..."
 
-#: src/components/LspStatusIndicator.tsx:186
+#: src/components/LspStatusIndicator.tsx:191
 msgid "清除 WASM 与标准库缓存后重启"
 msgstr "Clears WASM + stdlib caches, then restarts"
 
-#: src/components/LspStatusIndicator.tsx:185
+#: src/components/LspStatusIndicator.tsx:190
 msgid "清除缓存并重启"
 msgstr "Clear Cache and Restart"
 
@@ -410,7 +405,7 @@ msgstr "Run failed"
 msgid "运行成功"
 msgstr "Run successful"
 
-#: src/components/LspStatusIndicator.tsx:178
+#: src/components/LspStatusIndicator.tsx:183
 msgid "重启"
 msgstr "Restart"
 

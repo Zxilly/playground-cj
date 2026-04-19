@@ -1,7 +1,5 @@
-// TODO: switch back to /lsp/LSPServer-wasm.{js,wasm} once the signature
-// mismatch / documentLink crash is diagnosed.
-const LSP_WASM_PATH = '/lsp/LSPServer-wasm-debug.js'
-const LSP_WASM_BINARY_PATH = '/lsp/LSPServer-wasm-debug.wasm'
+const LSP_WASM_PATH = '/lsp/LSPServer-wasm.js'
+const LSP_WASM_BINARY_PATH = '/lsp/LSPServer-wasm.wasm'
 const LSP_MODULES_PATH = '/lsp/modules'
 
 // Disable all WASM + CJO caching in dev so a freshly built wasm/cjo is
