@@ -18,6 +18,8 @@ const CJO_STORE_NAME = 'modules'
 
 let currentCacheKey: string = CACHE_KEY_FALLBACK
 let wasmCacheName: string = `${WASM_CACHE_NAME_PREFIX}${CACHE_KEY_FALLBACK}`
+const ETAG_SANITIZE_RE = /["\s]/g
+const WASM_FATAL_RE = /\babort\(|RuntimeError|Uncaught/
 
 // Prefer ETag, then Last-Modified, then Content-Length — any value that
 // changes between builds is sufficient.
@@ -26,7 +28,7 @@ async function detectBuildVersion(): Promise<string> {
     const res = await fetch(LSP_WASM_BINARY_PATH, { method: 'HEAD', cache: 'no-cache' })
     const etag = res.headers.get('etag')
     if (etag)
-      return `etag-${etag.replace(/["\s]/g, '').slice(0, 24)}`
+      return `etag-${etag.replace(ETAG_SANITIZE_RE, '').slice(0, 24)}`
     const lastMod = res.headers.get('last-modified')
     if (lastMod)
       return `lm-${Date.parse(lastMod) || lastMod.slice(0, 24)}`
@@ -83,8 +85,6 @@ async function cachedFetch(url: string, cacheName: string): Promise<Response> {
   return response
 }
 
-// JS glue is not pre-cached — it's dynamically imported with a cache-busting
-// query param, so the browser's module cache handles freshness.
 async function preloadWasmCache(): Promise<void> {
   try {
     await cachedFetch(LSP_WASM_BINARY_PATH, wasmCacheName)
@@ -185,15 +185,21 @@ interface LspServerCallbacks {
   onError: (err: Error) => void
 }
 
-async function initializeLspServer(callbacks: LspServerCallbacks): Promise<EmscriptenModule> {
+async function initializeLspServer(
+  callbacks: LspServerCallbacks,
+  shouldAbort: () => boolean,
+): Promise<EmscriptenModule> {
   const { onMessage, onLog, onError } = callbacks
 
   await checkAndUpdateCacheVersion()
+  if (shouldAbort())
+    throw new Error('aborted')
 
   onLog('Loading WASM module...')
   await preloadWasmCache()
+  if (shouldAbort())
+    throw new Error('aborted')
 
-  // Cache-bust the JS glue in lockstep with the .wasm binary.
   // Directories the stdlib loader will write into. Cangjie's static init
   // (inside the wasm factory) also expects `/cangjie/modules/<target>/` to
   // exist — create everything in preRun so it's ready before main() runs.
@@ -208,9 +214,19 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
 
   const jsUrl = `${LSP_WASM_PATH}?v=${encodeURIComponent(currentCacheKey)}`
   const WasmModule = await import(/* webpackIgnore: true */ jsUrl)
+  if (shouldAbort())
+    throw new Error('aborted')
+
   const wasmMod: EmscriptenModule = await WasmModule.default({
     print: (text: string) => onLog(`[stdout] ${text}`),
-    printErr: (text: string) => onLog(`[stderr] ${text}`),
+    printErr: (text: string) => {
+      onLog(`[stderr] ${text}`)
+      // WASM abort / native RuntimeError is fatal — surface it so the
+      // controller can treat it as a crash and trigger auto-restart.
+      if (WASM_FATAL_RE.test(text)) {
+        onError(new Error(`WASM fatal: ${text}`))
+      }
+    },
     preRun: [(mod: EmscriptenModule) => {
       mkdirP(mod.FS, targetModulesPath)
       for (const dir of moduleDirs) {
@@ -231,6 +247,8 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
       return {}
     },
   })
+  if (shouldAbort())
+    throw new Error('aborted')
 
   const lspMessageHandler = (messageStr: string) => {
     try {
@@ -264,7 +282,9 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
     try {
       db = await openCjoDatabase()
     }
-    catch {}
+    catch (e) {
+      console.warn('[Cache] CJO IndexedDB open failed; modules will be re-downloaded:', e)
+    }
   }
 
   await Promise.all(__CJO_MODULES__.map(async (modulePath) => {
@@ -277,7 +297,6 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
         wasmMod.FS.writeFile(destPath, cachedData)
         loaded++
         cached++
-        onLog(`  [cjo] ${destPath} (${cachedData.length} bytes, cached)`)
       }
       else {
         const url = `${LSP_MODULES_PATH}/${__CJO_TARGET__}/${modulePath}`
@@ -292,7 +311,6 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
 
           loaded++
           downloaded++
-          onLog(`  [cjo] ${destPath} (${data.length} bytes, downloaded)`)
         }
       }
     }
@@ -303,6 +321,8 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
 
   db?.close()
   onLog(`Loaded ${loaded}/${__CJO_MODULES__.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
+  if (shouldAbort())
+    throw new Error('aborted')
 
   onLog('Starting server loop...')
   wasmMod.startServerLoop()
@@ -310,41 +330,229 @@ async function initializeLspServer(callbacks: LspServerCallbacks): Promise<Emscr
   return wasmMod
 }
 
+export type LspState = 'stopped'
+  | 'starting'
+  | 'running'
+  | 'stopping'
+  | 'crashed'
+  | 'restarting'
+
+export type LspStateOrigin = 'manual' | 'auto'
+
+export interface LspRuntimeStatus {
+  state: LspState
+  origin: LspStateOrigin
+  /** Sticky gate — while true, automatic start/restart paths refuse to run. */
+  manuallyStopped: boolean
+  lastError?: string
+  stdlibModulesLoaded: number
+  stdlibModulesTotal: number
+  /** Increments for each new WASM instance so UIs can detect port replacement. */
+  generation: number
+  autoRestartAttempts: number
+}
+
 interface ConnectionInstance {
   editorPort: MessagePort
+  serverPort: MessagePort
   initPromise: Promise<EmscriptenModule>
   module: EmscriptenModule | null
+  aborted: boolean
+  crashHandled: boolean
+}
+
+interface LspRuntimeDeps {
+  createMessageChannel: () => Pick<MessageChannel, 'port1' | 'port2'>
+  initializeLspServer: (
+    callbacks: LspServerCallbacks,
+    shouldAbort: () => boolean,
+  ) => Promise<EmscriptenModule>
+}
+
+const MAX_AUTO_RESTART_ATTEMPTS = 4
+const AUTO_RESTART_BACKOFF_MS = [1_000, 4_000, 15_000, 60_000]
+const runtimeDeps: LspRuntimeDeps = {
+  createMessageChannel: () => new MessageChannel(),
+  initializeLspServer,
 }
 
 let connectionInstance: ConnectionInstance | null = null
+let generationCounter = 0
+let lifecycleOperation: Promise<void> = Promise.resolve()
 
-// editorPort (port1) is consumed by monaco-languageclient's
-// BrowserMessageReader/Writer; serverPort (port2) bridges to the WASM LSP via
-// postMessage ↔ processMessage / onLSPMessage.
-function createLanguageClientConnection(): ConnectionInstance {
-  const { port1: editorPort, port2: serverPort } = new MessageChannel()
+const runtimeStatus: LspRuntimeStatus = {
+  state: 'stopped',
+  origin: 'auto',
+  manuallyStopped: false,
+  stdlibModulesLoaded: 0,
+  stdlibModulesTotal: __CJO_MODULES__.length,
+  generation: 0,
+  autoRestartAttempts: 0,
+}
 
-  const instance: ConnectionInstance = { editorPort, initPromise: null!, module: null }
+type StatusListener = (status: LspRuntimeStatus) => void
+const listeners = new Set<StatusListener>()
 
-  let wasmModule: EmscriptenModule | null = null
+function emitStatus(): void {
+  const snapshot: LspRuntimeStatus = { ...runtimeStatus }
+  for (const listener of listeners) {
+    try {
+      listener(snapshot)
+    }
+    catch (e) {
+      console.error('[LSP] status listener threw:', e)
+    }
+  }
+}
 
-  instance.initPromise = initializeLspServer({
-    onMessage: (_label, json) => serverPort.postMessage(json),
-    onLog: msg => console.log('[LSP]', msg),
-    onError: err => console.error('[LSP Error]', err),
-  }).then((module) => {
-    wasmModule = module
-    instance.module = module
-    return module
+function setState(patch: Partial<LspRuntimeStatus>): void {
+  Object.assign(runtimeStatus, patch)
+  emitStatus()
+}
+
+export function subscribeLspStatus(listener: StatusListener): () => void {
+  listeners.add(listener)
+  try {
+    listener({ ...runtimeStatus })
+  }
+  catch (e) {
+    console.error('[LSP] status listener threw on subscribe:', e)
+  }
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+let autoRestartTimer: ReturnType<typeof setTimeout> | null = null
+
+function cancelScheduledAutoRestart(): void {
+  if (autoRestartTimer !== null) {
+    clearTimeout(autoRestartTimer)
+    autoRestartTimer = null
+  }
+}
+
+function scheduleAutoRestart(reason: string): void {
+  if (runtimeStatus.manuallyStopped) {
+    return
+  }
+  if (runtimeStatus.autoRestartAttempts >= MAX_AUTO_RESTART_ATTEMPTS) {
+    console.warn('[LSP] exhausted auto-restart attempts; staying crashed')
+    setState({ state: 'crashed', origin: 'auto', lastError: reason })
+    return
+  }
+
+  const delay = AUTO_RESTART_BACKOFF_MS[
+    Math.min(runtimeStatus.autoRestartAttempts, AUTO_RESTART_BACKOFF_MS.length - 1)
+  ]
+  console.warn(`[LSP] scheduling auto-restart in ${delay}ms (attempt ${runtimeStatus.autoRestartAttempts + 1})`)
+  setState({ state: 'crashed', origin: 'auto', lastError: reason })
+
+  cancelScheduledAutoRestart()
+  autoRestartTimer = setTimeout(() => {
+    autoRestartTimer = null
+    if (runtimeStatus.manuallyStopped)
+      return
+    void restartLsp('auto')
+  }, delay)
+}
+
+function handleCrash(err: Error, instance: ConnectionInstance): void {
+  if (instance.crashHandled) {
+    return
+  }
+  // Ignore errors from a superseded instance (e.g. error fires after we've
+  // already torn it down for a restart).
+  if (connectionInstance !== instance) {
+    return
+  }
+  instance.crashHandled = true
+  console.error('[LSP] crash detected:', err)
+  const nextAttempt = runtimeStatus.autoRestartAttempts + 1
+  runtimeStatus.autoRestartAttempts = nextAttempt
+  setState({ autoRestartAttempts: nextAttempt })
+  scheduleAutoRestart(err.message)
+}
+
+function createConnection(origin: LspStateOrigin): ConnectionInstance {
+  const { port1: editorPort, port2: serverPort } = runtimeDeps.createMessageChannel()
+
+  generationCounter += 1
+  const instance: ConnectionInstance = {
+    editorPort,
+    serverPort,
+    initPromise: null!,
+    module: null,
+    aborted: false,
+    crashHandled: false,
+  }
+
+  setState({
+    origin,
+    state: 'starting',
+    lastError: undefined,
+    stdlibModulesLoaded: 0,
+    generation: generationCounter,
   })
 
+  instance.initPromise = runtimeDeps.initializeLspServer(
+    {
+      onMessage: (_label, json) => {
+        if (instance.aborted)
+          return
+        try {
+          serverPort.postMessage(json)
+        }
+        catch (e) {
+          console.warn('[LSP] serverPort.postMessage failed:', e)
+        }
+      },
+      onLog: msg => console.log('[LSP]', msg),
+      onError: err => handleCrash(err, instance),
+    },
+    () => instance.aborted,
+  )
+    .then((module) => {
+      if (instance.aborted) {
+        throw new Error('aborted')
+      }
+      instance.module = module
+      setState({
+        state: 'running',
+        stdlibModulesLoaded: runtimeStatus.stdlibModulesTotal,
+        lastError: undefined,
+        autoRestartAttempts: 0,
+      })
+      return module
+    })
+    .catch((err) => {
+      if (instance.aborted) {
+        throw err
+      }
+      handleCrash(err as Error, instance)
+      throw err
+    })
+
   serverPort.onmessage = async (event) => {
-    if (!wasmModule) {
-      await instance.initPromise
+    if (instance.aborted)
+      return
+    if (!instance.module) {
+      try {
+        await instance.initPromise
+      }
+      catch {
+        return
+      }
     }
-    console.log('[LSP Message]', event.data)
+    if (instance.aborted || !instance.module)
+      return
     const message = typeof event.data === 'string' ? event.data : JSON.stringify(event.data)
-    wasmModule!.processMessage(message)
+    try {
+      instance.module.processMessage(message)
+    }
+    catch (e) {
+      handleCrash(e as Error, instance)
+    }
   }
 
   serverPort.start()
@@ -353,25 +561,171 @@ function createLanguageClientConnection(): ConnectionInstance {
   return instance
 }
 
+async function disposeConnection(instance: ConnectionInstance): Promise<void> {
+  instance.aborted = true
+  instance.crashHandled = true
+  try {
+    instance.serverPort.onmessage = null
+    instance.serverPort.close()
+  }
+  catch {}
+  try {
+    instance.editorPort.close()
+  }
+  catch {}
+  // Wait for any pending init to settle so we don't race a late success
+  // callback that would mutate module/connectionInstance after teardown.
+  try {
+    await instance.initPromise
+  }
+  catch {}
+  instance.module = null
+}
+
+async function runLifecycle<T>(operation: () => Promise<T>): Promise<T> {
+  const next = lifecycleOperation.then(operation, operation)
+  lifecycleOperation = next.then(
+    () => undefined,
+    () => undefined,
+  )
+  return next
+}
+
+/**
+ * Lifts the `manuallyStopped` gate and cancels pending auto-restart when the
+ * caller is explicitly a user action. Returns `false` if an `auto`-origin
+ * call should short-circuit because the user has paused the LSP.
+ */
+function enterLifecycle(origin: LspStateOrigin): boolean {
+  if (origin === 'manual') {
+    runtimeStatus.manuallyStopped = false
+    runtimeStatus.autoRestartAttempts = 0
+    cancelScheduledAutoRestart()
+    return true
+  }
+  return !runtimeStatus.manuallyStopped
+}
+
+async function startLspInternal(origin: LspStateOrigin): Promise<void> {
+  if (!enterLifecycle(origin))
+    return
+
+  if (connectionInstance
+    && (runtimeStatus.state === 'running' || runtimeStatus.state === 'starting')) {
+    try {
+      await connectionInstance.initPromise
+    }
+    catch {}
+    return
+  }
+
+  if (connectionInstance) {
+    const instance = connectionInstance
+    connectionInstance = null
+    setState({ state: 'stopping', origin })
+    await disposeConnection(instance)
+  }
+
+  connectionInstance = createConnection(origin)
+  try {
+    await connectionInstance.initPromise
+  }
+  catch {}
+}
+
+export async function startLsp(origin: LspStateOrigin = 'auto'): Promise<void> {
+  await runLifecycle(() => startLspInternal(origin))
+}
+
+async function stopLspInternal(origin: LspStateOrigin): Promise<void> {
+  cancelScheduledAutoRestart()
+  if (origin === 'manual') {
+    runtimeStatus.manuallyStopped = true
+    runtimeStatus.autoRestartAttempts = 0
+  }
+
+  if (!connectionInstance) {
+    setState({ state: 'stopped', origin, lastError: undefined })
+    return
+  }
+
+  const instance = connectionInstance
+  connectionInstance = null
+  setState({ state: 'stopping', origin })
+  await disposeConnection(instance)
+  setState({ state: 'stopped', origin, stdlibModulesLoaded: 0 })
+}
+
+export async function stopLsp(origin: LspStateOrigin = 'auto'): Promise<void> {
+  await runLifecycle(() => stopLspInternal(origin))
+}
+
+async function restartLspInternal(origin: LspStateOrigin): Promise<void> {
+  if (!enterLifecycle(origin))
+    return
+
+  setState({ state: 'restarting', origin, lastError: undefined })
+
+  if (connectionInstance) {
+    const instance = connectionInstance
+    connectionInstance = null
+    await disposeConnection(instance)
+  }
+
+  connectionInstance = createConnection(origin)
+  try {
+    await connectionInstance.initPromise
+  }
+  catch {}
+}
+
+export async function restartLsp(origin: LspStateOrigin = 'auto'): Promise<void> {
+  await runLifecycle(() => restartLspInternal(origin))
+}
+
+async function clearCacheAndRestartLspInternal(origin: LspStateOrigin): Promise<void> {
+  enterLifecycle(origin)
+
+  // Stop first so no in-flight fetches write to caches we're about to wipe.
+  if (connectionInstance) {
+    const instance = connectionInstance
+    connectionInstance = null
+    setState({ state: 'stopping', origin })
+    await disposeConnection(instance)
+  }
+  await clearAllLspCache()
+  try {
+    localStorage.removeItem(CACHE_STORAGE_KEY)
+  }
+  catch {}
+  setState({ state: 'stopped', origin, stdlibModulesLoaded: 0 })
+  await startLspInternal(origin)
+}
+
+export async function clearCacheAndRestartLsp(origin: LspStateOrigin = 'manual'): Promise<void> {
+  await runLifecycle(() => clearCacheAndRestartLspInternal(origin))
+}
+
+export function getCurrentEditorPort(): MessagePort | null {
+  return connectionInstance?.editorPort ?? null
+}
+
+/**
+ * Returns the editor port for the currently running (or starting) LSP instance.
+ * If the LSP is stopped and not manually stopped, starts it first — this
+ * preserves the original boot-on-first-use contract used by the Monaco
+ * language client factory.
+ */
 export function getLanguageClientPort(): MessagePort {
   if (!connectionInstance) {
-    connectionInstance = createLanguageClientConnection()
+    if (runtimeStatus.manuallyStopped) {
+      throw new Error('LSP is manually stopped; cannot obtain port')
+    }
+    void startLsp('auto')
   }
-  return connectionInstance.editorPort
+  return connectionInstance!.editorPort
 }
 
-export interface LspStatus {
-  initialized: boolean
-  stdlibModulesLoaded: number
-  stdlibModulesTotal: number
-}
-
-export function getLspStatus(): LspStatus {
-  const initialized = connectionInstance !== null && connectionInstance.module !== null
-
-  return {
-    initialized,
-    stdlibModulesLoaded: initialized ? __CJO_MODULES__.length : 0,
-    stdlibModulesTotal: __CJO_MODULES__.length,
-  }
+export function getLspStatus(): LspRuntimeStatus {
+  return { ...runtimeStatus }
 }

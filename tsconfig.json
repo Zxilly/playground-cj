@@ -30,14 +30,13 @@
   },
   "include": [
     "next-env.d.ts",
-    "src/umami.d.ts",
-    "src/cangjie.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "next.config.ts",
+    "lingui.config.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "ref_doc"
   ]
 }

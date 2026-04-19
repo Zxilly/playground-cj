@@ -6,6 +6,7 @@ import { join, relative } from 'node:path'
 const CJ_RE = /\.cj$/i
 const MJS_RE = /\.m?js$/
 const CODINGAME_RE = /node_modules[\\/](@codingame|monaco-languageclient|vscode-languageclient)/
+const PATH_SEP_RE = /[\\/]/
 const CJO_TARGET = 'linux_x86_64_cjnative'
 
 // Downloads LSP assets on fresh checkout; a no-op when already present.
@@ -29,7 +30,7 @@ function collectCjoModules(): string[] {
       }
       else if (entry.name.endsWith('.cjo')) {
         // Normalize Windows backslashes so the runtime URL matches the posix layout
-        results.push(relative(root, full).split(/[\\/]/).join('/'))
+        results.push(relative(root, full).split(PATH_SEP_RE).join('/'))
       }
     }
   }

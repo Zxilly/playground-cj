@@ -13,6 +13,19 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#. placeholder {0}: status.lastError
+#: src/components/LspStatusIndicator.tsx:72
+msgid ""
+"\n"
+"错误：{0}"
+msgstr ""
+"\n"
+"Error: {0}"
+
+#: src/components/LspStatusIndicator.tsx:31
+msgid "（手动）"
+msgstr " (manual)"
+
 #: src/components/Playground.tsx:120
 msgid "{outputTip}输出内容"
 msgstr "{outputTip} Output"
@@ -25,30 +38,58 @@ msgstr "exit code {code}"
 msgid "Hash 方式"
 msgstr "Hash Method"
 
-#: src/components/ui/sidebar.tsx:203
-msgid "侧边栏"
-msgstr "Sidebar"
+#: src/components/LspStatusIndicator.tsx:55
+msgid "LSP 停止中"
+msgstr "LSP stopping"
+
+#: src/components/LspStatusIndicator.tsx:43
+msgid "LSP 启动中"
+msgstr "LSP starting"
+
+#: src/components/LspStatusIndicator.tsx:75
+msgid "LSP 崩溃"
+msgstr "LSP crashed"
+
+#: src/components/LspStatusIndicator.tsx:65
+msgid "LSP 已停止"
+msgstr "LSP stopped"
+
+#: src/components/LspStatusIndicator.tsx:37
+msgid "LSP 已就绪"
+msgstr "LSP ready"
+
+#: src/components/LspStatusIndicator.tsx:64
+msgid "LSP 已手动停止"
+msgstr "LSP stopped (manual)"
+
+#: src/components/LspStatusIndicator.tsx:49
+msgid "LSP 重启中"
+msgstr "LSP restarting"
 
 #: src/components/ShareButton.tsx:90
 msgid "URL 方式"
 msgstr "URL Method"
 
-#: src/components/tour/TourNavigation.tsx:26
-msgid "上一步"
-msgstr "Prev"
-
-#: src/components/tour/TourNavigation.tsx:39
-msgid "下一步"
-msgstr "Next"
-
-#: src/components/ui/breadcrumb.tsx:12
-msgid "面包屑"
-msgstr "Breadcrumb"
-
 #: src/components/playground/PlaygroundHeader.tsx:53
 #: src/components/playground/PlaygroundHeader.tsx:91
 msgid "仓颉 Playground"
 msgstr "Cangjie Playground"
+
+#: src/lib/lsp-commands.ts:58
+msgid "仓颉：停止 LSP"
+msgstr "Cangjie: Stop LSP"
+
+#: src/lib/lsp-commands.ts:53
+msgid "仓颉：启动 LSP"
+msgstr "Cangjie: Start LSP"
+
+#: src/lib/lsp-commands.ts:68
+msgid "仓颉：清除缓存并重启 LSP"
+msgstr "Cangjie: Clear Cache and Restart LSP"
+
+#: src/lib/lsp-commands.ts:63
+msgid "仓颉：重启 LSP"
+msgstr "Cangjie: Restart LSP"
 
 #: src/components/tour/TourSidebar.tsx:44
 msgid "仓颉之旅"
@@ -58,9 +99,129 @@ msgstr "Cangjie Tour"
 msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
 msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
 
+#: src/components/LspStatusIndicator.tsx:56
+msgid ""
+"仓颉语言服务器\n"
+"\n"
+"状态：停止中{originSuffix}"
+msgstr ""
+"Cangjie Language Server\n"
+"\n"
+"Status: Stopping{originSuffix}"
+
+#: src/components/LspStatusIndicator.tsx:44
+msgid ""
+"仓颉语言服务器\n"
+"\n"
+"状态：启动中{originSuffix}\n"
+"{moduleInfo}"
+msgstr ""
+"Cangjie Language Server\n"
+"\n"
+"Status: Starting{originSuffix}\n"
+"{moduleInfo}"
+
+#: src/components/LspStatusIndicator.tsx:38
+msgid ""
+"仓颉语言服务器\n"
+"\n"
+"状态：就绪{originSuffix}\n"
+"{moduleInfo}\n"
+"\n"
+"点击查看操作"
+msgstr ""
+"Cangjie Language Server\n"
+"\n"
+"Status: Ready{originSuffix}\n"
+"{moduleInfo}\n"
+"\n"
+"Click for actions"
+
+#: src/components/LspStatusIndicator.tsx:78
+msgid ""
+"仓颉语言服务器\n"
+"\n"
+"状态：崩溃 — 将自动重启{errLine}\n"
+"\n"
+"点击查看操作"
+msgstr ""
+"Cangjie Language Server\n"
+"\n"
+"Status: Crashed — will auto-restart{errLine}\n"
+"\n"
+"Click for actions"
+
+#: src/components/LspStatusIndicator.tsx:77
+msgid ""
+"仓颉语言服务器\n"
+"\n"
+"状态：崩溃（自动重启已耗尽）{errLine}\n"
+"\n"
+"点击手动重启"
+msgstr ""
+"Cangjie Language Server\n"
+"\n"
+"Status: Crashed (auto-restart exhausted){errLine}\n"
+"\n"
+"Click to manually restart"
+
+#: src/components/LspStatusIndicator.tsx:68
+msgid ""
+"仓颉语言服务器\n"
+"\n"
+"状态：已停止\n"
+"\n"
+"点击查看操作"
+msgstr ""
+"Cangjie Language Server\n"
+"\n"
+"Status: Stopped\n"
+"\n"
+"Click for actions"
+
+#: src/components/LspStatusIndicator.tsx:67
+msgid ""
+"仓颉语言服务器\n"
+"\n"
+"状态：已停止（手动）\n"
+"\n"
+"点击查看操作"
+msgstr ""
+"Cangjie Language Server\n"
+"\n"
+"Status: Stopped (manual)\n"
+"\n"
+"Click for actions"
+
+#: src/components/LspStatusIndicator.tsx:50
+msgid ""
+"仓颉语言服务器\n"
+"\n"
+"状态：重启中{originSuffix}\n"
+"{moduleInfo}"
+msgstr ""
+"Cangjie Language Server\n"
+"\n"
+"Status: Restarting{originSuffix}\n"
+"{moduleInfo}"
+
+#: src/components/ui/sidebar.tsx:203
+msgid "侧边栏"
+msgstr "Sidebar"
+
 #: src/lib/monaco/actions.ts:124
 msgid "保存代码"
 msgstr "Save Code"
+
+#: src/components/LspStatusIndicator.tsx:172
+msgid "停止"
+msgstr "Stop"
+
+#: src/components/ui/dialog.tsx:79
+#: src/components/ui/sheet.tsx:84
+#: src/components/ui/ui-i18n.test.tsx:53
+msgid "关闭"
+msgstr "Close"
 
 #: src/components/ShareButton.tsx:77
 msgid "分享"
@@ -108,13 +269,18 @@ msgstr "Share failed"
 msgid "分享成功"
 msgstr "Share successful"
 
+#: src/components/ui/sidebar.tsx:284
+#: src/components/ui/sidebar.tsx:292
+msgid "切换侧边栏"
+msgstr "Toggle Sidebar"
+
+#: src/components/LspStatusIndicator.tsx:166
+msgid "启动"
+msgstr "Start"
+
 #: src/components/Playground.tsx:151
 msgid "在 GitHub 查看源代码"
 msgstr "View source code on GitHub"
-
-#: src/components/ui/sidebar.tsx:204
-msgid "显示移动端侧边栏。"
-msgstr "Displays the mobile sidebar."
 
 #: src/components/tour/mdx/LanguagePicker.tsx:29
 msgid "对比"
@@ -125,7 +291,6 @@ msgid "对比内容将出现在文中。"
 msgstr "Comparisons will appear in the text."
 
 #: src/components/shared/OutputPanel.tsx:27
-#: src/components/tour/TourEditor.tsx:138
 msgid "工具输出"
 msgstr "Tool Output"
 
@@ -141,13 +306,9 @@ msgstr "Share link copied"
 msgid "我了解这些语言"
 msgstr "I know these languages"
 
-#: src/components/ExamplesDropdown.tsx:41
+#: src/components/ExamplesDropdown.tsx:44
 msgid "搜索示例..."
 msgstr "Search examples..."
-
-#: src/components/ui/breadcrumb.tsx:87
-msgid "更多"
-msgstr "More"
 
 #: src/components/playground/PlaygroundHeader.tsx:60
 #: src/components/playground/PlaygroundHeader.tsx:98
@@ -158,7 +319,16 @@ msgstr "Tour"
 msgid "显示"
 msgstr "Show"
 
-#: src/components/ExamplesDropdown.tsx:43
+#: src/components/ui/sidebar.tsx:205
+msgid "显示移动端侧边栏。"
+msgstr "Displays the mobile sidebar."
+
+#: src/components/ui/breadcrumb.tsx:110
+#: src/components/ui/ui-i18n.test.tsx:54
+msgid "更多"
+msgstr "More"
+
+#: src/components/ExamplesDropdown.tsx:46
 msgid "未找到示例。"
 msgstr "No examples found."
 
@@ -166,19 +336,14 @@ msgstr "No examples found."
 msgid "未找到语言。"
 msgstr "No languages found."
 
-#: src/components/ui/dialog.tsx:80
-#: src/components/ui/sheet.tsx:84
-msgid "关闭"
-msgstr "Close"
-
-#: src/service/run.ts:74
-#: src/service/run.ts:76
-#~ msgid "未知错误"
-#~ msgstr "Unknown error"
+#. placeholder {0}: status.stdlibModulesLoaded
+#. placeholder {1}: status.stdlibModulesTotal
+#: src/components/LspStatusIndicator.tsx:29
+msgid "标准库模块：{0}/{1}"
+msgstr "Stdlib modules: {0}/{1}"
 
 #: src/components/playground/PlaygroundHeader.tsx:71
 #: src/components/playground/PlaygroundHeader.tsx:114
-#: src/components/tour/TourEditor.tsx:118
 msgid "格式化"
 msgstr "Format"
 
@@ -186,10 +351,6 @@ msgstr "Format"
 #: src/components/CodeRunner.tsx:60
 msgid "格式化失败"
 msgstr "Format failed"
-
-#: src/components/CodeRunner.tsx:52
-#~ msgid "格式化失败，未知错误"
-#~ msgstr "Format failed, unknown error"
 
 #: src/components/CodeRunner.tsx:59
 msgid "格式化成功"
@@ -203,8 +364,15 @@ msgstr "Formatting..."
 msgid "正在运行..."
 msgstr "Running..."
 
+#: src/components/LspStatusIndicator.tsx:186
+msgid "清除 WASM 与标准库缓存后重启"
+msgstr "Clears WASM + stdlib caches, then restarts"
+
+#: src/components/LspStatusIndicator.tsx:185
+msgid "清除缓存并重启"
+msgstr "Clear Cache and Restart"
+
 #: src/components/shared/OutputPanel.tsx:38
-#: src/components/tour/TourEditor.tsx:132
 msgid "程序输出"
 msgstr "Program Output"
 
@@ -224,14 +392,8 @@ msgstr "Compile & Run"
 msgid "请先输入代码"
 msgstr "Please enter code first"
 
-#: src/components/ui/sidebar.tsx:284
-#: src/components/ui/sidebar.tsx:292
-msgid "切换侧边栏"
-msgstr "Toggle Sidebar"
-
 #: src/components/playground/PlaygroundHeader.tsx:68
 #: src/components/playground/PlaygroundHeader.tsx:111
-#: src/components/tour/TourEditor.tsx:112
 msgid "运行"
 msgstr "Run"
 
@@ -248,10 +410,14 @@ msgstr "Run failed"
 msgid "运行成功"
 msgstr "Run successful"
 
-#: src/components/tour/TourEditor.tsx:125
-msgid "重置"
-msgstr "Reset"
+#: src/components/LspStatusIndicator.tsx:178
+msgid "重启"
+msgstr "Restart"
 
 #: src/components/Playground.tsx:85
 msgid "隐藏"
 msgstr "Hide"
+
+#: src/components/ui/breadcrumb.tsx:16
+msgid "面包屑"
+msgstr "Breadcrumb"

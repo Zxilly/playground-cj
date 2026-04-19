@@ -1,14 +1,17 @@
 import type { CSSProperties } from 'react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
-import { LanguageClientManager } from 'monaco-languageclient/lcwrapper'
+import type { MonacoLanguageClient } from 'monaco-languageclient'
 import { EditorApp } from 'monaco-languageclient/editorApp'
 import type { CodeResources } from 'monaco-languageclient/editorApp'
-import { createEditorAppConfig, createLanguageClientConfig, createMonacoVscodeApiConfig } from '@/lib/monaco'
+import { createEditorAppConfig, createLanguageClient, createMonacoVscodeApiConfig, isLanguageClientAvailable } from '@/lib/monaco'
 import type { MonacoViewsType } from '@/lib/monaco'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
-import { getLspStatus } from '@/lib/lsp'
+import { getCurrentEditorPort, startLsp, subscribeLspStatus } from '@/lib/lsp'
+import { registerLspCommands } from '@/lib/lsp-commands'
+import { LspStatusIndicator } from '@/components/LspStatusIndicator'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 
 export interface MonacoEditorHandle {
@@ -80,22 +83,30 @@ function createStandaloneEditorHandle(
 }
 
 export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType = 'EditorService' }: MonacoEditorProps) {
-  const languageClientConfig = useMemo(() => createLanguageClientConfig(), [])
   const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale), [code, locale])
+  const hasLanguageClient = isLanguageClientAvailable()
 
   const isInitializingRef = useRef(false)
   const isInitializedRef = useRef(false)
 
   const vscodeApiWrapperRef = useRef<MonacoVscodeApiWrapper | null>(null)
-  const languageClientsManagerRef = useRef<LanguageClientManager | null>(null)
+  const languageClientRef = useRef<MonacoLanguageClient | null>(null)
   const editorAppRef = useRef<MonacoEditorHandle | null>(null)
   const statusBarRef = useRef<StatusBarHandle | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const standaloneHostRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
-  const lspPollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lspUnsubscribeRef = useRef<(() => void) | null>(null)
+  const boundGenerationRef = useRef<number>(0)
+  const rebuildPromiseRef = useRef<Promise<void> | null>(null)
+  const reconcileEpochRef = useRef(0)
+
+  const [indicatorHost, setIndicatorHost] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
+    const reconcileEpoch = ++reconcileEpochRef.current
+    const isActive = () => reconcileEpochRef.current === reconcileEpoch
+
     const updateEditorLayout = () => {
       if (containerRef.current && editorAppRef.current) {
         const parent = viewsType === 'EditorService'
@@ -119,6 +130,80 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
       }
     }
 
+    const disposeClient = async (client: MonacoLanguageClient) => {
+      try {
+        await client.stop()
+      }
+      catch {}
+
+      try {
+        await client.dispose()
+      }
+      catch {}
+    }
+
+    const reconcileLanguageClient = async (target: number) => {
+      if (!hasLanguageClient || !isActive())
+        return
+
+      const prev = languageClientRef.current
+      languageClientRef.current = null
+      if (prev)
+        await disposeClient(prev)
+
+      if (!isActive() || target === 0)
+        return
+
+      if (boundGenerationRef.current !== target)
+        return
+
+      const port = getCurrentEditorPort()
+      if (!port)
+        return
+
+      const client = await createLanguageClient(port)
+      if (!client)
+        return
+
+      if (!isActive()) {
+        await disposeClient(client)
+        return
+      }
+
+      try {
+        await client.start()
+      }
+      catch (e) {
+        const m = e instanceof Error ? e.message : JSON.stringify(e)
+        console.warn(`[LSP] MonacoLanguageClient.start failed: ${m}`)
+        await disposeClient(client)
+        return
+      }
+
+      if (!isActive() || boundGenerationRef.current !== target) {
+        await disposeClient(client)
+        return
+      }
+
+      languageClientRef.current = client
+    }
+
+    const queueReconcile = (target: number) => {
+      const run = async () => {
+        if (!isActive())
+          return
+        try {
+          await reconcileLanguageClient(target)
+        }
+        catch (e) {
+          console.error('[LSP] reconcile failed:', e)
+        }
+      }
+      const next = rebuildPromiseRef.current ? rebuildPromiseRef.current.then(run, run) : run()
+      rebuildPromiseRef.current = next
+      return next
+    }
+
     const initAll = async () => {
       if (!containerRef.current || isInitializingRef.current || isInitializedRef.current) {
         return
@@ -137,10 +222,11 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
         vscodeApiWrapperRef.current = new MonacoVscodeApiWrapper(vscodeApiConfig)
         await vscodeApiWrapperRef.current.start()
 
-        if (languageClientConfig) {
-          languageClientsManagerRef.current = new LanguageClientManager()
-          languageClientsManagerRef.current.setConfig(languageClientConfig)
-          languageClientsManagerRef.current.start()
+        if (hasLanguageClient) {
+          // Fire both concurrently: command registration does its own
+          // dynamic imports and shouldn't serialize with LSP boot.
+          void registerLspCommands()
+          void startLsp('auto')
         }
 
         const editorContainer = viewsType === 'EditorService'
@@ -158,7 +244,17 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
         }
         editorAppRef.current = editorHandle
 
-        if (languageClientConfig && viewsType === 'EditorService') {
+        if (hasLanguageClient) {
+          lspUnsubscribeRef.current = subscribeLspStatus((status) => {
+            const target = status.state === 'running' ? status.generation : 0
+            if (target !== boundGenerationRef.current) {
+              boundGenerationRef.current = target
+              void queueReconcile(target)
+            }
+          })
+        }
+
+        if (hasLanguageClient && viewsType === 'EditorService') {
           const parentContainer = containerRef.current.parentElement
           if (parentContainer) {
             statusBarRef.current = await createCustomStatusBar(parentContainer, {
@@ -166,34 +262,16 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
               height: 22,
             })
 
-            const lspStatusEntry = statusBarRef.current.addEntry({
-              id: 'lsp.status',
-              name: 'LSP',
-              text: '$(sync~spin) Cangjie',
-              ariaLabel: 'LSP initializing',
-              tooltip: 'Language Server: Initializing...',
-              alignment: 'right',
-              priority: 100,
-            })
-
-            const checkLspStatus = () => {
-              const status = getLspStatus()
-              if (languageClientsManagerRef.current?.isStarted() && status.initialized) {
-                lspStatusEntry.update({
-                  text: '$(check) Cangjie',
-                  ariaLabel: 'LSP ready',
-                  tooltip: `Cangjie Language Server\n\nStatus: Ready\nStdlib modules: ${status.stdlibModulesLoaded}/${status.stdlibModulesTotal}`,
-                })
-                lspPollTimerRef.current = null
-              }
-              else {
-                lspStatusEntry.update({
-                  tooltip: `Cangjie Language Server\n\nStatus: Loading...\nStdlib modules: ${status.stdlibModulesLoaded}/${status.stdlibModulesTotal}`,
-                })
-                lspPollTimerRef.current = setTimeout(checkLspStatus, 500)
-              }
-            }
-            checkLspStatus()
+            const host = document.createElement('div')
+            host.style.position = 'absolute'
+            host.style.right = '0'
+            host.style.top = '0'
+            host.style.bottom = '0'
+            host.style.display = 'flex'
+            host.style.alignItems = 'center'
+            host.style.zIndex = '2'
+            statusBarRef.current.container.appendChild(host)
+            setIndicatorHost(host)
           }
         }
 
@@ -220,27 +298,47 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
     }
 
     void initAll()
-  }, [onLoad, editorAppConfig, languageClientConfig, viewsType])
+  }, [onLoad, editorAppConfig, hasLanguageClient, viewsType])
 
   useEffect(() => {
     const disposeAll = async () => {
       try {
         isInitializedRef.current = false
-        statusBarRef.current?.dispose()
-        await editorAppRef.current?.dispose()
-        await languageClientsManagerRef.current?.dispose()
-        await vscodeApiWrapperRef.current?.dispose()
+        reconcileEpochRef.current += 1
+        rebuildPromiseRef.current = null
+        boundGenerationRef.current = 0
+        lspUnsubscribeRef.current?.()
+        lspUnsubscribeRef.current = null
+        setIndicatorHost(null)
+        const statusBar = statusBarRef.current
+        statusBarRef.current = null
+        const editorApp = editorAppRef.current
+        editorAppRef.current = null
+        const client = languageClientRef.current
+        languageClientRef.current = null
+        const vscodeApiWrapper = vscodeApiWrapperRef.current
+        vscodeApiWrapperRef.current = null
+
+        statusBar?.dispose()
+        await editorApp?.dispose()
+        if (client) {
+          try {
+            await client.stop()
+          }
+          catch {}
+
+          try {
+            await client.dispose()
+          }
+          catch {}
+        }
+        await vscodeApiWrapper?.dispose()
       }
       catch {
-        // Components may throw during disposal
       }
     }
 
     return () => {
-      if (lspPollTimerRef.current) {
-        clearTimeout(lspPollTimerRef.current)
-        lspPollTimerRef.current = null
-      }
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect()
         resizeObserverRef.current = null
@@ -259,6 +357,7 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
       {viewsType === 'ViewsService' && (
         <div ref={standaloneHostRef} className="absolute inset-0 z-10" />
       )}
+      {indicatorHost && hasLanguageClient && createPortal(<LspStatusIndicator />, indicatorHost)}
     </div>
   )
 }

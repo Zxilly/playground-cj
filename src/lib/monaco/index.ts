@@ -1,5 +1,5 @@
 export { updateEditor } from './actions'
 export { createEditorAppConfig, createMonacoVscodeApiConfig, setEditorValue } from './config'
 export type { MonacoViewsType, MonacoVscodeApiConfig } from './config'
-export { createLanguageClientConfig } from './language-client'
+export { createLanguageClient, isLanguageClientAvailable } from './language-client'
 export { configureMonacoWorkers } from './workers'
