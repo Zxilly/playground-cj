@@ -1,5 +1,18 @@
-import type { FormatMessage, RunMessage } from '@/lib/cangjie/types'
+import { BACKEND_URL } from '@/const'
 import { t } from '@lingui/core/macro'
+
+interface FormatMessage {
+  formatted: string
+  formatter_output: string
+  formatter_code: number
+}
+
+interface RunMessage {
+  compiler_output: string
+  compiler_code: number
+  bin_output: string
+  bin_code: number
+}
 
 export async function requestRemoteAction<
   T extends 'run' | 'format',
@@ -7,7 +20,7 @@ export async function requestRemoteAction<
   code: string,
   action: T,
 ): Promise<T extends 'run' ? RunMessage : FormatMessage> {
-  const resp = await fetch(`/api/${action}`, {
+  const resp = await fetch(`${BACKEND_URL}/${action}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',

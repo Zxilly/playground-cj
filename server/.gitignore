@@ -1,0 +1,11 @@
+.idea
+*.iml
+out
+gen
+*.exe
+.vscode
+
+*.tar.gz
+*.zip
+
+server

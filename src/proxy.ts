@@ -87,16 +87,6 @@ function buildPath(lang: Locale, includeTour: boolean, rest: string[]): string {
  */
 export function proxy(request: NextRequest): NextResponse {
   const pathname = request.nextUrl.pathname
-
-  if (
-    pathname.startsWith('/api/')
-    || pathname.startsWith('/_next/')
-    || pathname.startsWith('/favicon.ico')
-    || pathname.includes('.')
-  ) {
-    return NextResponse.next()
-  }
-
   const host = request.headers.get('host') ?? ''
   const domain = getSiteDomain(host)
   const parsed = parsePath(pathname)
@@ -138,6 +128,7 @@ export function proxy(request: NextRequest): NextResponse {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    // Exclude API, Next internals, and any path containing a dot (public static assets).
+    '/((?!api|_next/static|_next/image|.*\\.).*)',
   ],
 }
