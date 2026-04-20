@@ -57,15 +57,7 @@ func run(fMsg server.ForwardMessage) {
 	dataMsg := server.RunMessage{}
 
 	reportFailedCmd := func(err error, cmd *exec.Cmd, out *bytes.Buffer) {
-		command := ""
-		command += cmd.Path
-		command += " "
-		for _, arg := range cmd.Args {
-			command += arg
-			command += " "
-		}
-		command += "\n"
-
+		command := cmd.Path + " " + strings.Join(cmd.Args, " ") + "\n"
 		dataMsg.CompilerOutput = command + err.Error() + "\n" + out.String()
 		dataMsg.CompilerCode = cmd.ProcessState.ExitCode()
 		b, _ := json.Marshal(dataMsg)
