@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { notFound } from 'next/navigation'
 import { LinguiClientProvider } from '@/components/LinguiClientProvider'
-import type { Locale } from '@/lib/i18n'
+import { isLocale } from '@/lib/i18n'
 
 interface LayoutProps {
   children: ReactNode
@@ -26,12 +27,14 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
 
 export default async function LangLayout({ children, params }: LayoutProps) {
   const { lang } = await params
+  if (!isLocale(lang))
+    notFound()
 
   const { messages } = await import(`@/locales/${lang}/messages.mjs`)
 
   return (
     <LinguiClientProvider
-      initialLocale={lang as Locale}
+      initialLocale={lang}
       initialMessages={messages}
     >
       {children}
