@@ -27,7 +27,7 @@ msgstr " (manual)"
 msgid "{outputTip}输出内容"
 msgstr "{outputTip} Output"
 
-#: src/service/run.ts:46
+#: src/service/run.ts:42
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
@@ -67,8 +67,8 @@ msgstr "LSP restarting"
 msgid "URL 方式"
 msgstr "URL Method"
 
-#: src/components/playground/PlaygroundHeader.tsx:53
-#: src/components/playground/PlaygroundHeader.tsx:91
+#: src/components/playground/PlaygroundHeader.tsx:55
+#: src/components/playground/PlaygroundHeader.tsx:93
 msgid "仓颉 Playground"
 msgstr "Cangjie Playground"
 
@@ -93,8 +93,8 @@ msgid "仓颉之旅"
 msgstr "Cangjie Tour"
 
 #: src/components/Playground.tsx:142
-msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
-msgstr "Cangjie Version 1.0.0 | STDX Version 1.0.0.1 | "
+msgid "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
+msgstr "Cangjie Version 1.1.0-beta.25 | STDX Version 1.1.0-beta.25.1 | "
 
 #: src/components/LspStatusIndicator.tsx:61
 msgid ""
@@ -307,8 +307,8 @@ msgstr "I know these languages"
 msgid "搜索示例..."
 msgstr "Search examples..."
 
-#: src/components/playground/PlaygroundHeader.tsx:60
-#: src/components/playground/PlaygroundHeader.tsx:98
+#: src/components/playground/PlaygroundHeader.tsx:62
+#: src/components/playground/PlaygroundHeader.tsx:100
 msgid "教程"
 msgstr "Tour"
 
@@ -329,7 +329,7 @@ msgstr "More"
 msgid "未找到示例。"
 msgstr "No examples found."
 
-#: src/components/LanguageSelector.tsx:68
+#: src/components/LanguageSelector.tsx:58
 msgid "未找到语言。"
 msgstr "No languages found."
 
@@ -337,8 +337,8 @@ msgstr "No languages found."
 msgid "标准库模块：{loadedModules}/{totalModules}"
 msgstr ""
 
-#: src/components/playground/PlaygroundHeader.tsx:71
-#: src/components/playground/PlaygroundHeader.tsx:114
+#: src/components/playground/PlaygroundHeader.tsx:73
+#: src/components/playground/PlaygroundHeader.tsx:116
 msgid "格式化"
 msgstr "Format"
 
@@ -371,11 +371,11 @@ msgstr "Clear Cache and Restart"
 msgid "程序输出"
 msgstr "Program Output"
 
-#: src/service/run.ts:50
+#: src/service/run.ts:46
 msgid "编译中"
 msgstr "Compiling"
 
-#: src/service/run.ts:58
+#: src/service/run.ts:54
 msgid "编译失败"
 msgstr "Compilation failed"
 
@@ -387,17 +387,17 @@ msgstr "Compile & Run"
 msgid "请先输入代码"
 msgstr "Please enter code first"
 
-#: src/components/playground/PlaygroundHeader.tsx:68
-#: src/components/playground/PlaygroundHeader.tsx:111
+#: src/components/playground/PlaygroundHeader.tsx:70
+#: src/components/playground/PlaygroundHeader.tsx:113
 msgid "运行"
 msgstr "Run"
 
-#: src/service/run.ts:51
+#: src/service/run.ts:47
 msgid "运行中"
 msgstr "Running"
 
 #: src/components/CodeRunner.tsx:34
-#: src/service/run.ts:64
+#: src/service/run.ts:60
 msgid "运行失败"
 msgstr "Run failed"
 

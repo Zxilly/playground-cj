@@ -1,18 +1,5 @@
-import { BACKEND_URL } from '@/const'
+import type { FormatMessage, RunMessage } from '@/lib/cangjie/types'
 import { t } from '@lingui/core/macro'
-
-interface FormatMessage {
-  formatted: string
-  formatter_output: string
-  formatter_code: number
-}
-
-interface RunMessage {
-  compiler_output: string
-  compiler_code: number
-  bin_output: string
-  bin_code: number
-}
 
 export async function requestRemoteAction<
   T extends 'run' | 'format',
@@ -20,17 +7,26 @@ export async function requestRemoteAction<
   code: string,
   action: T,
 ): Promise<T extends 'run' ? RunMessage : FormatMessage> {
-  const resp = await fetch(`${BACKEND_URL}/${action}`, {
+  const resp = await fetch(`/api/${action}`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/plain; charset=utf-8',
     },
-    body: new TextEncoder().encode(code),
+    body: code,
   })
 
   if (!resp.ok) {
     const text = await resp.text()
-    throw new Error(`Remote action failed: ${text}`)
+    let msg = text
+    try {
+      const parsed = JSON.parse(text) as { error?: string }
+      if (parsed.error)
+        msg = parsed.error
+    }
+    catch {
+      // non-JSON body, use as-is
+    }
+    throw new Error(`Remote action failed: ${msg}`)
   }
 
   return resp.json()

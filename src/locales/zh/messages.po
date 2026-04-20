@@ -29,7 +29,7 @@ msgstr "（手动）"
 msgid "{outputTip}输出内容"
 msgstr "{outputTip}输出内容"
 
-#: src/service/run.ts:46
+#: src/service/run.ts:42
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
@@ -69,8 +69,8 @@ msgstr "LSP 重启中"
 msgid "URL 方式"
 msgstr "URL 方式"
 
-#: src/components/playground/PlaygroundHeader.tsx:53
-#: src/components/playground/PlaygroundHeader.tsx:91
+#: src/components/playground/PlaygroundHeader.tsx:55
+#: src/components/playground/PlaygroundHeader.tsx:93
 msgid "仓颉 Playground"
 msgstr "仓颉 Playground"
 
@@ -95,8 +95,8 @@ msgid "仓颉之旅"
 msgstr "仓颉之旅"
 
 #: src/components/Playground.tsx:142
-msgid "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
-msgstr "仓颉版本 1.0.0 | STDX 版本 1.0.0.1 | "
+msgid "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
+msgstr "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
 
 #: src/components/LspStatusIndicator.tsx:61
 msgid ""
@@ -309,8 +309,8 @@ msgstr "我了解这些语言"
 msgid "搜索示例..."
 msgstr "搜索示例..."
 
-#: src/components/playground/PlaygroundHeader.tsx:60
-#: src/components/playground/PlaygroundHeader.tsx:98
+#: src/components/playground/PlaygroundHeader.tsx:62
+#: src/components/playground/PlaygroundHeader.tsx:100
 msgid "教程"
 msgstr "教程"
 
@@ -331,7 +331,7 @@ msgstr "更多"
 msgid "未找到示例。"
 msgstr "未找到示例。"
 
-#: src/components/LanguageSelector.tsx:68
+#: src/components/LanguageSelector.tsx:58
 msgid "未找到语言。"
 msgstr "未找到语言。"
 
@@ -339,8 +339,8 @@ msgstr "未找到语言。"
 msgid "标准库模块：{loadedModules}/{totalModules}"
 msgstr "标准库模块：{loadedModules}/{totalModules}"
 
-#: src/components/playground/PlaygroundHeader.tsx:71
-#: src/components/playground/PlaygroundHeader.tsx:114
+#: src/components/playground/PlaygroundHeader.tsx:73
+#: src/components/playground/PlaygroundHeader.tsx:116
 msgid "格式化"
 msgstr "格式化"
 
@@ -373,11 +373,11 @@ msgstr "清除缓存并重启"
 msgid "程序输出"
 msgstr "程序输出"
 
-#: src/service/run.ts:50
+#: src/service/run.ts:46
 msgid "编译中"
 msgstr "编译中"
 
-#: src/service/run.ts:58
+#: src/service/run.ts:54
 msgid "编译失败"
 msgstr "编译失败"
 
@@ -389,17 +389,17 @@ msgstr "编译运行"
 msgid "请先输入代码"
 msgstr "请先输入代码"
 
-#: src/components/playground/PlaygroundHeader.tsx:68
-#: src/components/playground/PlaygroundHeader.tsx:111
+#: src/components/playground/PlaygroundHeader.tsx:70
+#: src/components/playground/PlaygroundHeader.tsx:113
 msgid "运行"
 msgstr "运行"
 
-#: src/service/run.ts:51
+#: src/service/run.ts:47
 msgid "运行中"
 msgstr "运行中"
 
 #: src/components/CodeRunner.tsx:34
-#: src/service/run.ts:64
+#: src/service/run.ts:60
 msgid "运行失败"
 msgstr "运行失败"
 
