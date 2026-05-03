@@ -24,8 +24,8 @@ RUN curl -fsSL --retry 3 -o /tmp/stdx.zip "${CJ_STDX_URL}" && \
     unzip -q /tmp/stdx.zip -d /tmp/stdx-raw && \
     stdx_dir=$(find /tmp/stdx-raw -type d -name stdx -print -quit) && \
     [ -n "$stdx_dir" ] || { echo "stdx dir not found in zip" >&2; exit 1; } && \
-    mkdir -p /linux_x86_64_llvm/dynamic/stdx && \
-    cp -a "$stdx_dir"/. /linux_x86_64_llvm/dynamic/stdx/ && \
+    mkdir -p /linux_x86_64_cjnative/dynamic/stdx && \
+    cp -a "$stdx_dir"/. /linux_x86_64_cjnative/dynamic/stdx/ && \
     rm -rf /tmp/stdx-raw /tmp/stdx.zip
 
 FROM debian:12-slim
@@ -41,16 +41,16 @@ RUN curl -fsSL --retry 3 -o /tmp/sdk.tar.gz "${CJ_SDK_URL}" && \
     mkdir -p /cangjie && \
     tar -xzf /tmp/sdk.tar.gz -C /cangjie --strip-components=1 \
         --wildcards \
-        --exclude='*/windows_x86_64_llvm*' \
+        --exclude='*/windows_x86_64_*' \
         --exclude='*/mingw*' && \
     rm /tmp/sdk.tar.gz
 
-COPY --from=extract /linux_x86_64_llvm/dynamic/stdx /linux_x86_64_llvm/dynamic/stdx
+COPY --from=extract /linux_x86_64_cjnative/dynamic/stdx /linux_x86_64_cjnative/dynamic/stdx
 COPY --from=builder /app/agent /app/agent
 
 ENV CANGJIE_HOME="/cangjie"
 ENV PATH="/cangjie/bin:/cangjie/tools/bin:/.cjpm/bin:$PATH"
-ENV LD_LIBRARY_PATH="/cangjie/runtime/lib/linux_x86_64_llvm:/cangjie/tools/lib:/linux_x86_64_llvm/dynamic/stdx"
+ENV LD_LIBRARY_PATH="/cangjie/runtime/lib/linux_x86_64_cjnative:/cangjie/tools/lib:/linux_x86_64_cjnative/dynamic/stdx"
 
 RUN mkdir -p /playground
 WORKDIR /playground

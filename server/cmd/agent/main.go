@@ -96,10 +96,10 @@ func run(fMsg server.ForwardMessage) {
 	compilerOut := bytes.NewBuffer(nil)
 
 	args := []string{
-		"--import-path=/linux_x86_64_llvm/dynamic",
+		"--import-path=/linux_x86_64_cjnative/dynamic",
 		"--no-sub-pkg",
 		"--output-dir=/playground/src",
-		"-L", "/linux_x86_64_llvm/dynamic/stdx",
+		"-L", "/linux_x86_64_cjnative/dynamic/stdx",
 	}
 
 	for _, p := range additionalPkgs {
