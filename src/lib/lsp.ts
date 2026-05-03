@@ -1,44 +1,23 @@
-const LSP_WASM_PATH = '/lsp/LSPServer-wasm.js'
-const LSP_WASM_BINARY_PATH = '/lsp/LSPServer-wasm.wasm'
+// Pthread workers spawned by the emscripten module inherit the JS glue's
+// query string via `import.meta.url`, so they hit the same cached URL as
+// the main thread without extra revalidation round-trips.
+const LSP_VERSION = __LSP_VERSION__
+const LSP_VERSION_QS = `?v=${LSP_VERSION}`
+const LSP_WASM_PATH = `/lsp/LSPServer-wasm.js${LSP_VERSION_QS}`
+const LSP_WASM_BINARY_PATH = `/lsp/LSPServer-wasm.wasm${LSP_VERSION_QS}`
 const LSP_MODULES_PATH = '/lsp/modules'
 
 // Disable all WASM + CJO caching in dev so a freshly built wasm/cjo is
 // picked up without manually clearing site data.
 const CACHE_ENABLED = process.env.NODE_ENV !== 'development'
 
-// Cache key is derived from the .wasm file's HTTP metadata so a new build
-// auto-invalidates the Cache API + IndexedDB layers without a manual bump.
-const CACHE_KEY_FALLBACK = 'lsp-fallback'
 const CACHE_STORAGE_KEY = 'lsp-cache-version'
 const WASM_CACHE_NAME_PREFIX = 'wasm-'
 const CJO_DB_NAME = 'cjo-cache'
 const CJO_STORE_NAME = 'modules'
 
-let currentCacheKey: string = CACHE_KEY_FALLBACK
-let wasmCacheName: string = `${WASM_CACHE_NAME_PREFIX}${CACHE_KEY_FALLBACK}`
-const ETAG_SANITIZE_RE = /["\s]/g
+const wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${LSP_VERSION}`
 const WASM_FATAL_RE = /\babort\(|RuntimeError|Uncaught/
-
-// Prefer ETag, then Last-Modified, then Content-Length — any value that
-// changes between builds is sufficient.
-async function detectBuildVersion(): Promise<string> {
-  try {
-    const res = await fetch(LSP_WASM_BINARY_PATH, { method: 'HEAD', cache: 'no-cache' })
-    const etag = res.headers.get('etag')
-    if (etag)
-      return `etag-${etag.replace(ETAG_SANITIZE_RE, '').slice(0, 24)}`
-    const lastMod = res.headers.get('last-modified')
-    if (lastMod)
-      return `lm-${Date.parse(lastMod) || lastMod.slice(0, 24)}`
-    const len = res.headers.get('content-length')
-    if (len)
-      return `len-${len}`
-  }
-  catch (e) {
-    console.warn('[Cache] detectBuildVersion HEAD failed, using fallback:', e)
-  }
-  return CACHE_KEY_FALLBACK
-}
 
 async function checkAndUpdateCacheVersion(): Promise<void> {
   if (!CACHE_ENABLED) {
@@ -47,15 +26,11 @@ async function checkAndUpdateCacheVersion(): Promise<void> {
     return
   }
 
-  const detected = await detectBuildVersion()
-  currentCacheKey = detected
-  wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${detected}`
-
   const storedVersion = localStorage.getItem(CACHE_STORAGE_KEY)
-  if (storedVersion !== detected) {
-    console.log(`[Cache] Build version changed: ${storedVersion} -> ${detected}`)
+  if (storedVersion !== LSP_VERSION) {
+    console.log(`[Cache] Build version changed: ${storedVersion} -> ${LSP_VERSION}`)
     await clearAllLspCache()
-    localStorage.setItem(CACHE_STORAGE_KEY, detected)
+    localStorage.setItem(CACHE_STORAGE_KEY, LSP_VERSION)
   }
 }
 
@@ -81,15 +56,6 @@ async function cachedFetch(url: string, cacheName: string): Promise<Response> {
   }
 
   return response
-}
-
-async function preloadWasmCache(): Promise<void> {
-  try {
-    await cachedFetch(LSP_WASM_BINARY_PATH, wasmCacheName)
-  }
-  catch (e) {
-    console.warn(`[Cache] Failed to preload ${LSP_WASM_BINARY_PATH}:`, e)
-  }
 }
 
 async function clearWasmCache(): Promise<void> {
@@ -194,9 +160,6 @@ async function initializeLspServer(
     throw new Error('aborted')
 
   onLog('Loading WASM module...')
-  await preloadWasmCache()
-  if (shouldAbort())
-    throw new Error('aborted')
 
   // Directories the stdlib loader will write into. Cangjie's static init
   // (inside the wasm factory) also expects `/cangjie/modules/<target>/` to
@@ -210,8 +173,7 @@ async function initializeLspServer(
     }
   }
 
-  const jsUrl = `${LSP_WASM_PATH}?v=${encodeURIComponent(currentCacheKey)}`
-  const WasmModule = await import(/* webpackIgnore: true */ jsUrl)
+  const WasmModule = await import(/* webpackIgnore: true */ LSP_WASM_PATH)
   if (shouldAbort())
     throw new Error('aborted')
 
@@ -297,7 +259,7 @@ async function initializeLspServer(
         cached++
       }
       else {
-        const url = `${LSP_MODULES_PATH}/${__CJO_TARGET__}/${modulePath}`
+        const url = `${LSP_MODULES_PATH}/${__CJO_TARGET__}/${modulePath}${LSP_VERSION_QS}`
         const response = await fetch(url)
         if (response.ok) {
           const data = new Uint8Array(await response.arrayBuffer())

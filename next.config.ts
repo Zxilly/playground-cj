@@ -1,19 +1,32 @@
 import type { NextConfig } from 'next'
-import { execSync } from 'node:child_process'
-import { readdirSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { ensureLspFiles } from './scripts/download-lsp.mjs'
 
 const CJ_RE = /\.cj$/i
 const MJS_RE = /\.m?js$/
 const CODINGAME_RE = /node_modules[\\/](@codingame|monaco-languageclient|vscode-languageclient)/
 const PATH_SEP_RE = /[\\/]/
 const CJO_TARGET = 'linux_x86_64_cjnative'
+const IS_DEV = process.env.NODE_ENV === 'development'
+const LSP_PUBLIC_DIR = join(import.meta.dirname, 'public', 'lsp')
 
-// Downloads LSP assets on fresh checkout; a no-op when already present.
-execSync('node scripts/download-lsp.mjs', { stdio: 'inherit' })
+// Content hash, not mtime — CI re-downloads the LSP archive on every build,
+// so an mtime-based key would bust caches across deploys even when the wasm
+// is byte-identical. Hashing 50 MB once at config load is ~100 ms.
+function detectLspVersion(): string {
+  try {
+    const bytes = readFileSync(join(LSP_PUBLIC_DIR, 'LSPServer-wasm.wasm'))
+    return createHash('sha256').update(bytes).digest('hex').slice(0, 16)
+  }
+  catch {
+    return 'fallback'
+  }
+}
 
 function collectCjoModules(): string[] {
-  const root = join(process.cwd(), 'public', 'lsp', 'modules', CJO_TARGET)
+  const root = join(LSP_PUBLIC_DIR, 'modules', CJO_TARGET)
   const results: string[] = []
   const walk = (dir: string) => {
     let entries: import('node:fs').Dirent[]
@@ -38,6 +51,11 @@ function collectCjoModules(): string[] {
   return results.sort()
 }
 
+// Downloads LSP assets on fresh checkout; a no-op when already present.
+await ensureLspFiles()
+const LSP_VERSION = detectLspVersion()
+const CJO_MODULES = collectCjoModules()
+
 const nextConfig: NextConfig = {
   experimental: {
     swcPlugins: [
@@ -59,6 +77,14 @@ const nextConfig: NextConfig = {
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Cross-Origin-Embedder-Policy', value: 'credentialless' },
         ],
+      },
+      // Dev: no-store so a fresh wasm build isn't masked by an immutable cache entry.
+      {
+        source: '/lsp/:path*',
+        headers: [{
+          key: 'Cache-Control',
+          value: IS_DEV ? 'no-store' : 'public, max-age=31536000, immutable',
+        }],
       },
     ]
   },
@@ -91,10 +117,12 @@ const nextConfig: NextConfig = {
       module: false,
     }
 
-    // Inlined at config-load time; restart the dev server after adding .cjo files.
+    // Inlined at config-load time; restart `next dev` after rebuilding the
+    // wasm or adding .cjo files.
     config.plugins.push(new webpack.DefinePlugin({
       __CJO_TARGET__: JSON.stringify(CJO_TARGET),
-      __CJO_MODULES__: JSON.stringify(collectCjoModules()),
+      __CJO_MODULES__: JSON.stringify(CJO_MODULES),
+      __LSP_VERSION__: JSON.stringify(LSP_VERSION),
     }))
 
     return config

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import * as yauzl from 'yauzl'
 
-const LSP_DIR = join(process.cwd(), 'public', 'lsp')
+const LSP_DIR = join(import.meta.dirname, '..', 'public', 'lsp')
 const LSP_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-lsp-1.1.0-beta/lsp.zip'
 
 function isLspDirEmpty() {
@@ -53,7 +53,7 @@ async function extractZipFromBuffer(buffer, destDir) {
   })
 }
 
-async function ensureLspFiles() {
+export async function ensureLspFiles() {
   if (!isLspDirEmpty()) {
     return
   }
@@ -78,4 +78,7 @@ async function ensureLspFiles() {
   console.log('LSP files extracted successfully.')
 }
 
-await ensureLspFiles()
+// Allow direct invocation (`node scripts/download-lsp.mjs`).
+if (process.argv[1] === import.meta.filename) {
+  await ensureLspFiles()
+}
