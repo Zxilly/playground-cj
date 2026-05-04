@@ -165,7 +165,7 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
     },
 
     update_learner: {
-      description: 'Single write tool for the learner profile. All fields optional. `concept` updates one concept (status / evidence / notes). `quiz` sets a new quiz (object) or clears it (null). For quiz prompt you may pass only the active uiLang text — the missing locale is copied.',
+      description: 'Single write tool for the learner profile. All fields optional. `concept` updates one concept (status / evidence / notes). For quiz creation/cancellation use the dedicated `set_quiz` / `clear_quiz` tools.',
       parameters: z.object({
         knownLanguages: z.array(z.string()).optional(),
         agentNotesSummary: z.string().max(300).optional(),
@@ -175,15 +175,6 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
           evidence: z.enum(EVIDENCE_OUTCOMES).optional(),
           notes: z.string().max(280).optional(),
         }).optional(),
-        quiz: z.union([
-          z.null(),
-          z.object({
-            conceptId: z.string(),
-            prompt: z.object({ zh: z.string().optional(), en: z.string().optional() }),
-            expectedOutput: z.string(),
-            matchMode: z.enum(QUIZ_MATCH_MODES).optional(),
-          }),
-        ]).optional(),
       }),
       execute: async (input) => {
         try {
@@ -216,29 +207,6 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
               if (evidence)
                 applyEvidence(m, id, evidence)
             }
-
-            if (input.quiz !== undefined) {
-              if (input.quiz === null) {
-                m.activeQuiz = null
-              }
-              else {
-                const zh = input.quiz.prompt.zh ?? input.quiz.prompt.en ?? ''
-                const en = input.quiz.prompt.en ?? input.quiz.prompt.zh ?? ''
-                if (!zh && !en) {
-                  rejected = 'Quiz prompt must include at least zh or en.'
-                  return
-                }
-                m.activeQuiz = {
-                  quizId: newQuizId(),
-                  conceptId: input.quiz.conceptId,
-                  prompt: { zh, en },
-                  expectedOutput: input.quiz.expectedOutput,
-                  matchMode: input.quiz.matchMode ?? 'exact',
-                  startedAt: Date.now(),
-                  attempts: 0,
-                }
-              }
-            }
           })
 
           if (rejected)
@@ -247,9 +215,61 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
           return ok({
             knownLanguages: m.knownLanguages,
             agentNotesSummary: m.agentNotesSummary ?? null,
-            activeQuiz: m.activeQuiz ?? null,
             concept: touchedConceptId ? m.concepts[touchedConceptId] ?? null : undefined,
           })
+        }
+        catch (e) {
+          return fail((e as Error).message)
+        }
+      },
+    },
+
+    set_quiz: {
+      description: 'Set or replace the active OJ-style quiz. The learner sees the prompt in the quiz panel; their next run_code call will auto-evaluate program output against expectedOutput. Pass at least one of prompt.zh / prompt.en — the missing locale is auto-copied. Default matchMode is "exact" (trailing whitespace trimmed). Setting a new quiz replaces the old one.',
+      parameters: z.object({
+        conceptId: z.string(),
+        prompt: z.object({ zh: z.string().optional(), en: z.string().optional() }),
+        expectedOutput: z.string(),
+        matchMode: z.enum(QUIZ_MATCH_MODES).optional(),
+      }),
+      execute: async ({ conceptId, prompt, expectedOutput, matchMode }) => {
+        try {
+          const zh = prompt.zh ?? prompt.en ?? ''
+          const en = prompt.en ?? prompt.zh ?? ''
+          if (!zh && !en)
+            return fail('Quiz prompt must include at least zh or en.')
+          const m = useLearnerStore.getState().mutate((m) => {
+            m.activeQuiz = {
+              quizId: newQuizId(),
+              conceptId,
+              prompt: { zh, en },
+              expectedOutput,
+              matchMode: matchMode ?? 'exact',
+              startedAt: Date.now(),
+              attempts: 0,
+            }
+          })
+          return ok({ activeQuiz: m.activeQuiz })
+        }
+        catch (e) {
+          return fail((e as Error).message)
+        }
+      },
+    },
+
+    clear_quiz: {
+      description: 'Clear the active quiz (e.g. learner gives up, or you decide to switch concepts). No-op if no quiz is active.',
+      parameters: z.object({}),
+      execute: async () => {
+        try {
+          const current = useLearnerStore.getState().learner
+          if (current.activeQuiz == null)
+            return ok({ activeQuiz: null })
+
+          const m = useLearnerStore.getState().mutate((m) => {
+            m.activeQuiz = null
+          })
+          return ok({ activeQuiz: m.activeQuiz ?? null })
         }
         catch (e) {
           return fail((e as Error).message)

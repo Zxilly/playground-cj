@@ -20,7 +20,7 @@ import { useAIBridge } from '@/components/tour/EditorBridgeContext'
 import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
 import { createBuiltinToolkit, loadMcpToolkit } from '@/components/tour/ai/tools'
 import { ProgressPanel } from '@/components/tour/ai/ProgressPanel'
-import { QuizBanner } from '@/components/tour/ai/QuizBanner'
+import { QuizPanel } from '@/components/tour/ai/QuizBanner'
 import { clearThread, globalThreadKey, loadThread, saveThread } from '@/lib/ai/persistence'
 import { useLearnerStore } from '@/stores/learner'
 import { buildSystemPrompt } from '@/lib/ai/system-prompt'
@@ -233,7 +233,7 @@ export function TourAIChat() {
           <span className="hidden sm:inline"><Trans>清空</Trans></span>
         </button>
       </div>
-      <QuizBanner />
+      <QuizPanel />
       <div className="flex-1 min-h-0">
         {bootstrap.status === 'ready' && config.apiKey
           ? (

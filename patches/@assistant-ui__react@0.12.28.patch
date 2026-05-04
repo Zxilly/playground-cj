@@ -1,0 +1,2101 @@
+diff --git a/dist/context/providers/ThreadViewportProvider.d.ts b/dist/context/providers/ThreadViewportProvider.d.ts
+index b37f66dcd247ffa0ef1b646298b8296218dddc4c..50adc798bd71d79d03b5bb1d9ee529d8ed3f66b4 100644
+--- a/dist/context/providers/ThreadViewportProvider.d.ts
++++ b/dist/context/providers/ThreadViewportProvider.d.ts
+@@ -4,4 +4,3 @@ export type ThreadViewportProviderProps = PropsWithChildren<{
+     options?: ThreadViewportStoreOptions;
+ }>;
+ export declare const ThreadPrimitiveViewportProvider: FC<ThreadViewportProviderProps>;
+-//# sourceMappingURL=ThreadViewportProvider.d.ts.map
+\ No newline at end of file
+diff --git a/dist/context/providers/ThreadViewportProvider.d.ts.map b/dist/context/providers/ThreadViewportProvider.d.ts.map
+deleted file mode 100644
+index 1a70da86e3a9f900b0e36374333045012f9f2fce..0000000000000000000000000000000000000000
+diff --git a/dist/context/providers/ThreadViewportProvider.js b/dist/context/providers/ThreadViewportProvider.js
+index 2a39d6d02c75a976637fca578e662d6603e541ef..19d72987d2b5bad542de2b09b050b68e046afd95 100644
+--- a/dist/context/providers/ThreadViewportProvider.js
++++ b/dist/context/providers/ThreadViewportProvider.js
+@@ -6,6 +6,8 @@ import { ThreadViewportContext, useThreadViewportStore, } from "../react/ThreadV
+ import { writableStore } from "../ReadonlyStore.js";
+ const useThreadViewportStoreValue = (options) => {
+     const outerViewport = useThreadViewportStore({ optional: true });
++    // Viewport options are initial configuration. Keeping them non-reactive avoids
++    // fanout through every message in long threads when anchoring config changes.
+     const [store] = useState(() => makeThreadViewportStore(options));
+     // Forward scrollToBottom from outer viewport to inner viewport
+     useEffect(() => {
+@@ -22,16 +24,6 @@ const useThreadViewportStoreValue = (options) => {
+             }
+         });
+     }, [store, outerViewport]);
+-    // Sync options to store when they change
+-    useEffect(() => {
+-        const nextState = {
+-            turnAnchor: options.turnAnchor ?? "bottom",
+-        };
+-        const currentState = store.getState();
+-        if (currentState.turnAnchor !== nextState.turnAnchor) {
+-            writableStore(store).setState(nextState);
+-        }
+-    }, [store, options.turnAnchor]);
+     return store;
+ };
+ export const ThreadPrimitiveViewportProvider = ({ children, options = {} }) => {
+@@ -43,4 +35,3 @@ export const ThreadPrimitiveViewportProvider = ({ children, options = {} }) => {
+     });
+     return (_jsx(ThreadViewportContext.Provider, { value: context, children: children }));
+ };
+-//# sourceMappingURL=ThreadViewportProvider.js.map
+\ No newline at end of file
+diff --git a/dist/context/providers/ThreadViewportProvider.js.map b/dist/context/providers/ThreadViewportProvider.js.map
+deleted file mode 100644
+index 7d56b9b4533118bbb523253fc672f703723060fc..0000000000000000000000000000000000000000
+diff --git a/dist/context/stores/ThreadViewport.d.ts b/dist/context/stores/ThreadViewport.d.ts
+index 697bd3c2058c4072bd4af9ded328bbd8b9ed974e..c1286d7026415946dc0c33208c60b479c1fce3c5 100644
+--- a/dist/context/stores/ThreadViewport.d.ts
++++ b/dist/context/stores/ThreadViewport.d.ts
+@@ -15,24 +15,52 @@ export type ThreadViewportState = {
+     }) => void) => Unsubscribe;
+     /** Controls scroll anchoring: "top" anchors user messages at top, "bottom" is classic behavior */
+     readonly turnAnchor: "top" | "bottom";
++    /** Clamps tall user messages so the assistant response stays in view. */
++    readonly topAnchorMessageClamp: {
++        readonly tallerThan: string;
++        readonly visibleHeight: string;
++    };
+     /** Raw height values from registered elements */
+     readonly height: {
+         /** Total viewport height */
+         readonly viewport: number;
+         /** Total content inset height (footer, anchor message, etc.) */
+         readonly inset: number;
+-        /** Height of the anchor user message (full height) */
+-        readonly userMessage: number;
+     };
++    /** Current DOM elements used for geometry-based top anchoring */
++    readonly element: {
++        readonly viewport: HTMLElement | null;
++        readonly anchor: HTMLElement | null;
++        readonly target: HTMLElement | null;
++    };
++    /** Numeric clamp configuration for the active top-anchor target message */
++    readonly targetConfig: {
++        readonly tallerThan: number;
++        readonly visibleHeight: number;
++    } | null;
+     /** Register a viewport and get a handle to update its height */
+     readonly registerViewport: () => SizeHandle;
+     /** Register a content inset (footer, anchor message, etc.) and get a handle to update its height */
+     readonly registerContentInset: () => SizeHandle;
+-    /** Register the anchor user message height */
+-    readonly registerUserMessageHeight: () => SizeHandle;
++    /** Register the scroll viewport element */
++    readonly registerViewportElement: (element: HTMLElement | null) => Unsubscribe;
++    /** Register the current anchor user message element */
++    readonly registerAnchorElement: (element: HTMLElement | null) => Unsubscribe;
++    /**
++     * Register the current top-anchor target (last assistant response) element
++     * along with its numeric clamp configuration. When unregistered, both
++     * `element.target` and `targetConfig` clear together.
++     */
++    readonly registerAnchorTargetElement: (element: HTMLElement | null, config?: {
++        readonly tallerThan: number;
++        readonly visibleHeight: number;
++    }) => Unsubscribe;
+ };
+ export type ThreadViewportStoreOptions = {
+     turnAnchor?: "top" | "bottom" | undefined;
++    topAnchorMessageClamp?: {
++        tallerThan?: string | undefined;
++        visibleHeight?: string | undefined;
++    } | undefined;
+ };
+-export declare const makeThreadViewportStore: (options?: ThreadViewportStoreOptions) => import("zustand").UseBoundStore<import("zustand").StoreApi<ThreadViewportState>>;
+-//# sourceMappingURL=ThreadViewport.d.ts.map
+\ No newline at end of file
++export declare const makeThreadViewportStore: (options?: ThreadViewportStoreOptions) => any;
+diff --git a/dist/context/stores/ThreadViewport.d.ts.map b/dist/context/stores/ThreadViewport.d.ts.map
+deleted file mode 100644
+index 924fe73b459b67f000182370e8c8a9bff85d16d6..0000000000000000000000000000000000000000
+diff --git a/dist/context/stores/ThreadViewport.js b/dist/context/stores/ThreadViewport.js
+index 7a29abbd013222ef7a747f35248f29b93e89fc60..07b31d2ee94d43698f6d4e3a956a1f0b9452fa33 100644
+--- a/dist/context/stores/ThreadViewport.js
++++ b/dist/context/stores/ThreadViewport.js
+@@ -46,14 +46,24 @@ export const makeThreadViewportStore = (options = {}) => {
+             },
+         });
+     });
+-    const userMessageRegistry = createSizeRegistry((total) => {
++    const registerElementSlot = (key, element) => {
+         store.setState({
+-            height: {
+-                ...store.getState().height,
+-                userMessage: total,
++            element: {
++                ...store.getState().element,
++                [key]: element,
+             },
+         });
+-    });
++        return () => {
++            if (store.getState().element[key] !== element)
++                return;
++            store.setState({
++                element: {
++                    ...store.getState().element,
++                    [key]: null,
++                },
++            });
++        };
++    };
+     const store = create(() => ({
+         isAtBottom: true,
+         scrollToBottom: ({ behavior = "auto" } = {}) => {
+@@ -68,15 +78,44 @@ export const makeThreadViewportStore = (options = {}) => {
+             };
+         },
+         turnAnchor: options.turnAnchor ?? "bottom",
++        topAnchorMessageClamp: {
++            tallerThan: options.topAnchorMessageClamp?.tallerThan ?? "10em",
++            visibleHeight: options.topAnchorMessageClamp?.visibleHeight ?? "6em",
++        },
+         height: {
+             viewport: 0,
+             inset: 0,
+-            userMessage: 0,
+         },
++        element: {
++            viewport: null,
++            anchor: null,
++            target: null,
++        },
++        targetConfig: null,
+         registerViewport: viewportRegistry.register,
+         registerContentInset: insetRegistry.register,
+-        registerUserMessageHeight: userMessageRegistry.register,
++        registerViewportElement: (element) => registerElementSlot("viewport", element),
++        registerAnchorElement: (element) => registerElementSlot("anchor", element),
++        registerAnchorTargetElement: (element, config) => {
++            store.setState({
++                element: {
++                    ...store.getState().element,
++                    target: element,
++                },
++                targetConfig: element && config ? config : null,
++            });
++            return () => {
++                if (store.getState().element.target !== element)
++                    return;
++                store.setState({
++                    element: {
++                        ...store.getState().element,
++                        target: null,
++                    },
++                    targetConfig: null,
++                });
++            };
++        },
+     }));
+     return store;
+ };
+-//# sourceMappingURL=ThreadViewport.js.map
+\ No newline at end of file
+diff --git a/dist/context/stores/ThreadViewport.js.map b/dist/context/stores/ThreadViewport.js.map
+deleted file mode 100644
+index 448141fc9488b8dc51dd78e1eab922e3ff3ff27a..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/composer/ComposerInput.js b/dist/primitives/composer/ComposerInput.js
+index 65d9274f51799f8b49a12a926a5ad7e9d3f6e0a0..18070c2b0c98ef457dd45f3693633725e6e8984f 100644
+--- a/dist/primitives/composer/ComposerInput.js
++++ b/dist/primitives/composer/ComposerInput.js
+@@ -161,13 +161,18 @@ export const ComposerPrimitiveInput = forwardRef(({ autoFocus = false, asChild,
+         onChange: composeEventHandlers(onChange, (e) => {
+             if (!aui.composer().getState().isEditing)
+                 return;
+-            const isComposing = e.nativeEvent.isComposing === true ||
+-                compositionRef.current;
+-            if (isComposing)
+-                return;
++            const nativeIsComposing = e.nativeEvent.isComposing === true;
++            // recover stuck compositionRef when the browser drops compositionend
++            if (compositionRef.current && !nativeIsComposing) {
++                compositionRef.current = false;
++            }
++            const isComposing = nativeIsComposing || compositionRef.current;
++            // keep controlled value in sync mid-IME so react does not reset the textarea to a stale value
+             flushResourcesSync(() => {
+                 aui.composer().setText(e.target.value);
+             });
++            if (isComposing)
++                return;
+             const pos = e.target.selectionStart ?? e.target.value.length;
+             if (pluginRegistry) {
+                 for (const plugin of pluginRegistry.getPlugins()) {
+diff --git a/dist/primitives/message/MessageRoot.d.ts b/dist/primitives/message/MessageRoot.d.ts
+index 85c47022780244a05255e89a77f7d71486944738..87f5629358421586e1a70cdafb77c7410c4b55b7 100644
+--- a/dist/primitives/message/MessageRoot.d.ts
++++ b/dist/primitives/message/MessageRoot.d.ts
+@@ -2,22 +2,7 @@ import { Primitive } from "../../utils/Primitive.js";
+ import { type ComponentRef, type ComponentPropsWithoutRef } from "react";
+ export declare namespace MessagePrimitiveRoot {
+     type Element = ComponentRef<typeof Primitive.div>;
+-    /**
+-     * Props for the MessagePrimitive.Root component.
+-     * Accepts all standard div element props plus optional viewport slack tuning.
+-     */
+-    type Props = ComponentPropsWithoutRef<typeof Primitive.div> & {
+-        /**
+-         * Threshold at which the user message height clamps to the offset.
+-         * @default "10em"
+-         */
+-        fillClampThreshold?: string | undefined;
+-        /**
+-         * Offset used when clamping large user messages.
+-         * @default "6em"
+-         */
+-        fillClampOffset?: string | undefined;
+-    };
++    type Props = ComponentPropsWithoutRef<typeof Primitive.div>;
+ }
+ /**
+  * The root container component for a message.
+@@ -26,8 +11,10 @@ export declare namespace MessagePrimitiveRoot {
+  * hover state management for the message. It automatically tracks when the user
+  * is hovering over the message, which can be used by child components like action bars.
+  *
+- * When `turnAnchor="top"` is set on the viewport, this component
+- * registers itself as the scroll anchor if it's the last user message.
++ * When `turnAnchor="top"` is set on the viewport, this component automatically
++ * registers itself as the top-anchor user message (when it's the previous user
++ * message) or as the top-anchor target (when it's the streaming assistant
++ * response). No additional component is required.
+  *
+  * @example
+  * ```tsx
+@@ -40,20 +27,4 @@ export declare namespace MessagePrimitiveRoot {
+  * </MessagePrimitive.Root>
+  * ```
+  */
+-export declare const MessagePrimitiveRoot: import("react").ForwardRefExoticComponent<Omit<Omit<import("react").ClassAttributes<HTMLDivElement> & import("react").HTMLAttributes<HTMLDivElement> & {
+-    asChild?: boolean;
+-}, "ref"> & {
+-    render?: import("react").ReactElement | undefined;
+-} & import("react").RefAttributes<HTMLDivElement>, "ref"> & {
+-    /**
+-     * Threshold at which the user message height clamps to the offset.
+-     * @default "10em"
+-     */
+-    fillClampThreshold?: string | undefined;
+-    /**
+-     * Offset used when clamping large user messages.
+-     * @default "6em"
+-     */
+-    fillClampOffset?: string | undefined;
+-} & import("react").RefAttributes<HTMLDivElement>>;
+-//# sourceMappingURL=MessageRoot.d.ts.map
+\ No newline at end of file
++export declare const MessagePrimitiveRoot: any;
+diff --git a/dist/primitives/message/MessageRoot.d.ts.map b/dist/primitives/message/MessageRoot.d.ts.map
+deleted file mode 100644
+index 4463321602f26a19a71fcb75ddbeaf12435fd478..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/message/MessageRoot.js b/dist/primitives/message/MessageRoot.js
+index 90549e45f892820122571821c72df84284b46433..064a8b1775db2423dc5e668d8f1749b8c8cae0c3 100644
+--- a/dist/primitives/message/MessageRoot.js
++++ b/dist/primitives/message/MessageRoot.js
+@@ -4,10 +4,9 @@ import { Primitive } from "../../utils/Primitive.js";
+ import { forwardRef, useCallback, } from "react";
+ import { useAui, useAuiState } from "@assistant-ui/store";
+ import { useManagedRef } from "../../utils/hooks/useManagedRef.js";
+-import { useSizeHandle } from "../../utils/hooks/useSizeHandle.js";
+ import { useComposedRefs } from "@radix-ui/react-compose-refs";
+-import { useThreadViewport } from "../../context/react/ThreadViewportContext.js";
+-import { ThreadPrimitiveViewportSlack } from "../thread/ThreadViewportSlack.js";
++import { useThreadViewportStore } from "../../context/react/ThreadViewportContext.js";
++import { parseCssLength } from "../thread/topAnchor/topAnchorUtils.js";
+ const useIsHoveringRef = () => {
+     const aui = useAui();
+     const message = useAuiState(() => aui.message());
+@@ -33,20 +32,54 @@ const useIsHoveringRef = () => {
+     return useManagedRef(callbackRef);
+ };
+ /**
+- * Hook that registers the anchor user message as a content inset.
+- * Only registers if: user message, at index messages.length-2, and last message is assistant.
++ * Predicate: this user message is the anchor target of an in-flight top-turn
++ * (second-to-last message after the first turn, with the last being an
++ * assistant response).
+  */
+-const useMessageViewportRef = () => {
+-    const turnAnchor = useThreadViewport((s) => s.turnAnchor);
+-    const registerUserHeight = useThreadViewport((s) => s.registerUserMessageHeight);
+-    // inset rules:
+-    // - the previous user message before the last assistant message registers its full height
+-    const shouldRegisterAsInset = useAuiState((s) => turnAnchor === "top" &&
++const useIsTopAnchorUser = (turnAnchor) => {
++    return useAuiState((s) => turnAnchor === "top" &&
+         s.message.role === "user" &&
++        s.message.index > 0 &&
+         s.message.index === s.thread.messages.length - 2 &&
+         s.thread.messages.at(-1)?.role === "assistant");
+-    const getHeight = useCallback((el) => el.offsetHeight, []);
+-    return useSizeHandle(shouldRegisterAsInset ? registerUserHeight : null, getHeight);
++};
++/**
++ * Predicate: this assistant message is the streaming response paired with the
++ * preceding user message under top-turn anchoring.
++ */
++const useIsTopAnchorTarget = (turnAnchor) => {
++    return useAuiState((s) => turnAnchor === "top" &&
++        s.message.isLast &&
++        s.message.role === "assistant" &&
++        s.message.index >= 1 &&
++        s.thread.messages.at(s.message.index - 1)?.role === "user");
++};
++/** Registers the user message as the top-anchor user reference element. */
++const useTopAnchorUserRef = (active, threadViewportStore) => {
++    const callback = useCallback((el) => {
++        if (!active)
++            return;
++        return threadViewportStore.getState().registerAnchorElement(el);
++    }, [active, threadViewportStore]);
++    return useManagedRef(callback);
++};
++/**
++ * Registers the assistant message as the top-anchor target element. CSS-length
++ * clamp config is parsed once at register time using the registered element's
++ * computed style, then stored as numeric pixels.
++ */
++const useTopAnchorTargetRef = ({ active, threadViewportStore, }) => {
++    const targetRefCallback = useCallback((el) => {
++        if (!active)
++            return;
++        const state = threadViewportStore.getState();
++        const clamp = state.topAnchorMessageClamp;
++        return state.registerAnchorTargetElement(el, {
++            tallerThan: parseCssLength(clamp.tallerThan, el),
++            visibleHeight: parseCssLength(clamp.visibleHeight, el),
++        });
++    }, [active, threadViewportStore]);
++    return useManagedRef(targetRefCallback);
+ };
+ /**
+  * The root container component for a message.
+@@ -55,8 +88,10 @@ const useMessageViewportRef = () => {
+  * hover state management for the message. It automatically tracks when the user
+  * is hovering over the message, which can be used by child components like action bars.
+  *
+- * When `turnAnchor="top"` is set on the viewport, this component
+- * registers itself as the scroll anchor if it's the last user message.
++ * When `turnAnchor="top"` is set on the viewport, this component automatically
++ * registers itself as the top-anchor user message (when it's the previous user
++ * message) or as the top-anchor target (when it's the streaming assistant
++ * response). No additional component is required.
+  *
+  * @example
+  * ```tsx
+@@ -69,12 +104,19 @@ const useMessageViewportRef = () => {
+  * </MessagePrimitive.Root>
+  * ```
+  */
+-export const MessagePrimitiveRoot = forwardRef(({ fillClampThreshold, fillClampOffset, ...props }, forwardRef) => {
++export const MessagePrimitiveRoot = forwardRef((props, forwardRef) => {
+     const isHoveringRef = useIsHoveringRef();
+-    const anchorUserMessageRef = useMessageViewportRef();
+-    const ref = useComposedRefs(forwardRef, isHoveringRef, anchorUserMessageRef);
++    const threadViewportStore = useThreadViewportStore();
++    const turnAnchor = threadViewportStore.getState().turnAnchor;
++    const isTopAnchorUser = useIsTopAnchorUser(turnAnchor);
++    const isTopAnchorTarget = useIsTopAnchorTarget(turnAnchor);
++    const topAnchorUserRef = useTopAnchorUserRef(isTopAnchorUser, threadViewportStore);
++    const topAnchorTargetRef = useTopAnchorTargetRef({
++        active: isTopAnchorTarget,
++        threadViewportStore,
++    });
++    const ref = useComposedRefs(forwardRef, isHoveringRef, topAnchorUserRef, topAnchorTargetRef);
+     const messageId = useAuiState((s) => s.message.id);
+-    return (_jsx(ThreadPrimitiveViewportSlack, { fillClampThreshold: fillClampThreshold, fillClampOffset: fillClampOffset, children: _jsx(Primitive.div, { ...props, ref: ref, "data-message-id": messageId }) }));
++    return (_jsx(Primitive.div, { ...props, ref: ref, "data-message-id": messageId, "data-aui-top-anchor-target": isTopAnchorTarget ? "" : undefined }));
+ });
+ MessagePrimitiveRoot.displayName = "MessagePrimitive.Root";
+-//# sourceMappingURL=MessageRoot.js.map
+\ No newline at end of file
+diff --git a/dist/primitives/message/MessageRoot.js.map b/dist/primitives/message/MessageRoot.js.map
+deleted file mode 100644
+index e8f09f67971d6849c98623847e38826a3ba5627d..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/ThreadViewport.d.ts b/dist/primitives/thread/ThreadViewport.d.ts
+index 1bb4eb8c03c6a075c8ddb1f9bc453c0a7d0407c4..cef20705de1530597b0b80a15e63a10b91a74bb3 100644
+--- a/dist/primitives/thread/ThreadViewport.d.ts
++++ b/dist/primitives/thread/ThreadViewport.d.ts
+@@ -16,6 +16,25 @@ export declare namespace ThreadPrimitiveViewport {
+          * - "top": New user messages anchor at the top of the viewport for a focused reading experience.
+          */
+         turnAnchor?: "top" | "bottom" | undefined;
++        /**
++         * Clamps tall user messages so the assistant response stays in view.
++         *
++         * @default { tallerThan: "10em", visibleHeight: "6em" }
++         */
++        topAnchorMessageClamp?: {
++            /**
++             * Clamp messages taller than this. Supports `px`, `em`, and `rem`.
++             *
++             * @default "10em"
++             */
++            tallerThan?: string;
++            /**
++             * Visible portion of clamped messages. Supports `px`, `em`, and `rem`.
++             *
++             * @default "6em"
++             */
++            visibleHeight?: string;
++        };
+         /**
+          * Whether to scroll to bottom when a new run starts.
+          *
+@@ -52,41 +71,4 @@ export declare namespace ThreadPrimitiveViewport {
+  * </ThreadPrimitive.Viewport>
+  * ```
+  */
+-export declare const ThreadPrimitiveViewport: import("react").ForwardRefExoticComponent<Omit<Omit<import("react").ClassAttributes<HTMLDivElement> & import("react").HTMLAttributes<HTMLDivElement> & {
+-    asChild?: boolean;
+-}, "ref"> & {
+-    render?: import("react").ReactElement | undefined;
+-} & import("react").RefAttributes<HTMLDivElement>, "ref"> & {
+-    /**
+-     * Whether to automatically scroll to the bottom when new messages are added.
+-     * When enabled, the viewport will automatically scroll to show the latest content.
+-     *
+-     * Default false if `turnAnchor` is "top", otherwise defaults to true.
+-     */
+-    autoScroll?: boolean | undefined;
+-    /**
+-     * Controls scroll anchoring behavior for new messages.
+-     * - "bottom" (default): Messages anchor at the bottom, classic chat behavior.
+-     * - "top": New user messages anchor at the top of the viewport for a focused reading experience.
+-     */
+-    turnAnchor?: "top" | "bottom" | undefined;
+-    /**
+-     * Whether to scroll to bottom when a new run starts.
+-     *
+-     * Defaults to true.
+-     */
+-    scrollToBottomOnRunStart?: boolean | undefined;
+-    /**
+-     * Whether to scroll to bottom when thread history is first loaded.
+-     *
+-     * Defaults to true.
+-     */
+-    scrollToBottomOnInitialize?: boolean | undefined;
+-    /**
+-     * Whether to scroll to bottom when switching to a different thread.
+-     *
+-     * Defaults to true.
+-     */
+-    scrollToBottomOnThreadSwitch?: boolean | undefined;
+-} & import("react").RefAttributes<HTMLDivElement>>;
+-//# sourceMappingURL=ThreadViewport.d.ts.map
+\ No newline at end of file
++export declare const ThreadPrimitiveViewport: any;
+diff --git a/dist/primitives/thread/ThreadViewport.d.ts.map b/dist/primitives/thread/ThreadViewport.d.ts.map
+deleted file mode 100644
+index 486e932ba05f037141225fbdf910267e4a577a53..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/ThreadViewport.js b/dist/primitives/thread/ThreadViewport.js
+index eb57dc68a7b40249b99a1bf7e2e4ddd4e99f09dc..f74ee3b8f08a2e5143f48c7629ee09d52a97b9ac 100644
+--- a/dist/primitives/thread/ThreadViewport.js
++++ b/dist/primitives/thread/ThreadViewport.js
+@@ -3,15 +3,21 @@ import { jsx as _jsx } from "react/jsx-runtime";
+ import { useComposedRefs } from "@radix-ui/react-compose-refs";
+ import { Primitive } from "../../utils/Primitive.js";
+ import { forwardRef, useCallback, } from "react";
++import { useManagedRef } from "../../utils/hooks/useManagedRef.js";
+ import { useThreadViewportAutoScroll } from "./useThreadViewportAutoScroll.js";
+ import { ThreadPrimitiveViewportProvider } from "../../context/providers/ThreadViewportProvider.js";
+ import { useSizeHandle } from "../../utils/hooks/useSizeHandle.js";
+-import { useThreadViewport } from "../../context/react/ThreadViewportContext.js";
++import { useThreadViewport, useThreadViewportStore, } from "../../context/react/ThreadViewportContext.js";
++import { useTopAnchorReserve } from "./topAnchor/useTopAnchorReserve.js";
+ const useViewportSizeRef = () => {
+     const register = useThreadViewport((s) => s.registerViewport);
+     const getHeight = useCallback((el) => el.clientHeight, []);
+     return useSizeHandle(register, getHeight);
+ };
++const useViewportElementRef = () => {
++    const registerViewportElement = useThreadViewport((s) => s.registerViewportElement);
++    return useManagedRef(registerViewportElement);
++};
+ const ThreadPrimitiveViewportScrollable = forwardRef(({ autoScroll, scrollToBottomOnRunStart, scrollToBottomOnInitialize, scrollToBottomOnThreadSwitch, children, ...rest }, forwardedRef) => {
+     const autoScrollRef = useThreadViewportAutoScroll({
+         autoScroll,
+@@ -20,7 +26,11 @@ const ThreadPrimitiveViewportScrollable = forwardRef(({ autoScroll, scrollToBott
+         scrollToBottomOnThreadSwitch,
+     });
+     const viewportSizeRef = useViewportSizeRef();
+-    const ref = useComposedRefs(forwardedRef, autoScrollRef, viewportSizeRef);
++    const viewportElementRef = useViewportElementRef();
++    const threadViewportStore = useThreadViewportStore();
++    const turnAnchor = threadViewportStore.getState().turnAnchor;
++    useTopAnchorReserve(turnAnchor === "top");
++    const ref = useComposedRefs(forwardedRef, autoScrollRef, viewportSizeRef, viewportElementRef);
+     return (_jsx(Primitive.div, { ...rest, ref: ref, children: children }));
+ });
+ ThreadPrimitiveViewportScrollable.displayName =
+@@ -41,8 +51,7 @@ ThreadPrimitiveViewportScrollable.displayName =
+  * </ThreadPrimitive.Viewport>
+  * ```
+  */
+-export const ThreadPrimitiveViewport = forwardRef(({ turnAnchor, ...props }, ref) => {
+-    return (_jsx(ThreadPrimitiveViewportProvider, { options: { turnAnchor }, children: _jsx(ThreadPrimitiveViewportScrollable, { ...props, ref: ref }) }));
++export const ThreadPrimitiveViewport = forwardRef(({ turnAnchor, topAnchorMessageClamp, ...props }, ref) => {
++    return (_jsx(ThreadPrimitiveViewportProvider, { options: { turnAnchor, topAnchorMessageClamp }, children: _jsx(ThreadPrimitiveViewportScrollable, { ...props, ref: ref }) }));
+ });
+ ThreadPrimitiveViewport.displayName = "ThreadPrimitive.Viewport";
+-//# sourceMappingURL=ThreadViewport.js.map
+\ No newline at end of file
+diff --git a/dist/primitives/thread/ThreadViewport.js.map b/dist/primitives/thread/ThreadViewport.js.map
+deleted file mode 100644
+index fb09049d82529197576fe94be049372040b9b195..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/ThreadViewportFooter.d.ts b/dist/primitives/thread/ThreadViewportFooter.d.ts
+index b24c0ba4b8c735faa20425ad4edbeb31abe60177..d669c795eec286a40f7bbb6920ba4d42910b4d3f 100644
+--- a/dist/primitives/thread/ThreadViewportFooter.d.ts
++++ b/dist/primitives/thread/ThreadViewportFooter.d.ts
+@@ -8,7 +8,8 @@ export declare namespace ThreadPrimitiveViewportFooter {
+  * A footer container that measures its height for scroll calculations.
+  *
+  * This component measures its height and provides it to the viewport context
+- * for use in scroll calculations (e.g., ViewportSlack min-height).
++ * so the auto-scroll system can account for any sticky footer overlapping the
++ * message list.
+  *
+  * Multiple ViewportFooter components can be used - their heights are summed.
+  *
+@@ -27,9 +28,4 @@ export declare namespace ThreadPrimitiveViewportFooter {
+  * </ThreadPrimitive.Viewport>
+  * ```
+  */
+-export declare const ThreadPrimitiveViewportFooter: import("react").ForwardRefExoticComponent<Omit<Omit<import("react").ClassAttributes<HTMLDivElement> & import("react").HTMLAttributes<HTMLDivElement> & {
+-    asChild?: boolean;
+-}, "ref"> & {
+-    render?: import("react").ReactElement | undefined;
+-} & import("react").RefAttributes<HTMLDivElement>, "ref"> & import("react").RefAttributes<HTMLDivElement>>;
+-//# sourceMappingURL=ThreadViewportFooter.d.ts.map
+\ No newline at end of file
++export declare const ThreadPrimitiveViewportFooter: any;
+diff --git a/dist/primitives/thread/ThreadViewportFooter.d.ts.map b/dist/primitives/thread/ThreadViewportFooter.d.ts.map
+deleted file mode 100644
+index a0ba3dc8e0563520785183f8932391185cfaaf62..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/ThreadViewportFooter.js b/dist/primitives/thread/ThreadViewportFooter.js
+index 996b02a870876cafb177772333c06183054afa2f..09c34233d0c1dc2d3ce5753ef4b7d9d9fc10ad7a 100644
+--- a/dist/primitives/thread/ThreadViewportFooter.js
++++ b/dist/primitives/thread/ThreadViewportFooter.js
+@@ -9,7 +9,8 @@ import { useThreadViewport } from "../../context/react/ThreadViewportContext.js"
+  * A footer container that measures its height for scroll calculations.
+  *
+  * This component measures its height and provides it to the viewport context
+- * for use in scroll calculations (e.g., ViewportSlack min-height).
++ * so the auto-scroll system can account for any sticky footer overlapping the
++ * message list.
+  *
+  * Multiple ViewportFooter components can be used - their heights are summed.
+  *
+@@ -39,4 +40,3 @@ export const ThreadPrimitiveViewportFooter = forwardRef((props, forwardedRef) =>
+     return _jsx(Primitive.div, { ...props, ref: ref });
+ });
+ ThreadPrimitiveViewportFooter.displayName = "ThreadPrimitive.ViewportFooter";
+-//# sourceMappingURL=ThreadViewportFooter.js.map
+\ No newline at end of file
+diff --git a/dist/primitives/thread/ThreadViewportFooter.js.map b/dist/primitives/thread/ThreadViewportFooter.js.map
+deleted file mode 100644
+index 0dd9d32f65a55780e9003759a06a2d4b9bb95d4c..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/ThreadViewportSlack.d.ts b/dist/primitives/thread/ThreadViewportSlack.d.ts
+deleted file mode 100644
+index 4915a9aa665d514f16885dd3ab34fe70c9f59a0e..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/ThreadViewportSlack.d.ts.map b/dist/primitives/thread/ThreadViewportSlack.d.ts.map
+deleted file mode 100644
+index 1e04cef14bd6f988942af47312862196394ba4fc..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/ThreadViewportSlack.js b/dist/primitives/thread/ThreadViewportSlack.js
+deleted file mode 100644
+index 123e9757563df882f13276891b6d685a5ef45fd6..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/ThreadViewportSlack.js.map b/dist/primitives/thread/ThreadViewportSlack.js.map
+deleted file mode 100644
+index 40b6ea6950d8d6749d577bba5fcb97c03068ce14..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/topAnchor/computeTopAnchorSlack.d.ts b/dist/primitives/thread/topAnchor/computeTopAnchorSlack.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..e9a890d3d23a3fa5c6858f0623488d14b6df47e0
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/computeTopAnchorSlack.d.ts
+@@ -0,0 +1,21 @@
++export type ComputeTopAnchorTargetOptions = {
++    viewport: HTMLElement;
++    anchor: HTMLElement;
++    tallerThan: number;
++    visibleHeight: number;
++};
++export type ComputeTopAnchorReserveOptions = ComputeTopAnchorTargetOptions & {
++    reserve: HTMLElement;
++};
++/**
++ * Compute the scroll position that pins the anchor (last user message) to the
++ * top of the viewport. For tall user messages the anchor is intentionally
++ * over-scrolled so only `visibleHeight` of it remains visible, leaving room
++ * for the assistant message below.
++ *
++ * Depends only on the anchor's offset within the scroll content; never reads
++ * `viewport.scrollHeight` (which is volatile while the assistant message
++ * streams in).
++ */
++export declare const computeTopAnchorTargetScrollTop: ({ viewport, anchor, tallerThan, visibleHeight, }: ComputeTopAnchorTargetOptions) => number;
++export declare const computeTopAnchorReserve: ({ viewport, reserve, ...targetOptions }: ComputeTopAnchorReserveOptions) => number;
+diff --git a/dist/primitives/thread/topAnchor/computeTopAnchorSlack.js b/dist/primitives/thread/topAnchor/computeTopAnchorSlack.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9829722fde70dfdd5c09cf2ea9bbb2303a807bb7
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/computeTopAnchorSlack.js
+@@ -0,0 +1,52 @@
++"use client";
++const getDocumentOffsetTop = (element) => {
++    let top = 0;
++    let current = element;
++    while (current) {
++        top += current.offsetTop;
++        current = current.offsetParent;
++    }
++    return top;
++};
++const getLayoutOffsetTop = (element, ancestor) => {
++    // Use layout geometry, not visual rects, so entrance transforms/animations
++    // on the anchor do not shift the scroll target while they settle.
++    let top = 0;
++    let current = element;
++    while (current && current !== ancestor) {
++        top += current.offsetTop;
++        current = current.offsetParent;
++    }
++    if (current === ancestor)
++        return top;
++    return getDocumentOffsetTop(element) - getDocumentOffsetTop(ancestor);
++};
++/**
++ * Compute the scroll position that pins the anchor (last user message) to the
++ * top of the viewport. For tall user messages the anchor is intentionally
++ * over-scrolled so only `visibleHeight` of it remains visible, leaving room
++ * for the assistant message below.
++ *
++ * Depends only on the anchor's offset within the scroll content; never reads
++ * `viewport.scrollHeight` (which is volatile while the assistant message
++ * streams in).
++ */
++export const computeTopAnchorTargetScrollTop = ({ viewport, anchor, tallerThan, visibleHeight, }) => {
++    const anchorTop = getLayoutOffsetTop(anchor, viewport);
++    const anchorHeight = anchor.offsetHeight;
++    const visibleAnchorHeight = anchorHeight <= tallerThan ? anchorHeight : visibleHeight;
++    return anchorTop + Math.max(0, anchorHeight - visibleAnchorHeight);
++};
++const computeTopAnchorSlack = ({ scrollHeight, ...targetOptions }) => {
++    const { viewport } = targetOptions;
++    const targetScrollTop = computeTopAnchorTargetScrollTop(targetOptions);
++    const targetScrollHeight = targetScrollTop + viewport.clientHeight;
++    return Math.max(0, targetScrollHeight - scrollHeight);
++};
++export const computeTopAnchorReserve = ({ viewport, reserve, ...targetOptions }) => {
++    return computeTopAnchorSlack({
++        viewport,
++        ...targetOptions,
++        scrollHeight: viewport.scrollHeight - reserve.offsetHeight,
++    });
++};
+diff --git a/dist/primitives/thread/topAnchor/createReserveObservers.d.ts b/dist/primitives/thread/topAnchor/createReserveObservers.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..bca6ffe67ca48393947ddb3de8eb48982150de1f
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/createReserveObservers.d.ts
+@@ -0,0 +1,4 @@
++export declare const createReserveObservers: (onChange: () => void) => {
++    target: (viewport: HTMLElement, anchor: HTMLElement, target: HTMLElement) => void;
++    disconnect: () => void;
++};
+diff --git a/dist/primitives/thread/topAnchor/createReserveObservers.js b/dist/primitives/thread/topAnchor/createReserveObservers.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe5b8bdca724ae386d0cd2fa7782a36fd294385a
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/createReserveObservers.js
+@@ -0,0 +1,37 @@
++"use client";
++export const createReserveObservers = (onChange) => {
++    const resizeObserver = new ResizeObserver(onChange);
++    const mutationObserver = new MutationObserver(onChange);
++    let observedViewport = null;
++    let observedAnchor = null;
++    let observedTarget = null;
++    const disconnect = () => {
++        resizeObserver.disconnect();
++        mutationObserver.disconnect();
++        observedViewport = null;
++        observedAnchor = null;
++        observedTarget = null;
++    };
++    return {
++        target: (viewport, anchor, target) => {
++            if (observedViewport === viewport &&
++                observedAnchor === anchor &&
++                observedTarget === target) {
++                return;
++            }
++            disconnect();
++            resizeObserver.observe(viewport);
++            resizeObserver.observe(anchor);
++            resizeObserver.observe(target);
++            mutationObserver.observe(target, {
++                childList: true,
++                subtree: true,
++                characterData: true,
++            });
++            observedViewport = viewport;
++            observedAnchor = anchor;
++            observedTarget = target;
++        },
++        disconnect,
++    };
++};
+diff --git a/dist/primitives/thread/topAnchor/mountTopAnchorReserve.d.ts b/dist/primitives/thread/topAnchor/mountTopAnchorReserve.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..ead8e65159c96be77f407a15353ed2a60790f6a5
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/mountTopAnchorReserve.d.ts
+@@ -0,0 +1,21 @@
++/**
++ * Minimal slice of `ThreadViewportStore` that the top-anchor reserve needs.
++ * Decoupling from the full store keeps `mountTopAnchorReserve` testable in
++ * isolation and re-usable from any consumer that can adapt to this shape.
++ */
++export type TopAnchorStore = {
++    getState(): {
++        turnAnchor: "top" | "bottom";
++        element: {
++            viewport: HTMLElement | null;
++            anchor: HTMLElement | null;
++            target: HTMLElement | null;
++        };
++        targetConfig: {
++            tallerThan: number;
++            visibleHeight: number;
++        } | null;
++    };
++    subscribe(fn: () => void): () => void;
++};
++export declare const mountTopAnchorReserve: (store: TopAnchorStore) => () => void;
+diff --git a/dist/primitives/thread/topAnchor/mountTopAnchorReserve.js b/dist/primitives/thread/topAnchor/mountTopAnchorReserve.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..13306af081267d5e080d1e7f32939c9166f076c6
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/mountTopAnchorReserve.js
+@@ -0,0 +1,74 @@
++"use client";
++import { computeTopAnchorReserve, computeTopAnchorTargetScrollTop, } from "./computeTopAnchorSlack.js";
++import { createReserveObservers } from "./createReserveObservers.js";
++import { createReserveElement, getAnchorId, setReserveHeight, snapScrollTop, } from "./topAnchorUtils.js";
++const createFrameScheduler = (fn) => {
++    let frame = null;
++    return {
++        schedule: () => {
++            if (frame !== null)
++                return;
++            frame = requestAnimationFrame(() => {
++                frame = null;
++                fn();
++            });
++        },
++        cancel: () => {
++            if (frame !== null) {
++                cancelAnimationFrame(frame);
++                frame = null;
++            }
++        },
++    };
++};
++export const mountTopAnchorReserve = (store) => {
++    let reserve = null;
++    let lastScrolledAnchorId;
++    function apply() {
++        const state = store.getState();
++        const { viewport, anchor, target } = state.element;
++        const clamp = state.targetConfig;
++        if (state.turnAnchor !== "top" ||
++            !viewport ||
++            !anchor ||
++            !target ||
++            !clamp) {
++            observers.disconnect();
++            if (reserve) {
++                setReserveHeight(reserve, 0);
++                reserve.remove();
++            }
++            return;
++        }
++        reserve ??= createReserveElement();
++        if (reserve.parentElement !== target.parentElement ||
++            reserve.previousElementSibling !== target) {
++            target.after(reserve);
++        }
++        observers.target(viewport, anchor, target);
++        const reserveChanged = setReserveHeight(reserve, computeTopAnchorReserve({ viewport, anchor, reserve, ...clamp }));
++        if (reserveChanged) {
++            scheduler.schedule();
++            return;
++        }
++        const anchorId = getAnchorId(anchor);
++        if (anchorId !== undefined && lastScrolledAnchorId === anchorId)
++            return;
++        const targetScrollTop = snapScrollTop(computeTopAnchorTargetScrollTop({ viewport, anchor, ...clamp }));
++        if (Math.abs(viewport.scrollTop - targetScrollTop) > 1) {
++            viewport.scrollTo({ top: targetScrollTop, behavior: "smooth" });
++        }
++        if (anchorId !== undefined)
++            lastScrolledAnchorId = anchorId;
++    }
++    const scheduler = createFrameScheduler(apply);
++    const observers = createReserveObservers(scheduler.schedule);
++    scheduler.schedule();
++    const unsubscribe = store.subscribe(scheduler.schedule);
++    return () => {
++        scheduler.cancel();
++        unsubscribe();
++        observers.disconnect();
++        reserve?.remove();
++    };
++};
+diff --git a/dist/primitives/thread/topAnchor/topAnchorUtils.d.ts b/dist/primitives/thread/topAnchor/topAnchorUtils.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..c2c26ac74763afc64e015d0d49c79839bc257b3e
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/topAnchorUtils.d.ts
+@@ -0,0 +1,14 @@
++/**
++ * Convert a supported CSS length string (`px`, `em`, `rem`) into pixels,
++ * resolving font-relative units against the supplied element's computed style.
++ * Unsupported or malformed values disable the tall-message clamp.
++ *
++ * Part of the top-anchor package's public input contract: consumers may pass
++ * clamp configuration as supported CSS-length strings, and this function is the
++ * single place that converts them into the pixel values the package operates on.
++ */
++export declare const parseCssLength: (value: string, element: HTMLElement) => number;
++export declare const getAnchorId: (anchor: HTMLElement) => string;
++export declare const createReserveElement: () => HTMLDivElement;
++export declare const setReserveHeight: (reserve: HTMLElement, height: number) => boolean;
++export declare const snapScrollTop: (top: number) => number;
+diff --git a/dist/primitives/thread/topAnchor/topAnchorUtils.js b/dist/primitives/thread/topAnchor/topAnchorUtils.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..171386aef4f471419635e6c3f7e07560f45a11e0
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/topAnchorUtils.js
+@@ -0,0 +1,50 @@
++"use client";
++/**
++ * Convert a supported CSS length string (`px`, `em`, `rem`) into pixels,
++ * resolving font-relative units against the supplied element's computed style.
++ * Unsupported or malformed values disable the tall-message clamp.
++ *
++ * Part of the top-anchor package's public input contract: consumers may pass
++ * clamp configuration as supported CSS-length strings, and this function is the
++ * single place that converts them into the pixel values the package operates on.
++ */
++export const parseCssLength = (value, element) => {
++    const match = value.trim().match(/^(\d+(?:\.\d+)?|\.\d+)(em|px|rem)$/);
++    if (!match)
++        return Number.POSITIVE_INFINITY;
++    const num = Number(match[1]);
++    const unit = match[2];
++    if (unit === "px")
++        return num;
++    if (unit === "em") {
++        const fontSize = parseFloat(getComputedStyle(element).fontSize) || 16;
++        return num * fontSize;
++    }
++    if (unit === "rem") {
++        const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
++        return num * rootFontSize;
++    }
++    return Number.POSITIVE_INFINITY;
++};
++export const getAnchorId = (anchor) => anchor.dataset.messageId;
++export const createReserveElement = () => {
++    const reserve = document.createElement("div");
++    reserve.dataset.auiTopAnchorReserve = "";
++    reserve.style.height = "0px";
++    reserve.style.flexShrink = "0";
++    reserve.style.pointerEvents = "none";
++    reserve.setAttribute("aria-hidden", "true");
++    return reserve;
++};
++export const setReserveHeight = (reserve, height) => {
++    const nextHeight = `${height}px`;
++    if (reserve.style.height !== nextHeight) {
++        reserve.style.height = nextHeight;
++        return true;
++    }
++    return false;
++};
++export const snapScrollTop = (top) => {
++    const pixelRatio = window.devicePixelRatio || 1;
++    return Math.round(top * pixelRatio) / pixelRatio;
++};
+diff --git a/dist/primitives/thread/topAnchor/useTopAnchorReserve.d.ts b/dist/primitives/thread/topAnchor/useTopAnchorReserve.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..431aae24709c7bc055b12cb03e0c538228dc9644
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/useTopAnchorReserve.d.ts
+@@ -0,0 +1,6 @@
++/**
++ * Mounts the top-turn-anchor reserve element against the active
++ * `ThreadViewport` store. Call this from inside the scrollable viewport so
++ * the reserve `<div>` is appended next to the streaming assistant message.
++ */
++export declare const useTopAnchorReserve: (enabled: boolean) => void;
+diff --git a/dist/primitives/thread/topAnchor/useTopAnchorReserve.js b/dist/primitives/thread/topAnchor/useTopAnchorReserve.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c58bbc41999721d6f517767c1afd2d6f5d51c3d
+--- /dev/null
++++ b/dist/primitives/thread/topAnchor/useTopAnchorReserve.js
+@@ -0,0 +1,17 @@
++"use client";
++import { useLayoutEffect } from "react";
++import { useThreadViewportStore } from "../../../context/react/ThreadViewportContext.js";
++import { mountTopAnchorReserve } from "./mountTopAnchorReserve.js";
++/**
++ * Mounts the top-turn-anchor reserve element against the active
++ * `ThreadViewport` store. Call this from inside the scrollable viewport so
++ * the reserve `<div>` is appended next to the streaming assistant message.
++ */
++export const useTopAnchorReserve = (enabled) => {
++    const threadViewportStore = useThreadViewportStore();
++    useLayoutEffect(() => {
++        if (!enabled)
++            return;
++        return mountTopAnchorReserve(threadViewportStore);
++    }, [enabled, threadViewportStore]);
++};
+diff --git a/dist/primitives/thread/useThreadViewportAutoScroll.d.ts b/dist/primitives/thread/useThreadViewportAutoScroll.d.ts
+index 037397cda13bd7913e981915a7060b83d23ad78b..6d1f81ad413fea8707ea59d25ae445bc5c853639 100644
+--- a/dist/primitives/thread/useThreadViewportAutoScroll.d.ts
++++ b/dist/primitives/thread/useThreadViewportAutoScroll.d.ts
+@@ -1,4 +1,3 @@
+-import { type RefCallback } from "react";
+ export declare namespace useThreadViewportAutoScroll {
+     type Options = {
+         /**
+@@ -29,4 +28,3 @@ export declare namespace useThreadViewportAutoScroll {
+     };
+ }
+ export declare const useThreadViewportAutoScroll: <TElement extends HTMLElement>({ autoScroll, scrollToBottomOnRunStart, scrollToBottomOnInitialize, scrollToBottomOnThreadSwitch, }: useThreadViewportAutoScroll.Options) => RefCallback<TElement>;
+-//# sourceMappingURL=useThreadViewportAutoScroll.d.ts.map
+\ No newline at end of file
+diff --git a/dist/primitives/thread/useThreadViewportAutoScroll.d.ts.map b/dist/primitives/thread/useThreadViewportAutoScroll.d.ts.map
+deleted file mode 100644
+index c10c4f3f3e1690f13862cc0c4093695a97041862..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread/useThreadViewportAutoScroll.js b/dist/primitives/thread/useThreadViewportAutoScroll.js
+index 047bbc2652f662c7d57bab3ddcb59209739b041d..5d01cf93c94380008de426e31cba23c71ac6fb6b 100644
+--- a/dist/primitives/thread/useThreadViewportAutoScroll.js
++++ b/dist/primitives/thread/useThreadViewportAutoScroll.js
+@@ -25,6 +25,12 @@ export const useThreadViewportAutoScroll = ({ autoScroll, scrollToBottomOnRunSta
+         scrollingToBottomBehaviorRef.current = behavior;
+         div.scrollTo({ top: div.scrollHeight, behavior });
+     }, []);
++    const hasActiveTopAnchor = useCallback(() => {
++        const state = threadViewportStore.getState();
++        return (state.turnAnchor === "top" &&
++            state.element.viewport === divRef.current &&
++            state.element.anchor !== null);
++    }, [threadViewportStore]);
+     const handleScroll = () => {
+         const div = divRef.current;
+         if (!div)
+@@ -50,7 +56,11 @@ export const useThreadViewportAutoScroll = ({ autoScroll, scrollToBottomOnRunSta
+     };
+     const resizeRef = useOnResizeContent(() => {
+         const scrollBehavior = scrollingToBottomBehaviorRef.current;
+-        if (scrollBehavior) {
++        if (scrollBehavior && hasActiveTopAnchor()) {
++            // Let the top-anchor reserve own scrolling while a run starts to avoid a bottom-scroll race.
++            scrollingToBottomBehaviorRef.current = null;
++        }
++        else if (scrollBehavior) {
+             scrollToBottom(scrollBehavior);
+         }
+         else if (autoScroll && threadViewportStore.getState().isAtBottom) {
+@@ -71,6 +81,8 @@ export const useThreadViewportAutoScroll = ({ autoScroll, scrollToBottomOnRunSta
+     useAuiEvent("thread.runStart", () => {
+         if (!scrollToBottomOnRunStart)
+             return;
++        if (threadViewportStore.getState().turnAnchor === "top")
++            return;
+         scrollingToBottomBehaviorRef.current = "auto";
+         requestAnimationFrame(() => {
+             scrollToBottom("auto");
+@@ -97,4 +109,3 @@ export const useThreadViewportAutoScroll = ({ autoScroll, scrollToBottomOnRunSta
+     const autoScrollRef = useComposedRefs(resizeRef, scrollRef, divRef);
+     return autoScrollRef;
+ };
+-//# sourceMappingURL=useThreadViewportAutoScroll.js.map
+\ No newline at end of file
+diff --git a/dist/primitives/thread/useThreadViewportAutoScroll.js.map b/dist/primitives/thread/useThreadViewportAutoScroll.js.map
+deleted file mode 100644
+index ffded79e0a79572717041546415225231375ee97..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread.d.ts b/dist/primitives/thread.d.ts
+index 570d45b6959ed2ec613db93976e155dd9f97d349..d5574f524a45dc425e784f30f9951a6ab7215fb4 100644
+--- a/dist/primitives/thread.d.ts
++++ b/dist/primitives/thread.d.ts
+@@ -4,10 +4,8 @@ export { ThreadPrimitiveIf as If } from "./thread/ThreadIf.js";
+ export { ThreadPrimitiveViewport as Viewport } from "./thread/ThreadViewport.js";
+ export { ThreadPrimitiveViewportProvider as ViewportProvider } from "../context/providers/ThreadViewportProvider.js";
+ export { ThreadPrimitiveViewportFooter as ViewportFooter } from "./thread/ThreadViewportFooter.js";
+-export { ThreadPrimitiveViewportSlack as ViewportSlack } from "./thread/ThreadViewportSlack.js";
+ export { ThreadPrimitiveMessages as Messages } from "./thread/ThreadMessages.js";
+ export { ThreadPrimitiveMessageByIndex as MessageByIndex } from "./thread/ThreadMessages.js";
+ export { ThreadPrimitiveScrollToBottom as ScrollToBottom } from "./thread/ThreadScrollToBottom.js";
+ export { ThreadPrimitiveSuggestion as Suggestion } from "./thread/ThreadSuggestion.js";
+ export { ThreadPrimitiveSuggestions as Suggestions, ThreadPrimitiveSuggestionByIndex as SuggestionByIndex, } from "./thread/ThreadSuggestions.js";
+-//# sourceMappingURL=thread.d.ts.map
+\ No newline at end of file
+diff --git a/dist/primitives/thread.d.ts.map b/dist/primitives/thread.d.ts.map
+deleted file mode 100644
+index 2e5658ddf89f639863842a50e0a60ddd578120a5..0000000000000000000000000000000000000000
+diff --git a/dist/primitives/thread.js b/dist/primitives/thread.js
+index 0a9f727aa62c85a6e1697fc4fc74f27415cffc3f..d5574f524a45dc425e784f30f9951a6ab7215fb4 100644
+--- a/dist/primitives/thread.js
++++ b/dist/primitives/thread.js
+@@ -4,10 +4,8 @@ export { ThreadPrimitiveIf as If } from "./thread/ThreadIf.js";
+ export { ThreadPrimitiveViewport as Viewport } from "./thread/ThreadViewport.js";
+ export { ThreadPrimitiveViewportProvider as ViewportProvider } from "../context/providers/ThreadViewportProvider.js";
+ export { ThreadPrimitiveViewportFooter as ViewportFooter } from "./thread/ThreadViewportFooter.js";
+-export { ThreadPrimitiveViewportSlack as ViewportSlack } from "./thread/ThreadViewportSlack.js";
+ export { ThreadPrimitiveMessages as Messages } from "./thread/ThreadMessages.js";
+ export { ThreadPrimitiveMessageByIndex as MessageByIndex } from "./thread/ThreadMessages.js";
+ export { ThreadPrimitiveScrollToBottom as ScrollToBottom } from "./thread/ThreadScrollToBottom.js";
+ export { ThreadPrimitiveSuggestion as Suggestion } from "./thread/ThreadSuggestion.js";
+ export { ThreadPrimitiveSuggestions as Suggestions, ThreadPrimitiveSuggestionByIndex as SuggestionByIndex, } from "./thread/ThreadSuggestions.js";
+-//# sourceMappingURL=thread.js.map
+\ No newline at end of file
+diff --git a/dist/primitives/thread.js.map b/dist/primitives/thread.js.map
+deleted file mode 100644
+index dd85d664bee077db4014a6516ee52eb918430ca7..0000000000000000000000000000000000000000
+diff --git a/dist/utils/hooks/useManagedRef.d.ts b/dist/utils/hooks/useManagedRef.d.ts
+index 32296c6f8ee46f620553c5fdd42abbf9b9f227ba..df9923c77d58efefe8c95475c575bef3203d22d5 100644
+--- a/dist/utils/hooks/useManagedRef.d.ts
++++ b/dist/utils/hooks/useManagedRef.d.ts
+@@ -1,2 +1 @@
+-export declare const useManagedRef: <TNode>(callback: (node: TNode) => (() => void) | undefined) => (el: TNode | null) => void;
+-//# sourceMappingURL=useManagedRef.d.ts.map
+\ No newline at end of file
++export declare const useManagedRef: <TNode>(callback: (node: TNode) => (() => void) | undefined) => any;
+diff --git a/dist/utils/hooks/useManagedRef.d.ts.map b/dist/utils/hooks/useManagedRef.d.ts.map
+deleted file mode 100644
+index a123d2ec8ed057c0469ae73c500932a4e5326437..0000000000000000000000000000000000000000
+diff --git a/dist/utils/hooks/useManagedRef.js b/dist/utils/hooks/useManagedRef.js
+index 889bff9b8733e7794870bf4dc699fdbf8c68abde..46eeb22765abc7507b402808fa3f5f8926085b9f 100644
+--- a/dist/utils/hooks/useManagedRef.js
++++ b/dist/utils/hooks/useManagedRef.js
+@@ -5,6 +5,7 @@ export const useManagedRef = (callback) => {
+         // Call the previous cleanup function
+         if (cleanupRef.current) {
+             cleanupRef.current();
++            cleanupRef.current = undefined;
+         }
+         // Call the new callback and store its cleanup function
+         if (el) {
+@@ -13,4 +14,3 @@ export const useManagedRef = (callback) => {
+     }, [callback]);
+     return ref;
+ };
+-//# sourceMappingURL=useManagedRef.js.map
+\ No newline at end of file
+diff --git a/dist/utils/hooks/useManagedRef.js.map b/dist/utils/hooks/useManagedRef.js.map
+deleted file mode 100644
+index ca286e0d7d7136f9f1e86b55ca9e20a4a765845e..0000000000000000000000000000000000000000
+diff --git a/dist/utils/hooks/useOnResizeContent.d.ts b/dist/utils/hooks/useOnResizeContent.d.ts
+index 4f3b4eaa34b974c8f82e6e9b8678f8a7b70fa08c..efdc9cf8490c4f86ca50e9c0ee5fedaf4d4f7bc7 100644
+--- a/dist/utils/hooks/useOnResizeContent.d.ts
++++ b/dist/utils/hooks/useOnResizeContent.d.ts
+@@ -1,2 +1 @@
+-export declare const useOnResizeContent: (callback: () => void) => (el: HTMLElement | null) => void;
+-//# sourceMappingURL=useOnResizeContent.d.ts.map
+\ No newline at end of file
++export declare const useOnResizeContent: (callback: () => void) => any;
+diff --git a/dist/utils/hooks/useOnResizeContent.d.ts.map b/dist/utils/hooks/useOnResizeContent.d.ts.map
+deleted file mode 100644
+index 930a5479d8313c68ed4f094f41dcce6cf0517da2..0000000000000000000000000000000000000000
+diff --git a/dist/utils/hooks/useOnResizeContent.js b/dist/utils/hooks/useOnResizeContent.js
+index 3f012318eb0abebbca0ebc8d4125011280864a11..fcb5c67adaca26849fcbea9cf8d9bfdbcfef0132 100644
+--- a/dist/utils/hooks/useOnResizeContent.js
++++ b/dist/utils/hooks/useOnResizeContent.js
+@@ -9,8 +9,7 @@ export const useOnResizeContent = (callback) => {
+         });
+         const mutationObserver = new MutationObserver((mutations) => {
+             // Filter out style-only attribute mutations to prevent feedback loops
+-            // with components like ThreadViewportSlack that write styles in response
+-            // to viewport changes
++            // with code paths that write styles in response to viewport changes.
+             const hasRelevantMutation = mutations.some((m) => m.type !== "attributes" || m.attributeName !== "style");
+             if (hasRelevantMutation) {
+                 callbackRef();
+@@ -30,4 +29,3 @@ export const useOnResizeContent = (callback) => {
+     }, [callbackRef]);
+     return useManagedRef(refCallback);
+ };
+-//# sourceMappingURL=useOnResizeContent.js.map
+\ No newline at end of file
+diff --git a/dist/utils/hooks/useOnResizeContent.js.map b/dist/utils/hooks/useOnResizeContent.js.map
+deleted file mode 100644
+index b8f2d039619caaa0c622669aba267e669fc3b54d..0000000000000000000000000000000000000000
+diff --git a/src/context/providers/ThreadViewportProvider.tsx b/src/context/providers/ThreadViewportProvider.tsx
+index d84aeba9d036ed9741e3d947524e7bf4bf6486ba..ec31c6192308f14e746a9507463a6a7028486ed5 100644
+--- a/src/context/providers/ThreadViewportProvider.tsx
++++ b/src/context/providers/ThreadViewportProvider.tsx
+@@ -19,6 +19,8 @@ export type ThreadViewportProviderProps = PropsWithChildren<{
+ 
+ const useThreadViewportStoreValue = (options: ThreadViewportStoreOptions) => {
+   const outerViewport = useThreadViewportStore({ optional: true });
++  // Viewport options are initial configuration. Keeping them non-reactive avoids
++  // fanout through every message in long threads when anchoring config changes.
+   const [store] = useState(() => makeThreadViewportStore(options));
+ 
+   // Forward scrollToBottom from outer viewport to inner viewport
+@@ -37,18 +39,6 @@ const useThreadViewportStoreValue = (options: ThreadViewportStoreOptions) => {
+     });
+   }, [store, outerViewport]);
+ 
+-  // Sync options to store when they change
+-  useEffect(() => {
+-    const nextState = {
+-      turnAnchor: options.turnAnchor ?? "bottom",
+-    };
+-
+-    const currentState = store.getState();
+-    if (currentState.turnAnchor !== nextState.turnAnchor) {
+-      writableStore(store).setState(nextState);
+-    }
+-  }, [store, options.turnAnchor]);
+-
+   return store;
+ };
+ 
+diff --git a/src/context/stores/ThreadViewport.ts b/src/context/stores/ThreadViewport.ts
+index 4041b476341957f7d27fa7eaf22485f0e16b1d38..792e421732b7b3b97400f683873e21fcf35b1d61 100644
+--- a/src/context/stores/ThreadViewport.ts
++++ b/src/context/stores/ThreadViewport.ts
+@@ -60,28 +60,66 @@ export type ThreadViewportState = {
+   /** Controls scroll anchoring: "top" anchors user messages at top, "bottom" is classic behavior */
+   readonly turnAnchor: "top" | "bottom";
+ 
++  /** Clamps tall user messages so the assistant response stays in view. */
++  readonly topAnchorMessageClamp: {
++    readonly tallerThan: string;
++    readonly visibleHeight: string;
++  };
++
+   /** Raw height values from registered elements */
+   readonly height: {
+     /** Total viewport height */
+     readonly viewport: number;
+     /** Total content inset height (footer, anchor message, etc.) */
+     readonly inset: number;
+-    /** Height of the anchor user message (full height) */
+-    readonly userMessage: number;
+   };
+ 
++  /** Current DOM elements used for geometry-based top anchoring */
++  readonly element: {
++    readonly viewport: HTMLElement | null;
++    readonly anchor: HTMLElement | null;
++    readonly target: HTMLElement | null;
++  };
++
++  /** Numeric clamp configuration for the active top-anchor target message */
++  readonly targetConfig: {
++    readonly tallerThan: number;
++    readonly visibleHeight: number;
++  } | null;
++
+   /** Register a viewport and get a handle to update its height */
+   readonly registerViewport: () => SizeHandle;
+ 
+   /** Register a content inset (footer, anchor message, etc.) and get a handle to update its height */
+   readonly registerContentInset: () => SizeHandle;
+ 
+-  /** Register the anchor user message height */
+-  readonly registerUserMessageHeight: () => SizeHandle;
++  /** Register the scroll viewport element */
++  readonly registerViewportElement: (
++    element: HTMLElement | null,
++  ) => Unsubscribe;
++
++  /** Register the current anchor user message element */
++  readonly registerAnchorElement: (element: HTMLElement | null) => Unsubscribe;
++
++  /**
++   * Register the current top-anchor target (last assistant response) element
++   * along with its numeric clamp configuration. When unregistered, both
++   * `element.target` and `targetConfig` clear together.
++   */
++  readonly registerAnchorTargetElement: (
++    element: HTMLElement | null,
++    config?: { readonly tallerThan: number; readonly visibleHeight: number },
++  ) => Unsubscribe;
+ };
+ 
+ export type ThreadViewportStoreOptions = {
+   turnAnchor?: "top" | "bottom" | undefined;
++  topAnchorMessageClamp?:
++    | {
++        tallerThan?: string | undefined;
++        visibleHeight?: string | undefined;
++      }
++    | undefined;
+ };
+ 
+ export const makeThreadViewportStore = (
+@@ -107,14 +145,27 @@ export const makeThreadViewportStore = (
+       },
+     });
+   });
+-  const userMessageRegistry = createSizeRegistry((total) => {
++  const registerElementSlot = (
++    key: "viewport" | "anchor",
++    element: HTMLElement | null,
++  ) => {
+     store.setState({
+-      height: {
+-        ...store.getState().height,
+-        userMessage: total,
++      element: {
++        ...store.getState().element,
++        [key]: element,
+       },
+     });
+-  });
++
++    return () => {
++      if (store.getState().element[key] !== element) return;
++      store.setState({
++        element: {
++          ...store.getState().element,
++          [key]: null,
++        },
++      });
++    };
++  };
+ 
+   const store = create<ThreadViewportState>(() => ({
+     isAtBottom: true,
+@@ -131,16 +182,47 @@ export const makeThreadViewportStore = (
+     },
+ 
+     turnAnchor: options.turnAnchor ?? "bottom",
++    topAnchorMessageClamp: {
++      tallerThan: options.topAnchorMessageClamp?.tallerThan ?? "10em",
++      visibleHeight: options.topAnchorMessageClamp?.visibleHeight ?? "6em",
++    },
+ 
+     height: {
+       viewport: 0,
+       inset: 0,
+-      userMessage: 0,
+     },
++    element: {
++      viewport: null,
++      anchor: null,
++      target: null,
++    },
++    targetConfig: null,
+ 
+     registerViewport: viewportRegistry.register,
+     registerContentInset: insetRegistry.register,
+-    registerUserMessageHeight: userMessageRegistry.register,
++    registerViewportElement: (element) =>
++      registerElementSlot("viewport", element),
++    registerAnchorElement: (element) => registerElementSlot("anchor", element),
++    registerAnchorTargetElement: (element, config) => {
++      store.setState({
++        element: {
++          ...store.getState().element,
++          target: element,
++        },
++        targetConfig: element && config ? config : null,
++      });
++
++      return () => {
++        if (store.getState().element.target !== element) return;
++        store.setState({
++          element: {
++            ...store.getState().element,
++            target: null,
++          },
++          targetConfig: null,
++        });
++      };
++    },
+   }));
+ 
+   return store;
+diff --git a/src/primitives/message/MessageRoot.tsx b/src/primitives/message/MessageRoot.tsx
+index 0e9872338a118e6bd39682d87909eb81c7975796..779782d88dc91f54a6ca693b51f16c9dc0686707 100644
+--- a/src/primitives/message/MessageRoot.tsx
++++ b/src/primitives/message/MessageRoot.tsx
+@@ -9,10 +9,13 @@ import {
+ } from "react";
+ import { useAui, useAuiState } from "@assistant-ui/store";
+ import { useManagedRef } from "../../utils/hooks/useManagedRef";
+-import { useSizeHandle } from "../../utils/hooks/useSizeHandle";
+ import { useComposedRefs } from "@radix-ui/react-compose-refs";
+-import { useThreadViewport } from "../../context/react/ThreadViewportContext";
+-import { ThreadPrimitiveViewportSlack } from "../thread/ThreadViewportSlack";
++import { useThreadViewportStore } from "../../context/react/ThreadViewportContext";
++import { parseCssLength } from "../thread/topAnchor/topAnchorUtils";
++
++type ThreadViewportStore = NonNullable<
++  ReturnType<typeof useThreadViewportStore>
++>;
+ 
+ const useIsHoveringRef = () => {
+   const aui = useAui();
+@@ -48,51 +51,84 @@ const useIsHoveringRef = () => {
+ };
+ 
+ /**
+- * Hook that registers the anchor user message as a content inset.
+- * Only registers if: user message, at index messages.length-2, and last message is assistant.
++ * Predicate: this user message is the anchor target of an in-flight top-turn
++ * (second-to-last message after the first turn, with the last being an
++ * assistant response).
+  */
+-const useMessageViewportRef = () => {
+-  const turnAnchor = useThreadViewport((s) => s.turnAnchor);
+-  const registerUserHeight = useThreadViewport(
+-    (s) => s.registerUserMessageHeight,
+-  );
+-
+-  // inset rules:
+-  // - the previous user message before the last assistant message registers its full height
+-  const shouldRegisterAsInset = useAuiState(
++const useIsTopAnchorUser = (turnAnchor: "top" | "bottom") => {
++  return useAuiState(
+     (s) =>
+       turnAnchor === "top" &&
+       s.message.role === "user" &&
++      s.message.index > 0 &&
+       s.message.index === s.thread.messages.length - 2 &&
+       s.thread.messages.at(-1)?.role === "assistant",
+   );
++};
+ 
+-  const getHeight = useCallback((el: HTMLElement) => el.offsetHeight, []);
++/**
++ * Predicate: this assistant message is the streaming response paired with the
++ * preceding user message under top-turn anchoring.
++ */
++const useIsTopAnchorTarget = (turnAnchor: "top" | "bottom") => {
++  return useAuiState(
++    (s) =>
++      turnAnchor === "top" &&
++      s.message.isLast &&
++      s.message.role === "assistant" &&
++      s.message.index >= 1 &&
++      s.thread.messages.at(s.message.index - 1)?.role === "user",
++  );
++};
+ 
+-  return useSizeHandle(
+-    shouldRegisterAsInset ? registerUserHeight : null,
+-    getHeight,
++/** Registers the user message as the top-anchor user reference element. */
++const useTopAnchorUserRef = (
++  active: boolean,
++  threadViewportStore: ThreadViewportStore,
++) => {
++  const callback = useCallback(
++    (el: HTMLElement) => {
++      if (!active) return;
++      return threadViewportStore.getState().registerAnchorElement(el);
++    },
++    [active, threadViewportStore],
+   );
++
++  return useManagedRef<HTMLElement>(callback);
++};
++
++/**
++ * Registers the assistant message as the top-anchor target element. CSS-length
++ * clamp config is parsed once at register time using the registered element's
++ * computed style, then stored as numeric pixels.
++ */
++const useTopAnchorTargetRef = ({
++  active,
++  threadViewportStore,
++}: {
++  active: boolean;
++  threadViewportStore: ThreadViewportStore;
++}) => {
++  const targetRefCallback = useCallback(
++    (el: HTMLElement) => {
++      if (!active) return;
++      const state = threadViewportStore.getState();
++      const clamp = state.topAnchorMessageClamp;
++
++      return state.registerAnchorTargetElement(el, {
++        tallerThan: parseCssLength(clamp.tallerThan, el),
++        visibleHeight: parseCssLength(clamp.visibleHeight, el),
++      });
++    },
++    [active, threadViewportStore],
++  );
++
++  return useManagedRef<HTMLElement>(targetRefCallback);
+ };
+ 
+ export namespace MessagePrimitiveRoot {
+   export type Element = ComponentRef<typeof Primitive.div>;
+-  /**
+-   * Props for the MessagePrimitive.Root component.
+-   * Accepts all standard div element props plus optional viewport slack tuning.
+-   */
+-  export type Props = ComponentPropsWithoutRef<typeof Primitive.div> & {
+-    /**
+-     * Threshold at which the user message height clamps to the offset.
+-     * @default "10em"
+-     */
+-    fillClampThreshold?: string | undefined;
+-    /**
+-     * Offset used when clamping large user messages.
+-     * @default "6em"
+-     */
+-    fillClampOffset?: string | undefined;
+-  };
++  export type Props = ComponentPropsWithoutRef<typeof Primitive.div>;
+ }
+ 
+ /**
+@@ -102,8 +138,10 @@ export namespace MessagePrimitiveRoot {
+  * hover state management for the message. It automatically tracks when the user
+  * is hovering over the message, which can be used by child components like action bars.
+  *
+- * When `turnAnchor="top"` is set on the viewport, this component
+- * registers itself as the scroll anchor if it's the last user message.
++ * When `turnAnchor="top"` is set on the viewport, this component automatically
++ * registers itself as the top-anchor user message (when it's the previous user
++ * message) or as the top-anchor target (when it's the streaming assistant
++ * response). No additional component is required.
+  *
+  * @example
+  * ```tsx
+@@ -119,23 +157,35 @@ export namespace MessagePrimitiveRoot {
+ export const MessagePrimitiveRoot = forwardRef<
+   MessagePrimitiveRoot.Element,
+   MessagePrimitiveRoot.Props
+->(({ fillClampThreshold, fillClampOffset, ...props }, forwardRef) => {
++>((props, forwardRef) => {
+   const isHoveringRef = useIsHoveringRef();
+-  const anchorUserMessageRef = useMessageViewportRef();
++  const threadViewportStore = useThreadViewportStore();
++  const turnAnchor = threadViewportStore.getState().turnAnchor;
++  const isTopAnchorUser = useIsTopAnchorUser(turnAnchor);
++  const isTopAnchorTarget = useIsTopAnchorTarget(turnAnchor);
++  const topAnchorUserRef = useTopAnchorUserRef(
++    isTopAnchorUser,
++    threadViewportStore,
++  );
++  const topAnchorTargetRef = useTopAnchorTargetRef({
++    active: isTopAnchorTarget,
++    threadViewportStore,
++  });
+   const ref = useComposedRefs<HTMLDivElement>(
+     forwardRef,
+     isHoveringRef,
+-    anchorUserMessageRef,
++    topAnchorUserRef,
++    topAnchorTargetRef,
+   );
+   const messageId = useAuiState((s) => s.message.id);
+ 
+   return (
+-    <ThreadPrimitiveViewportSlack
+-      fillClampThreshold={fillClampThreshold}
+-      fillClampOffset={fillClampOffset}
+-    >
+-      <Primitive.div {...props} ref={ref} data-message-id={messageId} />
+-    </ThreadPrimitiveViewportSlack>
++    <Primitive.div
++      {...props}
++      ref={ref}
++      data-message-id={messageId}
++      data-aui-top-anchor-target={isTopAnchorTarget ? "" : undefined}
++    />
+   );
+ });
+ 
+diff --git a/src/primitives/thread/ThreadViewport.tsx b/src/primitives/thread/ThreadViewport.tsx
+index 66211073e606aef48ffad5e04457bf4b51948f1c..c9a05ccfbb1a475bec36551ed502b765d0e1dc84 100644
+--- a/src/primitives/thread/ThreadViewport.tsx
++++ b/src/primitives/thread/ThreadViewport.tsx
+@@ -8,10 +8,15 @@ import {
+   type ComponentPropsWithoutRef,
+   useCallback,
+ } from "react";
++import { useManagedRef } from "../../utils/hooks/useManagedRef";
+ import { useThreadViewportAutoScroll } from "./useThreadViewportAutoScroll";
+ import { ThreadPrimitiveViewportProvider } from "../../context/providers/ThreadViewportProvider";
+ import { useSizeHandle } from "../../utils/hooks/useSizeHandle";
+-import { useThreadViewport } from "../../context/react/ThreadViewportContext";
++import {
++  useThreadViewport,
++  useThreadViewportStore,
++} from "../../context/react/ThreadViewportContext";
++import { useTopAnchorReserve } from "./topAnchor/useTopAnchorReserve";
+ 
+ export namespace ThreadPrimitiveViewport {
+   export type Element = ComponentRef<typeof Primitive.div>;
+@@ -31,6 +36,26 @@ export namespace ThreadPrimitiveViewport {
+      */
+     turnAnchor?: "top" | "bottom" | undefined;
+ 
++    /**
++     * Clamps tall user messages so the assistant response stays in view.
++     *
++     * @default { tallerThan: "10em", visibleHeight: "6em" }
++     */
++    topAnchorMessageClamp?: {
++      /**
++       * Clamp messages taller than this. Supports `px`, `em`, and `rem`.
++       *
++       * @default "10em"
++       */
++      tallerThan?: string;
++      /**
++       * Visible portion of clamped messages. Supports `px`, `em`, and `rem`.
++       *
++       * @default "6em"
++       */
++      visibleHeight?: string;
++    };
++
+     /**
+      * Whether to scroll to bottom when a new run starts.
+      *
+@@ -60,6 +85,14 @@ const useViewportSizeRef = () => {
+   return useSizeHandle(register, getHeight);
+ };
+ 
++const useViewportElementRef = () => {
++  const registerViewportElement = useThreadViewport(
++    (s) => s.registerViewportElement,
++  );
++
++  return useManagedRef(registerViewportElement);
++};
++
+ const ThreadPrimitiveViewportScrollable = forwardRef<
+   ThreadPrimitiveViewport.Element,
+   ThreadPrimitiveViewport.Props
+@@ -82,7 +115,16 @@ const ThreadPrimitiveViewportScrollable = forwardRef<
+       scrollToBottomOnThreadSwitch,
+     });
+     const viewportSizeRef = useViewportSizeRef();
+-    const ref = useComposedRefs(forwardedRef, autoScrollRef, viewportSizeRef);
++    const viewportElementRef = useViewportElementRef();
++    const threadViewportStore = useThreadViewportStore();
++    const turnAnchor = threadViewportStore.getState().turnAnchor;
++    useTopAnchorReserve(turnAnchor === "top");
++    const ref = useComposedRefs(
++      forwardedRef,
++      autoScrollRef,
++      viewportSizeRef,
++      viewportElementRef,
++    );
+ 
+     return (
+       <Primitive.div {...rest} ref={ref}>
+@@ -114,9 +156,11 @@ ThreadPrimitiveViewportScrollable.displayName =
+ export const ThreadPrimitiveViewport = forwardRef<
+   ThreadPrimitiveViewport.Element,
+   ThreadPrimitiveViewport.Props
+->(({ turnAnchor, ...props }, ref) => {
++>(({ turnAnchor, topAnchorMessageClamp, ...props }, ref) => {
+   return (
+-    <ThreadPrimitiveViewportProvider options={{ turnAnchor }}>
++    <ThreadPrimitiveViewportProvider
++      options={{ turnAnchor, topAnchorMessageClamp }}
++    >
+       <ThreadPrimitiveViewportScrollable {...props} ref={ref} />
+     </ThreadPrimitiveViewportProvider>
+   );
+diff --git a/src/primitives/thread/ThreadViewportFooter.tsx b/src/primitives/thread/ThreadViewportFooter.tsx
+index 479e6070e4131cb7ffc88cab0997f69fae2c53bf..a969f9dbf93db783a32fe30179ce6edaf330bf65 100644
+--- a/src/primitives/thread/ThreadViewportFooter.tsx
++++ b/src/primitives/thread/ThreadViewportFooter.tsx
+@@ -20,7 +20,8 @@ export namespace ThreadPrimitiveViewportFooter {
+  * A footer container that measures its height for scroll calculations.
+  *
+  * This component measures its height and provides it to the viewport context
+- * for use in scroll calculations (e.g., ViewportSlack min-height).
++ * so the auto-scroll system can account for any sticky footer overlapping the
++ * message list.
+  *
+  * Multiple ViewportFooter components can be used - their heights are summed.
+  *
+diff --git a/src/primitives/thread/ThreadViewportSlack.tsx b/src/primitives/thread/ThreadViewportSlack.tsx
+deleted file mode 100644
+index b9cb136350a828d07ca54741f075028dd56d420e..0000000000000000000000000000000000000000
+diff --git a/src/primitives/thread/topAnchor/computeTopAnchorSlack.ts b/src/primitives/thread/topAnchor/computeTopAnchorSlack.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..44688281c5ad22bf73b03bb53b84c3d506940aef
+--- /dev/null
++++ b/src/primitives/thread/topAnchor/computeTopAnchorSlack.ts
+@@ -0,0 +1,94 @@
++"use client";
++
++export type ComputeTopAnchorTargetOptions = {
++  viewport: HTMLElement;
++  anchor: HTMLElement;
++  tallerThan: number;
++  visibleHeight: number;
++};
++
++export type ComputeTopAnchorReserveOptions = ComputeTopAnchorTargetOptions & {
++  reserve: HTMLElement;
++};
++
++type ComputeTopAnchorSlackOptions = ComputeTopAnchorTargetOptions & {
++  scrollHeight: number;
++};
++
++const getDocumentOffsetTop = (element: HTMLElement): number => {
++  let top = 0;
++  let current: HTMLElement | null = element;
++
++  while (current) {
++    top += current.offsetTop;
++    current = current.offsetParent as HTMLElement | null;
++  }
++
++  return top;
++};
++
++const getLayoutOffsetTop = (
++  element: HTMLElement,
++  ancestor: HTMLElement,
++): number => {
++  // Use layout geometry, not visual rects, so entrance transforms/animations
++  // on the anchor do not shift the scroll target while they settle.
++  let top = 0;
++  let current: HTMLElement | null = element;
++
++  while (current && current !== ancestor) {
++    top += current.offsetTop;
++    current = current.offsetParent as HTMLElement | null;
++  }
++
++  if (current === ancestor) return top;
++
++  return getDocumentOffsetTop(element) - getDocumentOffsetTop(ancestor);
++};
++
++/**
++ * Compute the scroll position that pins the anchor (last user message) to the
++ * top of the viewport. For tall user messages the anchor is intentionally
++ * over-scrolled so only `visibleHeight` of it remains visible, leaving room
++ * for the assistant message below.
++ *
++ * Depends only on the anchor's offset within the scroll content; never reads
++ * `viewport.scrollHeight` (which is volatile while the assistant message
++ * streams in).
++ */
++export const computeTopAnchorTargetScrollTop = ({
++  viewport,
++  anchor,
++  tallerThan,
++  visibleHeight,
++}: ComputeTopAnchorTargetOptions): number => {
++  const anchorTop = getLayoutOffsetTop(anchor, viewport);
++  const anchorHeight = anchor.offsetHeight;
++  const visibleAnchorHeight =
++    anchorHeight <= tallerThan ? anchorHeight : visibleHeight;
++
++  return anchorTop + Math.max(0, anchorHeight - visibleAnchorHeight);
++};
++
++const computeTopAnchorSlack = ({
++  scrollHeight,
++  ...targetOptions
++}: ComputeTopAnchorSlackOptions): number => {
++  const { viewport } = targetOptions;
++  const targetScrollTop = computeTopAnchorTargetScrollTop(targetOptions);
++  const targetScrollHeight = targetScrollTop + viewport.clientHeight;
++
++  return Math.max(0, targetScrollHeight - scrollHeight);
++};
++
++export const computeTopAnchorReserve = ({
++  viewport,
++  reserve,
++  ...targetOptions
++}: ComputeTopAnchorReserveOptions): number => {
++  return computeTopAnchorSlack({
++    viewport,
++    ...targetOptions,
++    scrollHeight: viewport.scrollHeight - reserve.offsetHeight,
++  });
++};
+diff --git a/src/primitives/thread/topAnchor/createReserveObservers.ts b/src/primitives/thread/topAnchor/createReserveObservers.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..408a30546f768688cb6db79534ee6b47c2e1cc8e
+--- /dev/null
++++ b/src/primitives/thread/topAnchor/createReserveObservers.ts
+@@ -0,0 +1,50 @@
++"use client";
++
++export const createReserveObservers = (onChange: () => void) => {
++  const resizeObserver = new ResizeObserver(onChange);
++  const mutationObserver = new MutationObserver(onChange);
++
++  let observedViewport: HTMLElement | null = null;
++  let observedAnchor: HTMLElement | null = null;
++  let observedTarget: HTMLElement | null = null;
++
++  const disconnect = () => {
++    resizeObserver.disconnect();
++    mutationObserver.disconnect();
++    observedViewport = null;
++    observedAnchor = null;
++    observedTarget = null;
++  };
++
++  return {
++    target: (
++      viewport: HTMLElement,
++      anchor: HTMLElement,
++      target: HTMLElement,
++    ) => {
++      if (
++        observedViewport === viewport &&
++        observedAnchor === anchor &&
++        observedTarget === target
++      ) {
++        return;
++      }
++
++      disconnect();
++
++      resizeObserver.observe(viewport);
++      resizeObserver.observe(anchor);
++      resizeObserver.observe(target);
++      mutationObserver.observe(target, {
++        childList: true,
++        subtree: true,
++        characterData: true,
++      });
++
++      observedViewport = viewport;
++      observedAnchor = anchor;
++      observedTarget = target;
++    },
++    disconnect,
++  };
++};
+diff --git a/src/primitives/thread/topAnchor/mountTopAnchorReserve.ts b/src/primitives/thread/topAnchor/mountTopAnchorReserve.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..6a2e2ec6994833c82cbdc6c25413b4510412181e
+--- /dev/null
++++ b/src/primitives/thread/topAnchor/mountTopAnchorReserve.ts
+@@ -0,0 +1,127 @@
++"use client";
++
++import {
++  computeTopAnchorReserve,
++  computeTopAnchorTargetScrollTop,
++} from "./computeTopAnchorSlack";
++import { createReserveObservers } from "./createReserveObservers";
++import {
++  createReserveElement,
++  getAnchorId,
++  setReserveHeight,
++  snapScrollTop,
++} from "./topAnchorUtils";
++
++/**
++ * Minimal slice of `ThreadViewportStore` that the top-anchor reserve needs.
++ * Decoupling from the full store keeps `mountTopAnchorReserve` testable in
++ * isolation and re-usable from any consumer that can adapt to this shape.
++ */
++export type TopAnchorStore = {
++  getState(): {
++    turnAnchor: "top" | "bottom";
++    element: {
++      viewport: HTMLElement | null;
++      anchor: HTMLElement | null;
++      target: HTMLElement | null;
++    };
++    targetConfig: {
++      tallerThan: number;
++      visibleHeight: number;
++    } | null;
++  };
++  subscribe(fn: () => void): () => void;
++};
++
++const createFrameScheduler = (fn: () => void) => {
++  let frame: number | null = null;
++
++  return {
++    schedule: () => {
++      if (frame !== null) return;
++      frame = requestAnimationFrame(() => {
++        frame = null;
++        fn();
++      });
++    },
++    cancel: () => {
++      if (frame !== null) {
++        cancelAnimationFrame(frame);
++        frame = null;
++      }
++    },
++  };
++};
++
++export const mountTopAnchorReserve = (store: TopAnchorStore) => {
++  let reserve: HTMLElement | null = null;
++  let lastScrolledAnchorId: string | undefined;
++
++  function apply() {
++    const state = store.getState();
++    const { viewport, anchor, target } = state.element;
++    const clamp = state.targetConfig;
++
++    if (
++      state.turnAnchor !== "top" ||
++      !viewport ||
++      !anchor ||
++      !target ||
++      !clamp
++    ) {
++      observers.disconnect();
++      if (reserve) {
++        setReserveHeight(reserve, 0);
++        reserve.remove();
++      }
++      return;
++    }
++
++    reserve ??= createReserveElement();
++
++    if (
++      reserve.parentElement !== target.parentElement ||
++      reserve.previousElementSibling !== target
++    ) {
++      target.after(reserve);
++    }
++
++    observers.target(viewport, anchor, target);
++
++    const reserveChanged = setReserveHeight(
++      reserve,
++      computeTopAnchorReserve({ viewport, anchor, reserve, ...clamp }),
++    );
++
++    if (reserveChanged) {
++      scheduler.schedule();
++      return;
++    }
++
++    const anchorId = getAnchorId(anchor);
++    if (anchorId !== undefined && lastScrolledAnchorId === anchorId) return;
++
++    const targetScrollTop = snapScrollTop(
++      computeTopAnchorTargetScrollTop({ viewport, anchor, ...clamp }),
++    );
++
++    if (Math.abs(viewport.scrollTop - targetScrollTop) > 1) {
++      viewport.scrollTo({ top: targetScrollTop, behavior: "smooth" });
++    }
++
++    if (anchorId !== undefined) lastScrolledAnchorId = anchorId;
++  }
++
++  const scheduler = createFrameScheduler(apply);
++  const observers = createReserveObservers(scheduler.schedule);
++
++  scheduler.schedule();
++  const unsubscribe = store.subscribe(scheduler.schedule);
++
++  return () => {
++    scheduler.cancel();
++    unsubscribe();
++    observers.disconnect();
++    reserve?.remove();
++  };
++};
+diff --git a/src/primitives/thread/topAnchor/topAnchorUtils.ts b/src/primitives/thread/topAnchor/topAnchorUtils.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..285f2e867f0afb9fd3ae29474dd0fc81488654a4
+--- /dev/null
++++ b/src/primitives/thread/topAnchor/topAnchorUtils.ts
+@@ -0,0 +1,58 @@
++"use client";
++
++/**
++ * Convert a supported CSS length string (`px`, `em`, `rem`) into pixels,
++ * resolving font-relative units against the supplied element's computed style.
++ * Unsupported or malformed values disable the tall-message clamp.
++ *
++ * Part of the top-anchor package's public input contract: consumers may pass
++ * clamp configuration as supported CSS-length strings, and this function is the
++ * single place that converts them into the pixel values the package operates on.
++ */
++export const parseCssLength = (value: string, element: HTMLElement): number => {
++  const match = value.trim().match(/^(\d+(?:\.\d+)?|\.\d+)(em|px|rem)$/);
++  if (!match) return Number.POSITIVE_INFINITY;
++
++  const num = Number(match[1]);
++  const unit = match[2];
++
++  if (unit === "px") return num;
++  if (unit === "em") {
++    const fontSize = parseFloat(getComputedStyle(element).fontSize) || 16;
++    return num * fontSize;
++  }
++  if (unit === "rem") {
++    const rootFontSize =
++      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
++    return num * rootFontSize;
++  }
++  return Number.POSITIVE_INFINITY;
++};
++
++export const getAnchorId = (anchor: HTMLElement) => anchor.dataset.messageId;
++
++export const createReserveElement = () => {
++  const reserve = document.createElement("div");
++  reserve.dataset.auiTopAnchorReserve = "";
++  reserve.style.height = "0px";
++  reserve.style.flexShrink = "0";
++  reserve.style.pointerEvents = "none";
++  reserve.setAttribute("aria-hidden", "true");
++
++  return reserve;
++};
++
++export const setReserveHeight = (reserve: HTMLElement, height: number) => {
++  const nextHeight = `${height}px`;
++  if (reserve.style.height !== nextHeight) {
++    reserve.style.height = nextHeight;
++    return true;
++  }
++
++  return false;
++};
++
++export const snapScrollTop = (top: number) => {
++  const pixelRatio = window.devicePixelRatio || 1;
++  return Math.round(top * pixelRatio) / pixelRatio;
++};
+diff --git a/src/primitives/thread/topAnchor/useTopAnchorReserve.ts b/src/primitives/thread/topAnchor/useTopAnchorReserve.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..d891ab80d890e26b56e46d5275d46a17ad554b90
+--- /dev/null
++++ b/src/primitives/thread/topAnchor/useTopAnchorReserve.ts
+@@ -0,0 +1,19 @@
++"use client";
++
++import { useLayoutEffect } from "react";
++import { useThreadViewportStore } from "../../../context/react/ThreadViewportContext";
++import { mountTopAnchorReserve } from "./mountTopAnchorReserve";
++
++/**
++ * Mounts the top-turn-anchor reserve element against the active
++ * `ThreadViewport` store. Call this from inside the scrollable viewport so
++ * the reserve `<div>` is appended next to the streaming assistant message.
++ */
++export const useTopAnchorReserve = (enabled: boolean) => {
++  const threadViewportStore = useThreadViewportStore();
++
++  useLayoutEffect(() => {
++    if (!enabled) return;
++    return mountTopAnchorReserve(threadViewportStore);
++  }, [enabled, threadViewportStore]);
++};
+diff --git a/src/primitives/thread/useThreadViewportAutoScroll.ts b/src/primitives/thread/useThreadViewportAutoScroll.ts
+index c1ca7dba4f0dd3479d1dd140b556f8ea452843b1..eff53b3cc7d17fd4459af8271502e9b56f244ba6 100644
+--- a/src/primitives/thread/useThreadViewportAutoScroll.ts
++++ b/src/primitives/thread/useThreadViewportAutoScroll.ts
+@@ -70,6 +70,15 @@ export const useThreadViewportAutoScroll = <TElement extends HTMLElement>({
+     div.scrollTo({ top: div.scrollHeight, behavior });
+   }, []);
+ 
++  const hasActiveTopAnchor = useCallback(() => {
++    const state = threadViewportStore.getState();
++    return (
++      state.turnAnchor === "top" &&
++      state.element.viewport === divRef.current &&
++      state.element.anchor !== null
++    );
++  }, [threadViewportStore]);
++
+   const handleScroll = () => {
+     const div = divRef.current;
+     if (!div) return;
+@@ -101,7 +110,10 @@ export const useThreadViewportAutoScroll = <TElement extends HTMLElement>({
+ 
+   const resizeRef = useOnResizeContent(() => {
+     const scrollBehavior = scrollingToBottomBehaviorRef.current;
+-    if (scrollBehavior) {
++    if (scrollBehavior && hasActiveTopAnchor()) {
++      // Let the top-anchor reserve own scrolling while a run starts to avoid a bottom-scroll race.
++      scrollingToBottomBehaviorRef.current = null;
++    } else if (scrollBehavior) {
+       scrollToBottom(scrollBehavior);
+     } else if (autoScroll && threadViewportStore.getState().isAtBottom) {
+       scrollToBottom("instant");
+@@ -124,6 +136,8 @@ export const useThreadViewportAutoScroll = <TElement extends HTMLElement>({
+   // autoscroll on run start
+   useAuiEvent("thread.runStart", () => {
+     if (!scrollToBottomOnRunStart) return;
++    if (threadViewportStore.getState().turnAnchor === "top") return;
++
+     scrollingToBottomBehaviorRef.current = "auto";
+     requestAnimationFrame(() => {
+       scrollToBottom("auto");
+diff --git a/src/primitives/thread.ts b/src/primitives/thread.ts
+index fca9f19ac662edee38a43a32ebe865f2f0471275..2be81adfdd8ed677750edeb5c7ebe1dfddd3d6e8 100644
+--- a/src/primitives/thread.ts
++++ b/src/primitives/thread.ts
+@@ -4,7 +4,6 @@ export { ThreadPrimitiveIf as If } from "./thread/ThreadIf";
+ export { ThreadPrimitiveViewport as Viewport } from "./thread/ThreadViewport";
+ export { ThreadPrimitiveViewportProvider as ViewportProvider } from "../context/providers/ThreadViewportProvider";
+ export { ThreadPrimitiveViewportFooter as ViewportFooter } from "./thread/ThreadViewportFooter";
+-export { ThreadPrimitiveViewportSlack as ViewportSlack } from "./thread/ThreadViewportSlack";
+ export { ThreadPrimitiveMessages as Messages } from "./thread/ThreadMessages";
+ export { ThreadPrimitiveMessageByIndex as MessageByIndex } from "./thread/ThreadMessages";
+ export { ThreadPrimitiveScrollToBottom as ScrollToBottom } from "./thread/ThreadScrollToBottom";
+diff --git a/src/utils/hooks/useManagedRef.ts b/src/utils/hooks/useManagedRef.ts
+index 9556427d2263e87d6094c3e06888659bdb51053d..d0d5b800e557a5293f268d2c0c69d0348e80485e 100644
+--- a/src/utils/hooks/useManagedRef.ts
++++ b/src/utils/hooks/useManagedRef.ts
+@@ -10,6 +10,7 @@ export const useManagedRef = <TNode>(
+       // Call the previous cleanup function
+       if (cleanupRef.current) {
+         cleanupRef.current();
++        cleanupRef.current = undefined;
+       }
+ 
+       // Call the new callback and store its cleanup function
+diff --git a/src/utils/hooks/useOnResizeContent.ts b/src/utils/hooks/useOnResizeContent.ts
+index d6b06456301831c7484385b9a2cadfa4bb149a95..ec8c9be2d5ace8b2bd1b4ff8033b7f49e16b0d35 100644
+--- a/src/utils/hooks/useOnResizeContent.ts
++++ b/src/utils/hooks/useOnResizeContent.ts
+@@ -13,8 +13,7 @@ export const useOnResizeContent = (callback: () => void) => {
+ 
+       const mutationObserver = new MutationObserver((mutations) => {
+         // Filter out style-only attribute mutations to prevent feedback loops
+-        // with components like ThreadViewportSlack that write styles in response
+-        // to viewport changes
++        // with code paths that write styles in response to viewport changes.
+         const hasRelevantMutation = mutations.some(
+           (m) => m.type !== "attributes" || m.attributeName !== "style",
+         );

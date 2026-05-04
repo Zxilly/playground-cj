@@ -126,6 +126,10 @@
         "eslint": ">=10",
         "vite": ">=6"
       }
+    },
+    "patchedDependencies": {
+      "@assistant-ui/react@0.12.28": "patches/@assistant-ui__react@0.12.28.patch",
+      "@assistant-ui/store@0.2.9": "patches/@assistant-ui__store@0.2.9.patch"
     }
   }
 }

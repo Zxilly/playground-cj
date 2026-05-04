@@ -7,12 +7,14 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { fontFamily } from '@/app/font'
 import { updateEditor } from '@/lib/monaco'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import { Play, RotateCcw } from 'lucide-react'
+import { Play, RotateCcw, Target } from 'lucide-react'
 import type { MonacoEditorHandle } from '@/components/EditorWrapper'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { AnsiUp } from 'ansi_up'
 import { useEditorBridge } from '@/components/tour/EditorBridgeContext'
 import { useTourEditorStore } from '@/stores/tourEditor'
+import { useLearnerStore } from '@/stores/learner'
+import { QuizTestTabs } from '@/components/tour/ai/QuizTestTabs'
 
 interface TourEditorProps {
   code: string
@@ -47,6 +49,7 @@ function createLocalizedLabels(locale: string) {
     programOutput: locale === 'en' ? 'Program Output' : String.fromCodePoint(0x7A0B, 0x5E8F, 0x8F93, 0x51FA),
     compilerPlaceholder: locale === 'en' ? 'Run to see compiler output.' : String.fromCodePoint(0x8FD0, 0x884C, 0x540E, 0x5728, 0x6B64, 0x67E5, 0x770B, 0x7F16, 0x8BD1, 0x8F93, 0x51FA, 0x3002),
     programPlaceholder: locale === 'en' ? 'Run to see program output.' : String.fromCodePoint(0x8FD0, 0x884C, 0x540E, 0x5728, 0x6B64, 0x67E5, 0x770B, 0x7A0B, 0x5E8F, 0x8F93, 0x51FA, 0x3002),
+    quizActive: locale === 'en' ? 'Quiz mode' : String.fromCodePoint(0x6D4B, 0x9A8C, 0x4E2D),
   }
 }
 
@@ -142,9 +145,13 @@ export function TourEditor({ code, locale }: TourEditorProps) {
   const setActiveTab = useTourEditorStore(state => state.setActiveTab)
   const resetOutputs = useTourEditorStore(state => state.resetOutputs)
   const setInitialCode = useTourEditorStore(state => state.setInitialCode)
+  const activeQuiz = useLearnerStore(state => state.learner.activeQuiz)
 
   const labels = useMemo(() => createLocalizedLabels(locale), [locale])
   const outputHtml = useMemo(() => {
+    if (activeQuiz)
+      return ''
+
     const ansi = ansiRef.current
     const compilerText = toolOutput || labels.compilerPlaceholder
     const runtimeText = programOutput || labels.programPlaceholder
@@ -152,7 +159,7 @@ export function TourEditor({ code, locale }: TourEditorProps) {
     return activeTab === 'program'
       ? ansi.ansi_to_html(runtimeText)
       : ansi.ansi_to_html(compilerText)
-  }, [activeTab, labels.compilerPlaceholder, labels.programPlaceholder, programOutput, toolOutput])
+  }, [activeQuiz, activeTab, labels.compilerPlaceholder, labels.programPlaceholder, programOutput, toolOutput])
 
   const clearCompilerMarkers = useCallback(() => {
     const model = editorAppRef.current?.getEditor()?.getModel()
@@ -232,7 +239,15 @@ export function TourEditor({ code, locale }: TourEditorProps) {
     <div className="flex h-full flex-col" data-tour-editor-root>
       <ResizablePanelGroup orientation="vertical" className="h-full">
         <ResizablePanel defaultSize={68} minSize={35}>
-          <div className="relative h-full min-h-0 border-b border-border">
+          <div
+            className={`relative h-full min-h-0 border-b transition-colors ${activeQuiz ? 'border-tour-teal/50 ring-1 ring-inset ring-tour-teal/40' : 'border-border'}`}
+          >
+            {activeQuiz && (
+              <div className="absolute right-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-tour-teal/40 bg-background/85 px-2.5 py-1 text-[11px] font-medium text-tour-teal shadow-sm backdrop-blur-sm">
+                <Target className="size-3" />
+                {labels.quizActive}
+              </div>
+            )}
             <MonacoEditorReactComp
               code={code}
               onLoad={onLoad}
@@ -268,29 +283,37 @@ export function TourEditor({ code, locale }: TourEditorProps) {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 text-xs">
-                <button
-                  onClick={() => setActiveTab('program')}
-                  className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'program' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
-                >
-                  {labels.programOutput}
-                </button>
-                <button
-                  onClick={() => setActiveTab('tool')}
-                  className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'tool' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
-                >
-                  {labels.compilerOutput}
-                </button>
-              </div>
+              {!activeQuiz && (
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    onClick={() => setActiveTab('program')}
+                    className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'program' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
+                  >
+                    {labels.programOutput}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('tool')}
+                    className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'tool' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
+                  >
+                    {labels.compilerOutput}
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
-              <pre
-                className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground"
-                style={{ fontFamily }}
-                dangerouslySetInnerHTML={{ __html: outputHtml }}
-              />
-            </div>
+            {activeQuiz
+              ? (
+                  <QuizTestTabs programOutput={programOutput} />
+                )
+              : (
+                  <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
+                    <pre
+                      className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground"
+                      style={{ fontFamily }}
+                      dangerouslySetInnerHTML={{ __html: outputHtml }}
+                    />
+                  </div>
+                )}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
