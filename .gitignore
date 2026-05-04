@@ -47,3 +47,5 @@ wasm-dist/
 ref_doc/
 __pycache__/
 tour_gen/
+
+.tmp/

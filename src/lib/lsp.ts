@@ -1,3 +1,5 @@
+import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
+
 // Pthread workers spawned by the emscripten module inherit the JS glue's
 // query string via `import.meta.url`, so they hit the same cached URL as
 // the main thread without extra revalidation round-trips.
@@ -336,26 +338,37 @@ const runtimeDeps: LspRuntimeDeps = {
   initializeLspServer,
 }
 
-let connectionInstance: ConnectionInstance | null = null
-let generationCounter = 0
-let lifecycleOperation: Promise<void> = Promise.resolve()
+type StatusListener = (status: LspRuntimeStatus) => void
 
-const runtimeStatus: LspRuntimeStatus = {
-  state: 'stopped',
-  origin: 'auto',
-  manuallyStopped: false,
-  stdlibModulesLoaded: 0,
-  stdlibModulesTotal: __CJO_MODULES__.length,
-  generation: 0,
-  autoRestartAttempts: 0,
+interface LspGlobalState {
+  connectionInstance: ConnectionInstance | null
+  generationCounter: number
+  lifecycleOperation: Promise<void>
+  runtimeStatus: LspRuntimeStatus
+  listeners: Set<StatusListener>
+  autoRestartTimer: ReturnType<typeof setTimeout> | null
 }
 
-type StatusListener = (status: LspRuntimeStatus) => void
-const listeners = new Set<StatusListener>()
+const STATE = hmrSlot<LspGlobalState>(HMR_SLOT_KEYS.LSP_STATE, () => ({
+  connectionInstance: null,
+  generationCounter: 0,
+  lifecycleOperation: Promise.resolve(),
+  runtimeStatus: {
+    state: 'stopped',
+    origin: 'auto',
+    manuallyStopped: false,
+    stdlibModulesLoaded: 0,
+    stdlibModulesTotal: __CJO_MODULES__.length,
+    generation: 0,
+    autoRestartAttempts: 0,
+  },
+  listeners: new Set<StatusListener>(),
+  autoRestartTimer: null,
+}))
 
 function emitStatus(): void {
-  const snapshot: LspRuntimeStatus = { ...runtimeStatus }
-  for (const listener of listeners) {
+  const snapshot: LspRuntimeStatus = { ...STATE.runtimeStatus }
+  for (const listener of STATE.listeners) {
     try {
       listener(snapshot)
     }
@@ -366,52 +379,50 @@ function emitStatus(): void {
 }
 
 function setState(patch: Partial<LspRuntimeStatus>): void {
-  Object.assign(runtimeStatus, patch)
+  Object.assign(STATE.runtimeStatus, patch)
   emitStatus()
 }
 
 export function subscribeLspStatus(listener: StatusListener): () => void {
-  listeners.add(listener)
+  STATE.listeners.add(listener)
   try {
-    listener({ ...runtimeStatus })
+    listener({ ...STATE.runtimeStatus })
   }
   catch (e) {
     console.error('[LSP] status listener threw on subscribe:', e)
   }
   return () => {
-    listeners.delete(listener)
+    STATE.listeners.delete(listener)
   }
 }
 
-let autoRestartTimer: ReturnType<typeof setTimeout> | null = null
-
 function cancelScheduledAutoRestart(): void {
-  if (autoRestartTimer !== null) {
-    clearTimeout(autoRestartTimer)
-    autoRestartTimer = null
+  if (STATE.autoRestartTimer !== null) {
+    clearTimeout(STATE.autoRestartTimer)
+    STATE.autoRestartTimer = null
   }
 }
 
 function scheduleAutoRestart(reason: string): void {
-  if (runtimeStatus.manuallyStopped) {
+  if (STATE.runtimeStatus.manuallyStopped) {
     return
   }
-  if (runtimeStatus.autoRestartAttempts >= MAX_AUTO_RESTART_ATTEMPTS) {
+  if (STATE.runtimeStatus.autoRestartAttempts >= MAX_AUTO_RESTART_ATTEMPTS) {
     console.warn('[LSP] exhausted auto-restart attempts; staying crashed')
     setState({ state: 'crashed', origin: 'auto', lastError: reason })
     return
   }
 
   const delay = AUTO_RESTART_BACKOFF_MS[
-    Math.min(runtimeStatus.autoRestartAttempts, AUTO_RESTART_BACKOFF_MS.length - 1)
+    Math.min(STATE.runtimeStatus.autoRestartAttempts, AUTO_RESTART_BACKOFF_MS.length - 1)
   ]
-  console.warn(`[LSP] scheduling auto-restart in ${delay}ms (attempt ${runtimeStatus.autoRestartAttempts + 1})`)
+  console.warn(`[LSP] scheduling auto-restart in ${delay}ms (attempt ${STATE.runtimeStatus.autoRestartAttempts + 1})`)
   setState({ state: 'crashed', origin: 'auto', lastError: reason })
 
   cancelScheduledAutoRestart()
-  autoRestartTimer = setTimeout(() => {
-    autoRestartTimer = null
-    if (runtimeStatus.manuallyStopped)
+  STATE.autoRestartTimer = setTimeout(() => {
+    STATE.autoRestartTimer = null
+    if (STATE.runtimeStatus.manuallyStopped)
       return
     void restartLsp('auto')
   }, delay)
@@ -423,13 +434,13 @@ function handleCrash(err: Error, instance: ConnectionInstance): void {
   }
   // Ignore errors from a superseded instance (e.g. error fires after we've
   // already torn it down for a restart).
-  if (connectionInstance !== instance) {
+  if (STATE.connectionInstance !== instance) {
     return
   }
   instance.crashHandled = true
   console.error('[LSP] crash detected:', err)
-  const nextAttempt = runtimeStatus.autoRestartAttempts + 1
-  runtimeStatus.autoRestartAttempts = nextAttempt
+  const nextAttempt = STATE.runtimeStatus.autoRestartAttempts + 1
+  STATE.runtimeStatus.autoRestartAttempts = nextAttempt
   setState({ autoRestartAttempts: nextAttempt })
   scheduleAutoRestart(err.message)
 }
@@ -437,7 +448,7 @@ function handleCrash(err: Error, instance: ConnectionInstance): void {
 function createConnection(origin: LspStateOrigin): ConnectionInstance {
   const { port1: editorPort, port2: serverPort } = runtimeDeps.createMessageChannel()
 
-  generationCounter += 1
+  STATE.generationCounter += 1
   const instance: ConnectionInstance = {
     editorPort,
     serverPort,
@@ -452,7 +463,7 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
     state: 'starting',
     lastError: undefined,
     stdlibModulesLoaded: 0,
-    generation: generationCounter,
+    generation: STATE.generationCounter,
   })
 
   instance.initPromise = runtimeDeps.initializeLspServer(
@@ -479,7 +490,7 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
       instance.module = module
       setState({
         state: 'running',
-        stdlibModulesLoaded: runtimeStatus.stdlibModulesTotal,
+        stdlibModulesLoaded: STATE.runtimeStatus.stdlibModulesTotal,
         lastError: undefined,
         autoRestartAttempts: 0,
       })
@@ -543,8 +554,8 @@ async function disposeConnection(instance: ConnectionInstance): Promise<void> {
 }
 
 async function runLifecycle<T>(operation: () => Promise<T>): Promise<T> {
-  const next = lifecycleOperation.then(operation, operation)
-  lifecycleOperation = next.then(
+  const next = STATE.lifecycleOperation.then(operation, operation)
+  STATE.lifecycleOperation = next.then(
     () => undefined,
     () => undefined,
   )
@@ -558,37 +569,37 @@ async function runLifecycle<T>(operation: () => Promise<T>): Promise<T> {
  */
 function enterLifecycle(origin: LspStateOrigin): boolean {
   if (origin === 'manual') {
-    runtimeStatus.manuallyStopped = false
-    runtimeStatus.autoRestartAttempts = 0
+    STATE.runtimeStatus.manuallyStopped = false
+    STATE.runtimeStatus.autoRestartAttempts = 0
     cancelScheduledAutoRestart()
     return true
   }
-  return !runtimeStatus.manuallyStopped
+  return !STATE.runtimeStatus.manuallyStopped
 }
 
 async function startLspInternal(origin: LspStateOrigin): Promise<void> {
   if (!enterLifecycle(origin))
     return
 
-  if (connectionInstance
-    && (runtimeStatus.state === 'running' || runtimeStatus.state === 'starting')) {
+  if (STATE.connectionInstance
+    && (STATE.runtimeStatus.state === 'running' || STATE.runtimeStatus.state === 'starting')) {
     try {
-      await connectionInstance.initPromise
+      await STATE.connectionInstance.initPromise
     }
     catch {}
     return
   }
 
-  if (connectionInstance) {
-    const instance = connectionInstance
-    connectionInstance = null
+  if (STATE.connectionInstance) {
+    const instance = STATE.connectionInstance
+    STATE.connectionInstance = null
     setState({ state: 'stopping', origin })
     await disposeConnection(instance)
   }
 
-  connectionInstance = createConnection(origin)
+  STATE.connectionInstance = createConnection(origin)
   try {
-    await connectionInstance.initPromise
+    await STATE.connectionInstance.initPromise
   }
   catch {}
 }
@@ -600,17 +611,17 @@ export async function startLsp(origin: LspStateOrigin = 'auto'): Promise<void> {
 async function stopLspInternal(origin: LspStateOrigin): Promise<void> {
   cancelScheduledAutoRestart()
   if (origin === 'manual') {
-    runtimeStatus.manuallyStopped = true
-    runtimeStatus.autoRestartAttempts = 0
+    STATE.runtimeStatus.manuallyStopped = true
+    STATE.runtimeStatus.autoRestartAttempts = 0
   }
 
-  if (!connectionInstance) {
+  if (!STATE.connectionInstance) {
     setState({ state: 'stopped', origin, lastError: undefined })
     return
   }
 
-  const instance = connectionInstance
-  connectionInstance = null
+  const instance = STATE.connectionInstance
+  STATE.connectionInstance = null
   setState({ state: 'stopping', origin })
   await disposeConnection(instance)
   setState({ state: 'stopped', origin, stdlibModulesLoaded: 0 })
@@ -626,15 +637,15 @@ async function restartLspInternal(origin: LspStateOrigin): Promise<void> {
 
   setState({ state: 'restarting', origin, lastError: undefined })
 
-  if (connectionInstance) {
-    const instance = connectionInstance
-    connectionInstance = null
+  if (STATE.connectionInstance) {
+    const instance = STATE.connectionInstance
+    STATE.connectionInstance = null
     await disposeConnection(instance)
   }
 
-  connectionInstance = createConnection(origin)
+  STATE.connectionInstance = createConnection(origin)
   try {
-    await connectionInstance.initPromise
+    await STATE.connectionInstance.initPromise
   }
   catch {}
 }
@@ -647,9 +658,9 @@ async function clearCacheAndRestartLspInternal(origin: LspStateOrigin): Promise<
   enterLifecycle(origin)
 
   // Stop first so no in-flight fetches write to caches we're about to wipe.
-  if (connectionInstance) {
-    const instance = connectionInstance
-    connectionInstance = null
+  if (STATE.connectionInstance) {
+    const instance = STATE.connectionInstance
+    STATE.connectionInstance = null
     setState({ state: 'stopping', origin })
     await disposeConnection(instance)
   }
@@ -667,7 +678,7 @@ export async function clearCacheAndRestartLsp(origin: LspStateOrigin = 'manual')
 }
 
 export function getCurrentEditorPort(): MessagePort | null {
-  return connectionInstance?.editorPort ?? null
+  return STATE.connectionInstance?.editorPort ?? null
 }
 
 /**
@@ -677,15 +688,20 @@ export function getCurrentEditorPort(): MessagePort | null {
  * language client factory.
  */
 export function getLanguageClientPort(): MessagePort {
-  if (!connectionInstance) {
-    if (runtimeStatus.manuallyStopped) {
+  if (!STATE.connectionInstance) {
+    if (STATE.runtimeStatus.manuallyStopped) {
       throw new Error('LSP is manually stopped; cannot obtain port')
     }
     void startLsp('auto')
   }
-  return connectionInstance!.editorPort
+  return STATE.connectionInstance!.editorPort
 }
 
 export function getLspStatus(): LspRuntimeStatus {
-  return { ...runtimeStatus }
+  return { ...STATE.runtimeStatus }
 }
+
+// HMR boundary — combined with the globalThis-backed STATE above, accepting
+// here means edits to this file refresh closures in place without tearing
+// down the live LSP connection or re-mounting the editor component tree.
+import.meta.webpackHot?.accept()

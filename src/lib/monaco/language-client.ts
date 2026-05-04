@@ -3,29 +3,39 @@ import { MonacoLanguageClient } from 'monaco-languageclient'
 import { BrowserMessageReader, BrowserMessageWriter, CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import type { OutputChannel } from 'vscode'
 import isMobile from 'is-mobile'
+import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 
 // A single Output Channel shared across every LanguageClient instance.
 // When clientOptions.outputChannel is set, vscode-languageclient treats it
 // as caller-owned and skips disposing it (see _disposeOutputChannel) —
 // which eliminates the doCreateOutputChannel / store-disposed race that
 // otherwise fires on every LSP restart and leaks a channel each time.
-let sharedOutputChannel: OutputChannel | null = null
-let sharedOutputChannelPromise: Promise<OutputChannel> | null = null
+// Stored on globalThis so HMR module re-eval doesn't drop the existing channel
+// and create a duplicate one on the next LSP boot.
+interface OutputChannelState {
+  channel: OutputChannel | null
+  pending: Promise<OutputChannel> | null
+}
+
+const channelState = hmrSlot<OutputChannelState>(HMR_SLOT_KEYS.LSP_OUTPUT_CHANNEL, () => ({
+  channel: null,
+  pending: null,
+}))
 
 async function getSharedOutputChannel(): Promise<OutputChannel> {
-  if (sharedOutputChannel)
-    return sharedOutputChannel
-  if (!sharedOutputChannelPromise) {
-    sharedOutputChannelPromise = import('@codingame/monaco-vscode-extension-api')
+  if (channelState.channel)
+    return channelState.channel
+  if (!channelState.pending) {
+    channelState.pending = import('@codingame/monaco-vscode-extension-api')
       .then(({ window }) => {
-        sharedOutputChannel = window.createOutputChannel('Cangjie') as unknown as OutputChannel
-        return sharedOutputChannel
+        channelState.channel = window.createOutputChannel('Cangjie') as unknown as OutputChannel
+        return channelState.channel
       })
       .finally(() => {
-        sharedOutputChannelPromise = null
+        channelState.pending = null
       })
   }
-  return sharedOutputChannelPromise
+  return channelState.pending
 }
 
 function buildWorkspaceFolder() {
@@ -74,3 +84,5 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
 export function isLanguageClientAvailable(): boolean {
   return !isMobile({ tablet: true, featureDetect: true })
 }
+
+import.meta.webpackHot?.accept()

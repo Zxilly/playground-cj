@@ -101,6 +101,15 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
   const rebuildPromiseRef = useRef<Promise<void> | null>(null)
   const reconcileEpochRef = useRef(0)
 
+  // Mirror onLoad / editorAppConfig into refs so the init effect doesn't
+  // fire (and tear down + rebuild the editor) when a parent re-renders with a
+  // fresh callback identity, e.g. during HMR or during incidental upstream
+  // state changes.
+  const onLoadRef = useRef(onLoad)
+  onLoadRef.current = onLoad
+  const editorAppConfigRef = useRef(editorAppConfig)
+  editorAppConfigRef.current = editorAppConfig
+
   const [indicatorHost, setIndicatorHost] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
@@ -233,12 +242,13 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
           ? containerRef.current
           : standaloneHostRef.current ?? containerRef.current
 
+        const initialEditorAppConfig = editorAppConfigRef.current
         let editorHandle: MonacoEditorHandle
         if (viewsType === 'ViewsService') {
-          editorHandle = createStandaloneEditorHandle(editorContainer, editorAppConfig)
+          editorHandle = createStandaloneEditorHandle(editorContainer, initialEditorAppConfig)
         }
         else {
-          const editorApp = new EditorApp(editorAppConfig)
+          const editorApp = new EditorApp(initialEditorAppConfig)
           await editorApp.start(editorContainer)
           editorHandle = editorApp
         }
@@ -275,7 +285,7 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
           }
         }
 
-        onLoad?.(editorHandle)
+        onLoadRef.current?.(editorHandle)
 
         updateEditorLayout()
 
@@ -298,7 +308,23 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
     }
 
     void initAll()
-  }, [onLoad, editorAppConfig, hasLanguageClient, viewsType])
+    // Intentionally exclude `onLoad` and `editorAppConfig` — both are
+    // mirrored through refs above. Including them would force a full editor
+    // teardown + rebuild on every parent re-render that produces a fresh
+    // callback or memoized config (especially common during HMR).
+  }, [hasLanguageClient, viewsType])
+
+  // Push code/locale changes into the running editor without re-creating
+  // it. The init effect ignores `editorAppConfig` for this reason — model
+  // updates flow through `updateCodeResources` instead.
+  useEffect(() => {
+    if (!isInitializedRef.current)
+      return
+    const handle = editorAppRef.current
+    if (!handle?.updateCodeResources)
+      return
+    void handle.updateCodeResources(editorAppConfig.codeResources)
+  }, [editorAppConfig])
 
   useEffect(() => {
     const disposeAll = async () => {

@@ -1,6 +1,22 @@
 import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setupI18n } from '@lingui/core'
+import { I18nProvider } from '@lingui/react'
 import { TourHeader } from '@/components/tour/TourHeader'
+import { TourModeProvider } from '@/components/tour/TourModeContext'
+import { LLMConfigProvider } from '@/contexts/LLMConfigContext'
+
+function Wrapper({ children }: { children: React.ReactNode }) {
+  const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
+  i18n.activate('zh')
+  return (
+    <I18nProvider i18n={i18n}>
+      <LLMConfigProvider>
+        <TourModeProvider>{children}</TourModeProvider>
+      </LLMConfigProvider>
+    </I18nProvider>
+  )
+}
 
 let mockPathname = '/zh/01-welcome/01-intro'
 
@@ -59,14 +75,16 @@ describe('tour header', () => {
 
   it('links the Playground button to the playground domain when rendered on the tour domain', () => {
     render(
-      <TourHeader
-        lang="zh"
-        section={{
-          chapterName: { zh: '欢迎', en: 'Welcome' },
-          subChapterName: { zh: '介绍', en: 'Intro' },
-          sectionName: { zh: '开始', en: 'Start' },
-        } as never}
-      />,
+      <Wrapper>
+        <TourHeader
+          lang="zh"
+          section={{
+            chapterName: { zh: '欢迎', en: 'Welcome' },
+            subChapterName: { zh: '介绍', en: 'Intro' },
+            sectionName: { zh: '开始', en: 'Start' },
+          } as never}
+        />
+      </Wrapper>,
     )
 
     expect(screen.getByRole('link', { name: 'Playground' }).getAttribute('href')).toBe('https://playground.cj.zxilly.dev/zh')
@@ -80,14 +98,16 @@ describe('tour header', () => {
     })
 
     render(
-      <TourHeader
-        lang="zh"
-        section={{
-          chapterName: { zh: '欢迎', en: 'Welcome' },
-          subChapterName: { zh: '介绍', en: 'Intro' },
-          sectionName: { zh: '开始', en: 'Start' },
-        } as never}
-      />,
+      <Wrapper>
+        <TourHeader
+          lang="zh"
+          section={{
+            chapterName: { zh: '欢迎', en: 'Welcome' },
+            subChapterName: { zh: '介绍', en: 'Intro' },
+            sectionName: { zh: '开始', en: 'Start' },
+          } as never}
+        />
+      </Wrapper>,
     )
 
     expect(screen.getAllByRole('link')[0].getAttribute('href')).toBe('/zh/tour')

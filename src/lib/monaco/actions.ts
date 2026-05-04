@@ -6,11 +6,53 @@ import { eventEmitter, EVENTS } from '@/lib/events'
 import { toast } from 'sonner'
 import { t } from '@lingui/core/macro'
 import { setEditorValue } from './config'
+import { HMR_SLOT_KEYS, hmrFlag } from '@/lib/hmr-store'
 
 interface OnMountFunctionDependencies {
   setToolOutput: (output: string) => void
   setProgramOutput: (output: string) => void
   ed: monaco.editor.IStandaloneCodeEditor
+}
+
+// Document formatting provider is a global registration on the Monaco language
+// service — calling registerDocumentFormattingEditProvider twice for the same
+// language stacks providers and produces duplicate format requests. Gate it
+// behind an HMR-persistent flag so mount-cycles and HMR re-evals don't add
+// extra providers.
+const formattingProviderFlag = hmrFlag(HMR_SLOT_KEYS.MONACO_CANGJIE_FORMATTING_PROVIDER)
+
+function ensureCangjieFormattingProvider(): void {
+  if (formattingProviderFlag.get())
+    return
+  formattingProviderFlag.set(true)
+
+  monaco.languages.registerDocumentFormattingEditProvider('Cangjie', {
+    async provideDocumentFormattingEdits(model) {
+      if (isBusy()) {
+        return
+      }
+
+      return new Promise((resolve) => {
+        const handleFormatted = (formattedCode: string) => {
+          eventEmitter.off(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
+          if (formattedCode === model.getValue()) {
+            resolve([])
+          }
+          else {
+            resolve([{
+              range: model.getFullModelRange(),
+              text: formattedCode,
+            }])
+          }
+        }
+
+        eventEmitter.on(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
+        eventEmitter.emit(EVENTS.FORMAT_CODE, model.getValue())
+
+        window.umami?.track('format')
+      })
+    },
+  })
 }
 
 function loadLegacyShareCodeToEditor(ed: monaco.editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
@@ -41,33 +83,7 @@ function loadLegacyShareCodeToEditor(ed: monaco.editor.IStandaloneCodeEditor, se
 export function updateEditor(deps: OnMountFunctionDependencies) {
   const { setToolOutput, ed } = deps
 
-  monaco.languages.registerDocumentFormattingEditProvider('Cangjie', {
-    async provideDocumentFormattingEdits(model) {
-      if (isBusy()) {
-        return
-      }
-
-      return new Promise((resolve) => {
-        const handleFormatted = (formattedCode: string) => {
-          eventEmitter.off(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
-          if (formattedCode === model.getValue()) {
-            resolve([])
-          }
-          else {
-            resolve([{
-              range: model.getFullModelRange(),
-              text: formattedCode,
-            }])
-          }
-        }
-
-        eventEmitter.on(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
-        eventEmitter.emit(EVENTS.FORMAT_CODE, model.getValue())
-
-        window.umami?.track('format')
-      })
-    },
-  })
+  ensureCangjieFormattingProvider()
 
   ed.addAction({
     id: 'cangjie.compile.run',
@@ -134,3 +150,5 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
   loadLegacyShareCodeToEditor(ed, setToolOutput)
 }
+
+import.meta.webpackHot?.accept()

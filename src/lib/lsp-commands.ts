@@ -6,6 +6,7 @@ import {
   startLsp,
   stopLsp,
 } from '@/lib/lsp'
+import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 
 export const LSP_COMMAND_IDS = {
   start: 'cangjie.lsp.start',
@@ -14,17 +15,27 @@ export const LSP_COMMAND_IDS = {
   clearCacheRestart: 'cangjie.lsp.clearCacheAndRestart',
 } as const
 
-let registered = false
-let pendingRegistration: Promise<void> | null = null
+// Persisted across HMR — re-registering the same command id throws inside
+// CommandsRegistry and re-appending the menu item produces duplicate entries
+// in the Command Palette.
+interface CommandRegistrationState {
+  registered: boolean
+  pending: Promise<void> | null
+}
+
+const regState = hmrSlot<CommandRegistrationState>(HMR_SLOT_KEYS.LSP_COMMAND_REGISTRATION, () => ({
+  registered: false,
+  pending: null,
+}))
 
 /** Registers Cangjie LSP lifecycle commands in the Command Palette. */
 export async function registerLspCommands(): Promise<void> {
-  if (registered)
+  if (regState.registered)
     return
-  if (pendingRegistration)
-    return pendingRegistration
+  if (regState.pending)
+    return regState.pending
 
-  pendingRegistration = (async () => {
+  regState.pending = (async () => {
     const { CommandsRegistry, MenuRegistry, MenuId } = await import('@codingame/monaco-vscode-api/monaco')
 
     interface ActionDef {
@@ -68,13 +79,15 @@ export async function registerLspCommands(): Promise<void> {
       })
     }
 
-    registered = true
+    regState.registered = true
   })()
 
   try {
-    await pendingRegistration
+    await regState.pending
   }
   finally {
-    pendingRegistration = null
+    regState.pending = null
   }
 }
+
+import.meta.webpackHot?.accept()

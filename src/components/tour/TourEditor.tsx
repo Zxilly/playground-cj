@@ -11,6 +11,7 @@ import { Play, RotateCcw } from 'lucide-react'
 import type { MonacoEditorHandle } from '@/components/EditorWrapper'
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { AnsiUp } from 'ansi_up'
+import { useEditorBridge } from '@/components/tour/EditorBridgeContext'
 
 interface TourEditorProps {
   code: string
@@ -181,6 +182,7 @@ export function TourEditor({ code, locale }: TourEditorProps) {
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
   const codeRef = useRef(code)
   const ansiRef = useRef(new AnsiUp())
+  const bridge = useEditorBridge()
 
   const labels = useMemo(() => createLocalizedLabels(locale), [locale])
   const outputHtml = useMemo(() => {
@@ -229,6 +231,7 @@ export function TourEditor({ code, locale }: TourEditorProps) {
 
   useEffect(() => {
     codeRef.current = code
+    bridge.editor.setInitialCode(code)
     const editor = editorAppRef.current?.getEditor()
     const model = editor?.getModel()
     if (!model)
@@ -240,7 +243,7 @@ export function TourEditor({ code, locale }: TourEditorProps) {
 
     resetOutputs()
     clearCompilerMarkers()
-  }, [clearCompilerMarkers, code, resetOutputs])
+  }, [clearCompilerMarkers, code, resetOutputs, bridge.editor])
 
   useEffect(() => {
     syncCompilerMarkers(toolOutput)
@@ -249,18 +252,25 @@ export function TourEditor({ code, locale }: TourEditorProps) {
   useEffect(() => {
     return () => {
       clearCompilerMarkers()
+      bridge.editor.setEditor(undefined)
     }
-  }, [clearCompilerMarkers])
+  }, [clearCompilerMarkers, bridge.editor])
+
+  useEffect(() => {
+    bridge.editor.setLatestOutput({ compilerOutput: toolOutput, programOutput })
+  }, [bridge.editor, toolOutput, programOutput])
 
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     editorAppRef.current = editorApp
+    const ed = editorApp.getEditor()
+    bridge.editor.setEditor(ed ?? undefined)
     updateEditor({
       setProgramOutput: handleProgramOutputChange,
       setToolOutput: handleToolOutputChange,
-      ed: editorApp.getEditor()!,
+      ed: ed!,
     })
     syncCompilerMarkers(toolOutput)
-  }, [handleProgramOutputChange, handleToolOutputChange, syncCompilerMarkers, toolOutput])
+  }, [bridge.editor, handleProgramOutputChange, handleToolOutputChange, syncCompilerMarkers, toolOutput])
 
   const handleRun = useCallback(() => {
     editorAppRef.current?.getEditor()?.getAction('cangjie.compile.run')?.run()

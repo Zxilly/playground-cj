@@ -2,11 +2,16 @@
 
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
-import { Globe } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Globe, Sparkles } from 'lucide-react'
 import Image from 'next/image'
+import { Trans } from '@lingui/react/macro'
+import { t } from '@lingui/core/macro'
 import { LanguagePicker } from './mdx/LanguagePicker'
 import type { FlatSection } from '@/tour/types'
 import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourPath } from '@/lib/siteHref'
+import { useTourMode } from './TourModeContext'
+import { LLMConfigDialog } from './ai/LLMConfigDialog'
 
 interface TourHeaderProps {
   lang: string
@@ -19,6 +24,8 @@ export function TourHeader({ lang, section }: TourHeaderProps) {
   const tourHomeHref = getTourPath(lang, { servingDomain: getSiteDomain(window.location.host) })
   const localeHref = getLocaleHref(otherLang, window.location)
   const playgroundHref = getPlaygroundHref(lang, { currentOrigin: window.location.origin })
+  const { mode, setMode } = useTourMode()
+  const aiOn = mode === 'ai'
 
   return (
     <header className="flex h-[50px] shrink-0 items-center gap-2 bg-gradient-to-r from-tour-teal-deep via-tour-teal to-tour-teal-end px-4 text-white shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
@@ -38,6 +45,23 @@ export function TourHeader({ lang, section }: TourHeaderProps) {
         </span>
       </span>
       <div className="flex items-center gap-1 ml-auto shrink-0">
+        <div
+          className={`flex items-center gap-1.5 rounded-full pl-2.5 pr-1 py-1 transition-all ${aiOn ? 'bg-white/20 ring-1 ring-yellow-200/40 shadow-inner' : 'bg-white/5 hover:bg-white/10'}`}
+          title={aiOn ? t`关闭 AI 模式` : t`开启 AI 模式`}
+        >
+          <label className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white/95 select-none cursor-pointer">
+            <Sparkles className={`size-3.5 ${aiOn ? 'text-yellow-200 drop-shadow-[0_0_6px_rgba(254,240,138,0.6)]' : 'text-white/70'}`} />
+            <span className="hidden sm:inline"><Trans>AI 模式</Trans></span>
+            <Switch
+              checked={aiOn}
+              onCheckedChange={(v: boolean) => setMode(v ? 'ai' : 'tutorial')}
+              className="data-[state=checked]:bg-yellow-300 data-[state=unchecked]:bg-white/30"
+              aria-label={t`AI 模式`}
+            />
+          </label>
+          {aiOn && <LLMConfigDialog />}
+        </div>
+        <Separator orientation="vertical" className="!h-5 !bg-white/30 mx-1" />
         <LanguagePicker />
         <Separator orientation="vertical" className="!h-5 !bg-white/30 mx-1" />
         <a

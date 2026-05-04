@@ -19,3 +19,5 @@ export function configureMonacoWorkers() {
     throw new Error(`Unknown worker label: ${label}`)
   }
 }
+
+import.meta.webpackHot?.accept()

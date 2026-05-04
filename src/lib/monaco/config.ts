@@ -112,3 +112,5 @@ export function createEditorAppConfig(shareCode?: string, locale?: string): Edit
     },
   }
 }
+
+import.meta.webpackHot?.accept()

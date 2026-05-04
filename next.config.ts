@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next'
 import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { ensureLspFiles } from './scripts/download-lsp.mjs'
 
 const CJ_RE = /\.cj$/i
 const MJS_RE = /\.m?js$/
@@ -51,8 +50,20 @@ function collectCjoModules(): string[] {
   return results.sort()
 }
 
-// Downloads LSP assets on fresh checkout; a no-op when already present.
-await ensureLspFiles()
+// Next.js 16 loads next.config.ts via require(), which forbids top-level await,
+// so we cannot kick off the async download here. Require LSP assets to exist
+// at config-load time; run `node scripts/download-lsp-cli.mjs` (or `pnpm prep`)
+// to populate them on a fresh checkout.
+function lspDirEmpty(): boolean {
+  if (!existsSync(LSP_PUBLIC_DIR))
+    return true
+  return readdirSync(LSP_PUBLIC_DIR).filter(f => !f.startsWith('.')).length === 0
+}
+if (lspDirEmpty()) {
+  throw new Error(
+    `LSP assets missing in ${LSP_PUBLIC_DIR}. Run "node scripts/download-lsp-cli.mjs" first.`,
+  )
+}
 const LSP_VERSION = detectLspVersion()
 const CJO_MODULES = collectCjoModules()
 
