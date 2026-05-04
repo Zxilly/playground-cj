@@ -1,6 +1,7 @@
 'use client'
 
-import { useKnownLanguages } from '@/contexts/useKnownLanguages'
+import type { Language } from '@/stores/knownLanguages'
+import { useIsLanguageKnown } from '@/stores/knownLanguages'
 import type { ReactNode } from 'react'
 
 const LANG_LABELS: Record<string, string> = {
@@ -16,8 +17,8 @@ interface CompareWithProps {
 }
 
 export function CompareWith({ lang, children }: CompareWithProps) {
-  const { knownLanguages } = useKnownLanguages()
-  if (!knownLanguages.has(lang as any))
+  const isKnown = useIsLanguageKnown(lang as Language)
+  if (!isKnown)
     return null
 
   return (

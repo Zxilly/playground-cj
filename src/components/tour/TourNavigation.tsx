@@ -4,15 +4,16 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface TourNavigationProps {
   lang: string
-  hasPrev: boolean
-  hasNext: boolean
-  onPrev: () => void
-  onNext: () => void
   currentIndex: number
   total: number
+  onPrev: () => void
+  onNext: () => void
 }
 
-export function TourNavigation({ lang, hasPrev, hasNext, onPrev, onNext, currentIndex, total }: TourNavigationProps) {
+export function TourNavigation({ lang, currentIndex, total, onPrev, onNext }: TourNavigationProps) {
+  const hasPrev = currentIndex > 0
+  const hasNext = currentIndex < total - 1
+
   const prevLabel = lang === 'en' ? 'Previous' : String.fromCodePoint(0x4E0A, 0x4E00, 0x9875)
   const nextLabel = lang === 'en' ? 'Next' : String.fromCodePoint(0x4E0B, 0x4E00, 0x9875)
 
@@ -35,7 +36,7 @@ export function TourNavigation({ lang, hasPrev, hasNext, onPrev, onNext, current
       <button
         disabled={!hasNext}
         onClick={onNext}
-        data-tour-highlight="next"
+        data-tour-highlight="prev"
         className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-tour-teal to-tour-teal-light text-white hover:from-tour-teal-hover hover:to-tour-teal disabled:opacity-35 disabled:cursor-not-allowed transition-all shadow-sm"
       >
         {nextLabel}

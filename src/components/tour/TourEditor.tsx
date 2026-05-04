@@ -9,9 +9,10 @@ import { updateEditor } from '@/lib/monaco'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { Play, RotateCcw } from 'lucide-react'
 import type { MonacoEditorHandle } from '@/components/EditorWrapper'
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { AnsiUp } from 'ansi_up'
 import { useEditorBridge } from '@/components/tour/EditorBridgeContext'
+import { useTourEditorStore } from '@/stores/tourEditor'
 
 interface TourEditorProps {
   code: string
@@ -35,54 +36,6 @@ interface CompilerDiagnostic {
   startColumn: number
   endLineNumber: number
   endColumn: number
-}
-
-type OutputTab = 'program' | 'tool'
-
-interface EditorState {
-  toolOutput: string
-  programOutput: string
-  activeTab: OutputTab
-}
-
-type EditorAction
-  = | { type: 'reset' }
-    | { type: 'set-tool-output', output: string }
-    | { type: 'set-program-output', output: string }
-    | { type: 'set-active-tab', tab: OutputTab }
-
-function createInitialEditorState(): EditorState {
-  return {
-    toolOutput: '',
-    programOutput: '',
-    activeTab: 'program',
-  }
-}
-
-function editorStateReducer(state: EditorState, action: EditorAction): EditorState {
-  switch (action.type) {
-    case 'reset':
-      return createInitialEditorState()
-    case 'set-tool-output':
-      return {
-        ...state,
-        toolOutput: action.output,
-        activeTab: action.output && !state.programOutput ? 'tool' : state.activeTab,
-      }
-    case 'set-program-output':
-      return {
-        ...state,
-        programOutput: action.output,
-        activeTab: action.output ? 'program' : state.activeTab,
-      }
-    case 'set-active-tab':
-      return {
-        ...state,
-        activeTab: action.tab,
-      }
-    default:
-      return state
-  }
 }
 
 function createLocalizedLabels(locale: string) {
@@ -178,11 +131,17 @@ function toMarkerData(diagnostics: CompilerDiagnostic[]): monaco.editor.IMarkerD
 }
 
 export function TourEditor({ code, locale }: TourEditorProps) {
-  const [{ toolOutput, programOutput, activeTab }, dispatch] = useReducer(editorStateReducer, undefined, createInitialEditorState)
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
   const codeRef = useRef(code)
   const ansiRef = useRef(new AnsiUp())
   const bridge = useEditorBridge()
+
+  const toolOutput = useTourEditorStore(state => state.compilerOutput)
+  const programOutput = useTourEditorStore(state => state.programOutput)
+  const activeTab = useTourEditorStore(state => state.activeTab)
+  const setActiveTab = useTourEditorStore(state => state.setActiveTab)
+  const resetOutputs = useTourEditorStore(state => state.resetOutputs)
+  const setInitialCode = useTourEditorStore(state => state.setInitialCode)
 
   const labels = useMemo(() => createLocalizedLabels(locale), [locale])
   const outputHtml = useMemo(() => {
@@ -201,26 +160,6 @@ export function TourEditor({ code, locale }: TourEditorProps) {
       monaco.editor.setModelMarkers(model, TOUR_RUN_MARKER_OWNER, [])
   }, [])
 
-  const resetOutputs = useCallback(() => {
-    dispatch({ type: 'reset' })
-  }, [])
-
-  const handleToolOutputChange = useCallback((output: string) => {
-    dispatch({ type: 'set-tool-output', output })
-  }, [])
-
-  const handleProgramOutputChange = useCallback((output: string) => {
-    dispatch({ type: 'set-program-output', output })
-  }, [])
-
-  const handleSelectProgramTab = useCallback(() => {
-    dispatch({ type: 'set-active-tab', tab: 'program' })
-  }, [])
-
-  const handleSelectToolTab = useCallback(() => {
-    dispatch({ type: 'set-active-tab', tab: 'tool' })
-  }, [])
-
   const syncCompilerMarkers = useCallback((output: string) => {
     const model = editorAppRef.current?.getEditor()?.getModel()
     if (!model)
@@ -231,19 +170,18 @@ export function TourEditor({ code, locale }: TourEditorProps) {
 
   useEffect(() => {
     codeRef.current = code
-    bridge.editor.setInitialCode(code)
+    setInitialCode(code)
     const editor = editorAppRef.current?.getEditor()
     const model = editor?.getModel()
     if (!model)
       return
 
-    if (model.getValue() !== code) {
+    if (model.getValue() !== code)
       model.setValue(code)
-    }
 
     resetOutputs()
     clearCompilerMarkers()
-  }, [clearCompilerMarkers, code, resetOutputs, bridge.editor])
+  }, [clearCompilerMarkers, code, resetOutputs, setInitialCode])
 
   useEffect(() => {
     syncCompilerMarkers(toolOutput)
@@ -256,21 +194,18 @@ export function TourEditor({ code, locale }: TourEditorProps) {
     }
   }, [clearCompilerMarkers, bridge.editor])
 
-  useEffect(() => {
-    bridge.editor.setLatestOutput({ compilerOutput: toolOutput, programOutput })
-  }, [bridge.editor, toolOutput, programOutput])
-
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     editorAppRef.current = editorApp
     const ed = editorApp.getEditor()
     bridge.editor.setEditor(ed ?? undefined)
+    const store = useTourEditorStore.getState()
     updateEditor({
-      setProgramOutput: handleProgramOutputChange,
-      setToolOutput: handleToolOutputChange,
+      setProgramOutput: store.setProgramOutput,
+      setToolOutput: store.setCompilerOutput,
       ed: ed!,
     })
-    syncCompilerMarkers(toolOutput)
-  }, [bridge.editor, handleProgramOutputChange, handleToolOutputChange, syncCompilerMarkers, toolOutput])
+    syncCompilerMarkers(useTourEditorStore.getState().compilerOutput)
+  }, [bridge.editor, syncCompilerMarkers])
 
   const handleRun = useCallback(() => {
     editorAppRef.current?.getEditor()?.getAction('cangjie.compile.run')?.run()
@@ -335,13 +270,13 @@ export function TourEditor({ code, locale }: TourEditorProps) {
 
               <div className="flex items-center gap-2 text-xs">
                 <button
-                  onClick={handleSelectProgramTab}
+                  onClick={() => setActiveTab('program')}
                   className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'program' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                 >
                   {labels.programOutput}
                 </button>
                 <button
-                  onClick={handleSelectToolTab}
+                  onClick={() => setActiveTab('tool')}
                   className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'tool' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                 >
                   {labels.compilerOutput}
@@ -363,8 +298,8 @@ export function TourEditor({ code, locale }: TourEditorProps) {
       <div className="shrink-0">
         <Toaster richColors closeButton position="top-center" />
         <CodeRunner
-          setToolOutput={handleToolOutputChange}
-          setProgramOutput={handleProgramOutputChange}
+          setToolOutput={useTourEditorStore.getState().setCompilerOutput}
+          setProgramOutput={useTourEditorStore.getState().setProgramOutput}
           onFormatted={handleFormatted}
         />
       </div>

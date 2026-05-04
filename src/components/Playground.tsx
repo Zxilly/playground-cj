@@ -7,10 +7,9 @@ import { Toaster } from '@/components/ui/sonner'
 import { updateEditor } from '@/lib/monaco'
 import { isDarkMode } from '@/lib/utils'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { MonacoEditorHandle } from '@/components/EditorWrapper'
 import { MonacoEditorReactComp } from '@/components/EditorWrapper'
-import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { loadDataShareCode } from '@/service/share'
 import CodeRunner from '@/components/CodeRunner'
 import { useMedia } from 'react-use'
@@ -20,6 +19,7 @@ import { Trans } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import { useLanguage } from '@/hooks/useLanguage'
+import { usePlaygroundStore } from '@/stores/playground'
 
 export interface PlaygroundProps {
   defaultCode?: string
@@ -27,58 +27,60 @@ export interface PlaygroundProps {
 
 function Playground({ defaultCode }: PlaygroundProps) {
   const { i18n } = useLingui()
-  const [toolOutput, setToolOutput] = useState('')
-  const [programOutput, setProgramOutput] = useState('')
-  const [isOutputCollapsed, setIsOutputCollapsed] = useState(false)
+  const toolOutput = usePlaygroundStore(state => state.toolOutput)
+  const programOutput = usePlaygroundStore(state => state.programOutput)
+  const isOutputCollapsed = usePlaygroundStore(state => state.isOutputCollapsed)
+  const toggleOutputState = usePlaygroundStore(state => state.toggleOutput)
+  const setEditor = usePlaygroundStore(state => state.setEditor)
   const { locale } = useLanguage()
 
   const wrapperRef = useRef<MonacoEditorHandle | undefined>(undefined)
 
-  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | undefined>()
-
-  const getAction = useCallback((id: string) => {
-    return editor?.getAction(id)
-  }, [editor])
-
   const handleRun = useCallback(() => {
-    getAction('cangjie.compile.run')?.run()
-  }, [getAction])
+    usePlaygroundStore.getState().editor?.getAction('cangjie.compile.run')?.run()
+  }, [])
 
   const handleFormat = useCallback(() => {
-    getAction('editor.action.formatDocument')?.run()
-  }, [getAction])
+    usePlaygroundStore.getState().editor?.getAction('editor.action.formatDocument')?.run()
+  }, [])
 
   const outputPanelRef = useRef<PanelImperativeHandle | null>(null)
   const toggleOutput = useCallback(() => {
-    setIsOutputCollapsed(prev => !prev)
+    toggleOutputState()
     const panel = outputPanelRef.current
     if (!panel)
       return
 
-    if (panel.isCollapsed()) {
+    if (panel.isCollapsed())
       panel.expand()
-    }
-    else {
+    else
       panel.collapse()
-    }
-  }, [])
+  }, [toggleOutputState])
 
   const isDesktop = useMedia('(min-width: 1024px)')
 
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     wrapperRef.current = editorApp
+    const ed = editorApp.getEditor()!
+    const store = usePlaygroundStore.getState()
     updateEditor({
-      setProgramOutput,
-      setToolOutput,
-      ed: editorApp.getEditor()!,
+      setProgramOutput: store.setProgramOutput,
+      setToolOutput: store.setToolOutput,
+      ed,
     })
-    const editor = editorApp.getEditor()!
-    setEditor(editor)
+    setEditor(ed)
+  }, [setEditor])
+
+  useEffect(() => {
+    return () => {
+      // Drop the editor reference when the route unmounts so stale handles can't be used.
+      usePlaygroundStore.getState().setEditor(undefined)
+    }
   }, [])
 
   const handleFormatted = useCallback((code: string) => {
-    editor?.getModel()?.setValue(code)
-  }, [editor])
+    usePlaygroundStore.getState().editor?.getModel()?.setValue(code)
+  }, [])
 
   const renderedCode = useMemo(() => defaultCode ?? loadDataShareCode(), [defaultCode])
 
@@ -91,7 +93,6 @@ function Playground({ defaultCode }: PlaygroundProps) {
           <PlaygroundHeader
             handleRun={handleRun}
             handleFormat={handleFormat}
-            editor={editor}
             wrapperRef={wrapperRef}
           />
         </div>
@@ -153,8 +154,8 @@ function Playground({ defaultCode }: PlaygroundProps) {
       </div>
       <Toaster richColors closeButton position="top-center" />
       <CodeRunner
-        setToolOutput={setToolOutput}
-        setProgramOutput={setProgramOutput}
+        setToolOutput={usePlaygroundStore.getState().setToolOutput}
+        setProgramOutput={usePlaygroundStore.getState().setProgramOutput}
         onFormatted={handleFormatted}
       />
     </div>

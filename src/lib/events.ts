@@ -1,5 +1,8 @@
+// Event bus for *commands* that can't be expressed as state — e.g. running or
+// formatting code, where the listener (CodeRunner) lives in a different subtree
+// from the emitter (Monaco editor action). Plain state lives in zustand stores.
+
 export const EVENTS = {
-  SHOW_SHARE_DIALOG: 'show-share-dialog',
   RUN_CODE: 'run-code',
   FORMAT_CODE: 'format-code',
   FORMAT_CODE_COMPLETE: 'format-code-complete',
@@ -8,7 +11,6 @@ export const EVENTS = {
 export type EventType = typeof EVENTS[keyof typeof EVENTS]
 
 export interface EventPayload {
-  [EVENTS.SHOW_SHARE_DIALOG]: (url: string) => void
   [EVENTS.RUN_CODE]: (code: string) => void
   [EVENTS.FORMAT_CODE]: (code: string) => void
   [EVENTS.FORMAT_CODE_COMPLETE]: (code: string) => void
@@ -20,9 +22,8 @@ class EventEmitter {
   private events: { [key: string]: EventCallback<any>[] } = {}
 
   on<E extends EventType>(event: E, callback: EventCallback<E>): void {
-    if (!this.events[event]) {
+    if (!this.events[event])
       this.events[event] = []
-    }
     this.events[event].push(callback)
   }
 
@@ -40,9 +41,8 @@ class EventEmitter {
     if (!this.events[event])
       return
 
-    for (const callback of this.events[event]) {
+    for (const callback of this.events[event])
       callback(...args)
-    }
   }
 }
 

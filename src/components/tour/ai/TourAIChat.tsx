@@ -9,21 +9,24 @@ import {
   useAui,
 } from '@assistant-ui/react'
 import type { Toolkit } from '@assistant-ui/react'
-import { AssistantChatTransport, useChatRuntime } from '@assistant-ui/react-ai-sdk'
-import { lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
-import type { UIMessage } from 'ai'
+import { useChatRuntime } from '@assistant-ui/react-ai-sdk'
+import { DirectChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
+import type { InferAgentUIMessage } from 'ai'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Thread } from '@/components/thread'
 import { useAIBridge } from '@/components/tour/EditorBridgeContext'
-import { useLLMConfig } from '@/contexts/LLMConfigContext'
+import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
 import { createBuiltinToolkit, loadMcpToolkit } from '@/components/tour/ai/tools'
 import { ProgressPanel } from '@/components/tour/ai/ProgressPanel'
 import { QuizBanner } from '@/components/tour/ai/QuizBanner'
 import { clearThread, globalThreadKey, loadThread, saveThread } from '@/lib/ai/persistence'
-import { clearLearner } from '@/lib/ai/learner-model'
+import { useLearnerStore } from '@/stores/learner'
 import { buildSystemPrompt } from '@/lib/ai/system-prompt'
+import { createTourAgent } from '@/lib/ai/openai-agent'
+
+type AgentUIMessage = InferAgentUIMessage<ReturnType<typeof createTourAgent>>
 
 interface SuggestionDef {
   title: string
@@ -49,46 +52,37 @@ function buildSuggestions(lang: string): SuggestionDef[] {
 }
 
 interface InnerProps {
-  initialMessages: UIMessage[]
+  initialMessages: AgentUIMessage[]
   toolkit: Toolkit
   suggestions: SuggestionDef[]
   system: string
   baseURL: string
   apiKey: string
   model: string
-  onMessagesChange: (messages: UIMessage[]) => void
+  onMessagesChange: (messages: AgentUIMessage[]) => void
 }
 
 function ChatInner({ initialMessages, toolkit, suggestions, system, baseURL, apiKey, model, onMessagesChange }: InnerProps) {
-  const transport = useMemo(
-    () =>
-      new AssistantChatTransport({
-        api: '/api/ai/chat',
-        headers: () => ({
-          'x-llm-base-url': baseURL,
-          'x-llm-api-key': apiKey,
-          'x-llm-model': model,
-        }),
-      }),
-    [baseURL, apiKey, model],
-  )
+  const transport = useMemo(() => {
+    const agent = createTourAgent({ baseURL, apiKey, model, system, toolkit })
+    return new DirectChatTransport({ agent })
+  }, [baseURL, apiKey, model, system, toolkit])
 
   const onMessagesChangeRef = useRef(onMessagesChange)
   useEffect(() => {
     onMessagesChangeRef.current = onMessagesChange
   })
-  const onFinish = useCallback(
-    (event: { messages: UIMessage[] }) => onMessagesChangeRef.current(event.messages),
+  const handleFinish = useCallback(
+    ({ messages }: { messages: AgentUIMessage[] }) => onMessagesChangeRef.current(messages),
     [],
   )
 
-  const runtime = useChatRuntime({
+  const runtime = useChatRuntime<AgentUIMessage>({
     transport,
     messages: initialMessages,
-    system,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    onFinish,
-  } as any)
+    onFinish: handleFinish,
+  })
 
   const auiConfig = useMemo(
     () => ({
@@ -100,7 +94,7 @@ function ChatInner({ initialMessages, toolkit, suggestions, system, baseURL, api
   const aui = useAui(auiConfig)
 
   return (
-    <AssistantRuntimeProvider aui={aui as any} runtime={runtime as any}>
+    <AssistantRuntimeProvider aui={aui} runtime={runtime}>
       <TooltipProvider delayDuration={250}>
         <Thread />
       </TooltipProvider>
@@ -108,9 +102,51 @@ function ChatInner({ initialMessages, toolkit, suggestions, system, baseURL, api
   )
 }
 
+interface BootstrapState {
+  status: 'loading' | 'ready' | 'error'
+  error?: string
+}
+
+function useAIKeyBootstrap(): BootstrapState {
+  const apiKey = useLLMConfig().apiKey
+  const keySource = useLLMConfigStore(s => s.keySource)
+  const applyAutoKey = useLLMConfigStore(s => s.applyAutoKey)
+  const [error, setError] = useState<string | undefined>()
+
+  useEffect(() => {
+    if (apiKey || keySource !== 'auto')
+      return
+    let cancelled = false
+    fetch('/api/ai-key', { method: 'GET' })
+      .then(async (resp) => {
+        if (!resp.ok)
+          throw new Error(`HTTP ${resp.status}`)
+        return resp.json() as Promise<{ baseURL: string, apiKey: string, model: string }>
+      })
+      .then((data) => {
+        if (!cancelled)
+          applyAutoKey(data)
+      })
+      .catch((e: Error) => {
+        if (!cancelled)
+          setError(e.message)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [apiKey, keySource, applyAutoKey])
+
+  if (apiKey)
+    return { status: 'ready' }
+  if (error)
+    return { status: 'error', error }
+  return { status: 'loading' }
+}
+
 export function TourAIChat() {
   const bridge = useAIBridge()
-  const { config } = useLLMConfig()
+  const config = useLLMConfig()
+  const bootstrap = useAIKeyBootstrap()
 
   const sk = globalThreadKey(bridge.lang)
   const system = useMemo(() => buildSystemPrompt(bridge.lang), [bridge.lang])
@@ -132,20 +168,20 @@ export function TourAIChat() {
   }, [])
 
   const initialMessages = useMemo(
-    () => loadThread(sk),
+    () => loadThread<AgentUIMessage>(sk),
     // eslint-disable-next-line react/exhaustive-deps
     [sk, resetCounter],
   )
 
   const toolkit = useMemo<Toolkit>(() => ({ ...builtinToolkit, ...mcpToolkit }), [builtinToolkit, mcpToolkit])
 
-  const handleMessagesChange = useCallback((messages: UIMessage[]) => {
+  const handleMessagesChange = useCallback((messages: AgentUIMessage[]) => {
     saveThread(sk, messages)
   }, [sk])
 
   const handleClearAll = useCallback(() => {
     clearThread(sk)
-    clearLearner()
+    useLearnerStore.getState().clear()
     setResetCounter(c => c + 1)
   }, [sk])
 
@@ -199,18 +235,46 @@ export function TourAIChat() {
       </div>
       <QuizBanner />
       <div className="flex-1 min-h-0">
-        <ChatInner
-          key={`${sk}:${resetCounter}`}
-          initialMessages={initialMessages}
-          toolkit={toolkit}
-          suggestions={suggestions}
-          system={system}
-          baseURL={config.baseURL}
-          apiKey={config.apiKey}
-          model={config.model}
-          onMessagesChange={handleMessagesChange}
-        />
+        {bootstrap.status === 'ready' && config.apiKey
+          ? (
+              <ChatInner
+                key={`${sk}:${resetCounter}`}
+                initialMessages={initialMessages}
+                toolkit={toolkit}
+                suggestions={suggestions}
+                system={system}
+                baseURL={config.baseURL}
+                apiKey={config.apiKey}
+                model={config.model}
+                onMessagesChange={handleMessagesChange}
+              />
+            )
+          : (
+              <BootstrapStatus state={bootstrap} />
+            )}
       </div>
+    </div>
+  )
+}
+
+function BootstrapStatus({ state }: { state: BootstrapState }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center px-6 text-center text-xs text-muted-foreground">
+      {state.status === 'error'
+        ? (
+            <div className="space-y-1">
+              <div className="text-amber-600 dark:text-amber-400 font-medium">
+                <Trans>无法获取 AI 配额，请稍后重试，或在右上设置中填入自带 Key。</Trans>
+              </div>
+              <div className="font-mono text-[10px] opacity-70">{state.error}</div>
+            </div>
+          )
+        : (
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-3 text-tour-teal animate-pulse" />
+              <span><Trans>正在为你准备 AI 助教…</Trans></span>
+            </div>
+          )}
     </div>
   )
 }

@@ -3,15 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { TourHeader } from '@/components/tour/TourHeader'
-import { LLMConfigProvider } from '@/contexts/LLMConfigContext'
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
   i18n.activate('zh')
   return (
-    <I18nProvider i18n={i18n}>
-      <LLMConfigProvider>{children}</LLMConfigProvider>
-    </I18nProvider>
+    <I18nProvider i18n={i18n}>{children}</I18nProvider>
   )
 }
 

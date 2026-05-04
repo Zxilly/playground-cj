@@ -1,10 +1,10 @@
 import type { UIMessage } from 'ai'
 
-const THREAD_PREFIX = 'tour-ai:thread:'
+const THREAD_PREFIX = 'tour-ai:thread3:'
 const QUOTA_BYTES = 5 * 1024 * 1024
 
-interface StoredThread {
-  messages: UIMessage[]
+interface StoredThread<M extends UIMessage> {
+  messages: M[]
   updatedAt: number
 }
 
@@ -20,14 +20,14 @@ function fullKey(sk: string): string {
   return `${THREAD_PREFIX}${sk}`
 }
 
-export function loadThread(sk: string): UIMessage[] {
+export function loadThread<M extends UIMessage = UIMessage>(sk: string): M[] {
   if (typeof window === 'undefined')
     return []
   try {
     const raw = window.localStorage.getItem(fullKey(sk))
     if (!raw)
       return []
-    const parsed = JSON.parse(raw) as StoredThread
+    const parsed = JSON.parse(raw) as StoredThread<M>
     return Array.isArray(parsed.messages) ? parsed.messages : []
   }
   catch {
@@ -51,7 +51,7 @@ function collectOwnEntries(): OwnEntry[] {
     if (!raw)
       continue
     try {
-      const parsed = JSON.parse(raw) as StoredThread
+      const parsed = JSON.parse(raw) as StoredThread<UIMessage>
       entries.push({ key: k, size: (k.length + raw.length) * 2, updatedAt: parsed.updatedAt ?? 0 })
     }
     catch {
@@ -72,10 +72,10 @@ function evictUntilUnder(targetBytes: number) {
   }
 }
 
-export function saveThread(sk: string, messages: UIMessage[]): void {
+export function saveThread<M extends UIMessage>(sk: string, messages: readonly M[]): void {
   if (typeof window === 'undefined')
     return
-  const payload: StoredThread = { messages, updatedAt: Date.now() }
+  const payload: StoredThread<M> = { messages: messages as M[], updatedAt: Date.now() }
   const serialized = JSON.stringify(payload)
   try {
     window.localStorage.setItem(fullKey(sk), serialized)

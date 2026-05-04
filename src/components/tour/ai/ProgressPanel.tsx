@@ -14,9 +14,8 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { useAIBridge } from '@/components/tour/EditorBridgeContext'
-import { clearLearner, setActiveQuiz, setAgentNotesSummary, setKnownLanguages } from '@/lib/ai/learner-model'
 import type { ConceptStatus } from '@/lib/ai/learner-model'
-import { useLearner } from '@/lib/ai/useLearner'
+import { useLearnerStore } from '@/stores/learner'
 import { getAllConcepts } from '@/lib/ai/concept-graph/loader'
 import { cn } from '@/lib/utils'
 
@@ -37,9 +36,12 @@ interface ProgressPanelProps {
 }
 
 export function ProgressPanel({ trigger, onClearAll }: ProgressPanelProps) {
-  const bridge = useAIBridge()
-  const { learner } = useLearner()
-  const { uiLang } = bridge
+  const { uiLang } = useAIBridge()
+  const learner = useLearnerStore(state => state.learner)
+  const setKnownLanguages = useLearnerStore(state => state.setKnownLanguages)
+  const setAgentNotesSummary = useLearnerStore(state => state.setAgentNotesSummary)
+  const setActiveQuiz = useLearnerStore(state => state.setActiveQuiz)
+  const clear = useLearnerStore(state => state.clear)
   const [notesDraft, setNotesDraft] = useState<string | null>(null)
 
   const conceptTitle = useMemo(() => {
@@ -72,34 +74,27 @@ export function ProgressPanel({ trigger, onClearAll }: ProgressPanelProps) {
     })
   }, [learner.concepts])
 
-  const mutate = (fn: () => void) => {
-    fn()
-    bridge.notifyLearnerChange()
-  }
-
   const toggleLang = (l: string) => {
     const has = learner.knownLanguages.includes(l)
     const next = has
       ? learner.knownLanguages.filter(x => x !== l)
       : [...learner.knownLanguages, l]
-    mutate(() => setKnownLanguages(next))
+    setKnownLanguages(next)
   }
 
   const saveNotes = () => {
     if (notesDraft === null)
       return
-    mutate(() => setAgentNotesSummary(notesDraft))
+    setAgentNotesSummary(notesDraft)
     setNotesDraft(null)
   }
 
   const clearAll = () => {
-    mutate(() => {
-      clearLearner()
-      onClearAll()
-    })
+    clear()
+    onClearAll()
   }
 
-  const cancelQuiz = () => mutate(() => setActiveQuiz(null))
+  const cancelQuiz = () => setActiveQuiz(null)
 
   return (
     <Sheet>
@@ -234,7 +229,7 @@ export function ProgressPanel({ trigger, onClearAll }: ProgressPanelProps) {
                       </button>
                       {learner.agentNotesSummary && (
                         <button
-                          onClick={() => mutate(() => setAgentNotesSummary(undefined))}
+                          onClick={() => setAgentNotesSummary(undefined)}
                           className="text-[11px] underline underline-offset-2 text-muted-foreground hover:text-foreground"
                         >
                           <Trans>清空</Trans>

@@ -13,12 +13,12 @@ import {
   EVIDENCE_OUTCOMES,
   getDemonstratedSet,
   getRelevantConcepts,
-  mutateLearner,
   newQuizId,
   QUIZ_MATCH_MODES,
-  readLearner,
 } from '@/lib/ai/learner-model'
 import type { ConceptProgress, ConceptStatus } from '@/lib/ai/learner-model'
+import { readLearner, useLearnerStore } from '@/stores/learner'
+import { useTourEditorStore } from '@/stores/tourEditor'
 import { findChapterRefSections, getAllConcepts, getConcept, getReadyConcepts } from '@/lib/ai/concept-graph/loader'
 import { buildQuizHints, evaluateQuiz } from '@/lib/ai/quiz-evaluator'
 import { callMcpTool, listMcpTools } from '@/lib/mcp/client'
@@ -189,7 +189,7 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
         try {
           let rejected: string | undefined
           let touchedConceptId: string | undefined
-          const m = mutateLearner((m) => {
+          const m = useLearnerStore.getState().mutate((m) => {
             if (input.knownLanguages)
               m.knownLanguages = Array.from(new Set(input.knownLanguages))
             if (input.agentNotesSummary !== undefined)
@@ -240,8 +240,6 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
               }
             }
           })
-
-          bridge.notifyLearnerChange()
 
           if (rejected)
             return fail(rejected)
@@ -337,7 +335,7 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
           const { model } = getModel(bridge)
           const code = model.getValue()
           const data = await requestRemoteAction(code, 'run')
-          bridge.editor.setLatestOutput({
+          useTourEditorStore.getState().setLatestOutput({
             compilerOutput: data.compiler_output,
             programOutput: data.bin_output,
           })
@@ -356,7 +354,7 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
           let evaluatedQuiz: ReturnType<typeof readLearner>['activeQuiz'] = null
           let conceptAfter: ConceptProgress | undefined
 
-          mutateLearner((m) => {
+          useLearnerStore.getState().mutate((m) => {
             if (!m.activeQuiz)
               return
             m.activeQuiz.attempts += 1
@@ -367,8 +365,6 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
               m.activeQuiz = null
             conceptAfter = m.concepts[evaluatedQuiz.conceptId]
           })
-
-          bridge.notifyLearnerChange()
 
           if (!evalResult || !evaluatedQuiz)
             return ok(base)
@@ -441,7 +437,7 @@ export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
       execute: async () => {
         try {
           const { model } = getModel(bridge)
-          const initial = bridge.editor.getInitialCode()
+          const initial = useTourEditorStore.getState().initialCode
           const result = await applyFullReplace(model, initial)
           return ok(result)
         }

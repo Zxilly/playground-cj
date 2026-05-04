@@ -1,6 +1,6 @@
 'use client'
 
-import { useKnownLanguages } from '@/contexts/useKnownLanguages'
+import { useKnownLanguagesStore } from '@/stores/knownLanguages'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Settings2 } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
@@ -13,7 +13,8 @@ const LANGUAGES = [
 ] as const
 
 export function LanguagePicker() {
-  const { knownLanguages, toggleLanguage } = useKnownLanguages()
+  const knownLanguages = useKnownLanguagesStore(state => state.knownLanguages)
+  const toggleLanguage = useKnownLanguagesStore(state => state.toggleLanguage)
 
   return (
     <Popover>
@@ -24,8 +25,8 @@ export function LanguagePicker() {
         >
           <Settings2 className="size-4" />
           <span className="hidden sm:inline">
-            {knownLanguages.size > 0
-              ? Array.from(knownLanguages).map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(', ')
+            {knownLanguages.length > 0
+              ? knownLanguages.map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(', ')
               : <Trans>对比</Trans>}
           </span>
         </button>
@@ -45,8 +46,8 @@ export function LanguagePicker() {
             >
               <input
                 type="checkbox"
-                checked={knownLanguages.has(id as any)}
-                onChange={() => toggleLanguage(id as any)}
+                checked={knownLanguages.includes(id)}
+                onChange={() => toggleLanguage(id)}
                 className="rounded border-border accent-tour-teal"
               />
               <span className="text-sm text-foreground">{label}</span>

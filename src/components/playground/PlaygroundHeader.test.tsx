@@ -77,7 +77,6 @@ describe('playground header', () => {
         <PlaygroundHeader
           handleRun={() => {}}
           handleFormat={() => {}}
-          editor={undefined}
           wrapperRef={{ current: undefined }}
         />
       </I18nProvider>,

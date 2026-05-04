@@ -74,20 +74,20 @@ export function TourSidebar({
                               </CollapsibleTrigger>
                               <CollapsibleContent>
                                 <SidebarMenuSub>
-                                  {sub.sections.map((section) => {
+                                  {sub.sections.map((s) => {
                                     const isActive
                                       = chapter.id === currentChapter
                                         && sub.id === currentSubChapter
-                                        && section.id === currentSection
+                                        && s.id === currentSection
 
                                     return (
-                                      <SidebarMenuSubItem key={section.id}>
+                                      <SidebarMenuSubItem key={s.id}>
                                         <SidebarMenuButton
                                           isActive={isActive}
                                           className="text-xs cursor-pointer"
-                                          onClick={() => onNavigate(chapter.id, sub.id, section.id)}
+                                          onClick={() => onNavigate(chapter.id, sub.id, s.id)}
                                         >
-                                          {section.name[lang] ?? section.name.zh}
+                                          {s.name[lang] ?? s.name.zh}
                                         </SidebarMenuButton>
                                       </SidebarMenuSubItem>
                                     )

@@ -1,41 +1,26 @@
 'use client'
 
-import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronDown, Hash, Link } from 'lucide-react'
-import { memo, useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import ShareDialog from '@/components/ShareDialog'
 import { generateDataShareUrl, generateHashShareUrl } from '@/service/share'
-import { eventEmitter, EVENTS } from '@/lib/events'
 import { Trans } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
+import { usePlaygroundStore } from '@/stores/playground'
 
-interface ShareButtonProps {
-  editor: monaco.editor.IStandaloneCodeEditor | undefined
-}
-
-const ShareButton = memo(({ editor }: ShareButtonProps) => {
+const ShareButton = memo(() => {
   const { i18n } = useLingui()
   const [isOpen, setIsOpen] = useState(false)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [shareUrl, setShareUrl] = useState('')
-
-  useEffect(() => {
-    const handleShowDialog = (url: string) => {
-      setShareUrl(url)
-      setIsDialogOpen(true)
-    }
-
-    eventEmitter.on(EVENTS.SHOW_SHARE_DIALOG, handleShowDialog)
-    return () => {
-      eventEmitter.off(EVENTS.SHOW_SHARE_DIALOG, handleShowDialog)
-    }
-  }, [])
+  const shareDialogUrl = usePlaygroundStore(state => state.shareDialogUrl)
+  const openShareDialog = usePlaygroundStore(state => state.openShareDialog)
+  const closeShareDialog = usePlaygroundStore(state => state.closeShareDialog)
 
   const handleShare = useCallback(async (type: 'url' | 'hash') => {
+    const editor = usePlaygroundStore.getState().editor
     if (!editor) {
       console.warn('No editor found')
       return
@@ -48,16 +33,13 @@ const ShareButton = memo(({ editor }: ShareButtonProps) => {
     }
 
     if (type === 'url') {
-      const url = generateDataShareUrl(code)
-      setShareUrl(url)
-      setIsDialogOpen(true)
+      openShareDialog(generateDataShareUrl(code))
       setIsOpen(false)
     }
     else {
       toast.promise(async () => {
         const url = await generateHashShareUrl(code)
-        setShareUrl(url)
-        setIsDialogOpen(true)
+        openShareDialog(url)
         setIsOpen(false)
       }, {
         loading: i18n._(msg`分享中...`),
@@ -67,7 +49,7 @@ const ShareButton = memo(({ editor }: ShareButtonProps) => {
     }
 
     window.umami?.track(`share.${type}`)
-  }, [editor, i18n])
+  }, [i18n, openShareDialog])
 
   return (
     <>
@@ -101,12 +83,14 @@ const ShareButton = memo(({ editor }: ShareButtonProps) => {
         </PopoverContent>
       </Popover>
       <ShareDialog
-        isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
-        url={shareUrl}
+        isOpen={shareDialogUrl !== null}
+        onClose={closeShareDialog}
+        url={shareDialogUrl ?? ''}
       />
     </>
   )
 })
+
+ShareButton.displayName = 'ShareButton'
 
 export default ShareButton

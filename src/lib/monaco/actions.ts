@@ -3,6 +3,7 @@ import { isBusy, remoteLock } from '@/lib/lock'
 import { saveAsFile } from '@/lib/file'
 import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
 import { eventEmitter, EVENTS } from '@/lib/events'
+import { usePlaygroundStore } from '@/stores/playground'
 import { toast } from 'sonner'
 import { t } from '@lingui/core/macro'
 import { setEditorValue } from './config'
@@ -109,7 +110,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
     run: (editor: monaco.editor.ICodeEditor) => {
       const code = editor.getValue()
       const url = generateDataShareUrl(code)
-      eventEmitter.emit(EVENTS.SHOW_SHARE_DIALOG, url)
+      usePlaygroundStore.getState().openShareDialog(url)
       window.umami?.track('share.url')
     },
   })
@@ -124,7 +125,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
       toast.promise(async () => {
         const url = await generateHashShareUrl(code)
-        eventEmitter.emit(EVENTS.SHOW_SHARE_DIALOG, url)
+        usePlaygroundStore.getState().openShareDialog(url)
       }, {
         loading: t`分享中...`,
         success: t`分享成功`,

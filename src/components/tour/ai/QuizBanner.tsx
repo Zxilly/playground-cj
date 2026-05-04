@@ -4,21 +4,17 @@ import { CheckCircle2, Target, X } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { useAIBridge } from '@/components/tour/EditorBridgeContext'
-import { setActiveQuiz } from '@/lib/ai/learner-model'
-import { useLearner } from '@/lib/ai/useLearner'
+import { useLearnerStore } from '@/stores/learner'
 
 export function QuizBanner() {
-  const bridge = useAIBridge()
-  const { learner } = useLearner()
-  const quiz = learner.activeQuiz
+  const { uiLang } = useAIBridge()
+  const quiz = useLearnerStore(state => state.learner.activeQuiz)
+  const setActiveQuiz = useLearnerStore(state => state.setActiveQuiz)
   if (!quiz)
     return null
-  const promptText = quiz.prompt[bridge.uiLang] || quiz.prompt.zh
+  const promptText = quiz.prompt[uiLang] || quiz.prompt.zh
 
-  const cancel = () => {
-    setActiveQuiz(null)
-    bridge.notifyLearnerChange()
-  }
+  const cancel = () => setActiveQuiz(null)
 
   return (
     <div className="border-b border-tour-teal/30 bg-tour-teal/5 px-3 py-2 text-xs space-y-1">

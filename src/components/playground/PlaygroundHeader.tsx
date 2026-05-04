@@ -7,27 +7,30 @@ import { Button } from '@/components/ui/button'
 import { Trans } from '@lingui/react/macro'
 import Image from 'next/image'
 import type { MonacoEditorHandle } from '@/components/EditorWrapper'
-import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { useMedia } from 'react-use'
 import { useLanguage } from '@/hooks/useLanguage'
 import { getTourHref } from '@/lib/siteHref'
 import { BookOpen } from 'lucide-react'
+import { usePlaygroundStore } from '@/stores/playground'
 
 interface PlaygroundHeaderProps {
   handleRun: () => void
   handleFormat: () => void
-  editor: monaco.editor.IStandaloneCodeEditor | undefined
   wrapperRef: React.RefObject<MonacoEditorHandle | undefined>
 }
 
-function ExamplesAction({ editor, wrapperRef }: Pick<PlaygroundHeaderProps, 'editor' | 'wrapperRef'>) {
+function ExamplesAction({ wrapperRef }: Pick<PlaygroundHeaderProps, 'wrapperRef'>) {
   return (
     <ExamplesDropdown action={(code) => {
+      const editor = usePlaygroundStore.getState().editor
+      const uri = editor?.getModel()?.uri.toString()
+      if (!uri)
+        return
       wrapperRef.current?.updateCodeResources?.({
         modified: {
           text: code,
           enforceLanguageId: 'Cangjie',
-          uri: editor!.getModel()!.uri.toString(),
+          uri,
         },
       })
     }}
@@ -35,7 +38,7 @@ function ExamplesAction({ editor, wrapperRef }: Pick<PlaygroundHeaderProps, 'edi
   )
 }
 
-export function PlaygroundHeader({ handleRun, handleFormat, editor, wrapperRef }: PlaygroundHeaderProps) {
+export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: PlaygroundHeaderProps) {
   const isDesktop = useMedia('(min-width: 1024px)')
   const { locale } = useLanguage()
   const tourHref = getTourHref(locale, { currentOrigin: window.location.origin })
@@ -63,7 +66,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, editor, wrapperRef }
             </a>
           </Button>
           <div className="w-[200px]">
-            <ExamplesAction editor={editor} wrapperRef={wrapperRef} />
+            <ExamplesAction wrapperRef={wrapperRef} />
           </div>
           <LanguageSelector />
           <Button onClick={handleRun}>
@@ -72,7 +75,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, editor, wrapperRef }
           <Button onClick={handleFormat}>
             <Trans>格式化</Trans>
           </Button>
-          <ShareButton editor={editor} />
+          <ShareButton />
         </div>
       </div>
     )
@@ -106,7 +109,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, editor, wrapperRef }
 
       <div className="flex flex-col space-y-2 mb-2">
         <div className="w-full">
-          <ExamplesAction editor={editor} wrapperRef={wrapperRef} />
+          <ExamplesAction wrapperRef={wrapperRef} />
         </div>
         <div className="flex flex-row space-x-2 [&>*]:flex-1 [&_button]:w-full">
           <Button onClick={handleRun}>
@@ -115,7 +118,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, editor, wrapperRef }
           <Button onClick={handleFormat}>
             <Trans>格式化</Trans>
           </Button>
-          <ShareButton editor={editor} />
+          <ShareButton />
         </div>
       </div>
     </div>
