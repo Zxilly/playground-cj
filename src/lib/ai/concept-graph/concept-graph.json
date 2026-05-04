@@ -1,0 +1,415 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "conceptId": "cj.program.main",
+      "title": { "zh": "程序入口与 main", "en": "Program entry and main" },
+      "summary": { "zh": "仓颉程序从 main 函数开始执行；理解最小可运行程序结构。", "en": "Cangjie programs start at main; understand the minimal runnable structure." },
+      "difficulty": 1,
+      "prerequisites": [],
+      "chapterRefs": ["01-welcome/01-intro"]
+    },
+    {
+      "conceptId": "cj.io.println",
+      "title": { "zh": "标准输出 println", "en": "Standard output println" },
+      "summary": { "zh": "用 println 把值写到标准输出，便于练习时观察。", "en": "Use println to write values to stdout — the main feedback channel during exercises." },
+      "difficulty": 1,
+      "prerequisites": ["cj.program.main"],
+      "chapterRefs": ["01-welcome/01-intro"]
+    },
+    {
+      "conceptId": "cj.var.immutable",
+      "title": { "zh": "不可变绑定 let", "en": "Immutable binding let" },
+      "summary": { "zh": "let 声明的绑定一旦初始化便不能再赋值。", "en": "let bindings cannot be reassigned after initialization." },
+      "difficulty": 1,
+      "prerequisites": ["cj.program.main"],
+      "chapterRefs": ["02-basics/01-bindings"],
+      "commonMisconceptions": [
+        { "zh": "把 let 当作 Python 的赋值，认为可以在同作用域重新声明同名变量。", "en": "Treating let like Python assignment and assuming same-scope redeclaration is allowed." }
+      ]
+    },
+    {
+      "conceptId": "cj.var.mutable",
+      "title": { "zh": "可变绑定 var", "en": "Mutable binding var" },
+      "summary": { "zh": "var 声明的绑定可以重新赋值；和 let 形成对比。", "en": "var bindings allow reassignment; contrasts with let." },
+      "difficulty": 1,
+      "prerequisites": ["cj.var.immutable"],
+      "chapterRefs": ["02-basics/01-bindings"],
+      "commonMisconceptions": [
+        { "zh": "把『重新赋值』和『重新声明』混淆。", "en": "Confusing reassignment with redeclaration." }
+      ]
+    },
+    {
+      "conceptId": "cj.type.basic",
+      "title": { "zh": "基本类型", "en": "Basic types" },
+      "summary": { "zh": "Int、Float、Bool、Rune、String 等内建类型与字面量形式。", "en": "Built-in types like Int, Float, Bool, Rune, String and their literal forms." },
+      "difficulty": 1,
+      "prerequisites": ["cj.var.immutable"],
+      "chapterRefs": ["02-basics/02-basic-types"]
+    },
+    {
+      "conceptId": "cj.type.annotation",
+      "title": { "zh": "类型标注", "en": "Type annotation" },
+      "summary": { "zh": "`name: Type = value` 形式的显式类型标注，与类型推断的关系。", "en": "Explicit type annotation `name: Type = value` and how it relates to inference." },
+      "difficulty": 2,
+      "prerequisites": ["cj.type.basic"],
+      "chapterRefs": ["02-basics/02-basic-types", "02-basics/02-bindings-types"]
+    },
+    {
+      "conceptId": "cj.type.inference",
+      "title": { "zh": "静态类型推断", "en": "Static type inference" },
+      "summary": { "zh": "编译器根据初始化值推断绑定类型；强调与动态类型的区别。", "en": "The compiler infers binding types from initializers — distinct from dynamic typing." },
+      "difficulty": 2,
+      "prerequisites": ["cj.type.annotation"],
+      "chapterRefs": ["02-basics/02-basic-types"],
+      "commonMisconceptions": [
+        { "zh": "把『推断』当作『动态类型』，认为同一变量可重绑不同类型。", "en": "Treating inference as dynamic typing and expecting a binding can hold different types over time." }
+      ]
+    },
+    {
+      "conceptId": "cj.expr.arithmetic",
+      "title": { "zh": "算术运算", "en": "Arithmetic operators" },
+      "summary": { "zh": "+、-、*、/、% 等运算与整型/浮点的结果类型规则。", "en": "+, -, *, /, % and result-type rules between integer and float operands." },
+      "difficulty": 1,
+      "prerequisites": ["cj.type.basic"],
+      "chapterRefs": ["02-basics/03-operators", "02-basics/02-bindings-types"]
+    },
+    {
+      "conceptId": "cj.expr.comparison",
+      "title": { "zh": "比较运算", "en": "Comparison operators" },
+      "summary": { "zh": "==、!=、<、<=、>、>= 返回 Bool 值。", "en": "==, !=, <, <=, >, >= return Bool values." },
+      "difficulty": 1,
+      "prerequisites": ["cj.type.basic"],
+      "chapterRefs": ["02-basics/03-operators"]
+    },
+    {
+      "conceptId": "cj.expr.logical",
+      "title": { "zh": "逻辑运算", "en": "Logical operators" },
+      "summary": { "zh": "&&、||、! 与短路求值规则。", "en": "&&, ||, ! with short-circuit evaluation." },
+      "difficulty": 2,
+      "prerequisites": ["cj.expr.comparison"],
+      "chapterRefs": ["02-basics/03-operators"]
+    },
+    {
+      "conceptId": "cj.string.basic",
+      "title": { "zh": "字符串基础", "en": "String basics" },
+      "summary": { "zh": "String 字面量、连接、长度等基础操作。", "en": "String literals, concatenation, and length basics." },
+      "difficulty": 1,
+      "prerequisites": ["cj.type.basic"],
+      "chapterRefs": ["02-basics/02-basic-types"]
+    },
+    {
+      "conceptId": "cj.string.interpolation",
+      "title": { "zh": "字符串插值", "en": "String interpolation" },
+      "summary": { "zh": "在字符串字面量中嵌入表达式的语法。", "en": "Embedding expressions inside string literals." },
+      "difficulty": 2,
+      "prerequisites": ["cj.string.basic", "cj.var.immutable"],
+      "chapterRefs": ["02-basics/02-basic-types"]
+    },
+    {
+      "conceptId": "cj.control.if-expr",
+      "title": { "zh": "if 表达式", "en": "if expression" },
+      "summary": { "zh": "if/else 既能控制流程，也能作为表达式产生值；条件需要括号。", "en": "if/else as both control flow and an expression that yields a value; the condition is parenthesised." },
+      "difficulty": 2,
+      "prerequisites": ["cj.expr.comparison", "cj.var.immutable"],
+      "chapterRefs": ["03-flow-control/01-conditions"],
+      "commonMisconceptions": [
+        { "zh": "省略条件外层括号（仓颉与 Swift/Kotlin 不同，要求括号）。", "en": "Omitting parentheses around the condition (unlike Swift/Kotlin, Cangjie requires them)." }
+      ]
+    },
+    {
+      "conceptId": "cj.control.while",
+      "title": { "zh": "while 循环", "en": "while loop" },
+      "summary": { "zh": "条件成立时反复执行循环体。", "en": "Repeats the body while the condition holds." },
+      "difficulty": 2,
+      "prerequisites": ["cj.control.if-expr", "cj.var.mutable"],
+      "chapterRefs": ["03-flow-control/02-loops"]
+    },
+    {
+      "conceptId": "cj.control.for-in",
+      "title": { "zh": "for-in 循环", "en": "for-in loop" },
+      "summary": { "zh": "for-in 遍历可迭代对象，包括区间和集合。", "en": "for-in iterates over iterables such as ranges and collections." },
+      "difficulty": 2,
+      "prerequisites": ["cj.control.while"],
+      "chapterRefs": ["03-flow-control/02-loops"]
+    },
+    {
+      "conceptId": "cj.control.range",
+      "title": { "zh": "区间 Range", "en": "Range" },
+      "summary": { "zh": "0..n、a..=b 区间字面量及其作为可迭代对象的用法。", "en": "Range literals like 0..n and a..=b and using them as iterables." },
+      "difficulty": 2,
+      "prerequisites": ["cj.control.for-in"],
+      "chapterRefs": ["03-flow-control/02-loops"]
+    },
+    {
+      "conceptId": "cj.control.break-continue",
+      "title": { "zh": "break 与 continue", "en": "break and continue" },
+      "summary": { "zh": "提前终止或跳过本轮循环体。", "en": "Exit a loop early or skip the current iteration." },
+      "difficulty": 2,
+      "prerequisites": ["cj.control.while"],
+      "chapterRefs": ["03-flow-control/02-loops"]
+    },
+    {
+      "conceptId": "cj.control.match-basic",
+      "title": { "zh": "match 基础", "en": "match basics" },
+      "summary": { "zh": "match 表达式按值/常量分支匹配。", "en": "match expression dispatches by value or constant arms." },
+      "difficulty": 3,
+      "prerequisites": ["cj.control.if-expr"],
+      "chapterRefs": ["03-flow-control/03-match"]
+    },
+    {
+      "conceptId": "cj.control.match-pattern",
+      "title": { "zh": "模式匹配", "en": "Pattern matching" },
+      "summary": { "zh": "解构、绑定、通配 _、守卫等模式形式。", "en": "Destructuring, binding, wildcard `_`, guards." },
+      "difficulty": 3,
+      "prerequisites": ["cj.control.match-basic", "cj.tuple"],
+      "chapterRefs": ["03-flow-control/03-match"]
+    },
+    {
+      "conceptId": "cj.function.signature",
+      "title": { "zh": "函数签名", "en": "Function signature" },
+      "summary": { "zh": "func 名(参数: 类型): 返回类型 { ... } 的基本形式。", "en": "func name(params: Type): ReturnType { ... }." },
+      "difficulty": 2,
+      "prerequisites": ["cj.type.annotation"],
+      "chapterRefs": ["02-basics/03-functions"]
+    },
+    {
+      "conceptId": "cj.function.params",
+      "title": { "zh": "函数参数", "en": "Function parameters" },
+      "summary": { "zh": "位置参数、命名参数与默认值。", "en": "Positional, named, and default-valued parameters." },
+      "difficulty": 2,
+      "prerequisites": ["cj.function.signature"],
+      "chapterRefs": ["02-basics/03-functions"]
+    },
+    {
+      "conceptId": "cj.function.return",
+      "title": { "zh": "函数返回值", "en": "Function return" },
+      "summary": { "zh": "显式 return；最后表达式作为隐式返回值。", "en": "Explicit `return`; trailing expression as implicit return." },
+      "difficulty": 2,
+      "prerequisites": ["cj.function.signature"],
+      "chapterRefs": ["02-basics/03-functions"]
+    },
+    {
+      "conceptId": "cj.function.lambda",
+      "title": { "zh": "Lambda 表达式", "en": "Lambda expressions" },
+      "summary": { "zh": "{ x => x + 1 } 形式的匿名函数；可作为值传递。", "en": "Anonymous function `{ x => x + 1 }` that can be passed as a value." },
+      "difficulty": 3,
+      "prerequisites": ["cj.function.signature"],
+      "chapterRefs": ["05-abstractions/01-functions-advanced"]
+    },
+    {
+      "conceptId": "cj.function.higher-order",
+      "title": { "zh": "高阶函数", "en": "Higher-order functions" },
+      "summary": { "zh": "把函数作为参数或返回值；map/filter/reduce 模式。", "en": "Functions taking or returning functions; map/filter/reduce patterns." },
+      "difficulty": 4,
+      "prerequisites": ["cj.function.lambda", "cj.function.return"],
+      "chapterRefs": ["05-abstractions/01-functions-advanced"]
+    },
+    {
+      "conceptId": "cj.tuple",
+      "title": { "zh": "元组", "en": "Tuples" },
+      "summary": { "zh": "(a, b) 不可变多值容器；可解构。", "en": "Immutable multi-value container `(a, b)` with destructuring." },
+      "difficulty": 2,
+      "prerequisites": ["cj.type.basic"],
+      "chapterRefs": ["04-more-types/01-tuples-arrays"]
+    },
+    {
+      "conceptId": "cj.array.basic",
+      "title": { "zh": "数组基础", "en": "Array basics" },
+      "summary": { "zh": "Array<T> 定长数组的声明、索引、长度。", "en": "Array<T> fixed-length arrays — declare, index, length." },
+      "difficulty": 2,
+      "prerequisites": ["cj.type.annotation"],
+      "chapterRefs": ["04-more-types/01-tuples-arrays"]
+    },
+    {
+      "conceptId": "cj.struct.define",
+      "title": { "zh": "结构体定义", "en": "Struct definition" },
+      "summary": { "zh": "struct 声明带命名字段的复合值类型。", "en": "`struct` declares a value-type record with named fields." },
+      "difficulty": 3,
+      "prerequisites": ["cj.type.annotation"],
+      "chapterRefs": ["04-more-types/02-structs"]
+    },
+    {
+      "conceptId": "cj.struct.method",
+      "title": { "zh": "结构体方法", "en": "Struct methods" },
+      "summary": { "zh": "在 struct 内定义实例方法与构造器。", "en": "Define instance methods and constructors inside a struct." },
+      "difficulty": 3,
+      "prerequisites": ["cj.struct.define", "cj.function.signature"],
+      "chapterRefs": ["04-more-types/02-structs"]
+    },
+    {
+      "conceptId": "cj.enum.define",
+      "title": { "zh": "枚举定义", "en": "Enum definition" },
+      "summary": { "zh": "enum 定义代数数据类型，支持带载荷的构造器。", "en": "`enum` defines an ADT with payload-bearing constructors." },
+      "difficulty": 3,
+      "prerequisites": ["cj.type.annotation"],
+      "chapterRefs": ["04-more-types/03-enums-option"]
+    },
+    {
+      "conceptId": "cj.enum.option",
+      "title": { "zh": "Option 类型", "en": "Option type" },
+      "summary": { "zh": "Option<T> = Some(T) | None，仓颉用它表达可选值，没有 null。", "en": "Option<T> = Some(T) | None — Cangjie's stand-in for null-free optional values." },
+      "difficulty": 3,
+      "prerequisites": ["cj.enum.define", "cj.control.match-pattern"],
+      "chapterRefs": ["04-more-types/03-enums-option"],
+      "commonMisconceptions": [
+        { "zh": "把 None 当作 null，期望可以直接调用方法。", "en": "Treating None as null and expecting to call methods on it directly." }
+      ]
+    },
+    {
+      "conceptId": "cj.collection.arraylist",
+      "title": { "zh": "ArrayList 动态数组", "en": "ArrayList" },
+      "summary": { "zh": "可变长度的数组容器，支持 append/remove/索引。", "en": "Variable-length array container with append/remove/indexing." },
+      "difficulty": 3,
+      "prerequisites": ["cj.array.basic"],
+      "chapterRefs": ["04-more-types/04-collections-basic"]
+    },
+    {
+      "conceptId": "cj.collection.hashmap",
+      "title": { "zh": "HashMap", "en": "HashMap" },
+      "summary": { "zh": "键值对集合，支持 get/put/迭代。", "en": "Key-value collection with get/put/iteration." },
+      "difficulty": 3,
+      "prerequisites": ["cj.collection.arraylist"],
+      "chapterRefs": ["04-more-types/04-collections-basic"]
+    },
+    {
+      "conceptId": "cj.collection.iter",
+      "title": { "zh": "集合迭代", "en": "Collection iteration" },
+      "summary": { "zh": "用 for-in 与高阶函数遍历/变换集合。", "en": "Iterate / transform collections with for-in and higher-order functions." },
+      "difficulty": 3,
+      "prerequisites": ["cj.collection.arraylist", "cj.control.for-in"],
+      "chapterRefs": ["04-more-types/04-collections-basic"]
+    },
+    {
+      "conceptId": "cj.class.define",
+      "title": { "zh": "类定义", "en": "Class definition" },
+      "summary": { "zh": "class 定义引用类型，与 struct（值类型）区别。", "en": "`class` defines reference types — contrast with `struct` (value types)." },
+      "difficulty": 3,
+      "prerequisites": ["cj.struct.define"],
+      "chapterRefs": ["05-abstractions/02-classes"]
+    },
+    {
+      "conceptId": "cj.class.constructor",
+      "title": { "zh": "类构造器", "en": "Class constructors" },
+      "summary": { "zh": "init 方法初始化实例字段；可重载。", "en": "`init` initialises instance fields; can be overloaded." },
+      "difficulty": 3,
+      "prerequisites": ["cj.class.define"],
+      "chapterRefs": ["05-abstractions/02-classes"]
+    },
+    {
+      "conceptId": "cj.class.method",
+      "title": { "zh": "类方法", "en": "Class methods" },
+      "summary": { "zh": "实例方法、可见性修饰符 public/private 等。", "en": "Instance methods and visibility modifiers (public/private/...)." },
+      "difficulty": 3,
+      "prerequisites": ["cj.class.define", "cj.function.signature"],
+      "chapterRefs": ["05-abstractions/02-classes"]
+    },
+    {
+      "conceptId": "cj.class.inheritance",
+      "title": { "zh": "类继承", "en": "Class inheritance" },
+      "summary": { "zh": "用 `<:` 表示子类关系；调用 super。", "en": "`<:` denotes subtyping; use `super` to reach parent behaviour." },
+      "difficulty": 4,
+      "prerequisites": ["cj.class.method"],
+      "chapterRefs": ["05-abstractions/02-classes"]
+    },
+    {
+      "conceptId": "cj.interface.define",
+      "title": { "zh": "接口定义", "en": "Interface definition" },
+      "summary": { "zh": "interface 声明可被多种类型实现的契约。", "en": "`interface` declares a contract implementable by many types." },
+      "difficulty": 3,
+      "prerequisites": ["cj.class.define"],
+      "chapterRefs": ["05-abstractions/03-interfaces"]
+    },
+    {
+      "conceptId": "cj.interface.impl",
+      "title": { "zh": "接口实现", "en": "Interface implementation" },
+      "summary": { "zh": "类/结构体用 `<:` 实现接口；多接口组合。", "en": "Types implement interfaces with `<:`; multiple interfaces can be combined." },
+      "difficulty": 4,
+      "prerequisites": ["cj.interface.define"],
+      "chapterRefs": ["05-abstractions/03-interfaces"],
+      "commonMisconceptions": [
+        { "zh": "把实现写成 Java 风格的 `:`，应使用 `<:`。", "en": "Writing `:` in Java style — Cangjie uses `<:` for interface implementation." }
+      ]
+    },
+    {
+      "conceptId": "cj.interface.default-method",
+      "title": { "zh": "接口默认方法", "en": "Interface default methods" },
+      "summary": { "zh": "接口可提供默认实现，实现者可选择覆盖。", "en": "Interfaces may carry default implementations that implementers can override." },
+      "difficulty": 4,
+      "prerequisites": ["cj.interface.impl"],
+      "chapterRefs": ["05-abstractions/03-interfaces"]
+    },
+    {
+      "conceptId": "cj.error.exception",
+      "title": { "zh": "异常类型", "en": "Exception types" },
+      "summary": { "zh": "Exception 体系与常见子类型概览。", "en": "Overview of the Exception hierarchy and common subtypes." },
+      "difficulty": 3,
+      "prerequisites": ["cj.class.inheritance"],
+      "chapterRefs": ["05-abstractions/05-errors"]
+    },
+    {
+      "conceptId": "cj.error.try-catch",
+      "title": { "zh": "try / catch", "en": "try / catch" },
+      "summary": { "zh": "用 try/catch 捕获并分支处理异常；finally 保证收尾。", "en": "Use try/catch to capture and branch on exceptions; finally guarantees cleanup." },
+      "difficulty": 3,
+      "prerequisites": ["cj.error.exception", "cj.control.match-basic"],
+      "chapterRefs": ["05-abstractions/05-errors"]
+    },
+    {
+      "conceptId": "cj.error.throw",
+      "title": { "zh": "throw 抛出异常", "en": "throw" },
+      "summary": { "zh": "用 throw 抛出 Exception 实例。", "en": "Use `throw` to raise an Exception instance." },
+      "difficulty": 3,
+      "prerequisites": ["cj.error.exception"],
+      "chapterRefs": ["05-abstractions/05-errors"]
+    },
+    {
+      "conceptId": "cj.error.option-flow",
+      "title": { "zh": "Option 与异常的取舍", "en": "Option vs exceptions" },
+      "summary": { "zh": "选 Option 还是 throw —— 何时表达『缺值』、何时表达『异常』。", "en": "When to model absence with Option vs raise an exception." },
+      "difficulty": 4,
+      "prerequisites": ["cj.enum.option", "cj.error.try-catch"],
+      "chapterRefs": ["04-more-types/03-enums-option", "05-abstractions/05-errors"]
+    },
+    {
+      "conceptId": "cj.generics.function",
+      "title": { "zh": "泛型函数", "en": "Generic functions" },
+      "summary": { "zh": "func name<T>(...) 形式声明类型参数。", "en": "Declare type parameters with `func name<T>(...)`." },
+      "difficulty": 4,
+      "prerequisites": ["cj.function.signature", "cj.type.annotation"],
+      "chapterRefs": ["06-generics/01-basics"]
+    },
+    {
+      "conceptId": "cj.generics.type",
+      "title": { "zh": "泛型类型", "en": "Generic types" },
+      "summary": { "zh": "class/struct/interface 定义类型参数。", "en": "class/struct/interface with type parameters." },
+      "difficulty": 4,
+      "prerequisites": ["cj.generics.function", "cj.class.define"],
+      "chapterRefs": ["06-generics/01-basics"]
+    },
+    {
+      "conceptId": "cj.generics.constraint",
+      "title": { "zh": "泛型约束", "en": "Generic constraints" },
+      "summary": { "zh": "用 where 子句或 `<:` 约束类型参数能力。", "en": "Constrain type parameters via `where` or `<:` bounds." },
+      "difficulty": 5,
+      "prerequisites": ["cj.generics.type", "cj.interface.impl"],
+      "chapterRefs": ["06-generics/02-advanced"]
+    },
+    {
+      "conceptId": "cj.concurrency.spawn",
+      "title": { "zh": "spawn 并发", "en": "spawn concurrency" },
+      "summary": { "zh": "spawn { => ... } 启动轻量用户态线程。", "en": "`spawn { => ... }` starts a lightweight user-mode thread." },
+      "difficulty": 5,
+      "prerequisites": ["cj.function.lambda"],
+      "chapterRefs": ["07-concurrency/01-threads"]
+    },
+    {
+      "conceptId": "cj.package.import",
+      "title": { "zh": "包与 import", "en": "Packages and import" },
+      "summary": { "zh": "用 package / import 组织代码；默认可见性是 internal。", "en": "Organise code with `package` / `import`; default visibility is `internal`." },
+      "difficulty": 2,
+      "prerequisites": ["cj.program.main"],
+      "chapterRefs": ["02-basics/01-packages"]
+    }
+  ]
+}

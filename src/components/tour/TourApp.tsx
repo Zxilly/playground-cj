@@ -15,9 +15,7 @@ import { useMedia } from 'react-use'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FlatSection, TourChapterSlim } from '@/tour/types'
 import { getTourPath } from '@/lib/siteHref'
-import { TourModeProvider, useTourMode } from './TourModeContext'
 import { TourBridgeProvider } from './EditorBridgeContext'
-import { TourAIChat } from './ai/TourAIChat'
 
 interface TourAppProps {
   lang: string
@@ -106,112 +104,69 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [currentIndex, allSections.length, goNext, goPrev])
 
+  const code = section.code[lang] || section.code.zh || ''
+
   return (
     <KnownLanguagesProvider>
       <LLMConfigProvider>
-        <TourModeProvider>
-          <TourBridgeProvider
-            lang={lang}
-            section={section}
-            allSections={allSections}
-            navigate={navigate}
-            goToSection={goToSection}
+        <TourBridgeProvider
+          lang={lang}
+          section={section}
+          allSections={allSections}
+          navigate={navigate}
+          goToSection={goToSection}
+        >
+          <div
+            className={`h-screen ${isDarkMode() ? 'dark' : ''}`}
+            style={{
+              'fontFamily': `${harmonyFont.style.fontFamily}, sans-serif`,
+              '--tour-code-font': `${jetbrainsFont.style.fontFamily}, monospace`,
+            } as React.CSSProperties}
           >
-            <div
-              className={`h-screen ${isDarkMode() ? 'dark' : ''}`}
-              style={{
-                'fontFamily': `${harmonyFont.style.fontFamily}, sans-serif`,
-                '--tour-code-font': `${jetbrainsFont.style.fontFamily}, monospace`,
-              } as React.CSSProperties}
+            <TourLayout
+              sidebar={(
+                <TourSidebar
+                  lang={lang}
+                  tourData={tourData}
+                  {...sidebarNav}
+                />
+              )}
             >
-              <TourLayout
-                sidebar={(
-                  <TourSidebar
-                    lang={lang}
-                    tourData={tourData}
-                    {...sidebarNav}
-                  />
-                )}
-              >
-                <div className="flex flex-col h-full bg-background text-foreground">
-                  <TourHeader lang={lang} section={section} />
-                  <TourBody
-                    isDesktop={isDesktop}
-                    lang={lang}
-                    section={section}
-                    navProps={navProps}
-                  />
+              <div className="flex flex-col h-full bg-background text-foreground">
+                <TourHeader lang={lang} section={section} />
+                <div className="flex-1 min-h-0 pt-1">
+                  {isDesktop
+                    ? (
+                        <ResizablePanelGroup orientation="horizontal" className="h-full">
+                          <ResizablePanel defaultSize={38} minSize={25}>
+                            <div className="flex flex-col h-full">
+                              <div className="flex-1 min-h-0">
+                                <TourContent lang={lang} section={section} />
+                              </div>
+                              <TourNavigation {...navProps} />
+                            </div>
+                          </ResizablePanel>
+                          <ResizableHandle withHandle className="bg-tour-border/80" />
+                          <ResizablePanel defaultSize={62} minSize={30}>
+                            <TourEditor code={code} locale={lang} />
+                          </ResizablePanel>
+                        </ResizablePanelGroup>
+                      )
+                    : (
+                        <div className="flex flex-col h-full overflow-auto">
+                          <TourContent lang={lang} section={section} />
+                          <TourNavigation {...navProps} />
+                          <div className="h-[50vh] shrink-0 border-t border-border">
+                            <TourEditor code={code} locale={lang} />
+                          </div>
+                        </div>
+                      )}
                 </div>
-              </TourLayout>
-            </div>
-          </TourBridgeProvider>
-        </TourModeProvider>
+              </div>
+            </TourLayout>
+          </div>
+        </TourBridgeProvider>
       </LLMConfigProvider>
     </KnownLanguagesProvider>
-  )
-}
-
-interface NavProps {
-  lang: string
-  hasPrev: boolean
-  hasNext: boolean
-  onPrev: () => void
-  onNext: () => void
-  currentIndex: number
-  total: number
-}
-
-interface TourBodyProps {
-  isDesktop: boolean
-  lang: string
-  section: FlatSection
-  navProps: NavProps
-}
-
-function TourBody({ isDesktop, lang, section, navProps }: TourBodyProps) {
-  const { mode } = useTourMode()
-  const code = section.code[lang] || section.code.zh || ''
-
-  const leftPanel = mode === 'ai'
-    ? <TourAIChat />
-    : (
-        <div className="flex flex-col h-full">
-          <div className="flex-1 min-h-0">
-            <TourContent lang={lang} section={section} />
-          </div>
-          <TourNavigation {...navProps} />
-        </div>
-      )
-
-  return (
-    <div className="flex-1 min-h-0 pt-1">
-      {isDesktop
-        ? (
-            <ResizablePanelGroup orientation="horizontal" className="h-full">
-              <ResizablePanel defaultSize={38} minSize={25}>
-                {leftPanel}
-              </ResizablePanel>
-              <ResizableHandle withHandle className="bg-tour-border/80" />
-              <ResizablePanel defaultSize={62} minSize={30}>
-                <TourEditor code={code} locale={lang} />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          )
-        : (
-            <div className="flex flex-col h-full overflow-auto">
-              {mode === 'ai'
-                ? <div className="h-[50vh] shrink-0">{leftPanel}</div>
-                : (
-                    <>
-                      <TourContent lang={lang} section={section} />
-                      <TourNavigation {...navProps} />
-                    </>
-                  )}
-              <div className="h-[50vh] shrink-0 border-t border-border">
-                <TourEditor code={code} locale={lang} />
-              </div>
-            </div>
-          )}
-    </div>
   )
 }

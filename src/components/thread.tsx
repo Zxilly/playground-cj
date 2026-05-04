@@ -127,10 +127,10 @@ const ThreadWelcome: FC = () => {
       <div className="aui-thread-welcome-center flex w-full grow flex-col items-center justify-center">
         <div className="aui-thread-welcome-message flex size-full flex-col justify-center px-4">
           <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both font-semibold text-2xl duration-200">
-            <Trans>需要帮你做点什么？</Trans>
+            <Trans>从这里开始你的仓颉之旅</Trans>
           </h1>
           <p className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-muted-foreground text-base delay-75 duration-200">
-            <Trans>我可以阅读教程、读写编辑器代码、运行并修复错误。</Trans>
+            <Trans>告诉我你想学什么，或选一个下面的卡片。我会读教程、写示例代码、运行并帮你修错。</Trans>
           </p>
         </div>
       </div>

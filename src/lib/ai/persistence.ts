@@ -12,6 +12,10 @@ export function sectionKey(lang: string, chapterId: string, subChapterId: string
   return `${lang}:${chapterId}/${subChapterId}/${sectionId}`
 }
 
+export function globalThreadKey(lang: string): string {
+  return `ai:global:${lang}`
+}
+
 function fullKey(sk: string): string {
   return `${THREAD_PREFIX}${sk}`
 }

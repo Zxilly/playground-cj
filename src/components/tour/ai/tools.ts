@@ -1,20 +1,30 @@
 'use client'
 
-// We expose tools as a plain `Toolkit` (per the assistant-ui canonical
-// `Tools()` API). Each entry is `{ description, parameters, execute }`.
-// Registration happens once via `useAui({ tools: Tools({ toolkit }) })` in
-// TourAIChat — no component-level hooks (the deprecated `useAssistantTool`
-// pattern caused duplicate registrations on remount).
 import type { Toolkit } from '@assistant-ui/react'
 import type { JSONSchema7 } from 'ai'
 import { z } from 'zod'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import type { TourBridgeValue } from '@/components/tour/EditorBridgeContext'
+import type { AIBridgeValue } from '@/components/tour/EditorBridgeContext'
 import { applyEdit, applyFullReplace, applyInsertAtLine } from '@/lib/ai/monaco-edit'
-import { listProgress, recordProgress } from '@/lib/ai/progress'
-import { sectionKey } from '@/lib/ai/persistence'
+import {
+  applyConceptStatus,
+  applyEvidence,
+  CONCEPT_STATUSES,
+  EVIDENCE_OUTCOMES,
+  getDemonstratedSet,
+  getRelevantConcepts,
+  mutateLearner,
+  newQuizId,
+  QUIZ_MATCH_MODES,
+  readLearner,
+} from '@/lib/ai/learner-model'
+import type { ConceptProgress, ConceptStatus } from '@/lib/ai/learner-model'
+import { findChapterRefSections, getAllConcepts, getConcept, getReadyConcepts } from '@/lib/ai/concept-graph/loader'
+import { buildQuizHints, evaluateQuiz } from '@/lib/ai/quiz-evaluator'
 import { callMcpTool, listMcpTools } from '@/lib/mcp/client'
 import { requestRemoteAction } from '@/service/run'
+
+const MARKDOWN_SUMMARY_CHARS = 600
 
 function withLineNumbers(text: string): string {
   return text
@@ -23,7 +33,7 @@ function withLineNumbers(text: string): string {
     .join('\n')
 }
 
-function getModel(bridge: TourBridgeValue) {
+function getModel(bridge: AIBridgeValue) {
   const editor = bridge.editor.getEditor()
   const model = editor?.getModel()
   if (!model || !editor)
@@ -39,81 +49,219 @@ function fail(message: string) {
   return { ok: false as const, error: message }
 }
 
-async function runCodeAndAwait(bridge: TourBridgeValue) {
-  const { model } = getModel(bridge)
-  const code = model.getValue()
-  const data = await requestRemoteAction(code, 'run')
-  bridge.editor.setLatestOutput({
-    compilerOutput: data.compiler_output,
-    programOutput: data.bin_output,
-  })
-  return {
-    compilerOutput: data.compiler_output,
-    compilerCode: data.compiler_code,
-    programOutput: data.bin_output,
-    programCode: data.bin_code,
-  }
+function truncate(s: string, n: number): string {
+  if (s.length <= n)
+    return s
+  return `${s.slice(0, n)}\n…[truncated; call read_concepts with materials='full' for the rest]`
 }
 
-export function createBuiltinToolkit(bridge: TourBridgeValue): Toolkit {
-  const sk = sectionKey(bridge.lang, bridge.section.chapterId, bridge.section.subChapterId, bridge.section.sectionId)
+function statusOf(c: ConceptProgress | undefined): ConceptStatus {
+  return c?.status ?? 'unseen'
+}
+
+const MATERIAL_MODES = ['none', 'titles', 'summary', 'full'] as const
+type MaterialMode = typeof MATERIAL_MODES[number]
+
+export function createBuiltinToolkit(bridge: AIBridgeValue): Toolkit {
+  const { uiLang } = bridge
 
   return {
-    read_tutorial: {
-      description: 'Read the current tutorial section markdown for the active language. Use before answering content questions.',
-      parameters: z.object({}),
-      execute: async () => {
-        const lang = bridge.lang
-        const md = bridge.section.markdown[lang] || bridge.section.markdown.zh || ''
-        const title = bridge.section.sectionName[lang] || bridge.section.sectionName.zh
-        return ok({
-          title,
-          markdown: md,
-          chapterId: bridge.section.chapterId,
-          subChapterId: bridge.section.subChapterId,
-          sectionId: bridge.section.sectionId,
-        })
-      },
-    },
-
-    list_sections: {
-      description: 'List every section across the whole tour. Use when the user asks for an overview or wants to navigate.',
-      parameters: z.object({}),
-      execute: async () => {
-        const lang = bridge.lang
-        return ok({
-          sections: bridge.allSections.map((s, idx) => ({
-            index: idx,
-            chapterId: s.chapterId,
-            chapterSlug: s.chapterSlug,
-            subChapterId: s.subChapterId,
-            sectionId: s.sectionId,
-            chapterName: s.chapterName[lang] || s.chapterName.zh,
-            subChapterName: s.subChapterName[lang] || s.subChapterName.zh,
-            sectionName: s.sectionName[lang] || s.sectionName.zh,
-          })),
-        })
-      },
-    },
-
-    navigate_section: {
-      description: 'Navigate the user to a different section. Always call record_progress first.',
+    read_concepts: {
+      description: 'Read the Cangjie concept graph. Without ids: returns ready / in-progress / blocked / recently-touched concepts only (capped) plus a totalCount. With ids: returns full metadata + linked tour materials. Use materials=\'titles\' (default for detail) to skip markdown; \'summary\' for a 600-char excerpt; \'full\' for the entire chapter markdown.',
       parameters: z.object({
-        chapterId: z.string(),
-        subChapterId: z.string(),
-        sectionId: z.string(),
+        ids: z.array(z.string()).optional(),
+        materials: z.enum(MATERIAL_MODES).optional(),
       }),
-      execute: async ({ chapterId, subChapterId, sectionId }) => {
-        bridge.goToSection(chapterId, subChapterId, sectionId)
-        return ok()
+      execute: async ({ ids, materials }) => {
+        const learner = readLearner()
+
+        if (!ids || ids.length === 0) {
+          const all = getAllConcepts()
+          const ready = new Set(getReadyConcepts(getDemonstratedSet(learner)).map(n => n.conceptId))
+          const interesting = all.filter((n) => {
+            const s = statusOf(learner.concepts[n.conceptId])
+            return ready.has(n.conceptId) || s === 'practicing' || s === 'blocked' || s === 'demonstrated' || s === 'exposed'
+          })
+          const items = interesting.slice(0, 20).map(n => ({
+            conceptId: n.conceptId,
+            title: n.title[uiLang],
+            difficulty: n.difficulty,
+            prerequisites: n.prerequisites,
+            status: statusOf(learner.concepts[n.conceptId]),
+            ready: ready.has(n.conceptId),
+          }))
+          return ok({
+            concepts: items,
+            totalCount: all.length,
+            note: items.length < interesting.length
+              ? `Showing ${items.length} of ${interesting.length} interesting concepts. Pass ids=[...] for specifics.`
+              : undefined,
+          })
+        }
+
+        const mode: MaterialMode = materials ?? 'titles'
+        const details = ids.map((id: string) => {
+          const node = getConcept(id)
+          if (!node)
+            return { conceptId: id, error: 'not found' }
+
+          const sections = mode === 'none'
+            ? []
+            : node.chapterRefs.flatMap(ref => findChapterRefSections(ref, bridge.allSections))
+
+          const materialsOut = sections.map((s) => {
+            const md = s.markdown[uiLang] || s.markdown.zh || ''
+            const code = s.code[uiLang] || s.code.zh || ''
+            const base = {
+              ref: `${s.chapterId}/${s.subChapterId}/${s.sectionId}`,
+              title: s.sectionName[uiLang],
+              chapter: s.chapterName[uiLang],
+            }
+            if (mode === 'titles')
+              return base
+            if (mode === 'summary')
+              return { ...base, markdownSummary: truncate(md, MARKDOWN_SUMMARY_CHARS), sampleCode: code }
+            return { ...base, markdown: md, sampleCode: code }
+          })
+
+          const prerequisitesStatus = Object.fromEntries(
+            node.prerequisites.map(p => [p, statusOf(learner.concepts[p])]),
+          )
+
+          return {
+            conceptId: node.conceptId,
+            title: node.title[uiLang],
+            summary: node.summary[uiLang],
+            difficulty: node.difficulty,
+            prerequisites: node.prerequisites,
+            prerequisitesStatus,
+            commonMisconceptions: node.commonMisconceptions?.map(m => m[uiLang]) ?? [],
+            docRefs: node.docRefs ?? [],
+            status: statusOf(learner.concepts[id]),
+            evidenceCount: learner.concepts[id]?.evidenceCount,
+            materials: materialsOut,
+          }
+        })
+        return ok({ concepts: details, materialsMode: mode })
+      },
+    },
+
+    read_learner: {
+      description: 'Read the learner profile. Returns knownLanguages, agentNotesSummary, ready concepts (hard prereqs all demonstrated/mastered), in-progress / blocked / recently-touched concept progress (capped), and the active quiz if any. Call before making teaching decisions; pure conversational replies do not require this.',
+      parameters: z.object({}),
+      execute: async () => {
+        const m = readLearner()
+        const ready = getReadyConcepts(getDemonstratedSet(m)).slice(0, 8).map(n => n.conceptId)
+        const concepts = Object.fromEntries(getRelevantConcepts(m).map(c => [c.conceptId, c]))
+        return ok({
+          knownLanguages: m.knownLanguages,
+          agentNotesSummary: m.agentNotesSummary ?? null,
+          concepts,
+          conceptCount: Object.keys(m.concepts).length,
+          readyConceptIds: ready,
+          activeQuiz: m.activeQuiz ?? null,
+        })
+      },
+    },
+
+    update_learner: {
+      description: 'Single write tool for the learner profile. All fields optional. `concept` updates one concept (status / evidence / notes). `quiz` sets a new quiz (object) or clears it (null). For quiz prompt you may pass only the active uiLang text — the missing locale is copied.',
+      parameters: z.object({
+        knownLanguages: z.array(z.string()).optional(),
+        agentNotesSummary: z.string().max(300).optional(),
+        concept: z.object({
+          id: z.string(),
+          status: z.enum(CONCEPT_STATUSES).optional(),
+          evidence: z.enum(EVIDENCE_OUTCOMES).optional(),
+          notes: z.string().max(280).optional(),
+        }).optional(),
+        quiz: z.union([
+          z.null(),
+          z.object({
+            conceptId: z.string(),
+            prompt: z.object({ zh: z.string().optional(), en: z.string().optional() }),
+            expectedOutput: z.string(),
+            matchMode: z.enum(QUIZ_MATCH_MODES).optional(),
+          }),
+        ]).optional(),
+      }),
+      execute: async (input) => {
+        try {
+          let rejected: string | undefined
+          let touchedConceptId: string | undefined
+          const m = mutateLearner((m) => {
+            if (input.knownLanguages)
+              m.knownLanguages = Array.from(new Set(input.knownLanguages))
+            if (input.agentNotesSummary !== undefined)
+              m.agentNotesSummary = input.agentNotesSummary.length > 0 ? input.agentNotesSummary.slice(0, 300) : undefined
+
+            if (input.concept) {
+              const { id, status, evidence, notes } = input.concept
+              touchedConceptId = id
+
+              if (status === 'mastered') {
+                const node = getConcept(id)
+                const allPrereqsDone = node?.prerequisites.every((p) => {
+                  const s = statusOf(m.concepts[p])
+                  return s === 'demonstrated' || s === 'mastered'
+                }) ?? true
+                if (!allPrereqsDone) {
+                  rejected = `Cannot set ${id} to "mastered" — at least one hard prerequisite is below demonstrated. Teach the prereqs first or use status="demonstrated" for now.`
+                  return
+                }
+              }
+
+              if (status || notes !== undefined)
+                applyConceptStatus(m, id, status ?? statusOf(m.concepts[id]), notes)
+              if (evidence)
+                applyEvidence(m, id, evidence)
+            }
+
+            if (input.quiz !== undefined) {
+              if (input.quiz === null) {
+                m.activeQuiz = null
+              }
+              else {
+                const zh = input.quiz.prompt.zh ?? input.quiz.prompt.en ?? ''
+                const en = input.quiz.prompt.en ?? input.quiz.prompt.zh ?? ''
+                if (!zh && !en) {
+                  rejected = 'Quiz prompt must include at least zh or en.'
+                  return
+                }
+                m.activeQuiz = {
+                  quizId: newQuizId(),
+                  conceptId: input.quiz.conceptId,
+                  prompt: { zh, en },
+                  expectedOutput: input.quiz.expectedOutput,
+                  matchMode: input.quiz.matchMode ?? 'exact',
+                  startedAt: Date.now(),
+                  attempts: 0,
+                }
+              }
+            }
+          })
+
+          bridge.notifyLearnerChange()
+
+          if (rejected)
+            return fail(rejected)
+
+          return ok({
+            knownLanguages: m.knownLanguages,
+            agentNotesSummary: m.agentNotesSummary ?? null,
+            activeQuiz: m.activeQuiz ?? null,
+            concept: touchedConceptId ? m.concepts[touchedConceptId] ?? null : undefined,
+          })
+        }
+        catch (e) {
+          return fail((e as Error).message)
+        }
       },
     },
 
     read_editor_code: {
-      description: 'Read the current Monaco editor content. Set withLineNumbers=true when the user asks about specific lines.',
-      parameters: z.object({
-        withLineNumbers: z.boolean().optional(),
-      }),
+      description: 'Read the current Monaco editor content. Set withLineNumbers=true when discussing specific lines.',
+      parameters: z.object({ withLineNumbers: z.boolean().optional() }),
       execute: async ({ withLineNumbers: lineNumbers }) => {
         try {
           const { model } = getModel(bridge)
@@ -131,7 +279,7 @@ export function createBuiltinToolkit(bridge: TourBridgeValue): Toolkit {
     },
 
     replace_editor_code: {
-      description: 'Replace the entire editor content. Use only for large rewrites; prefer edit_editor_code for small changes.',
+      description: 'Replace the entire editor content. Use only for opening a fresh exercise scaffold or large rewrites — prefer edit_editor_code for small changes.',
       parameters: z.object({
         code: z.string().describe('The new full Cangjie source code'),
       }),
@@ -148,10 +296,10 @@ export function createBuiltinToolkit(bridge: TourBridgeValue): Toolkit {
     },
 
     edit_editor_code: {
-      description: 'Apply a targeted text replacement on the editor. oldString must uniquely identify the location (include surrounding context lines if necessary). Set replaceAll=true only when every occurrence should change.',
+      description: 'Targeted text replacement on the editor. oldString must uniquely identify the location (include surrounding context). Use replaceAll only when every occurrence should change.',
       parameters: z.object({
-        oldString: z.string().describe('Exact substring to find. Include enough context to be unique.'),
-        newString: z.string().describe('Replacement text. Must differ from oldString.'),
+        oldString: z.string(),
+        newString: z.string(),
         replaceAll: z.boolean().optional(),
       }),
       execute: async ({ oldString, newString, replaceAll }) => {
@@ -167,11 +315,8 @@ export function createBuiltinToolkit(bridge: TourBridgeValue): Toolkit {
     },
 
     insert_at_line: {
-      description: 'Insert text before the given 1-based line. Useful for adding new statements or imports.',
-      parameters: z.object({
-        line: z.number().int().min(1),
-        text: z.string(),
-      }),
+      description: 'Insert text before the given 1-based line. Useful for adding imports or new statements.',
+      parameters: z.object({ line: z.number().int().min(1), text: z.string() }),
       execute: async ({ line, text }) => {
         try {
           const { model } = getModel(bridge)
@@ -185,12 +330,64 @@ export function createBuiltinToolkit(bridge: TourBridgeValue): Toolkit {
     },
 
     run_code: {
-      description: 'Compile and run the current editor code. Returns compiler diagnostics and program stdout/stderr.',
+      description: 'Compile and run the current editor code. Returns compiler diagnostics + program stdout/stderr. If a quiz is active, ALSO compares output against the expectation and writes a success / failed evidence entry. NOTE: passing a quiz only records the evidence — you must still decide whether to upgrade concept status.',
       parameters: z.object({}),
       execute: async () => {
         try {
-          const out = await runCodeAndAwait(bridge)
-          return ok(out)
+          const { model } = getModel(bridge)
+          const code = model.getValue()
+          const data = await requestRemoteAction(code, 'run')
+          bridge.editor.setLatestOutput({
+            compilerOutput: data.compiler_output,
+            programOutput: data.bin_output,
+          })
+
+          const base = {
+            compilerOutput: data.compiler_output,
+            compilerCode: data.compiler_code,
+            programOutput: data.bin_output,
+            programCode: data.bin_code,
+          }
+
+          if (!readLearner().activeQuiz)
+            return ok(base)
+
+          let evalResult: ReturnType<typeof evaluateQuiz> | null = null
+          let evaluatedQuiz: ReturnType<typeof readLearner>['activeQuiz'] = null
+          let conceptAfter: ConceptProgress | undefined
+
+          mutateLearner((m) => {
+            if (!m.activeQuiz)
+              return
+            m.activeQuiz.attempts += 1
+            evaluatedQuiz = { ...m.activeQuiz }
+            evalResult = evaluateQuiz(m.activeQuiz, data.bin_output ?? '')
+            applyEvidence(m, m.activeQuiz.conceptId, evalResult.matched ? 'success' : 'failed')
+            if (evalResult.matched)
+              m.activeQuiz = null
+            conceptAfter = m.concepts[evaluatedQuiz.conceptId]
+          })
+
+          bridge.notifyLearnerChange()
+
+          if (!evalResult || !evaluatedQuiz)
+            return ok(base)
+          const er = evalResult as ReturnType<typeof evaluateQuiz>
+          const eq = evaluatedQuiz as NonNullable<ReturnType<typeof readLearner>['activeQuiz']>
+          return ok({
+            ...base,
+            quiz: {
+              quizId: eq.quizId,
+              conceptId: eq.conceptId,
+              attempts: eq.attempts,
+              matched: er.matched,
+              expected: er.expected,
+              actual: er.actual,
+              diff: er.diff,
+              hints: buildQuizHints(er.matched, eq.attempts),
+              conceptAfter: conceptAfter ?? null,
+            },
+          })
         }
         catch (e) {
           return fail((e as Error).message)
@@ -239,7 +436,7 @@ export function createBuiltinToolkit(bridge: TourBridgeValue): Toolkit {
     },
 
     reset_editor_to_initial: {
-      description: 'Reset the editor to the original example code shipped with this section.',
+      description: 'Reset the editor to the initial code stashed when this AI session started. Useful after a botched experiment.',
       parameters: z.object({}),
       execute: async () => {
         try {
@@ -252,24 +449,6 @@ export function createBuiltinToolkit(bridge: TourBridgeValue): Toolkit {
           return fail((e as Error).message)
         }
       },
-    },
-
-    record_progress: {
-      description: 'Persist learner progress for the current section.',
-      parameters: z.object({
-        status: z.enum(['started', 'completed', 'skipped']),
-        note: z.string().optional(),
-      }),
-      execute: async ({ status, note }) => {
-        const entry = recordProgress(sk, status, note)
-        return ok({ entry })
-      },
-    },
-
-    list_progress: {
-      description: 'List progress entries for every section the learner has touched.',
-      parameters: z.object({}),
-      execute: async () => ok({ entries: listProgress() }),
     },
   }
 }
@@ -306,14 +485,4 @@ export async function loadMcpToolkit(): Promise<Toolkit> {
     console.warn('[MCP] failed to load tools', err)
     return {}
   }
-}
-
-export function describeSectionPath(bridge: TourBridgeValue): string {
-  const lang = bridge.lang
-  const s = bridge.section
-  return [
-    s.chapterName[lang] || s.chapterName.zh,
-    s.subChapterName[lang] || s.subChapterName.zh,
-    s.sectionName[lang] || s.sectionName.zh,
-  ].join(' / ')
 }

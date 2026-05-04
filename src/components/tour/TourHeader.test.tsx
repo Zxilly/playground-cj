@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { TourHeader } from '@/components/tour/TourHeader'
-import { TourModeProvider } from '@/components/tour/TourModeContext'
 import { LLMConfigProvider } from '@/contexts/LLMConfigContext'
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -11,9 +10,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   i18n.activate('zh')
   return (
     <I18nProvider i18n={i18n}>
-      <LLMConfigProvider>
-        <TourModeProvider>{children}</TourModeProvider>
-      </LLMConfigProvider>
+      <LLMConfigProvider>{children}</LLMConfigProvider>
     </I18nProvider>
   )
 }

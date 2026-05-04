@@ -24,30 +24,26 @@ export interface TourBridgeValue {
   goToSection: (chapterId: string, subChapterId: string, sectionId: string) => void
 }
 
-const TourBridgeContext = createContext<TourBridgeValue | null>(null)
+export type UILang = 'zh' | 'en'
 
-export function useEditorBridge(): TourBridgeValue {
-  const ctx = use(TourBridgeContext)
-  if (!ctx)
-    throw new Error('useEditorBridge must be used within <TourBridgeProvider>')
-  return ctx
-}
-
-interface ProviderProps {
-  children: React.ReactNode
+export interface AIBridgeValue {
+  editor: EditorBridge
   lang: string
-  section: FlatSection
+  uiLang: UILang
   allSections: FlatSection[]
-  navigate: (index: number) => void
-  goToSection: (chapterId: string, subChapterId: string, sectionId: string) => void
+  /** Tools/UI call this after writing to the learner model so subscribers refresh. */
+  notifyLearnerChange: () => void
+  subscribeLearnerChange: (fn: () => void) => () => void
 }
 
-export function TourBridgeProvider({ children, lang, section, allSections, navigate, goToSection }: ProviderProps) {
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined)
-  const initialCodeRef = useRef<string>(section.code[lang] || section.code.zh || '')
-  const outputRef = useRef({ compilerOutput: '', programOutput: '' })
+const TourBridgeContext = createContext<TourBridgeValue | null>(null)
+const AIBridgeContext = createContext<AIBridgeValue | null>(null)
 
-  const editor = useMemo<EditorBridge>(() => ({
+function createEditorBridge(initialCode: string): EditorBridge {
+  const editorRef: { current: monaco.editor.IStandaloneCodeEditor | undefined } = { current: undefined }
+  const initialCodeRef = { current: initialCode }
+  const outputRef = { current: { compilerOutput: '', programOutput: '' } }
+  return {
     getEditor: () => editorRef.current,
     setEditor: (ed) => { editorRef.current = ed },
     getInitialCode: () => initialCodeRef.current,
@@ -61,7 +57,47 @@ export function TourBridgeProvider({ children, lang, section, allSections, navig
         return
       outputRef.current = { compilerOutput, programOutput }
     },
-  }), [])
+  }
+}
+
+// ---------------- Tour bridge (tutorial mode) ----------------
+
+export function useTourBridge(): TourBridgeValue {
+  const ctx = use(TourBridgeContext)
+  if (!ctx)
+    throw new Error('useTourBridge must be used within <TourBridgeProvider>')
+  return ctx
+}
+
+/**
+ * @deprecated Prefer `useTourBridge()` (tutorial routes) or `useAIBridge()` (AI route).
+ * Retained for code paths that only need editor + lang, regardless of mode.
+ */
+export function useEditorBridge(): { editor: EditorBridge, lang: string } {
+  const tour = use(TourBridgeContext)
+  if (tour)
+    return { editor: tour.editor, lang: tour.lang }
+  const ai = use(AIBridgeContext)
+  if (ai)
+    return { editor: ai.editor, lang: ai.lang }
+  throw new Error('useEditorBridge must be used within <TourBridgeProvider> or <AIBridgeProvider>')
+}
+
+interface TourProviderProps {
+  children: React.ReactNode
+  lang: string
+  section: FlatSection
+  allSections: FlatSection[]
+  navigate: (index: number) => void
+  goToSection: (chapterId: string, subChapterId: string, sectionId: string) => void
+}
+
+export function TourBridgeProvider({ children, lang, section, allSections, navigate, goToSection }: TourProviderProps) {
+  const initialCode = section.code[lang] || section.code.zh || ''
+  const editorRef = useRef<EditorBridge | null>(null)
+  if (editorRef.current === null)
+    editorRef.current = createEditorBridge(initialCode)
+  const editor = editorRef.current
 
   const stableNavigate = useCallback((idx: number) => navigate(idx), [navigate])
   const stableGoToSection = useCallback(
@@ -82,5 +118,64 @@ export function TourBridgeProvider({ children, lang, section, allSections, navig
     <TourBridgeContext value={value}>
       {children}
     </TourBridgeContext>
+  )
+}
+
+// ---------------- AI bridge (autonomous tutor mode) ----------------
+
+export function useAIBridge(): AIBridgeValue {
+  const ctx = use(AIBridgeContext)
+  if (!ctx)
+    throw new Error('useAIBridge must be used within <AIBridgeProvider>')
+  return ctx
+}
+
+interface AIProviderProps {
+  children: React.ReactNode
+  lang: string
+  allSections: FlatSection[]
+  initialCode?: string
+}
+
+export function AIBridgeProvider({ children, lang, allSections, initialCode = '' }: AIProviderProps) {
+  const editorRef = useRef<EditorBridge | null>(null)
+  if (editorRef.current === null)
+    editorRef.current = createEditorBridge(initialCode)
+  const editor = editorRef.current
+
+  const subscribersRef = useRef<Set<() => void> | null>(null)
+  if (subscribersRef.current === null)
+    subscribersRef.current = new Set<() => void>()
+
+  const subscribeLearnerChange = useCallback((fn: () => void) => {
+    subscribersRef.current!.add(fn)
+    return () => {
+      subscribersRef.current!.delete(fn)
+    }
+  }, [])
+  const notifyLearnerChange = useCallback(() => {
+    for (const fn of subscribersRef.current!) {
+      try {
+        fn()
+      }
+      catch {}
+    }
+  }, [])
+
+  const uiLang: UILang = lang === 'en' ? 'en' : 'zh'
+
+  const value = useMemo<AIBridgeValue>(() => ({
+    editor,
+    lang,
+    uiLang,
+    allSections,
+    notifyLearnerChange,
+    subscribeLearnerChange,
+  }), [editor, lang, uiLang, allSections, notifyLearnerChange, subscribeLearnerChange])
+
+  return (
+    <AIBridgeContext value={value}>
+      {children}
+    </AIBridgeContext>
   )
 }

@@ -2,7 +2,6 @@
 
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
 import { Globe, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import { Trans } from '@lingui/react/macro'
@@ -10,57 +9,79 @@ import { t } from '@lingui/core/macro'
 import { LanguagePicker } from './mdx/LanguagePicker'
 import type { FlatSection } from '@/tour/types'
 import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourPath } from '@/lib/siteHref'
-import { useTourMode } from './TourModeContext'
 import { LLMConfigDialog } from './ai/LLMConfigDialog'
 
-interface TourHeaderProps {
+export interface TourHeaderProps {
   lang: string
-  section: FlatSection
+  /** Tutorial mode: shows chapter / sub-chapter / section breadcrumb. Omit on AI route. */
+  section?: FlatSection
+  /** When true, current page IS the AI tutor: render config dialog + omit the switch link. */
+  aiMode?: boolean
 }
 
-export function TourHeader({ lang, section }: TourHeaderProps) {
+export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
   const otherLang = lang === 'en' ? 'zh' : 'en'
   const otherLabel = lang === 'en' ? '中文' : 'EN'
   const tourHomeHref = getTourPath(lang, { servingDomain: getSiteDomain(window.location.host) })
+  const aiHref = getTourPath(lang, { rest: ['ai'], servingDomain: getSiteDomain(window.location.host) })
   const localeHref = getLocaleHref(otherLang, window.location)
   const playgroundHref = getPlaygroundHref(lang, { currentOrigin: window.location.origin })
-  const { mode, setMode } = useTourMode()
-  const aiOn = mode === 'ai'
+
+  // SidebarTrigger throws if rendered outside a SidebarProvider — only the
+  // tutorial route mounts one (via TourLayout). In AI mode the header lives on
+  // a sidebar-less page, so omit the trigger and its separator.
+  const hasSidebar = !aiMode
 
   return (
     <header className="flex h-[50px] shrink-0 items-center gap-2 bg-gradient-to-r from-tour-teal-deep via-tour-teal to-tour-teal-end px-4 text-white shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
-      <SidebarTrigger className="-ml-1 text-white hover:text-white hover:bg-white/10" />
-      <Separator orientation="vertical" className="!h-5 !bg-white/30" />
+      {hasSidebar && (
+        <>
+          <SidebarTrigger className="-ml-1 text-white hover:text-white hover:bg-white/10" />
+          <Separator orientation="vertical" className="!h-5 !bg-white/30" />
+        </>
+      )}
       <a href={tourHomeHref} className="flex items-center shrink-0">
         <Image src="/icon.png" alt="Logo" width={22} height={22} />
       </a>
       <Separator orientation="vertical" className="!h-5 !bg-white/30" />
-      <span className="text-[15px] text-white truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
-        {section.chapterName[lang] ?? section.chapterName.zh}
-        <span className="mx-1.5 text-white/60">/</span>
-        {section.subChapterName[lang] ?? section.subChapterName.zh}
-        <span className="mx-1.5 text-white/60">/</span>
-        <span className="font-semibold">
-          {section.sectionName[lang] ?? section.sectionName.zh}
-        </span>
-      </span>
+      {section
+        ? (
+            <span className="text-[15px] text-white truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
+              {section.chapterName[lang] ?? section.chapterName.zh}
+              <span className="mx-1.5 text-white/60">/</span>
+              {section.subChapterName[lang] ?? section.subChapterName.zh}
+              <span className="mx-1.5 text-white/60">/</span>
+              <span className="font-semibold">
+                {section.sectionName[lang] ?? section.sectionName.zh}
+              </span>
+            </span>
+          )
+        : (
+            <span className="text-[15px] text-white truncate font-semibold [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
+              <Trans>AI 助教</Trans>
+            </span>
+          )}
       <div className="flex items-center gap-1 ml-auto shrink-0">
-        <div
-          className={`flex items-center gap-1.5 rounded-full pl-2.5 pr-1 py-1 transition-all ${aiOn ? 'bg-white/20 ring-1 ring-yellow-200/40 shadow-inner' : 'bg-white/5 hover:bg-white/10'}`}
-          title={aiOn ? t`关闭 AI 模式` : t`开启 AI 模式`}
-        >
-          <label className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white/95 select-none cursor-pointer">
-            <Sparkles className={`size-3.5 ${aiOn ? 'text-yellow-200 drop-shadow-[0_0_6px_rgba(254,240,138,0.6)]' : 'text-white/70'}`} />
-            <span className="hidden sm:inline"><Trans>AI 模式</Trans></span>
-            <Switch
-              checked={aiOn}
-              onCheckedChange={(v: boolean) => setMode(v ? 'ai' : 'tutorial')}
-              className="data-[state=checked]:bg-yellow-300 data-[state=unchecked]:bg-white/30"
-              aria-label={t`AI 模式`}
-            />
-          </label>
-          {aiOn && <LLMConfigDialog />}
-        </div>
+        {aiMode
+          ? (
+              <div className="flex items-center gap-1.5 rounded-full pl-2.5 pr-1 py-1 bg-white/20 ring-1 ring-yellow-200/40 shadow-inner">
+                <Sparkles className="size-3.5 text-yellow-200 drop-shadow-[0_0_6px_rgba(254,240,138,0.6)]" />
+                <span className="hidden sm:inline text-[12px] font-medium text-white/95">
+                  <Trans>自主教学</Trans>
+                </span>
+                <LLMConfigDialog />
+              </div>
+            )
+          : (
+              <a
+                href={aiHref}
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/5 hover:bg-white/15 transition-colors text-[12px] font-medium text-white/95"
+                title={t`切换到 AI 助教`}
+              >
+                <Sparkles className="size-3.5 text-white/70" />
+                <span className="hidden sm:inline"><Trans>AI 助教</Trans></span>
+              </a>
+            )}
         <Separator orientation="vertical" className="!h-5 !bg-white/30 mx-1" />
         <LanguagePicker />
         <Separator orientation="vertical" className="!h-5 !bg-white/30 mx-1" />
