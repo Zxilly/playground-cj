@@ -38,11 +38,11 @@ interface QuizEvaluation {
   diff?: string
 }
 
-function now(value?: number): number {
+function resolveActionTime(value?: number): number {
   return value ?? Date.now()
 }
 
-function id(prefix: string, createdAt: number): string {
+function createStreamItemId(prefix: string, createdAt: number): string {
   return `${prefix}:${createdAt}:${Math.random().toString(36).slice(2, 8)}`
 }
 
@@ -50,7 +50,7 @@ function trimTrailing(text: string): string {
   return text.replace(/\s+$/u, '')
 }
 
-function conceptState(conceptId: string, status: ConceptState['status'], createdAt: number): ConceptState {
+function createConceptState(conceptId: string, status: ConceptState['status'], createdAt: number): ConceptState {
   return { conceptId, status, updatedAt: createdAt }
 }
 
@@ -58,7 +58,12 @@ function summarize(text: string): string {
   return text.length > 320 ? `${text.slice(0, 317)}...` : text
 }
 
-function ensureConcept(session: ClassroomSession, conceptId: string, status: ConceptState['status'], createdAt: number): ClassroomSession {
+function transitionConceptStatus(
+  session: ClassroomSession,
+  conceptId: string,
+  status: ConceptState['status'],
+  createdAt: number,
+): ClassroomSession {
   const current = session.learner.concepts[conceptId]
   if (current && current.status === status)
     return session
@@ -69,7 +74,7 @@ function ensureConcept(session: ClassroomSession, conceptId: string, status: Con
       ...session.learner,
       concepts: {
         ...session.learner.concepts,
-        [conceptId]: conceptState(conceptId, status, createdAt),
+        [conceptId]: createConceptState(conceptId, status, createdAt),
       },
     },
   }
@@ -128,7 +133,70 @@ export function evaluateQuizOutput(quiz: ClassroomQuiz, output: string): QuizEva
   }
 }
 
-function completeQuiz(session: ClassroomSession, outcome: EvidenceOutcome, createdAt: number): ClassroomSession {
+function transitionLessonAuthorStarted(session: ClassroomSession): ClassroomSession {
+  return { ...session, pendingAction: 'lesson_author' }
+}
+
+function transitionLessonContentAppended(
+  session: ClassroomSession,
+  blocks: LessonContentBlock[],
+  createdAt: number,
+): ClassroomSession {
+  return {
+    ...session,
+    phase: 'teach',
+    pendingAction: 'none',
+    sessionSummary: summarize(`LessonAuthor appended ${blocks.length} lesson block(s).`),
+    stream: [
+      ...session.stream,
+      {
+        id: createStreamItemId('lesson', createdAt),
+        type: 'lesson_blocks',
+        blocks,
+        createdAt,
+      },
+    ],
+  }
+}
+
+function transitionQuizActivated(
+  session: ClassroomSession,
+  quizBlock: Extract<LessonContentBlock, { type: 'quiz' }>,
+  createdAt: number,
+): ClassroomSession {
+  const quiz: ClassroomQuiz = {
+    conceptId: quizBlock.conceptId,
+    prompt: quizBlock.prompt,
+    starterCode: quizBlock.starterCode,
+    expectedOutput: quizBlock.expectedOutput,
+    matchMode: quizBlock.matchMode ?? 'exact',
+    status: 'active',
+    createdAt,
+  }
+
+  return transitionConceptStatus({
+    ...session,
+    phase: 'practice',
+    pendingAction: 'user',
+    currentQuiz: quiz,
+    sessionSummary: summarize(`Practice quiz active for ${quiz.conceptId}.`),
+    stream: [
+      ...session.stream,
+      {
+        id: createStreamItemId('quiz', createdAt),
+        type: 'quiz',
+        quiz,
+        createdAt,
+      },
+    ],
+  }, quiz.conceptId, 'practicing', createdAt)
+}
+
+function transitionRunStarted(session: ClassroomSession): ClassroomSession {
+  return { ...session, pendingAction: 'runner' }
+}
+
+function transitionQuizCompleted(session: ClassroomSession, outcome: EvidenceOutcome, createdAt: number): ClassroomSession {
   const quiz = session.currentQuiz
   if (!quiz || quiz.status !== 'active')
     return session
@@ -144,7 +212,7 @@ function completeQuiz(session: ClassroomSession, outcome: EvidenceOutcome, creat
   }
   const conceptStatus: ConceptState['status'] = outcome === 'success' ? 'demonstrated' : 'practicing'
 
-  const updated = ensureConcept({
+  const updated = transitionConceptStatus({
     ...session,
     currentQuiz: { ...quiz, status: outcome },
     pendingAction: 'lesson_author',
@@ -170,7 +238,7 @@ function completeQuiz(session: ClassroomSession, outcome: EvidenceOutcome, creat
           : item,
       ),
       {
-        id: id('progress', createdAt),
+        id: createStreamItemId('progress', createdAt),
         type: 'progress_update',
         conceptId: quiz.conceptId,
         outcome,
@@ -183,7 +251,11 @@ function completeQuiz(session: ClassroomSession, outcome: EvidenceOutcome, creat
   return updated
 }
 
-function finishRun(session: ClassroomSession, result: RunResult, createdAt: number): { session: ClassroomSession, matched: boolean | undefined } {
+function transitionRunFinished(
+  session: ClassroomSession,
+  result: RunResult,
+  createdAt: number,
+): { session: ClassroomSession, matched: boolean | undefined } {
   const matched = session.currentQuiz?.status === 'active'
     ? result.ok && evaluateQuizOutput(session.currentQuiz, result.stdout).matched
     : undefined
@@ -198,7 +270,7 @@ function finishRun(session: ClassroomSession, result: RunResult, createdAt: numb
       stream: [
         ...session.stream,
         {
-          id: id('run', createdAt),
+          id: createStreamItemId('run', createdAt),
           type: 'run_result',
           result,
           matched,
@@ -209,139 +281,124 @@ function finishRun(session: ClassroomSession, result: RunResult, createdAt: numb
   }
 }
 
+function transitionQuizRunFinished(session: ClassroomSession, result: RunResult, createdAt: number): ClassroomSession {
+  const finished = transitionRunFinished(session, result, createdAt)
+  return finished.matched
+    ? transitionQuizCompleted(finished.session, 'success', createdAt)
+    : finished.session
+}
+
+function transitionLessonAuthorFailed(session: ClassroomSession, error: string, createdAt: number): ClassroomSession {
+  const event: ClassroomEvent = {
+    type: 'lesson_author_error',
+    summary: error,
+    createdAt,
+  }
+
+  return {
+    ...session,
+    pendingAction: 'user',
+    sessionSummary: summarize(`LessonAuthor failed: ${error}`),
+    stream: [
+      ...session.stream,
+      {
+        id: createStreamItemId('author-error', createdAt),
+        type: 'system_event',
+        event,
+        createdAt,
+      },
+    ],
+  }
+}
+
+function transitionLearningNotesUpdated(session: ClassroomSession, notes: string): ClassroomSession {
+  return {
+    ...session,
+    learner: {
+      ...session.learner,
+      learningNotes: notes,
+    },
+  }
+}
+
+function transitionChatIntentQueued(
+  session: ClassroomSession,
+  intent: string,
+  summary: string,
+  createdAt: number,
+): ClassroomSession {
+  const event: ClassroomEvent = {
+    type: 'chat_intent',
+    intent,
+    summary,
+    createdAt,
+  }
+
+  return {
+    ...session,
+    pendingAction: 'lesson_author',
+    sessionSummary: summarize(`Chat intent queued: ${summary}`),
+    eventQueue: [...session.eventQueue, event],
+    stream: [
+      ...session.stream,
+      {
+        id: createStreamItemId('event', createdAt),
+        type: 'system_event',
+        event,
+        createdAt,
+      },
+    ],
+  }
+}
+
+function transitionEventConsumed(session: ClassroomSession): ClassroomSession {
+  return { ...session, eventQueue: session.eventQueue.slice(1) }
+}
+
 export function classroomReducer(session: ClassroomSession, action: ClassroomAction): ClassroomSession {
-  const createdAt = now(action.now)
+  const createdAt = resolveActionTime(action.now)
 
   switch (action.type) {
     case 'BATCH':
       return action.actions.reduce((nextSession, childAction) => classroomReducer(nextSession, childAction), session)
 
     case 'LESSON_AUTHOR_STARTED':
-      return { ...session, pendingAction: 'lesson_author' }
+      return transitionLessonAuthorStarted(session)
 
     case 'APPEND_LESSON_CONTENT':
-      return {
-        ...session,
-        phase: 'teach',
-        pendingAction: 'none',
-        sessionSummary: summarize(`LessonAuthor appended ${action.blocks.length} lesson block(s).`),
-        stream: [
-          ...session.stream,
-          {
-            id: id('lesson', createdAt),
-            type: 'lesson_blocks',
-            blocks: action.blocks,
-            createdAt,
-          },
-        ],
-      }
+      return transitionLessonContentAppended(session, action.blocks, createdAt)
 
-    case 'SET_CURRENT_QUIZ': {
-      const quiz: ClassroomQuiz = {
-        conceptId: action.quiz.conceptId,
-        prompt: action.quiz.prompt,
-        starterCode: action.quiz.starterCode,
-        expectedOutput: action.quiz.expectedOutput,
-        matchMode: action.quiz.matchMode ?? 'exact',
-        status: 'active',
-        createdAt,
-      }
-      return ensureConcept({
-        ...session,
-        phase: 'practice',
-        pendingAction: 'user',
-        currentQuiz: quiz,
-        sessionSummary: summarize(`Practice quiz active for ${quiz.conceptId}.`),
-        stream: [
-          ...session.stream,
-          {
-            id: id('quiz', createdAt),
-            type: 'quiz',
-            quiz,
-            createdAt,
-          },
-        ],
-      }, quiz.conceptId, 'practicing', createdAt)
-    }
+    case 'SET_CURRENT_QUIZ':
+      return transitionQuizActivated(session, action.quiz, createdAt)
 
     case 'RUN_STARTED':
-      return { ...session, pendingAction: 'runner' }
+      return transitionRunStarted(session)
 
     case 'RUN_FINISHED':
-      return finishRun(session, action.result, createdAt).session
+      return transitionRunFinished(session, action.result, createdAt).session
 
-    case 'QUIZ_RUN_FINISHED': {
-      const finished = finishRun(session, action.result, createdAt)
-      return finished.matched
-        ? completeQuiz(finished.session, 'success', createdAt)
-        : finished.session
-    }
+    case 'QUIZ_RUN_FINISHED':
+      return transitionQuizRunFinished(session, action.result, createdAt)
 
     case 'QUIZ_SUCCESS':
-      return completeQuiz(session, 'success', createdAt)
+      return transitionQuizCompleted(session, 'success', createdAt)
 
     case 'QUIZ_SKIP':
-      return completeQuiz(session, 'skip', createdAt)
+      return transitionQuizCompleted(session, 'skip', createdAt)
 
-    case 'LESSON_AUTHOR_FAILED': {
-      const event: ClassroomEvent = {
-        type: 'lesson_author_error',
-        summary: action.error,
-        createdAt,
-      }
-      return {
-        ...session,
-        pendingAction: 'user',
-        sessionSummary: summarize(`LessonAuthor failed: ${action.error}`),
-        stream: [
-          ...session.stream,
-          {
-            id: id('author-error', createdAt),
-            type: 'system_event',
-            event,
-            createdAt,
-          },
-        ],
-      }
-    }
+    case 'LESSON_AUTHOR_FAILED':
+      return transitionLessonAuthorFailed(session, action.error, createdAt)
 
     case 'SET_PHASE':
       return { ...session, phase: action.phase }
 
     case 'SET_LEARNING_NOTES':
-      return {
-        ...session,
-        learner: {
-          ...session.learner,
-          learningNotes: action.notes,
-        },
-      }
+      return transitionLearningNotesUpdated(session, action.notes)
 
-    case 'EMIT_CHAT_INTENT': {
-      const event: ClassroomEvent = {
-        type: 'chat_intent',
-        intent: action.intent,
-        summary: action.summary,
-        createdAt,
-      }
-      return {
-        ...session,
-        pendingAction: 'lesson_author',
-        sessionSummary: summarize(`Chat intent queued: ${action.summary}`),
-        eventQueue: [...session.eventQueue, event],
-        stream: [
-          ...session.stream,
-          {
-            id: id('event', createdAt),
-            type: 'system_event',
-            event,
-            createdAt,
-          },
-        ],
-      }
-    }
+    case 'EMIT_CHAT_INTENT':
+      return transitionChatIntentQueued(session, action.intent, action.summary, createdAt)
 
     case 'CONSUME_EVENT':
-      return { ...session, eventQueue: session.eventQueue.slice(1) }
+      return transitionEventConsumed(session)
   }
 }

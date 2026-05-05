@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { notFound } from 'next/navigation'
-import { LinguiClientProvider } from '@/components/LinguiClientProvider'
+import { LinguiClientProvider } from '@/modules/i18n/LinguiClientProvider'
 import { isLocale } from '@/lib/i18n'
 
 interface LayoutProps {

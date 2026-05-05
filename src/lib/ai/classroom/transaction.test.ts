@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { classroomReducer, createInitialClassroomSession } from './reducer'
 import { createClassroomTransaction } from './transaction'
 import type { ClassroomAction } from './reducer'
-import type { AIBridgeValue } from '@/components/tour/EditorBridgeContext'
+import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
 
 function createBridge() {
   let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
@@ -10,7 +10,7 @@ function createBridge() {
     session = classroomReducer(session, action)
   })
 
-  const bridge: AIBridgeValue = {
+  const bridge: AIClassroomBridgeValue = {
     editor: {
       getEditor: () => undefined,
       setEditor: () => {},

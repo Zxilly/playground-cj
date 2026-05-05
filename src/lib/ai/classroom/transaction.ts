@@ -1,15 +1,15 @@
 import { classroomReducer } from './reducer'
 import type { ClassroomAction } from './reducer'
 import type { ClassroomSession } from './types'
-import type { AIBridgeValue, AIClassroomBridge } from '@/components/tour/EditorBridgeContext'
+import type { AIClassroomBridgeValue, AIClassroomStateBridge } from '@/lib/ai/classroom/bridge'
 
 export interface ClassroomTransaction {
-  bridge: AIBridgeValue
+  bridge: AIClassroomBridgeValue
   commit: (extraActions?: ClassroomAction[]) => void
   discard: () => void
 }
 
-export function createClassroomTransaction(bridge: AIBridgeValue): ClassroomTransaction {
+export function createClassroomTransaction(bridge: AIClassroomBridgeValue): ClassroomTransaction {
   const baseClassroom = bridge.classroom
   if (!baseClassroom)
     throw new Error('Cannot create classroom transaction without classroom bridge')
@@ -20,7 +20,7 @@ export function createClassroomTransaction(bridge: AIBridgeValue): ClassroomTran
     return actions.reduce((nextSession, action) => classroomReducer(nextSession, action), baseSession)
   }
 
-  const transactionalClassroom: AIClassroomBridge = {
+  const transactionalClassroom: AIClassroomStateBridge = {
     ...baseClassroom,
     getSession: () => reduceBuffered(baseClassroom.getSession()),
     dispatch: (action: ClassroomAction) => {

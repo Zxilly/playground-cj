@@ -1,4 +1,4 @@
-import type { AIBridgeValue } from '@/components/tour/EditorBridgeContext'
+import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
 import { createLessonAuthorAgent, createLessonAuthorEventEnvelope } from './lesson-author-agent'
 import type { ClassroomEvent } from './classroom/types'
 import type { LLMConfig } from './model-provider'
@@ -7,7 +7,7 @@ import type { Toolkit } from '@assistant-ui/react'
 interface LessonAuthorRunnerOptions {
   config: Partial<LLMConfig>
   toolkit: Toolkit
-  bridge: AIBridgeValue
+  bridge: AIClassroomBridgeValue
   event: ClassroomEvent
   abortSignal?: AbortSignal
   onProgress?: (chunk: string) => void

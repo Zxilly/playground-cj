@@ -1,6 +1,6 @@
 import { flattenSections, loadTourData } from '@/tour/loader'
-import TourAIWrapper from '@/components/tour/ai/TourAIWrapper'
-import { createAIClassroomSections } from '@/components/tour/ai/section-payload'
+import TourAIWrapper from '@/features/tour-ai/components/TourAIWrapper'
+import { createAIClassroomSections } from '@/features/tour-ai/data/section-payload'
 import type { Metadata } from 'next'
 
 interface PageProps {

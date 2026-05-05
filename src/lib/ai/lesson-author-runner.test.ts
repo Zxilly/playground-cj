@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AIBridgeValue } from '@/components/tour/EditorBridgeContext'
+import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
 import type { ClassroomEvent } from './classroom/types'
 import type { LLMConfig } from './model-provider'
 import type { Toolkit } from '@assistant-ui/react'
@@ -39,7 +39,7 @@ describe('runLessonAuthorStep', () => {
     await runLessonAuthorStep({
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
       toolkit: {} as Toolkit,
-      bridge: {} as AIBridgeValue,
+      bridge: {} as AIClassroomBridgeValue,
       event,
       onProgress: chunk => progress.push(chunk),
     })

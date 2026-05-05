@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { fontFamily } from '@/app/font'
 import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
-import TrackingScript from '@/components/TrackingScript'
+import TrackingScript from '@/modules/analytics/TrackingScript'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
 export const metadata: Metadata = {
