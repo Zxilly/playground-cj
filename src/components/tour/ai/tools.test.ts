@@ -1,128 +1,149 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Toolkit } from '@assistant-ui/react'
 import type { AIBridgeValue } from '@/components/tour/EditorBridgeContext'
-import { useLearnerStore } from '@/stores/learner'
+import { createInitialClassroomSession } from '@/lib/ai/classroom/reducer'
+import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
+import type { ClassroomSession } from '@/lib/ai/classroom/types'
 
-// Skip the monaco wrapper that tools.ts imports — it pulls in CSS modules that
-// vitest can't parse. We only exercise quiz-related tools, so monaco is never
-// touched at runtime here either.
-vi.mock('@codingame/monaco-vscode-editor-api', () => ({}))
-// `@/service/run` chains through `@/const` which imports `.cj` example files —
-// vite tries to parse those and chokes. Stub the service since the quiz tools
-// never call it.
-vi.mock('@/service/run', () => ({
-  requestRemoteAction: vi.fn(),
+vi.mock('@codingame/monaco-vscode-editor-api', () => ({
+  editor: {
+    setModelMarkers: vi.fn(),
+  },
+  MarkerSeverity: {
+    Hint: 1,
+    Info: 2,
+    Warning: 4,
+    Error: 8,
+  },
+  Range: class {
+    constructor(
+      public startLineNumber: number,
+      public startColumn: number,
+      public endLineNumber: number,
+      public endColumn: number,
+    ) {}
+  },
 }))
 
-const fakeBridge = {
-  uiLang: 'zh',
+let session: ClassroomSession = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+const dispatch = vi.fn((action: ClassroomAction) => {
+  session = { ...session, pendingAction: action.type === 'EMIT_CHAT_INTENT' ? 'lesson_author' : session.pendingAction }
+})
+const replaceChatAnnotations = vi.fn()
+const clearChatAnnotations = vi.fn()
+
+const model = {
+  getValue: () => 'main() {\n    println(3)\n}',
+  getLineCount: () => 3,
+  getLineContent: (line: number) => line === 2 ? '    println(3)' : '',
+  getLineMaxColumn: () => 15,
+  getLanguageId: () => 'cangjie',
+  getVersionId: () => 7,
+  uri: 'inmemory://test.cj',
+}
+
+const editor = {
+  getModel: () => model,
+  revealLineInCenter: vi.fn(),
+}
+
+const bridge = {
   lang: 'zh',
+  uiLang: 'zh',
   allSections: [],
   editor: {
-    getEditor: () => null,
+    getEditor: () => editor,
+    setEditor: vi.fn(),
+  },
+  classroom: {
+    getSession: () => session,
+    dispatch,
+    replaceChatAnnotations,
+    clearChatAnnotations,
   },
 } as unknown as AIBridgeValue
 
-let toolkit: Toolkit
-
 afterEach(() => {
-  useLearnerStore.getState().clear()
-  if (typeof window !== 'undefined')
-    window.localStorage.removeItem('tour-ai:learner:v1')
+  session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+  dispatch.mockClear()
+  replaceChatAnnotations.mockClear()
+  clearChatAnnotations.mockClear()
+  editor.revealLineInCenter.mockClear()
 })
 
-async function loadToolkit() {
-  if (!toolkit) {
-    const mod = await import('./tools')
-    toolkit = mod.createBuiltinToolkit(fakeBridge)
-  }
-  return toolkit
-}
+describe('ai classroom toolkits', () => {
+  it('chatAgent toolkit exposes only chat-safe tools', async () => {
+    const { createChatAgentToolkit } = await import('./tools')
+    const toolkit = createChatAgentToolkit(bridge)
 
-describe('builtin toolkit / quiz tools', () => {
-  it('set_quiz writes the active quiz with both locales when only one is provided', async () => {
-    const tk = await loadToolkit()
-    const result = await tk.set_quiz!.execute!({
-      conceptId: 'cj.var.basic',
-      prompt: { zh: '把 1 加到 2 并打印结果' },
-      expectedOutput: '3',
-    }, { toolCallId: 't', abortSignal: new AbortController().signal, human: async () => undefined }) as { ok: boolean, activeQuiz?: { prompt: { zh: string, en: string }, conceptId: string, attempts: number } }
-
-    expect(result.ok).toBe(true)
-    const stored = useLearnerStore.getState().learner.activeQuiz
-    expect(stored).not.toBeNull()
-    expect(stored?.conceptId).toBe('cj.var.basic')
-    expect(stored?.prompt.zh).toBe('把 1 加到 2 并打印结果')
-    expect(stored?.prompt.en).toBe('把 1 加到 2 并打印结果') // auto-copied
-    expect(stored?.attempts).toBe(0)
-    expect(stored?.matchMode).toBe('exact')
+    expect(Object.keys(toolkit).sort()).toEqual([
+      'clear_editor_annotations',
+      'emit_classroom_event',
+      'highlight_editor_lines',
+      'mcp_call_tool',
+      'read_classroom_state',
+      'read_concepts',
+      'read_current_quiz',
+      'read_editor_code',
+      'read_last_run',
+      'reveal_editor_line',
+      'underline_editor_range',
+    ].sort())
+    expect(toolkit.append_lesson_content).toBeUndefined()
+    expect(toolkit.set_current_quiz).toBeUndefined()
+    expect(toolkit.set_learning_notes).toBeUndefined()
   })
 
-  it('set_quiz refuses an empty prompt', async () => {
-    const tk = await loadToolkit()
-    const result = await tk.set_quiz!.execute!({
-      conceptId: 'cj.var.basic',
-      prompt: {},
-      expectedOutput: '3',
-    }, { toolCallId: 't', abortSignal: new AbortController().signal, human: async () => undefined }) as { ok: boolean, error?: string }
+  it('lessonAuthor toolkit can append content and set quiz', async () => {
+    const { createLessonAuthorToolkit } = await import('./tools')
+    const toolkit = createLessonAuthorToolkit(bridge)
 
-    expect(result.ok).toBe(false)
-    expect(result.error).toMatch(/prompt/i)
-    expect(useLearnerStore.getState().learner.activeQuiz ?? null).toBeNull()
-  })
-
-  it('clear_quiz nulls the active quiz', async () => {
-    const tk = await loadToolkit()
-    await tk.set_quiz!.execute!({
-      conceptId: 'cj.var.basic',
-      prompt: { zh: 'x', en: 'x' },
-      expectedOutput: '3',
+    await toolkit.append_lesson_content!.execute!({
+      blocks: [{ type: 'heading', text: 'Bindings', level: 2 }],
     }, { toolCallId: 't1', abortSignal: new AbortController().signal, human: async () => undefined })
-    expect(useLearnerStore.getState().learner.activeQuiz).not.toBeNull()
+    await toolkit.set_current_quiz!.execute!({
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.bindings.let',
+        prompt: [{ text: 'Print 3.' }],
+        starterCode: 'main() {\n    println(0)\n}',
+        expectedOutput: '3',
+      },
+    }, { toolCallId: 't2', abortSignal: new AbortController().signal, human: async () => undefined })
 
-    const result = await tk.clear_quiz!.execute!({}, { toolCallId: 't2', abortSignal: new AbortController().signal, human: async () => undefined }) as { ok: boolean, activeQuiz: unknown }
-    expect(result.ok).toBe(true)
-    expect(result.activeQuiz).toBeNull()
-    expect(useLearnerStore.getState().learner.activeQuiz).toBeNull()
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'APPEND_LESSON_CONTENT',
+    }))
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'SET_CURRENT_QUIZ',
+      quiz: expect.objectContaining({ conceptId: 'cj.bindings.let' }),
+    }))
   })
 
-  it('clear_quiz does not notify subscribers when no quiz is active', async () => {
-    const tk = await loadToolkit()
-    useLearnerStore.getState().setActiveQuiz(null)
-    const listener = vi.fn()
-    const unsubscribe = useLearnerStore.subscribe(listener)
+  it('chatAgent can emit intent and replace editor annotations without writing evidence', async () => {
+    const { createChatAgentToolkit } = await import('./tools')
+    const toolkit = createChatAgentToolkit(bridge)
 
-    try {
-      const result = await tk.clear_quiz!.execute!({}, { toolCallId: 't3', abortSignal: new AbortController().signal, human: async () => undefined }) as { ok: boolean, activeQuiz: unknown }
+    await toolkit.emit_classroom_event!.execute!({
+      intent: 'go_deeper',
+      summary: 'Learner asked for a deeper explanation.',
+    }, { toolCallId: 't1', abortSignal: new AbortController().signal, human: async () => undefined })
+    await toolkit.highlight_editor_lines!.execute!({
+      startLine: 2,
+      label: 'print statement',
+    }, { toolCallId: 't2', abortSignal: new AbortController().signal, human: async () => undefined })
 
-      expect(result.ok).toBe(true)
-      expect(result.activeQuiz).toBeNull()
-      expect(listener).not.toHaveBeenCalled()
-    }
-    finally {
-      unsubscribe()
-    }
-  })
-
-  it('set_quiz Zod schema rejects malformed (stringified) input', async () => {
-    const tk = await loadToolkit()
-    const schema = tk.set_quiz!.parameters as { safeParse?: (v: unknown) => { success: boolean } }
-    expect(typeof schema.safeParse).toBe('function')
-    // Model used to send the entire payload as a JSON string. With Zod hooked
-    // into ai-sdk's validate path this is now caught at the schema boundary.
-    const stringified = '{"conceptId":"cj.var.basic","prompt":{"zh":"x"},"expectedOutput":"3"}'
-    expect(schema.safeParse!(stringified).success).toBe(false)
-    expect(schema.safeParse!({ conceptId: 'cj.var.basic', prompt: { zh: 'x' }, expectedOutput: '3' }).success).toBe(true)
-  })
-
-  it('update_learner schema no longer carries a quiz field', async () => {
-    const tk = await loadToolkit()
-    const schema = tk.update_learner!.parameters as { _def?: { shape?: () => Record<string, unknown> }, shape?: Record<string, unknown> }
-    // Zod v4 puts the shape under either `_def.shape()` or `shape` depending
-    // on object kind; check both spellings without relying on internals.
-    const shape = (schema as { shape?: Record<string, unknown> }).shape
-      ?? (schema as { _def?: { shape?: () => Record<string, unknown> } })._def?.shape?.()
-      ?? {}
-    expect(Object.keys(shape)).not.toContain('quiz')
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'EMIT_CHAT_INTENT',
+      intent: 'go_deeper',
+    }))
+    expect(replaceChatAnnotations).toHaveBeenCalledWith([
+      expect.objectContaining({
+        kind: 'highlight',
+        startLine: 2,
+        modelVersionId: 7,
+        targetSnippet: 'println(3)',
+      }),
+    ])
+    expect(session.learner.evidence).toEqual([])
   })
 })

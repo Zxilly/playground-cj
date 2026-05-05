@@ -4,6 +4,9 @@
 import { createContext, use, useCallback, useMemo, useRef } from 'react'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import type { FlatSection } from '@/tour/types'
+import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
+import type { ClassroomSession } from '@/lib/ai/classroom/types'
+import type { NewChatAnnotation } from '@/lib/ai/classroom/editor-annotations'
 
 /**
  * Thin wrapper around the Monaco editor instance ref. Reactive state lives in
@@ -22,11 +25,19 @@ export interface TourBridgeValue {
 
 export type UILang = 'zh' | 'en'
 
+export interface AIClassroomBridge {
+  getSession: () => ClassroomSession
+  dispatch: (action: ClassroomAction) => void
+  replaceChatAnnotations: (annotations: NewChatAnnotation[]) => void
+  clearChatAnnotations: () => void
+}
+
 export interface AIBridgeValue {
   editor: EditorBridge
   lang: string
   uiLang: UILang
   allSections: FlatSection[]
+  classroom?: AIClassroomBridge
 }
 
 const TourBridgeContext = createContext<TourBridgeValue | null>(null)
@@ -92,15 +103,16 @@ interface AIProviderProps {
   children: React.ReactNode
   lang: string
   allSections: FlatSection[]
+  classroom?: AIClassroomBridge
 }
 
-export function AIBridgeProvider({ children, lang, allSections }: AIProviderProps) {
+export function AIBridgeProvider({ children, lang, allSections, classroom }: AIProviderProps) {
   const editor = useStableEditorBridge()
   const uiLang: UILang = lang === 'en' ? 'en' : 'zh'
 
   const value = useMemo<AIBridgeValue>(
-    () => ({ editor, lang, uiLang, allSections }),
-    [editor, lang, uiLang, allSections],
+    () => ({ editor, lang, uiLang, allSections, classroom }),
+    [editor, lang, uiLang, allSections, classroom],
   )
 
   return (

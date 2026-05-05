@@ -2,29 +2,23 @@
 
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import {
+
+  normaliseLLMConfig,
+  resolveProviderDefaults,
+} from '@/lib/ai/model-provider'
+import type { LLMConfig } from '@/lib/ai/model-provider'
 
 export type LLMKeySource = 'auto' | 'user'
+export type { LLMConfig } from '@/lib/ai/model-provider'
 
-export interface LLMConfig {
-  baseURL: string
-  apiKey: string
-  model: string
-}
-
-const PUBLIC_LLM_BASE_URL = process.env.NEXT_PUBLIC_LLM_BASE_URL || 'https://llm.learningman.top/v1'
-const DEFAULT_MODEL = process.env.NEXT_PUBLIC_LLM_DEFAULT_MODEL || 'gpt-4o-mini'
-
-export const DEFAULT_LLM_CONFIG: LLMConfig = {
-  baseURL: PUBLIC_LLM_BASE_URL,
-  apiKey: '',
-  model: DEFAULT_MODEL,
-}
+export const DEFAULT_LLM_CONFIG: LLMConfig = resolveProviderDefaults('openai-compatible')
 
 interface LLMConfigState {
   readonly config: Readonly<LLMConfig>
   readonly keySource: LLMKeySource
   readonly setConfig: (next: LLMConfig) => void
-  readonly applyAutoKey: (next: { baseURL?: string, apiKey: string, model?: string }) => void
+  readonly applyAutoKey: (next: Partial<LLMConfig> & { apiKey: string }) => void
   readonly reset: () => void
 }
 
@@ -33,17 +27,13 @@ export const useLLMConfigStore = create<LLMConfigState>()(
     set => ({
       config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
-      setConfig: next => set({ config: next, keySource: 'user' }),
-      applyAutoKey: ({ baseURL, apiKey, model }) =>
+      setConfig: next => set({ config: normaliseLLMConfig(next), keySource: 'user' }),
+      applyAutoKey: next =>
         set((state) => {
           if (state.keySource !== 'auto')
             return state
           return {
-            config: {
-              baseURL: baseURL ?? state.config.baseURL,
-              apiKey,
-              model: model ?? state.config.model,
-            },
+            config: normaliseLLMConfig({ ...state.config, ...next }),
           }
         }),
       reset: () => set({ config: DEFAULT_LLM_CONFIG, keySource: 'auto' }),
@@ -52,6 +42,14 @@ export const useLLMConfigStore = create<LLMConfigState>()(
       name: 'tour-ai:config',
       storage: createJSONStorage(() => localStorage),
       partialize: state => ({ config: state.config, keySource: state.keySource }),
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<LLMConfigState>
+        return {
+          ...current,
+          ...saved,
+          config: normaliseLLMConfig(saved.config ?? current.config),
+        }
+      },
     },
   ),
 )

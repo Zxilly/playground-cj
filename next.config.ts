@@ -68,6 +68,9 @@ const LSP_VERSION = detectLspVersion()
 const CJO_MODULES = collectCjoModules()
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: [
+    '127.0.0.1',
+  ],
   experimental: {
     swcPlugins: [
       ['@lingui/swc-plugin', {

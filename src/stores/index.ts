@@ -23,7 +23,6 @@
 export { ALL_LANGUAGES, useIsLanguageKnown, useKnownLanguagesStore } from './knownLanguages'
 export type { Language } from './knownLanguages'
 
-export { readLearner, useLearnerStore } from './learner'
 export { DEFAULT_LLM_CONFIG, useLLMConfig, useLLMConfigStore } from './llmConfig'
 
 export type { LLMConfig } from './llmConfig'

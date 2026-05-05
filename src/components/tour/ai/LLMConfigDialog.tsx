@@ -18,6 +18,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
+import { providerLabel, switchProviderPreservingKey } from '@/lib/ai/model-provider'
+import type { LLMProvider } from '@/lib/ai/model-provider'
 
 interface UsageState {
   totalGranted: number
@@ -98,6 +100,9 @@ export function LLMConfigDialog() {
     reset()
     setDraft(DEFAULT_LLM_CONFIG)
   }
+  const handleProviderChange = (provider: LLMProvider) => {
+    setDraft(switchProviderPreservingKey(draft, provider))
+  }
 
   const usageReady = !usage.loading && !usage.error
   const lowBudget = usageReady && usage.totalAvailable > 0 && usage.totalAvailable < QUOTA_PER_USD * 0.01
@@ -141,18 +146,35 @@ export function LLMConfigDialog() {
                 </span>
               )}
           <span className="inline-flex items-center gap-1 rounded-full border border-tour-border/60 bg-tour-bg/40 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-            {draft.model || 'gpt-4o-mini'}
+            {draft.model || '未填写模型'}
           </span>
         </div>
 
         <div className="grid gap-3 py-1">
           <div className="grid gap-1">
-            <Label htmlFor="llm-base-url" className="text-xs"><Trans>Base URL</Trans></Label>
+            <Label className="text-xs">API 风格</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {(['openai-compatible', 'anthropic'] satisfies LLMProvider[]).map(provider => (
+                <Button
+                  key={provider}
+                  type="button"
+                  variant={draft.provider === provider ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleProviderChange(provider)}
+                  className="cursor-pointer"
+                >
+                  {providerLabel(provider)}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="llm-base-url" className="text-xs">API Base</Label>
             <Input
               id="llm-base-url"
               value={draft.baseURL}
               onChange={e => setDraft({ ...draft, baseURL: e.target.value })}
-              placeholder="https://api.openai.com/v1"
+              placeholder="https://..."
               className="font-mono text-xs"
             />
           </div>
@@ -177,7 +199,7 @@ export function LLMConfigDialog() {
               id="llm-model"
               value={draft.model}
               onChange={e => setDraft({ ...draft, model: e.target.value })}
-              placeholder="gpt-4o-mini"
+              placeholder="model"
               className="font-mono text-xs"
             />
           </div>
