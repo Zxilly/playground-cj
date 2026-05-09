@@ -65,12 +65,12 @@ export function deriveChapterIndex(session: ClassroomSession): ChapterIndexEntry
   for (const item of session.stream) {
     if (item.type !== 'lesson_blocks')
       continue
-    for (const block of item.blocks) {
+    for (const [blockIndex, block] of item.blocks.entries()) {
       if (block.type !== 'heading')
         continue
       const blockKey = lessonBlockKey(block)
       out.push({
-        id: `${item.id}:${blockKey}`,
+        id: `${item.id}:${blockIndex}:${blockKey}`,
         text: block.text,
         level: block.level ?? 2,
         streamItemId: item.id,

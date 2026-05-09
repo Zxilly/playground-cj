@@ -177,4 +177,25 @@ describe('deriveChapterIndex', () => {
     const result = deriveChapterIndex(session)
     expect(result.map(e => e.text)).toEqual(['X'])
   })
+
+  it('produces unique ids when two headings share text within the same lesson_blocks item', () => {
+    const session = {
+      ...createInitialClassroomSession({ lang: 'zh' }),
+      stream: [
+        {
+          id: 's1',
+          type: 'lesson_blocks' as const,
+          createdAt: 1,
+          blocks: [
+            { type: 'heading' as const, text: '示例', level: 2 as const },
+            { type: 'paragraph' as const, body: [{ text: 'p' }] },
+            { type: 'heading' as const, text: '示例', level: 2 as const },
+          ],
+        },
+      ],
+    }
+    const result = deriveChapterIndex(session)
+    expect(result).toHaveLength(2)
+    expect(new Set(result.map(e => e.id)).size).toBe(2)
+  })
 })
