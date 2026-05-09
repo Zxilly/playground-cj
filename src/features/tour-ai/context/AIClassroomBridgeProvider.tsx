@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { FlatSection } from '@/tour/types'
 import { useEditorBridge } from '@/modules/cangjie-editor/context/useEditorBridge'
@@ -20,9 +20,41 @@ export function AIClassroomBridgeProvider({
 }: AIClassroomBridgeProviderProps) {
   const { editor, lang } = useEditorBridge()
   const uiLang: UILang = lang === 'en' ? 'en' : 'zh'
+
+  const aliveRef = useRef(true)
+  useEffect(() => {
+    aliveRef.current = true
+    return () => {
+      aliveRef.current = false
+    }
+  }, [])
+
+  const guardedClassroom = useMemo<AIClassroomStateBridge | undefined>(() => {
+    if (!classroom)
+      return undefined
+    return {
+      getSession: () => classroom.getSession(),
+      dispatch: (action) => {
+        if (!aliveRef.current)
+          return
+        classroom.dispatch(action)
+      },
+      replaceChatAnnotations: (annotations) => {
+        if (!aliveRef.current)
+          return
+        classroom.replaceChatAnnotations(annotations)
+      },
+      clearChatAnnotations: () => {
+        if (!aliveRef.current)
+          return
+        classroom.clearChatAnnotations()
+      },
+    }
+  }, [classroom])
+
   const value = useMemo<AIClassroomBridgeValue>(
-    () => ({ editor, lang, uiLang, allSections, classroom }),
-    [editor, lang, uiLang, allSections, classroom],
+    () => ({ editor, lang, uiLang, allSections, classroom: guardedClassroom }),
+    [editor, lang, uiLang, allSections, guardedClassroom],
   )
 
   return (
