@@ -1,6 +1,5 @@
 import { flattenSections, loadTourData } from '@/tour/loader'
 import TourAIWrapper from '@/features/tour-ai/components/TourAIWrapper'
-import { createAIClassroomSections } from '@/features/tour-ai/data/section-payload'
 import type { Metadata } from 'next'
 
 interface PageProps {
@@ -24,11 +23,10 @@ export default async function TourAIPage({ params }: PageProps) {
   const { lang } = await params
   const tourData = await loadTourData()
   const flat = flattenSections(tourData)
-  const aiSections = createAIClassroomSections(flat)
 
   return (
     <main>
-      <TourAIWrapper lang={lang} allSections={aiSections} />
+      <TourAIWrapper lang={lang} allSections={flat} />
     </main>
   )
 }
