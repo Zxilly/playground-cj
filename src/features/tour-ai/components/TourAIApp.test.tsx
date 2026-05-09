@@ -225,14 +225,14 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
     await screen.findByText('Let bindings')
 
-    expect(screen.getByTestId('classroom-phase').textContent).toContain('practice')
+    expect(screen.getByTestId('classroom-phase').textContent).toContain('练习')
     fireEvent.click(screen.getByRole('button', { name: '打开聊天' }))
     screen.getByTestId('chat-panel')
-    expect(screen.getByTestId('classroom-phase').textContent).toContain('practice')
+    expect(screen.getByTestId('classroom-phase').textContent).toContain('练习')
     fireEvent.click(screen.getByRole('button', { name: '关闭聊天' }))
 
     await waitFor(() => expect(screen.queryByTestId('chat-panel')).toBeNull())
-    expect(screen.getByTestId('classroom-phase').textContent).toContain('practice')
+    expect(screen.getByTestId('classroom-phase').textContent).toContain('练习')
   })
 
   it('failed quiz run appends run result only and keeps quiz active', async () => {

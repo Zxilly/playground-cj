@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { EditorBridgeProvider } from '@/modules/cangjie-editor/context/EditorBridgeProvider'
 import { AIClassroomBridgeProvider } from '@/features/tour-ai/context/AIClassroomBridgeProvider'
+import { ClassroomThemeProvider } from '@/features/tour-ai/context/classroom-theme-context'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
 import type { ClassroomSession } from '@/lib/ai/classroom/types'
 import {
@@ -34,17 +35,19 @@ export default function TourAIApp({ lang }: TourAIAppProps) {
   }), [dispatch])
 
   return (
-    <EditorBridgeProvider lang={lang}>
-      <AIClassroomBridgeProvider classroom={classroom}>
-        <TourAIClassroomShell
-          lang={lang}
-          session={session}
-          dispatch={dispatch}
-          hydrated={hydrated}
-          annotationState={annotationState}
-        />
-      </AIClassroomBridgeProvider>
-    </EditorBridgeProvider>
+    <ClassroomThemeProvider>
+      <EditorBridgeProvider lang={lang}>
+        <AIClassroomBridgeProvider classroom={classroom}>
+          <TourAIClassroomShell
+            lang={lang}
+            session={session}
+            dispatch={dispatch}
+            hydrated={hydrated}
+            annotationState={annotationState}
+          />
+        </AIClassroomBridgeProvider>
+      </EditorBridgeProvider>
+    </ClassroomThemeProvider>
   )
 }
 
