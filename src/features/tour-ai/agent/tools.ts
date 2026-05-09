@@ -10,6 +10,8 @@ import { callMcpTool, listMcpTools } from '@/lib/mcp/client'
 import { lessonContentBlockSchema, lessonContentBlocksSchema } from '@/lib/ai/classroom/schema'
 import type { ClassroomSession } from '@/lib/ai/classroom/types'
 
+const CHAT_MARKER_NAMESPACE = 'chat'
+
 function ok<T extends object>(extra?: T) {
   return { ok: true as const, ...(extra ?? ({} as T)) } as { ok: true } & T
 }
@@ -79,7 +81,7 @@ const mcpCallParameters = z.object({
   arguments: z.record(z.string(), z.unknown()).optional(),
 })
 
-export function createChatAgentToolkit(bridge: AIClassroomBridgeValue): Toolkit {
+export function createClassroomChatToolkit(bridge: AIClassroomBridgeValue): Toolkit {
   return {
     read_classroom_state: {
       description: 'Read the current classroom state summary, phase, learner evidence, and pending action. Does not return the full stream.',
@@ -173,7 +175,7 @@ export function createChatAgentToolkit(bridge: AIClassroomBridgeValue): Toolkit 
     },
 
     emit_classroom_event: {
-      description: 'Emit a structured learner intent for LessonAuthorAgent. Use when the learner asks to go deeper, slow down, change topic, or advance.',
+      description: 'Emit a structured learner intent for the lesson generation flow. Use when the learner asks to go deeper, slow down, change topic, or advance.',
       parameters: z.object({
         intent: z.string(),
         summary: z.string(),
@@ -212,9 +214,9 @@ export function createChatAgentToolkit(bridge: AIClassroomBridgeValue): Toolkit 
             modelVersionId: model.getVersionId(),
             targetSnippet: targetSnippet(model, startLine),
           }])
-          monaco.editor.setModelMarkers(model, 'chat', [{
+          monaco.editor.setModelMarkers(model, CHAT_MARKER_NAMESPACE, [{
             severity: monaco.MarkerSeverity.Hint,
-            message: label ?? 'ChatAgent highlight',
+            message: label ?? '聊天高亮',
             startLineNumber: startLine,
             startColumn: 1,
             endLineNumber: endLine ?? startLine,
@@ -248,9 +250,9 @@ export function createChatAgentToolkit(bridge: AIClassroomBridgeValue): Toolkit 
             modelVersionId: model.getVersionId(),
             targetSnippet: targetSnippet(model, startLine, startColumn, endColumn),
           }])
-          monaco.editor.setModelMarkers(model, 'chat', [{
+          monaco.editor.setModelMarkers(model, CHAT_MARKER_NAMESPACE, [{
             severity: monaco.MarkerSeverity.Info,
-            message: label ?? 'ChatAgent annotation',
+            message: label ?? '聊天标注',
             startLineNumber: startLine,
             startColumn,
             endLineNumber: endLine,
@@ -279,13 +281,13 @@ export function createChatAgentToolkit(bridge: AIClassroomBridgeValue): Toolkit 
     },
 
     clear_editor_annotations: {
-      description: 'Clear ChatAgent annotations without touching compiler markers.',
+      description: 'Clear chat annotations without touching compiler markers.',
       parameters: z.object({}),
       execute: async () => {
         try {
           const { model } = getModel(bridge)
           requireClassroom(bridge).clearChatAnnotations()
-          monaco.editor.setModelMarkers(model, 'chat', [])
+          monaco.editor.setModelMarkers(model, CHAT_MARKER_NAMESPACE, [])
           return ok()
         }
         catch (e) {
@@ -296,7 +298,7 @@ export function createChatAgentToolkit(bridge: AIClassroomBridgeValue): Toolkit 
   }
 }
 
-export function createLessonAuthorToolkit(bridge: AIClassroomBridgeValue): Toolkit {
+export function createLessonGenerationToolkit(bridge: AIClassroomBridgeValue): Toolkit {
   return {
     read_classroom_state: {
       description: 'Read the current classroom session summary and learner state. Does not expose internal task/run identifiers.',
@@ -407,7 +409,7 @@ export function createLessonAuthorToolkit(bridge: AIClassroomBridgeValue): Toolk
     },
 
     set_learning_notes: {
-      description: 'Set concise learner notes for future LessonAuthor steps.',
+      description: 'Set concise learner notes for future lesson generation steps.',
       parameters: z.object({
         notes: z.string().max(500),
       }),
@@ -425,9 +427,31 @@ export function createLessonAuthorToolkit(bridge: AIClassroomBridgeValue): Toolk
 }
 
 const MCP_PREFIX = 'mcp_'
+const MAX_TOOL_NAME_LENGTH = 64
 
-function safeMcpName(raw: string): string {
-  return `${MCP_PREFIX}${raw.replace(/\W/g, '_')}`
+function encodeToolNameSegment(raw: string): string {
+  return raw.replace(/[^A-Za-z0-9_]/g, (ch) => {
+    const cp = ch.codePointAt(0) ?? 0
+    const hex = cp.toString(16).padStart(cp > 0xFF ? 4 : 2, '0')
+    return `_x${hex}_`
+  })
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input)
+  const buffer = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(buffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+async function safeMcpName(raw: string): Promise<string> {
+  const full = `${MCP_PREFIX}${encodeToolNameSegment(raw)}`
+  if (full.length <= MAX_TOOL_NAME_LENGTH)
+    return full
+  const hash = await sha256Hex(raw)
+  const suffix = `__${hash.slice(0, 8)}`
+  return `${full.slice(0, MAX_TOOL_NAME_LENGTH - suffix.length)}${suffix}`
 }
 
 export async function loadMcpToolkit(): Promise<Toolkit> {
@@ -435,7 +459,7 @@ export async function loadMcpToolkit(): Promise<Toolkit> {
     const descriptors = await listMcpTools()
     const out: Toolkit = {}
     for (const desc of descriptors) {
-      const safeName = safeMcpName(desc.name)
+      const safeName = await safeMcpName(desc.name)
       const schema: JSONSchema7 = (desc.inputSchema as JSONSchema7 | undefined) ?? { type: 'object' }
       out[safeName] = {
         description: desc.description ?? `MCP tool: ${desc.name}`,
