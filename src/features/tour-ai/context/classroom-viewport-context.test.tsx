@@ -1,11 +1,11 @@
 import { renderHook } from '@testing-library/react'
-import { createRef } from 'react'
+import type { RefObject } from 'react'
 import { describe, expect, it } from 'vitest'
-import { ViewportRefProvider, useViewportRef } from './classroom-viewport-context'
+import { useViewportRef, ViewportRefProvider } from './classroom-viewport-context'
 
 describe('viewportRefContext', () => {
   it('exposes the provided ref', () => {
-    const ref = createRef<HTMLDivElement>()
+    const ref: RefObject<HTMLDivElement | null> = { current: null }
     function wrapper({ children }: { children: React.ReactNode }) {
       return <ViewportRefProvider value={ref}>{children}</ViewportRefProvider>
     }
