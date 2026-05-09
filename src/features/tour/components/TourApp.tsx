@@ -7,7 +7,7 @@ import { TourContent } from './TourContent'
 import { TourEditor } from './TourEditor'
 import { TourNavigation } from './TourNavigation'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { isDarkMode } from '@/lib/utils'
+import { useDarkMode } from '@/lib/theme/useDarkMode'
 import { harmonyFont, jetbrainsFont } from '@/app/font'
 import { useMedia } from 'react-use'
 import type { FlatSection, TourChapterSlim } from '@/tour/types'
@@ -25,6 +25,7 @@ interface TourAppProps {
 
 export default function TourApp({ lang, tourData, allSections, initialIndex, isTourDomain }: TourAppProps) {
   const isDesktop = useMedia('(min-width: 1024px)')
+  const dark = useDarkMode()
   const basePath = getTourPath(lang, { servingDomain: isTourDomain ? 'tour' : 'playground' })
   const {
     currentIndex,
@@ -42,7 +43,7 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
   return (
     <EditorBridgeProvider lang={lang}>
       <div
-        className={`h-screen ${isDarkMode() ? 'dark' : ''}`}
+        className={`h-screen ${dark ? 'dark' : ''}`}
         style={{
           'fontFamily': `${harmonyFont.style.fontFamily}, sans-serif`,
           '--tour-code-font': `${jetbrainsFont.style.fontFamily}, monospace`,

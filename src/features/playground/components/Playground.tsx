@@ -5,7 +5,7 @@ import { OutputPanel } from '@/features/playground/components/OutputPanel'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { updateEditor } from '@/lib/monaco'
-import { isDarkMode } from '@/lib/utils'
+import { useDarkMode } from '@/lib/theme/useDarkMode'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
@@ -27,6 +27,7 @@ export interface PlaygroundProps {
 
 function Playground({ defaultCode }: PlaygroundProps) {
   const { i18n } = useLingui()
+  const dark = useDarkMode()
   const toolOutput = usePlaygroundStore(state => state.toolOutput)
   const programOutput = usePlaygroundStore(state => state.programOutput)
   const isOutputCollapsed = usePlaygroundStore(state => state.isOutputCollapsed)
@@ -87,7 +88,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
   const outputTip = isOutputCollapsed ? i18n._(msg`显示`) : i18n._(msg`隐藏`)
 
   return (
-    <div className={`flex flex-col h-screen bg-background text-foreground ${isDarkMode() ? 'dark' : ''}`}>
+    <div className={`flex flex-col h-screen bg-background text-foreground ${dark ? 'dark' : ''}`}>
       <div className="flex flex-col h-full bg-background text-foreground p-4">
         <div id="header" className="flex-none px-2 lg:px-4">
           <PlaygroundHeader

@@ -4,21 +4,20 @@ import dynamic from 'next/dynamic'
 import { Trans } from '@lingui/react/macro'
 import type { FlatSection } from '@/tour/types'
 import { cn } from '@/lib/utils'
-import { aiClassroomStyles } from '@/features/tour-ai/styles/ai-classroom-design'
 
 function AIClassroomLoadingShell() {
   return (
-    <div className="h-screen bg-[#FAF7F2] text-[#1F1B16]">
-      <header className={aiClassroomStyles.header.root}>
-        <div className={aiClassroomStyles.header.content}>
-          <div className={aiClassroomStyles.header.brandMark}>仓</div>
-          <div className={aiClassroomStyles.header.title}><Trans>AI 课堂</Trans></div>
+    <div className="h-screen bg-tour-bg text-tour-text">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-tour-border bg-tour-surface px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-6 items-center justify-center rounded-md bg-tour-accent-fg font-mono text-xs font-bold text-white">仓</div>
+          <div className="truncate text-sm font-semibold text-tour-text"><Trans>AI 课堂</Trans></div>
         </div>
       </header>
-      <main className={aiClassroomStyles.layout.content}>
-        <div className={aiClassroomStyles.text.eyebrow}><Trans>课堂内容</Trans></div>
-        <h1 className={aiClassroomStyles.text.pageTitle}><Trans>AI 课堂</Trans></h1>
-        <div className={cn(aiClassroomStyles.surface.muted, 'mt-6')}>
+      <main className="mx-auto w-full max-w-[920px] px-6 py-8 pb-20">
+        <div className="text-xs font-semibold uppercase text-tour-link"><Trans>课堂内容</Trans></div>
+        <h1 className="mt-1 text-2xl font-bold tracking-normal text-tour-heading"><Trans>AI 课堂</Trans></h1>
+        <div className={cn('rounded-md border border-tour-border bg-tour-surface px-4 py-4 text-sm text-muted-foreground', 'mt-6')}>
           <Trans>正在加载 AI 课堂</Trans>
         </div>
       </main>

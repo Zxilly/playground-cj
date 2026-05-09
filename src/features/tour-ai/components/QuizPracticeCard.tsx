@@ -8,7 +8,6 @@ import { TourEditor } from '@/features/tour/components/TourEditor'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
 import type { ClassroomQuiz, RunResult } from '@/lib/ai/classroom/types'
 import { requestRemoteAction } from '@/service/run'
-import { aiClassroomStyles } from '@/features/tour-ai/styles/ai-classroom-design'
 import { richTextPlainText } from '@/features/tour-ai/utils/classroom-text'
 import { useClassroomActivity } from '@/features/tour-ai/context/classroom-activity-context'
 
@@ -77,40 +76,40 @@ export function QuizPracticeCard({
   }
 
   return (
-    <section data-testid="quiz-practice-card" className={aiClassroomStyles.surface.accent}>
-      <div className={aiClassroomStyles.quiz.header}>
+    <section data-testid="quiz-practice-card" className="overflow-hidden rounded-md border border-tour-accent-fg bg-tour-surface">
+      <div className="flex items-center justify-between border-b border-tour-border bg-classroom-success-bg px-4 py-3">
         <div>
-          <div className={aiClassroomStyles.text.label}><Trans>Practice</Trans></div>
-          <div className={aiClassroomStyles.text.status}>
+          <div className="text-sm font-semibold"><Trans>Practice</Trans></div>
+          <div className="text-xs font-semibold text-tour-link">
             <Trans>Quiz</Trans>
             {' '}
             {quiz.status}
           </div>
         </div>
-        <div className={aiClassroomStyles.badge.status}>
+        <div className="shrink-0 text-xs font-semibold text-tour-link">
           <Trans>Quiz</Trans>
           {' '}
           {quiz.status}
         </div>
       </div>
-      <div className={aiClassroomStyles.quiz.body}>
-        <p className={aiClassroomStyles.text.body}>{promptText}</p>
-        <div className={aiClassroomStyles.quiz.expectedFrame}>
-          <div className={aiClassroomStyles.quiz.expectedBar}>
+      <div className="space-y-4 p-4">
+        <p className="text-sm leading-7">{promptText}</p>
+        <div className="rounded-md border border-tour-border">
+          <div className="border-b border-tour-border bg-tour-code-bg px-3 py-2 text-xs text-muted-foreground">
             <Trans>Expected output:</Trans>
             {' '}
             <code>{quiz.expectedOutput}</code>
           </div>
-          <div className={aiClassroomStyles.quiz.editor}>
+          <div className="h-[420px]">
             <TourEditor code={quiz.starterCode} locale={lang} />
           </div>
         </div>
-        <div className={aiClassroomStyles.quiz.actions}>
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={runQuiz}
             disabled={running || !isActive}
-            className={aiClassroomStyles.button.primary}
+            className="inline-flex items-center gap-2 rounded-md bg-tour-accent-fg px-4 py-2 text-sm font-semibold text-white disabled:bg-tour-border-soft"
           >
             {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
             <Trans>运行检查</Trans>
@@ -119,7 +118,7 @@ export function QuizPracticeCard({
             type="button"
             onClick={() => dispatch({ type: 'QUIZ_SKIP', now: Date.now() })}
             disabled={!isActive}
-            className={aiClassroomStyles.button.secondaryLarge}
+            className="inline-flex items-center gap-2 rounded-md border border-tour-border px-4 py-2 text-sm text-muted-foreground disabled:opacity-50"
           >
             <SkipForward className="size-4" />
             <Trans>Skip</Trans>
