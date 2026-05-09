@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  deriveChapterIndex,
   deriveClassroomPendingState,
   deriveLatestHeading,
   deriveSessionPendingWork,
 } from './selectors'
 import { classroomReducer, createInitialClassroomSession } from './reducer'
 import type { ClassroomSession } from './types'
+import { lessonBlockKey } from '@/features/tour-ai/utils/lesson-block-key'
 
 const baseSession = (): ClassroomSession => createInitialClassroomSession({ lang: 'zh' })
 
@@ -134,5 +136,45 @@ describe('deriveLatestHeading', () => {
       ],
     }
     expect(deriveLatestHeading(session)).toBe('只有这一条')
+  })
+})
+
+describe('deriveChapterIndex', () => {
+  it('returns empty array for empty stream', () => {
+    const session = createInitialClassroomSession({ lang: 'zh' })
+    expect(deriveChapterIndex(session)).toEqual([])
+  })
+
+  it('collects all heading blocks across multiple lesson_blocks items in order', () => {
+    const h1 = { type: 'heading' as const, text: 'A', level: 2 as const }
+    const h2 = { type: 'heading' as const, text: 'B', level: 3 as const }
+    const h3 = { type: 'heading' as const, text: 'C', level: 2 as const }
+    const session = {
+      ...createInitialClassroomSession({ lang: 'zh' }),
+      stream: [
+        { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [h1, h2] },
+        { id: 's2', type: 'lesson_blocks' as const, createdAt: 2, blocks: [h3] },
+      ],
+    }
+    const result = deriveChapterIndex(session)
+    expect(result).toHaveLength(3)
+    expect(result.map(e => e.text)).toEqual(['A', 'B', 'C'])
+    expect(result.map(e => e.level)).toEqual([2, 3, 2])
+    expect(result[0].streamItemId).toBe('s1')
+    expect(result[2].streamItemId).toBe('s2')
+    expect(result[0].blockKey).toBe(lessonBlockKey(h1))
+  })
+
+  it('skips lesson_blocks with no heading and non-lesson_blocks items', () => {
+    const session = {
+      ...createInitialClassroomSession({ lang: 'zh' }),
+      stream: [
+        { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [{ type: 'paragraph' as const, body: [{ text: 'p' }] }] },
+        { id: 's2', type: 'system_event' as const, createdAt: 2, event: { type: 'page_opened' as const, createdAt: 2 } },
+        { id: 's3', type: 'lesson_blocks' as const, createdAt: 3, blocks: [{ type: 'heading' as const, text: 'X', level: 2 as const }] },
+      ],
+    }
+    const result = deriveChapterIndex(session)
+    expect(result.map(e => e.text)).toEqual(['X'])
   })
 })

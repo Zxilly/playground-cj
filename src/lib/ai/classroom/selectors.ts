@@ -1,4 +1,5 @@
 import type { ClassroomSession } from './types'
+import { lessonBlockKey } from '@/features/tour-ai/utils/lesson-block-key'
 
 export type SessionPendingWork = 'none' | 'lesson_generation' | 'awaiting_user'
 
@@ -49,4 +50,33 @@ export function deriveLatestHeading(session: ClassroomSession): string | null {
     }
   }
   return null
+}
+
+export interface ChapterIndexEntry {
+  id: string
+  text: string
+  level: 2 | 3
+  streamItemId: string
+  blockKey: string
+}
+
+export function deriveChapterIndex(session: ClassroomSession): ChapterIndexEntry[] {
+  const out: ChapterIndexEntry[] = []
+  for (const item of session.stream) {
+    if (item.type !== 'lesson_blocks')
+      continue
+    for (const block of item.blocks) {
+      if (block.type !== 'heading')
+        continue
+      const blockKey = lessonBlockKey(block)
+      out.push({
+        id: `${item.id}:${blockKey}`,
+        text: block.text,
+        level: block.level ?? 2,
+        streamItemId: item.id,
+        blockKey,
+      })
+    }
+  }
+  return out
 }
