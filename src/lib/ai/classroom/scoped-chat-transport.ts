@@ -1,0 +1,26 @@
+import { DirectChatTransport } from 'ai'
+import type { ChatTransport, UIMessage } from 'ai'
+
+type DirectChatTransportOptions = ConstructorParameters<typeof DirectChatTransport>[0]
+
+function mergeSignal(upstream: AbortSignal | undefined, scope: AbortSignal): AbortSignal {
+  if (!upstream)
+    return scope
+  return AbortSignal.any([upstream, scope])
+}
+
+export function createScopedChatTransport<UI extends UIMessage = UIMessage>(
+  agent: DirectChatTransportOptions['agent'],
+  scopeSignal: AbortSignal,
+): ChatTransport<UI> {
+  const inner = new DirectChatTransport({ agent }) as unknown as ChatTransport<UI>
+
+  return {
+    sendMessages(opts) {
+      return inner.sendMessages({ ...opts, abortSignal: mergeSignal(opts.abortSignal, scopeSignal) })
+    },
+    reconnectToStream(opts) {
+      return inner.reconnectToStream({ ...opts, abortSignal: mergeSignal(opts.abortSignal, scopeSignal) })
+    },
+  }
+}
