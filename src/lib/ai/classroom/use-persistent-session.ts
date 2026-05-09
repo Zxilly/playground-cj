@@ -48,7 +48,7 @@ export function usePersistentClassroomSession({ lang }: PersistentClassroomSessi
 
     return () => {
       cancelled = true
-      queueRef.current.cancel()
+      void queueRef.current.flush().finally(() => queueRef.current.cancel())
     }
   }, [lang])
 

@@ -7,12 +7,14 @@ import type { ClassroomSession } from './types'
 
 const loadClassroomSessionMock = vi.hoisted(() => vi.fn())
 const enqueueMock = vi.hoisted(() => vi.fn())
+const flushMock = vi.hoisted(() => vi.fn())
 const cancelMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./persistence', () => ({
   loadClassroomSession: loadClassroomSessionMock,
   createClassroomPersistenceQueue: vi.fn(() => ({
     enqueue: enqueueMock,
+    flush: flushMock,
     cancel: cancelMock,
   })),
 }))
@@ -27,6 +29,8 @@ describe('usePersistentClassroomSession', () => {
     root = createRoot(container)
     loadClassroomSessionMock.mockReset()
     enqueueMock.mockReset()
+    flushMock.mockReset()
+    flushMock.mockResolvedValue(undefined)
     cancelMock.mockReset()
   })
 
@@ -103,6 +107,32 @@ describe('usePersistentClassroomSession', () => {
     expect(latest?.hydrated).toBe(true)
     expect(latest?.session.sessionSummary).toContain('zh')
     warn.mockRestore()
+  })
+
+  it('flushes pending writes before cancelling on lang change cleanup', async () => {
+    loadClassroomSessionMock.mockResolvedValue(null)
+
+    await act(async () => {
+      root.render(createElement(Harness, {
+        lang: 'zh',
+        onRender: () => {},
+      }))
+      await flushPromises()
+    })
+
+    await act(async () => {
+      root.render(createElement(Harness, {
+        lang: 'en',
+        onRender: () => {},
+      }))
+      await flushPromises()
+    })
+
+    expect(flushMock).toHaveBeenCalled()
+    expect(cancelMock).toHaveBeenCalled()
+    const flushOrder = flushMock.mock.invocationCallOrder[0]
+    const cancelOrder = cancelMock.mock.invocationCallOrder[0]
+    expect(flushOrder).toBeLessThan(cancelOrder)
   })
 })
 
