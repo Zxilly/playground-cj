@@ -1,3 +1,13 @@
+import type {
+  ClassroomEvent,
+  ClassroomQuiz,
+  ClassroomSession,
+  ClassroomStreamItem,
+  ConceptState,
+  Evidence,
+  LearnerState,
+  RunResult,
+} from './types'
 import { z } from 'zod'
 
 const richTextSpanSchema = z.union([
@@ -67,17 +77,6 @@ export const lessonContentBlockSchema = z.discriminatedUnion('type', [
 export const lessonContentBlocksSchema = z.array(lessonContentBlockSchema)
 
 export type LessonContentBlockInput = z.infer<typeof lessonContentBlockSchema>
-
-import type {
-  ClassroomEvent,
-  ClassroomQuiz,
-  ClassroomSession,
-  ClassroomStreamItem,
-  ConceptState,
-  Evidence,
-  LearnerState,
-  RunResult,
-} from './types'
 
 export const classroomPhaseSchema = z.enum(['orient', 'teach', 'practice'])
 export const quizMatchModeSchema = z.enum(['exact', 'contains', 'regex'])
