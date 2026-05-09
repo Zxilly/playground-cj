@@ -1,7 +1,5 @@
 import { DirectChatTransport } from 'ai'
-import type { ChatTransport, UIMessage } from 'ai'
-
-type DirectChatTransportOptions = ConstructorParameters<typeof DirectChatTransport>[0]
+import type { Agent, ChatTransport, ToolSet, UIMessage } from 'ai'
 
 function mergeSignal(upstream: AbortSignal | undefined, scope: AbortSignal): AbortSignal {
   if (!upstream)
@@ -9,8 +7,11 @@ function mergeSignal(upstream: AbortSignal | undefined, scope: AbortSignal): Abo
   return AbortSignal.any([upstream, scope])
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyAgent = Agent<any, ToolSet, any>
+
 export function createScopedChatTransport<UI extends UIMessage = UIMessage>(
-  agent: DirectChatTransportOptions['agent'],
+  agent: AnyAgent,
   scopeSignal: AbortSignal,
 ): ChatTransport<UI> {
   const inner = new DirectChatTransport({ agent }) as unknown as ChatTransport<UI>
