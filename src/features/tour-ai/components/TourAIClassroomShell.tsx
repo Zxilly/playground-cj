@@ -57,8 +57,6 @@ function TourAIClassroomShellInner({
     retryQueuedGenerationEvent,
     toggleGenerationProgress,
   } = useLessonGenerationRuntime({
-    lang,
-    currentSection: undefined,
     session,
     dispatch,
     hydrated,

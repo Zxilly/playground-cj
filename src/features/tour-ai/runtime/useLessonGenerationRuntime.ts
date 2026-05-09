@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { t } from '@lingui/core/macro'
-import type { FlatSection } from '@/tour/types'
 import { useAIClassroomBridge } from '@/features/tour-ai/context/useAIClassroomBridge'
 import { useClassroomAbortScope } from '@/features/tour-ai/context/classroom-abort-scope'
 import { useClassroomActivity } from '@/features/tour-ai/context/classroom-activity-context'
@@ -17,19 +16,14 @@ import {
   EMPTY_LESSON_GENERATION_PROGRESS,
 } from '@/features/tour-ai/state/lesson-generation-progress-state'
 import { createLessonGenerationToolkit } from '@/features/tour-ai/agent/tools'
-import { textFor } from '@/features/tour-ai/utils/classroom-text'
 
 interface UseLessonGenerationRuntimeProps {
-  lang: string
-  currentSection: FlatSection | undefined
   session: ClassroomSession
   dispatch: React.Dispatch<ClassroomAction>
   hydrated: boolean
 }
 
 export function useLessonGenerationRuntime({
-  lang,
-  currentSection,
   session,
   dispatch,
   hydrated,
@@ -40,7 +34,7 @@ export function useLessonGenerationRuntime({
   const { activity, setGenerationRunning } = useClassroomActivity()
   const generationRunning = activity.generationRunning
   const [generationProgress, setGenerationProgress] = useState(EMPTY_LESSON_GENERATION_PROGRESS)
-  const hasTriggeredInitialPageOpenRef = useRef(false)
+  const hasTriggeredInitialOpenRef = useRef(false)
   const activeQueuedEventKeyRef = useRef<string | null>(null)
   const mountedRef = useRef(true)
 
@@ -114,15 +108,20 @@ export function useLessonGenerationRuntime({
   }, [generationRunning, bridge, config, dispatch, scopeSignal, setGenerationRunning])
 
   useEffect(() => {
-    if (hasTriggeredInitialPageOpenRef.current || !hydrated || !currentSection || !config.apiKey || session.stream.length > 0 || session.eventQueue.length > 0)
+    if (hasTriggeredInitialOpenRef.current)
       return
-    hasTriggeredInitialPageOpenRef.current = true
+    if (!hydrated || !config.apiKey)
+      return
+    if (session.stream.length > 0 || session.eventQueue.length > 0)
+      return
+
+    hasTriggeredInitialOpenRef.current = true
     void runLessonGenerationForEvent({
       type: 'classroom_opened',
       createdAt: Date.now(),
-      summary: `Opened ${textFor(lang, currentSection.sectionName)}.`,
+      summary: 'Classroom opened.',
     }, false)
-  }, [config.apiKey, currentSection, hydrated, lang, runLessonGenerationForEvent, session.eventQueue.length, session.stream.length])
+  }, [config.apiKey, hydrated, runLessonGenerationForEvent, session.eventQueue.length, session.stream.length])
 
   const runQueuedLessonGenerationEvent = useCallback((next: ClassroomEvent | undefined) => {
     if (!next || generationRunning)

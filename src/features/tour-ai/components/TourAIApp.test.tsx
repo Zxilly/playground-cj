@@ -164,8 +164,7 @@ describe('tourAIApp classroom flow', () => {
     useLLMConfigStore.getState().reset()
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('renders one continuous classroom stream authored by lesson generation', async () => {
+  it('renders one continuous classroom stream authored by lesson generation', async () => {
     renderApp()
 
     await screen.findByText('Let bindings')
@@ -174,8 +173,7 @@ describe('tourAIApp classroom flow', () => {
     expect(screen.getByTestId('tour-editor').textContent).toContain('println')
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('streams lesson generation progress in an expanded panel and collapses it after commit', async () => {
+  it('streams lesson generation progress in an expanded panel and collapses it after commit', async () => {
     let finishAuthor: (() => void) | undefined
     vi.mocked(runLessonGenerationStep).mockImplementationOnce(async (options) => {
       const progressOptions = options as typeof options & { onProgress?: (chunk: string) => void }
@@ -202,8 +200,7 @@ describe('tourAIApp classroom flow', () => {
     screen.getByText('读取课堂状态')
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('retries classroom_opened after the automatic key resolves', async () => {
+  it('retries classroom_opened after the automatic key resolves', async () => {
     useLLMConfigStore.getState().reset()
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
@@ -224,8 +221,7 @@ describe('tourAIApp classroom flow', () => {
     vi.unstubAllGlobals()
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('opens and closes the chat sidebar without changing classroom phase', async () => {
+  it('opens and closes the chat sidebar without changing classroom phase', async () => {
     renderApp()
     await screen.findByText('Let bindings')
 
@@ -239,8 +235,7 @@ describe('tourAIApp classroom flow', () => {
     expect(screen.getByTestId('classroom-phase').textContent).toContain('practice')
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('failed quiz run appends run result only and keeps quiz active', async () => {
+  it('failed quiz run appends run result only and keeps quiz active', async () => {
     vi.mocked(requestRemoteAction).mockResolvedValueOnce({
       compiler_output: '',
       compiler_code: 0,
@@ -257,8 +252,7 @@ describe('tourAIApp classroom flow', () => {
     expect(screen.queryByText(/已记录：success/)).toBeNull()
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('records a failed quiz run and keeps the quiz active when the runner request rejects', async () => {
+  it('records a failed quiz run and keeps the quiz active when the runner request rejects', async () => {
     vi.mocked(requestRemoteAction).mockRejectedValueOnce(new Error('network down'))
     renderApp()
     await screen.findByText('Print 3.')
@@ -278,8 +272,7 @@ describe('tourAIApp classroom flow', () => {
     })
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('successful quiz run writes progress and triggers lesson generation automatically', async () => {
+  it('successful quiz run writes progress and triggers lesson generation automatically', async () => {
     vi.mocked(requestRemoteAction).mockResolvedValueOnce({
       compiler_output: '',
       compiler_code: 0,
@@ -296,8 +289,7 @@ describe('tourAIApp classroom flow', () => {
     await waitFor(() => expect(runLessonGenerationStep).toHaveBeenCalledTimes(2))
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('does not complete a quiz when a non-zero run prints the expected output', async () => {
+  it('does not complete a quiz when a non-zero run prints the expected output', async () => {
     vi.mocked(requestRemoteAction).mockResolvedValueOnce({
       compiler_output: 'runtime failure',
       compiler_code: 0,
@@ -315,8 +307,7 @@ describe('tourAIApp classroom flow', () => {
     expect(runLessonGenerationStep).toHaveBeenCalledTimes(1)
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('keeps older quiz cards immutable after lesson generation sets the next quiz', async () => {
+  it('keeps older quiz cards immutable after lesson generation sets the next quiz', async () => {
     vi.mocked(runLessonGenerationStep)
       .mockImplementationOnce(async ({ bridge }) => appendFirstQuiz(bridge))
       .mockImplementationOnce(async ({ bridge }) => appendSecondQuiz(bridge))
@@ -335,8 +326,7 @@ describe('tourAIApp classroom flow', () => {
     screen.getByText('Print 3.')
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('retains queued events when lesson generation fails and allows retry', async () => {
+  it('retains queued events when lesson generation fails and allows retry', async () => {
     vi.mocked(runLessonGenerationStep)
       .mockImplementationOnce(async ({ bridge }) => appendFirstQuiz(bridge))
       .mockRejectedValueOnce(new Error('network'))
@@ -359,8 +349,7 @@ describe('tourAIApp classroom flow', () => {
     expect(runLessonGenerationStep).toHaveBeenCalledTimes(3)
   })
 
-  // TODO(Task 3.3): re-enable after trigger rewrite
-  it.skip('does not render partial lesson generation writes when the author fails mid-run', async () => {
+  it('does not render partial lesson generation writes when the author fails mid-run', async () => {
     vi.mocked(runLessonGenerationStep).mockImplementationOnce(async ({ bridge }) => {
       appendFirstQuiz(bridge)
       throw new Error('network')
