@@ -56,6 +56,14 @@
   --tour-compare-label: #2a7a6e;
   --tour-compare-bg: #f7faf9;
   --tour-compare-text: #333333;
+
+  /* ── AI Classroom: warning/success semantic tokens (light) ── */
+  --classroom-warning-bg: #FFF8E8;
+  --classroom-warning-fg: #8A5A00;
+  --classroom-warning-border: #F0D6A6;
+  --classroom-success-bg: #F2FAF7;
+  --classroom-success-fg: #0A6E57;
+  --classroom-success-border: #BFE6D6;
 }
 
 .dark {
@@ -108,6 +116,14 @@
   --tour-compare-label: #5ec4b0;
   --tour-compare-bg: #1a2420;
   --tour-compare-text: #c8c8c8;
+
+  /* ── AI Classroom: warning/success semantic tokens (dark) ── */
+  --classroom-warning-bg: #2A2014;
+  --classroom-warning-fg: #E5C16D;
+  --classroom-warning-border: #5A4220;
+  --classroom-success-bg: #1A2A22;
+  --classroom-success-fg: #4FB59A;
+  --classroom-success-border: #2A4A3C;
 }
 
 @theme inline {
@@ -174,6 +190,46 @@
   --color-tour-compare-label: var(--tour-compare-label);
   --color-tour-compare-bg: var(--tour-compare-bg);
   --color-tour-compare-text: var(--tour-compare-text);
+
+  /* ── AI Classroom: scope-local semantic tokens (auto light/dark) ── */
+  --color-classroom-warning-bg: var(--classroom-warning-bg);
+  --color-classroom-warning-fg: var(--classroom-warning-fg);
+  --color-classroom-warning-border: var(--classroom-warning-border);
+  --color-classroom-success-bg: var(--classroom-success-bg);
+  --color-classroom-success-fg: var(--classroom-success-fg);
+  --color-classroom-success-border: var(--classroom-success-border);
+}
+
+/* ═══════════════════════════════════════════════════
+   AI Classroom: scope-local brand identity (米色暖底 + 深绿)
+   ═══════════════════════════════════════════════════ */
+
+.ai-classroom-root {
+  --tour-bg: #FAF7F2;
+  --tour-surface: #FFFFFF;
+  --tour-text: #1F1B16;
+  --tour-heading: #1F1B16;
+  --tour-border: #E8E2D5;
+  --tour-border-soft: #F0EBE0;
+  --tour-accent-fg: #0F8C6E;
+  --tour-link: #0A6E57;
+  --tour-code-bg: #F4F1EB;
+  --tour-code-text: #1F1B16;
+  --tour-code-border: #E8E2D5;
+}
+
+.dark .ai-classroom-root {
+  --tour-bg: #1A1715;
+  --tour-surface: #221E1A;
+  --tour-text: #E0DCCF;
+  --tour-heading: #F0EBE0;
+  --tour-border: #3A322A;
+  --tour-border-soft: #2E2823;
+  --tour-accent-fg: #4FB59A;
+  --tour-link: #6FCDAF;
+  --tour-code-bg: #1F1B16;
+  --tour-code-text: #E0DCCF;
+  --tour-code-border: #3A322A;
 }
 
 @layer base {
