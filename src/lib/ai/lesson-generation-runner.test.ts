@@ -26,7 +26,7 @@ describe('runLessonGenerationStep', () => {
 
   it('streams text and tool progress while consuming the author stream', async () => {
     const event: ClassroomEvent = {
-      type: 'page_opened',
+      type: 'classroom_opened',
       createdAt: 1,
       summary: 'opened',
     }
@@ -65,7 +65,7 @@ describe('runLessonGenerationStep', () => {
       config: {} as Partial<LLMConfig>,
       toolkit: {} as Toolkit,
       bridge: {} as AIClassroomBridgeValue,
-      event: { type: 'page_opened', createdAt: 1 },
+      event: { type: 'classroom_opened', createdAt: 1 },
     })
 
     expect(createLessonGenerationMock).not.toHaveBeenCalled()
@@ -85,7 +85,7 @@ describe('runLessonGenerationStep', () => {
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
       toolkit: {} as Toolkit,
       bridge: {} as AIClassroomBridgeValue,
-      event: { type: 'page_opened', createdAt: 1 },
+      event: { type: 'classroom_opened', createdAt: 1 },
       onProgress: chunk => progress.push(chunk),
     })).rejects.toThrowError(/append_lesson_content/)
 
@@ -104,7 +104,7 @@ describe('runLessonGenerationStep', () => {
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
       toolkit: {} as Toolkit,
       bridge: {} as AIClassroomBridgeValue,
-      event: { type: 'page_opened', createdAt: 1 },
+      event: { type: 'classroom_opened', createdAt: 1 },
     })).rejects.toThrowError(/set_phase failed: bad input/)
   })
 
@@ -123,7 +123,7 @@ describe('runLessonGenerationStep', () => {
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
       toolkit: {} as Toolkit,
       bridge: {} as AIClassroomBridgeValue,
-      event: { type: 'page_opened', createdAt: 1 },
+      event: { type: 'classroom_opened', createdAt: 1 },
       abortSignal: controller.signal,
       onProgress: chunk => progress.push(chunk),
     })

@@ -44,7 +44,7 @@ vi.mock('@codingame/monaco-vscode-editor-api', () => ({
 
 vi.mock('@/lib/ai/lesson-generation-runner', () => ({
   runLessonGenerationStep: vi.fn(async ({ bridge, event }) => {
-    if (event.type === 'page_opened') {
+    if (event.type === 'classroom_opened') {
       bridge.classroom?.dispatch({
         type: 'APPEND_LESSON_CONTENT',
         blocks: [
@@ -172,7 +172,7 @@ describe('tourAIApp classroom flow', () => {
     vi.mocked(requestRemoteAction).mockReset()
     vi.mocked(runLessonGenerationStep).mockReset()
     vi.mocked(runLessonGenerationStep).mockImplementation(async ({ bridge, event }) => {
-      if (event.type === 'page_opened')
+      if (event.type === 'classroom_opened')
         appendFirstQuiz(bridge)
     })
   })
@@ -220,7 +220,7 @@ describe('tourAIApp classroom flow', () => {
     screen.getByText('读取课堂状态')
   })
 
-  it('retries page_opened after the automatic key resolves', async () => {
+  it('retries classroom_opened after the automatic key resolves', async () => {
     useLLMConfigStore.getState().reset()
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
@@ -236,7 +236,7 @@ describe('tourAIApp classroom flow', () => {
 
     await screen.findByText('Let bindings')
     expect(runLessonGenerationStep).toHaveBeenCalledWith(expect.objectContaining({
-      event: expect.objectContaining({ type: 'page_opened' }),
+      event: expect.objectContaining({ type: 'classroom_opened' }),
     }))
     vi.unstubAllGlobals()
   })
@@ -382,7 +382,7 @@ describe('tourAIApp classroom flow', () => {
     expect(screen.queryByText('Print 3.')).toBeNull()
   })
 
-  it('hydrates persisted classroom state before deciding whether to run page_opened', async () => {
+  it('hydrates persisted classroom state before deciding whether to run classroom_opened', async () => {
     const persisted = classroomReducer(createInitialClassroomSession({ lang: 'zh' }), {
       type: 'APPEND_LESSON_CONTENT',
       blocks: [{ type: 'heading', text: 'Persisted lesson', level: 2 }],

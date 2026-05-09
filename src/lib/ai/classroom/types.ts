@@ -70,7 +70,7 @@ export interface RunResult {
 }
 
 export type ClassroomEvent
-  = | { type: 'page_opened', createdAt: number, summary?: string }
+  = | { type: 'classroom_opened', createdAt: number, summary?: string }
     | { type: 'quiz_success', conceptId: string, summary: string, createdAt: number }
     | { type: 'quiz_skip', conceptId: string, summary: string, createdAt: number }
     | { type: 'chat_intent', intent: string, summary: string, createdAt: number }

@@ -125,7 +125,7 @@ export const runResultSchema: z.ZodType<RunResult> = z.object({
 }).strict()
 
 export const classroomEventSchema: z.ZodType<ClassroomEvent> = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('page_opened'), createdAt: z.number(), summary: z.string().optional() }).strict(),
+  z.object({ type: z.literal('classroom_opened'), createdAt: z.number(), summary: z.string().optional() }).strict(),
   z.object({ type: z.literal('quiz_success'), conceptId: z.string(), summary: z.string(), createdAt: z.number() }).strict(),
   z.object({ type: z.literal('quiz_skip'), conceptId: z.string(), summary: z.string(), createdAt: z.number() }).strict(),
   z.object({ type: z.literal('chat_intent'), intent: z.string(), summary: z.string(), createdAt: z.number() }).strict(),

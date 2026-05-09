@@ -131,7 +131,7 @@ describe('deriveLatestHeading', () => {
           id: 's2',
           type: 'system_event' as const,
           createdAt: 2,
-          event: { type: 'page_opened' as const, createdAt: 2 },
+          event: { type: 'classroom_opened' as const, createdAt: 2 },
         },
       ],
     }
@@ -170,7 +170,7 @@ describe('deriveChapterIndex', () => {
       ...createInitialClassroomSession({ lang: 'zh' }),
       stream: [
         { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [{ type: 'paragraph' as const, body: [{ text: 'p' }] }] },
-        { id: 's2', type: 'system_event' as const, createdAt: 2, event: { type: 'page_opened' as const, createdAt: 2 } },
+        { id: 's2', type: 'system_event' as const, createdAt: 2, event: { type: 'classroom_opened' as const, createdAt: 2 } },
         { id: 's3', type: 'lesson_blocks' as const, createdAt: 3, blocks: [{ type: 'heading' as const, text: 'X', level: 2 as const }] },
       ],
     }

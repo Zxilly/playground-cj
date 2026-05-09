@@ -61,7 +61,7 @@ describe('lesson content DSL schema', () => {
 
 describe('classroomEventSchema', () => {
   it('accepts all five event types', () => {
-    expect(classroomEventSchema.safeParse({ type: 'page_opened', createdAt: 1 }).success).toBe(true)
+    expect(classroomEventSchema.safeParse({ type: 'classroom_opened', createdAt: 1 }).success).toBe(true)
     expect(classroomEventSchema.safeParse({
       type: 'quiz_success', conceptId: 'c', summary: 's', createdAt: 1,
     }).success).toBe(true)
@@ -86,7 +86,7 @@ describe('classroomEventSchema', () => {
 
   it('rejects extra fields under strict mode', () => {
     expect(classroomEventSchema.safeParse({
-      type: 'page_opened', createdAt: 1, extra: 'nope',
+      type: 'classroom_opened', createdAt: 1, extra: 'nope',
     }).success).toBe(false)
   })
 })

@@ -118,7 +118,7 @@ export function useLessonGenerationRuntime({
       return
     hasTriggeredInitialPageOpenRef.current = true
     void runLessonGenerationForEvent({
-      type: 'page_opened',
+      type: 'classroom_opened',
       createdAt: Date.now(),
       summary: `Opened ${textFor(lang, currentSection.sectionName)}.`,
     }, false)
