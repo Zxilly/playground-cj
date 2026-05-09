@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   CLASSROOM_DB_NAME,
   clearClassroomSession,
@@ -186,16 +186,81 @@ describe('classroom IndexedDB persistence', () => {
         await new Promise<void>((resolve) => { releaseFirst = resolve })
     })
 
-    queue.enqueue(first)
-    queue.enqueue(second)
+    void queue.enqueue(first)
+    const firstFlushed = queue.flush()
     await Promise.resolve()
     await Promise.resolve()
 
     expect(calls).toEqual([first.sessionSummary])
 
+    void queue.enqueue(second)
+    const secondFlushed = queue.flush()
+
     releaseFirst()
-    await queue.flush()
+    await firstFlushed
+    await secondFlushed
 
     expect(calls).toEqual([first.sessionSummary, second.sessionSummary])
+  })
+})
+
+describe('createClassroomPersistenceQueue (debounce)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('coalesces multiple enqueues within 200ms into a single save with the latest session', async () => {
+    const save = vi.fn().mockResolvedValue(undefined)
+    const queue = createClassroomPersistenceQueue(save)
+    const s1 = createInitialClassroomSession({ lang: 'zh' })
+    const s2 = { ...s1, sessionSummary: 'second' }
+    const s3 = { ...s1, sessionSummary: 'third' }
+    void queue.enqueue(s1)
+    vi.advanceTimersByTime(50)
+    void queue.enqueue(s2)
+    vi.advanceTimersByTime(50)
+    void queue.enqueue(s3)
+    expect(save).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(200)
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(save).toHaveBeenCalledWith(s3)
+  })
+
+  it('flush() triggers immediate save bypassing the timer', async () => {
+    const save = vi.fn().mockResolvedValue(undefined)
+    const queue = createClassroomPersistenceQueue(save)
+    const s = createInitialClassroomSession({ lang: 'zh' })
+    void queue.enqueue(s)
+    expect(save).not.toHaveBeenCalled()
+    await queue.flush()
+    expect(save).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancel() prevents save and resolves pending promises', async () => {
+    const save = vi.fn().mockResolvedValue(undefined)
+    const queue = createClassroomPersistenceQueue(save)
+    const s = createInitialClassroomSession({ lang: 'zh' })
+    const p = queue.enqueue(s)
+    queue.cancel()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(save).not.toHaveBeenCalled()
+    await expect(p).resolves.toBeUndefined()
+  })
+
+  it('save error does not deadlock the tail; subsequent enqueue still works', async () => {
+    const save = vi.fn()
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValue(undefined)
+    const queue = createClassroomPersistenceQueue(save)
+    const s = createInitialClassroomSession({ lang: 'zh' })
+    void queue.enqueue(s)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(save).toHaveBeenCalledTimes(1)
+    void queue.enqueue({ ...s, sessionSummary: 'after-error' })
+    await vi.advanceTimersByTimeAsync(200)
+    expect(save).toHaveBeenCalledTimes(2)
   })
 })

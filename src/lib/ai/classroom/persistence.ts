@@ -160,29 +160,73 @@ export async function clearClassroomSession(lang: string): Promise<void> {
   }
 }
 
+const PERSISTENCE_DEBOUNCE_MS = 200
+
 export function createClassroomPersistenceQueue(save: SaveClassroomSession = saveClassroomSession) {
   let tail = Promise.resolve()
   let cancelled = false
+  let pendingSession: ClassroomSession | null = null
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let pendingResolvers: Array<() => void> = []
+
+  function flushPending() {
+    if (timer != null) {
+      clearTimeout(timer)
+      timer = null
+    }
+    if (pendingSession == null)
+      return
+    const sessionToWrite = pendingSession
+    const resolvers = pendingResolvers
+    pendingSession = null
+    pendingResolvers = []
+    tail = tail
+      .catch(() => {})
+      .then(() => {
+        if (cancelled)
+          return
+        return save(sessionToWrite)
+      })
+      .catch((error) => {
+        console.warn('[AI Classroom] Failed to persist session', error)
+      })
+      .finally(() => {
+        for (const r of resolvers) r()
+      })
+  }
+
+  function scheduleWrite() {
+    if (timer != null)
+      return
+    timer = setTimeout(flushPending, PERSISTENCE_DEBOUNCE_MS)
+  }
 
   return {
-    enqueue(session: ClassroomSession) {
-      tail = tail
-        .catch(() => {})
-        .then(() => {
-          if (cancelled)
-            return
-          return save(session)
-        })
-        .catch((error) => {
-          console.warn('[AI Classroom] Failed to persist session', error)
-        })
-      return tail
+    enqueue(session: ClassroomSession): Promise<void> {
+      pendingSession = session
+      return new Promise<void>((resolve) => {
+        if (cancelled) {
+          resolve()
+          return
+        }
+        pendingResolvers.push(resolve)
+        scheduleWrite()
+      })
     },
-    flush() {
+    flush(): Promise<void> {
+      flushPending()
       return tail
     },
     cancel() {
       cancelled = true
+      if (timer != null) {
+        clearTimeout(timer)
+        timer = null
+      }
+      const resolvers = pendingResolvers
+      pendingResolvers = []
+      pendingSession = null
+      for (const r of resolvers) r()
     },
   }
 }
