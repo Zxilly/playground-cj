@@ -36,3 +36,17 @@ export function deriveClassroomPendingState(
     return 'awaiting_user'
   return 'idle'
 }
+
+export function deriveLatestHeading(session: ClassroomSession): string | null {
+  for (let i = session.stream.length - 1; i >= 0; i--) {
+    const item = session.stream[i]
+    if (item.type !== 'lesson_blocks')
+      continue
+    for (let j = item.blocks.length - 1; j >= 0; j--) {
+      const block = item.blocks[j]
+      if (block.type === 'heading')
+        return block.text
+    }
+  }
+  return null
+}
