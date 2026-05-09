@@ -430,9 +430,9 @@ const MCP_PREFIX = 'mcp_'
 const MAX_TOOL_NAME_LENGTH = 64
 
 function encodeToolNameSegment(raw: string): string {
-  return raw.replace(/[^A-Za-z0-9_]/g, (ch) => {
+  return raw.replace(/[^A-Za-z0-9_]/gu, (ch) => {
     const cp = ch.codePointAt(0) ?? 0
-    const hex = cp.toString(16).padStart(cp > 0xFF ? 4 : 2, '0')
+    const hex = cp.toString(16).padStart(cp > 0xFFFF ? 6 : cp > 0xFF ? 4 : 2, '0')
     return `_x${hex}_`
   })
 }

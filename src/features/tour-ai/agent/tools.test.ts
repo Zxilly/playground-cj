@@ -294,14 +294,18 @@ describe('ai classroom toolkits', () => {
   it('safeMcpName encodes multi-byte unicode reversibly with hex escapes', async () => {
     listMcpToolsMock.mockResolvedValueOnce([
       { name: '中文工具', inputSchema: { type: 'object' } },
+      { name: '🎉tool', inputSchema: { type: 'object' } },
     ])
     const { loadMcpToolkit } = await import('./tools')
 
     const toolkit = await loadMcpToolkit()
     const keys = Object.keys(toolkit)
 
-    expect(keys).toHaveLength(1)
+    expect(keys).toHaveLength(2)
+    // BMP CJK: each char encoded as a single _xHHHH_
     expect(keys[0]).toMatch(/^mcp_(_x[0-9a-f]+_)+$/)
+    // Supplementary-plane (emoji) must encode as single 6-hex code point, not surrogate pair
+    expect(keys[1]).toBe('mcp__x1f389_tool')
   })
 
   it('safeMcpName preserves alphanumeric and underscore unchanged', async () => {
