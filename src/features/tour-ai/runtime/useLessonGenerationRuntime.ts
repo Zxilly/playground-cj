@@ -1,22 +1,25 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { t } from '@lingui/core/macro'
 import type { FlatSection } from '@/tour/types'
 import { useAIClassroomBridge } from '@/features/tour-ai/context/useAIClassroomBridge'
+import { useClassroomAbortScope } from '@/features/tour-ai/context/classroom-abort-scope'
+import { useClassroomActivity } from '@/features/tour-ai/context/classroom-activity-context'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
 import { createClassroomTransaction } from '@/lib/ai/classroom/transaction'
 import type { ClassroomEvent, ClassroomSession } from '@/lib/ai/classroom/types'
-import { runLessonAuthorStep } from '@/lib/ai/lesson-author-runner'
+import { runLessonGenerationStep } from '@/lib/ai/lesson-generation-runner'
 import { useLLMConfig } from '@/stores/llmConfig'
 import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfigBootstrap'
 import {
-  appendLessonAuthorProgress,
-  EMPTY_AUTHOR_PROGRESS,
-} from '@/features/tour-ai/state/lesson-author-progress-state'
-import { createLessonAuthorToolkit } from '@/features/tour-ai/agent/tools'
+  appendLessonGenerationProgress,
+  EMPTY_LESSON_GENERATION_PROGRESS,
+} from '@/features/tour-ai/state/lesson-generation-progress-state'
+import { createLessonGenerationToolkit } from '@/features/tour-ai/agent/tools'
 import { textFor } from '@/features/tour-ai/utils/classroom-text'
 
-interface UseLessonAuthorRuntimeProps {
+interface UseLessonGenerationRuntimeProps {
   lang: string
   currentSection: FlatSection | undefined
   session: ClassroomSession
@@ -24,75 +27,67 @@ interface UseLessonAuthorRuntimeProps {
   hydrated: boolean
 }
 
-export function useLessonAuthorRuntime({
+export function useLessonGenerationRuntime({
   lang,
   currentSection,
   session,
   dispatch,
   hydrated,
-}: UseLessonAuthorRuntimeProps) {
+}: UseLessonGenerationRuntimeProps) {
   const bridge = useAIClassroomBridge()
   const config = useLLMConfig()
-  const [authorRunning, setAuthorRunning] = useState(false)
-  const [authorProgress, setAuthorProgress] = useState(EMPTY_AUTHOR_PROGRESS)
-  const appendAuthorProgressRef = useRef<(chunk: string) => void>(() => {})
+  const scopeSignal = useClassroomAbortScope()
+  const { activity, setGenerationRunning } = useClassroomActivity()
+  const generationRunning = activity.generationRunning
+  const [generationProgress, setGenerationProgress] = useState(EMPTY_LESSON_GENERATION_PROGRESS)
   const hasTriggeredInitialPageOpenRef = useRef(false)
   const activeQueuedEventKeyRef = useRef<string | null>(null)
   const mountedRef = useRef(true)
-  const activeAuthorAbortRef = useRef<AbortController | null>(null)
 
   useLLMConfigBootstrap({ reportErrors: false })
-
-  appendAuthorProgressRef.current = (chunk: string) => {
-    setAuthorProgress(state => appendLessonAuthorProgress(state, chunk))
-  }
 
   useEffect(() => {
     mountedRef.current = true
     return () => {
       mountedRef.current = false
-      activeAuthorAbortRef.current?.abort()
-      activeAuthorAbortRef.current = null
     }
   }, [])
 
-  const runLessonAuthorForEvent = useCallback(async (event: ClassroomEvent, consumeQueuedEvent: boolean): Promise<boolean> => {
-    if (!config.apiKey || authorRunning || !mountedRef.current)
+  const runLessonGenerationForEvent = useCallback(async (event: ClassroomEvent, consumeQueuedEvent: boolean): Promise<boolean> => {
+    if (!config.apiKey || generationRunning || !mountedRef.current)
       return false
-    const abortController = new AbortController()
-    activeAuthorAbortRef.current = abortController
-    setAuthorRunning(true)
-    setAuthorProgress({
+    const localController = new AbortController()
+    const mergedSignal = AbortSignal.any([scopeSignal, localController.signal])
+    setGenerationRunning(true)
+    setGenerationProgress({
       status: 'running',
       expanded: true,
       text: '',
     })
-    dispatch({ type: 'LESSON_AUTHOR_STARTED', now: Date.now() })
+    dispatch({ type: 'LESSON_GENERATION_STARTED', now: Date.now() })
     const transaction = createClassroomTransaction(bridge)
     try {
       const transactionBridge = transaction.bridge
-      await runLessonAuthorStep({
+      await runLessonGenerationStep({
         config,
-        toolkit: createLessonAuthorToolkit(transactionBridge),
+        toolkit: createLessonGenerationToolkit(transactionBridge),
         bridge: transactionBridge,
         event,
-        abortSignal: abortController.signal,
+        abortSignal: mergedSignal,
         onProgress: (chunk) => {
-          if (abortController.signal.aborted || !mountedRef.current)
-            return
           queueMicrotask(() => {
-            if (abortController.signal.aborted || !mountedRef.current)
+            if (mergedSignal.aborted || !mountedRef.current)
               return
-            appendAuthorProgressRef.current(chunk)
+            setGenerationProgress(state => appendLessonGenerationProgress(state, chunk))
           })
         },
       })
-      if (abortController.signal.aborted || !mountedRef.current) {
+      if (mergedSignal.aborted || !mountedRef.current) {
         transaction.discard()
         return false
       }
       transaction.commit(consumeQueuedEvent ? [{ type: 'CONSUME_EVENT', now: Date.now() }] : [])
-      setAuthorProgress(state => ({
+      setGenerationProgress(state => ({
         ...state,
         status: 'completed',
         expanded: false,
@@ -101,69 +96,67 @@ export function useLessonAuthorRuntime({
     }
     catch (error) {
       transaction.discard()
-      if (abortController.signal.aborted || !mountedRef.current)
+      if (mergedSignal.aborted || !mountedRef.current)
         return false
+      const errorMessage = error instanceof Error ? error.message : String(error)
       dispatch({
-        type: 'LESSON_AUTHOR_FAILED',
-        error: (error as Error).message,
+        type: 'LESSON_GENERATION_FAILED',
+        error: errorMessage,
         now: Date.now(),
       })
-      setAuthorProgress(state => appendLessonAuthorProgress({
+      setGenerationProgress(state => appendLessonGenerationProgress({
         ...state,
         status: 'failed',
         expanded: true,
-      }, `\n失败：${(error as Error).message}`))
+      }, t`\n失败：${errorMessage}`))
       return false
     }
     finally {
-      if (activeAuthorAbortRef.current === abortController)
-        activeAuthorAbortRef.current = null
-      if (mountedRef.current)
-        setAuthorRunning(false)
+      setGenerationRunning(false)
     }
-  }, [authorRunning, bridge, config, dispatch])
+  }, [generationRunning, bridge, config, dispatch, scopeSignal, setGenerationRunning])
 
   useEffect(() => {
     if (hasTriggeredInitialPageOpenRef.current || !hydrated || !currentSection || !config.apiKey || session.stream.length > 0 || session.eventQueue.length > 0)
       return
     hasTriggeredInitialPageOpenRef.current = true
-    void runLessonAuthorForEvent({
+    void runLessonGenerationForEvent({
       type: 'page_opened',
       createdAt: Date.now(),
       summary: `Opened ${textFor(lang, currentSection.sectionName)}.`,
     }, false)
-  }, [config.apiKey, currentSection, hydrated, lang, runLessonAuthorForEvent, session.eventQueue.length, session.stream.length])
+  }, [config.apiKey, currentSection, hydrated, lang, runLessonGenerationForEvent, session.eventQueue.length, session.stream.length])
 
-  const runQueuedLessonAuthorEvent = useCallback((next: ClassroomEvent | undefined) => {
-    if (!next || authorRunning)
+  const runQueuedLessonGenerationEvent = useCallback((next: ClassroomEvent | undefined) => {
+    if (!next || generationRunning)
       return
     const key = `${next.type}:${next.createdAt}`
     if (activeQueuedEventKeyRef.current === key)
       return
     activeQueuedEventKeyRef.current = key
-    void runLessonAuthorForEvent(next, true).then((completed) => {
+    void runLessonGenerationForEvent(next, true).then((completed) => {
       if (completed && activeQueuedEventKeyRef.current === key)
         activeQueuedEventKeyRef.current = null
     })
-  }, [authorRunning, runLessonAuthorForEvent])
+  }, [generationRunning, runLessonGenerationForEvent])
 
   useEffect(() => {
-    runQueuedLessonAuthorEvent(session.eventQueue[0])
-  }, [runQueuedLessonAuthorEvent, session.eventQueue])
+    runQueuedLessonGenerationEvent(session.eventQueue[0])
+  }, [runQueuedLessonGenerationEvent, session.eventQueue])
 
-  const retryQueuedAuthorEvent = useCallback(() => {
+  const retryQueuedGenerationEvent = useCallback(() => {
     activeQueuedEventKeyRef.current = null
-    runQueuedLessonAuthorEvent(session.eventQueue[0])
-  }, [runQueuedLessonAuthorEvent, session.eventQueue])
+    runQueuedLessonGenerationEvent(session.eventQueue[0])
+  }, [runQueuedLessonGenerationEvent, session.eventQueue])
 
-  const toggleAuthorProgress = useCallback(() => {
-    setAuthorProgress(state => ({ ...state, expanded: !state.expanded }))
+  const toggleGenerationProgress = useCallback(() => {
+    setGenerationProgress(state => ({ ...state, expanded: !state.expanded }))
   }, [])
 
   return {
-    authorRunning,
-    authorProgress,
-    retryQueuedAuthorEvent,
-    toggleAuthorProgress,
+    generationRunning,
+    generationProgress,
+    retryQueuedGenerationEvent,
+    toggleGenerationProgress,
   }
 }
