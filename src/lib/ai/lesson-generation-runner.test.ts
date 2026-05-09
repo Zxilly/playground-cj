@@ -92,10 +92,10 @@ describe('runLessonGenerationStep', () => {
     expect(progress).toEqual(['工具失败：append_lesson_content\n'])
   })
 
-  it('throws on tool-input-error', async () => {
+  it('throws on tool-input-error and surfaces errorText in the message', async () => {
     streamMock.mockResolvedValueOnce({
       fullStream: createAsyncIterable([
-        { type: 'tool-input-error', id: 'in-err', toolName: 'set_phase', error: new Error('bad input') },
+        { type: 'tool-input-error', id: 'in-err', toolName: 'set_phase', errorText: 'bad input' },
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
@@ -105,7 +105,7 @@ describe('runLessonGenerationStep', () => {
       toolkit: {} as Toolkit,
       bridge: {} as AIClassroomBridgeValue,
       event: { type: 'page_opened', createdAt: 1 },
-    })).rejects.toThrowError(/set_phase/)
+    })).rejects.toThrowError(/set_phase failed: bad input/)
   })
 
   it('stops consuming stream parts after an abort signal fires', async () => {

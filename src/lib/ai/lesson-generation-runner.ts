@@ -41,7 +41,8 @@ export async function runLessonGenerationStep({ config, toolkit, event, abortSig
     else if (part.type === 'tool-error' || (part as { type: string }).type === 'tool-input-error') {
       const toolName = String((part as { toolName?: unknown }).toolName)
       reportProgress(onProgress, t`工具失败：${toolName}\n`)
-      throw new Error(`Tool ${toolName} failed: ${String((part as { error?: unknown }).error)}`)
+      const detail = (part as { error?: unknown }).error ?? (part as { errorText?: unknown }).errorText
+      throw new Error(`Tool ${toolName} failed: ${String(detail)}`)
     }
   }
 }
