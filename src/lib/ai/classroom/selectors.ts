@@ -1,7 +1,5 @@
 import type { ClassroomSession } from './types'
 
-export type PendingAction = 'none' | 'lesson_generation' | 'user' | 'runner'
-
 export type SessionPendingWork = 'none' | 'lesson_generation' | 'awaiting_user'
 
 export function deriveSessionPendingWork(session: ClassroomSession): SessionPendingWork {

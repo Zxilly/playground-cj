@@ -56,8 +56,6 @@ export function useLessonGenerationRuntime({
   const runLessonGenerationForEvent = useCallback(async (event: ClassroomEvent, consumeQueuedEvent: boolean): Promise<boolean> => {
     if (!config.apiKey || generationRunning || !mountedRef.current)
       return false
-    const localController = new AbortController()
-    const mergedSignal = AbortSignal.any([scopeSignal, localController.signal])
     setGenerationRunning(true)
     setGenerationProgress({
       status: 'running',
@@ -72,16 +70,16 @@ export function useLessonGenerationRuntime({
         toolkit: createLessonGenerationToolkit(transactionBridge),
         bridge: transactionBridge,
         event,
-        abortSignal: mergedSignal,
+        abortSignal: scopeSignal,
         onProgress: (chunk) => {
           queueMicrotask(() => {
-            if (mergedSignal.aborted || !mountedRef.current)
+            if (scopeSignal.aborted || !mountedRef.current)
               return
             setGenerationProgress(state => appendLessonGenerationProgress(state, chunk))
           })
         },
       })
-      if (mergedSignal.aborted || !mountedRef.current) {
+      if (scopeSignal.aborted || !mountedRef.current) {
         transaction.discard()
         return false
       }
@@ -95,7 +93,7 @@ export function useLessonGenerationRuntime({
     }
     catch (error) {
       transaction.discard()
-      if (mergedSignal.aborted || !mountedRef.current)
+      if (scopeSignal.aborted || !mountedRef.current)
         return false
       const errorMessage = error instanceof Error ? error.message : String(error)
       dispatch({
