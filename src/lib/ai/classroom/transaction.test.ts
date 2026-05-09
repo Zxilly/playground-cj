@@ -17,7 +17,6 @@ function createBridge() {
     },
     lang: 'zh',
     uiLang: 'zh',
-    allSections: [],
     classroom: {
       getSession: () => session,
       dispatch,

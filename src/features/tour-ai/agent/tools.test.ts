@@ -57,7 +57,6 @@ const editor = {
 const bridge = {
   lang: 'zh',
   uiLang: 'zh',
-  allSections: [],
   editor: {
     getEditor: () => editor,
     setEditor: vi.fn(),

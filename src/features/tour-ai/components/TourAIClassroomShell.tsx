@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { MessageCircle, X } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
-import type { FlatSection } from '@/tour/types'
 import { useAIClassroomBridge } from '@/features/tour-ai/context/useAIClassroomBridge'
 import { harmonyFont, jetbrainsFont } from '@/app/font'
 import { cn, isDarkMode } from '@/lib/utils'
@@ -16,7 +15,6 @@ import { LessonGenerationErrorRetry } from '@/features/tour-ai/components/Lesson
 import { ClassroomStream } from '@/features/tour-ai/components/ClassroomStream'
 import { LessonGenerationProgressPanel } from '@/features/tour-ai/components/LessonGenerationProgressPanel'
 import { TourAIChat } from '@/features/tour-ai/components/TourAIChat'
-import { textFor } from '@/features/tour-ai/utils/classroom-text'
 import { useLessonGenerationRuntime } from '@/features/tour-ai/runtime/useLessonGenerationRuntime'
 import { ClassroomAbortScopeProvider } from '@/features/tour-ai/context/classroom-abort-scope'
 import {
@@ -27,7 +25,6 @@ import { deriveClassroomPendingState } from '@/lib/ai/classroom/selectors'
 
 interface TourAIClassroomShellProps {
   lang: string
-  allSections: FlatSection[]
   session: ClassroomSession
   dispatch: React.Dispatch<ClassroomAction>
   hydrated: boolean
@@ -46,7 +43,6 @@ export function TourAIClassroomShell(props: TourAIClassroomShellProps) {
 
 function TourAIClassroomShellInner({
   lang,
-  allSections,
   session,
   dispatch,
   hydrated,
@@ -55,7 +51,6 @@ function TourAIClassroomShellInner({
   const bridge = useAIClassroomBridge()
   const { activity } = useClassroomActivity()
   const [chatOpen, setChatOpen] = useState(false)
-  const currentSection = allSections[0]
   const {
     generationProgress,
     generationRunning,
@@ -63,16 +58,13 @@ function TourAIClassroomShellInner({
     toggleGenerationProgress,
   } = useLessonGenerationRuntime({
     lang,
-    currentSection,
+    currentSection: undefined,
     session,
     dispatch,
     hydrated,
   })
 
   const pendingState = deriveClassroomPendingState(session, activity)
-
-  if (!currentSection)
-    return null
 
   return (
     <div
@@ -89,7 +81,7 @@ function TourAIClassroomShellInner({
             <div className={aiClassroomStyles.header.content}>
               <div className={aiClassroomStyles.header.brandMark}>仓</div>
               <div className={aiClassroomStyles.header.title}><Trans>AI 课堂</Trans></div>
-              <span className={aiClassroomStyles.header.subtitle}>{textFor(lang, currentSection.sectionName)}</span>
+              <span className={aiClassroomStyles.header.subtitle}></span>
               <span data-testid="classroom-phase" className={aiClassroomStyles.badge.phase}>
                 {session.phase}
               </span>
@@ -109,7 +101,7 @@ function TourAIClassroomShellInner({
             <div className={aiClassroomStyles.layout.content}>
               <section className={aiClassroomStyles.layout.sectionIntro}>
                 <div className={aiClassroomStyles.text.eyebrow}><Trans>课堂内容</Trans></div>
-                <h1 className={aiClassroomStyles.text.pageTitle}>{textFor(lang, currentSection.sectionName)}</h1>
+                <h1 className={aiClassroomStyles.text.pageTitle}><Trans>AI 课堂</Trans></h1>
               </section>
 
               <ClassroomStream session={session} lang={lang} dispatch={dispatch} bridge={bridge} />

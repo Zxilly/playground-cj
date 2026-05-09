@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FlatSection } from '@/tour/types'
 import { EditorBridgeProvider } from '@/modules/cangjie-editor/context/EditorBridgeProvider'
 import { AIClassroomBridgeProvider } from '@/features/tour-ai/context/AIClassroomBridgeProvider'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
@@ -17,10 +16,9 @@ import { TourAIClassroomShell } from '@/features/tour-ai/components/TourAIClassr
 
 interface TourAIAppProps {
   lang: string
-  allSections: FlatSection[]
 }
 
-export default function TourAIApp({ lang, allSections }: TourAIAppProps) {
+export default function TourAIApp({ lang }: TourAIAppProps) {
   const { session, dispatch, hydrated } = usePersistentClassroomSession({ lang })
   const sessionRef = useRef(session)
   const [annotationState, setAnnotationState] = useState<EditorAnnotationState>(() => createEditorAnnotationState())
@@ -37,10 +35,9 @@ export default function TourAIApp({ lang, allSections }: TourAIAppProps) {
 
   return (
     <EditorBridgeProvider lang={lang}>
-      <AIClassroomBridgeProvider allSections={allSections} classroom={classroom}>
+      <AIClassroomBridgeProvider classroom={classroom}>
         <TourAIClassroomShell
           lang={lang}
-          allSections={allSections}
           session={session}
           dispatch={dispatch}
           hydrated={hydrated}

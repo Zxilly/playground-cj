@@ -31,7 +31,7 @@ function BridgeProbe() {
 function renderProvider(stub: ReturnType<typeof makeStub>) {
   capturedBridge = null
   const utils = render(
-    <AIClassroomBridgeProvider allSections={[]} classroom={stub as never}>
+    <AIClassroomBridgeProvider classroom={stub as never}>
       <BridgeProbe />
     </AIClassroomBridgeProvider>,
   )
