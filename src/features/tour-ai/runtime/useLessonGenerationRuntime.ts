@@ -64,7 +64,6 @@ export function useLessonGenerationRuntime({
       expanded: true,
       text: '',
     })
-    dispatch({ type: 'LESSON_GENERATION_STARTED', now: Date.now() })
     const transaction = createClassroomTransaction(bridge)
     try {
       const transactionBridge = transaction.bridge

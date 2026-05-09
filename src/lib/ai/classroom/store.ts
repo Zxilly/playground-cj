@@ -13,27 +13,24 @@ export function classroomStorageKey(lang: string): string {
 
 interface ClassroomStoreOptions {
   lang: string
-  now?: number
 }
 
 export interface ClassroomStoreState {
   session: ClassroomSession
   dispatch: (action: ClassroomAction) => void
-  reset: (now?: number) => void
+  reset: () => void
 }
 
-export function createClassroomStore({ lang, now }: ClassroomStoreOptions) {
+export function createClassroomStore({ lang }: ClassroomStoreOptions) {
   return createStore<ClassroomStoreState>((set) => {
-    const initial = createInitialClassroomSession({ lang, now })
-
+    const initial = createInitialClassroomSession({ lang })
     return {
       session: initial,
-      dispatch: action => set(state => ({
-        session: classroomReducer(state.session, action),
-      })),
-      reset: resetNow => set({
-        session: createInitialClassroomSession({ lang, now: resetNow }),
+      dispatch: action => set((state) => {
+        const next = classroomReducer(state.session, action)
+        return next === state.session ? state : { session: next }
       }),
+      reset: () => set({ session: createInitialClassroomSession({ lang }) }),
     }
   })
 }

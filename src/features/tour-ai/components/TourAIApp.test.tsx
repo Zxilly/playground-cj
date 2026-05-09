@@ -8,8 +8,8 @@ import TourAIApp from './TourAIApp'
 import type { FlatSection } from '@/tour/types'
 import { useLLMConfigStore } from '@/stores/llmConfig'
 import { requestRemoteAction } from '@/service/run'
-import { runLessonAuthorStep } from '@/lib/ai/lesson-author-runner'
-import { clearClassroomSession, saveClassroomSession } from '@/lib/ai/classroom/persistence'
+import { runLessonGenerationStep } from '@/lib/ai/lesson-generation-runner'
+import { clearClassroomSession, loadClassroomSession, saveClassroomSession } from '@/lib/ai/classroom/persistence'
 import { classroomReducer, createInitialClassroomSession } from '@/lib/ai/classroom/reducer'
 
 vi.mock('next/font/local', () => ({
@@ -23,7 +23,7 @@ vi.mock('@/features/tour/components/TourEditor', () => ({
 }))
 
 vi.mock('@/features/tour-ai/components/TourAIChat', () => ({
-  TourAIChat: () => <div data-testid="chat-agent">ChatAgent</div>,
+  TourAIChat: () => <div data-testid="chat-panel">聊天</div>,
 }))
 
 vi.mock('@/service/run', () => ({
@@ -42,8 +42,8 @@ vi.mock('@codingame/monaco-vscode-editor-api', () => ({
   },
 }))
 
-vi.mock('@/lib/ai/lesson-author-runner', () => ({
-  runLessonAuthorStep: vi.fn(async ({ bridge, event }) => {
+vi.mock('@/lib/ai/lesson-generation-runner', () => ({
+  runLessonGenerationStep: vi.fn(async ({ bridge, event }) => {
     if (event.type === 'page_opened') {
       bridge.classroom?.dispatch({
         type: 'APPEND_LESSON_CONTENT',
@@ -69,7 +69,7 @@ vi.mock('@/lib/ai/lesson-author-runner', () => ({
   }),
 }))
 
-function appendFirstQuiz(bridge: Parameters<typeof runLessonAuthorStep>[0]['bridge']) {
+function appendFirstQuiz(bridge: Parameters<typeof runLessonGenerationStep>[0]['bridge']) {
   bridge.classroom?.dispatch({
     type: 'APPEND_LESSON_CONTENT',
     blocks: [
@@ -92,7 +92,7 @@ function appendFirstQuiz(bridge: Parameters<typeof runLessonAuthorStep>[0]['brid
   })
 }
 
-function appendSecondQuiz(bridge: Parameters<typeof runLessonAuthorStep>[0]['bridge']) {
+function appendSecondQuiz(bridge: Parameters<typeof runLessonGenerationStep>[0]['bridge']) {
   bridge.classroom?.dispatch({
     type: 'APPEND_LESSON_CONTENT',
     blocks: [{ type: 'paragraph', body: [{ text: 'Next practice.' }] }],
@@ -170,8 +170,8 @@ describe('tourAIApp classroom flow', () => {
       model: 'test-model',
     })
     vi.mocked(requestRemoteAction).mockReset()
-    vi.mocked(runLessonAuthorStep).mockReset()
-    vi.mocked(runLessonAuthorStep).mockImplementation(async ({ bridge, event }) => {
+    vi.mocked(runLessonGenerationStep).mockReset()
+    vi.mocked(runLessonGenerationStep).mockImplementation(async ({ bridge, event }) => {
       if (event.type === 'page_opened')
         appendFirstQuiz(bridge)
     })
@@ -184,7 +184,7 @@ describe('tourAIApp classroom flow', () => {
     useLLMConfigStore.getState().reset()
   })
 
-  it('renders one continuous classroom stream authored by LessonAuthor', async () => {
+  it('renders one continuous classroom stream authored by lesson generation', async () => {
     renderApp()
 
     await screen.findByText('Let bindings')
@@ -193,9 +193,9 @@ describe('tourAIApp classroom flow', () => {
     expect(screen.getByTestId('tour-editor').textContent).toContain('println')
   })
 
-  it('streams LessonAuthor progress in an expanded panel and collapses it after commit', async () => {
+  it('streams lesson generation progress in an expanded panel and collapses it after commit', async () => {
     let finishAuthor: (() => void) | undefined
-    vi.mocked(runLessonAuthorStep).mockImplementationOnce(async (options) => {
+    vi.mocked(runLessonGenerationStep).mockImplementationOnce(async (options) => {
       const progressOptions = options as typeof options & { onProgress?: (chunk: string) => void }
       progressOptions.onProgress?.('读取课堂状态')
       await new Promise<void>((resolve) => {
@@ -209,14 +209,14 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
 
     await screen.findByText('读取课堂状态')
-    expect(screen.getByRole('button', { name: /LessonAuthor 编写进度/ }).getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByRole('button', { name: /课程生成进度/ }).getAttribute('aria-expanded')).toBe('true')
 
     finishAuthor?.()
     await screen.findByText('Let bindings')
-    await waitFor(() => expect(screen.getByRole('button', { name: /LessonAuthor 编写进度/ }).getAttribute('aria-expanded')).toBe('false'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /课程生成进度/ }).getAttribute('aria-expanded')).toBe('false'))
     expect(screen.queryByText('读取课堂状态')).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: /LessonAuthor 编写进度/ }))
+    fireEvent.click(screen.getByRole('button', { name: /课程生成进度/ }))
     screen.getByText('读取课堂状态')
   })
 
@@ -235,23 +235,23 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
 
     await screen.findByText('Let bindings')
-    expect(runLessonAuthorStep).toHaveBeenCalledWith(expect.objectContaining({
+    expect(runLessonGenerationStep).toHaveBeenCalledWith(expect.objectContaining({
       event: expect.objectContaining({ type: 'page_opened' }),
     }))
     vi.unstubAllGlobals()
   })
 
-  it('opens and closes ChatAgent sidebar without changing classroom phase', async () => {
+  it('opens and closes the chat sidebar without changing classroom phase', async () => {
     renderApp()
     await screen.findByText('Let bindings')
 
     expect(screen.getByTestId('classroom-phase').textContent).toContain('practice')
-    fireEvent.click(screen.getByRole('button', { name: '打开 ChatAgent' }))
-    screen.getByTestId('chat-agent')
+    fireEvent.click(screen.getByRole('button', { name: '打开聊天' }))
+    screen.getByTestId('chat-panel')
     expect(screen.getByTestId('classroom-phase').textContent).toContain('practice')
-    fireEvent.click(screen.getByRole('button', { name: '关闭 ChatAgent' }))
+    fireEvent.click(screen.getByRole('button', { name: '关闭聊天' }))
 
-    await waitFor(() => expect(screen.queryByTestId('chat-agent')).toBeNull())
+    await waitFor(() => expect(screen.queryByTestId('chat-panel')).toBeNull())
     expect(screen.getByTestId('classroom-phase').textContent).toContain('practice')
   })
 
@@ -272,7 +272,27 @@ describe('tourAIApp classroom flow', () => {
     expect(screen.queryByText(/已记录：success/)).toBeNull()
   })
 
-  it('successful quiz run writes progress and triggers LessonAuthor automatically', async () => {
+  it('records a failed quiz run and keeps the quiz active when the runner request rejects', async () => {
+    vi.mocked(requestRemoteAction).mockRejectedValueOnce(new Error('network down'))
+    renderApp()
+    await screen.findByText('Print 3.')
+
+    const runButton = screen.getByRole('button', { name: '运行检查' }) as HTMLButtonElement
+    fireEvent.click(runButton)
+
+    await waitFor(() => expect(runButton.disabled).toBe(false))
+    await screen.findByText('运行结果')
+    expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/已记录：success/)).toBeNull()
+    expect(runLessonGenerationStep).toHaveBeenCalledTimes(1)
+    await waitFor(async () => {
+      const saved = await loadClassroomSession('zh')
+      expect(saved?.lastRun).toEqual(expect.objectContaining({ ok: false }))
+      expect(saved?.currentQuiz).toEqual(expect.objectContaining({ status: 'active' }))
+    })
+  })
+
+  it('successful quiz run writes progress and triggers lesson generation automatically', async () => {
     vi.mocked(requestRemoteAction).mockResolvedValueOnce({
       compiler_output: '',
       compiler_code: 0,
@@ -286,7 +306,7 @@ describe('tourAIApp classroom flow', () => {
 
     await screen.findByText(/已记录：success/)
     expect(screen.getAllByText('Quiz success').length).toBeGreaterThan(0)
-    await waitFor(() => expect(runLessonAuthorStep).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(runLessonGenerationStep).toHaveBeenCalledTimes(2))
   })
 
   it('does not complete a quiz when a non-zero run prints the expected output', async () => {
@@ -304,11 +324,11 @@ describe('tourAIApp classroom flow', () => {
     await screen.findByText(/输出：3/)
     expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
     expect(screen.queryByText(/已记录：success/)).toBeNull()
-    expect(runLessonAuthorStep).toHaveBeenCalledTimes(1)
+    expect(runLessonGenerationStep).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps older quiz cards immutable after LessonAuthor sets the next quiz', async () => {
-    vi.mocked(runLessonAuthorStep)
+  it('keeps older quiz cards immutable after lesson generation sets the next quiz', async () => {
+    vi.mocked(runLessonGenerationStep)
       .mockImplementationOnce(async ({ bridge }) => appendFirstQuiz(bridge))
       .mockImplementationOnce(async ({ bridge }) => appendSecondQuiz(bridge))
     vi.mocked(requestRemoteAction).mockResolvedValueOnce({
@@ -326,8 +346,8 @@ describe('tourAIApp classroom flow', () => {
     screen.getByText('Print 3.')
   })
 
-  it('retains queued events when LessonAuthor fails and allows retry', async () => {
-    vi.mocked(runLessonAuthorStep)
+  it('retains queued events when lesson generation fails and allows retry', async () => {
+    vi.mocked(runLessonGenerationStep)
       .mockImplementationOnce(async ({ bridge }) => appendFirstQuiz(bridge))
       .mockRejectedValueOnce(new Error('network'))
       .mockImplementationOnce(async ({ bridge }) => appendSecondQuiz(bridge))
@@ -342,28 +362,28 @@ describe('tourAIApp classroom flow', () => {
     await screen.findByText('Print 3.')
     fireEvent.click(screen.getByRole('button', { name: '运行检查' }))
 
-    await screen.findByText(/LessonAuthor 失败：network/)
-    fireEvent.click(screen.getByRole('button', { name: '重试 LessonAuthor' }))
+    expect(await screen.findAllByText(/课程生成失败：network/)).toHaveLength(2)
+    fireEvent.click(screen.getByRole('button', { name: '重试课程生成' }))
 
     await screen.findByText('Print 4.')
-    expect(runLessonAuthorStep).toHaveBeenCalledTimes(3)
+    expect(runLessonGenerationStep).toHaveBeenCalledTimes(3)
   })
 
-  it('does not render partial LessonAuthor writes when the author fails mid-run', async () => {
-    vi.mocked(runLessonAuthorStep).mockImplementationOnce(async ({ bridge }) => {
+  it('does not render partial lesson generation writes when the author fails mid-run', async () => {
+    vi.mocked(runLessonGenerationStep).mockImplementationOnce(async ({ bridge }) => {
       appendFirstQuiz(bridge)
       throw new Error('network')
     })
 
     renderApp()
 
-    await screen.findByText('lesson_author_error')
+    await screen.findByText(/课程生成失败：network/)
     expect(screen.queryByText('Let bindings')).toBeNull()
     expect(screen.queryByText('Print 3.')).toBeNull()
   })
 
   it('hydrates persisted classroom state before deciding whether to run page_opened', async () => {
-    const persisted = classroomReducer(createInitialClassroomSession({ lang: 'zh', now: 900 }), {
+    const persisted = classroomReducer(createInitialClassroomSession({ lang: 'zh' }), {
       type: 'APPEND_LESSON_CONTENT',
       blocks: [{ type: 'heading', text: 'Persisted lesson', level: 2 }],
       now: 901,
@@ -373,6 +393,6 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
 
     await screen.findByText('Persisted lesson')
-    expect(runLessonAuthorStep).not.toHaveBeenCalled()
+    expect(runLessonGenerationStep).not.toHaveBeenCalled()
   })
 })

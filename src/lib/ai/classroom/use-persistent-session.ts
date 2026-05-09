@@ -8,7 +8,6 @@ import type { ClassroomSession } from './types'
 
 interface PersistentClassroomSessionOptions {
   lang: string
-  now?: number
 }
 
 interface PersistentClassroomSession {
@@ -17,16 +16,16 @@ interface PersistentClassroomSession {
   hydrated: boolean
 }
 
-export function usePersistentClassroomSession({ lang, now }: PersistentClassroomSessionOptions): PersistentClassroomSession {
+export function usePersistentClassroomSession({ lang }: PersistentClassroomSessionOptions): PersistentClassroomSession {
   const [state, setState] = useState(() => ({
-    session: createInitialClassroomSession({ lang, now }),
+    session: createInitialClassroomSession({ lang }),
     hydrated: false,
   }))
   const queueRef = useRef(createClassroomPersistenceQueue())
 
   useEffect(() => {
     let cancelled = false
-    const fresh = createInitialClassroomSession({ lang, now })
+    const fresh = createInitialClassroomSession({ lang })
     queueRef.current = createClassroomPersistenceQueue()
     // Reset immediately on language changes so old classroom state is never shown under the new route.
     // eslint-disable-next-line react/set-state-in-effect
@@ -51,7 +50,7 @@ export function usePersistentClassroomSession({ lang, now }: PersistentClassroom
       cancelled = true
       queueRef.current.cancel()
     }
-  }, [lang, now])
+  }, [lang])
 
   const dispatch = useCallback<React.Dispatch<ClassroomAction>>((action) => {
     setState((current) => {

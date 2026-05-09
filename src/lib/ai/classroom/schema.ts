@@ -140,14 +140,7 @@ export const classroomStreamItemSchema: z.ZodType<ClassroomStreamItem> = z.discr
   z.object({ id: z.string(), type: z.literal('system_event'), event: classroomEventSchema, createdAt: z.number() }).strict(),
 ])
 
-// IMPORTANT TYPE NOTE: ClassroomSession in src/lib/ai/classroom/types.ts CURRENTLY contains a `pendingAction: PendingAction` field. The schema below intentionally describes the FUTURE v2 shape (no pendingAction, version: 2 literal). Therefore the type annotation `z.ZodType<ClassroomSession>` will fail to compile against the current ClassroomSession type.
-//
-// Use this annotation INSTEAD to describe the future shape without coupling to the current types.ts:
-//   z.ZodType<Omit<ClassroomSession, 'pendingAction' | 'version'> & { version: 2 }>
-//
-// This will be reverted to plain z.ZodType<ClassroomSession> in Task 14 when types.ts is updated.
-
-export const classroomSessionSchema: z.ZodType<Omit<ClassroomSession, 'pendingAction' | 'version'> & { version: 2 }> = z.object({
+export const classroomSessionSchema: z.ZodType<ClassroomSession> = z.object({
   version: z.literal(2),
   lang: z.string(),
   phase: classroomPhaseSchema,

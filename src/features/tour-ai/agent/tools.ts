@@ -8,6 +8,7 @@ import type { AIClassroomBridgeValue, AIClassroomStateBridge } from '@/lib/ai/cl
 import { getAllConcepts, getReadyConcepts } from '@/lib/ai/concept-graph/loader'
 import { callMcpTool, listMcpTools } from '@/lib/mcp/client'
 import { lessonContentBlockSchema, lessonContentBlocksSchema } from '@/lib/ai/classroom/schema'
+import { deriveSessionPendingWork } from '@/lib/ai/classroom/selectors'
 import type { ClassroomSession } from '@/lib/ai/classroom/types'
 
 const CHAT_MARKER_NAMESPACE = 'chat'
@@ -91,7 +92,7 @@ export function createClassroomChatToolkit(bridge: AIClassroomBridgeValue): Tool
           const session = requireClassroom(bridge).getSession()
           return ok({
             phase: session.phase,
-            pendingAction: session.pendingAction,
+            pendingAction: deriveSessionPendingWork(session),
             sessionSummary: session.sessionSummary,
             learner: session.learner,
             currentQuiz: session.currentQuiz,
@@ -308,7 +309,7 @@ export function createLessonGenerationToolkit(bridge: AIClassroomBridgeValue): T
           const session = requireClassroom(bridge).getSession()
           return ok({
             phase: session.phase,
-            pendingAction: session.pendingAction,
+            pendingAction: deriveSessionPendingWork(session),
             sessionSummary: session.sessionSummary,
             learner: session.learner,
             currentQuiz: session.currentQuiz,

@@ -11,15 +11,12 @@ import type {
 } from './types'
 
 export type ClassroomAction
-  = | { type: 'LESSON_AUTHOR_STARTED', now?: number }
-    | { type: 'APPEND_LESSON_CONTENT', blocks: LessonContentBlock[], now?: number }
+  = | { type: 'APPEND_LESSON_CONTENT', blocks: LessonContentBlock[], now?: number }
     | { type: 'SET_CURRENT_QUIZ', quiz: Extract<LessonContentBlock, { type: 'quiz' }>, now?: number }
-    | { type: 'RUN_STARTED', now?: number }
-    | { type: 'RUN_FINISHED', result: RunResult, now?: number }
     | { type: 'QUIZ_RUN_FINISHED', result: RunResult, now?: number }
     | { type: 'QUIZ_SUCCESS', now?: number }
     | { type: 'QUIZ_SKIP', now?: number }
-    | { type: 'LESSON_AUTHOR_FAILED', error: string, now?: number }
+    | { type: 'LESSON_GENERATION_FAILED', error: string, now?: number }
     | { type: 'SET_PHASE', phase: ClassroomPhase, now?: number }
     | { type: 'SET_LEARNING_NOTES', notes: string, now?: number }
     | { type: 'EMIT_CHAT_INTENT', intent: string, summary: string, now?: number }
@@ -28,7 +25,6 @@ export type ClassroomAction
 
 interface InitialSessionOptions {
   lang: string
-  now?: number
 }
 
 interface QuizEvaluation {
@@ -82,10 +78,9 @@ function transitionConceptStatus(
 
 export function createInitialClassroomSession({ lang }: InitialSessionOptions): ClassroomSession {
   return {
-    version: 1,
+    version: 2,
     lang,
     phase: 'orient',
-    pendingAction: 'none',
     stream: [],
     learner: {
       concepts: {},
@@ -133,10 +128,6 @@ export function evaluateQuizOutput(quiz: ClassroomQuiz, output: string): QuizEva
   }
 }
 
-function transitionLessonAuthorStarted(session: ClassroomSession): ClassroomSession {
-  return { ...session, pendingAction: 'lesson_author' }
-}
-
 function transitionLessonContentAppended(
   session: ClassroomSession,
   blocks: LessonContentBlock[],
@@ -145,8 +136,7 @@ function transitionLessonContentAppended(
   return {
     ...session,
     phase: 'teach',
-    pendingAction: 'none',
-    sessionSummary: summarize(`LessonAuthor appended ${blocks.length} lesson block(s).`),
+    sessionSummary: summarize(`Lesson content appended ${blocks.length} block(s).`),
     stream: [
       ...session.stream,
       {
@@ -177,7 +167,6 @@ function transitionQuizActivated(
   return transitionConceptStatus({
     ...session,
     phase: 'practice',
-    pendingAction: 'user',
     currentQuiz: quiz,
     sessionSummary: summarize(`Practice quiz active for ${quiz.conceptId}.`),
     stream: [
@@ -192,14 +181,18 @@ function transitionQuizActivated(
   }, quiz.conceptId, 'practicing', createdAt)
 }
 
-function transitionRunStarted(session: ClassroomSession): ClassroomSession {
-  return { ...session, pendingAction: 'runner' }
-}
-
 function transitionQuizCompleted(session: ClassroomSession, outcome: EvidenceOutcome, createdAt: number): ClassroomSession {
   const quiz = session.currentQuiz
   if (!quiz || quiz.status !== 'active')
     return session
+
+  const streamHasQuiz = session.stream.some(
+    item => item.type === 'quiz' && item.quiz.createdAt === quiz.createdAt,
+  )
+  if (!streamHasQuiz) {
+    console.warn('[Classroom] currentQuiz exists but no stream entry, skipping transition')
+    return session
+  }
 
   const summary = outcome === 'success'
     ? `Quiz completed successfully for ${quiz.conceptId}.`
@@ -215,7 +208,6 @@ function transitionQuizCompleted(session: ClassroomSession, outcome: EvidenceOut
   const updated = transitionConceptStatus({
     ...session,
     currentQuiz: { ...quiz, status: outcome },
-    pendingAction: 'lesson_author',
     sessionSummary: summarize(`${outcome} evidence recorded for ${quiz.conceptId}.`),
     eventQueue: [...session.eventQueue, event],
     learner: {
@@ -264,7 +256,6 @@ function transitionRunFinished(
     matched,
     session: {
       ...session,
-      pendingAction: 'user',
       lastRun: result,
       sessionSummary: summarize(`Last run ${result.ok ? 'completed' : 'failed'}${matched ? ' and matched the current quiz' : ''}.`),
       stream: [
@@ -281,28 +272,20 @@ function transitionRunFinished(
   }
 }
 
-function transitionQuizRunFinished(session: ClassroomSession, result: RunResult, createdAt: number): ClassroomSession {
-  const finished = transitionRunFinished(session, result, createdAt)
-  return finished.matched
-    ? transitionQuizCompleted(finished.session, 'success', createdAt)
-    : finished.session
-}
-
-function transitionLessonAuthorFailed(session: ClassroomSession, error: string, createdAt: number): ClassroomSession {
+function transitionLessonGenerationFailed(session: ClassroomSession, error: string, createdAt: number): ClassroomSession {
   const event: ClassroomEvent = {
-    type: 'lesson_author_error',
+    type: 'lesson_generation_error',
     summary: error,
     createdAt,
   }
 
   return {
     ...session,
-    pendingAction: 'user',
-    sessionSummary: summarize(`LessonAuthor failed: ${error}`),
+    sessionSummary: summarize(`Lesson generation failed: ${error}`),
     stream: [
       ...session.stream,
       {
-        id: createStreamItemId('author-error', createdAt),
+        id: createStreamItemId('generation-error', createdAt),
         type: 'system_event',
         event,
         createdAt,
@@ -336,7 +319,6 @@ function transitionChatIntentQueued(
 
   return {
     ...session,
-    pendingAction: 'lesson_author',
     sessionSummary: summarize(`Chat intent queued: ${summary}`),
     eventQueue: [...session.eventQueue, event],
     stream: [
@@ -361,44 +343,34 @@ export function classroomReducer(session: ClassroomSession, action: ClassroomAct
   switch (action.type) {
     case 'BATCH':
       return action.actions.reduce((nextSession, childAction) => classroomReducer(nextSession, childAction), session)
-
-    case 'LESSON_AUTHOR_STARTED':
-      return transitionLessonAuthorStarted(session)
-
     case 'APPEND_LESSON_CONTENT':
       return transitionLessonContentAppended(session, action.blocks, createdAt)
-
     case 'SET_CURRENT_QUIZ':
       return transitionQuizActivated(session, action.quiz, createdAt)
-
-    case 'RUN_STARTED':
-      return transitionRunStarted(session)
-
-    case 'RUN_FINISHED':
-      return transitionRunFinished(session, action.result, createdAt).session
-
-    case 'QUIZ_RUN_FINISHED':
-      return transitionQuizRunFinished(session, action.result, createdAt)
-
+    case 'QUIZ_RUN_FINISHED': {
+      const finished = transitionRunFinished(session, action.result, createdAt)
+      return finished.matched
+        ? transitionQuizCompleted(finished.session, 'success', createdAt)
+        : finished.session
+    }
     case 'QUIZ_SUCCESS':
       return transitionQuizCompleted(session, 'success', createdAt)
-
     case 'QUIZ_SKIP':
       return transitionQuizCompleted(session, 'skip', createdAt)
-
-    case 'LESSON_AUTHOR_FAILED':
-      return transitionLessonAuthorFailed(session, action.error, createdAt)
-
+    case 'LESSON_GENERATION_FAILED':
+      return transitionLessonGenerationFailed(session, action.error, createdAt)
     case 'SET_PHASE':
       return { ...session, phase: action.phase }
-
     case 'SET_LEARNING_NOTES':
       return transitionLearningNotesUpdated(session, action.notes)
-
     case 'EMIT_CHAT_INTENT':
       return transitionChatIntentQueued(session, action.intent, action.summary, createdAt)
-
     case 'CONSUME_EVENT':
       return transitionEventConsumed(session)
+    default: {
+      const _exhaustive: never = action
+      void _exhaustive
+      return session
+    }
   }
 }

@@ -5,7 +5,7 @@ import type { ClassroomAction } from './reducer'
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
 
 function createBridge() {
-  let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+  let session = createInitialClassroomSession({ lang: 'zh' })
   const dispatch = vi.fn((action: ClassroomAction) => {
     session = classroomReducer(session, action)
   })
@@ -30,7 +30,7 @@ function createBridge() {
 }
 
 describe('classroom transaction', () => {
-  it('buffers LessonAuthor state changes until a single commit', () => {
+  it('buffers LessonGeneration state changes until a single commit', () => {
     const { bridge, dispatch, getSession } = createBridge()
     const transaction = createClassroomTransaction(bridge)
 
@@ -62,17 +62,17 @@ describe('classroom transaction', () => {
     expect(dispatch).toHaveBeenCalledTimes(1)
     expect(dispatch).toHaveBeenCalledWith({
       type: 'BATCH',
-      actions: expect.arrayContaining([
+      actions: [
         expect.objectContaining({ type: 'APPEND_LESSON_CONTENT' }),
         expect.objectContaining({ type: 'SET_CURRENT_QUIZ' }),
         expect.objectContaining({ type: 'CONSUME_EVENT' }),
-      ]),
+      ],
     })
     expect(getSession().phase).toBe('practice')
     expect(getSession().stream).toHaveLength(2)
   })
 
-  it('discards buffered changes when LessonAuthor fails before commit', () => {
+  it('discards buffered changes when LessonGeneration fails before commit', () => {
     const { bridge, dispatch, getSession } = createBridge()
     const transaction = createClassroomTransaction(bridge)
 
@@ -86,5 +86,21 @@ describe('classroom transaction', () => {
     expect(dispatch).not.toHaveBeenCalled()
     expect(getSession().stream).toEqual([])
     expect(transaction.bridge.classroom?.getSession().stream).toEqual([])
+  })
+
+  it('does not replay discarded changes on a later commit', () => {
+    const { bridge, dispatch, getSession } = createBridge()
+    const transaction = createClassroomTransaction(bridge)
+
+    transaction.bridge.classroom?.dispatch({
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [{ type: 'heading', text: 'Partial lesson', level: 2 }],
+      now: 1001,
+    })
+    transaction.discard()
+    transaction.commit()
+
+    expect(dispatch).not.toHaveBeenCalled()
+    expect(getSession().stream).toEqual([])
   })
 })

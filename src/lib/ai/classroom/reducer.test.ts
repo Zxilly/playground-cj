@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   classroomReducer,
   createInitialClassroomSession,
   evaluateQuizOutput,
 } from './reducer'
-import type { LessonContentBlock, RunResult } from './types'
+import { deriveSessionPendingWork } from './selectors'
+import type { ClassroomSession, LessonContentBlock, RunResult } from './types'
 
 const quizBlock: LessonContentBlock = {
   type: 'quiz',
@@ -25,10 +26,10 @@ const failedRun: RunResult = {
 
 describe('classroom reducer', () => {
   it('initializes a fresh classroom session without legacy lesson or chat state', () => {
-    const session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+    const session = createInitialClassroomSession({ lang: 'zh' })
 
     expect(session.phase).toBe('orient')
-    expect(session.pendingAction).toBe('none')
+    expect(deriveSessionPendingWork(session)).toBe('none')
     expect(session.stream).toEqual([])
     expect(session.currentQuiz).toBeNull()
     expect(session.lastRun).toBeNull()
@@ -39,19 +40,21 @@ describe('classroom reducer', () => {
       learningNotes: '',
     })
     expect(session.sessionSummary).toContain('zh')
-    expect(JSON.stringify(session)).not.toContain('lesson-feed')
-    expect(JSON.stringify(session)).not.toContain('thread')
+    expect(Object.keys(session)).toEqual([
+      'version',
+      'lang',
+      'phase',
+      'stream',
+      'learner',
+      'currentQuiz',
+      'lastRun',
+      'sessionSummary',
+      'eventQueue',
+    ])
   })
 
   it('supports orient to teach to practice as explicit reducer transitions', () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
-
-    session = classroomReducer(session, {
-      type: 'LESSON_AUTHOR_STARTED',
-      now: 1001,
-    })
-    expect(session.pendingAction).toBe('lesson_author')
-    expect(session.phase).toBe('orient')
+    let session = createInitialClassroomSession({ lang: 'zh' })
 
     session = classroomReducer(session, {
       type: 'APPEND_LESSON_CONTENT',
@@ -59,7 +62,7 @@ describe('classroom reducer', () => {
       now: 1002,
     })
     expect(session.phase).toBe('teach')
-    expect(session.pendingAction).toBe('none')
+    expect(deriveSessionPendingWork(session)).toBe('none')
     expect(session.stream.at(-1)).toMatchObject({ type: 'lesson_blocks' })
 
     session = classroomReducer(session, {
@@ -75,26 +78,22 @@ describe('classroom reducer', () => {
     expect(session.learner.concepts['cj.bindings.let'].status).toBe('practicing')
   })
 
-  it('appends a failed quiz run result without evidence or LessonAuthor event', () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+  it('appends a failed quiz run result without evidence or LessonGeneration event', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'SET_CURRENT_QUIZ',
       quiz: quizBlock,
       now: 1001,
     })
 
-    session = classroomReducer(session, {
-      type: 'RUN_FINISHED',
-      result: failedRun,
-      now: 1002,
-    })
+    session = classroomReducer(session, { type: 'QUIZ_RUN_FINISHED', result: failedRun, now: 1002 })
 
     expect(evaluateQuizOutput(session.currentQuiz!, failedRun.stdout).matched).toBe(false)
     expect(session.currentQuiz?.status).toBe('active')
     expect(session.lastRun).toEqual(failedRun)
     expect(session.learner.evidence).toEqual([])
     expect(session.eventQueue).toEqual([])
-    expect(session.pendingAction).toBe('user')
+    expect(deriveSessionPendingWork(session)).toBe('awaiting_user')
     expect(session.stream.at(-1)).toMatchObject({
       type: 'run_result',
       result: failedRun,
@@ -102,7 +101,7 @@ describe('classroom reducer', () => {
   })
 
   it('does not mark a non-zero run as quiz matched even when stdout matches', () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+    let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'SET_CURRENT_QUIZ',
       quiz: quizBlock,
@@ -110,7 +109,7 @@ describe('classroom reducer', () => {
     })
 
     session = classroomReducer(session, {
-      type: 'RUN_FINISHED',
+      type: 'QUIZ_RUN_FINISHED',
       result: {
         ok: false,
         stdout: '3\n',
@@ -146,55 +145,8 @@ describe('classroom reducer', () => {
     })
   })
 
-  it('quiz success writes deterministic evidence and queues LessonAuthor', () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
-    session = classroomReducer(session, {
-      type: 'SET_CURRENT_QUIZ',
-      quiz: quizBlock,
-      now: 1001,
-    })
-
-    expect(evaluateQuizOutput(session.currentQuiz!, '3\n').matched).toBe(true)
-    session = classroomReducer(session, {
-      type: 'RUN_FINISHED',
-      result: { ...failedRun, stdout: '3\n' },
-      now: 1002,
-    })
-    session = classroomReducer(session, {
-      type: 'QUIZ_SUCCESS',
-      now: 1003,
-    })
-
-    expect(session.currentQuiz?.status).toBe('success')
-    expect(session.learner.evidence).toEqual([
-      {
-        conceptId: 'cj.bindings.let',
-        outcome: 'success',
-        source: 'quiz',
-        summary: 'Quiz completed successfully for cj.bindings.let.',
-        createdAt: 1003,
-      },
-    ])
-    expect(session.learner.concepts['cj.bindings.let'].status).toBe('demonstrated')
-    expect(session.eventQueue).toEqual([
-      {
-        type: 'quiz_success',
-        conceptId: 'cj.bindings.let',
-        summary: 'Quiz completed successfully for cj.bindings.let.',
-        createdAt: 1003,
-      },
-    ])
-    expect(session.pendingAction).toBe('lesson_author')
-    expect(session.stream.at(-1)).toMatchObject({
-      type: 'progress_update',
-      outcome: 'success',
-      conceptId: 'cj.bindings.let',
-    })
-    expect(session.sessionSummary).toContain('success')
-  })
-
-  it('finishes a successful quiz run atomically with evidence and LessonAuthor event', () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+  it('finishes a successful quiz run atomically with evidence and LessonGeneration event', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'SET_CURRENT_QUIZ',
       quiz: quizBlock,
@@ -233,7 +185,7 @@ describe('classroom reducer', () => {
   })
 
   it('does not complete a quiz from a failed atomic run even when stdout matches', () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+    let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'SET_CURRENT_QUIZ',
       quiz: quizBlock,
@@ -260,8 +212,8 @@ describe('classroom reducer', () => {
     })
   })
 
-  it('quiz skip writes skip evidence and queues LessonAuthor without model involvement', () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+  it('quiz skip writes skip evidence and queues LessonGeneration without model involvement', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'SET_CURRENT_QUIZ',
       quiz: quizBlock,
@@ -291,11 +243,11 @@ describe('classroom reducer', () => {
         createdAt: 1002,
       },
     ])
-    expect(session.pendingAction).toBe('lesson_author')
+    expect(deriveSessionPendingWork(session)).toBe('lesson_generation')
   })
 
   it('marks author failure without dropping queued events', () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+    let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'EMIT_CHAT_INTENT',
       intent: 'go_deeper',
@@ -304,7 +256,7 @@ describe('classroom reducer', () => {
     })
 
     session = classroomReducer(session, {
-      type: 'LESSON_AUTHOR_FAILED',
+      type: 'LESSON_GENERATION_FAILED',
       error: 'network',
       now: 1002,
     })
@@ -312,14 +264,69 @@ describe('classroom reducer', () => {
     expect(session.eventQueue).toEqual([
       expect.objectContaining({ type: 'chat_intent', intent: 'go_deeper' }),
     ])
-    expect(session.pendingAction).toBe('user')
+    // eventQueue is non-empty, so pendingWork is 'lesson_generation'
+    expect(deriveSessionPendingWork(session)).toBe('lesson_generation')
     expect(session.stream.at(-1)).toMatchObject({
       type: 'system_event',
       event: {
-        type: 'lesson_author_error',
+        type: 'lesson_generation_error',
         summary: 'network',
         createdAt: 1002,
       },
     })
+  })
+
+  it('commits generated content and consumes the queued event in order', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+    session = classroomReducer(session, {
+      type: 'EMIT_CHAT_INTENT',
+      intent: 'go_deeper',
+      summary: 'Learner asked for depth.',
+      now: 1001,
+    })
+
+    session = classroomReducer(session, {
+      type: 'BATCH',
+      actions: [
+        {
+          type: 'APPEND_LESSON_CONTENT',
+          blocks: [{ type: 'paragraph', body: [{ text: 'More detail.' }] }],
+          now: 1002,
+        },
+        {
+          type: 'CONSUME_EVENT',
+          now: 1003,
+        },
+      ],
+    })
+
+    expect(session.eventQueue).toEqual([])
+    expect(deriveSessionPendingWork(session)).toBe('none')
+    expect(session.stream.at(-1)).toMatchObject({
+      type: 'lesson_blocks',
+    })
+  })
+
+  it('quiz completion is a no-op when stream has no matching quiz item', () => {
+    const session = createInitialClassroomSession({ lang: 'zh' })
+    const broken: ClassroomSession = {
+      ...session,
+      currentQuiz: {
+        conceptId: 'c',
+        prompt: [{ text: 'p' }],
+        starterCode: '',
+        expectedOutput: '',
+        matchMode: 'exact',
+        status: 'active',
+        createdAt: 999,
+      },
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const result = classroomReducer(broken, { type: 'QUIZ_SKIP', now: 1000 })
+
+    expect(result).toBe(broken)
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('no stream entry'))
+    warn.mockRestore()
   })
 })

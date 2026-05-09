@@ -1,5 +1,6 @@
+import { classroomRecordSchema } from './schema'
 import { classroomStorageKey } from './store'
-import type { ClassroomSession, PendingAction } from './types'
+import type { ClassroomEvent, ClassroomSession, ClassroomStreamItem } from './types'
 
 export const CLASSROOM_DB_NAME = 'tour-ai-classroom'
 const CLASSROOM_STORE_NAME = 'sessions'
@@ -54,45 +55,35 @@ function openClassroomDatabase(): Promise<IDBDatabase | null> {
   })
 }
 
-function stablePendingAction(session: ClassroomSession): PendingAction {
-  if (session.eventQueue.length > 0)
-    return 'lesson_author'
-  if (session.currentQuiz?.status === 'active')
-    return 'user'
-  return 'none'
+type LegacyClassroomEvent = ClassroomEvent | { type: 'lesson_author_error', summary: string, createdAt: number }
+
+function normalizeClassroomEvent(event: LegacyClassroomEvent): ClassroomEvent {
+  if (event.type === 'lesson_author_error') {
+    return {
+      type: 'lesson_generation_error',
+      summary: event.summary,
+      createdAt: event.createdAt,
+    }
+  }
+  return event
 }
 
-function normalizeForPersistence(session: ClassroomSession): ClassroomSession {
+function normalizeStreamItem(item: ClassroomStreamItem): ClassroomStreamItem {
+  if (item.type !== 'system_event')
+    return item
   return {
-    ...session,
-    pendingAction: stablePendingAction(session),
+    ...item,
+    event: normalizeClassroomEvent(item.event as LegacyClassroomEvent),
   }
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function isClassroomSession(value: unknown, lang: string): value is ClassroomSession {
-  if (!isObject(value))
-    return false
-  return value.version === 1
-    && value.lang === lang
-    && typeof value.phase === 'string'
-    && typeof value.pendingAction === 'string'
-    && Array.isArray(value.stream)
-    && isObject(value.learner)
-    && typeof value.sessionSummary === 'string'
-    && Array.isArray(value.eventQueue)
-}
-
-function isClassroomRecord(value: unknown, lang: string): value is ClassroomSnapshotRecord {
-  if (!isObject(value))
-    return false
-  return value.version === 1
-    && value.lang === lang
-    && value.key === classroomStorageKey(lang)
-    && isClassroomSession(value.session, lang)
+function normalizeForPersistence(session: ClassroomSession): ClassroomSession {
+  const eventQueue = session.eventQueue.map(event => normalizeClassroomEvent(event as LegacyClassroomEvent))
+  return {
+    ...session,
+    eventQueue,
+    stream: session.stream.map(normalizeStreamItem),
+  }
 }
 
 export async function loadClassroomSession(lang: string): Promise<ClassroomSession | null> {
@@ -103,11 +94,20 @@ export async function loadClassroomSession(lang: string): Promise<ClassroomSessi
   try {
     const transaction = db.transaction(CLASSROOM_STORE_NAME, 'readonly')
     const store = transaction.objectStore(CLASSROOM_STORE_NAME)
-    const record = await requestResult<unknown>(store.get(classroomStorageKey(lang)))
+    const raw = await requestResult<unknown>(store.get(classroomStorageKey(lang)))
     await transactionDone(transaction)
-    if (!isClassroomRecord(record, lang))
+
+    if (raw == null)
       return null
-    return normalizeForPersistence(record.session)
+
+    const result = classroomRecordSchema.safeParse(raw)
+    if (!result.success) {
+      console.warn('[AI Classroom] Persisted record failed schema validation, discarding', result.error.issues)
+      return null
+    }
+    if (result.data.lang !== lang || result.data.key !== classroomStorageKey(lang))
+      return null
+    return normalizeForPersistence(result.data.session)
   }
   finally {
     db.close()

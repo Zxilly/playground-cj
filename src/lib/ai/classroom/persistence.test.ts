@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   CLASSROOM_DB_NAME,
   clearClassroomSession,
@@ -8,7 +8,10 @@ import {
   saveClassroomSession,
 } from './persistence'
 import { classroomReducer, createInitialClassroomSession } from './reducer'
+import { classroomStorageKey } from './store'
 import type { ClassroomSession, LessonContentBlock, RunResult } from './types'
+
+const CLASSROOM_STORE_NAME = 'sessions'
 
 const lessonBlock: LessonContentBlock = {
   type: 'heading',
@@ -41,13 +44,41 @@ function deleteDatabase(name: string): Promise<void> {
   })
 }
 
+function openRawDatabase(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(CLASSROOM_DB_NAME, 1)
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(CLASSROOM_STORE_NAME))
+        request.result.createObjectStore(CLASSROOM_STORE_NAME, { keyPath: 'key' })
+    }
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+}
+
+async function writeRawRecord(record: unknown): Promise<void> {
+  const db = await openRawDatabase()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(CLASSROOM_STORE_NAME, 'readwrite')
+      transaction.objectStore(CLASSROOM_STORE_NAME).put(record)
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error)
+      transaction.onabort = () => reject(transaction.error)
+    })
+  }
+  finally {
+    db.close()
+  }
+}
+
 describe('classroom IndexedDB persistence', () => {
   beforeEach(async () => {
     await deleteDatabase(CLASSROOM_DB_NAME)
   })
 
   it('saves and loads a versioned classroom snapshot by language', async () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+    let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'APPEND_LESSON_CONTENT',
       blocks: [lessonBlock],
@@ -58,7 +89,7 @@ describe('classroom IndexedDB persistence', () => {
 
     const loaded = await loadClassroomSession('zh')
     expect(loaded).toMatchObject({
-      version: 1,
+      version: 2,
       lang: 'zh',
       phase: 'teach',
       stream: [
@@ -71,46 +102,43 @@ describe('classroom IndexedDB persistence', () => {
     expect(await loadClassroomSession('en')).toBeNull()
   })
 
-  it('rejects incompatible snapshots instead of hydrating stale state', async () => {
-    const session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
-
-    await saveClassroomSession({ ...session, version: 2 } as unknown as ClassroomSession)
+  it('rejects v1 session payload as schema-invalid and warns', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await writeRawRecord({
+      key: classroomStorageKey('zh'),
+      version: 1,
+      lang: 'zh',
+      updatedAt: 1001,
+      session: { version: 1, lang: 'zh', phase: 'orient' },
+    })
 
     expect(await loadClassroomSession('zh')).toBeNull()
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
   })
 
-  it('does not persist transient in-flight author or runner pending state', async () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
-    session = classroomReducer(session, { type: 'LESSON_AUTHOR_STARTED', now: 1001 })
-
+  it('persists session content and reloads structurally', async () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+    session = classroomReducer(session, { type: 'SET_CURRENT_QUIZ', quiz: quizBlock, now: 1002 })
     await saveClassroomSession(session)
 
-    expect(await loadClassroomSession('zh')).toMatchObject({
-      pendingAction: 'none',
-      stream: [],
+    const loaded = await loadClassroomSession('zh')
+    expect(loaded).toMatchObject({
+      version: 2,
+      currentQuiz: expect.objectContaining({ status: 'active' }),
       eventQueue: [],
     })
-
-    session = classroomReducer(session, { type: 'SET_CURRENT_QUIZ', quiz: quizBlock, now: 1002 })
-    session = classroomReducer(session, { type: 'RUN_STARTED', now: 1003 })
-
-    await saveClassroomSession(session)
-
-    expect(await loadClassroomSession('zh')).toMatchObject({
-      pendingAction: 'user',
-      currentQuiz: expect.objectContaining({ status: 'active' }),
-    })
   })
 
-  it('preserves queued LessonAuthor work across reloads', async () => {
-    let session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+  it('preserves queued lesson generation work across reloads', async () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, { type: 'SET_CURRENT_QUIZ', quiz: quizBlock, now: 1001 })
     session = classroomReducer(session, { type: 'QUIZ_RUN_FINISHED', result: successRun, now: 1002 })
 
     await saveClassroomSession(session)
 
-    expect(await loadClassroomSession('zh')).toMatchObject({
-      pendingAction: 'lesson_author',
+    const loaded = await loadClassroomSession('zh')
+    expect(loaded).toMatchObject({
       eventQueue: [
         expect.objectContaining({
           type: 'quiz_success',
@@ -120,8 +148,22 @@ describe('classroom IndexedDB persistence', () => {
     })
   })
 
+  it('rejects records with legacy event names', async () => {
+    await writeRawRecord({
+      key: classroomStorageKey('zh'),
+      version: 1,
+      lang: 'zh',
+      updatedAt: 1001,
+      session: {
+        ...createInitialClassroomSession({ lang: 'zh' }),
+        eventQueue: [{ type: 'lesson_author_error', summary: 'network', createdAt: 1001 }],
+      } as unknown as ClassroomSession,
+    })
+    expect(await loadClassroomSession('zh')).toBeNull()
+  })
+
   it('clears a classroom snapshot for a language', async () => {
-    const session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+    const session = createInitialClassroomSession({ lang: 'zh' })
     await saveClassroomSession(session)
 
     await clearClassroomSession('zh')
@@ -130,7 +172,7 @@ describe('classroom IndexedDB persistence', () => {
   })
 
   it('serializes snapshot writes so older saves cannot overwrite newer saves', async () => {
-    const first = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+    const first = createInitialClassroomSession({ lang: 'zh' })
     const second = classroomReducer(first, {
       type: 'APPEND_LESSON_CONTENT',
       blocks: [lessonBlock],

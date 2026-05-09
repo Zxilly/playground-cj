@@ -32,9 +32,9 @@ vi.mock('@/lib/mcp/client', () => ({
   callMcpTool: callMcpToolMock,
 }))
 
-let session: ClassroomSession = createInitialClassroomSession({ lang: 'zh', now: 1000 })
-const dispatch = vi.fn((action: ClassroomAction) => {
-  session = { ...session, pendingAction: action.type === 'EMIT_CHAT_INTENT' ? 'lesson_generation' : session.pendingAction }
+let session: ClassroomSession = createInitialClassroomSession({ lang: 'zh' })
+const dispatch = vi.fn((_action: ClassroomAction) => {
+  // no-op; pendingAction is derived now
 })
 const replaceChatAnnotations = vi.fn()
 const clearChatAnnotations = vi.fn()
@@ -71,7 +71,7 @@ const bridge = {
 } as unknown as AIClassroomBridgeValue
 
 afterEach(() => {
-  session = createInitialClassroomSession({ lang: 'zh', now: 1000 })
+  session = createInitialClassroomSession({ lang: 'zh' })
   dispatch.mockClear()
   replaceChatAnnotations.mockClear()
   clearChatAnnotations.mockClear()

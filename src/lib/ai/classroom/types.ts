@@ -1,5 +1,4 @@
 export type ClassroomPhase = 'orient' | 'teach' | 'practice'
-export type PendingAction = 'none' | 'lesson_generation' | 'user' | 'runner'
 
 export type RichText = Array<
   | { text: string }
@@ -85,10 +84,9 @@ export type ClassroomStreamItem
     | { id: string, type: 'system_event', event: ClassroomEvent, createdAt: number }
 
 export interface ClassroomSession {
-  version: 1
+  version: 2
   lang: string
   phase: ClassroomPhase
-  pendingAction: PendingAction
   stream: ClassroomStreamItem[]
   learner: LearnerState
   currentQuiz: ClassroomQuiz | null
