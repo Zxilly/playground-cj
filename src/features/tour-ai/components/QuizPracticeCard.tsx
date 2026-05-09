@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, Play, SkipForward } from 'lucide-react'
+import { Trans } from '@lingui/react/macro'
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
 import { TourEditor } from '@/features/tour/components/TourEditor'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
@@ -9,6 +10,7 @@ import type { ClassroomQuiz, RunResult } from '@/lib/ai/classroom/types'
 import { requestRemoteAction } from '@/service/run'
 import { aiClassroomStyles } from '@/features/tour-ai/styles/ai-classroom-design'
 import { richTextPlainText } from '@/features/tour-ai/utils/classroom-text'
+import { useClassroomActivity } from '@/features/tour-ai/context/classroom-activity-context'
 
 interface QuizPracticeCardProps {
   quiz: ClassroomQuiz
@@ -26,6 +28,7 @@ export function QuizPracticeCard({
   bridge,
 }: QuizPracticeCardProps) {
   const [running, setRunning] = useState(false)
+  const { setRunnerRunning } = useClassroomActivity()
   const mountedRef = useRef(true)
   const promptText = richTextPlainText(quiz.prompt)
 
@@ -38,7 +41,7 @@ export function QuizPracticeCard({
 
   const runQuiz = async () => {
     setRunning(true)
-    dispatch({ type: 'RUN_STARTED', now: Date.now() })
+    setRunnerRunning(true)
     try {
       const editorCode = bridge.editor.getEditor()?.getModel()?.getValue() ?? quiz.starterCode
       const data = await requestRemoteAction(editorCode, 'run')
@@ -52,9 +55,24 @@ export function QuizPracticeCard({
         return
       dispatch({ type: 'QUIZ_RUN_FINISHED', result, now: Date.now() })
     }
+    catch (error) {
+      if (!mountedRef.current)
+        return
+      dispatch({
+        type: 'QUIZ_RUN_FINISHED',
+        result: {
+          ok: false,
+          stdout: '',
+          stderr: error instanceof Error ? error.message : String(error),
+          exitCode: null,
+        },
+        now: Date.now(),
+      })
+    }
     finally {
       if (mountedRef.current)
         setRunning(false)
+      setRunnerRunning(false)
     }
   }
 
@@ -62,15 +80,15 @@ export function QuizPracticeCard({
     <section data-testid="quiz-practice-card" className={aiClassroomStyles.surface.accent}>
       <div className={aiClassroomStyles.quiz.header}>
         <div>
-          <div className={aiClassroomStyles.text.label}>Practice</div>
+          <div className={aiClassroomStyles.text.label}><Trans>Practice</Trans></div>
           <div className={aiClassroomStyles.text.status}>
-            Quiz
+            <Trans>Quiz</Trans>
             {' '}
             {quiz.status}
           </div>
         </div>
         <div className={aiClassroomStyles.badge.status}>
-          Quiz
+          <Trans>Quiz</Trans>
           {' '}
           {quiz.status}
         </div>
@@ -79,7 +97,7 @@ export function QuizPracticeCard({
         <p className={aiClassroomStyles.text.body}>{promptText}</p>
         <div className={aiClassroomStyles.quiz.expectedFrame}>
           <div className={aiClassroomStyles.quiz.expectedBar}>
-            Expected output:
+            <Trans>Expected output:</Trans>
             {' '}
             <code>{quiz.expectedOutput}</code>
           </div>
@@ -95,7 +113,7 @@ export function QuizPracticeCard({
             className={aiClassroomStyles.button.primary}
           >
             {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-            运行检查
+            <Trans>运行检查</Trans>
           </button>
           <button
             type="button"
@@ -104,7 +122,7 @@ export function QuizPracticeCard({
             className={aiClassroomStyles.button.secondaryLarge}
           >
             <SkipForward className="size-4" />
-            Skip
+            <Trans>Skip</Trans>
           </button>
         </div>
       </div>
