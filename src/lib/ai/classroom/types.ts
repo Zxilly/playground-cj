@@ -1,5 +1,5 @@
 export type ClassroomPhase = 'orient' | 'teach' | 'practice'
-export type PendingAction = 'none' | 'lesson_author' | 'user' | 'runner' | 'chat_agent'
+export type PendingAction = 'none' | 'lesson_generation' | 'user' | 'runner'
 
 export type RichText = Array<
   | { text: string }
@@ -75,7 +75,7 @@ export type ClassroomEvent
     | { type: 'quiz_success', conceptId: string, summary: string, createdAt: number }
     | { type: 'quiz_skip', conceptId: string, summary: string, createdAt: number }
     | { type: 'chat_intent', intent: string, summary: string, createdAt: number }
-    | { type: 'lesson_author_error', summary: string, createdAt: number }
+    | { type: 'lesson_generation_error', summary: string, createdAt: number }
 
 export type ClassroomStreamItem
   = | { id: string, type: 'lesson_blocks', blocks: LessonContentBlock[], createdAt: number }
