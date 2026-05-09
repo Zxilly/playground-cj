@@ -1,10 +1,11 @@
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
-import { createLessonAuthorAgent, createLessonAuthorEventEnvelope } from './lesson-author-agent'
+import { t } from '@lingui/core/macro'
+import { createLessonGeneration, createLessonGenerationEventEnvelope } from './lesson-generation'
 import type { ClassroomEvent } from './classroom/types'
 import type { LLMConfig } from './model-provider'
 import type { Toolkit } from '@assistant-ui/react'
 
-interface LessonAuthorRunnerOptions {
+interface LessonGenerationRunnerOptions {
   config: Partial<LLMConfig>
   toolkit: Toolkit
   bridge: AIClassroomBridgeValue
@@ -13,13 +14,13 @@ interface LessonAuthorRunnerOptions {
   onProgress?: (chunk: string) => void
 }
 
-export async function runLessonAuthorStep({ config, toolkit, event, abortSignal, onProgress }: LessonAuthorRunnerOptions): Promise<void> {
+export async function runLessonGenerationStep({ config, toolkit, event, abortSignal, onProgress }: LessonGenerationRunnerOptions): Promise<void> {
   if (!config.apiKey)
     return
 
-  const agent = createLessonAuthorAgent(config, toolkit)
-  const stream = await agent.stream({
-    prompt: JSON.stringify(createLessonAuthorEventEnvelope(event)),
+  const generation = createLessonGeneration(config, toolkit)
+  const stream = await generation.stream({
+    prompt: JSON.stringify(createLessonGenerationEventEnvelope(event)),
     abortSignal,
   })
 
@@ -30,18 +31,22 @@ export async function runLessonAuthorStep({ config, toolkit, event, abortSignal,
       reportProgress(onProgress, part.text)
     }
     else if (part.type === 'tool-input-start') {
-      reportProgress(onProgress, `\n调用工具：${part.toolName}\n`)
+      const toolName = String(part.toolName)
+      reportProgress(onProgress, t`\n调用工具：${toolName}\n`)
     }
     else if (part.type === 'tool-result') {
-      reportProgress(onProgress, `完成工具：${String(part.toolName)}\n`)
+      const toolName = String(part.toolName)
+      reportProgress(onProgress, t`完成工具：${toolName}\n`)
     }
-    else if (part.type === 'tool-error') {
-      reportProgress(onProgress, `工具失败：${String(part.toolName)}\n`)
+    else if (part.type === 'tool-error' || (part as { type: string }).type === 'tool-input-error') {
+      const toolName = String((part as { toolName?: unknown }).toolName)
+      reportProgress(onProgress, t`工具失败：${toolName}\n`)
+      throw new Error(`Tool ${toolName} failed: ${String((part as { error?: unknown }).error)}`)
     }
   }
 }
 
-function reportProgress(onProgress: LessonAuthorRunnerOptions['onProgress'], chunk: string) {
+function reportProgress(onProgress: LessonGenerationRunnerOptions['onProgress'], chunk: string) {
   if (!chunk)
     return
   onProgress?.(chunk)
