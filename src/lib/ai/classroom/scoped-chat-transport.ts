@@ -7,7 +7,6 @@ function mergeSignal(upstream: AbortSignal | undefined, scope: AbortSignal): Abo
   return AbortSignal.any([upstream, scope])
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyAgent = Agent<any, ToolSet, any>
 
 export function createScopedChatTransport<UI extends UIMessage = UIMessage>(

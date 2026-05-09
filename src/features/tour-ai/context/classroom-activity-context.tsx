@@ -38,6 +38,7 @@ export function ClassroomActivityProvider({ children }: { children: ReactNode })
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useClassroomActivity(): ClassroomActivityValue {
   const value = useContext(ClassroomActivityContext)
   if (!value)

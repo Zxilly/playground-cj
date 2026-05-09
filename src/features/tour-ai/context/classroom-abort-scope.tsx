@@ -23,6 +23,7 @@ export function ClassroomAbortScopeProvider({ children }: { children: ReactNode 
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useClassroomAbortScope(): AbortSignal {
   const signal = useContext(ClassroomAbortScopeContext)
   if (!signal)

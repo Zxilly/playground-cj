@@ -1,9 +1,10 @@
-import { render, type RenderResult } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AIClassroomBridgeProvider } from './AIClassroomBridgeProvider'
 import { useAIClassroomBridge } from './useAIClassroomBridge'
 
 vi.mock('@/modules/cangjie-editor/context/useEditorBridge', () => ({
+  // eslint-disable-next-line react/component-hook-factories
   useEditorBridge: () => ({
     editor: { getEditor: () => null, setEditor: vi.fn() },
     lang: 'zh',
@@ -19,21 +20,30 @@ function makeStub() {
   }
 }
 
-function renderProvider(stub: ReturnType<typeof makeStub>) {
-  let captured: ReturnType<typeof useAIClassroomBridge> | null = null
-  function Probe() {
-    captured = useAIClassroomBridge()
-    return null
-  }
-  const utils = render(
-    <AIClassroomBridgeProvider allSections={[]} classroom={stub as never}>
-      <Probe />
-    </AIClassroomBridgeProvider>,
-  )
-  return { utils, get captured() { return captured! } }
+// Module-level probe component — captures bridge value into the module-level variable.
+// Must be reset to null before each test that uses it.
+let capturedBridge: ReturnType<typeof useAIClassroomBridge> | null = null
+function BridgeProbe() {
+  capturedBridge = useAIClassroomBridge()
+  return null
 }
 
-describe('AIClassroomBridgeProvider', () => {
+function renderProvider(stub: ReturnType<typeof makeStub>) {
+  capturedBridge = null
+  const utils = render(
+    <AIClassroomBridgeProvider allSections={[]} classroom={stub as never}>
+      <BridgeProbe />
+    </AIClassroomBridgeProvider>,
+  )
+  return {
+    utils,
+    get captured() {
+      return capturedBridge!
+    },
+  }
+}
+
+describe('aIClassroomBridgeProvider', () => {
   it('forwards dispatch while mounted', () => {
     const stub = makeStub()
     const { captured } = renderProvider(stub)
@@ -45,42 +55,22 @@ describe('AIClassroomBridgeProvider', () => {
 
   it('drops dispatch calls after provider unmount', () => {
     const stub = makeStub()
-    const { utils, get } = (() => {
-      const stub2 = stub
-      let captured: ReturnType<typeof useAIClassroomBridge> | null = null
-      function Probe() {
-        captured = useAIClassroomBridge()
-        return null
-      }
-      const u = render(
-        <AIClassroomBridgeProvider allSections={[]} classroom={stub2 as never}>
-          <Probe />
-        </AIClassroomBridgeProvider>,
-      )
-      return { utils: u, get: () => captured! }
-    })()
+    const { utils, captured } = renderProvider(stub)
+    const savedCapture = captured
 
     utils.unmount()
-    get().classroom!.dispatch({ type: 'CONSUME_EVENT' } as never)
+    savedCapture.classroom!.dispatch({ type: 'CONSUME_EVENT' } as never)
     expect(stub.dispatch).not.toHaveBeenCalled()
   })
 
   it('drops replaceChatAnnotations and clearChatAnnotations after unmount', () => {
     const stub = makeStub()
-    let captured: ReturnType<typeof useAIClassroomBridge> | null = null
-    function Probe() {
-      captured = useAIClassroomBridge()
-      return null
-    }
-    const utils = render(
-      <AIClassroomBridgeProvider allSections={[]} classroom={stub as never}>
-        <Probe />
-      </AIClassroomBridgeProvider>,
-    )
+    const { utils, captured } = renderProvider(stub)
+    const savedCapture = captured
 
     utils.unmount()
-    captured!.classroom!.replaceChatAnnotations([])
-    captured!.classroom!.clearChatAnnotations()
+    savedCapture.classroom!.replaceChatAnnotations([])
+    savedCapture.classroom!.clearChatAnnotations()
 
     expect(stub.replaceChatAnnotations).not.toHaveBeenCalled()
     expect(stub.clearChatAnnotations).not.toHaveBeenCalled()
@@ -89,19 +79,11 @@ describe('AIClassroomBridgeProvider', () => {
   it('getSession still works after unmount (read-only is allowed)', () => {
     const stub = makeStub()
     stub.getSession.mockReturnValue({ snapshot: true })
-    let captured: ReturnType<typeof useAIClassroomBridge> | null = null
-    function Probe() {
-      captured = useAIClassroomBridge()
-      return null
-    }
-    const utils = render(
-      <AIClassroomBridgeProvider allSections={[]} classroom={stub as never}>
-        <Probe />
-      </AIClassroomBridgeProvider>,
-    )
+    const { utils, captured } = renderProvider(stub)
+    const savedCapture = captured
 
     utils.unmount()
-    const result = captured!.classroom!.getSession()
+    const result = savedCapture.classroom!.getSession()
     expect(result).toEqual({ snapshot: true })
   })
 })
