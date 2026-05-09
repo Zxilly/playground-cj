@@ -29,7 +29,9 @@ describe('useDarkMode', () => {
     fakeMql = makeFakeMql(false)
     vi.stubGlobal('window', { matchMedia: vi.fn(() => fakeMql) })
   })
-  afterEach(() => { vi.unstubAllGlobals() })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
 
   it('returns initial matches value', () => {
     fakeMql.matches = true

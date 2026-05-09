@@ -12,9 +12,11 @@ beforeEach(() => {
     }),
   })
 })
-afterEach(() => { vi.unstubAllGlobals() })
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
-describe('ClassroomThemeToggle', () => {
+describe('classroomThemeToggle', () => {
   it('cycles auto → light → dark → auto on clicks', () => {
     render(
       <ClassroomThemeProvider>

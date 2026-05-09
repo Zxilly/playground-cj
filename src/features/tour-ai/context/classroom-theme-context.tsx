@@ -20,10 +20,11 @@ export function ClassroomThemeProvider({ children }: { children: ReactNode }) {
   const resolved: 'light' | 'dark' = mode === 'auto'
     ? (systemDark ? 'dark' : 'light')
     : mode
-  const value = useMemo<ClassroomThemeValue>(() => ({ mode, setMode, resolved }), [mode, resolved])
+  const value = useMemo<ClassroomThemeValue>(() => ({ mode, setMode, resolved }), [mode, setMode, resolved])
   return <ClassroomThemeContext.Provider value={value}>{children}</ClassroomThemeContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useClassroomTheme(): ClassroomThemeValue {
   const ctx = useContext(ClassroomThemeContext)
   if (!ctx)

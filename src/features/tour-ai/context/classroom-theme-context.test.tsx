@@ -13,13 +13,15 @@ beforeEach(() => {
     }),
   })
 })
-afterEach(() => { vi.unstubAllGlobals() })
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <ClassroomThemeProvider>{children}</ClassroomThemeProvider>
-)
+function wrapper({ children }: { children: React.ReactNode }) {
+  return <ClassroomThemeProvider>{children}</ClassroomThemeProvider>
+}
 
-describe('ClassroomThemeProvider', () => {
+describe('classroomThemeProvider', () => {
   it('defaults to mode=auto, resolved follows systemDark', () => {
     fakeMatches = true
     const { result } = renderHook(() => useClassroomTheme(), { wrapper })
