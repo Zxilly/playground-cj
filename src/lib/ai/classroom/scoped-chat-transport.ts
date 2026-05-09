@@ -20,7 +20,8 @@ export function createScopedChatTransport<UI extends UIMessage = UIMessage>(
       return inner.sendMessages({ ...opts, abortSignal: mergeSignal(opts.abortSignal, scopeSignal) })
     },
     reconnectToStream(opts) {
-      return inner.reconnectToStream({ ...opts, abortSignal: mergeSignal(opts.abortSignal, scopeSignal) })
+      // ChatTransport.reconnectToStream options do not include abortSignal; just delegate.
+      return inner.reconnectToStream(opts)
     },
   }
 }

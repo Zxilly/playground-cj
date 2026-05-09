@@ -70,28 +70,14 @@ describe('createScopedChatTransport', () => {
     expect(scope.signal.aborted).toBe(false)
   })
 
-  it('reconnectToStream also merges scope signal', async () => {
+  it('reconnectToStream delegates options unchanged (its options type does not include abortSignal)', async () => {
     const scope = new AbortController()
     const transport = createScopedChatTransport({} as never, scope.signal)
     reconnectToStreamMock.mockResolvedValue(null)
 
     await transport.reconnectToStream({ chatId: 'c' } as never)
 
-    const passed = reconnectToStreamMock.mock.calls[0][0].abortSignal
-    expect(passed).toBe(scope.signal)
-  })
-
-  it('reconnectToStream merges upstream + scope when upstream provided', async () => {
-    const scope = new AbortController()
-    const upstream = new AbortController()
-    const transport = createScopedChatTransport({} as never, scope.signal)
-    reconnectToStreamMock.mockResolvedValue(null)
-
-    await transport.reconnectToStream({ chatId: 'c', abortSignal: upstream.signal } as never)
-
-    const merged = reconnectToStreamMock.mock.calls[0][0].abortSignal
-    expect(merged.aborted).toBe(false)
-    scope.abort()
-    expect(merged.aborted).toBe(true)
+    const passed = reconnectToStreamMock.mock.calls[0][0]
+    expect(passed).toEqual({ chatId: 'c' })
   })
 })
