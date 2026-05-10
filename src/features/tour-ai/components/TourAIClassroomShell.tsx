@@ -96,41 +96,43 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
   }
 
   return (
-    <div
-      data-testid="ai-classroom-root"
-      className={cn('ai-classroom-root h-screen', isDark && 'dark')}
-      style={inlineStyle}
-    >
-      <ViewportRefProvider value={viewportRef}>
-        <div className="flex h-full min-h-0 bg-tour-bg text-tour-text">
-          <main className="relative flex min-w-0 flex-1 flex-col">
-            <ClassroomHeader
-              onOpenChat={() => setChatOpen(true)}
-              chapterIndex={<ClassroomChapterIndex />}
-            />
-            <ClassroomViewport viewportRef={viewportRef}>
-              {!hydrated
-                ? <ClassroomLoadingSkeleton />
-                : (
-                    <>
-                      <ClassroomStream session={session} lang={lang} dispatch={dispatch} bridge={bridge} />
-                      <LessonGenerationProgressPanel
-                        progress={generationProgress}
-                        visible={pendingState === 'lesson_generation' || generationRunning || generationProgress.status !== 'idle'}
-                        onToggle={toggleGenerationProgress}
-                      />
-                      {annotationState.annotations.some(a => a.namespace === 'chat' && a.stale) && (
-                        <div className="mt-3 text-xs text-classroom-warning-fg"><Trans>聊天标注已过期</Trans></div>
-                      )}
-                      <LessonGenerationErrorRetry session={session} onRetry={retryQueuedGenerationEvent} />
-                    </>
-                  )}
-            </ClassroomViewport>
-            <ClassroomScrollFollower visible={newContentBelow && !pinned} onClick={scrollToBottom} />
-          </main>
-          {chatOpen && <ClassroomChatSidebar onClose={() => setChatOpen(false)} />}
-        </div>
-      </ViewportRefProvider>
+    <div className={cn('h-screen', isDark && 'dark')}>
+      <div
+        data-testid="ai-classroom-root"
+        className="ai-classroom-root h-full"
+        style={inlineStyle}
+      >
+        <ViewportRefProvider value={viewportRef}>
+          <div className="flex h-full min-h-0 bg-tour-bg text-tour-text">
+            <main className="relative flex min-w-0 flex-1 flex-col">
+              <ClassroomHeader
+                onOpenChat={() => setChatOpen(true)}
+                chapterIndex={<ClassroomChapterIndex />}
+              />
+              <ClassroomViewport viewportRef={viewportRef}>
+                {!hydrated
+                  ? <ClassroomLoadingSkeleton />
+                  : (
+                      <>
+                        <ClassroomStream session={session} lang={lang} dispatch={dispatch} bridge={bridge} />
+                        <LessonGenerationProgressPanel
+                          progress={generationProgress}
+                          visible={pendingState === 'lesson_generation' || generationRunning || generationProgress.status !== 'idle'}
+                          onToggle={toggleGenerationProgress}
+                        />
+                        {annotationState.annotations.some(a => a.namespace === 'chat' && a.stale) && (
+                          <div className="mt-3 text-xs text-classroom-warning-fg"><Trans>聊天标注已过期</Trans></div>
+                        )}
+                        <LessonGenerationErrorRetry session={session} onRetry={retryQueuedGenerationEvent} />
+                      </>
+                    )}
+              </ClassroomViewport>
+              <ClassroomScrollFollower visible={newContentBelow && !pinned} onClick={scrollToBottom} />
+            </main>
+            {chatOpen && <ClassroomChatSidebar onClose={() => setChatOpen(false)} />}
+          </div>
+        </ViewportRefProvider>
+      </div>
     </div>
   )
 }
