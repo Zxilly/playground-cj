@@ -71,11 +71,13 @@ describe('runLessonGenerationStep', () => {
     expect(createLessonGenerationMock).not.toHaveBeenCalled()
   })
 
-  it('reports tool-error label and continues to allow LLM retry', async () => {
+  it('reports tool-error label and continues to allow LLM retry (recovers with later authoring success)', async () => {
     streamMock.mockResolvedValueOnce({
       fullStream: createAsyncIterable([
         { type: 'text-delta', id: 'empty', text: '' },
         { type: 'tool-error', id: 'tool-err', toolName: 'append_paragraph', error: new Error('boom') },
+        { type: 'tool-input-start', id: 'in2', toolName: 'append_paragraph' },
+        { type: 'tool-result', toolCallId: 'tool-ok', toolName: 'append_paragraph', output: { ok: true, appended: 1 } },
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
@@ -89,13 +91,16 @@ describe('runLessonGenerationStep', () => {
       onProgress: chunk => progress.push(chunk),
     })).resolves.toBeUndefined()
 
-    expect(progress).toEqual(['工具失败：append_paragraph\n'])
+    expect(progress).toContain('工具失败：append_paragraph\n')
+    expect(progress).toContain('完成工具：append_paragraph\n')
   })
 
-  it('reports tool-input-error label and continues to allow LLM retry', async () => {
+  it('reports tool-input-error label and continues to allow LLM retry (recovers with later authoring success)', async () => {
     streamMock.mockResolvedValueOnce({
       fullStream: createAsyncIterable([
         { type: 'tool-input-error', id: 'in-err', toolName: 'set_phase', errorText: 'bad input' },
+        { type: 'tool-input-start', id: 'in2', toolName: 'append_paragraph' },
+        { type: 'tool-result', toolCallId: 'tool-ok', toolName: 'append_paragraph', output: { ok: true, appended: 1 } },
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
@@ -109,7 +114,64 @@ describe('runLessonGenerationStep', () => {
       onProgress: chunk => progress.push(chunk),
     })).resolves.toBeUndefined()
 
-    expect(progress).toEqual(['工具失败：set_phase\n'])
+    expect(progress).toContain('工具失败：set_phase\n')
+    expect(progress).toContain('完成工具：append_paragraph\n')
+  })
+
+  it('throws when tool errors occurred and no authoring tool ever succeeded', async () => {
+    streamMock.mockResolvedValueOnce({
+      fullStream: createAsyncIterable([
+        { type: 'tool-input-start', id: 'in', toolName: 'append_paragraph' },
+        { type: 'tool-error', id: 'tool-err', toolName: 'append_paragraph', error: new Error('boom') },
+      ]),
+    })
+    const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+
+    await expect(runLessonGenerationStep({
+      config: { apiKey: 'test-key' } as Partial<LLMConfig>,
+      toolkit: {} as Toolkit,
+      bridge: {} as AIClassroomBridgeValue,
+      event: { type: 'classroom_opened', createdAt: 1 },
+    })).rejects.toThrow(/produced no authoring output/)
+  })
+
+  it('throws when authoring tool only returns retry hint (ok:false) and never succeeds', async () => {
+    streamMock.mockResolvedValueOnce({
+      fullStream: createAsyncIterable([
+        { type: 'tool-input-start', id: 'in', toolName: 'set_current_quiz' },
+        { type: 'tool-error', id: 'tool-err', toolName: 'set_current_quiz', error: new Error('zod') },
+        { type: 'tool-input-start', id: 'in2', toolName: 'set_current_quiz' },
+        // Tool returns retry hint (ok: false) — should NOT count as authoring success
+        { type: 'tool-result', toolCallId: 'tool-hint', toolName: 'set_current_quiz', output: { ok: false, error: 'zod', expectedShape: {} } },
+      ]),
+    })
+    const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+
+    await expect(runLessonGenerationStep({
+      config: { apiKey: 'test-key' } as Partial<LLMConfig>,
+      toolkit: {} as Toolkit,
+      bridge: {} as AIClassroomBridgeValue,
+      event: { type: 'classroom_opened', createdAt: 1 },
+    })).rejects.toThrow(/produced no authoring output/)
+  })
+
+  it('does not throw when only non-authoring tool failed and authoring succeeded', async () => {
+    streamMock.mockResolvedValueOnce({
+      fullStream: createAsyncIterable([
+        { type: 'tool-input-start', id: 'in', toolName: 'set_phase' },
+        { type: 'tool-error', id: 'tool-err', toolName: 'set_phase', error: new Error('boom') },
+        { type: 'tool-input-start', id: 'in2', toolName: 'append_heading' },
+        { type: 'tool-result', toolCallId: 'tool-ok', toolName: 'append_heading', output: { ok: true, appended: 1 } },
+      ]),
+    })
+    const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+
+    await expect(runLessonGenerationStep({
+      config: { apiKey: 'test-key' } as Partial<LLMConfig>,
+      toolkit: {} as Toolkit,
+      bridge: {} as AIClassroomBridgeValue,
+      event: { type: 'classroom_opened', createdAt: 1 },
+    })).resolves.toBeUndefined()
   })
 
   it('stops consuming stream parts after an abort signal fires', async () => {

@@ -14,6 +14,10 @@ interface LessonGenerationRunnerOptions {
   onProgress?: (chunk: string) => void
 }
 
+function isAuthoringTool(name: string): boolean {
+  return name.startsWith('append_') || name === 'set_current_quiz'
+}
+
 export async function runLessonGenerationStep({ config, toolkit, event, abortSignal, onProgress }: LessonGenerationRunnerOptions): Promise<void> {
   if (!config.apiKey)
     return
@@ -23,6 +27,10 @@ export async function runLessonGenerationStep({ config, toolkit, event, abortSig
     prompt: JSON.stringify(createLessonGenerationEventEnvelope(event)),
     abortSignal,
   })
+
+  let hadToolError = false
+  let hadAuthoringSuccess = false
+  let lastErrorDetail: string | undefined
 
   for await (const part of stream.fullStream) {
     if (abortSignal?.aborted)
@@ -37,13 +45,34 @@ export async function runLessonGenerationStep({ config, toolkit, event, abortSig
     else if (part.type === 'tool-result') {
       const toolName = String(part.toolName)
       reportProgress(onProgress, t`完成工具：${toolName}\n`)
+      if (isAuthoringTool(toolName)) {
+        // Only count as authoring success if the tool returned ok:true.
+        // failWithRetryHint returns { ok: false, error, expectedShape } and
+        // is delivered as a tool-result (not tool-error), so we must
+        // distinguish based on the payload.
+        const output = (part as { output?: unknown, result?: unknown }).output
+          ?? (part as { result?: unknown }).result
+        if (output && typeof output === 'object' && (output as { ok?: unknown }).ok === true) {
+          hadAuthoringSuccess = true
+        }
+      }
     }
     else if (part.type === 'tool-error' || (part as { type: string }).type === 'tool-input-error') {
       const toolName = String((part as { toolName?: unknown }).toolName)
       reportProgress(onProgress, t`工具失败：${toolName}\n`)
-      // Do NOT throw — let the agent loop continue so the LLM can self-correct
-      // on the next iteration via the tool result's expectedShape feedback.
+      // Do NOT throw mid-stream — let the agent loop continue so the LLM can
+      // self-correct on the next iteration via the tool result's
+      // expectedShape feedback. Persistent failure is handled post-stream.
+      hadToolError = true
+      const detail = (part as { error?: unknown }).error
+        ?? (part as { errorText?: unknown }).errorText
+      if (detail !== undefined)
+        lastErrorDetail = detail instanceof Error ? detail.message : String(detail)
     }
+  }
+
+  if (hadToolError && !hadAuthoringSuccess) {
+    throw new Error(`Lesson generation produced no authoring output after tool failures${lastErrorDetail ? `: ${lastErrorDetail}` : ''}`)
   }
 }
 
