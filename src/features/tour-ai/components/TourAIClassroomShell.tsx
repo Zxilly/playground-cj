@@ -7,12 +7,10 @@ import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
 import type { ClassroomSession } from '@/lib/ai/classroom/types'
 import type { EditorAnnotationState } from '@/lib/ai/classroom/editor-annotations'
 import { harmonyFont, jetbrainsFont } from '@/app/font'
-import { cn } from '@/lib/utils'
 import { ClassroomAbortScopeProvider } from '@/features/tour-ai/context/classroom-abort-scope'
 import { ClassroomActivityProvider, useClassroomActivity } from '@/features/tour-ai/context/classroom-activity-context'
 import { ClassroomSessionProvider, useClassroomSession } from '@/features/tour-ai/context/classroom-session-context'
 import { ViewportRefProvider } from '@/features/tour-ai/context/classroom-viewport-context'
-import { useClassroomTheme } from '@/features/tour-ai/context/classroom-theme-context'
 import { ClassroomChapterIndex } from '@/features/tour-ai/components/ClassroomChapterIndex'
 import { ClassroomHeader } from '@/features/tour-ai/components/ClassroomHeader'
 import { ClassroomViewport } from '@/features/tour-ai/components/ClassroomViewport'
@@ -55,7 +53,6 @@ export function TourAIClassroomShell(props: TourAIClassroomShellProps) {
 function TourAIClassroomShellInner({ lang }: { lang: string }) {
   const bridge = useAIClassroomBridge()
   const { activity } = useClassroomActivity()
-  const { resolved } = useClassroomTheme()
   const { session, dispatch, hydrated, annotationState } = useClassroomSession()
   const [chatOpen, setChatOpen] = useState(false)
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -88,7 +85,6 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
   }, [hydrated])
 
   const pendingState = deriveClassroomPendingState(session, activity)
-  const isDark = resolved === 'dark'
 
   const inlineStyle: React.CSSProperties & Record<`--${string}`, string> = {
     'fontFamily': `${harmonyFont.style.fontFamily}, sans-serif`,
@@ -96,43 +92,41 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
   }
 
   return (
-    <div className={cn('h-screen', isDark && 'dark')}>
-      <div
-        data-testid="ai-classroom-root"
-        className="ai-classroom-root h-full"
-        style={inlineStyle}
-      >
-        <ViewportRefProvider value={viewportRef}>
-          <div className="flex h-full min-h-0 bg-tour-bg text-tour-text">
-            <main className="relative flex min-w-0 flex-1 flex-col">
-              <ClassroomHeader
-                onOpenChat={() => setChatOpen(true)}
-                chapterIndex={<ClassroomChapterIndex />}
-              />
-              <ClassroomViewport viewportRef={viewportRef}>
-                {!hydrated
-                  ? <ClassroomLoadingSkeleton />
-                  : (
-                      <>
-                        <ClassroomStream session={session} lang={lang} dispatch={dispatch} bridge={bridge} />
-                        <LessonGenerationProgressPanel
-                          progress={generationProgress}
-                          visible={pendingState === 'lesson_generation' || generationRunning || generationProgress.status !== 'idle'}
-                          onToggle={toggleGenerationProgress}
-                        />
-                        {annotationState.annotations.some(a => a.namespace === 'chat' && a.stale) && (
-                          <div className="mt-3 text-xs text-classroom-warning-fg"><Trans>聊天标注已过期</Trans></div>
-                        )}
-                        <LessonGenerationErrorRetry session={session} onRetry={retryQueuedGenerationEvent} />
-                      </>
-                    )}
-              </ClassroomViewport>
-              <ClassroomScrollFollower visible={newContentBelow && !pinned} onClick={scrollToBottom} />
-            </main>
-            {chatOpen && <ClassroomChatSidebar onClose={() => setChatOpen(false)} />}
-          </div>
-        </ViewportRefProvider>
-      </div>
+    <div
+      data-testid="ai-classroom-root"
+      className="ai-classroom-root h-screen"
+      style={inlineStyle}
+    >
+      <ViewportRefProvider value={viewportRef}>
+        <div className="flex h-full min-h-0 bg-tour-bg text-tour-text">
+          <main className="relative flex min-w-0 flex-1 flex-col">
+            <ClassroomHeader
+              onOpenChat={() => setChatOpen(true)}
+              chapterIndex={<ClassroomChapterIndex />}
+            />
+            <ClassroomViewport viewportRef={viewportRef}>
+              {!hydrated
+                ? <ClassroomLoadingSkeleton />
+                : (
+                    <>
+                      <ClassroomStream session={session} lang={lang} dispatch={dispatch} bridge={bridge} />
+                      <LessonGenerationProgressPanel
+                        progress={generationProgress}
+                        visible={pendingState === 'lesson_generation' || generationRunning || generationProgress.status !== 'idle'}
+                        onToggle={toggleGenerationProgress}
+                      />
+                      {annotationState.annotations.some(a => a.namespace === 'chat' && a.stale) && (
+                        <div className="mt-3 text-xs text-classroom-warning-fg"><Trans>聊天标注已过期</Trans></div>
+                      )}
+                      <LessonGenerationErrorRetry session={session} onRetry={retryQueuedGenerationEvent} />
+                    </>
+                  )}
+            </ClassroomViewport>
+            <ClassroomScrollFollower visible={newContentBelow && !pinned} onClick={scrollToBottom} />
+          </main>
+          {chatOpen && <ClassroomChatSidebar onClose={() => setChatOpen(false)} />}
+        </div>
+      </ViewportRefProvider>
     </div>
   )
 }
