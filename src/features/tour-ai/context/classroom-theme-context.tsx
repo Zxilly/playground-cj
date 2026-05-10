@@ -1,10 +1,17 @@
 'use client'
 
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useDarkMode } from '@/lib/theme/useDarkMode'
+import { readString, writeString } from '@/lib/storage'
 
 export type ThemeMode = 'auto' | 'light' | 'dark'
+
+const STORAGE_KEY = 'classroom-theme-mode'
+
+function isThemeMode(value: string): value is ThemeMode {
+  return value === 'auto' || value === 'light' || value === 'dark'
+}
 
 interface ClassroomThemeValue {
   mode: ThemeMode
@@ -15,11 +22,24 @@ interface ClassroomThemeValue {
 const ClassroomThemeContext = createContext<ClassroomThemeValue | null>(null)
 
 export function ClassroomThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<ThemeMode>('auto')
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    const stored = readString(STORAGE_KEY, 'auto')
+    return isThemeMode(stored) ? stored : 'auto'
+  })
   const systemDark = useDarkMode()
   const resolved: 'light' | 'dark' = mode === 'auto'
     ? (systemDark ? 'dark' : 'light')
     : mode
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', resolved === 'dark')
+  }, [resolved])
+
+  const setMode = useCallback((next: ThemeMode) => {
+    setModeState(next)
+    writeString(STORAGE_KEY, next)
+  }, [])
+
   const value = useMemo<ClassroomThemeValue>(() => ({ mode, setMode, resolved }), [mode, setMode, resolved])
   return <ClassroomThemeContext.Provider value={value}>{children}</ClassroomThemeContext.Provider>
 }
