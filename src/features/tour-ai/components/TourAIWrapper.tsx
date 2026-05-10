@@ -2,15 +2,15 @@
 
 import dynamic from 'next/dynamic'
 import { Trans } from '@lingui/react/macro'
+import { ClassroomBrandChip } from '@/features/tour-ai/components/ClassroomBrandChip'
 import { cn } from '@/lib/utils'
 
 function AIClassroomLoadingShell() {
   return (
-    <div className="h-screen bg-tour-bg text-tour-text">
+    <div className="ai-classroom-root h-screen bg-tour-bg text-tour-text">
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-tour-border bg-tour-surface px-5">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-6 items-center justify-center rounded-md bg-tour-accent-fg font-mono text-xs font-bold text-white">仓</div>
-          <div className="truncate text-sm font-semibold text-tour-text"><Trans>AI 课堂</Trans></div>
+          <ClassroomBrandChip />
         </div>
       </header>
       <main className="mx-auto w-full max-w-[920px] px-6 py-8 pb-20">

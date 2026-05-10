@@ -4,10 +4,11 @@ import { useMemo } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
+import { ClassroomBrandChip } from '@/features/tour-ai/components/ClassroomBrandChip'
+import { ClassroomThemeToggle } from '@/features/tour-ai/components/ClassroomThemeToggle'
 import { useClassroomSession } from '@/features/tour-ai/context/classroom-session-context'
 import { deriveLatestHeading } from '@/lib/ai/classroom/selectors'
 import type { ClassroomPhase } from '@/lib/ai/classroom/types'
-import { ClassroomThemeToggle } from '@/features/tour-ai/components/ClassroomThemeToggle'
 
 interface ClassroomHeaderProps {
   onOpenChat: () => void
@@ -24,8 +25,7 @@ export function ClassroomHeader({ onOpenChat, chapterIndex }: ClassroomHeaderPro
       className="flex h-12 shrink-0 items-center justify-between border-b border-tour-border bg-tour-surface px-5"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex size-6 items-center justify-center rounded-md bg-tour-accent-fg font-mono text-xs font-bold text-white">仓</div>
-        <div className="truncate text-sm font-semibold text-tour-text"><Trans>AI 课堂</Trans></div>
+        <ClassroomBrandChip />
         {latestHeading && (
           <span className="truncate text-xs text-muted-foreground">
             ·
