@@ -15,6 +15,7 @@ export function LessonGenerationProgressPanel({
   if (!visible)
     return null
 
+  const headerLabel = t`课程生成进度`
   const statusLabel = lessonGenerationProgressStatusLabel(progress.status)
   const bodyText = progress.text.trim() || (progress.status === 'running' ? t`等待生成进度...` : t`暂无进度详情`)
 
@@ -24,14 +25,14 @@ export function LessonGenerationProgressPanel({
         type="button"
         aria-expanded={progress.expanded}
         aria-controls="lesson-generation-progress-body"
-        aria-label={t`课程生成进度`}
+        aria-label={headerLabel}
         onClick={onToggle}
         className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-tour-bg"
       >
         <span className="flex min-w-0 items-center gap-2">
           <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition-transform', !progress.expanded && '-rotate-90')} />
           {progress.status === 'running' && <Loader2 className="size-3.5 shrink-0 animate-spin text-tour-accent-fg" />}
-          <span className="font-semibold text-tour-text">{t`课程生成进度`}</span>
+          <span className="font-semibold text-tour-text">{headerLabel}</span>
         </span>
         <span className="shrink-0 text-xs text-muted-foreground">{statusLabel}</span>
       </button>
