@@ -1,6 +1,6 @@
 import { classroomRecordSchema } from './schema'
 import { classroomStorageKey } from './store'
-import type { ClassroomEvent, ClassroomSession, ClassroomStreamItem } from './types'
+import type { ClassroomSession } from './types'
 
 export const CLASSROOM_DB_NAME = 'tour-ai-classroom'
 const CLASSROOM_STORE_NAME = 'sessions'
@@ -55,37 +55,6 @@ function openClassroomDatabase(): Promise<IDBDatabase | null> {
   })
 }
 
-type LegacyClassroomEvent = ClassroomEvent | { type: 'lesson_author_error', summary: string, createdAt: number }
-
-function normalizeClassroomEvent(event: LegacyClassroomEvent): ClassroomEvent {
-  if (event.type === 'lesson_author_error') {
-    return {
-      type: 'lesson_generation_error',
-      summary: event.summary,
-      createdAt: event.createdAt,
-    }
-  }
-  return event
-}
-
-function normalizeStreamItem(item: ClassroomStreamItem): ClassroomStreamItem {
-  if (item.type !== 'system_event')
-    return item
-  return {
-    ...item,
-    event: normalizeClassroomEvent(item.event as LegacyClassroomEvent),
-  }
-}
-
-function normalizeForPersistence(session: ClassroomSession): ClassroomSession {
-  const eventQueue = session.eventQueue.map(event => normalizeClassroomEvent(event as LegacyClassroomEvent))
-  return {
-    ...session,
-    eventQueue,
-    stream: session.stream.map(normalizeStreamItem),
-  }
-}
-
 export async function loadClassroomSession(lang: string): Promise<ClassroomSession | null> {
   const db = await openClassroomDatabase()
   if (!db)
@@ -107,7 +76,7 @@ export async function loadClassroomSession(lang: string): Promise<ClassroomSessi
     }
     if (result.data.lang !== lang || result.data.key !== classroomStorageKey(lang))
       return null
-    return normalizeForPersistence(result.data.session)
+    return result.data.session
   }
   finally {
     db.close()
@@ -120,15 +89,14 @@ async function writeClassroomSession(session: ClassroomSession): Promise<void> {
     return
 
   try {
-    const stableSession = normalizeForPersistence(session)
     const transaction = db.transaction(CLASSROOM_STORE_NAME, 'readwrite')
     const store = transaction.objectStore(CLASSROOM_STORE_NAME)
     store.put({
-      key: classroomStorageKey(stableSession.lang),
+      key: classroomStorageKey(session.lang),
       version: 1,
-      lang: stableSession.lang,
+      lang: session.lang,
       updatedAt: Date.now(),
-      session: stableSession,
+      session,
     } satisfies ClassroomSnapshotRecord)
     await transactionDone(transaction)
   }
