@@ -502,7 +502,7 @@ msgstr "Tour"
 msgid "新内容"
 msgstr "New content"
 
-#: src/features/tour-ai/components/TourAIChat.tsx:45
+#: src/features/tour-ai/components/TourAIChat.tsx:44
 msgid "无法获取 AI 配额，请在设置里填入自带 Key。"
 msgstr "Could not get AI quota. Add your own key in settings."
 
@@ -570,7 +570,7 @@ msgstr "Model returned: {text}"
 msgid "模型连接测试失败，未返回可读错误信息。"
 msgstr "Model connection test failed without a readable error message."
 
-#: src/features/tour-ai/components/TourAIChat.tsx:52
+#: src/features/tour-ai/components/TourAIChat.tsx:61
 msgid "正在准备聊天"
 msgstr "Preparing chat"
 
@@ -700,6 +700,10 @@ msgstr "Fill in {missingText} before testing the {currentProviderLabel} connecti
 msgid "请先输入代码"
 msgstr "Please enter code first"
 
+#: src/features/tour-ai/components/TourAIChat.tsx:53
+msgid "请在设置里填入 AI 服务的 API Key 后开始聊天。"
+msgstr "Add an AI service API Key in settings to start chatting."
+
 #: src/features/tour-ai/components/TourAIWrapper.tsx:18
 msgid "课堂内容"
 msgstr "Classroom content"
@@ -708,7 +712,7 @@ msgstr "Classroom content"
 msgid "课程内容已生成"
 msgstr "Lesson content generated"
 
-#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:20
+#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:31
 msgid "课程生成失败：{errorSummary}"
 msgstr "Lesson generation failed: {errorSummary}"
 
@@ -771,7 +775,7 @@ msgstr "Regenerate"
 msgid "重置默认"
 msgstr "Reset defaults"
 
-#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:30
+#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:41
 msgid "重试课程生成"
 msgstr "Retry lesson generation"
 
