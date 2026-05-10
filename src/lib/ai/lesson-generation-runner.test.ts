@@ -71,11 +71,11 @@ describe('runLessonGenerationStep', () => {
     expect(createLessonGenerationMock).not.toHaveBeenCalled()
   })
 
-  it('throws on tool-error and reports the failure label first', async () => {
+  it('reports tool-error label and continues to allow LLM retry', async () => {
     streamMock.mockResolvedValueOnce({
       fullStream: createAsyncIterable([
         { type: 'text-delta', id: 'empty', text: '' },
-        { type: 'tool-error', id: 'tool-err', toolName: 'append_lesson_content', error: new Error('boom') },
+        { type: 'tool-error', id: 'tool-err', toolName: 'append_paragraph', error: new Error('boom') },
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
@@ -87,25 +87,29 @@ describe('runLessonGenerationStep', () => {
       bridge: {} as AIClassroomBridgeValue,
       event: { type: 'classroom_opened', createdAt: 1 },
       onProgress: chunk => progress.push(chunk),
-    })).rejects.toThrowError(/append_lesson_content/)
+    })).resolves.toBeUndefined()
 
-    expect(progress).toEqual(['工具失败：append_lesson_content\n'])
+    expect(progress).toEqual(['工具失败：append_paragraph\n'])
   })
 
-  it('throws on tool-input-error and surfaces errorText in the message', async () => {
+  it('reports tool-input-error label and continues to allow LLM retry', async () => {
     streamMock.mockResolvedValueOnce({
       fullStream: createAsyncIterable([
         { type: 'tool-input-error', id: 'in-err', toolName: 'set_phase', errorText: 'bad input' },
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+    const progress: string[] = []
 
     await expect(runLessonGenerationStep({
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
       toolkit: {} as Toolkit,
       bridge: {} as AIClassroomBridgeValue,
       event: { type: 'classroom_opened', createdAt: 1 },
-    })).rejects.toThrowError(/set_phase failed: bad input/)
+      onProgress: chunk => progress.push(chunk),
+    })).resolves.toBeUndefined()
+
+    expect(progress).toEqual(['工具失败：set_phase\n'])
   })
 
   it('stops consuming stream parts after an abort signal fires', async () => {
