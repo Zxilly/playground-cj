@@ -23,6 +23,21 @@ export const LESSON_GENERATION_TOOL_NAMES = [
 
 export type LessonGenerationToolName = typeof LESSON_GENERATION_TOOL_NAMES[number]
 
+export const LESSON_AUTHORING_TOOL_NAMES = new Set<LessonGenerationToolName>([
+  'append_heading',
+  'append_paragraph',
+  'append_concept_card',
+  'append_code_example',
+  'append_callout',
+  'append_steps',
+  'append_compare',
+  'set_current_quiz',
+])
+
+export function isLessonAuthoringTool(name: string): boolean {
+  return (LESSON_AUTHORING_TOOL_NAMES as Set<string>).has(name)
+}
+
 export const LESSON_GENERATION_SYSTEM_PROMPT = `You create and advance AI classroom lessons.
 
 You create and advance one continuous classroom stream. You do not chat with the learner directly and you never receive free-form user messages as your primary input. You consume structured classroom events only: classroom_opened, quiz_success, quiz_skip, and chat_intent.

@@ -12,6 +12,8 @@ const createLessonGenerationMock = vi.hoisted(() => vi.fn(() => ({
 vi.mock('./lesson-generation', () => ({
   createLessonGeneration: createLessonGenerationMock,
   createLessonGenerationEventEnvelope: (event: ClassroomEvent) => ({ event }),
+  isLessonAuthoringTool: (name: string) =>
+    name.startsWith('append_') || name === 'set_current_quiz',
 }))
 
 vi.mock('@lingui/core/macro', () => ({
@@ -34,7 +36,7 @@ describe('runLessonGenerationStep', () => {
       fullStream: createAsyncIterable([
         { type: 'text-delta', id: 'text-1', text: '正在规划课程' },
         { type: 'tool-input-start', id: 'tool-1', toolName: 'read_classroom_state' },
-        { type: 'tool-result', toolCallId: 'tool-1', toolName: 'append_lesson_content', output: undefined },
+        { type: 'tool-result', toolCallId: 'tool-1', toolName: 'append_paragraph', output: { ok: true, appended: 1 } },
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
@@ -54,7 +56,7 @@ describe('runLessonGenerationStep', () => {
     expect(progress).toEqual([
       '正在规划课程',
       '\n调用工具：read_classroom_state\n',
-      '完成工具：append_lesson_content\n',
+      '完成工具：append_paragraph\n',
     ])
   })
 
@@ -135,14 +137,12 @@ describe('runLessonGenerationStep', () => {
     })).rejects.toThrow(/produced no authoring output/)
   })
 
-  it('throws when authoring tool only returns retry hint (ok:false) and never succeeds', async () => {
+  it('throws when authoring tool only returns failWithRetryHint (ok:false) and never succeeds', async () => {
     streamMock.mockResolvedValueOnce({
       fullStream: createAsyncIterable([
         { type: 'tool-input-start', id: 'in', toolName: 'set_current_quiz' },
-        { type: 'tool-error', id: 'tool-err', toolName: 'set_current_quiz', error: new Error('zod') },
-        { type: 'tool-input-start', id: 'in2', toolName: 'set_current_quiz' },
-        // Tool returns retry hint (ok: false) — should NOT count as authoring success
-        { type: 'tool-result', toolCallId: 'tool-hint', toolName: 'set_current_quiz', output: { ok: false, error: 'zod', expectedShape: {} } },
+        // Tool returns retry hint (ok: false) — should now count as failure (B-1)
+        { type: 'tool-result', toolCallId: 'tool-hint', toolName: 'set_current_quiz', output: { ok: false, error: 'zod validation failed', expectedShape: {} } },
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')

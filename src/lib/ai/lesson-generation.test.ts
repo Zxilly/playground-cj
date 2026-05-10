@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createLessonGeneration,
   createLessonGenerationEventEnvelope,
+  isLessonAuthoringTool,
+  LESSON_AUTHORING_TOOL_NAMES,
   LESSON_GENERATION_SYSTEM_PROMPT,
   LESSON_GENERATION_TOOL_NAMES,
 } from './lesson-generation'
@@ -70,6 +72,28 @@ describe('lesson generation contract', () => {
       expect(LESSON_GENERATION_TOOL_NAMES).toContain(name)
     }
     expect(LESSON_GENERATION_TOOL_NAMES).not.toContain('append_lesson_content')
+  })
+
+  it('lesson authoring tool names cover all 8 lesson-content tools', () => {
+    expect(LESSON_AUTHORING_TOOL_NAMES.size).toBe(8)
+    for (const name of [
+      'append_heading',
+      'append_paragraph',
+      'append_concept_card',
+      'append_code_example',
+      'append_callout',
+      'append_steps',
+      'append_compare',
+      'set_current_quiz',
+    ] as const) {
+      expect(LESSON_AUTHORING_TOOL_NAMES.has(name)).toBe(true)
+    }
+  })
+
+  it('lesson authoring tool names exclude read/control tools', () => {
+    for (const name of ['read_classroom_state', 'read_concepts', 'mcp_call_tool', 'set_phase', 'set_learning_notes'] as const) {
+      expect(isLessonAuthoringTool(name)).toBe(false)
+    }
   })
 
   it('lesson generation system prompt mentions expectedShape and append_heading', () => {
