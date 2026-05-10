@@ -5,10 +5,6 @@ export interface RetryHint<T> {
 }
 
 export function failWithRetryHint<T>(error: unknown, expectedShape: T): RetryHint<T> {
-  const message = error instanceof Error
-    ? error.message
-    : error == null
-      ? String(error)
-      : String(error)
+  const message = error instanceof Error ? error.message : String(error)
   return { ok: false, error: message, expectedShape }
 }
