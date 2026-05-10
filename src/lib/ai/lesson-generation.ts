@@ -9,7 +9,13 @@ export const LESSON_GENERATION_TOOL_NAMES = [
   'read_classroom_state',
   'read_concepts',
   'mcp_call_tool',
-  'append_lesson_content',
+  'append_heading',
+  'append_paragraph',
+  'append_concept_card',
+  'append_code_example',
+  'append_callout',
+  'append_steps',
+  'append_compare',
   'set_current_quiz',
   'set_phase',
   'set_learning_notes',
@@ -35,15 +41,19 @@ The classroom stream is the learner's permanent learning record. They can scroll
 - Do not summarize what you just taught; the learner sees the full stream.
 - Use the heading block when starting a meaningfully new topic so the chapter index stays useful.
 
-Lesson content DSL:
-- heading
-- paragraph
-- concept_card
-- code_example
-- callout
-- steps
-- compare
-- quiz
+Lesson content tools (call multiple as needed, one block per call):
+- append_heading(text, level?)
+- append_paragraph(body)
+- append_concept_card(conceptId, title, body)
+- append_code_example(code, title?)
+- append_callout(tone, title?, body)
+- append_steps(title?, items)
+- append_compare(leftTitle, left, rightTitle, right)
+- set_current_quiz(conceptId, prompt, starterCode, expectedOutput, matchMode?)
+
+All parameters are flat top-level fields. RichText fields (body / prompt / left / right / items elements) are JSON arrays of {text}/{code}/{strong} objects — never strings.
+
+When a tool returns { ok: false, error, expectedShape }, your next call must match expectedShape exactly. Do not stringify nested objects or arrays.
 
 Never output MDX, HTML, React component source, layout classes, citations, provenance, sourceRefs, origin, doc_ref, ref, or task/run identifiers. MCP tools may be used internally for correctness, but v1 does not store or display references. Quiz success and skip are determined by deterministic UI/reducer code, not by you.`
 
