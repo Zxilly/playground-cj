@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Trans } from '@lingui/react/macro'
 import { useAIClassroomBridge } from '@/features/tour-ai/context/useAIClassroomBridge'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
@@ -72,6 +72,20 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
     contentLength: session.stream.length,
     hydrated,
   })
+
+  // One-shot: when hydrate completes, scroll to latest content (restore historical position)
+  const didHydrateScrollRef = useRef(false)
+  useEffect(() => {
+    if (didHydrateScrollRef.current)
+      return
+    if (!hydrated)
+      return
+    const el = viewportRef.current
+    if (!el)
+      return
+    didHydrateScrollRef.current = true
+    el.scrollTop = el.scrollHeight
+  }, [hydrated])
 
   const pendingState = deriveClassroomPendingState(session, activity)
   const isDark = resolved === 'dark'
