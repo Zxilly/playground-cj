@@ -15,6 +15,14 @@ vi.mock('next/font/local', () => ({
   default: () => ({ style: { fontFamily: 'MockFont' } }),
 }))
 
+vi.mock('react-virtuoso', () => ({
+  Virtuoso: ({ data, itemContent }: { data: unknown[], itemContent: (i: number, item: unknown) => React.ReactNode }) => (
+    <div data-testid="virtuoso-mock">
+      {data.map((item, i) => <div key={i}>{itemContent(i, item)}</div>)}
+    </div>
+  ),
+}))
+
 vi.mock('@/features/tour/components/TourEditor', () => ({
   TourEditor: ({ code }: { code: string }) => (
     <div data-testid="tour-editor">{code || 'empty editor'}</div>

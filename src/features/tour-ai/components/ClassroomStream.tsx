@@ -1,18 +1,20 @@
 'use client'
 
-import { Check } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
+import { Check } from 'lucide-react'
+import { Virtuoso } from 'react-virtuoso'
+import { LessonBlockView } from '@/features/tour-ai/components/LessonBlockView'
+import { QuizPracticeCard } from '@/features/tour-ai/components/QuizPracticeCard'
+import { useViewportRef } from '@/features/tour-ai/context/classroom-viewport-context'
+import { lessonBlockKey } from '@/features/tour-ai/utils/lesson-block-key'
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
-import { cn } from '@/lib/utils'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
 import type {
   ClassroomQuiz,
   ClassroomSession,
   ClassroomStreamItem,
 } from '@/lib/ai/classroom/types'
-import { lessonBlockKey } from '@/features/tour-ai/utils/lesson-block-key'
-import { LessonBlockView } from '@/features/tour-ai/components/LessonBlockView'
-import { QuizPracticeCard } from '@/features/tour-ai/components/QuizPracticeCard'
+import { cn } from '@/lib/utils'
 
 interface ClassroomStreamProps {
   session: ClassroomSession
@@ -22,6 +24,7 @@ interface ClassroomStreamProps {
 }
 
 export function ClassroomStream({ session, lang, dispatch, bridge }: ClassroomStreamProps) {
+  const viewportRef = useViewportRef()
   if (session.stream.length === 0) {
     return (
       <div className="rounded-md border border-tour-border bg-tour-surface px-4 py-4 text-sm text-muted-foreground">
@@ -31,18 +34,22 @@ export function ClassroomStream({ session, lang, dispatch, bridge }: ClassroomSt
   }
 
   return (
-    <div className="space-y-5">
-      {session.stream.map(item => (
-        <StreamItemView
-          key={item.id}
-          item={item}
-          currentQuiz={session.currentQuiz}
-          lang={lang}
-          dispatch={dispatch}
-          bridge={bridge}
-        />
-      ))}
-    </div>
+    <Virtuoso
+      data={session.stream}
+      customScrollParent={viewportRef.current ?? undefined}
+      computeItemKey={(_, item) => item.id}
+      itemContent={(_, item) => (
+        <div className="mb-5">
+          <StreamItemView
+            item={item}
+            currentQuiz={session.currentQuiz}
+            lang={lang}
+            dispatch={dispatch}
+            bridge={bridge}
+          />
+        </div>
+      )}
+    />
   )
 }
 
@@ -107,14 +114,14 @@ function StreamItemView({
     )
   }
 
-  const eventSummary = item.event.summary
+  const errorSummary = item.event.summary
 
   if (item.event.type === 'lesson_generation_error') {
     return (
       <section className="rounded-md border border-tour-border bg-tour-surface p-3 text-xs text-muted-foreground">
         <Trans>
           课程生成失败：
-          {eventSummary}
+          {errorSummary}
         </Trans>
       </section>
     )
@@ -122,7 +129,7 @@ function StreamItemView({
 
   return (
     <section className="rounded-md border border-tour-border bg-tour-surface p-3 text-xs text-muted-foreground">
-      {eventSummary || item.event.type}
+      {errorSummary || item.event.type}
     </section>
   )
 }
