@@ -1,12 +1,20 @@
 import { cn } from '@/lib/utils'
 import type { LessonContentBlock } from '@/lib/ai/classroom/types'
 import { richTextPlainText } from '@/features/tour-ai/utils/classroom-text'
+import { lessonBlockKey } from '@/features/tour-ai/utils/lesson-block-key'
 import { RichTextView } from '@/features/tour-ai/components/RichTextView'
 
 export function LessonBlockView({ block }: { block: LessonContentBlock }) {
   if (block.type === 'heading') {
     const HeadingTag = block.level === 3 ? 'h3' : 'h2'
-    return <HeadingTag className="text-xl font-bold tracking-normal text-tour-heading">{block.text}</HeadingTag>
+    return (
+      <HeadingTag
+        data-chapter-key={lessonBlockKey(block)}
+        className="text-xl font-bold tracking-normal text-tour-heading"
+      >
+        {block.text}
+      </HeadingTag>
+    )
   }
   if (block.type === 'paragraph')
     return <p className="text-[15px] leading-7"><RichTextView body={block.body} /></p>
