@@ -1,4 +1,9 @@
-export function buildTourAIChatSuggestions(lang: string) {
+export interface LocalSuggestion {
+  title: string
+  prompt: string
+}
+
+export function buildTourAIChatSuggestions(lang: string): LocalSuggestion[] {
   if (lang === 'en') {
     return [
       { title: 'Explain the quiz', prompt: 'Explain what the current quiz is asking without solving it completely.' },

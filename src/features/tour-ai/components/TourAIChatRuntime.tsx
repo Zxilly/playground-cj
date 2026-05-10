@@ -17,7 +17,14 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { createClassroomChat } from '@/lib/ai/classroom-chat'
 import { Thread } from '@/modules/assistant-ui/chat/Thread'
 import { buildTourAIChatSuggestions } from '@/features/tour-ai/agent/chat-suggestions'
+import type { LocalSuggestion } from '@/features/tour-ai/agent/chat-suggestions'
 import { useLLMConfig } from '@/stores/llmConfig'
+
+// Adapter: assistant-ui's SuggestionConfig requires `label` (used as a tag chip we don't render).
+// We pass empty string so the upstream type contract is satisfied without coupling our local model.
+function adaptSuggestions(suggestions: LocalSuggestion[]): SuggestionConfig[] {
+  return suggestions.map(s => ({ ...s, label: '' }))
+}
 
 type ClassroomChatMessage = InferAgentUIMessage<ReturnType<typeof createClassroomChat>>
 
@@ -39,7 +46,7 @@ export function TourAIChatRuntime({ toolkit, lang }: { toolkit: Toolkit, lang: s
   const auiConfig = useMemo(
     () => ({
       tools: Tools({ toolkit }),
-      suggestions: Suggestions(suggestions as unknown as SuggestionConfig[]),
+      suggestions: Suggestions(adaptSuggestions(suggestions)),
     }),
     [toolkit, suggestions],
   )
