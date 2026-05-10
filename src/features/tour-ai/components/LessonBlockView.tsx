@@ -1,6 +1,5 @@
 import { cn } from '@/lib/utils'
 import type { LessonContentBlock } from '@/lib/ai/classroom/types'
-import { richTextPlainText } from '@/features/tour-ai/utils/classroom-text'
 import { lessonBlockKey } from '@/features/tour-ai/utils/lesson-block-key'
 import { RichTextView } from '@/features/tour-ai/components/RichTextView'
 
@@ -48,8 +47,8 @@ export function LessonBlockView({ block }: { block: LessonContentBlock }) {
       <section>
         {block.title && <div className="mb-2 font-semibold">{block.title}</div>}
         <ol className="list-decimal space-y-2 pl-5">
-          {block.items.map(item => (
-            <li key={richTextPlainText(item)} className="text-sm leading-7">
+          {block.items.map((item, idx) => (
+            <li key={`step:${idx}`} className="text-sm leading-7">
               <RichTextView body={item} />
             </li>
           ))}
