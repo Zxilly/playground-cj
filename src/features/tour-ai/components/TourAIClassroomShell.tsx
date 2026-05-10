@@ -13,6 +13,7 @@ import { ClassroomActivityProvider, useClassroomActivity } from '@/features/tour
 import { ClassroomSessionProvider, useClassroomSession } from '@/features/tour-ai/context/classroom-session-context'
 import { ViewportRefProvider } from '@/features/tour-ai/context/classroom-viewport-context'
 import { useClassroomTheme } from '@/features/tour-ai/context/classroom-theme-context'
+import { ClassroomChapterIndex } from '@/features/tour-ai/components/ClassroomChapterIndex'
 import { ClassroomHeader } from '@/features/tour-ai/components/ClassroomHeader'
 import { ClassroomViewport } from '@/features/tour-ai/components/ClassroomViewport'
 import { ClassroomLoadingSkeleton } from '@/features/tour-ai/components/ClassroomLoadingSkeleton'
@@ -89,7 +90,10 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
       <ViewportRefProvider value={viewportRef}>
         <div className="flex h-full min-h-0 bg-tour-bg text-tour-text">
           <main className="relative flex min-w-0 flex-1 flex-col">
-            <ClassroomHeader onOpenChat={() => setChatOpen(true)} />
+            <ClassroomHeader
+              onOpenChat={() => setChatOpen(true)}
+              chapterIndex={<ClassroomChapterIndex />}
+            />
             <ClassroomViewport viewportRef={viewportRef}>
               {!hydrated
                 ? <ClassroomLoadingSkeleton />
