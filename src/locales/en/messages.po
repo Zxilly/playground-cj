@@ -39,7 +39,7 @@ msgstr ""
 "\n"
 "Error: {lastError}"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:90
+#: src/features/tour-ai/components/ClassroomStream.tsx:97
 msgid "(empty)"
 msgstr "(empty)"
 
@@ -60,9 +60,8 @@ msgstr "{outputTip} Output"
 msgid "AI 助教"
 msgstr "AI Tutor"
 
-#: src/features/tour-ai/components/ClassroomHeader.tsx:28
-#: src/features/tour-ai/components/TourAIWrapper.tsx:14
-#: src/features/tour-ai/components/TourAIWrapper.tsx:19
+#: src/features/tour-ai/components/ClassroomBrandChip.tsx:7
+#: src/features/tour-ai/components/TourAIWrapper.tsx:18
 msgid "AI 课堂"
 msgstr "AI Classroom"
 
@@ -477,7 +476,7 @@ msgstr "Code saved"
 msgid "已复制分享链接"
 msgstr "Share link copied"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:100
+#: src/features/tour-ai/components/ClassroomStream.tsx:107
 msgid "已记录："
 msgstr "Recorded:"
 
@@ -518,7 +517,7 @@ msgstr "Show"
 msgid "显示移动端侧边栏。"
 msgstr "Displays the mobile sidebar."
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:19
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:20
 msgid "暂无进度详情"
 msgstr "No progress details yet"
 
@@ -574,7 +573,7 @@ msgstr "Model connection test failed without a readable error message."
 msgid "正在准备聊天"
 msgstr "Preparing chat"
 
-#: src/features/tour-ai/components/TourAIWrapper.tsx:21
+#: src/features/tour-ai/components/TourAIWrapper.tsx:20
 msgid "正在加载 AI 课堂"
 msgstr "Loading AI classroom"
 
@@ -590,11 +589,11 @@ msgstr "Loading lesson content"
 msgid "正在格式化..."
 msgstr "Formatting..."
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:51
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:52
 msgid "正在编写课程"
 msgstr "Writing lesson content"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:28
+#: src/features/tour-ai/components/ClassroomStream.tsx:31
 msgid "正在规划下一步"
 msgstr "Planning the next step"
 
@@ -622,7 +621,7 @@ msgstr "Clear Cache and Restart"
 msgid "滚动到最新内容"
 msgstr "Scroll to latest content"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:53
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:54
 msgid "生成失败"
 msgstr "Generation failed"
 
@@ -638,11 +637,11 @@ msgstr "Leave blank to use shared quota"
 msgid "程序输出"
 msgstr "Program Output"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:54
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:55
 msgid "等待开始"
 msgstr "Waiting to start"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:19
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:20
 msgid "等待生成进度..."
 msgstr "Waiting for generation progress..."
 
@@ -672,7 +671,7 @@ msgstr "Edit"
 msgid "聊天"
 msgstr "Chat"
 
-#: src/features/tour-ai/components/TourAIClassroomShell.tsx:109
+#: src/features/tour-ai/components/TourAIClassroomShell.tsx:119
 msgid "聊天标注已过期"
 msgstr "Chat annotations are stale"
 
@@ -704,24 +703,20 @@ msgstr "Please enter code first"
 msgid "请在设置里填入 AI 服务的 API Key 后开始聊天。"
 msgstr "Add an AI service API Key in settings to start chatting."
 
-#: src/features/tour-ai/components/TourAIWrapper.tsx:18
+#: src/features/tour-ai/components/TourAIWrapper.tsx:17
 msgid "课堂内容"
 msgstr "Classroom content"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:52
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:53
 msgid "课程内容已生成"
 msgstr "Lesson content generated"
 
+#: src/features/tour-ai/components/ClassroomStream.tsx:122
 #: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:31
 msgid "课程生成失败：{errorSummary}"
 msgstr "Lesson generation failed: {errorSummary}"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:115
-msgid "课程生成失败：{eventSummary}"
-msgstr "Lesson generation failed: {eventSummary}"
-
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:27
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:34
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:18
 msgid "课程生成进度"
 msgstr "Lesson generation progress"
 
@@ -729,7 +724,7 @@ msgstr "Lesson generation progress"
 msgid "课程目录"
 msgstr "Lesson outline"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:89
+#: src/features/tour-ai/components/ClassroomStream.tsx:96
 msgid "输出："
 msgstr "Output:"
 
@@ -755,7 +750,7 @@ msgstr "Run successful"
 msgid "运行检查"
 msgstr "Run check"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:87
+#: src/features/tour-ai/components/ClassroomStream.tsx:94
 msgid "运行结果"
 msgstr "Run result"
 

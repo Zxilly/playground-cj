@@ -39,7 +39,7 @@ msgstr ""
 "\n"
 "错误：{lastError}"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:90
+#: src/features/tour-ai/components/ClassroomStream.tsx:97
 msgid "(empty)"
 msgstr "（空）"
 
@@ -60,9 +60,8 @@ msgstr "{outputTip}输出内容"
 msgid "AI 助教"
 msgstr "AI 助教"
 
-#: src/features/tour-ai/components/ClassroomHeader.tsx:28
-#: src/features/tour-ai/components/TourAIWrapper.tsx:14
-#: src/features/tour-ai/components/TourAIWrapper.tsx:19
+#: src/features/tour-ai/components/ClassroomBrandChip.tsx:7
+#: src/features/tour-ai/components/TourAIWrapper.tsx:18
 msgid "AI 课堂"
 msgstr "AI 课堂"
 
@@ -477,7 +476,7 @@ msgstr "已保存代码"
 msgid "已复制分享链接"
 msgstr "已复制分享链接"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:100
+#: src/features/tour-ai/components/ClassroomStream.tsx:107
 msgid "已记录："
 msgstr "已记录："
 
@@ -518,7 +517,7 @@ msgstr "显示"
 msgid "显示移动端侧边栏。"
 msgstr "显示移动端侧边栏。"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:19
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:20
 msgid "暂无进度详情"
 msgstr "暂无进度详情"
 
@@ -574,7 +573,7 @@ msgstr "模型连接测试失败，未返回可读错误信息。"
 msgid "正在准备聊天"
 msgstr "正在准备聊天"
 
-#: src/features/tour-ai/components/TourAIWrapper.tsx:21
+#: src/features/tour-ai/components/TourAIWrapper.tsx:20
 msgid "正在加载 AI 课堂"
 msgstr "正在加载 AI 课堂"
 
@@ -590,11 +589,11 @@ msgstr "正在加载课程内容"
 msgid "正在格式化..."
 msgstr "正在格式化..."
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:51
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:52
 msgid "正在编写课程"
 msgstr "正在编写课程"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:28
+#: src/features/tour-ai/components/ClassroomStream.tsx:31
 msgid "正在规划下一步"
 msgstr "正在规划下一步"
 
@@ -622,7 +621,7 @@ msgstr "清除缓存并重启"
 msgid "滚动到最新内容"
 msgstr "滚动到最新内容"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:53
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:54
 msgid "生成失败"
 msgstr "生成失败"
 
@@ -638,11 +637,11 @@ msgstr "留空使用共享额度"
 msgid "程序输出"
 msgstr "程序输出"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:54
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:55
 msgid "等待开始"
 msgstr "等待开始"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:19
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:20
 msgid "等待生成进度..."
 msgstr "等待生成进度..."
 
@@ -672,7 +671,7 @@ msgstr "编辑"
 msgid "聊天"
 msgstr "聊天"
 
-#: src/features/tour-ai/components/TourAIClassroomShell.tsx:109
+#: src/features/tour-ai/components/TourAIClassroomShell.tsx:119
 msgid "聊天标注已过期"
 msgstr "聊天标注已过期"
 
@@ -704,24 +703,20 @@ msgstr "请先输入代码"
 msgid "请在设置里填入 AI 服务的 API Key 后开始聊天。"
 msgstr "请在设置里填入 AI 服务的 API Key 后开始聊天。"
 
-#: src/features/tour-ai/components/TourAIWrapper.tsx:18
+#: src/features/tour-ai/components/TourAIWrapper.tsx:17
 msgid "课堂内容"
 msgstr "课堂内容"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:52
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:53
 msgid "课程内容已生成"
 msgstr "课程内容已生成"
 
+#: src/features/tour-ai/components/ClassroomStream.tsx:122
 #: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:31
 msgid "课程生成失败：{errorSummary}"
 msgstr "课程生成失败：{errorSummary}"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:115
-msgid "课程生成失败：{eventSummary}"
-msgstr "课程生成失败：{eventSummary}"
-
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:27
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:34
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:18
 msgid "课程生成进度"
 msgstr "课程生成进度"
 
@@ -729,7 +724,7 @@ msgstr "课程生成进度"
 msgid "课程目录"
 msgstr "课程目录"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:89
+#: src/features/tour-ai/components/ClassroomStream.tsx:96
 msgid "输出："
 msgstr "输出："
 
@@ -755,7 +750,7 @@ msgstr "运行成功"
 msgid "运行检查"
 msgstr "运行检查"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:87
+#: src/features/tour-ai/components/ClassroomStream.tsx:94
 msgid "运行结果"
 msgstr "运行结果"
 
