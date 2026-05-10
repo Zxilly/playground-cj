@@ -7,11 +7,20 @@ import * as monaco from '@codingame/monaco-vscode-editor-api'
 import type { AIClassroomBridgeValue, AIClassroomStateBridge } from '@/lib/ai/classroom/bridge'
 import { getAllConcepts, getReadyConcepts } from '@/lib/ai/concept-graph/loader'
 import { callMcpTool, listMcpTools } from '@/lib/mcp/client'
-import { lessonContentBlockSchema, lessonContentBlocksSchema } from '@/lib/ai/classroom/schema'
+import { lessonContentBlockSchema, lessonContentBlocksSchema, richTextSchema } from '@/lib/ai/classroom/schema'
 import { deriveSessionPendingWork } from '@/lib/ai/classroom/selectors'
 import type { ClassroomSession } from '@/lib/ai/classroom/types'
+import { failWithRetryHint } from './fail-with-retry-hint'
 
 const CHAT_MARKER_NAMESPACE = 'chat'
+
+const SET_CURRENT_QUIZ_EXAMPLE = {
+  conceptId: 'concept_id',
+  prompt: [{ text: 'Write a function that returns the sum of two integers.' }],
+  starterCode: 'func add(a: Int64, b: Int64): Int64 { 0 }',
+  expectedOutput: '7',
+  matchMode: 'exact' as const,
+}
 
 function ok<T extends object>(extra?: T) {
   return { ok: true as const, ...(extra ?? ({} as T)) } as { ok: true } & T
@@ -371,24 +380,35 @@ export function createLessonGenerationToolkit(bridge: AIClassroomBridgeValue): T
     },
 
     set_current_quiz: {
-      description: 'Set the current active quiz using the DSL quiz block.',
+      description: 'Set the current active quiz. All parameters are top-level — do not wrap fields in a "quiz" key, do not stringify nested objects. prompt is a RichText array of {text}/{code}/{strong} objects.',
       parameters: z.object({
-        quiz: lessonContentBlockSchema,
+        conceptId: z.string(),
+        prompt: richTextSchema,
+        starterCode: z.string(),
+        expectedOutput: z.string(),
+        matchMode: z.union([z.literal('exact'), z.literal('contains'), z.literal('regex')]).optional(),
       }),
-      execute: async ({ quiz }) => {
+      execute: async ({ conceptId, prompt, starterCode, expectedOutput, matchMode }) => {
         try {
-          const parsed = lessonContentBlockSchema.parse(quiz)
-          if (parsed.type !== 'quiz')
-            return fail('set_current_quiz requires a quiz block.')
+          const block = lessonContentBlockSchema.parse({
+            type: 'quiz',
+            conceptId,
+            prompt,
+            starterCode,
+            expectedOutput,
+            matchMode,
+          })
+          if (block.type !== 'quiz')
+            return failWithRetryHint(new Error('expected quiz block after parse'), SET_CURRENT_QUIZ_EXAMPLE)
           requireClassroom(bridge).dispatch({
             type: 'SET_CURRENT_QUIZ',
-            quiz: parsed,
+            quiz: block,
             now: Date.now(),
           })
-          return ok({ currentQuiz: parsed })
+          return ok({ currentQuiz: block })
         }
         catch (e) {
-          return fail((e as Error).message)
+          return failWithRetryHint(e, SET_CURRENT_QUIZ_EXAMPLE)
         }
       },
     },

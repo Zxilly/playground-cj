@@ -110,13 +110,10 @@ describe('ai classroom toolkits', () => {
       blocks: [{ type: 'heading', text: 'Bindings', level: 2 }],
     }, { toolCallId: 't1', abortSignal: new AbortController().signal, human: async () => undefined })
     await toolkit.set_current_quiz!.execute!({
-      quiz: {
-        type: 'quiz',
-        conceptId: 'cj.bindings.let',
-        prompt: [{ text: 'Print 3.' }],
-        starterCode: 'main() {\n    println(0)\n}',
-        expectedOutput: '3',
-      },
+      conceptId: 'cj.bindings.let',
+      prompt: [{ text: 'Print 3.' }],
+      starterCode: 'main() {\n    println(0)\n}',
+      expectedOutput: '3',
     }, { toolCallId: 't2', abortSignal: new AbortController().signal, human: async () => undefined })
 
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
@@ -230,18 +227,20 @@ describe('ai classroom toolkits', () => {
     expect(monaco.editor.setModelMarkers).toHaveBeenLastCalledWith(model, 'chat', [])
   })
 
-  it('rejects non-quiz blocks when setting the current quiz', async () => {
+  it('set_current_quiz returns retry hint with expected shape on zod parse failure', async () => {
     const { createLessonGenerationToolkit } = await import('./tools')
     const toolkit = createLessonGenerationToolkit(bridge)
 
     const result = await toolkit.set_current_quiz!.execute!({
-      quiz: { type: 'heading', text: 'Not a quiz', level: 2 },
+      conceptId: 'concept_x',
+      prompt: [],
+      starterCode: 'main(){0}',
+      expectedOutput: '7',
     }, toolOptions())
 
-    expect(result).toEqual({
-      ok: false,
-      error: 'set_current_quiz requires a quiz block.',
-    })
+    expect((result as { ok: boolean }).ok).toBe(false)
+    expect((result as { expectedShape?: unknown }).expectedShape).toBeDefined()
+    expect((result as { expectedShape: { conceptId: string } }).expectedShape.conceptId).toBe('concept_id')
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_CURRENT_QUIZ' }))
   })
 
