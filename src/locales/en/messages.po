@@ -13,90 +13,200 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/components/LspStatusIndicator.tsx:77
+#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:102
+msgid ""
+"\n"
+"失败：{errorMessage}"
+msgstr ""
+"\n"
+"Failed: {errorMessage}"
+
+#: src/lib/ai/lesson-generation-runner.ts:35
+msgid ""
+"\n"
+"调用工具：{toolName}\n"
+""
+msgstr ""
+"\n"
+"Calling tool: {toolName}\n"
+""
+
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:69
 msgid ""
 "\n"
 "错误：{lastError}"
 msgstr ""
+"\n"
+"Error: {lastError}"
 
-#: src/components/LspStatusIndicator.tsx:36
+#: src/features/tour-ai/components/ClassroomStream.tsx:90
+msgid "(empty)"
+msgstr "(empty)"
+
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:30
 msgid "（手动）"
 msgstr " (manual)"
 
-#: src/components/Playground.tsx:120
+#: src/lib/ai/model-test.ts:61
+msgid "{currentProviderLabel} 连接正常。"
+msgstr "{currentProviderLabel} connection is working."
+
+#: src/features/playground/components/Playground.tsx:122
 msgid "{outputTip}输出内容"
 msgstr "{outputTip} Output"
 
-#: src/service/run.ts:42
+#: src/features/tour/components/TourHeader.tsx:61
+#: src/features/tour/components/TourHeader.tsx:82
+msgid "AI 助教"
+msgstr "AI Tutor"
+
+#: src/features/tour-ai/components/ClassroomHeader.tsx:28
+#: src/features/tour-ai/components/TourAIWrapper.tsx:14
+#: src/features/tour-ai/components/TourAIWrapper.tsx:19
+msgid "AI 课堂"
+msgstr "AI Classroom"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:172
+msgid "API Base"
+msgstr "API Base"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:184
+msgid "API Key"
+msgstr "API Key"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:155
+msgid "API 风格"
+msgstr "API style"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:241
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/components/ui/dialog.tsx:115
+msgid "Close"
+msgstr "Close"
+
+#: src/service/run.ts:55
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
-#: src/components/ShareButton.tsx:98
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:99
+msgid "Expected output:"
+msgstr "Expected output:"
+
+#: src/features/playground/components/ShareButton.tsx:80
 msgid "Hash 方式"
 msgstr "Hash Method"
 
-#: src/components/LspStatusIndicator.tsx:60
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:116
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:117
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:127
+msgid "LLM 设置"
+msgstr "LLM settings"
+
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:54
 msgid "LSP 停止中"
 msgstr "LSP stopping"
 
-#: src/components/LspStatusIndicator.tsx:48
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:42
 msgid "LSP 启动中"
 msgstr "LSP starting"
 
-#: src/components/LspStatusIndicator.tsx:80
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:72
 msgid "LSP 崩溃"
 msgstr "LSP crashed"
 
-#: src/components/LspStatusIndicator.tsx:70
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:62
 msgid "LSP 已停止"
 msgstr "LSP stopped"
 
-#: src/components/LspStatusIndicator.tsx:42
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:36
 msgid "LSP 已就绪"
 msgstr "LSP ready"
 
-#: src/components/LspStatusIndicator.tsx:69
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:61
 msgid "LSP 已手动停止"
 msgstr "LSP stopped (manual)"
 
-#: src/components/LspStatusIndicator.tsx:54
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:48
 msgid "LSP 重启中"
 msgstr "LSP restarting"
 
-#: src/components/ShareButton.tsx:90
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:197
+msgid "Model"
+msgstr "Model"
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:82
+msgid "Practice"
+msgstr "Practice"
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:84
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:90
+msgid "Quiz"
+msgstr "Quiz"
+
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:233
+msgid "Result:"
+msgstr "Result:"
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:124
+msgid "Skip"
+msgstr "Skip"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:245
+msgid "Update"
+msgstr "Update"
+
+#: src/features/playground/components/ShareButton.tsx:72
 msgid "URL 方式"
 msgstr "URL Method"
 
-#: src/components/playground/PlaygroundHeader.tsx:55
-#: src/components/playground/PlaygroundHeader.tsx:93
+#: src/features/tour-ai/components/ClassroomThemeToggle.tsx:20
+msgid "主题：浅色"
+msgstr "Theme: light"
+
+#: src/features/tour-ai/components/ClassroomThemeToggle.tsx:21
+msgid "主题：深色"
+msgstr "Theme: dark"
+
+#: src/features/tour-ai/components/ClassroomThemeToggle.tsx:18
+msgid "主题：跟随系统"
+msgstr "Theme: follow system"
+
+#: src/modules/assistant-ui/chat/ThreadWelcome.tsx:15
+msgid "从这里开始你的仓颉之旅"
+msgstr "Start your Cangjie tour here"
+
+#: src/features/playground/components/PlaygroundHeader.tsx:58
+#: src/features/playground/components/PlaygroundHeader.tsx:96
 msgid "仓颉 Playground"
 msgstr "Cangjie Playground"
 
-#: src/lib/lsp-commands.ts:44
+#: src/lib/lsp-commands.ts:55
 msgid "仓颉：停止 LSP"
 msgstr "Cangjie: Stop LSP"
 
-#: src/lib/lsp-commands.ts:39
+#: src/lib/lsp-commands.ts:50
 msgid "仓颉：启动 LSP"
 msgstr "Cangjie: Start LSP"
 
-#: src/lib/lsp-commands.ts:54
+#: src/lib/lsp-commands.ts:65
 msgid "仓颉：清除缓存并重启 LSP"
 msgstr "Cangjie: Clear Cache and Restart LSP"
 
-#: src/lib/lsp-commands.ts:49
+#: src/lib/lsp-commands.ts:60
 msgid "仓颉：重启 LSP"
 msgstr "Cangjie: Restart LSP"
 
-#: src/components/tour/TourSidebar.tsx:44
+#: src/features/tour/components/TourSidebar.tsx:44
 msgid "仓颉之旅"
 msgstr "Cangjie Tour"
 
-#: src/components/Playground.tsx:142
+#: src/features/playground/components/Playground.tsx:144
 msgid "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
 msgstr "Cangjie Version 1.1.0-beta.25 | STDX Version 1.1.0-beta.25.1 | "
 
-#: src/components/LspStatusIndicator.tsx:61
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:55
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -106,7 +216,7 @@ msgstr ""
 "\n"
 "Status: Stopping{originSuffix}"
 
-#: src/components/LspStatusIndicator.tsx:49
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:43
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -118,7 +228,7 @@ msgstr ""
 "Status: Starting{originSuffix}\n"
 "{moduleInfo}"
 
-#: src/components/LspStatusIndicator.tsx:43
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:37
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -134,7 +244,7 @@ msgstr ""
 "\n"
 "Click for actions"
 
-#: src/components/LspStatusIndicator.tsx:83
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:75
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -148,7 +258,7 @@ msgstr ""
 "\n"
 "Click for actions"
 
-#: src/components/LspStatusIndicator.tsx:82
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:74
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -162,7 +272,7 @@ msgstr ""
 "\n"
 "Click to manually restart"
 
-#: src/components/LspStatusIndicator.tsx:73
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:65
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -176,7 +286,7 @@ msgstr ""
 "\n"
 "Click for actions"
 
-#: src/components/LspStatusIndicator.tsx:72
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:64
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -190,7 +300,7 @@ msgstr ""
 "\n"
 "Click for actions"
 
-#: src/components/LspStatusIndicator.tsx:55
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:49
 msgid ""
 "仓颉语言服务器\n"
 "\n"
@@ -206,63 +316,75 @@ msgstr ""
 msgid "侧边栏"
 msgstr "Sidebar"
 
-#: src/lib/monaco/actions.ts:124
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:260
+msgid "保存"
+msgstr "Save"
+
+#: src/lib/monaco/actions.ts:141
 msgid "保存代码"
 msgstr "Save Code"
 
-#: src/components/LspStatusIndicator.tsx:177
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:117
 msgid "停止"
 msgstr "Stop"
 
-#: src/components/ui/dialog.tsx:79
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:139
+msgid "共享额度"
+msgstr "Shared quota"
+
+#: src/components/ui/dialog.tsx:77
 #: src/components/ui/sheet.tsx:84
 #: src/components/ui/ui-i18n.test.tsx:53
 msgid "关闭"
 msgstr "Close"
 
-#: src/components/ShareButton.tsx:77
+#: src/features/tour-ai/components/ClassroomChatSidebar.tsx:15
+msgid "关闭聊天"
+msgstr "Close chat"
+
+#: src/features/playground/components/ShareButton.tsx:59
 msgid "分享"
 msgstr "Share"
 
-#: src/lib/monaco/actions.ts:103
+#: src/lib/monaco/actions.ts:120
 msgid "分享 (Hash 方式)"
 msgstr "Share (Hash Method)"
 
-#: src/lib/monaco/actions.ts:90
+#: src/lib/monaco/actions.ts:107
 msgid "分享 (URL 方式)"
 msgstr "Share (URL Method)"
 
-#: src/components/ShareButton.tsx:63
-#: src/lib/monaco/actions.ts:113
+#: src/features/playground/components/ShareButton.tsx:45
+#: src/lib/monaco/actions.ts:130
 msgid "分享中..."
 msgstr "Sharing..."
 
-#: src/components/ShareDialog.tsx:32
+#: src/features/playground/components/ShareDialog.tsx:37
 msgid "分享代码"
 msgstr "Share Code"
 
-#: src/lib/monaco/actions.ts:18
-#: src/lib/monaco/actions.ts:34
+#: src/lib/monaco/actions.ts:61
+#: src/lib/monaco/actions.ts:77
 msgid "分享代码加载中..."
 msgstr "Loading shared code..."
 
-#: src/lib/monaco/actions.ts:29
-#: src/lib/monaco/actions.ts:36
+#: src/lib/monaco/actions.ts:72
+#: src/lib/monaco/actions.ts:79
 msgid "分享代码加载失败"
 msgstr "Failed to load shared code"
 
-#: src/lib/monaco/actions.ts:24
-#: src/lib/monaco/actions.ts:35
+#: src/lib/monaco/actions.ts:67
+#: src/lib/monaco/actions.ts:78
 msgid "分享代码加载成功"
 msgstr "Shared code loaded successfully"
 
-#: src/components/ShareButton.tsx:65
-#: src/lib/monaco/actions.ts:115
+#: src/features/playground/components/ShareButton.tsx:47
+#: src/lib/monaco/actions.ts:132
 msgid "分享失败"
 msgstr "Share failed"
 
-#: src/components/ShareButton.tsx:64
-#: src/lib/monaco/actions.ts:114
+#: src/features/playground/components/ShareButton.tsx:46
+#: src/lib/monaco/actions.ts:131
 msgid "分享成功"
 msgstr "Share successful"
 
@@ -271,48 +393,124 @@ msgstr "Share successful"
 msgid "切换侧边栏"
 msgstr "Toggle Sidebar"
 
-#: src/components/LspStatusIndicator.tsx:171
+#: src/features/tour/components/TourHeader.tsx:79
+msgid "切换到 AI 助教"
+msgstr "Switch to AI Tutor"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:229
+msgid "剩余"
+msgstr "Remaining"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:258
+msgid "取消"
+msgstr "Cancel"
+
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:111
 msgid "启动"
 msgstr "Start"
 
-#: src/components/Playground.tsx:151
+#: src/modules/assistant-ui/chat/ThreadWelcome.tsx:18
+msgid "告诉我你想学什么，或选一个下面的卡片。我会读教程、写示例代码、运行并帮你修错。"
+msgstr "Tell me what you want to learn, or choose one of the cards below. I will read the tutorial, write sample code, run it, and help you fix mistakes."
+
+#: src/features/playground/components/Playground.tsx:153
 msgid "在 GitHub 查看源代码"
 msgstr "View source code on GitHub"
 
-#: src/components/tour/mdx/LanguagePicker.tsx:29
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:145
+msgid "复制"
+msgstr "Copy"
+
+#: src/features/playground/components/ShareDialog.tsx:50
+msgid "复制分享链接"
+msgstr "Copy share link"
+
+#: src/features/playground/components/ShareDialog.tsx:29
+msgid "复制分享链接失败"
+msgstr "Failed to copy share link"
+
+#: src/lib/ai/lesson-generation-runner.ts:39
+msgid ""
+"完成工具：{toolName}\n"
+""
+msgstr ""
+"Completed tool: {toolName}\n"
+""
+
+#: src/features/tour/components/mdx/LanguagePicker.tsx:30
 msgid "对比"
 msgstr "Compare"
 
-#: src/components/tour/mdx/LanguagePicker.tsx:38
+#: src/features/tour/components/mdx/LanguagePicker.tsx:39
 msgid "对比内容将出现在文中。"
 msgstr "Comparisons will appear in the text."
 
-#: src/components/shared/OutputPanel.tsx:27
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:176
+msgid "导出为 Markdown"
+msgstr "Export as Markdown"
+
+#: src/features/tour-ai/components/ClassroomHeader.tsx:57
+msgid "导向"
+msgstr "Guide"
+
+#: src/features/tour-ai/components/ClassroomChapterIndex.tsx:42
+msgid "尚无章节"
+msgstr "No chapters yet"
+
+#: src/lib/ai/lesson-generation-runner.ts:43
+msgid ""
+"工具失败：{toolName}\n"
+""
+msgstr ""
+"Tool failed: {toolName}\n"
+""
+
+#: src/features/playground/components/OutputPanel.tsx:27
 msgid "工具输出"
 msgstr "Tool Output"
 
-#: src/lib/monaco/actions.ts:130
+#: src/lib/monaco/actions.ts:147
 msgid "已保存代码"
 msgstr "Code saved"
 
-#: src/components/ShareDialog.tsx:25
+#: src/features/playground/components/ShareDialog.tsx:26
 msgid "已复制分享链接"
 msgstr "Share link copied"
 
-#: src/components/tour/mdx/LanguagePicker.tsx:35
+#: src/features/tour-ai/components/ClassroomStream.tsx:100
+msgid "已记录："
+msgstr "Recorded:"
+
+#: src/features/tour/components/mdx/LanguagePicker.tsx:36
 msgid "我了解这些语言"
 msgstr "I know these languages"
 
-#: src/components/ExamplesDropdown.tsx:44
+#: src/features/tour-ai/components/ClassroomHeader.tsx:43
+msgid "打开聊天"
+msgstr "Open chat"
+
+#: src/features/playground/components/ExamplesDropdown.tsx:44
 msgid "搜索示例..."
 msgstr "Search examples..."
 
-#: src/components/playground/PlaygroundHeader.tsx:62
-#: src/components/playground/PlaygroundHeader.tsx:100
+#: src/features/playground/components/PlaygroundHeader.tsx:65
+#: src/features/playground/components/PlaygroundHeader.tsx:103
 msgid "教程"
 msgstr "Tour"
 
-#: src/components/Playground.tsx:85
+#: src/features/tour-ai/components/ClassroomScrollFollower.tsx:23
+msgid "新内容"
+msgstr "New content"
+
+#: src/features/tour-ai/components/TourAIChat.tsx:45
+msgid "无法获取 AI 配额，请在设置里填入自带 Key。"
+msgstr "Could not get AI quota. Add your own key in settings."
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:222
+msgid "无法读取剩余额度："
+msgstr "Could not read remaining quota:"
+
+#: src/features/playground/components/Playground.tsx:88
 msgid "显示"
 msgstr "Show"
 
@@ -320,96 +518,264 @@ msgstr "Show"
 msgid "显示移动端侧边栏。"
 msgstr "Displays the mobile sidebar."
 
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:19
+msgid "暂无进度详情"
+msgstr "No progress details yet"
+
 #: src/components/ui/breadcrumb.tsx:110
 #: src/components/ui/ui-i18n.test.tsx:54
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:162
 msgid "更多"
 msgstr "More"
 
-#: src/components/ExamplesDropdown.tsx:46
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:130
+msgid "未填写 API Key 时将自动使用基于访客 IP 颁发的限额 Key。"
+msgstr "When no API key is provided, a quota-limited key issued by visitor IP will be used automatically."
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:149
+msgid "未填写模型"
+msgstr "No model set"
+
+#: src/features/playground/components/ExamplesDropdown.tsx:46
 msgid "未找到示例。"
 msgstr "No examples found."
 
-#: src/components/LanguageSelector.tsx:58
+#: src/features/playground/components/LanguageSelector.tsx:58
 msgid "未找到语言。"
 msgstr "No languages found."
 
-#: src/components/LspStatusIndicator.tsx:34
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:28
 msgid "标准库模块：{loadedModules}/{totalModules}"
-msgstr ""
+msgstr "Stdlib modules: {loadedModules}/{totalModules}"
 
-#: src/components/playground/PlaygroundHeader.tsx:73
-#: src/components/playground/PlaygroundHeader.tsx:116
+#: src/features/playground/components/PlaygroundHeader.tsx:76
+#: src/features/playground/components/PlaygroundHeader.tsx:119
 msgid "格式化"
 msgstr "Format"
 
-#: src/components/CodeRunner.tsx:54
-#: src/components/CodeRunner.tsx:60
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:54
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:60
 msgid "格式化失败"
 msgstr "Format failed"
 
-#: src/components/CodeRunner.tsx:59
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:59
 msgid "格式化成功"
 msgstr "Format successful"
 
-#: src/components/CodeRunner.tsx:58
+#: src/lib/ai/model-test.ts:61
+msgid "模型返回：{text}"
+msgstr "Model returned: {text}"
+
+#: src/lib/ai/model-test.ts:114
+msgid "模型连接测试失败，未返回可读错误信息。"
+msgstr "Model connection test failed without a readable error message."
+
+#: src/features/tour-ai/components/TourAIChat.tsx:52
+msgid "正在准备聊天"
+msgstr "Preparing chat"
+
+#: src/features/tour-ai/components/TourAIWrapper.tsx:21
+msgid "正在加载 AI 课堂"
+msgstr "Loading AI classroom"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:218
+msgid "正在加载剩余额度…"
+msgstr "Loading remaining quota..."
+
+#: src/features/tour-ai/components/ClassroomLoadingSkeleton.tsx:5
+msgid "正在加载课程内容"
+msgstr "Loading lesson content"
+
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:58
 msgid "正在格式化..."
 msgstr "Formatting..."
 
-#: src/components/CodeRunner.tsx:32
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:51
+msgid "正在编写课程"
+msgstr "Writing lesson content"
+
+#: src/features/tour-ai/components/ClassroomStream.tsx:28
+msgid "正在规划下一步"
+msgstr "Planning the next step"
+
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:32
 msgid "正在运行..."
 msgstr "Running..."
 
-#: src/components/LspStatusIndicator.tsx:191
+#: src/lib/ai/model-test.ts:75
+msgid "测试失败"
+msgstr "Test failed"
+
+#: src/lib/ai/model-test.ts:60
+msgid "测试成功"
+msgstr "Test successful"
+
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:131
 msgid "清除 WASM 与标准库缓存后重启"
 msgstr "Clears WASM + stdlib caches, then restarts"
 
-#: src/components/LspStatusIndicator.tsx:190
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:130
 msgid "清除缓存并重启"
 msgstr "Clear Cache and Restart"
 
-#: src/components/shared/OutputPanel.tsx:38
+#: src/features/tour-ai/components/ClassroomScrollFollower.tsx:18
+msgid "滚动到最新内容"
+msgstr "Scroll to latest content"
+
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:53
+msgid "生成失败"
+msgstr "Generation failed"
+
+#: src/features/tour-ai/components/TourAIChat.tsx:27
+msgid "用户只和这里聊天"
+msgstr "The learner only chats here"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:192
+msgid "留空使用共享额度"
+msgstr "Leave blank to use shared quota"
+
+#: src/features/playground/components/OutputPanel.tsx:38
 msgid "程序输出"
 msgstr "Program Output"
 
-#: src/service/run.ts:46
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:54
+msgid "等待开始"
+msgstr "Waiting to start"
+
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:19
+msgid "等待生成进度..."
+msgstr "Waiting for generation progress..."
+
+#: src/features/tour-ai/components/ClassroomHeader.tsx:60
+msgid "练习"
+msgstr "Practice"
+
+#: src/service/run.ts:59
 msgid "编译中"
 msgstr "Compiling"
 
-#: src/service/run.ts:54
+#: src/service/run.ts:67
 msgid "编译失败"
 msgstr "Compilation failed"
 
-#: src/lib/monaco/actions.ts:74
+#: src/lib/monaco/actions.ts:91
 msgid "编译运行"
 msgstr "Compile & Run"
 
-#: src/components/ShareButton.tsx:46
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:219
+msgid "编辑"
+msgstr "Edit"
+
+#: src/features/tour-ai/components/ClassroomChatSidebar.tsx:12
+#: src/features/tour-ai/components/ClassroomHeader.tsx:48
+#: src/features/tour-ai/components/TourAIChat.tsx:26
+msgid "聊天"
+msgstr "Chat"
+
+#: src/features/tour-ai/components/TourAIClassroomShell.tsx:109
+msgid "聊天标注已过期"
+msgstr "Chat annotations are stale"
+
+#: src/features/tour/components/TourHeader.tsx:70
+msgid "自主教学"
+msgstr "Self-guided teaching"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:145
+msgid "自带 Key"
+msgstr "Own key"
+
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:12
+msgid "让 AI 帮你学这一节..."
+msgstr "Let AI help you learn this section..."
+
+#: src/features/tour-ai/components/ClassroomHeader.tsx:59
+msgid "讲解"
+msgstr "Explanation"
+
+#: src/lib/ai/model-test.ts:42
+msgid "请先填写 {missingText}，再测试 {currentProviderLabel} 连接。"
+msgstr "Fill in {missingText} before testing the {currentProviderLabel} connection."
+
+#: src/features/playground/components/ShareButton.tsx:31
 msgid "请先输入代码"
 msgstr "Please enter code first"
 
-#: src/components/playground/PlaygroundHeader.tsx:70
-#: src/components/playground/PlaygroundHeader.tsx:113
+#: src/features/tour-ai/components/TourAIWrapper.tsx:18
+msgid "课堂内容"
+msgstr "Classroom content"
+
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:52
+msgid "课程内容已生成"
+msgstr "Lesson content generated"
+
+#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:20
+msgid "课程生成失败：{errorSummary}"
+msgstr "Lesson generation failed: {errorSummary}"
+
+#: src/features/tour-ai/components/ClassroomStream.tsx:115
+msgid "课程生成失败：{eventSummary}"
+msgstr "Lesson generation failed: {eventSummary}"
+
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:27
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:34
+msgid "课程生成进度"
+msgstr "Lesson generation progress"
+
+#: src/features/tour-ai/components/ClassroomChapterIndex.tsx:31
+msgid "课程目录"
+msgstr "Lesson outline"
+
+#: src/features/tour-ai/components/ClassroomStream.tsx:89
+msgid "输出："
+msgstr "Output:"
+
+#: src/features/playground/components/PlaygroundHeader.tsx:73
+#: src/features/playground/components/PlaygroundHeader.tsx:116
 msgid "运行"
 msgstr "Run"
 
-#: src/service/run.ts:47
+#: src/service/run.ts:60
 msgid "运行中"
 msgstr "Running"
 
-#: src/components/CodeRunner.tsx:34
-#: src/service/run.ts:60
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:34
+#: src/service/run.ts:73
 msgid "运行失败"
 msgstr "Run failed"
 
-#: src/components/CodeRunner.tsx:33
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:33
 msgid "运行成功"
 msgstr "Run successful"
 
-#: src/components/LspStatusIndicator.tsx:183
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:115
+msgid "运行检查"
+msgstr "Run check"
+
+#: src/features/tour-ai/components/ClassroomStream.tsx:87
+msgid "运行结果"
+msgstr "Run result"
+
+#: src/lib/ai/model-test.ts:41
+msgid "配置不完整"
+msgstr "Configuration incomplete"
+
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:123
 msgid "重启"
 msgstr "Restart"
 
-#: src/components/Playground.tsx:85
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:155
+msgid "重新生成"
+msgstr "Regenerate"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:254
+msgid "重置默认"
+msgstr "Reset defaults"
+
+#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:30
+msgid "重试课程生成"
+msgstr "Retry lesson generation"
+
+#: src/features/playground/components/Playground.tsx:88
 msgid "隐藏"
 msgstr "Hide"
 
