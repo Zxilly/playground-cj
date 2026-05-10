@@ -7,7 +7,7 @@ import {
   Tools,
   useAui,
 } from '@assistant-ui/react'
-import type { Toolkit } from '@assistant-ui/react'
+import type { SuggestionConfig, Toolkit } from '@assistant-ui/react'
 import { useChatRuntime } from '@assistant-ui/react-ai-sdk'
 import { lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import { createScopedChatTransport } from '@/lib/ai/classroom/scoped-chat-transport'
@@ -39,7 +39,7 @@ export function TourAIChatRuntime({ toolkit, lang }: { toolkit: Toolkit, lang: s
   const auiConfig = useMemo(
     () => ({
       tools: Tools({ toolkit }),
-      suggestions: Suggestions(suggestions),
+      suggestions: Suggestions(suggestions as unknown as SuggestionConfig[]),
     }),
     [toolkit, suggestions],
   )
