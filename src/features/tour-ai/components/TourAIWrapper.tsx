@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic'
 import { Trans } from '@lingui/react/macro'
-import type { FlatSection } from '@/tour/types'
 import { cn } from '@/lib/utils'
 
 function AIClassroomLoadingShell() {
@@ -45,7 +44,6 @@ const ChineseTourAIApp = dynamic(
 
 interface TourAIWrapperProps {
   lang: string
-  allSections: FlatSection[]
 }
 
 export default function TourAIWrapper(props: TourAIWrapperProps) {
