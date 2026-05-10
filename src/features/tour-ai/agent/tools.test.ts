@@ -106,9 +106,7 @@ describe('ai classroom toolkits', () => {
     const { createLessonGenerationToolkit } = await import('./tools')
     const toolkit = createLessonGenerationToolkit(bridge)
 
-    await toolkit.append_lesson_content!.execute!({
-      blocks: [{ type: 'heading', text: 'Bindings', level: 2 }],
-    }, { toolCallId: 't1', abortSignal: new AbortController().signal, human: async () => undefined })
+    await toolkit.append_heading!.execute!({ text: 'Bindings', level: 2 }, { toolCallId: 't1', abortSignal: new AbortController().signal, human: async () => undefined })
     await toolkit.set_current_quiz!.execute!({
       conceptId: 'cj.bindings.let',
       prompt: [{ text: 'Print 3.' }],
@@ -130,7 +128,13 @@ describe('ai classroom toolkits', () => {
     const toolkit = createLessonGenerationToolkit(bridge)
 
     expect(Object.keys(toolkit).sort()).toEqual([
-      'append_lesson_content',
+      'append_callout',
+      'append_code_example',
+      'append_compare',
+      'append_concept_card',
+      'append_heading',
+      'append_paragraph',
+      'append_steps',
       'mcp_call_tool',
       'read_classroom_state',
       'read_concepts',
@@ -339,3 +343,121 @@ function toolOptions() {
     human: async () => undefined,
   }
 }
+
+describe('append_* sub-tools', () => {
+  function makeBridge(dispatch = vi.fn()) {
+    return {
+      classroom: {
+        dispatch,
+        getSession: () => createInitialClassroomSession({ lang: 'zh' }),
+        replaceChatAnnotations: vi.fn(),
+        clearChatAnnotations: vi.fn(),
+      },
+      editor: { getEditor: () => null },
+      lang: 'zh',
+      uiLang: 'zh' as const,
+    } as unknown as AIClassroomBridgeValue
+  }
+
+  const ctx = { toolCallId: 'x', abortSignal: new AbortController().signal, human: async () => undefined }
+
+  it('append_heading dispatches APPEND_LESSON_CONTENT with [heading]', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_heading!.execute!({ text: 'Intro', level: 2 }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(true)
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [{ type: 'heading', text: 'Intro', level: 2 }],
+    }))
+  })
+
+  it('append_paragraph dispatches with [paragraph]', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_paragraph!.execute!({ body: [{ text: 'p' }] }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(true)
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [{ type: 'paragraph', body: [{ text: 'p' }] }],
+    }))
+  })
+
+  it('append_concept_card dispatches with [concept_card]', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_concept_card!.execute!({ conceptId: 'c1', title: 'T', body: [{ text: 'b' }] }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(true)
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      blocks: [{ type: 'concept_card', conceptId: 'c1', title: 'T', body: [{ text: 'b' }] }],
+    }))
+  })
+
+  it('append_code_example dispatches with [code_example]', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_code_example!.execute!({ code: 'main(){}', title: 'Hi' }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(true)
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      blocks: [{ type: 'code_example', code: 'main(){}', title: 'Hi' }],
+    }))
+  })
+
+  it('append_callout dispatches with [callout]', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_callout!.execute!({ tone: 'note', body: [{ text: 'c' }] }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(true)
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      blocks: [{ type: 'callout', tone: 'note', body: [{ text: 'c' }] }],
+    }))
+  })
+
+  it('append_steps dispatches with [steps]', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_steps!.execute!({ items: [[{ text: 's1' }], [{ text: 's2' }]] }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(true)
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      blocks: [{ type: 'steps', items: [[{ text: 's1' }], [{ text: 's2' }]] }],
+    }))
+  })
+
+  it('append_compare dispatches with [compare]', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_compare!.execute!({
+      leftTitle: 'A',
+      left: [{ text: 'a' }],
+      rightTitle: 'B',
+      right: [{ text: 'b' }],
+    }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(true)
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      blocks: [{ type: 'compare', leftTitle: 'A', left: [{ text: 'a' }], rightTitle: 'B', right: [{ text: 'b' }] }],
+    }))
+  })
+
+  it('append_paragraph returns retry hint on zod fail (empty body)', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_paragraph!.execute!({ body: [] }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(false)
+    expect((r as { expectedShape?: unknown }).expectedShape).toBeDefined()
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it('append_lesson_content tool no longer exists', async () => {
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge())
+    expect(tk.append_lesson_content).toBeUndefined()
+  })
+})

@@ -7,9 +7,9 @@ import * as monaco from '@codingame/monaco-vscode-editor-api'
 import type { AIClassroomBridgeValue, AIClassroomStateBridge } from '@/lib/ai/classroom/bridge'
 import { getAllConcepts, getReadyConcepts } from '@/lib/ai/concept-graph/loader'
 import { callMcpTool, listMcpTools } from '@/lib/mcp/client'
-import { lessonContentBlockSchema, lessonContentBlocksSchema, richTextSchema } from '@/lib/ai/classroom/schema'
+import { lessonContentBlockSchema, richTextSchema } from '@/lib/ai/classroom/schema'
 import { deriveSessionPendingWork } from '@/lib/ai/classroom/selectors'
-import type { ClassroomSession } from '@/lib/ai/classroom/types'
+import type { ClassroomSession, LessonContentBlock } from '@/lib/ai/classroom/types'
 import { failWithRetryHint } from './fail-with-retry-hint'
 
 const CHAT_MARKER_NAMESPACE = 'chat'
@@ -20,6 +20,39 @@ const SET_CURRENT_QUIZ_EXAMPLE = {
   starterCode: 'func add(a: Int64, b: Int64): Int64 { 0 }',
   expectedOutput: '7',
   matchMode: 'exact' as const,
+}
+
+function appendOne(bridge: AIClassroomBridgeValue, block: LessonContentBlock) {
+  requireClassroom(bridge).dispatch({
+    type: 'APPEND_LESSON_CONTENT',
+    blocks: [block],
+    now: Date.now(),
+  })
+  return { ok: true as const, appended: 1 }
+}
+
+const APPEND_HEADING_EXAMPLE = { text: 'Section title', level: 2 as const }
+const APPEND_PARAGRAPH_EXAMPLE = { body: [{ text: 'Cangjie supports type inference.' }] }
+const APPEND_CONCEPT_CARD_EXAMPLE = {
+  conceptId: 'variables_constants',
+  title: 'Variables and constants',
+  body: [{ text: 'Use let for immutable bindings.' }],
+}
+const APPEND_CODE_EXAMPLE_EXAMPLE = { code: 'let x = 25', title: 'Declaring a variable' }
+const APPEND_CALLOUT_EXAMPLE = {
+  tone: 'note' as const,
+  title: 'Heads up',
+  body: [{ text: 'Type inference works for most expressions.' }],
+}
+const APPEND_STEPS_EXAMPLE = {
+  title: 'How to declare',
+  items: [[{ text: 'Choose let or var.' }], [{ text: 'Provide an initializer.' }]],
+}
+const APPEND_COMPARE_EXAMPLE = {
+  leftTitle: 'let',
+  left: [{ text: 'Immutable.' }],
+  rightTitle: 'var',
+  right: [{ text: 'Mutable.' }],
 }
 
 function ok<T extends object>(extra?: T) {
@@ -358,23 +391,122 @@ export function createLessonGenerationToolkit(bridge: AIClassroomBridgeValue): T
       },
     },
 
-    append_lesson_content: {
-      description: 'Append official lesson content blocks using the classroom DSL. Do not output MDX/HTML/provenance fields.',
+    append_heading: {
+      description: 'Append a heading block. text is the heading text. level is 2 (H2) or 3 (H3); default 2.',
       parameters: z.object({
-        blocks: lessonContentBlocksSchema,
+        text: z.string(),
+        level: z.union([z.literal(2), z.literal(3)]).optional(),
       }),
-      execute: async ({ blocks }) => {
+      execute: async ({ text, level }) => {
         try {
-          const parsed = lessonContentBlocksSchema.parse(blocks)
-          requireClassroom(bridge).dispatch({
-            type: 'APPEND_LESSON_CONTENT',
-            blocks: parsed,
-            now: Date.now(),
-          })
-          return ok({ appended: parsed.length })
+          const block = lessonContentBlockSchema.parse({ type: 'heading', text, level })
+          return appendOne(bridge, block)
         }
         catch (e) {
-          return fail((e as Error).message)
+          return failWithRetryHint(e, APPEND_HEADING_EXAMPLE)
+        }
+      },
+    },
+
+    append_paragraph: {
+      description: 'Append a paragraph block. body is a RichText array of {text}/{code}/{strong} objects.',
+      parameters: z.object({ body: richTextSchema }),
+      execute: async ({ body }) => {
+        try {
+          const block = lessonContentBlockSchema.parse({ type: 'paragraph', body })
+          return appendOne(bridge, block)
+        }
+        catch (e) {
+          return failWithRetryHint(e, APPEND_PARAGRAPH_EXAMPLE)
+        }
+      },
+    },
+
+    append_concept_card: {
+      description: 'Append a concept_card block. body is a RichText array.',
+      parameters: z.object({
+        conceptId: z.string(),
+        title: z.string(),
+        body: richTextSchema,
+      }),
+      execute: async ({ conceptId, title, body }) => {
+        try {
+          const block = lessonContentBlockSchema.parse({ type: 'concept_card', conceptId, title, body })
+          return appendOne(bridge, block)
+        }
+        catch (e) {
+          return failWithRetryHint(e, APPEND_CONCEPT_CARD_EXAMPLE)
+        }
+      },
+    },
+
+    append_code_example: {
+      description: 'Append a code_example block. code is the source string. title is optional.',
+      parameters: z.object({
+        code: z.string(),
+        title: z.string().optional(),
+      }),
+      execute: async ({ code, title }) => {
+        try {
+          const block = lessonContentBlockSchema.parse({ type: 'code_example', code, title })
+          return appendOne(bridge, block)
+        }
+        catch (e) {
+          return failWithRetryHint(e, APPEND_CODE_EXAMPLE_EXAMPLE)
+        }
+      },
+    },
+
+    append_callout: {
+      description: 'Append a callout block. tone is "note", "warning", or "tip". body is a RichText array.',
+      parameters: z.object({
+        tone: z.union([z.literal('note'), z.literal('warning'), z.literal('tip')]),
+        title: z.string().optional(),
+        body: richTextSchema,
+      }),
+      execute: async ({ tone, title, body }) => {
+        try {
+          const block = lessonContentBlockSchema.parse({ type: 'callout', tone, title, body })
+          return appendOne(bridge, block)
+        }
+        catch (e) {
+          return failWithRetryHint(e, APPEND_CALLOUT_EXAMPLE)
+        }
+      },
+    },
+
+    append_steps: {
+      description: 'Append a steps block. items is an array of RichText arrays (one per step).',
+      parameters: z.object({
+        title: z.string().optional(),
+        items: z.array(richTextSchema).min(1),
+      }),
+      execute: async ({ title, items }) => {
+        try {
+          const block = lessonContentBlockSchema.parse({ type: 'steps', title, items })
+          return appendOne(bridge, block)
+        }
+        catch (e) {
+          return failWithRetryHint(e, APPEND_STEPS_EXAMPLE)
+        }
+      },
+    },
+
+    append_compare: {
+      description: 'Append a compare block (left vs right). left and right are RichText arrays.',
+      parameters: z.object({
+        leftTitle: z.string(),
+        left: richTextSchema,
+        rightTitle: z.string(),
+        right: richTextSchema,
+      }),
+      execute: async ({ leftTitle, left, rightTitle, right }) => {
+        try {
+          const block = lessonContentBlockSchema.parse({ type: 'compare', leftTitle, left, rightTitle, right })
+          return appendOne(bridge, block)
+        }
+        catch (e) {
+          return failWithRetryHint(e, APPEND_COMPARE_EXAMPLE)
         }
       },
     },
@@ -451,7 +583,7 @@ const MCP_PREFIX = 'mcp_'
 const MAX_TOOL_NAME_LENGTH = 64
 
 function encodeToolNameSegment(raw: string): string {
-  return raw.replace(/[^A-Za-z0-9_]/gu, (ch) => {
+  return raw.replace(/\W/gu, (ch) => {
     const cp = ch.codePointAt(0) ?? 0
     const hex = cp.toString(16).padStart(cp > 0xFFFF ? 6 : cp > 0xFF ? 4 : 2, '0')
     return `_x${hex}_`
