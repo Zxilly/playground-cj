@@ -17,9 +17,11 @@ import { ClassroomHeader } from '@/features/tour-ai/components/ClassroomHeader'
 import { ClassroomViewport } from '@/features/tour-ai/components/ClassroomViewport'
 import { ClassroomLoadingSkeleton } from '@/features/tour-ai/components/ClassroomLoadingSkeleton'
 import { ClassroomChatSidebar } from '@/features/tour-ai/components/ClassroomChatSidebar'
+import { ClassroomScrollFollower } from '@/features/tour-ai/components/ClassroomScrollFollower'
 import { ClassroomStream } from '@/features/tour-ai/components/ClassroomStream'
 import { LessonGenerationProgressPanel } from '@/features/tour-ai/components/LessonGenerationProgressPanel'
 import { LessonGenerationErrorRetry } from '@/features/tour-ai/components/LessonGenerationErrorRetry'
+import { useScrollFollower } from '@/features/tour-ai/components/use-scroll-follower'
 import { useLessonGenerationRuntime } from '@/features/tour-ai/runtime/useLessonGenerationRuntime'
 import { deriveClassroomPendingState } from '@/lib/ai/classroom/selectors'
 
@@ -64,6 +66,12 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
     toggleGenerationProgress,
   } = useLessonGenerationRuntime({ session, dispatch, hydrated })
 
+  const { newContentBelow, pinned, scrollToBottom } = useScrollFollower({
+    viewportRef,
+    contentLength: session.stream.length,
+    hydrated,
+  })
+
   const pendingState = deriveClassroomPendingState(session, activity)
   const isDark = resolved === 'dark'
 
@@ -100,6 +108,7 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
                     </>
                   )}
             </ClassroomViewport>
+            <ClassroomScrollFollower visible={newContentBelow && !pinned} onClick={scrollToBottom} />
           </main>
           {chatOpen && <ClassroomChatSidebar onClose={() => setChatOpen(false)} />}
         </div>
