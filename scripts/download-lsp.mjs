@@ -1,18 +1,82 @@
 import { Buffer } from 'node:buffer'
-import { createWriteStream, existsSync, mkdirSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { createWriteStream, mkdirSync, readdirSync, statSync } from 'node:fs'
+import { dirname, isAbsolute, join, relative, resolve as resolvePath } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import * as yauzl from 'yauzl'
 
 const LSP_DIR = join(import.meta.dirname, '..', 'public', 'lsp')
 const LSP_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-lsp-1.1.0-beta/lsp.zip'
+const CJO_TARGET = 'linux_x86_64_cjnative'
+const REQUIRED_LSP_FILES = [
+  'LSPServer-wasm.js',
+  'LSPServer-wasm.wasm',
+]
+const WINDOWS_ABSOLUTE_RE = /^(?:[A-Za-z]:[\\/]|\\\\)/
 
-function isLspDirEmpty() {
-  if (!existsSync(LSP_DIR)) {
-    return true
+function isFile(path) {
+  try {
+    return statSync(path).isFile()
   }
-  const files = readdirSync(LSP_DIR).filter(f => !f.startsWith('.'))
-  return files.length === 0
+  catch {
+    return false
+  }
+}
+
+function isDirectory(path) {
+  try {
+    return statSync(path).isDirectory()
+  }
+  catch {
+    return false
+  }
+}
+
+function hasCjoModule(dir) {
+  try {
+    return readdirSync(dir, { withFileTypes: true }).some((entry) => {
+      const fullPath = join(dir, entry.name)
+      if (entry.isDirectory())
+        return hasCjoModule(fullPath)
+      return entry.isFile() && entry.name.endsWith('.cjo')
+    })
+  }
+  catch {
+    return false
+  }
+}
+
+export function isLspAssetsComplete(lspDir = LSP_DIR) {
+  if (!isDirectory(lspDir))
+    return false
+
+  const hasRequiredFiles = REQUIRED_LSP_FILES.every(file => isFile(join(lspDir, file)))
+  if (!hasRequiredFiles)
+    return false
+
+  const modulesDir = join(lspDir, 'modules', CJO_TARGET)
+  return isDirectory(modulesDir) && hasCjoModule(modulesDir)
+}
+
+export function resolveZipEntryPath(destDir, entryName) {
+  const normalizedEntryName = entryName.replace(/\\/g, '/')
+  const targetRoot = resolvePath(destDir)
+
+  if (
+    normalizedEntryName.startsWith('/')
+    || WINDOWS_ABSOLUTE_RE.test(entryName)
+    || normalizedEntryName.includes('\0')
+  ) {
+    throw new Error(`Zip entry is outside the target directory: ${entryName}`)
+  }
+
+  const targetPath = resolvePath(targetRoot, normalizedEntryName)
+  const relativePath = relative(targetRoot, targetPath)
+
+  if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
+    throw new Error(`Zip entry is outside the target directory: ${entryName}`)
+  }
+
+  return targetPath
 }
 
 async function extractZipFromBuffer(buffer, destDir) {
@@ -27,14 +91,22 @@ async function extractZipFromBuffer(buffer, destDir) {
       zipfile.on('end', resolve)
 
       zipfile.on('entry', (entry) => {
-        const fullPath = join(destDir, entry.fileName)
+        let fullPath
+        try {
+          fullPath = resolveZipEntryPath(destDir, entry.fileName)
+        }
+        catch (error) {
+          reject(error)
+          zipfile.close()
+          return
+        }
 
         if (entry.fileName.endsWith('/')) {
           mkdirSync(fullPath, { recursive: true })
           zipfile.readEntry()
         }
         else {
-          mkdirSync(join(fullPath, '..'), { recursive: true })
+          mkdirSync(dirname(fullPath), { recursive: true })
           zipfile.openReadStream(entry, (streamErr, readStream) => {
             if (streamErr || !readStream) {
               reject(streamErr || new Error('Failed to open read stream'))
@@ -54,15 +126,13 @@ async function extractZipFromBuffer(buffer, destDir) {
 }
 
 export async function ensureLspFiles() {
-  if (!isLspDirEmpty()) {
+  if (isLspAssetsComplete()) {
     return
   }
 
   console.log('LSP directory is empty, downloading LSP files...')
 
-  if (!existsSync(LSP_DIR)) {
-    mkdirSync(LSP_DIR, { recursive: true })
-  }
+  mkdirSync(LSP_DIR, { recursive: true })
 
   console.log(`Downloading from ${LSP_ZIP_URL}...`)
   const response = await fetch(LSP_ZIP_URL, { redirect: 'follow' })
