@@ -12,6 +12,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { getTourHref } from '@/lib/siteHref'
 import { BookOpen } from 'lucide-react'
 import { usePlaygroundStore } from '@/stores/playground'
+import { CANGJIE_LANGUAGE_ID } from '@/lib/monaco/language'
 
 interface PlaygroundHeaderProps {
   handleRun: () => void
@@ -29,7 +30,7 @@ function ExamplesAction({ wrapperRef }: Pick<PlaygroundHeaderProps, 'wrapperRef'
       wrapperRef.current?.updateCodeResources?.({
         modified: {
           text: code,
-          enforceLanguageId: 'Cangjie',
+          enforceLanguageId: CANGJIE_LANGUAGE_ID,
           uri,
         },
       })

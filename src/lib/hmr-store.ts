@@ -51,6 +51,7 @@ export const HMR_SLOT_KEYS = {
   LSP_OUTPUT_CHANNEL: 'lsp.outputChannel',
   LSP_COMMAND_REGISTRATION: 'lsp.commandRegistration',
   MONACO_CANGJIE_FORMATTING_PROVIDER: 'monaco.cangjieFormattingProvider',
+  MONACO_CANGJIE_MONARCH_PROVIDER: 'monaco.cangjieMonarchProvider',
 } as const
 
 declare global {

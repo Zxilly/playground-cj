@@ -17,6 +17,8 @@ import { useTourEditorStore } from '@/stores/tourEditor'
 interface TourEditorProps {
   code: string
   locale: string
+  layout?: 'full' | 'editorOnly'
+  enableLanguageClient?: boolean
 }
 
 const TOUR_RUN_MARKER_OWNER = 'tour-run'
@@ -130,7 +132,12 @@ function toMarkerData(diagnostics: CompilerDiagnostic[]): monaco.editor.IMarkerD
   }))
 }
 
-export function TourEditor({ code, locale }: TourEditorProps) {
+export function TourEditor({
+  code,
+  locale,
+  layout = 'full',
+  enableLanguageClient = true,
+}: TourEditorProps) {
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
   const codeRef = useRef(code)
   const ansiRef = useRef(new AnsiUp())
@@ -198,14 +205,16 @@ export function TourEditor({ code, locale }: TourEditorProps) {
     editorAppRef.current = editorApp
     const ed = editorApp.getEditor()
     bridge.editor.setEditor(ed ?? undefined)
-    const store = useTourEditorStore.getState()
-    updateEditor({
-      setProgramOutput: store.setProgramOutput,
-      setToolOutput: store.setCompilerOutput,
-      ed: ed!,
-    })
-    syncCompilerMarkers(useTourEditorStore.getState().compilerOutput)
-  }, [bridge.editor, syncCompilerMarkers])
+    if (layout === 'full') {
+      const store = useTourEditorStore.getState()
+      updateEditor({
+        setProgramOutput: store.setProgramOutput,
+        setToolOutput: store.setCompilerOutput,
+        ed: ed!,
+      })
+      syncCompilerMarkers(useTourEditorStore.getState().compilerOutput)
+    }
+  }, [bridge.editor, layout, syncCompilerMarkers])
 
   const handleRun = useCallback(() => {
     editorAppRef.current?.getEditor()?.getAction('cangjie.compile.run')?.run()
@@ -228,6 +237,19 @@ export function TourEditor({ code, locale }: TourEditorProps) {
     editorAppRef.current?.getEditor()?.getModel()?.setValue(formattedCode)
   }, [])
 
+  if (layout === 'editorOnly') {
+    return (
+      <div className="relative h-full min-h-0" data-tour-editor-root>
+        <MonacoEditorReactComp
+          code={code}
+          onLoad={onLoad}
+          locale={locale}
+          enableLanguageClient={enableLanguageClient}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full flex-col" data-tour-editor-root>
       <ResizablePanelGroup orientation="vertical" className="h-full">
@@ -239,6 +261,7 @@ export function TourEditor({ code, locale }: TourEditorProps) {
               code={code}
               onLoad={onLoad}
               locale={locale}
+              enableLanguageClient={enableLanguageClient}
             />
           </div>
         </ResizablePanel>

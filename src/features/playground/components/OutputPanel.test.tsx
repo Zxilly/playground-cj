@@ -1,0 +1,47 @@
+import type { ReactNode } from 'react'
+import { cleanup, render, screen, within } from '@testing-library/react'
+import { setupI18n } from '@lingui/core'
+import { I18nProvider } from '@lingui/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { OutputPanel } from '@/features/playground/components/OutputPanel'
+
+function Wrapper({ children }: { children: ReactNode }) {
+  const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
+  i18n.activate('zh')
+  return <I18nProvider i18n={i18n}>{children}</I18nProvider>
+}
+
+vi.mock('@/app/font', () => ({
+  fontFamily: 'monospace',
+}))
+
+describe('outputPanel', () => {
+  afterEach(cleanup)
+
+  it('renders tool and program output in separate labelled containers', () => {
+    const { container } = render(
+      <Wrapper>
+        <OutputPanel toolOutput="compile ok" programOutput="hello world" />
+      </Wrapper>,
+    )
+    const panels = container.querySelectorAll('pre')
+
+    screen.getByText('工具输出')
+    screen.getByText('程序输出')
+    expect(within(panels[0]).getByText('compile ok')).toBeTruthy()
+    expect(within(panels[1]).getByText('hello world')).toBeTruthy()
+  })
+
+  it('renders ANSI output as HTML while escaping program text', () => {
+    const { container } = render(
+      <Wrapper>
+        <OutputPanel toolOutput={'\u001B[32mok\u001B[0m'} programOutput="<script>alert(1)</script>" />
+      </Wrapper>,
+    )
+    const panels = container.querySelectorAll('pre')
+
+    expect(panels[0].innerHTML).toContain('color:rgb(0,187,0)')
+    expect(panels[1].querySelector('script')).toBeNull()
+    expect(panels[1].textContent).toContain('<script>alert(1)</script>')
+  })
+})

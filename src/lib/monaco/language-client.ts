@@ -4,6 +4,7 @@ import { BrowserMessageReader, BrowserMessageWriter, CloseAction, ErrorAction } 
 import type { OutputChannel } from 'vscode'
 import isMobile from 'is-mobile'
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
+import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
 
 // A single Output Channel shared across every LanguageClient instance.
 // When clientOptions.outputChannel is set, vscode-languageclient treats it
@@ -28,7 +29,7 @@ async function getSharedOutputChannel(): Promise<OutputChannel> {
   if (!channelState.pending) {
     channelState.pending = import('@codingame/monaco-vscode-extension-api')
       .then(({ window }) => {
-        channelState.channel = window.createOutputChannel('Cangjie') as unknown as OutputChannel
+        channelState.channel = window.createOutputChannel(CANGJIE_LANGUAGE_NAME) as unknown as OutputChannel
         return channelState.channel
       })
       .finally(() => {
@@ -58,10 +59,10 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
   const outputChannel = await getSharedOutputChannel()
 
   return new MonacoLanguageClient({
-    id: 'Cangjie',
-    name: 'Cangjie Language Client',
+    id: CANGJIE_LANGUAGE_NAME,
+    name: `${CANGJIE_LANGUAGE_NAME} Language Client`,
     clientOptions: {
-      documentSelector: ['Cangjie'],
+      documentSelector: [CANGJIE_LANGUAGE_ID],
       outputChannel,
       initializationOptions: {
         cangjiePath: '/cangjie',

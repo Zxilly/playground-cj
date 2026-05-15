@@ -1,5 +1,7 @@
 export { updateEditor } from './actions'
+export { ensureCangjieMonarchTokensProvider } from './cangjie-monarch'
 export { createEditorAppConfig, createMonacoVscodeApiConfig, setEditorValue } from './config'
 export type { MonacoViewsType, MonacoVscodeApiConfig } from './config'
+export { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
 export { createLanguageClient, isLanguageClientAvailable } from './language-client'
 export { configureMonacoWorkers } from './workers'

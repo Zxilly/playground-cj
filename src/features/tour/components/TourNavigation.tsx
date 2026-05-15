@@ -36,7 +36,7 @@ export function TourNavigation({ lang, currentIndex, total, onPrev, onNext }: To
       <button
         disabled={!hasNext}
         onClick={onNext}
-        data-tour-highlight="prev"
+        data-tour-highlight="next"
         className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-tour-teal to-tour-teal-light text-white hover:from-tour-teal-hover hover:to-tour-teal disabled:opacity-35 disabled:cursor-not-allowed transition-all shadow-sm"
       >
         {nextLabel}

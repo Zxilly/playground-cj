@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
@@ -12,18 +12,12 @@ function Wrapper({ children }: { children: React.ReactNode }) {
   )
 }
 
-let mockPathname = '/zh/01-welcome/01-intro'
-
-function mockUsePathname() {
-  return mockPathname
-}
-
 function MockImage() {
   return <div data-testid="next-image" />
 }
 
 function MockSidebarTrigger(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button {...props} />
+  return <button data-testid="sidebar-trigger" {...props} />
 }
 
 function MockSeparator(props: React.HTMLAttributes<HTMLDivElement>) {
@@ -34,12 +28,12 @@ function MockLanguagePicker() {
   return <div>Language Picker</div>
 }
 
+function MockLLMConfigDialog() {
+  return <button type="button">LLM 设置</button>
+}
+
 vi.mock('next/image', () => ({
   default: MockImage,
-}))
-
-vi.mock('next/navigation', () => ({
-  usePathname: mockUsePathname,
 }))
 
 vi.mock('@/components/ui/sidebar', () => ({
@@ -54,9 +48,12 @@ vi.mock('@/features/tour/components/mdx/LanguagePicker', () => ({
   LanguagePicker: MockLanguagePicker,
 }))
 
+vi.mock('@/modules/llm-config/components/LLMConfigDialog', () => ({
+  LLMConfigDialog: MockLLMConfigDialog,
+}))
+
 describe('tour header', () => {
   beforeEach(() => {
-    mockPathname = '/zh/01-welcome/01-intro'
     vi.stubGlobal('location', {
       ...window.location,
       origin: 'https://tour.cj.zxilly.dev',
@@ -64,6 +61,7 @@ describe('tour header', () => {
   })
 
   afterEach(() => {
+    cleanup()
     vi.unstubAllGlobals()
   })
 
@@ -85,7 +83,6 @@ describe('tour header', () => {
   })
 
   it('links the logo to the tour index path when the tour is served from a non-tour host', () => {
-    mockPathname = '/zh/tour/01-welcome/01-intro'
     vi.stubGlobal('location', {
       ...window.location,
       origin: 'http://localhost:3000',
@@ -105,5 +102,17 @@ describe('tour header', () => {
     )
 
     expect(screen.getAllByRole('link')[0].getAttribute('href')).toBe('/zh/tour')
+  })
+
+  it('omits the sidebar trigger on the AI route because it has no sidebar provider', () => {
+    render(
+      <Wrapper>
+        <TourHeader lang="zh" aiMode />
+      </Wrapper>,
+    )
+
+    expect(screen.queryByTestId('sidebar-trigger')).toBeNull()
+    screen.getByRole('button', { name: 'LLM 设置' })
+    expect(screen.queryByRole('link', { name: 'AI 助教' })).toBeNull()
   })
 })

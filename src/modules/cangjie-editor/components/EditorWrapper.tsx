@@ -5,7 +5,7 @@ import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper 
 import type { MonacoLanguageClient } from 'monaco-languageclient'
 import { EditorApp } from 'monaco-languageclient/editorApp'
 import type { CodeResources } from 'monaco-languageclient/editorApp'
-import { createEditorAppConfig, createLanguageClient, createMonacoVscodeApiConfig, isLanguageClientAvailable } from '@/lib/monaco'
+import { createEditorAppConfig, createLanguageClient, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, isLanguageClientAvailable } from '@/lib/monaco'
 import type { MonacoViewsType } from '@/lib/monaco'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
@@ -26,6 +26,7 @@ export interface MonacoEditorProps {
   onLoad?: (editorApp: MonacoEditorHandle) => void
   locale?: string
   viewsType?: MonacoViewsType
+  enableLanguageClient?: boolean
 }
 
 function createStandaloneEditorHandle(
@@ -82,9 +83,16 @@ function createStandaloneEditorHandle(
   }
 }
 
-export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType = 'EditorService' }: MonacoEditorProps) {
+export function MonacoEditorReactComp({
+  style,
+  onLoad,
+  code,
+  locale,
+  viewsType = 'EditorService',
+  enableLanguageClient = true,
+}: MonacoEditorProps) {
   const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale), [code, locale])
-  const hasLanguageClient = isLanguageClientAvailable()
+  const hasLanguageClient = enableLanguageClient && isLanguageClientAvailable()
 
   const isInitializingRef = useRef(false)
   const isInitializedRef = useRef(false)
@@ -115,6 +123,12 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
   useEffect(() => {
     const reconcileEpoch = ++reconcileEpochRef.current
     const isActive = () => reconcileEpochRef.current === reconcileEpoch
+    const getLiveContainer = () => {
+      const container = containerRef.current
+      if (!container || !container.isConnected || !isActive())
+        return null
+      return container
+    }
 
     const updateEditorLayout = () => {
       if (containerRef.current && editorAppRef.current) {
@@ -214,7 +228,8 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
     }
 
     const initAll = async () => {
-      if (!containerRef.current || isInitializingRef.current || isInitializedRef.current) {
+      const initialContainer = getLiveContainer()
+      if (!initialContainer || isInitializingRef.current || isInitializedRef.current) {
         return
       }
 
@@ -222,14 +237,29 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
 
       try {
         await getEnhancedMonacoEnvironment().vscodeApiGlobalInitAwait
+        const containerAfterGlobalInit = getLiveContainer()
+        if (!containerAfterGlobalInit)
+          return
 
-        if (viewsType === 'ViewsService' && containerRef.current && !containerRef.current.querySelector('#workbench-container')) {
-          containerRef.current.innerHTML = defaultViewsHtml
+        if (viewsType === 'ViewsService' && !containerAfterGlobalInit.querySelector('#workbench-container')) {
+          containerAfterGlobalInit.innerHTML = defaultViewsHtml
         }
 
-        const vscodeApiConfig = createMonacoVscodeApiConfig(containerRef.current, viewsType)
-        vscodeApiWrapperRef.current = new MonacoVscodeApiWrapper(vscodeApiConfig)
-        await vscodeApiWrapperRef.current.start()
+        const vscodeApiConfig = createMonacoVscodeApiConfig(containerAfterGlobalInit, viewsType)
+        const vscodeApiWrapper = new MonacoVscodeApiWrapper(vscodeApiConfig)
+        vscodeApiWrapperRef.current = vscodeApiWrapper
+        const shouldRegisterExtensionsAfterStart = getEnhancedMonacoEnvironment().vscodeApiInitialised === true
+        await vscodeApiWrapper.start()
+        if (shouldRegisterExtensionsAfterStart)
+          await vscodeApiWrapper.initExtensions()
+        ensureCangjieMonarchTokensProvider()
+        const containerAfterWrapperStart = getLiveContainer()
+        if (!containerAfterWrapperStart) {
+          if (vscodeApiWrapperRef.current === vscodeApiWrapper)
+            vscodeApiWrapperRef.current = null
+          await vscodeApiWrapper.dispose()
+          return
+        }
 
         if (hasLanguageClient) {
           // Fire both concurrently: command registration does its own
@@ -239,8 +269,10 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
         }
 
         const editorContainer = viewsType === 'EditorService'
-          ? containerRef.current
-          : standaloneHostRef.current ?? containerRef.current
+          ? containerAfterWrapperStart
+          : standaloneHostRef.current && standaloneHostRef.current.isConnected
+            ? standaloneHostRef.current
+            : containerAfterWrapperStart
 
         const initialEditorAppConfig = editorAppConfigRef.current
         let editorHandle: MonacoEditorHandle
@@ -251,6 +283,10 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
           const editorApp = new EditorApp(initialEditorAppConfig)
           await editorApp.start(editorContainer)
           editorHandle = editorApp
+        }
+        if (!isActive()) {
+          await editorHandle.dispose()
+          return
         }
         editorAppRef.current = editorHandle
 
@@ -265,12 +301,17 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
         }
 
         if (hasLanguageClient && viewsType === 'EditorService') {
-          const parentContainer = containerRef.current.parentElement
+          const parentContainer = containerAfterWrapperStart.parentElement
           if (parentContainer) {
-            statusBarRef.current = await createCustomStatusBar(parentContainer, {
+            const statusBar = await createCustomStatusBar(parentContainer, {
               position: 'bottom',
               height: 22,
             })
+            if (!isActive()) {
+              statusBar.dispose()
+              return
+            }
+            statusBarRef.current = statusBar
 
             const host = document.createElement('div')
             host.style.position = 'absolute'
@@ -285,6 +326,9 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
           }
         }
 
+        if (!getLiveContainer())
+          return
+
         onLoadRef.current?.(editorHandle)
 
         updateEditorLayout()
@@ -295,7 +339,9 @@ export function MonacoEditorReactComp({ style, onLoad, code, locale, viewsType =
 
         resizeObserverRef.current = new ResizeObserver(updateEditorLayout)
 
-        resizeObserverRef.current.observe(containerRef.current.parentElement!)
+        const resizeParent = containerAfterWrapperStart.parentElement
+        if (resizeParent)
+          resizeObserverRef.current.observe(resizeParent)
 
         isInitializedRef.current = true
       }

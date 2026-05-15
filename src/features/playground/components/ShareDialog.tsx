@@ -21,8 +21,13 @@ export default function ShareDialog({ isOpen, onClose, url }: ShareDialogProps) 
   const { i18n } = useLingui()
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(url)
-    toast.success(i18n._(msg`已复制分享链接`))
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success(i18n._(msg`已复制分享链接`))
+    }
+    catch {
+      toast.error(i18n._(msg`复制分享链接失败`))
+    }
   }
 
   return (
@@ -38,7 +43,12 @@ export default function ShareDialog({ isOpen, onClose, url }: ShareDialogProps) 
             readOnly
             className="flex-1 px-3 py-2 border rounded-md bg-muted"
           />
-          <Button variant="outline" size="icon" onClick={handleCopy}>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleCopy}
+            aria-label={i18n._(msg`复制分享链接`)}
+          >
             <Copy className="h-4 w-4" />
           </Button>
         </div>

@@ -31,7 +31,12 @@ export function loadDataShareCode(): string | undefined {
 
   const base64UrlData = params.get('data')
   if (base64UrlData) {
-    return decompressFromBase64(base64UrlToBase64(base64UrlData))
+    try {
+      return decompressFromBase64(base64UrlToBase64(base64UrlData)) ?? undefined
+    }
+    catch {
+      return undefined
+    }
   }
 
   return undefined
@@ -70,7 +75,10 @@ export async function generateHashShareUrl(code: string): Promise<string> {
     throw new Error('Failed to create share URL')
   }
 
-  const { hash } = await response.json()
+  const { hash } = await response.json() as { hash?: unknown }
+  if (typeof hash !== 'string' || hash.trim() === '') {
+    throw new Error('Failed to create share URL: invalid hash response')
+  }
 
   const url = new URL(window.location.href.split('#')[0])
   url.search = ''
