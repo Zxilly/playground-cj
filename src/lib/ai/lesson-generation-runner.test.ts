@@ -40,7 +40,7 @@ describe('runLessonGenerationStep', () => {
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
-    const progress: string[] = []
+    const progress: unknown[] = []
 
     await runLessonGenerationStep({
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
@@ -54,9 +54,9 @@ describe('runLessonGenerationStep', () => {
       prompt: JSON.stringify({ event }),
     }))
     expect(progress).toEqual([
-      '正在规划课程',
-      '\n调用工具：read_classroom_state\n',
-      '完成工具：append_paragraph\n',
+      { type: 'text', text: '正在规划课程' },
+      { type: 'tool-start', toolCallId: 'tool-1', toolName: 'read_classroom_state' },
+      { type: 'tool-result', toolCallId: 'tool-1', toolName: 'append_paragraph', output: { ok: true, appended: 1 } },
     ])
   })
 
@@ -83,7 +83,7 @@ describe('runLessonGenerationStep', () => {
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
-    const progress: string[] = []
+    const progress: unknown[] = []
 
     await expect(runLessonGenerationStep({
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
@@ -93,8 +93,18 @@ describe('runLessonGenerationStep', () => {
       onProgress: chunk => progress.push(chunk),
     })).resolves.toBeUndefined()
 
-    expect(progress).toContain('工具失败：append_paragraph\n')
-    expect(progress).toContain('完成工具：append_paragraph\n')
+    expect(progress).toContainEqual({
+      type: 'tool-error',
+      toolCallId: 'tool-err',
+      toolName: 'append_paragraph',
+      error: new Error('boom'),
+    })
+    expect(progress).toContainEqual({
+      type: 'tool-result',
+      toolCallId: 'tool-ok',
+      toolName: 'append_paragraph',
+      output: { ok: true, appended: 1 },
+    })
   })
 
   it('reports tool-input-error label and continues to allow LLM retry (recovers with later authoring success)', async () => {
@@ -106,7 +116,7 @@ describe('runLessonGenerationStep', () => {
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
-    const progress: string[] = []
+    const progress: unknown[] = []
 
     await expect(runLessonGenerationStep({
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
@@ -116,8 +126,18 @@ describe('runLessonGenerationStep', () => {
       onProgress: chunk => progress.push(chunk),
     })).resolves.toBeUndefined()
 
-    expect(progress).toContain('工具失败：set_phase\n')
-    expect(progress).toContain('完成工具：append_paragraph\n')
+    expect(progress).toContainEqual({
+      type: 'tool-error',
+      toolCallId: 'in-err',
+      toolName: 'set_phase',
+      error: 'bad input',
+    })
+    expect(progress).toContainEqual({
+      type: 'tool-result',
+      toolCallId: 'tool-ok',
+      toolName: 'append_paragraph',
+      output: { ok: true, appended: 1 },
+    })
   })
 
   it('throws when tool errors occurred and no authoring tool ever succeeded', async () => {
@@ -125,6 +145,23 @@ describe('runLessonGenerationStep', () => {
       fullStream: createAsyncIterable([
         { type: 'tool-input-start', id: 'in', toolName: 'append_paragraph' },
         { type: 'tool-error', id: 'tool-err', toolName: 'append_paragraph', error: new Error('boom') },
+      ]),
+    })
+    const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+
+    await expect(runLessonGenerationStep({
+      config: { apiKey: 'test-key' } as Partial<LLMConfig>,
+      toolkit: {} as Toolkit,
+      bridge: {} as AIClassroomBridgeValue,
+      event: { type: 'classroom_opened', createdAt: 1 },
+    })).rejects.toThrow(/produced no authoring output/)
+  })
+
+  it('throws when the stream completes without any authoring output', async () => {
+    streamMock.mockResolvedValueOnce({
+      fullStream: createAsyncIterable([
+        { type: 'text-delta', id: 'text-only', text: 'I will plan the lesson.' },
+        { type: 'tool-result', toolCallId: 'phase', toolName: 'set_phase', output: { ok: true } },
       ]),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
@@ -183,7 +220,7 @@ describe('runLessonGenerationStep', () => {
       ], () => controller.abort()),
     })
     const { runLessonGenerationStep } = await import('./lesson-generation-runner')
-    const progress: string[] = []
+    const progress: unknown[] = []
 
     await runLessonGenerationStep({
       config: { apiKey: 'test-key' } as Partial<LLMConfig>,
@@ -194,7 +231,7 @@ describe('runLessonGenerationStep', () => {
       onProgress: chunk => progress.push(chunk),
     })
 
-    expect(progress).toEqual(['before'])
+    expect(progress).toEqual([{ type: 'text', text: 'before' }])
   })
 })
 

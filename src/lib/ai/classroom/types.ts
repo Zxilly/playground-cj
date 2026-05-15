@@ -2,7 +2,7 @@ export type ClassroomPhase = 'orient' | 'teach' | 'practice'
 
 export type RichText = Array<
   | { text: string }
-  | { code: string }
+  | { code: string, lang?: string, language?: string }
   | { strong: string }
 >
 
@@ -16,16 +16,17 @@ export type LessonContentBlock
   = | { type: 'heading', text: string, level?: 2 | 3 }
     | { type: 'paragraph', body: RichText }
     | { type: 'concept_card', conceptId: string, title: string, body: RichText }
-    | { type: 'code_example', title?: string, code: string, highlights?: CodeHighlight[] }
+    | { type: 'code_example', title?: string, code: string, language?: string, highlights?: CodeHighlight[] }
     | { type: 'callout', tone: 'note' | 'warning' | 'tip', title?: string, body: RichText }
     | { type: 'steps', title?: string, items: RichText[] }
     | { type: 'compare', leftTitle: string, left: RichText, rightTitle: string, right: RichText }
     | { type: 'quiz', conceptId: string, prompt: RichText, starterCode: string, expectedOutput: string, matchMode?: QuizMatchMode }
 
 export type QuizMatchMode = 'exact' | 'contains' | 'regex'
-export type QuizStatus = 'active' | 'success' | 'skip'
+export type QuizStatus = 'active' | 'success' | 'skip' | 'superseded'
 
 export interface ClassroomQuiz {
+  id: string
   conceptId: string
   prompt: RichText
   starterCode: string
@@ -69,11 +70,13 @@ export interface RunResult {
   compilerOutput?: string
 }
 
+export type ChatIntentKind = 'advance' | 'go_deeper' | 'slow_down' | 'change_topic' | 'explain_error'
+
 export type ClassroomEvent
   = | { type: 'classroom_opened', createdAt: number, summary?: string }
     | { type: 'quiz_success', conceptId: string, summary: string, createdAt: number }
     | { type: 'quiz_skip', conceptId: string, summary: string, createdAt: number }
-    | { type: 'chat_intent', intent: string, summary: string, createdAt: number }
+    | { type: 'chat_intent', intent: ChatIntentKind, summary: string, createdAt: number }
     | { type: 'lesson_generation_error', summary: string, createdAt: number }
 
 export type ClassroomStreamItem

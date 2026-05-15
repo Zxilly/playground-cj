@@ -23,6 +23,8 @@ interface UseLessonGenerationRuntimeProps {
   hydrated: boolean
 }
 
+type LessonGenerationRunOutcome = 'completed' | 'failed' | 'skipped' | 'aborted'
+
 export function useLessonGenerationRuntime({
   session,
   dispatch,
@@ -31,11 +33,12 @@ export function useLessonGenerationRuntime({
   const bridge = useAIClassroomBridge()
   const config = useLLMConfig()
   const scopeSignal = useClassroomAbortScope()
-  const { activity, setGenerationRunning } = useClassroomActivity()
+  const { activity, beginGenerationRun, endGenerationRun } = useClassroomActivity()
   const generationRunning = activity.generationRunning
   const [generationProgress, setGenerationProgress] = useState(EMPTY_LESSON_GENERATION_PROGRESS)
   const hasTriggeredInitialOpenRef = useRef(false)
   const activeQueuedEventKeyRef = useRef<string | null>(null)
+  const inFlightGenerationRef = useRef<string | null>(null)
   const mountedRef = useRef(true)
 
   useLLMConfigBootstrap({ reportErrors: false })
@@ -47,14 +50,22 @@ export function useLessonGenerationRuntime({
     }
   }, [])
 
-  const runLessonGenerationForEvent = useCallback(async (event: ClassroomEvent, consumeQueuedEvent: boolean): Promise<boolean> => {
-    if (!config.apiKey || generationRunning || !mountedRef.current)
-      return false
-    setGenerationRunning(true)
+  const runLessonGenerationForEvent = useCallback(async (
+    event: ClassroomEvent,
+    consumeQueuedEvent: boolean,
+    runKey: string,
+  ): Promise<LessonGenerationRunOutcome> => {
+    if (!config.apiKey || !mountedRef.current)
+      return 'skipped'
+    if (inFlightGenerationRef.current !== null)
+      return 'skipped'
+    inFlightGenerationRef.current = runKey
+    beginGenerationRun(runKey)
     setGenerationProgress({
       status: 'running',
       expanded: true,
       text: '',
+      items: [],
     })
     const transaction = createClassroomTransaction(bridge)
     try {
@@ -69,13 +80,14 @@ export function useLessonGenerationRuntime({
           queueMicrotask(() => {
             if (scopeSignal.aborted || !mountedRef.current)
               return
+            // eslint-disable-next-line react/set-state-in-effect -- Progress chunks come from the agent stream callback, outside React effects.
             setGenerationProgress(state => appendLessonGenerationProgress(state, chunk))
           })
         },
       })
       if (scopeSignal.aborted || !mountedRef.current) {
         transaction.discard()
-        return false
+        return 'aborted'
       }
       transaction.commit(consumeQueuedEvent ? [{ type: 'CONSUME_EVENT', now: Date.now() }] : [])
       setGenerationProgress(state => ({
@@ -83,12 +95,12 @@ export function useLessonGenerationRuntime({
         status: 'completed',
         expanded: false,
       }))
-      return true
+      return 'completed'
     }
     catch (error) {
       transaction.discard()
       if (scopeSignal.aborted || !mountedRef.current)
-        return false
+        return 'aborted'
       const errorMessage = error instanceof Error ? error.message : String(error)
       dispatch({
         type: 'LESSON_GENERATION_FAILED',
@@ -100,12 +112,14 @@ export function useLessonGenerationRuntime({
         status: 'failed',
         expanded: true,
       }, t`\n失败：${errorMessage}`))
-      return false
+      return 'failed'
     }
     finally {
-      setGenerationRunning(false)
+      if (inFlightGenerationRef.current === runKey)
+        inFlightGenerationRef.current = null
+      endGenerationRun(runKey)
     }
-  }, [generationRunning, bridge, config, dispatch, scopeSignal, setGenerationRunning])
+  }, [beginGenerationRun, bridge, config, dispatch, endGenerationRun, scopeSignal])
 
   useEffect(() => {
     if (hasTriggeredInitialOpenRef.current)
@@ -120,7 +134,7 @@ export function useLessonGenerationRuntime({
       type: 'classroom_opened',
       createdAt: Date.now(),
       summary: 'Classroom opened.',
-    }, false)
+    }, false, 'initial:classroom_opened')
   }, [config.apiKey, hydrated, runLessonGenerationForEvent, session.eventQueue.length, session.stream.length])
 
   const runQueuedLessonGenerationEvent = useCallback((next: ClassroomEvent | undefined) => {
@@ -130,8 +144,8 @@ export function useLessonGenerationRuntime({
     if (activeQueuedEventKeyRef.current === key)
       return
     activeQueuedEventKeyRef.current = key
-    void runLessonGenerationForEvent(next, true).then((completed) => {
-      if (completed && activeQueuedEventKeyRef.current === key)
+    void runLessonGenerationForEvent(next, true, key).then((outcome) => {
+      if ((outcome === 'completed' || outcome === 'skipped' || outcome === 'aborted') && activeQueuedEventKeyRef.current === key)
         activeQueuedEventKeyRef.current = null
     })
   }, [generationRunning, runLessonGenerationForEvent])
@@ -152,6 +166,7 @@ export function useLessonGenerationRuntime({
   return {
     generationRunning,
     generationProgress,
+    waitingForApiKey: hydrated && session.eventQueue.length > 0 && !config.apiKey,
     retryQueuedGenerationEvent,
     toggleGenerationProgress,
   }

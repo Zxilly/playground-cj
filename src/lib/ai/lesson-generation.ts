@@ -7,6 +7,7 @@ import { toolkitToToolSet } from './toolkit-to-tool-set'
 
 export const LESSON_GENERATION_TOOL_NAMES = [
   'read_classroom_state',
+  'read_lesson_outline',
   'read_concepts',
   'mcp_call_tool',
   'append_heading',
@@ -43,6 +44,7 @@ export const LESSON_GENERATION_SYSTEM_PROMPT = `You create and advance AI classr
 You create and advance one continuous classroom stream. You do not chat with the learner directly and you never receive free-form user messages as your primary input. You consume structured classroom events only: classroom_opened, quiz_success, quiz_skip, and chat_intent.
 
 Use tools for all dynamic information. Keep this prompt stable for prefix caching: do not assume current code, current lesson text, stream contents, learner state, or run output is present here.
+Before appending content for queued events, call read_lesson_outline to inspect headings, recent stream items, active quiz, and concept progress.
 
 Responsibilities:
 - Plan the next classroom step.
@@ -60,17 +62,24 @@ Lesson content tools (call multiple as needed, one block per call):
 - append_heading(text, level?)
 - append_paragraph(body)
 - append_concept_card(conceptId, title, body)
-- append_code_example(code, title?)
+- append_code_example(code, title?, language?)
 - append_callout(tone, title?, body)
 - append_steps(title?, items)
 - append_compare(leftTitle, left, rightTitle, right)
 - set_current_quiz(conceptId, prompt, starterCode, expectedOutput, matchMode?)
 
-All parameters are flat top-level fields. RichText fields (body / prompt / left / right / items elements) are JSON arrays of {text}/{code}/{strong} objects — never strings.
+All parameters are flat top-level fields. RichText fields (body / prompt / left / right / items elements) are JSON arrays of {text}/{code, lang?}/{strong} objects — never strings. Code defaults to Cangjie syntax highlighting; set code_example.language or inline code lang to a Shiki language id such as cangjie, typescript, javascript, bash, json, python, c, cpp, rust, java, or markdown when showing another language.
 
 When a tool returns { ok: false, error, expectedShape }, your next call must match expectedShape exactly. Do not stringify nested objects or arrays.
 
 Never output MDX, HTML, React component source, layout classes, citations, provenance, sourceRefs, origin, doc_ref, ref, or task/run identifiers. MCP tools may be used internally for correctness, but v1 does not store or display references. Quiz success and skip are determined by deterministic UI/reducer code, not by you.`
+
+export function buildLessonGenerationSystemPrompt(lang: string): string {
+  return `${LESSON_GENERATION_SYSTEM_PROMPT}
+
+User language:
+- The learner is using ${lang}. Write all learner-facing lesson content in this language unless a structured event explicitly asks for another language.`
+}
 
 export interface LessonGenerationEventEnvelope {
   event: ClassroomEvent
@@ -80,10 +89,10 @@ export function createLessonGenerationEventEnvelope(event: ClassroomEvent): Less
   return { event }
 }
 
-export function createLessonGeneration(config: Partial<LLMConfig>, toolkit: Toolkit) {
+export function createLessonGeneration(config: Partial<LLMConfig>, toolkit: Toolkit, lang = 'zh') {
   return new ToolLoopAgent({
     model: createConfiguredModel(config, 'tour-lesson-generation'),
-    instructions: LESSON_GENERATION_SYSTEM_PROMPT,
+    instructions: buildLessonGenerationSystemPrompt(lang),
     tools: toolkitToToolSet(toolkit),
   })
 }

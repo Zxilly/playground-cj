@@ -5,6 +5,12 @@ import { createInitialClassroomSession } from './reducer'
 import { usePersistentClassroomSession } from './use-persistent-session'
 import type { ClassroomSession } from './types'
 
+const reactActGlobal = globalThis as typeof globalThis & {
+  IS_REACT_ACT_ENVIRONMENT?: boolean
+}
+
+reactActGlobal.IS_REACT_ACT_ENVIRONMENT = true
+
 const loadClassroomSessionMock = vi.hoisted(() => vi.fn())
 const enqueueMock = vi.hoisted(() => vi.fn())
 const flushMock = vi.hoisted(() => vi.fn())
@@ -88,6 +94,26 @@ describe('usePersistentClassroomSession', () => {
     expect(enqueueMock).toHaveBeenCalledWith(expect.objectContaining({
       learner: expect.objectContaining({ learningNotes: 'Focus on loops' }),
     }))
+  })
+
+  it('does not persist hydrated dispatches that leave the session unchanged', async () => {
+    loadClassroomSessionMock.mockResolvedValueOnce(null)
+    let latest: ReturnType<typeof usePersistentClassroomSession> | undefined
+
+    await act(async () => {
+      root.render(createElement(Harness, {
+        lang: 'en',
+        onRender: value => latest = value,
+      }))
+      await flushPromises()
+    })
+
+    act(() => {
+      latest?.dispatch({ type: 'QUIZ_SKIP', now: 2 })
+    })
+
+    expect(latest?.hydrated).toBe(true)
+    expect(enqueueMock).not.toHaveBeenCalled()
   })
 
   it('falls back to a fresh session and warns when hydration fails', async () => {

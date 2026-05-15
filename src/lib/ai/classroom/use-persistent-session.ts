@@ -55,6 +55,8 @@ export function usePersistentClassroomSession({ lang }: PersistentClassroomSessi
   const dispatch = useCallback<React.Dispatch<ClassroomAction>>((action) => {
     setState((current) => {
       const nextSession = classroomReducer(current.session, action)
+      if (nextSession === current.session)
+        return current
       if (current.hydrated)
         void queueRef.current.enqueue(nextSession)
       return {

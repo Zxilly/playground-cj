@@ -1,4 +1,5 @@
 import { classroomRecordSchema } from './schema'
+import { migrateClassroomRecord } from './migrations'
 import { classroomStorageKey } from './store'
 import type { ClassroomSession } from './types'
 
@@ -69,7 +70,7 @@ export async function loadClassroomSession(lang: string): Promise<ClassroomSessi
     if (raw == null)
       return null
 
-    const result = classroomRecordSchema.safeParse(raw)
+    const result = classroomRecordSchema.safeParse(migrateClassroomRecord(raw))
     if (!result.success) {
       console.warn('[AI Classroom] Persisted record failed schema validation, discarding', result.error.issues)
       return null

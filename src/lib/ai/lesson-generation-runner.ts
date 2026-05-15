@@ -1,8 +1,8 @@
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
-import { t } from '@lingui/core/macro'
 import type { Toolkit } from '@assistant-ui/react'
 import type { ClassroomEvent } from './classroom/types'
 import { createLessonGeneration, createLessonGenerationEventEnvelope, isLessonAuthoringTool } from './lesson-generation'
+import type { LessonGenerationProgressChunk } from './lesson-generation-progress'
 import type { LLMConfig } from './model-provider'
 
 interface LessonGenerationRunnerOptions {
@@ -11,14 +11,14 @@ interface LessonGenerationRunnerOptions {
   bridge: AIClassroomBridgeValue
   event: ClassroomEvent
   abortSignal?: AbortSignal
-  onProgress?: (chunk: string) => void
+  onProgress?: (chunk: LessonGenerationProgressChunk) => void
 }
 
-export async function runLessonGenerationStep({ config, toolkit, event, abortSignal, onProgress }: LessonGenerationRunnerOptions): Promise<void> {
+export async function runLessonGenerationStep({ config, toolkit, bridge, event, abortSignal, onProgress }: LessonGenerationRunnerOptions): Promise<void> {
   if (!config.apiKey)
     return
 
-  const generation = createLessonGeneration(config, toolkit)
+  const generation = createLessonGeneration(config, toolkit, bridge.lang)
   const stream = await generation.stream({
     prompt: JSON.stringify(createLessonGenerationEventEnvelope(event)),
     abortSignal,
@@ -39,15 +39,24 @@ export async function runLessonGenerationStep({ config, toolkit, event, abortSig
     if (abortSignal?.aborted)
       return
     if (part.type === 'text-delta') {
-      reportProgress(onProgress, part.text)
+      reportProgress(onProgress, { type: 'text', text: part.text })
     }
     else if (part.type === 'tool-input-start') {
       const toolName = part.toolName
-      reportProgress(onProgress, t`\n调用工具：${toolName}\n`)
+      reportProgress(onProgress, {
+        type: 'tool-start',
+        toolCallId: part.id,
+        toolName,
+      })
     }
     else if (part.type === 'tool-result') {
       const toolName = part.toolName
-      reportProgress(onProgress, t`完成工具：${toolName}\n`)
+      reportProgress(onProgress, {
+        type: 'tool-result',
+        toolCallId: part.toolCallId,
+        toolName,
+        output: part.output,
+      })
       if (isLessonAuthoringTool(toolName)) {
         const output = part.output
         if (output && typeof output === 'object' && (output as { ok?: unknown }).ok === true) {
@@ -61,7 +70,13 @@ export async function runLessonGenerationStep({ config, toolkit, event, abortSig
     }
     else if (part.type === 'tool-error') {
       const toolName = part.toolName
-      reportProgress(onProgress, t`工具失败：${toolName}\n`)
+      const toolErrorPart = part as unknown as { toolCallId?: string, id?: string }
+      reportProgress(onProgress, {
+        type: 'tool-error',
+        toolCallId: toolErrorPart.toolCallId ?? toolErrorPart.id ?? `${toolName}:error`,
+        toolName,
+        error: part.error,
+      })
       // Don't throw mid-stream; ToolLoopAgent re-feeds the error so LLM can self-correct.
       recordFailure(part.error)
     }
@@ -69,18 +84,24 @@ export async function runLessonGenerationStep({ config, toolkit, event, abortSig
       // tool-input-error is emitted on UI/full-message streams but not on the typed fullStream union; narrow by cast.
       const errPart = part as unknown as { toolName: string, errorText: string }
       const toolName = errPart.toolName
-      reportProgress(onProgress, t`工具失败：${toolName}\n`)
+      reportProgress(onProgress, {
+        type: 'tool-error',
+        toolCallId: (part as unknown as { id?: string }).id ?? `${toolName}:input-error`,
+        toolName,
+        error: errPart.errorText,
+      })
       recordFailure(errPart.errorText)
     }
   }
 
-  if (hadToolFailure && !hadAuthoringSuccess) {
-    throw new Error(`Lesson generation produced no authoring output after tool failures${firstErrorDetail ? `: ${firstErrorDetail}` : ''}`)
+  if (!hadAuthoringSuccess) {
+    const failureContext = hadToolFailure ? ' after tool failures' : ''
+    throw new Error(`Lesson generation produced no authoring output${failureContext}${firstErrorDetail ? `: ${firstErrorDetail}` : ''}`)
   }
 }
 
-function reportProgress(onProgress: LessonGenerationRunnerOptions['onProgress'], chunk: string) {
-  if (!chunk)
+function reportProgress(onProgress: LessonGenerationRunnerOptions['onProgress'], chunk: LessonGenerationProgressChunk) {
+  if (!chunk || (typeof chunk !== 'string' && chunk.type === 'text' && !chunk.text))
     return
   onProgress?.(chunk)
 }

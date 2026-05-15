@@ -16,6 +16,15 @@ const quizBlock: LessonContentBlock = {
   matchMode: 'exact',
 }
 
+const secondQuizBlock: LessonContentBlock = {
+  type: 'quiz',
+  conceptId: 'cj.bindings.var',
+  prompt: [{ text: 'Print the value 4.' }],
+  starterCode: 'main() {\n    println(0)\n}',
+  expectedOutput: '4',
+  matchMode: 'exact',
+}
+
 const failedRun: RunResult = {
   ok: true,
   stdout: '2\n',
@@ -78,6 +87,130 @@ describe('classroom reducer', () => {
     expect(session.learner.concepts['cj.bindings.let'].status).toBe('practicing')
   })
 
+  it('creates deterministic stream item ids from action order and timestamp', () => {
+    const initial = createInitialClassroomSession({ lang: 'zh' })
+    const action = {
+      type: 'APPEND_LESSON_CONTENT' as const,
+      blocks: [{ type: 'heading' as const, text: 'Let bindings', level: 2 as const }],
+      now: 1002,
+    }
+
+    const first = classroomReducer(initial, action)
+    const second = classroomReducer(initial, action)
+
+    expect(first.stream[0].id).toBe(second.stream[0].id)
+    expect(first.stream[0].id).toBe('lesson:1002:0')
+  })
+
+  it('keeps same-timestamp stream item ids unique within a session', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+
+    session = classroomReducer(session, {
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [{ type: 'heading', text: 'First', level: 2 }],
+      now: 1002,
+    })
+    session = classroomReducer(session, {
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [{ type: 'heading', text: 'Second', level: 2 }],
+      now: 1002,
+    })
+
+    expect(session.stream.map(item => item.id)).toEqual([
+      'lesson:1002:0',
+      'lesson:1002:1',
+    ])
+  })
+
+  it('marks concept cards as introduced without downgrading stronger statuses', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+
+    session = classroomReducer(session, {
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [
+        {
+          type: 'concept_card',
+          conceptId: 'cj.bindings.let',
+          title: 'Let bindings',
+          body: [{ text: 'Use let for immutable bindings.' }],
+        },
+      ],
+      now: 1001,
+    })
+    expect(session.learner.concepts['cj.bindings.let'].status).toBe('introduced')
+
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: quizBlock,
+      now: 1002,
+    })
+    expect(session.learner.concepts['cj.bindings.let'].status).toBe('practicing')
+
+    session = classroomReducer(session, {
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [
+        {
+          type: 'concept_card',
+          conceptId: 'cj.bindings.let',
+          title: 'Let bindings again',
+          body: [{ text: 'A reminder.' }],
+        },
+      ],
+      now: 1003,
+    })
+    expect(session.learner.concepts['cj.bindings.let'].status).toBe('practicing')
+  })
+
+  it('supersedes the previous active quiz when a new quiz is set', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: quizBlock,
+      now: 1001,
+    })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: secondQuizBlock,
+      now: 1002,
+    })
+
+    const quizStatuses = session.stream
+      .filter(item => item.type === 'quiz')
+      .map(item => item.quiz.status)
+    expect(quizStatuses).toEqual(['superseded', 'active'])
+    expect(session.currentQuiz).toMatchObject({
+      conceptId: 'cj.bindings.var',
+      status: 'active',
+    })
+  })
+
+  it('completes only the current quiz on submit when two quizzes share a timestamp', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: quizBlock,
+      now: 1001,
+    })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: secondQuizBlock,
+      now: 1001,
+    })
+
+    session = classroomReducer(session, {
+      type: 'QUIZ_SUBMIT_FINISHED',
+      result: { ...failedRun, stdout: '4\n' },
+      now: 1002,
+    })
+
+    const quizStatuses = session.stream
+      .filter(item => item.type === 'quiz')
+      .map(item => item.quiz.status)
+    expect(quizStatuses).toEqual(['superseded', 'success'])
+  })
+
   it('appends a failed quiz run result without evidence or LessonGeneration event', () => {
     let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
@@ -97,6 +230,31 @@ describe('classroom reducer', () => {
     expect(session.stream.at(-1)).toMatchObject({
       type: 'run_result',
       result: failedRun,
+    })
+  })
+
+  it('appends a matched quiz run without completing the quiz', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: quizBlock,
+      now: 1001,
+    })
+
+    session = classroomReducer(session, {
+      type: 'QUIZ_RUN_FINISHED',
+      result: { ...failedRun, stdout: '3\n' },
+      now: 1002,
+    })
+
+    expect(session.currentQuiz?.status).toBe('active')
+    expect(session.lastRun).toEqual({ ...failedRun, stdout: '3\n' })
+    expect(session.learner.evidence).toEqual([])
+    expect(session.eventQueue).toEqual([])
+    expect(deriveSessionPendingWork(session)).toBe('awaiting_user')
+    expect(session.stream.at(-1)).toMatchObject({
+      type: 'run_result',
+      matched: true,
     })
   })
 
@@ -129,6 +287,7 @@ describe('classroom reducer', () => {
 
   it('treats an invalid regex quiz expectation as a safe non-match', () => {
     const regexQuiz = {
+      id: 'quiz:1000:0',
       conceptId: 'cj.regex',
       prompt: [{ text: 'Print digits.' }],
       starterCode: 'main() {}',
@@ -145,7 +304,7 @@ describe('classroom reducer', () => {
     })
   })
 
-  it('finishes a successful quiz run atomically with evidence and LessonGeneration event', () => {
+  it('finishes a successful quiz submit atomically with evidence and LessonGeneration event', () => {
     let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'SET_CURRENT_QUIZ',
@@ -154,7 +313,7 @@ describe('classroom reducer', () => {
     })
 
     session = classroomReducer(session, {
-      type: 'QUIZ_RUN_FINISHED',
+      type: 'QUIZ_SUBMIT_FINISHED',
       result: { ...failedRun, stdout: '3\n' },
       now: 1002,
     })
@@ -184,7 +343,7 @@ describe('classroom reducer', () => {
     })
   })
 
-  it('does not complete a quiz from a failed atomic run even when stdout matches', () => {
+  it('does not complete a quiz from a failed submit even when stdout matches', () => {
     let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'SET_CURRENT_QUIZ',
@@ -193,7 +352,7 @@ describe('classroom reducer', () => {
     })
 
     session = classroomReducer(session, {
-      type: 'QUIZ_RUN_FINISHED',
+      type: 'QUIZ_SUBMIT_FINISHED',
       result: {
         ok: false,
         stdout: '3\n',
@@ -276,6 +435,26 @@ describe('classroom reducer', () => {
     })
   })
 
+  it('dedupes repeated chat intent at the tail of the queue', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+
+    session = classroomReducer(session, {
+      type: 'EMIT_CHAT_INTENT',
+      intent: 'go_deeper',
+      summary: 'Learner asked for depth.',
+      now: 1001,
+    })
+    session = classroomReducer(session, {
+      type: 'EMIT_CHAT_INTENT',
+      intent: 'go_deeper',
+      summary: 'Learner asked for depth.',
+      now: 1002,
+    })
+
+    expect(session.eventQueue).toHaveLength(1)
+    expect(session.stream.filter(item => item.type === 'system_event')).toHaveLength(1)
+  })
+
   it('commits generated content and consumes the queued event in order', () => {
     let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
@@ -312,6 +491,7 @@ describe('classroom reducer', () => {
     const broken: ClassroomSession = {
       ...session,
       currentQuiz: {
+        id: 'quiz:999:0',
         conceptId: 'c',
         prompt: [{ text: 'p' }],
         starterCode: '',

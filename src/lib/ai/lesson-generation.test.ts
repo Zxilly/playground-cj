@@ -1,6 +1,7 @@
 /* eslint-disable prefer-arrow-callback */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  buildLessonGenerationSystemPrompt,
   createLessonGeneration,
   createLessonGenerationEventEnvelope,
   isLessonAuthoringTool,
@@ -42,23 +43,29 @@ describe('lesson generation contract', () => {
       },
     } as Parameters<typeof createLessonGeneration>[1]
 
-    const generation = createLessonGeneration({ apiKey: 'key' }, toolkit)
+    const generation = createLessonGeneration({ apiKey: 'key' }, toolkit, 'zh')
 
     expect(createConfiguredModelMock).toHaveBeenCalledWith({ apiKey: 'key' }, 'tour-lesson-generation')
     expect(toolkitToToolSetMock).toHaveBeenCalledWith(toolkit)
     expect(toolLoopAgentMock).toHaveBeenCalledWith({
       model: { model: 'configured' },
-      instructions: LESSON_GENERATION_SYSTEM_PROMPT,
+      instructions: buildLessonGenerationSystemPrompt('zh'),
       tools: { append_paragraph: { type: 'tool' } },
     })
     expect(generation).toEqual({
       options: expect.objectContaining({
-        instructions: LESSON_GENERATION_SYSTEM_PROMPT,
+        instructions: buildLessonGenerationSystemPrompt('zh'),
       }),
     })
   })
 
+  it('adds the current user language to generation system instructions', () => {
+    expect(buildLessonGenerationSystemPrompt('zh')).toContain('The learner is using zh')
+    expect(buildLessonGenerationSystemPrompt('en')).toContain('The learner is using en')
+  })
+
   it('lesson generation tool names list includes all 7 append_* tools and set_current_quiz', () => {
+    expect(LESSON_GENERATION_TOOL_NAMES).toContain('read_lesson_outline')
     for (const name of [
       'append_heading',
       'append_paragraph',
@@ -98,6 +105,7 @@ describe('lesson generation contract', () => {
 
   it('lesson generation system prompt mentions expectedShape and append_heading', () => {
     expect(LESSON_GENERATION_SYSTEM_PROMPT).toContain('append_heading')
+    expect(LESSON_GENERATION_SYSTEM_PROMPT).toContain('read_lesson_outline')
     expect(LESSON_GENERATION_SYSTEM_PROMPT).toContain('expectedShape')
     expect(LESSON_GENERATION_SYSTEM_PROMPT).not.toContain('append_lesson_content')
   })

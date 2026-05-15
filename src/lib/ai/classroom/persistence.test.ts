@@ -130,10 +130,63 @@ describe('classroom IndexedDB persistence', () => {
     })
   })
 
+  it('migrates legacy v2 snapshots before validating', async () => {
+    const legacyQuiz = {
+      conceptId: 'cj.bindings.let',
+      prompt: [{ text: 'Print 3.' }],
+      starterCode: '',
+      expectedOutput: '3',
+      matchMode: 'exact',
+      status: 'active',
+      createdAt: 1001,
+    }
+
+    await writeRawRecord({
+      key: classroomStorageKey('zh'),
+      version: 1,
+      lang: 'zh',
+      updatedAt: 1003,
+      session: {
+        version: 2,
+        lang: 'zh',
+        phase: 'practice',
+        stream: [{
+          id: 'quiz:1001:0',
+          type: 'quiz',
+          quiz: legacyQuiz,
+          createdAt: 1001,
+        }],
+        learner: { concepts: {}, evidence: [], learningNotes: '' },
+        currentQuiz: legacyQuiz,
+        lastRun: null,
+        sessionSummary: '',
+        eventQueue: [{
+          type: 'chat_intent',
+          intent: 'legacy_custom_intent',
+          summary: 'legacy',
+          createdAt: 1002,
+        }],
+      },
+    })
+
+    const loaded = await loadClassroomSession('zh')
+
+    expect(loaded).toMatchObject({
+      currentQuiz: { id: 'quiz:1001:0' },
+      eventQueue: [{ type: 'chat_intent', intent: 'change_topic' }],
+      stream: [
+        expect.objectContaining({
+          type: 'quiz',
+          quiz: expect.objectContaining({ id: 'quiz:1001:0' }),
+        }),
+      ],
+    })
+  })
+
   it('preserves queued lesson generation work across reloads', async () => {
     let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, { type: 'SET_CURRENT_QUIZ', quiz: quizBlock, now: 1001 })
-    session = classroomReducer(session, { type: 'QUIZ_RUN_FINISHED', result: successRun, now: 1002 })
+    session = classroomReducer(session, { type: 'QUIZ_SUBMIT_FINISHED', result: successRun, now: 1002 })
 
     await saveClassroomSession(session)
 

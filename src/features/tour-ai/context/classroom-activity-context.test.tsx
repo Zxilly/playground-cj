@@ -5,7 +5,7 @@ import {
   useClassroomActivity,
 } from './classroom-activity-context'
 
-describe('ClassroomActivityProvider', () => {
+describe('classroomActivityProvider', () => {
   it('provides default activity flags as false', () => {
     const { result } = renderHook(() => useClassroomActivity(), {
       wrapper: ({ children }) => <ClassroomActivityProvider>{children}</ClassroomActivityProvider>,
@@ -28,6 +28,36 @@ describe('ClassroomActivityProvider', () => {
     })
     act(() => result.current.setRunnerRunning(true))
     expect(result.current.activity.runnerRunning).toBe(true)
+  })
+
+  it('only ends the matching generation run id', () => {
+    const { result } = renderHook(() => useClassroomActivity(), {
+      wrapper: ({ children }) => <ClassroomActivityProvider>{children}</ClassroomActivityProvider>,
+    })
+
+    act(() => result.current.beginGenerationRun('run-a'))
+    expect(result.current.activity.generationRunning).toBe(true)
+
+    act(() => result.current.endGenerationRun('run-b'))
+    expect(result.current.activity.generationRunning).toBe(true)
+
+    act(() => result.current.endGenerationRun('run-a'))
+    expect(result.current.activity.generationRunning).toBe(false)
+  })
+
+  it('only ends the matching runner run id', () => {
+    const { result } = renderHook(() => useClassroomActivity(), {
+      wrapper: ({ children }) => <ClassroomActivityProvider>{children}</ClassroomActivityProvider>,
+    })
+
+    act(() => result.current.beginRunnerRun('run-a'))
+    expect(result.current.activity.runnerRunning).toBe(true)
+
+    act(() => result.current.endRunnerRun('run-b'))
+    expect(result.current.activity.runnerRunning).toBe(true)
+
+    act(() => result.current.endRunnerRun('run-a'))
+    expect(result.current.activity.runnerRunning).toBe(false)
   })
 
   it('throws when used outside provider', () => {

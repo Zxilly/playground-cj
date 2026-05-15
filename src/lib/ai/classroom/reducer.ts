@@ -1,4 +1,5 @@
 import type {
+  ChatIntentKind,
   ClassroomEvent,
   ClassroomPhase,
   ClassroomQuiz,
@@ -14,12 +15,13 @@ export type ClassroomAction
   = | { type: 'APPEND_LESSON_CONTENT', blocks: LessonContentBlock[], now?: number }
     | { type: 'SET_CURRENT_QUIZ', quiz: Extract<LessonContentBlock, { type: 'quiz' }>, now?: number }
     | { type: 'QUIZ_RUN_FINISHED', result: RunResult, now?: number }
+    | { type: 'QUIZ_SUBMIT_FINISHED', result: RunResult, now?: number }
     | { type: 'QUIZ_SUCCESS', now?: number }
     | { type: 'QUIZ_SKIP', now?: number }
     | { type: 'LESSON_GENERATION_FAILED', error: string, now?: number }
     | { type: 'SET_PHASE', phase: ClassroomPhase, now?: number }
     | { type: 'SET_LEARNING_NOTES', notes: string, now?: number }
-    | { type: 'EMIT_CHAT_INTENT', intent: string, summary: string, now?: number }
+    | { type: 'EMIT_CHAT_INTENT', intent: ChatIntentKind, summary: string, now?: number }
     | { type: 'CONSUME_EVENT', now?: number }
     | { type: 'BATCH', actions: ClassroomAction[], now?: number }
 
@@ -38,8 +40,8 @@ function resolveActionTime(value?: number): number {
   return value ?? Date.now()
 }
 
-function createStreamItemId(prefix: string, createdAt: number): string {
-  return `${prefix}:${createdAt}:${Math.random().toString(36).slice(2, 8)}`
+function createStreamItemId(prefix: string, createdAt: number, streamIndex: number): string {
+  return `${prefix}:${createdAt}:${streamIndex}`
 }
 
 function trimTrailing(text: string): string {
@@ -48,6 +50,13 @@ function trimTrailing(text: string): string {
 
 function createConceptState(conceptId: string, status: ConceptState['status'], createdAt: number): ConceptState {
   return { conceptId, status, updatedAt: createdAt }
+}
+
+const CONCEPT_STATUS_RANK: Record<ConceptState['status'], number> = {
+  unseen: 0,
+  introduced: 1,
+  practicing: 2,
+  demonstrated: 3,
 }
 
 function summarize(text: string): string {
@@ -61,7 +70,7 @@ function transitionConceptStatus(
   createdAt: number,
 ): ClassroomSession {
   const current = session.learner.concepts[conceptId]
-  if (current && current.status === status)
+  if (current && CONCEPT_STATUS_RANK[current.status] >= CONCEPT_STATUS_RANK[status])
     return session
 
   return {
@@ -133,20 +142,26 @@ function transitionLessonContentAppended(
   blocks: LessonContentBlock[],
   createdAt: number,
 ): ClassroomSession {
-  return {
+  const appended: ClassroomSession = {
     ...session,
     phase: 'teach',
     sessionSummary: summarize(`Lesson content appended ${blocks.length} block(s).`),
     stream: [
       ...session.stream,
       {
-        id: createStreamItemId('lesson', createdAt),
+        id: createStreamItemId('lesson', createdAt, session.stream.length),
         type: 'lesson_blocks',
         blocks,
         createdAt,
       },
     ],
   }
+
+  return blocks.reduce((nextSession, block) => {
+    if (block.type !== 'concept_card')
+      return nextSession
+    return transitionConceptStatus(nextSession, block.conceptId, 'introduced', createdAt)
+  }, appended)
 }
 
 function transitionQuizActivated(
@@ -154,7 +169,9 @@ function transitionQuizActivated(
   quizBlock: Extract<LessonContentBlock, { type: 'quiz' }>,
   createdAt: number,
 ): ClassroomSession {
+  const streamIndex = session.stream.length
   const quiz: ClassroomQuiz = {
+    id: createStreamItemId('quiz', createdAt, streamIndex),
     conceptId: quizBlock.conceptId,
     prompt: quizBlock.prompt,
     starterCode: quizBlock.starterCode,
@@ -163,6 +180,11 @@ function transitionQuizActivated(
     status: 'active',
     createdAt,
   }
+  const stream = session.stream.map(item =>
+    item.type === 'quiz' && item.quiz.status === 'active'
+      ? { ...item, quiz: { ...item.quiz, status: 'superseded' as const } }
+      : item,
+  )
 
   return transitionConceptStatus({
     ...session,
@@ -170,9 +192,9 @@ function transitionQuizActivated(
     currentQuiz: quiz,
     sessionSummary: summarize(`Practice quiz active for ${quiz.conceptId}.`),
     stream: [
-      ...session.stream,
+      ...stream,
       {
-        id: createStreamItemId('quiz', createdAt),
+        id: quiz.id,
         type: 'quiz',
         quiz,
         createdAt,
@@ -187,7 +209,7 @@ function transitionQuizCompleted(session: ClassroomSession, outcome: EvidenceOut
     return session
 
   const streamHasQuiz = session.stream.some(
-    item => item.type === 'quiz' && item.quiz.createdAt === quiz.createdAt,
+    item => item.type === 'quiz' && item.quiz.id === quiz.id,
   )
   if (!streamHasQuiz) {
     console.warn('[Classroom] currentQuiz exists but no stream entry, skipping transition')
@@ -225,12 +247,12 @@ function transitionQuizCompleted(session: ClassroomSession, outcome: EvidenceOut
     },
     stream: [
       ...session.stream.map(item =>
-        item.type === 'quiz' && item.quiz.createdAt === quiz.createdAt
+        item.type === 'quiz' && item.quiz.id === quiz.id
           ? { ...item, quiz: { ...item.quiz, status: outcome } }
           : item,
       ),
       {
-        id: createStreamItemId('progress', createdAt),
+        id: createStreamItemId('progress', createdAt, session.stream.length),
         type: 'progress_update',
         conceptId: quiz.conceptId,
         outcome,
@@ -261,7 +283,7 @@ function transitionRunFinished(
       stream: [
         ...session.stream,
         {
-          id: createStreamItemId('run', createdAt),
+          id: createStreamItemId('run', createdAt, session.stream.length),
           type: 'run_result',
           result,
           matched,
@@ -285,7 +307,7 @@ function transitionLessonGenerationFailed(session: ClassroomSession, error: stri
     stream: [
       ...session.stream,
       {
-        id: createStreamItemId('generation-error', createdAt),
+        id: createStreamItemId('generation-error', createdAt, session.stream.length),
         type: 'system_event',
         event,
         createdAt,
@@ -306,10 +328,19 @@ function transitionLearningNotesUpdated(session: ClassroomSession, notes: string
 
 function transitionChatIntentQueued(
   session: ClassroomSession,
-  intent: string,
+  intent: ChatIntentKind,
   summary: string,
   createdAt: number,
 ): ClassroomSession {
+  const queuedTail = session.eventQueue.at(-1)
+  if (
+    queuedTail?.type === 'chat_intent'
+    && queuedTail.intent === intent
+    && queuedTail.summary === summary
+  ) {
+    return session
+  }
+
   const event: ClassroomEvent = {
     type: 'chat_intent',
     intent,
@@ -324,7 +355,7 @@ function transitionChatIntentQueued(
     stream: [
       ...session.stream,
       {
-        id: createStreamItemId('event', createdAt),
+        id: createStreamItemId('event', createdAt, session.stream.length),
         type: 'system_event',
         event,
         createdAt,
@@ -348,6 +379,10 @@ export function classroomReducer(session: ClassroomSession, action: ClassroomAct
     case 'SET_CURRENT_QUIZ':
       return transitionQuizActivated(session, action.quiz, createdAt)
     case 'QUIZ_RUN_FINISHED': {
+      const finished = transitionRunFinished(session, action.result, createdAt)
+      return finished.session
+    }
+    case 'QUIZ_SUBMIT_FINISHED': {
       const finished = transitionRunFinished(session, action.result, createdAt)
       return finished.matched
         ? transitionQuizCompleted(finished.session, 'success', createdAt)

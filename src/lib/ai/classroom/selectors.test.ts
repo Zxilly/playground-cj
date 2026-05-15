@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   deriveChapterIndex,
   deriveClassroomPendingState,
+  deriveConceptProgress,
   deriveLatestHeading,
+  deriveLessonOutline,
   deriveSessionPendingWork,
 } from './selectors'
 import { classroomReducer, createInitialClassroomSession } from './reducer'
 import type { ClassroomSession } from './types'
-import { lessonBlockKey } from '@/features/tour-ai/utils/lesson-block-key'
 
 const baseSession = (): ClassroomSession => createInitialClassroomSession({ lang: 'zh' })
 
@@ -80,6 +81,84 @@ describe('deriveClassroomPendingState', () => {
     expect(
       deriveClassroomPendingState(baseSession(), { generationRunning: false, runnerRunning: false }),
     ).toBe('idle')
+  })
+})
+
+describe('deriveConceptProgress', () => {
+  it('groups concept ids by learner status', () => {
+    let session = baseSession()
+    session = classroomReducer(session, {
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [{
+        type: 'concept_card',
+        conceptId: 'cj.introduced',
+        title: 'Introduced',
+        body: [{ text: 'Intro.' }],
+      }],
+      now: 1,
+    })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: quizBlock,
+      now: 2,
+    })
+    session = classroomReducer(session, {
+      type: 'QUIZ_SUBMIT_FINISHED',
+      result: { ok: true, stdout: '3\n', stderr: '', exitCode: 0 },
+      now: 3,
+    })
+
+    expect(deriveConceptProgress(session)).toEqual({
+      introduced: ['cj.introduced'],
+      practicing: [],
+      demonstrated: ['cj.let'],
+    })
+  })
+})
+
+describe('deriveLessonOutline', () => {
+  it('returns chapters, bounded recent items, active quiz, and concept progress', () => {
+    let session = baseSession()
+    session = classroomReducer(session, {
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [
+        { type: 'heading', text: 'Bindings', level: 2 },
+        {
+          type: 'concept_card',
+          conceptId: 'cj.bindings.let',
+          title: 'Let',
+          body: [{ text: 'Use let.' }],
+        },
+      ],
+      now: 1,
+    })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: quizBlock,
+      now: 2,
+    })
+    session = classroomReducer(session, {
+      type: 'QUIZ_RUN_FINISHED',
+      result: { ok: true, stdout: '2\n', stderr: '', exitCode: 0 },
+      now: 3,
+    })
+
+    const outline = deriveLessonOutline(session, 2)
+
+    expect(outline.chapters.map(c => c.text)).toEqual(['Bindings'])
+    expect(outline.recentItems).toEqual([
+      expect.objectContaining({ type: 'quiz', summary: 'Quiz active for cj.let' }),
+      expect.objectContaining({ type: 'run_result', summary: 'Run completed, matched: false' }),
+    ])
+    expect(outline.activeQuiz).toEqual(expect.objectContaining({
+      conceptId: 'cj.let',
+      status: 'active',
+    }))
+    expect(outline.conceptProgress).toEqual({
+      introduced: ['cj.bindings.let'],
+      practicing: ['cj.let'],
+      demonstrated: [],
+    })
   })
 })
 
@@ -162,7 +241,7 @@ describe('deriveChapterIndex', () => {
     expect(result.map(e => e.level)).toEqual([2, 3, 2])
     expect(result[0].streamItemId).toBe('s1')
     expect(result[2].streamItemId).toBe('s2')
-    expect(result[0].blockKey).toBe(lessonBlockKey(h1))
+    expect(result[0].blockKey).toBe('s1:block:0')
   })
 
   it('skips lesson_blocks with no heading and non-lesson_blocks items', () => {
@@ -197,5 +276,20 @@ describe('deriveChapterIndex', () => {
     const result = deriveChapterIndex(session)
     expect(result).toHaveLength(2)
     expect(new Set(result.map(e => e.id)).size).toBe(2)
+    expect(result.map(e => e.blockKey)).toEqual(['s1:block:0', 's1:block:2'])
+  })
+
+  it('reuses the derived chapter index when the stream reference has not changed', () => {
+    const session = {
+      ...createInitialClassroomSession({ lang: 'zh' }),
+      stream: [
+        { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [{ type: 'heading' as const, text: 'A', level: 2 as const }] },
+      ],
+    }
+
+    const first = deriveChapterIndex(session)
+    const second = deriveChapterIndex({ ...session, phase: 'teach' })
+
+    expect(second).toBe(first)
   })
 })

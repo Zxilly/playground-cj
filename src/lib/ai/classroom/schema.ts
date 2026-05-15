@@ -12,7 +12,7 @@ import { z } from 'zod'
 
 const richTextSpanSchema = z.union([
   z.object({ text: z.string() }).strict(),
-  z.object({ code: z.string() }).strict(),
+  z.object({ code: z.string(), lang: z.string().optional(), language: z.string().optional() }).strict(),
   z.object({ strong: z.string() }).strict(),
 ])
 
@@ -44,6 +44,7 @@ export const lessonContentBlockSchema = z.discriminatedUnion('type', [
     type: z.literal('code_example'),
     title: z.string().optional(),
     code: z.string(),
+    language: z.string().optional(),
     highlights: z.array(codeHighlightSchema).optional(),
   }).strict(),
   z.object({
@@ -80,11 +81,13 @@ export type LessonContentBlockInput = z.infer<typeof lessonContentBlockSchema>
 
 export const classroomPhaseSchema = z.enum(['orient', 'teach', 'practice'])
 export const quizMatchModeSchema = z.enum(['exact', 'contains', 'regex'])
-export const quizStatusSchema = z.enum(['active', 'success', 'skip'])
+export const quizStatusSchema = z.enum(['active', 'success', 'skip', 'superseded'])
 export const conceptStatusSchema = z.enum(['unseen', 'introduced', 'practicing', 'demonstrated'])
 export const evidenceOutcomeSchema = z.enum(['success', 'skip'])
+export const chatIntentKindSchema = z.enum(['advance', 'go_deeper', 'slow_down', 'change_topic', 'explain_error'])
 
 export const classroomQuizSchema: z.ZodType<ClassroomQuiz> = z.object({
+  id: z.string(),
   conceptId: z.string(),
   prompt: richTextSchema,
   starterCode: z.string(),
@@ -128,7 +131,7 @@ export const classroomEventSchema: z.ZodType<ClassroomEvent> = z.discriminatedUn
   z.object({ type: z.literal('classroom_opened'), createdAt: z.number(), summary: z.string().optional() }).strict(),
   z.object({ type: z.literal('quiz_success'), conceptId: z.string(), summary: z.string(), createdAt: z.number() }).strict(),
   z.object({ type: z.literal('quiz_skip'), conceptId: z.string(), summary: z.string(), createdAt: z.number() }).strict(),
-  z.object({ type: z.literal('chat_intent'), intent: z.string(), summary: z.string(), createdAt: z.number() }).strict(),
+  z.object({ type: z.literal('chat_intent'), intent: chatIntentKindSchema, summary: z.string(), createdAt: z.number() }).strict(),
   z.object({ type: z.literal('lesson_generation_error'), summary: z.string(), createdAt: z.number() }).strict(),
 ])
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lessonContentBlockSchema, lessonContentBlocksSchema, classroomEventSchema, classroomRecordSchema, classroomSessionSchema, classroomStreamItemSchema } from './schema'
+import { classroomEventSchema, classroomRecordSchema, classroomSessionSchema, classroomStreamItemSchema, lessonContentBlockSchema, lessonContentBlocksSchema } from './schema'
 import { classroomStorageKey } from './store'
 
 describe('lesson content DSL schema', () => {
@@ -33,6 +33,26 @@ describe('lesson content DSL schema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('accepts language hints for inline and block code', () => {
+    expect(lessonContentBlockSchema.safeParse({
+      type: 'paragraph',
+      body: [
+        { text: 'Use ' },
+        { code: 'let value = 1', lang: 'cangjie' },
+        { text: ' or ' },
+        { code: 'const value = 1', lang: 'typescript' },
+        { text: '.' },
+      ],
+    }).success).toBe(true)
+
+    expect(lessonContentBlockSchema.safeParse({
+      type: 'code_example',
+      title: 'TypeScript comparison',
+      code: 'const value = 1',
+      language: 'typescript',
+    }).success).toBe(true)
+  })
+
   it('rejects MDX, HTML, and layout source as model output', () => {
     expect(lessonContentBlockSchema.safeParse({
       type: 'mdx',
@@ -63,16 +83,27 @@ describe('classroomEventSchema', () => {
   it('accepts all five event types', () => {
     expect(classroomEventSchema.safeParse({ type: 'classroom_opened', createdAt: 1 }).success).toBe(true)
     expect(classroomEventSchema.safeParse({
-      type: 'quiz_success', conceptId: 'c', summary: 's', createdAt: 1,
+      type: 'quiz_success',
+      conceptId: 'c',
+      summary: 's',
+      createdAt: 1,
     }).success).toBe(true)
     expect(classroomEventSchema.safeParse({
-      type: 'quiz_skip', conceptId: 'c', summary: 's', createdAt: 1,
+      type: 'quiz_skip',
+      conceptId: 'c',
+      summary: 's',
+      createdAt: 1,
     }).success).toBe(true)
     expect(classroomEventSchema.safeParse({
-      type: 'chat_intent', intent: 'i', summary: 's', createdAt: 1,
+      type: 'chat_intent',
+      intent: 'go_deeper',
+      summary: 's',
+      createdAt: 1,
     }).success).toBe(true)
     expect(classroomEventSchema.safeParse({
-      type: 'lesson_generation_error', summary: 's', createdAt: 1,
+      type: 'lesson_generation_error',
+      summary: 's',
+      createdAt: 1,
     }).success).toBe(true)
   })
 
@@ -86,7 +117,9 @@ describe('classroomEventSchema', () => {
 
   it('rejects extra fields under strict mode', () => {
     expect(classroomEventSchema.safeParse({
-      type: 'classroom_opened', createdAt: 1, extra: 'nope',
+      type: 'classroom_opened',
+      createdAt: 1,
+      extra: 'nope',
     }).success).toBe(false)
   })
 })
@@ -97,8 +130,14 @@ describe('classroomStreamItemSchema', () => {
       id: 'q1',
       type: 'quiz',
       quiz: {
-        conceptId: 'c', prompt: [{ text: 'p' }], starterCode: 's',
-        expectedOutput: '3', matchMode: 'exact', status: 'active', createdAt: 1,
+        id: 'q1',
+        conceptId: 'c',
+        prompt: [{ text: 'p' }],
+        starterCode: 's',
+        expectedOutput: '3',
+        matchMode: 'exact',
+        status: 'active',
+        createdAt: 1,
       },
       createdAt: 1,
     }).success).toBe(true)
@@ -106,7 +145,9 @@ describe('classroomStreamItemSchema', () => {
 
   it('rejects a stream item with bad discriminator', () => {
     expect(classroomStreamItemSchema.safeParse({
-      id: 'x', type: 'unknown', createdAt: 1,
+      id: 'x',
+      type: 'unknown',
+      createdAt: 1,
     }).success).toBe(false)
   })
 })

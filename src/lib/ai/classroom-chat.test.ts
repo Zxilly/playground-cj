@@ -1,26 +1,66 @@
-import { describe, expect, it } from 'vitest'
-import { CHAT_AGENT_SYSTEM_PROMPT, CHAT_AGENT_TOOL_NAMES } from './chat-agent'
+/* eslint-disable prefer-arrow-callback */
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { buildClassroomChatSystemPrompt, CLASSROOM_CHAT_SYSTEM_PROMPT, createClassroomChat } from './classroom-chat'
 
-describe('chatAgent contract', () => {
-  it('is the only natural-language user interface and cannot author official lesson content', () => {
-    expect(CHAT_AGENT_SYSTEM_PROMPT).toContain('ChatAgent')
-    expect(CHAT_AGENT_SYSTEM_PROMPT).toContain('only natural-language')
+const toolLoopAgentMock = vi.hoisted(() => vi.fn(function ToolLoopAgent(options: unknown) {
+  return { options }
+}))
+const createConfiguredModelMock = vi.hoisted(() => vi.fn(() => ({ model: 'configured' })))
+const toolkitToToolSetMock = vi.hoisted(() => vi.fn(() => ({ read_classroom_state: { type: 'tool' } })))
 
-    expect(CHAT_AGENT_TOOL_NAMES).toEqual([
-      'read_classroom_state',
-      'read_current_quiz',
-      'read_editor_code',
-      'read_last_run',
-      'read_concepts',
-      'mcp_call_tool',
-      'emit_classroom_event',
-      'highlight_editor_lines',
-      'underline_editor_range',
-      'reveal_editor_line',
-      'clear_editor_annotations',
-    ])
-    expect(CHAT_AGENT_TOOL_NAMES).not.toContain('append_lesson_content')
-    expect(CHAT_AGENT_TOOL_NAMES).not.toContain('set_current_quiz')
-    expect(CHAT_AGENT_TOOL_NAMES).not.toContain('set_learning_notes')
+vi.mock('ai', () => ({
+  ToolLoopAgent: toolLoopAgentMock,
+}))
+
+vi.mock('./model-provider', () => ({
+  createConfiguredModel: createConfiguredModelMock,
+}))
+
+vi.mock('./toolkit-to-tool-set', () => ({
+  toolkitToToolSet: toolkitToToolSetMock,
+}))
+
+describe('chat contract', () => {
+  beforeEach(() => {
+    toolLoopAgentMock.mockClear()
+    createConfiguredModelMock.mockClear()
+    toolkitToToolSetMock.mockClear()
+  })
+
+  it('constructs chat with the classroom chat model name and converted tools', () => {
+    const toolkit = {
+      read_classroom_state: {
+        parameters: { type: 'object' },
+        execute: () => ({}),
+      },
+    } as Parameters<typeof createClassroomChat>[1]
+
+    const chat = createClassroomChat({ apiKey: 'key' }, toolkit, 'zh')
+
+    expect(createConfiguredModelMock).toHaveBeenCalledWith({ apiKey: 'key' }, 'tour-classroom-chat')
+    expect(toolkitToToolSetMock).toHaveBeenCalledWith(toolkit)
+    expect(toolLoopAgentMock).toHaveBeenCalledWith({
+      model: { model: 'configured' },
+      instructions: buildClassroomChatSystemPrompt('zh'),
+      tools: { read_classroom_state: { type: 'tool' } },
+    })
+    expect(chat).toEqual({
+      options: expect.objectContaining({
+        instructions: buildClassroomChatSystemPrompt('zh'),
+      }),
+    })
+  })
+
+  it('adds the current user language to chat system instructions', () => {
+    expect(buildClassroomChatSystemPrompt('zh')).toContain('The learner is using zh')
+    expect(buildClassroomChatSystemPrompt('en')).toContain('The learner is using en')
+  })
+
+  it('keeps dynamic classroom state out of the static chat instructions', () => {
+    expect(CLASSROOM_CHAT_SYSTEM_PROMPT).not.toContain('currentQuiz:')
+    expect(CLASSROOM_CHAT_SYSTEM_PROMPT).not.toContain('lastRun:')
+    expect(CLASSROOM_CHAT_SYSTEM_PROMPT).not.toContain('stream:')
+    expect(CLASSROOM_CHAT_SYSTEM_PROMPT).not.toContain('ClassroomChat')
+    expect(CLASSROOM_CHAT_SYSTEM_PROMPT).not.toContain('Agent')
   })
 })
