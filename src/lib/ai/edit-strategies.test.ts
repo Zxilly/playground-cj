@@ -30,10 +30,17 @@ describe('replace', () => {
 
   it('block-anchor matches when middle lines diverge slightly', () => {
     const content = ['fn foo() {', '  let x = 1', '  let y = 2', '  return x + y', '}'].join('\n')
-    const find = ['fn foo() {', '  // body', '  // body', '  // body', '}'].join('\n')
+    const find = ['fn foo() {', '  let x = 1', '  let y = 3', '  return x + y', '}'].join('\n')
     const replacement = 'fn foo() {\n  return 42\n}'
     const out = replace(content, find, replacement)
     expect(out).toBe(replacement)
+  })
+
+  it('does not replace unrelated blocks that only share first and last lines', () => {
+    const content = ['fn foo() {', '  let x = 1', '  let y = 2', '  return x + y', '}'].join('\n')
+    const find = ['fn foo() {', '  connectProductionDatabase()', '  deleteEverything()', '}'].join('\n')
+
+    expect(() => replace(content, find, 'fn foo() {\n  return 42\n}')).toThrow(/Could not find/)
   })
 
   it('handles indentation-flexible matches', () => {
@@ -48,6 +55,6 @@ describe('replace', () => {
   it('handles trimmed-boundary matches', () => {
     const content = 'before\nfoo\nafter'
     const out = replace(content, '\nfoo\n', 'foo')
-    expect(out).toContain('foo')
+    expect(out).toBe('beforefooafter')
   })
 })

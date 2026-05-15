@@ -2,16 +2,27 @@ import { describe, expect, it } from 'vitest'
 import { findChapterRefSections, getAllConcepts, getConcept, getReadyConcepts } from './loader'
 
 describe('concept-graph loader', () => {
-  it('loads non-empty graph', () => {
+  it('loads complete concept metadata with unique ids', () => {
     const all = getAllConcepts()
-    expect(all.length).toBeGreaterThan(20)
+    const ids = new Set<string>()
+
+    for (const concept of all) {
+      expect(concept.conceptId).toMatch(/^cj\./)
+      expect(ids.has(concept.conceptId), `duplicate concept ${concept.conceptId}`).toBe(false)
+      expect(concept.title.zh).toBeTruthy()
+      expect(concept.title.en).toBeTruthy()
+      expect(concept.summary.zh).toBeTruthy()
+      expect(concept.summary.en).toBeTruthy()
+      expect(concept.difficulty).toBeGreaterThan(0)
+      ids.add(concept.conceptId)
+    }
   })
 
-  it('looks up by id', () => {
-    const main = getConcept('cj.program.main')
-    expect(main).toBeDefined()
-    expect(main!.title.zh).toBeTruthy()
-    expect(main!.title.en).toBeTruthy()
+  it('looks up every concept by id and rejects unknown ids', () => {
+    for (const concept of getAllConcepts())
+      expect(getConcept(concept.conceptId)).toBe(concept)
+
+    expect(getConcept('cj.missing')).toBeUndefined()
   })
 
   it('all prerequisites resolve to known concepts', () => {
@@ -50,9 +61,14 @@ describe('concept-graph loader', () => {
 
   it('getReadyConcepts unlocks concepts after demonstrating prereq', () => {
     const main = 'cj.program.main'
-    const before = getReadyConcepts(new Set())
     const after = getReadyConcepts(new Set([main]))
-    expect(after.length).toBeGreaterThan(before.length)
+
+    expect(after.some(concept => concept.prerequisites.includes(main))).toBe(true)
+    for (const concept of after) {
+      expect(concept.conceptId).not.toBe(main)
+      expect(concept.prerequisites.every(prereq => prereq === main || getConcept(prereq)?.prerequisites.length === 0)).toBe(true)
+    }
+    expect(after.map(concept => concept.difficulty)).toEqual([...after].map(concept => concept.difficulty).sort((a, b) => a - b))
   })
 
   it('findChapterRefSections matches sub-chapter prefix', () => {

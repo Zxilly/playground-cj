@@ -10,7 +10,7 @@
 
 export type Replacer = (content: string, find: string) => Generator<string, void, unknown>
 
-const SINGLE_CANDIDATE_SIMILARITY_THRESHOLD = 0.0
+const SINGLE_CANDIDATE_SIMILARITY_THRESHOLD = 0.3
 const MULTIPLE_CANDIDATES_SIMILARITY_THRESHOLD = 0.3
 
 function levenshtein(a: string, b: string): number {

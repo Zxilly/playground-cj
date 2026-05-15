@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
-import { createInitialClassroomSession } from '@/lib/ai/classroom/reducer'
+import { classroomReducer, createInitialClassroomSession } from '@/lib/ai/classroom/reducer'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
 import type { ClassroomSession } from '@/lib/ai/classroom/types'
 
@@ -138,6 +138,7 @@ describe('ai classroom toolkits', () => {
       'mcp_call_tool',
       'read_classroom_state',
       'read_concepts',
+      'read_lesson_outline',
       'set_current_quiz',
       'set_learning_notes',
       'set_phase',
@@ -158,6 +159,106 @@ describe('ai classroom toolkits', () => {
       code: '   1  main() {\n   2      println(3)\n   3  }',
       lineCount: 3,
       language: 'cangjie',
+    })
+  })
+
+  it('lessonGeneration read_classroom_state includes concept progress groups', async () => {
+    session = classroomReducer(session, {
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [{
+        type: 'concept_card',
+        conceptId: 'cj.bindings.let',
+        title: 'Let bindings',
+        body: [{ text: 'Use let.' }],
+      }],
+      now: 1001,
+    })
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const toolkit = createLessonGenerationToolkit(bridge)
+
+    const result = await toolkit.read_classroom_state!.execute!({}, toolOptions())
+
+    expect(result).toMatchObject({
+      ok: true,
+      conceptProgress: {
+        introduced: ['cj.bindings.let'],
+        practicing: [],
+        demonstrated: [],
+      },
+    })
+  })
+
+  it('lessonGeneration read_concepts lowers skipped concept priority in default recommendations', async () => {
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.program.main',
+        prompt: [{ text: 'Print 1.' }],
+        starterCode: '',
+        expectedOutput: '1',
+      },
+      now: 1001,
+    })
+    session = classroomReducer(session, { type: 'QUIZ_SUCCESS', now: 1002 })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.io.println',
+        prompt: [{ text: 'Print 2.' }],
+        starterCode: '',
+        expectedOutput: '2',
+      },
+      now: 1003,
+    })
+    session = classroomReducer(session, { type: 'QUIZ_SKIP', now: 1004 })
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const toolkit = createLessonGenerationToolkit(bridge)
+
+    const result = await toolkit.read_concepts!.execute!({}, toolOptions())
+    const concepts = (result as {
+      ok: true
+      concepts: Array<{ conceptId: string, skipCount: number }>
+    }).concepts
+
+    expect(concepts.find(c => c.conceptId === 'cj.io.println')).toMatchObject({ skipCount: 1 })
+    expect(concepts.findIndex(c => c.conceptId === 'cj.var.immutable'))
+      .toBeLessThan(concepts.findIndex(c => c.conceptId === 'cj.io.println'))
+  })
+
+  it('lessonGeneration read_lesson_outline returns bounded stream memory', async () => {
+    session = classroomReducer(session, {
+      type: 'APPEND_LESSON_CONTENT',
+      blocks: [
+        { type: 'heading', text: 'Bindings', level: 2 },
+        { type: 'paragraph', body: [{ text: 'Intro.' }] },
+      ],
+      now: 1001,
+    })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.bindings.let',
+        prompt: [{ text: 'Print 3.' }],
+        starterCode: '',
+        expectedOutput: '3',
+      },
+      now: 1002,
+    })
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const toolkit = createLessonGenerationToolkit(bridge)
+
+    const result = await toolkit.read_lesson_outline!.execute!({ limit: 1 }, toolOptions())
+
+    expect(result).toMatchObject({
+      ok: true,
+      outline: {
+        chapters: [expect.objectContaining({ text: 'Bindings' })],
+        recentItems: [expect.objectContaining({ type: 'quiz' })],
+        activeQuiz: expect.objectContaining({ conceptId: 'cj.bindings.let' }),
+      },
     })
   })
 
@@ -246,6 +347,42 @@ describe('ai classroom toolkits', () => {
     expect((result as { expectedShape?: unknown }).expectedShape).toBeDefined()
     expect((result as { expectedShape: { conceptId: string } }).expectedShape.conceptId).toBe('concept_id')
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_CURRENT_QUIZ' }))
+  })
+
+  it('mcp_call_tool only calls tools returned by discovery', async () => {
+    listMcpToolsMock.mockResolvedValueOnce([
+      { name: 'docs.search', description: 'Search docs', inputSchema: { type: 'object' } },
+    ])
+    callMcpToolMock.mockResolvedValueOnce({ hits: 1 })
+    const { createClassroomChatToolkit } = await import('./tools')
+    const toolkit = createClassroomChatToolkit(bridge)
+
+    const result = await toolkit.mcp_call_tool!.execute!({
+      name: 'docs.search',
+      arguments: { q: 'let' },
+    }, toolOptions())
+
+    expect(result).toEqual({ ok: true, result: { hits: 1 } })
+    expect(callMcpToolMock).toHaveBeenCalledWith('docs.search', { q: 'let' })
+  })
+
+  it('mcp_call_tool rejects undiscovered tool names', async () => {
+    listMcpToolsMock.mockResolvedValueOnce([
+      { name: 'docs.search', description: 'Search docs', inputSchema: { type: 'object' } },
+    ])
+    const { createClassroomChatToolkit } = await import('./tools')
+    const toolkit = createClassroomChatToolkit(bridge)
+
+    const result = await toolkit.mcp_call_tool!.execute!({
+      name: 'shell.delete_everything',
+      arguments: {},
+    }, toolOptions())
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'MCP tool "shell.delete_everything" is not available from discovery',
+    })
+    expect(callMcpToolMock).not.toHaveBeenCalled()
   })
 
   it('loads MCP tools with safe names and isolates call failures', async () => {
@@ -400,10 +537,10 @@ describe('append_* sub-tools', () => {
     const dispatch = vi.fn()
     const { createLessonGenerationToolkit } = await import('./tools')
     const tk = createLessonGenerationToolkit(makeBridge(dispatch))
-    const r = await tk.append_code_example!.execute!({ code: 'main(){}', title: 'Hi' }, ctx)
+    const r = await tk.append_code_example!.execute!({ code: 'const answer = 42', title: 'Hi', language: 'typescript' }, ctx)
     expect((r as { ok: boolean }).ok).toBe(true)
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
-      blocks: [{ type: 'code_example', code: 'main(){}', title: 'Hi' }],
+      blocks: [{ type: 'code_example', code: 'const answer = 42', title: 'Hi', language: 'typescript' }],
     }))
   })
 
