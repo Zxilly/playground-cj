@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
 import { Trans } from '@lingui/react/macro'
 import { useAIClassroomBridge } from '@/features/tour-ai/context/useAIClassroomBridge'
 import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
@@ -23,6 +24,7 @@ import { LessonGenerationErrorRetry } from '@/features/tour-ai/components/Lesson
 import { useScrollFollower } from '@/features/tour-ai/components/use-scroll-follower'
 import { useLessonGenerationRuntime } from '@/features/tour-ai/runtime/useLessonGenerationRuntime'
 import { deriveClassroomPendingState } from '@/lib/ai/classroom/selectors'
+import { classroomFadeUpVariants } from '@/features/tour-ai/components/classroom-motion'
 
 interface TourAIClassroomShellProps {
   lang: string
@@ -62,6 +64,7 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
     generationRunning,
     retryQueuedGenerationEvent,
     toggleGenerationProgress,
+    waitingForApiKey,
   } = useLessonGenerationRuntime({ session, dispatch, hydrated })
 
   const { newContentBelow, pinned, scrollToBottom } = useScrollFollower({
@@ -92,41 +95,77 @@ function TourAIClassroomShellInner({ lang }: { lang: string }) {
   }
 
   return (
-    <div
-      data-testid="ai-classroom-root"
-      className="ai-classroom-root h-screen"
-      style={inlineStyle}
-    >
-      <ViewportRefProvider value={viewportRef}>
-        <div className="flex h-full min-h-0 bg-tour-bg text-tour-text">
-          <main className="relative flex min-w-0 flex-1 flex-col">
-            <ClassroomHeader
-              onOpenChat={() => setChatOpen(true)}
-              chapterIndex={<ClassroomChapterIndex />}
-            />
-            <ClassroomViewport viewportRef={viewportRef}>
-              {!hydrated
-                ? <ClassroomLoadingSkeleton />
-                : (
-                    <>
-                      <ClassroomStream session={session} lang={lang} dispatch={dispatch} bridge={bridge} />
-                      <LessonGenerationProgressPanel
-                        progress={generationProgress}
-                        visible={pendingState === 'lesson_generation' || generationRunning || generationProgress.status !== 'idle'}
-                        onToggle={toggleGenerationProgress}
-                      />
-                      {annotationState.annotations.some(a => a.namespace === 'chat' && a.stale) && (
-                        <div className="mt-3 text-xs text-classroom-warning-fg"><Trans>聊天标注已过期</Trans></div>
+    <MotionConfig reducedMotion="user">
+      <div
+        data-testid="ai-classroom-root"
+        className="ai-classroom-root h-screen"
+        style={inlineStyle}
+      >
+        <ViewportRefProvider value={viewportRef}>
+          <div className="flex h-full min-h-0 bg-tour-bg text-tour-text">
+            <main className="relative flex min-w-0 flex-1 flex-col">
+              <ClassroomHeader
+                onOpenChat={() => setChatOpen(true)}
+                chapterIndex={<ClassroomChapterIndex />}
+              />
+              <ClassroomViewport viewportRef={viewportRef}>
+                <AnimatePresence mode="wait" initial={false}>
+                  {!hydrated
+                    ? (
+                        <motion.div
+                          key="classroom-loading"
+                          data-testid="ai-classroom-loading-motion"
+                          variants={classroomFadeUpVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                        >
+                          <ClassroomLoadingSkeleton />
+                        </motion.div>
+                      )
+                    : (
+                        <motion.div
+                          key="classroom-content"
+                          data-testid="ai-classroom-content-motion"
+                          variants={classroomFadeUpVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="exit"
+                        >
+                          <ClassroomStream session={session} lang={lang} dispatch={dispatch} bridge={bridge} />
+                          <LessonGenerationProgressPanel
+                            progress={generationProgress}
+                            visible={pendingState === 'lesson_generation' || generationRunning || generationProgress.status !== 'idle'}
+                            blockedReason={waitingForApiKey ? 'api_key' : undefined}
+                            onToggle={toggleGenerationProgress}
+                          />
+                          <AnimatePresence initial={false}>
+                            {annotationState.annotations.some(a => a.namespace === 'chat' && a.stale) && (
+                              <motion.div
+                                key="stale-chat-annotation"
+                                variants={classroomFadeUpVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                className="mt-3 text-xs text-classroom-warning-fg"
+                              >
+                                <Trans>聊天标注已过期</Trans>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                          <LessonGenerationErrorRetry session={session} onRetry={retryQueuedGenerationEvent} />
+                        </motion.div>
                       )}
-                      <LessonGenerationErrorRetry session={session} onRetry={retryQueuedGenerationEvent} />
-                    </>
-                  )}
-            </ClassroomViewport>
-            <ClassroomScrollFollower visible={newContentBelow && !pinned} onClick={scrollToBottom} />
-          </main>
-          {chatOpen && <ClassroomChatSidebar onClose={() => setChatOpen(false)} />}
-        </div>
-      </ViewportRefProvider>
-    </div>
+                </AnimatePresence>
+              </ClassroomViewport>
+              <ClassroomScrollFollower visible={newContentBelow && !pinned} onClick={scrollToBottom} />
+            </main>
+            <AnimatePresence>
+              {chatOpen && <ClassroomChatSidebar onClose={() => setChatOpen(false)} />}
+            </AnimatePresence>
+          </div>
+        </ViewportRefProvider>
+      </div>
+    </MotionConfig>
   )
 }

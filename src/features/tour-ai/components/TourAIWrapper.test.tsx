@@ -16,5 +16,6 @@ describe('tourAIWrapper', () => {
 
     expect(html).toContain('AI 课堂')
     expect(html).toContain('正在加载 AI 课堂')
+    expect(html).toContain('data-motion="ai-classroom-fallback"')
   })
 })

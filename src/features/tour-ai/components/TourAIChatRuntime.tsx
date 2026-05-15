@@ -32,9 +32,9 @@ export function TourAIChatRuntime({ toolkit, lang }: { toolkit: Toolkit, lang: s
   const config = useLLMConfig()
   const scopeSignal = useClassroomAbortScope()
   const transport = useMemo(() => {
-    const chat = createClassroomChat(config, toolkit)
+    const chat = createClassroomChat(config, toolkit, lang)
     return createScopedChatTransport(chat, scopeSignal)
-  }, [config, toolkit, scopeSignal])
+  }, [config, toolkit, scopeSignal, lang])
   const suggestions = useMemo(() => buildTourAIChatSuggestions(lang), [lang])
 
   const runtime = useChatRuntime<ClassroomChatMessage>({

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { Sparkles } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Trans } from '@lingui/react/macro'
 import { useAIClassroomBridge } from '@/features/tour-ai/context/useAIClassroomBridge'
 import { createClassroomChatToolkit } from '@/features/tour-ai/agent/tools'
@@ -9,6 +10,7 @@ import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfig
 import type { LLMConfigBootstrapState } from '@/modules/llm-config/runtime/useLLMConfigBootstrap'
 import { TourAIChatRuntime } from '@/features/tour-ai/components/TourAIChatRuntime'
 import { useLLMConfig } from '@/stores/llmConfig'
+import { classroomFadeUpVariants } from '@/features/tour-ai/components/classroom-motion'
 
 export function TourAIChat() {
   const bridge = useAIClassroomBridge()
@@ -28,9 +30,33 @@ export function TourAIChat() {
         </div>
       </div>
       <div className="min-h-0 flex-1">
-        {bootstrap.status === 'ready' && config.apiKey
-          ? <TourAIChatRuntime toolkit={toolkit} lang={bridge.lang} />
-          : <BootstrapStatus state={bootstrap} hasApiKey={Boolean(config.apiKey)} />}
+        <AnimatePresence initial={false} mode="wait">
+          {bootstrap.status === 'ready' && config.apiKey
+            ? (
+                <motion.div
+                  key="chat-runtime"
+                  variants={classroomFadeUpVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="h-full"
+                >
+                  <TourAIChatRuntime toolkit={toolkit} lang={bridge.lang} />
+                </motion.div>
+              )
+            : (
+                <motion.div
+                  key="chat-bootstrap"
+                  variants={classroomFadeUpVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  className="h-full"
+                >
+                  <BootstrapStatus state={bootstrap} hasApiKey={Boolean(config.apiKey)} />
+                </motion.div>
+              )}
+        </AnimatePresence>
       </div>
     </div>
   )
@@ -57,7 +83,14 @@ function BootstrapStatus({ state, hasApiKey }: { state: LLMConfigBootstrapState,
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 text-center text-xs text-muted-foreground">
       <div className="flex items-center gap-2">
-        <Sparkles className="size-3 animate-pulse text-tour-accent-fg" />
+        <motion.span
+          aria-hidden="true"
+          animate={{ opacity: [0.65, 1, 0.65], scale: [0.92, 1.08, 0.92] }}
+          transition={{ duration: 1.35, ease: 'easeInOut', repeat: Infinity }}
+          className="inline-flex text-tour-accent-fg"
+        >
+          <Sparkles className="size-3" />
+        </motion.span>
         <span><Trans>正在准备聊天</Trans></span>
       </div>
     </div>

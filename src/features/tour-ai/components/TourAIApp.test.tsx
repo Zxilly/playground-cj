@@ -2,7 +2,7 @@
 import 'fake-indexeddb/auto'
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TourAIApp from './TourAIApp'
 import { useLLMConfigStore } from '@/stores/llmConfig'
@@ -18,14 +18,25 @@ vi.mock('next/font/local', () => ({
 vi.mock('react-virtuoso', () => ({
   Virtuoso: ({ data, itemContent }: { data: unknown[], itemContent: (i: number, item: unknown) => React.ReactNode }) => (
     <div data-testid="virtuoso-mock">
-      {data.map((item, i) => <div key={i}>{itemContent(i, item)}</div>)}
+      {data.map((item, i) => {
+        const key = typeof item === 'object' && item !== null && 'id' in item
+          ? String(item.id)
+          : JSON.stringify(item)
+        return <div key={key}>{itemContent(i, item)}</div>
+      })}
     </div>
   ),
 }))
 
 vi.mock('@/features/tour/components/TourEditor', () => ({
-  TourEditor: ({ code }: { code: string }) => (
-    <div data-testid="tour-editor">{code || 'empty editor'}</div>
+  TourEditor: ({ code, layout, enableLanguageClient }: { code: string, layout?: string, enableLanguageClient?: boolean }) => (
+    <div
+      data-testid="tour-editor"
+      data-layout={layout ?? 'full'}
+      data-language-client={String(enableLanguageClient ?? true)}
+    >
+      {code || 'empty editor'}
+    </div>
   ),
 }))
 
@@ -178,10 +189,22 @@ describe('tourAIApp classroom flow', () => {
     await screen.findByText('Let bindings')
     screen.getByText('Use let for immutable values.')
     screen.getByText('Print 3.')
+    screen.getByTestId('quiz-code-panel')
+    screen.getByTestId('quiz-test-panel')
+    expect(screen.getByTestId('tour-editor').getAttribute('data-layout')).toBe('editorOnly')
+    expect(screen.getByTestId('tour-editor').getAttribute('data-language-client')).toBe('false')
     expect(screen.getByTestId('tour-editor').textContent).toContain('println')
+    const codePanel = within(screen.getByTestId('quiz-code-panel'))
+    codePanel.getByText('代码')
+    codePanel.getByRole('button', { name: '运行' })
+    codePanel.getByRole('button', { name: '提交' })
+    const testPanel = within(screen.getByTestId('quiz-test-panel'))
+    testPanel.getByRole('tab', { name: '测试用例' })
+    testPanel.getByRole('tab', { name: '测试结果' })
+    testPanel.getByText('Case 1')
   })
 
-  it('streams lesson generation progress in an expanded panel and collapses it after commit', async () => {
+  it('streams lesson generation progress and hides the completed panel after commit', async () => {
     let finishAuthor: (() => void) | undefined
     vi.mocked(runLessonGenerationStep).mockImplementationOnce(async (options) => {
       const progressOptions = options as typeof options & { onProgress?: (chunk: string) => void }
@@ -201,11 +224,8 @@ describe('tourAIApp classroom flow', () => {
 
     finishAuthor?.()
     await screen.findByText('Let bindings')
-    await waitFor(() => expect(screen.getByRole('button', { name: /课程生成进度/ }).getAttribute('aria-expanded')).toBe('false'))
+    await waitFor(() => expect(screen.queryByTestId('lesson-generation-progress-panel')).toBeNull())
     expect(screen.queryByText('读取课堂状态')).toBeNull()
-
-    fireEvent.click(screen.getByRole('button', { name: /课程生成进度/ }))
-    screen.getByText('读取课堂状态')
   })
 
   it('retries classroom_opened after the automatic key resolves', async () => {
@@ -236,6 +256,9 @@ describe('tourAIApp classroom flow', () => {
     expect(screen.getByTestId('classroom-phase').textContent).toContain('练习')
     fireEvent.click(screen.getByRole('button', { name: '打开聊天' }))
     screen.getByTestId('chat-panel')
+    expect(screen.getByTestId('classroom-chat-overlay')).not.toBeNull()
+    expect(screen.getByTestId('classroom-chat-sidebar').className).toContain('fixed')
+    expect(screen.getByTestId('classroom-chat-sidebar').className).not.toContain('sm:relative')
     expect(screen.getByTestId('classroom-phase').textContent).toContain('练习')
     fireEvent.click(screen.getByRole('button', { name: '关闭聊天' }))
 
@@ -253,11 +276,14 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
     await screen.findByText('Print 3.')
 
-    fireEvent.click(screen.getByRole('button', { name: '运行检查' }))
+    fireEvent.click(screen.getByRole('button', { name: '运行' }))
 
+    await screen.findByText('运行结果：错误')
     await screen.findByText(/输出：2/)
+    expect(screen.queryByText(/^运行结果$/)).toBeNull()
     expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
     expect(screen.queryByText(/已记录：success/)).toBeNull()
+    expect(runLessonGenerationStep).toHaveBeenCalledTimes(1)
   })
 
   it('records a failed quiz run and keeps the quiz active when the runner request rejects', async () => {
@@ -265,11 +291,11 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
     await screen.findByText('Print 3.')
 
-    const runButton = screen.getByRole('button', { name: '运行检查' }) as HTMLButtonElement
+    const runButton = screen.getByRole('button', { name: '运行' }) as HTMLButtonElement
     fireEvent.click(runButton)
 
     await waitFor(() => expect(runButton.disabled).toBe(false))
-    await screen.findByText('运行结果')
+    await screen.findByText('运行结果：错误')
     expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
     expect(screen.queryByText(/已记录：success/)).toBeNull()
     expect(runLessonGenerationStep).toHaveBeenCalledTimes(1)
@@ -280,7 +306,7 @@ describe('tourAIApp classroom flow', () => {
     })
   })
 
-  it('successful quiz run writes progress and triggers lesson generation automatically', async () => {
+  it('matched quiz run shows correct feedback without completing the quiz', async () => {
     vi.mocked(requestRemoteAction).mockResolvedValueOnce({
       compiler_output: '',
       compiler_code: 0,
@@ -290,8 +316,29 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
     await screen.findByText('Print 3.')
 
-    fireEvent.click(screen.getByRole('button', { name: '运行检查' }))
+    fireEvent.click(screen.getByRole('button', { name: '运行' }))
 
+    await screen.findByText('运行结果：正确')
+    await screen.findByText(/输出：3/)
+    expect(screen.queryByText(/^运行结果$/)).toBeNull()
+    expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/已记录：success/)).toBeNull()
+    expect(runLessonGenerationStep).toHaveBeenCalledTimes(1)
+  })
+
+  it('successful quiz submit writes progress and triggers lesson generation automatically', async () => {
+    vi.mocked(requestRemoteAction).mockResolvedValueOnce({
+      compiler_output: '',
+      compiler_code: 0,
+      bin_output: '3\n',
+      bin_code: 0,
+    })
+    renderApp()
+    await screen.findByText('Print 3.')
+
+    fireEvent.click(screen.getByRole('button', { name: '提交' }))
+
+    await screen.findByText('提交结果：正确')
     await screen.findByText(/已记录：success/)
     expect(screen.getAllByText('Quiz success').length).toBeGreaterThan(0)
     await waitFor(() => expect(runLessonGenerationStep).toHaveBeenCalledTimes(2))
@@ -307,8 +354,9 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
     await screen.findByText('Print 3.')
 
-    fireEvent.click(screen.getByRole('button', { name: '运行检查' }))
+    fireEvent.click(screen.getByRole('button', { name: '提交' }))
 
+    await screen.findByText('提交结果：错误')
     await screen.findByText(/输出：3/)
     expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
     expect(screen.queryByText(/已记录：success/)).toBeNull()
@@ -328,10 +376,14 @@ describe('tourAIApp classroom flow', () => {
 
     renderApp()
     await screen.findByText('Print 3.')
-    fireEvent.click(screen.getByRole('button', { name: '运行检查' }))
+    fireEvent.click(screen.getByRole('button', { name: '提交' }))
 
     await screen.findByText('Print 4.')
     screen.getByText('Print 3.')
+    expect(screen.getAllByTestId('tour-editor')).toHaveLength(1)
+    await waitFor(() => {
+      expect(screen.getAllByTestId('shiki-code-block').length).toBeGreaterThan(0)
+    })
   })
 
   it('retains queued events when lesson generation fails and allows retry', async () => {
@@ -348,7 +400,7 @@ describe('tourAIApp classroom flow', () => {
 
     renderApp()
     await screen.findByText('Print 3.')
-    fireEvent.click(screen.getByRole('button', { name: '运行检查' }))
+    fireEvent.click(screen.getByRole('button', { name: '提交' }))
 
     expect(await screen.findAllByText(/课程生成失败：network/)).toHaveLength(2)
     fireEvent.click(screen.getByRole('button', { name: '重试课程生成' }))
@@ -381,6 +433,41 @@ describe('tourAIApp classroom flow', () => {
     renderApp()
 
     await screen.findByText('Persisted lesson')
+    expect(screen.getByTestId('ai-classroom-content-motion')).not.toBeNull()
     expect(runLessonGenerationStep).not.toHaveBeenCalled()
+  })
+
+  it('runs a queued lesson generation event after the api key becomes available', async () => {
+    useLLMConfigStore.getState().setConfig({
+      provider: 'openai-compatible',
+      baseURL: 'https://api.example.test/v1',
+      apiKey: '',
+      model: 'test-model',
+    })
+    const queued = classroomReducer(createInitialClassroomSession({ lang: 'zh' }), {
+      type: 'EMIT_CHAT_INTENT',
+      intent: 'go_deeper',
+      summary: 'Go deeper.',
+      now: 100,
+    })
+    await saveClassroomSession(queued)
+    vi.mocked(runLessonGenerationStep).mockImplementationOnce(async ({ bridge }) => appendSecondQuiz(bridge))
+
+    renderApp()
+
+    await screen.findByText('Go deeper.')
+    expect(runLessonGenerationStep).not.toHaveBeenCalled()
+
+    useLLMConfigStore.getState().setConfig({
+      provider: 'openai-compatible',
+      baseURL: 'https://api.example.test/v1',
+      apiKey: 'test-key',
+      model: 'test-model',
+    })
+
+    await screen.findByText('Print 4.')
+    expect(runLessonGenerationStep).toHaveBeenCalledWith(expect.objectContaining({
+      event: expect.objectContaining({ type: 'chat_intent', summary: 'Go deeper.' }),
+    }))
   })
 })

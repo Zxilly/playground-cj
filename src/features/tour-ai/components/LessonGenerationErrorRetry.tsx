@@ -1,7 +1,11 @@
+'use client'
+
 import { useRef } from 'react'
+import { motion } from 'framer-motion'
 import { Trans } from '@lingui/react/macro'
 import type { ClassroomSession } from '@/lib/ai/classroom/types'
 import { cn } from '@/lib/utils'
+import { classroomCardVariants } from '@/features/tour-ai/components/classroom-motion'
 
 export function LessonGenerationErrorRetry({ session, onRetry }: { session: ClassroomSession, onRetry: () => void }) {
   const lastClickRef = useRef(0)
@@ -26,7 +30,14 @@ export function LessonGenerationErrorRetry({ session, onRetry }: { session: Clas
   }
 
   return (
-    <section className={cn('rounded-md border border-classroom-warning-border bg-classroom-warning-bg p-3 text-sm text-classroom-warning-fg', 'mt-4')}>
+    <motion.section
+      layout
+      variants={classroomCardVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      className={cn('rounded-md border border-classroom-warning-border bg-classroom-warning-bg p-3 text-sm text-classroom-warning-fg', 'mt-4')}
+    >
       <div className="mb-2">
         <Trans>
           课程生成失败：
@@ -40,6 +51,6 @@ export function LessonGenerationErrorRetry({ session, onRetry }: { session: Clas
       >
         <Trans>重试课程生成</Trans>
       </button>
-    </section>
+    </motion.section>
   )
 }
