@@ -22,6 +22,7 @@ import { providerLabel, switchProviderPreservingKey } from '@/lib/ai/model-provi
 import type { LLMProvider } from '@/lib/ai/model-provider'
 
 interface UsageState {
+  apiKey?: string
   totalGranted: number
   totalUsed: number
   totalAvailable: number
@@ -84,7 +85,7 @@ export function LLMConfigDialog() {
     let cancelled = false
     void fetchUsage(draft.apiKey).then((u) => {
       if (!cancelled)
-        setUsage(u)
+        setUsage({ ...u, apiKey: draft.apiKey })
     })
     return () => {
       cancelled = true
@@ -104,10 +105,13 @@ export function LLMConfigDialog() {
     setDraft(switchProviderPreservingKey(draft, provider))
   }
 
-  const usageReady = !usage.loading && !usage.error
-  const lowBudget = usageReady && usage.totalAvailable > 0 && usage.totalAvailable < QUOTA_PER_USD * 0.01
-  const exhausted = usageReady && usage.totalAvailable === 0 && usage.totalGranted > 0
-  const usagePct = usage.totalGranted > 0 ? Math.min(100, Math.round((usage.totalUsed / usage.totalGranted) * 100)) : 0
+  const visibleUsage: UsageState = usage.apiKey === draft.apiKey
+    ? usage
+    : { totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: true }
+  const usageReady = !visibleUsage.loading && !visibleUsage.error
+  const lowBudget = usageReady && visibleUsage.totalAvailable > 0 && visibleUsage.totalAvailable < QUOTA_PER_USD * 0.01
+  const exhausted = usageReady && visibleUsage.totalAvailable === 0 && visibleUsage.totalGranted > 0
+  const usagePct = visibleUsage.totalGranted > 0 ? Math.min(100, Math.round((visibleUsage.totalUsed / visibleUsage.totalGranted) * 100)) : 0
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -146,13 +150,13 @@ export function LLMConfigDialog() {
                 </span>
               )}
           <span className="inline-flex items-center gap-1 rounded-full border border-tour-border/60 bg-tour-bg/40 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-            {draft.model || '未填写模型'}
+            {draft.model || <Trans>未填写模型</Trans>}
           </span>
         </div>
 
         <div className="grid gap-3 py-1">
           <div className="grid gap-1">
-            <Label className="text-xs">API 风格</Label>
+            <Label className="text-xs"><Trans>API 风格</Trans></Label>
             <div className="grid grid-cols-2 gap-2">
               {(['openai-compatible', 'anthropic'] satisfies LLMProvider[]).map(provider => (
                 <Button
@@ -169,7 +173,7 @@ export function LLMConfigDialog() {
             </div>
           </div>
           <div className="grid gap-1">
-            <Label htmlFor="llm-base-url" className="text-xs">API Base</Label>
+            <Label htmlFor="llm-base-url" className="text-xs"><Trans>API Base</Trans></Label>
             <Input
               id="llm-base-url"
               value={draft.baseURL}
@@ -181,7 +185,7 @@ export function LLMConfigDialog() {
           <div className="grid gap-1">
             <Label htmlFor="llm-api-key" className="flex items-center gap-1 text-xs">
               <KeyRound className="size-3" />
-              API Key
+              <Trans>API Key</Trans>
             </Label>
             <Input
               id="llm-api-key"
@@ -208,19 +212,19 @@ export function LLMConfigDialog() {
             <div
               className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs ${exhausted || lowBudget ? 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300' : 'border-tour-border bg-tour-bg/40 text-muted-foreground'}`}
             >
-              {usage.loading
+              {visibleUsage.loading
                 ? <Loader2 className="size-3.5 mt-0.5 shrink-0 animate-spin text-muted-foreground" />
-                : usage.error
+                : visibleUsage.error
                   ? <CircleAlert className="size-3.5 mt-0.5 shrink-0 text-amber-500" />
                   : <Wallet className={`size-3.5 mt-0.5 shrink-0 ${exhausted || lowBudget ? 'text-amber-500' : 'text-tour-teal'}`} />}
               <div className="flex-1 leading-relaxed">
-                {usage.loading
+                {visibleUsage.loading
                   ? <Trans>正在加载剩余额度…</Trans>
-                  : usage.error
+                  : visibleUsage.error
                     ? (
                         <span>
                           <Trans>无法读取剩余额度：</Trans>
-                          <span className="font-mono">{usage.error}</span>
+                          <span className="font-mono">{visibleUsage.error}</span>
                         </span>
                       )
                     : (
@@ -228,11 +232,11 @@ export function LLMConfigDialog() {
                           <div className="flex items-baseline gap-1.5">
                             <span><Trans>剩余</Trans></span>
                             <span className="font-mono text-sm font-semibold text-foreground">
-                              {quotaToUSD(usage.totalAvailable)}
+                              {quotaToUSD(visibleUsage.totalAvailable)}
                             </span>
                             <span className="opacity-70">
                               {' / '}
-                              {quotaToUSD(usage.totalGranted)}
+                              {quotaToUSD(visibleUsage.totalGranted)}
                             </span>
                           </div>
                           <div className="h-1.5 w-full overflow-hidden rounded-full bg-tour-border/60">

@@ -1,6 +1,7 @@
 'use client'
 
 import { generateText } from 'ai'
+import { t } from '@lingui/core/macro'
 import {
   createConfiguredModel,
   normaliseLLMConfig,
@@ -31,12 +32,14 @@ export async function testLLMConnection(config: LLMConfig): Promise<LLMTestResul
     !next.apiKey && 'API Key',
     !next.model && 'Model',
   ].filter(Boolean)
+  const currentProviderLabel = providerLabel(next.provider)
+  const missingText = missing.join('、')
 
   if (missing.length > 0) {
     return {
       ok: false,
-      title: '配置不完整',
-      message: `请先填写 ${missing.join('、')}，再测试 ${providerLabel(next.provider)} 连接。`,
+      title: t`配置不完整`,
+      message: t`请先填写 ${missingText}，再测试 ${currentProviderLabel} 连接。`,
       details: {
         ...baseDetails,
         missing,
@@ -54,8 +57,8 @@ export async function testLLMConnection(config: LLMConfig): Promise<LLMTestResul
     const text = result.text.trim()
     return {
       ok: true,
-      title: '测试成功',
-      message: text ? `模型返回：${text}` : `${providerLabel(next.provider)} 连接正常。`,
+      title: t`测试成功`,
+      message: text ? t`模型返回：${text}` : t`${currentProviderLabel} 连接正常。`,
       details: {
         ...baseDetails,
         durationMs: Date.now() - startedAt,
@@ -69,7 +72,7 @@ export async function testLLMConnection(config: LLMConfig): Promise<LLMTestResul
     const errorDetails = extractConnectionErrorDetails(error)
     return {
       ok: false,
-      title: '测试失败',
+      title: t`测试失败`,
       message: summariseConnectionError(errorDetails),
       details: {
         ...baseDetails,
@@ -108,7 +111,7 @@ function summariseConnectionError(details: Record<string, unknown>): string {
     typeof details.errorMessage === 'string' ? details.errorMessage : '',
   ].filter(Boolean)
   const uniqueParts = [...new Set(parts)]
-  return uniqueParts.length > 0 ? uniqueParts.join(' · ') : '模型连接测试失败，未返回可读错误信息。'
+  return uniqueParts.length > 0 ? uniqueParts.join(' · ') : t`模型连接测试失败，未返回可读错误信息。`
 }
 
 function extractResponseBodyDetails(responseBody: string | undefined): Record<string, unknown> {

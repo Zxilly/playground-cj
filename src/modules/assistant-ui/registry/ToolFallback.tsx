@@ -12,6 +12,7 @@ import {
 
   useScrollLock,
 } from '@assistant-ui/react'
+import { Trans } from '@lingui/react/macro'
 import type { ToolCallMessagePartComponent, ToolCallMessagePartStatus } from '@assistant-ui/react'
 import {
   Collapsible,
@@ -229,7 +230,7 @@ function ToolFallbackResult({
       )}
       {...props}
     >
-      <p className="aui-tool-fallback-result-header font-semibold">Result:</p>
+      <p className="aui-tool-fallback-result-header font-semibold"><Trans>Result:</Trans></p>
       <pre className="aui-tool-fallback-result-content whitespace-pre-wrap">
         {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
       </pre>
