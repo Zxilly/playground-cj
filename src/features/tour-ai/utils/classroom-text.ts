@@ -1,9 +1,7 @@
-import type { RichText } from '@/lib/ai/classroom/types'
+// richTextPlainText now lives alongside the new shape in
+// `@/lib/ai/classroom/rich-text` — re-export to keep existing imports working.
+export { richTextPlainText } from '@/lib/ai/classroom/rich-text'
 
 export function textFor(lang: string, text: Record<string, string>): string {
   return text[lang] || text.zh || text.en || ''
-}
-
-export function richTextPlainText(body: RichText): string {
-  return body.map(span => 'text' in span ? span.text : 'code' in span ? span.code : span.strong).join('')
 }

@@ -5,13 +5,16 @@ describe('lessonBlockKey', () => {
   it('returns stable non-empty keys for every lesson block variant', () => {
     const blocks = [
       { type: 'heading' as const, text: 'Intro', level: 2 as const },
-      { type: 'paragraph' as const, body: [{ text: 'Use ' }, { code: 'let' }, { strong: ' carefully' }] },
-      { type: 'concept_card' as const, conceptId: 'cj.let', title: 'Let', body: [{ text: 'Bindings' }] },
+      { type: 'paragraph' as const, body: 'Use `let` carefully' },
+      { type: 'concept_card' as const, conceptId: 'cj.let', title: 'Let', body: 'Bindings' },
       { type: 'code_example' as const, title: 'Example', code: 'x'.repeat(90) },
-      { type: 'callout' as const, tone: 'tip' as const, body: [{ text: 'Remember' }] },
-      { type: 'steps' as const, items: [[{ text: 'One' }], [{ code: 'two()' }]] },
-      { type: 'compare' as const, leftTitle: 'let', left: [{ text: 'a' }], rightTitle: 'var', right: [{ text: 'b' }] },
-      { type: 'quiz' as const, conceptId: 'cj.quiz', prompt: [{ strong: 'Why?' }], starterCode: '', expectedOutput: '' },
+      { type: 'callout' as const, tone: 'tip' as const, body: 'Remember' },
+      { type: 'steps' as const, items: [
+        [{ type: 'text' as const, text: 'One' }],
+        [{ type: 'code' as const, code: 'two()' }],
+      ] },
+      { type: 'compare' as const, leftTitle: 'let', left: [{ type: 'text' as const, text: 'a' }], rightTitle: 'var', right: [{ type: 'text' as const, text: 'b' }] },
+      { type: 'quiz' as const, conceptId: 'cj.quiz', prompt: '**Why?**', starterCode: '', expectedOutput: '' },
     ]
 
     const keys = blocks.map(block => lessonBlockKey(block))
@@ -21,10 +24,10 @@ describe('lessonBlockKey', () => {
     expect(new Set(keys).size).toBe(blocks.length)
   })
 
-  it('includes learner-visible rich text in paragraph and quiz keys', () => {
-    expect(lessonBlockKey({ type: 'paragraph', body: [{ text: 'Use ' }, { code: 'let' }, { strong: ' carefully' }] }))
+  it('includes learner-visible text in paragraph and quiz keys', () => {
+    expect(lessonBlockKey({ type: 'paragraph', body: 'Use let carefully' }))
       .toContain('Use let carefully')
-    expect(lessonBlockKey({ type: 'quiz', conceptId: 'cj.quiz', prompt: [{ strong: 'Why?' }], starterCode: '', expectedOutput: '' }))
+    expect(lessonBlockKey({ type: 'quiz', conceptId: 'cj.quiz', prompt: 'Why?', starterCode: '', expectedOutput: '' }))
       .toContain('Why?')
   })
 

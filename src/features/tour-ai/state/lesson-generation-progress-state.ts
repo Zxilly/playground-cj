@@ -27,6 +27,8 @@ export function appendLessonGenerationProgress(
     return state
   if (typeof chunk === 'string' || chunk.type === 'text')
     return appendTextProgress(state, typeof chunk === 'string' ? chunk : chunk.text)
+  if (chunk.type === 'reasoning')
+    return appendReasoningProgress(state, chunk.reasoningId, chunk.text)
 
   return appendToolProgress(state, chunk)
 }
@@ -64,9 +66,50 @@ function appendTextItem(items: LessonGenerationProgressItem[], text: string): Le
   return trimItems(next)
 }
 
+function appendReasoningProgress(
+  state: LessonGenerationProgressState,
+  reasoningId: string,
+  chunk: string,
+): LessonGenerationProgressState {
+  if (!chunk)
+    return state
+  const items = [...(state.items ?? [])]
+  const last = items.at(-1)
+  // Only fold into the trailing reasoning item when it came from the same
+  // reasoning channel. Some models reuse the same reasoning id across multiple
+  // bursts separated by tool calls; we must NOT append back to the earlier
+  // item in that case, or the UI collapses chronologically-distinct thoughts
+  // into one block and loses the interleaving with tools.
+  if (last?.type === 'reasoning' && last.reasoningKey === reasoningId) {
+    items[items.length - 1] = {
+      ...last,
+      text: `${last.text}${chunk}`.slice(-MAX_GENERATION_PROGRESS_CHARS),
+    }
+  }
+  else {
+    items.push({
+      id: `reasoning-${reasoningId}-${items.length}`,
+      reasoningKey: reasoningId,
+      type: 'reasoning',
+      text: chunk.slice(-MAX_GENERATION_PROGRESS_CHARS),
+    })
+  }
+  return {
+    ...state,
+    status: state.status === 'idle' ? 'running' : state.status,
+    expanded: state.status === 'completed' ? state.expanded : true,
+    items: trimItems(items),
+  }
+}
+
 function appendToolProgress(
   state: LessonGenerationProgressState,
-  chunk: Exclude<LessonGenerationProgressChunk, string | { type: 'text', text: string }>,
+  // Narrow positively to the three tool-shaped chunks. The dispatcher in
+  // appendLessonGenerationProgress has already returned for text + reasoning
+  // variants by the time we get here, so the union we receive is only the
+  // tool-* members — name them explicitly so TS can resolve `toolCallId` and
+  // `toolName` below without union-membership errors.
+  chunk: Extract<LessonGenerationProgressChunk, { type: 'tool-start' | 'tool-result' | 'tool-error' }>,
 ): LessonGenerationProgressState {
   const items = [...(state.items ?? [])]
   const existingIndex = items.findIndex(item => item.type === 'tool' && item.id === chunk.toolCallId)

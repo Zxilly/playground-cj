@@ -9,7 +9,9 @@ import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
 import { createClassroomTransaction } from '@/lib/ai/classroom/transaction'
 import type { ClassroomEvent, ClassroomSession } from '@/lib/ai/classroom/types'
 import { runLessonGenerationStep } from '@/lib/ai/lesson-generation-runner'
-import { useLLMConfig } from '@/stores/llmConfig'
+import { isQuotaExhaustedError } from '@/lib/ai/quota-error'
+import { nextResetAtMs } from '@/lib/quota-reset'
+import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
 import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfigBootstrap'
 import {
   appendLessonGenerationProgress,
@@ -21,6 +23,13 @@ interface UseLessonGenerationRuntimeProps {
   session: ClassroomSession
   dispatch: React.Dispatch<ClassroomAction>
   hydrated: boolean
+  /**
+   * Optional topic seed (typically a conceptId, e.g. `cj.var.immutable`) that
+   * gets folded into the initial `classroom_opened` event summary so the
+   * lesson agent knows where to anchor the very first session. Set by the
+   * `?topic=` deep-link path from the tutorial header.
+   */
+  initialTopic?: string
 }
 
 type LessonGenerationRunOutcome = 'completed' | 'failed' | 'skipped' | 'aborted'
@@ -29,6 +38,7 @@ export function useLessonGenerationRuntime({
   session,
   dispatch,
   hydrated,
+  initialTopic,
 }: UseLessonGenerationRuntimeProps) {
   const bridge = useAIClassroomBridge()
   const config = useLLMConfig()
@@ -101,7 +111,21 @@ export function useLessonGenerationRuntime({
       transaction.discard()
       if (scopeSignal.aborted || !mountedRef.current)
         return 'aborted'
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const quotaExhausted = isQuotaExhaustedError(error)
+      if (quotaExhausted) {
+        // Surface the exhausted state to the store so QuotaExhaustedDialog opens
+        // even when bootstrap probed a non-empty balance and the quota only ran
+        // out during this run. User-key keySource stays untouched — that key is
+        // not ours to gate, the raw error message will tell the user it's empty.
+        const store = useLLMConfigStore.getState()
+        if (store.keySource === 'auto') {
+          const nextResetAt = store.autoQuota?.nextResetAt ?? nextResetAtMs(Date.now())
+          store.setAutoQuota({ nextResetAt, exhausted: true })
+        }
+      }
+      const errorMessage = quotaExhausted
+        ? t`AI 额度不足`
+        : error instanceof Error ? error.message : String(error)
       dispatch({
         type: 'LESSON_GENERATION_FAILED',
         error: errorMessage,
@@ -130,12 +154,18 @@ export function useLessonGenerationRuntime({
       return
 
     hasTriggeredInitialOpenRef.current = true
+    // Deep-link from the tutorial ("learn `cj.var.immutable` with AI"): pass
+    // the requested concept id through so the agent anchors the opening
+    // lesson on that topic instead of a generic intro.
+    const summary = initialTopic
+      ? `Classroom opened. Learner requested to start with topic: ${initialTopic}`
+      : 'Classroom opened.'
     void runLessonGenerationForEvent({
       type: 'classroom_opened',
       createdAt: Date.now(),
-      summary: 'Classroom opened.',
+      summary,
     }, false, 'initial:classroom_opened')
-  }, [config.apiKey, hydrated, runLessonGenerationForEvent, session.eventQueue.length, session.stream.length])
+  }, [config.apiKey, hydrated, initialTopic, runLessonGenerationForEvent, session.eventQueue.length, session.stream.length])
 
   const runQueuedLessonGenerationEvent = useCallback((next: ClassroomEvent | undefined) => {
     if (!next || generationRunning)
