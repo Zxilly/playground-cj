@@ -19,7 +19,7 @@ describe('classroom record migrations', () => {
           type: 'quiz',
           quiz: {
             conceptId: 'cj.bindings.let',
-            prompt: [{ text: 'Print 3.' }],
+            prompt: 'Print 3.',
             starterCode: '',
             expectedOutput: '3',
             matchMode: 'exact',
@@ -31,7 +31,7 @@ describe('classroom record migrations', () => {
         learner: { concepts: {}, evidence: [], learningNotes: '' },
         currentQuiz: {
           conceptId: 'cj.bindings.let',
-          prompt: [{ text: 'Print 3.' }],
+          prompt: 'Print 3.',
           starterCode: '',
           expectedOutput: '3',
           matchMode: 'exact',

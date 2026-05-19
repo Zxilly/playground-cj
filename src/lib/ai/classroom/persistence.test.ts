@@ -22,7 +22,7 @@ const lessonBlock: LessonContentBlock = {
 const quizBlock: Extract<LessonContentBlock, { type: 'quiz' }> = {
   type: 'quiz',
   conceptId: 'cj.bindings.let',
-  prompt: [{ text: 'Print 3.' }],
+  prompt: 'Print 3.',
   starterCode: 'main() {\n    println(0)\n}',
   expectedOutput: '3',
   matchMode: 'exact',
@@ -133,7 +133,7 @@ describe('classroom IndexedDB persistence', () => {
   it('migrates legacy v2 snapshots before validating', async () => {
     const legacyQuiz = {
       conceptId: 'cj.bindings.let',
-      prompt: [{ text: 'Print 3.' }],
+      prompt: 'Print 3.',
       starterCode: '',
       expectedOutput: '3',
       matchMode: 'exact',

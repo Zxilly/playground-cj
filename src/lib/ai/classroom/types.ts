@@ -1,10 +1,14 @@
 export type ClassroomPhase = 'orient' | 'teach' | 'practice'
 
-export type RichText = Array<
-  | { text: string }
-  | { code: string, lang?: string, language?: string }
-  | { strong: string }
->
+// RichText is the structured representation for sides of `compare` blocks and
+// elements of `steps`. Spans are discriminated on `type`. Body/prompt fields
+// elsewhere are plain markdown strings — see markdownBodySchema.
+export type RichTextSpan
+  = | { type: 'text', text: string }
+    | { type: 'code', code: string, lang?: string }
+    | { type: 'strong', text: string }
+
+export type RichText = RichTextSpan[]
 
 export interface CodeHighlight {
   startLine: number
@@ -14,13 +18,13 @@ export interface CodeHighlight {
 
 export type LessonContentBlock
   = | { type: 'heading', text: string, level?: 2 | 3 }
-    | { type: 'paragraph', body: RichText }
-    | { type: 'concept_card', conceptId: string, title: string, body: RichText }
+    | { type: 'paragraph', body: string }
+    | { type: 'concept_card', conceptId: string, title: string, body: string }
     | { type: 'code_example', title?: string, code: string, language?: string, highlights?: CodeHighlight[] }
-    | { type: 'callout', tone: 'note' | 'warning' | 'tip', title?: string, body: RichText }
+    | { type: 'callout', tone: 'note' | 'warning' | 'tip', title?: string, body: string }
     | { type: 'steps', title?: string, items: RichText[] }
     | { type: 'compare', leftTitle: string, left: RichText, rightTitle: string, right: RichText }
-    | { type: 'quiz', conceptId: string, prompt: RichText, starterCode: string, expectedOutput: string, matchMode?: QuizMatchMode }
+    | { type: 'quiz', conceptId: string, prompt: string, starterCode: string, expectedOutput: string, matchMode?: QuizMatchMode }
 
 export type QuizMatchMode = 'exact' | 'contains' | 'regex'
 export type QuizStatus = 'active' | 'success' | 'skip' | 'superseded'
@@ -28,7 +32,7 @@ export type QuizStatus = 'active' | 'success' | 'skip' | 'superseded'
 export interface ClassroomQuiz {
   id: string
   conceptId: string
-  prompt: RichText
+  prompt: string
   starterCode: string
   expectedOutput: string
   matchMode: QuizMatchMode
@@ -76,6 +80,7 @@ export type ClassroomEvent
   = | { type: 'classroom_opened', createdAt: number, summary?: string }
     | { type: 'quiz_success', conceptId: string, summary: string, createdAt: number }
     | { type: 'quiz_skip', conceptId: string, summary: string, createdAt: number }
+    | { type: 'quiz_failure', conceptId: string, quizId: string, prompt: string, attemptedCode: string, expectedOutput: string, actualOutput: string, summary: string, createdAt: number }
     | { type: 'chat_intent', intent: ChatIntentKind, summary: string, createdAt: number }
     | { type: 'lesson_generation_error', summary: string, createdAt: number }
 

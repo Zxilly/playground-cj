@@ -41,6 +41,12 @@ export async function runLessonGenerationStep({ config, toolkit, bridge, event, 
     if (part.type === 'text-delta') {
       reportProgress(onProgress, { type: 'text', text: part.text })
     }
+    else if (part.type === 'reasoning-delta') {
+      // Reasoning models (mimo, deepseek-r1, gpt-5, claude w/ extended thinking)
+      // emit their chain-of-thought through reasoning-delta. Without surfacing it
+      // the panel skips straight from idle to tool calls and looks frozen.
+      reportProgress(onProgress, { type: 'reasoning', reasoningId: part.id, text: part.text })
+    }
     else if (part.type === 'tool-input-start') {
       const toolName = part.toolName
       reportProgress(onProgress, {
@@ -92,6 +98,15 @@ export async function runLessonGenerationStep({ config, toolkit, bridge, event, 
       })
       recordFailure(errPart.errorText)
     }
+    else if ((part as { type: string }).type === 'error') {
+      // Stream-level errors (e.g. provider HTTP failures like new-api 403 insufficient_user_quota)
+      // arrive as their own part instead of throwing from the iterator. Re-throw so the caller sees
+      // the original APICallError-shaped error and can classify it — otherwise the loop completes
+      // silently and we fall through to the generic "produced no authoring output" message.
+      const errPart = part as unknown as { error?: unknown }
+      const raw = errPart.error
+      throw raw instanceof Error ? raw : new Error(typeof raw === 'string' ? raw : JSON.stringify(raw))
+    }
   }
 
   if (!hadAuthoringSuccess) {
@@ -101,7 +116,11 @@ export async function runLessonGenerationStep({ config, toolkit, bridge, event, 
 }
 
 function reportProgress(onProgress: LessonGenerationRunnerOptions['onProgress'], chunk: LessonGenerationProgressChunk) {
-  if (!chunk || (typeof chunk !== 'string' && chunk.type === 'text' && !chunk.text))
+  if (!chunk)
     return
+  if (typeof chunk !== 'string') {
+    if ((chunk.type === 'text' || chunk.type === 'reasoning') && !chunk.text)
+      return
+  }
   onProgress?.(chunk)
 }

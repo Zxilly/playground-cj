@@ -14,8 +14,8 @@ import type {
 export type ClassroomAction
   = | { type: 'APPEND_LESSON_CONTENT', blocks: LessonContentBlock[], now?: number }
     | { type: 'SET_CURRENT_QUIZ', quiz: Extract<LessonContentBlock, { type: 'quiz' }>, now?: number }
-    | { type: 'QUIZ_RUN_FINISHED', result: RunResult, now?: number }
-    | { type: 'QUIZ_SUBMIT_FINISHED', result: RunResult, now?: number }
+    | { type: 'QUIZ_RUN_FINISHED', result: RunResult, attemptedCode?: string, now?: number }
+    | { type: 'QUIZ_SUBMIT_FINISHED', result: RunResult, attemptedCode?: string, now?: number }
     | { type: 'QUIZ_SUCCESS', now?: number }
     | { type: 'QUIZ_SKIP', now?: number }
     | { type: 'LESSON_GENERATION_FAILED', error: string, now?: number }
@@ -294,6 +294,52 @@ function transitionRunFinished(
   }
 }
 
+function transitionQuizFailureEnqueued(
+  session: ClassroomSession,
+  result: RunResult,
+  attemptedCode: string | undefined,
+  createdAt: number,
+): ClassroomSession {
+  const quiz = session.currentQuiz
+  if (!quiz || quiz.status !== 'active')
+    return session
+
+  // Coalesce repeated failures: if the same active quiz already has a pending
+  // failure event in the queue, drop this one to avoid stacking N "explain my
+  // mistake" requests every time the learner re-submits identical wrong code.
+  const queuedFailureExists = session.eventQueue.some(
+    e => e.type === 'quiz_failure' && e.quizId === quiz.id,
+  )
+  if (queuedFailureExists)
+    return session
+
+  // expectedOutput is the same regardless of run success — the gap is between
+  // it and `actual`. We split actual: on a clean run the stdout is the wrong
+  // answer; on a crash, stderr carries the diagnostic.
+  const expected = quiz.expectedOutput
+  const actual = result.ok ? result.stdout : (result.stderr || result.stdout)
+  const reason = result.ok ? 'mismatch' : 'run_failed'
+  const summary = `Learner submission for ${quiz.conceptId} failed (${reason}); needs a focused explanation of the gap, not a new quiz.`
+
+  const event: ClassroomEvent = {
+    type: 'quiz_failure',
+    conceptId: quiz.conceptId,
+    quizId: quiz.id,
+    prompt: quiz.prompt,
+    attemptedCode: attemptedCode ?? '',
+    expectedOutput: expected,
+    actualOutput: actual,
+    summary,
+    createdAt,
+  }
+
+  return {
+    ...session,
+    sessionSummary: summarize(`Quiz failure recorded for ${quiz.conceptId}, awaiting agent explanation.`),
+    eventQueue: [...session.eventQueue, event],
+  }
+}
+
 function transitionLessonGenerationFailed(session: ClassroomSession, error: string, createdAt: number): ClassroomSession {
   const event: ClassroomEvent = {
     type: 'lesson_generation_error',
@@ -384,9 +430,13 @@ export function classroomReducer(session: ClassroomSession, action: ClassroomAct
     }
     case 'QUIZ_SUBMIT_FINISHED': {
       const finished = transitionRunFinished(session, action.result, createdAt)
-      return finished.matched
-        ? transitionQuizCompleted(finished.session, 'success', createdAt)
-        : finished.session
+      if (finished.matched)
+        return transitionQuizCompleted(finished.session, 'success', createdAt)
+      // Surface the failure to the lesson generation agent so it can write a
+      // diagnostic block instead of silently leaving the learner stuck. The
+      // event captures everything the agent needs to reason about the gap:
+      // the prompt, the learner's code, what we got vs what we expected.
+      return transitionQuizFailureEnqueued(finished.session, action.result, action.attemptedCode, createdAt)
     }
     case 'QUIZ_SUCCESS':
       return transitionQuizCompleted(session, 'success', createdAt)

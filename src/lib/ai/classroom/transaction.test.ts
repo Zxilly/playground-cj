@@ -43,7 +43,7 @@ describe('classroom transaction', () => {
       quiz: {
         type: 'quiz',
         conceptId: 'cj.bindings.let',
-        prompt: [{ text: 'Print 3.' }],
+        prompt: 'Print 3.',
         starterCode: 'main() {\n    println(0)\n}',
         expectedOutput: '3',
         matchMode: 'exact',

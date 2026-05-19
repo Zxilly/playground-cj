@@ -9,14 +9,32 @@ import type {
   RunResult,
 } from './types'
 import { z } from 'zod'
+import { unflattenCodeEscapes } from '@/lib/ai/unflatten-code-escapes'
 
-const richTextSpanSchema = z.union([
-  z.object({ text: z.string() }).strict(),
-  z.object({ code: z.string(), lang: z.string().optional(), language: z.string().optional() }).strict(),
-  z.object({ strong: z.string() }).strict(),
+// Source-code strings (richText {code} parts, code_example.code, quiz.starterCode)
+// run through unflattenCodeEscapes on parse to repair double-JSON-encoded args
+// from weaker models.
+const codeString = z.string().transform(unflattenCodeEscapes)
+
+// Discriminated union on `type` — models pick the right shape from one keyword
+// instead of inferring it from which keys are present.
+const richTextSpanSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('text'), text: z.string() }).strict(),
+  z.object({ type: z.literal('code'), code: codeString, lang: z.string().optional() }).strict(),
+  z.object({ type: z.literal('strong'), text: z.string() }).strict(),
 ])
 
-export const richTextSchema = z.array(richTextSpanSchema).min(1)
+// richTextSchema accepts either a plain string (lifted into a single text span)
+// or an array of spans. The string fallback is an ergonomic shortcut for the
+// common single-text-span case, not back-compat for legacy persisted data.
+export const richTextSchema = z.union([
+  z.string().transform(s => [{ type: 'text' as const, text: s }]),
+  z.array(richTextSpanSchema).min(1),
+])
+
+// Body / prompt fields are plain markdown strings. Renderers parse the markdown
+// at display time (see MarkdownBody); the schema just enforces "string".
+export const markdownBodySchema = z.string()
 
 export const codeHighlightSchema = z.object({
   startLine: z.number().int().min(1),
@@ -32,18 +50,18 @@ export const lessonContentBlockSchema = z.discriminatedUnion('type', [
   }).strict(),
   z.object({
     type: z.literal('paragraph'),
-    body: richTextSchema,
+    body: markdownBodySchema,
   }).strict(),
   z.object({
     type: z.literal('concept_card'),
     conceptId: z.string(),
     title: z.string(),
-    body: richTextSchema,
+    body: markdownBodySchema,
   }).strict(),
   z.object({
     type: z.literal('code_example'),
     title: z.string().optional(),
-    code: z.string(),
+    code: codeString,
     language: z.string().optional(),
     highlights: z.array(codeHighlightSchema).optional(),
   }).strict(),
@@ -51,7 +69,7 @@ export const lessonContentBlockSchema = z.discriminatedUnion('type', [
     type: z.literal('callout'),
     tone: z.union([z.literal('note'), z.literal('warning'), z.literal('tip')]),
     title: z.string().optional(),
-    body: richTextSchema,
+    body: markdownBodySchema,
   }).strict(),
   z.object({
     type: z.literal('steps'),
@@ -68,8 +86,8 @@ export const lessonContentBlockSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('quiz'),
     conceptId: z.string(),
-    prompt: richTextSchema,
-    starterCode: z.string(),
+    prompt: markdownBodySchema,
+    starterCode: codeString,
     expectedOutput: z.string(),
     matchMode: z.union([z.literal('exact'), z.literal('contains'), z.literal('regex')]).optional(),
   }).strict(),
@@ -89,8 +107,8 @@ export const chatIntentKindSchema = z.enum(['advance', 'go_deeper', 'slow_down',
 export const classroomQuizSchema: z.ZodType<ClassroomQuiz> = z.object({
   id: z.string(),
   conceptId: z.string(),
-  prompt: richTextSchema,
-  starterCode: z.string(),
+  prompt: markdownBodySchema,
+  starterCode: codeString,
   expectedOutput: z.string(),
   matchMode: quizMatchModeSchema,
   status: quizStatusSchema,
@@ -131,6 +149,17 @@ export const classroomEventSchema: z.ZodType<ClassroomEvent> = z.discriminatedUn
   z.object({ type: z.literal('classroom_opened'), createdAt: z.number(), summary: z.string().optional() }).strict(),
   z.object({ type: z.literal('quiz_success'), conceptId: z.string(), summary: z.string(), createdAt: z.number() }).strict(),
   z.object({ type: z.literal('quiz_skip'), conceptId: z.string(), summary: z.string(), createdAt: z.number() }).strict(),
+  z.object({
+    type: z.literal('quiz_failure'),
+    conceptId: z.string(),
+    quizId: z.string(),
+    prompt: z.string(),
+    attemptedCode: z.string(),
+    expectedOutput: z.string(),
+    actualOutput: z.string(),
+    summary: z.string(),
+    createdAt: z.number(),
+  }).strict(),
   z.object({ type: z.literal('chat_intent'), intent: chatIntentKindSchema, summary: z.string(), createdAt: z.number() }).strict(),
   z.object({ type: z.literal('lesson_generation_error'), summary: z.string(), createdAt: z.number() }).strict(),
 ])

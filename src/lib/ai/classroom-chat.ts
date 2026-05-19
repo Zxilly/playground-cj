@@ -16,6 +16,7 @@ export const CLASSROOM_CHAT_TOOL_NAMES = [
   'underline_editor_range',
   'reveal_editor_line',
   'clear_editor_annotations',
+  'suggest_code_change',
 ] as const
 
 export type ClassroomChatToolName = typeof CLASSROOM_CHAT_TOOL_NAMES[number]
@@ -30,7 +31,9 @@ Boundaries:
 - Do not write evidence or learning notes.
 - Do not decide curriculum advancement.
 
-When the learner asks to change direction, go deeper, slow down, or advance, emit a structured classroom event for the lesson generation flow. Use editor annotation tools only for temporary chat guidance. A new chat annotation replaces older chat annotations; compiler markers are separate.`
+When the learner asks to change direction, go deeper, slow down, or advance, emit a structured classroom event for the lesson generation flow. Use editor annotation tools only for temporary chat guidance. A new chat annotation replaces older chat annotations; compiler markers are separate.
+
+When the learner is stuck and you want to show them a concrete fix, use suggest_code_change rather than rewriting their editor. Never silently mutate the learner's code — they should always opt in via the "Apply" button. Use highlight_editor_lines for pointing at lines you want to discuss; use suggest_code_change for proposing a replacement.`
 
 export function buildClassroomChatSystemPrompt(lang: string): string {
   return `${CLASSROOM_CHAT_SYSTEM_PROMPT}

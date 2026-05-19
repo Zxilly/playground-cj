@@ -15,7 +15,7 @@ const baseSession = (): ClassroomSession => createInitialClassroomSession({ lang
 const quizBlock = {
   type: 'quiz' as const,
   conceptId: 'cj.let',
-  prompt: [{ text: 'Print 3.' }],
+  prompt: 'Print 3.',
   starterCode: 'main(){}',
   expectedOutput: '3',
   matchMode: 'exact' as const,
@@ -93,7 +93,7 @@ describe('deriveConceptProgress', () => {
         type: 'concept_card',
         conceptId: 'cj.introduced',
         title: 'Introduced',
-        body: [{ text: 'Intro.' }],
+        body: 'Intro.',
       }],
       now: 1,
     })
@@ -127,7 +127,7 @@ describe('deriveLessonOutline', () => {
           type: 'concept_card',
           conceptId: 'cj.bindings.let',
           title: 'Let',
-          body: [{ text: 'Use let.' }],
+          body: 'Use let.',
         },
       ],
       now: 1,
@@ -178,7 +178,7 @@ describe('deriveLatestHeading', () => {
           createdAt: 1,
           blocks: [
             { type: 'heading' as const, text: '第一章', level: 2 as const },
-            { type: 'paragraph' as const, body: [{ text: 'intro' }] },
+            { type: 'paragraph' as const, body: 'intro' },
           ],
         },
         {
@@ -188,7 +188,7 @@ describe('deriveLatestHeading', () => {
           blocks: [
             { type: 'heading' as const, text: '第二章', level: 2 as const },
             { type: 'heading' as const, text: '2.1 子节', level: 3 as const },
-            { type: 'paragraph' as const, body: [{ text: 'body' }] },
+            { type: 'paragraph' as const, body: 'body' },
           ],
         },
       ],
@@ -248,7 +248,7 @@ describe('deriveChapterIndex', () => {
     const session = {
       ...createInitialClassroomSession({ lang: 'zh' }),
       stream: [
-        { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [{ type: 'paragraph' as const, body: [{ text: 'p' }] }] },
+        { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [{ type: 'paragraph' as const, body: 'p' }] },
         { id: 's2', type: 'system_event' as const, createdAt: 2, event: { type: 'classroom_opened' as const, createdAt: 2 } },
         { id: 's3', type: 'lesson_blocks' as const, createdAt: 3, blocks: [{ type: 'heading' as const, text: 'X', level: 2 as const }] },
       ],
@@ -267,7 +267,7 @@ describe('deriveChapterIndex', () => {
           createdAt: 1,
           blocks: [
             { type: 'heading' as const, text: '示例', level: 2 as const },
-            { type: 'paragraph' as const, body: [{ text: 'p' }] },
+            { type: 'paragraph' as const, body: 'p' },
             { type: 'heading' as const, text: '示例', level: 2 as const },
           ],
         },

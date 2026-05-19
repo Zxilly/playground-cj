@@ -211,6 +211,92 @@ describe('runLessonGenerationStep', () => {
     })).resolves.toBeUndefined()
   })
 
+  it('forwards reasoning-delta parts as reasoning progress chunks', async () => {
+    streamMock.mockResolvedValueOnce({
+      fullStream: createAsyncIterable([
+        { type: 'reasoning-start', id: 'r-1' },
+        { type: 'reasoning-delta', id: 'r-1', text: '我应该先读课堂状态' },
+        { type: 'reasoning-delta', id: 'r-1', text: '，再决定教什么。' },
+        { type: 'reasoning-end', id: 'r-1' },
+        { type: 'tool-result', toolCallId: 'tool-1', toolName: 'append_paragraph', output: { ok: true, appended: 1 } },
+      ]),
+    })
+    const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+    const progress: unknown[] = []
+
+    await runLessonGenerationStep({
+      config: { apiKey: 'test-key' } as Partial<LLMConfig>,
+      toolkit: {} as Toolkit,
+      bridge: {} as AIClassroomBridgeValue,
+      event: { type: 'classroom_opened', createdAt: 1 },
+      onProgress: chunk => progress.push(chunk),
+    })
+
+    expect(progress).toContainEqual({ type: 'reasoning', reasoningId: 'r-1', text: '我应该先读课堂状态' })
+    expect(progress).toContainEqual({ type: 'reasoning', reasoningId: 'r-1', text: '，再决定教什么。' })
+  })
+
+  it('drops empty reasoning-delta chunks', async () => {
+    streamMock.mockResolvedValueOnce({
+      fullStream: createAsyncIterable([
+        { type: 'reasoning-delta', id: 'r-1', text: '' },
+        { type: 'reasoning-delta', id: 'r-1', text: 'actual content' },
+        { type: 'tool-result', toolCallId: 'tool-1', toolName: 'append_paragraph', output: { ok: true, appended: 1 } },
+      ]),
+    })
+    const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+    const progress: unknown[] = []
+
+    await runLessonGenerationStep({
+      config: { apiKey: 'test-key' } as Partial<LLMConfig>,
+      toolkit: {} as Toolkit,
+      bridge: {} as AIClassroomBridgeValue,
+      event: { type: 'classroom_opened', createdAt: 1 },
+      onProgress: chunk => progress.push(chunk),
+    })
+
+    const reasoningChunks = progress.filter((c): c is { type: 'reasoning', text: string } =>
+      !!c && typeof c === 'object' && (c as { type?: string }).type === 'reasoning')
+    expect(reasoningChunks.map(c => c.text)).toEqual(['actual content'])
+  })
+
+  it('rethrows stream-level error parts instead of falling through to no-authoring-output', async () => {
+    const apiError = Object.assign(new Error('AI_APICallError: 用户额度不足, 剩余额度: $0'), {
+      statusCode: 403,
+      responseBody: '{"error":{"message":"用户额度不足","code":"insufficient_user_quota"}}',
+    })
+    streamMock.mockResolvedValueOnce({
+      fullStream: createAsyncIterable([
+        { type: 'text-delta', id: 'pre', text: 'I will try…' },
+        { type: 'error', error: apiError },
+      ]),
+    })
+    const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+
+    await expect(runLessonGenerationStep({
+      config: { apiKey: 'test-key' } as Partial<LLMConfig>,
+      toolkit: {} as Toolkit,
+      bridge: {} as AIClassroomBridgeValue,
+      event: { type: 'classroom_opened', createdAt: 1 },
+    })).rejects.toBe(apiError)
+  })
+
+  it('wraps non-Error error payloads from error parts into Error instances', async () => {
+    streamMock.mockResolvedValueOnce({
+      fullStream: createAsyncIterable([
+        { type: 'error', error: 'plain string failure' },
+      ]),
+    })
+    const { runLessonGenerationStep } = await import('./lesson-generation-runner')
+
+    await expect(runLessonGenerationStep({
+      config: { apiKey: 'test-key' } as Partial<LLMConfig>,
+      toolkit: {} as Toolkit,
+      bridge: {} as AIClassroomBridgeValue,
+      event: { type: 'classroom_opened', createdAt: 1 },
+    })).rejects.toThrow(/plain string failure/)
+  })
+
   it('stops consuming stream parts after an abort signal fires', async () => {
     const controller = new AbortController()
     streamMock.mockResolvedValueOnce({

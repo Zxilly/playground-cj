@@ -10,7 +10,7 @@ import type { ClassroomSession, LessonContentBlock, RunResult } from './types'
 const quizBlock: LessonContentBlock = {
   type: 'quiz',
   conceptId: 'cj.bindings.let',
-  prompt: [{ text: 'Print the value 3.' }],
+  prompt: 'Print the value 3.',
   starterCode: 'main() {\n    println(0)\n}',
   expectedOutput: '3',
   matchMode: 'exact',
@@ -19,7 +19,7 @@ const quizBlock: LessonContentBlock = {
 const secondQuizBlock: LessonContentBlock = {
   type: 'quiz',
   conceptId: 'cj.bindings.var',
-  prompt: [{ text: 'Print the value 4.' }],
+  prompt: 'Print the value 4.',
   starterCode: 'main() {\n    println(0)\n}',
   expectedOutput: '4',
   matchMode: 'exact',
@@ -132,7 +132,7 @@ describe('classroom reducer', () => {
           type: 'concept_card',
           conceptId: 'cj.bindings.let',
           title: 'Let bindings',
-          body: [{ text: 'Use let for immutable bindings.' }],
+          body: 'Use let for immutable bindings.',
         },
       ],
       now: 1001,
@@ -153,7 +153,7 @@ describe('classroom reducer', () => {
           type: 'concept_card',
           conceptId: 'cj.bindings.let',
           title: 'Let bindings again',
-          body: [{ text: 'A reminder.' }],
+          body: 'A reminder.',
         },
       ],
       now: 1003,
@@ -289,7 +289,7 @@ describe('classroom reducer', () => {
     const regexQuiz = {
       id: 'quiz:1000:0',
       conceptId: 'cj.regex',
-      prompt: [{ text: 'Print digits.' }],
+      prompt: 'Print digits.',
       starterCode: 'main() {}',
       expectedOutput: '[',
       matchMode: 'regex' as const,
@@ -343,7 +343,7 @@ describe('classroom reducer', () => {
     })
   })
 
-  it('does not complete a quiz from a failed submit even when stdout matches', () => {
+  it('does not complete a quiz from a failed submit even when stdout matches, and enqueues a quiz_failure for the agent to explain', () => {
     let session = createInitialClassroomSession({ lang: 'zh' })
     session = classroomReducer(session, {
       type: 'SET_CURRENT_QUIZ',
@@ -359,16 +359,47 @@ describe('classroom reducer', () => {
         stderr: 'runtime failure',
         exitCode: 1,
       },
+      attemptedCode: 'main() { Println(2) }',
       now: 1002,
     })
 
     expect(session.currentQuiz?.status).toBe('active')
     expect(session.learner.evidence).toEqual([])
-    expect(session.eventQueue).toEqual([])
     expect(session.stream.at(-1)).toMatchObject({
       type: 'run_result',
       matched: false,
     })
+    // Failure flows into the event queue so lesson generation can write a
+    // targeted explanation block rather than letting the learner sit stuck.
+    expect(session.eventQueue).toHaveLength(1)
+    expect(session.eventQueue[0]).toMatchObject({
+      type: 'quiz_failure',
+      conceptId: 'cj.bindings.let',
+      attemptedCode: 'main() { Println(2) }',
+      expectedOutput: '3',
+      actualOutput: 'runtime failure',
+    })
+  })
+
+  it('coalesces repeated failures on the same active quiz so the agent is not asked to explain the identical mistake twice', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+    session = classroomReducer(session, { type: 'SET_CURRENT_QUIZ', quiz: quizBlock, now: 1001 })
+    session = classroomReducer(session, {
+      type: 'QUIZ_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'wrong\n', stderr: '', exitCode: 0 },
+      attemptedCode: 'attempt-1',
+      now: 1002,
+    })
+    expect(session.eventQueue).toHaveLength(1)
+
+    session = classroomReducer(session, {
+      type: 'QUIZ_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'still-wrong\n', stderr: '', exitCode: 0 },
+      attemptedCode: 'attempt-2',
+      now: 1003,
+    })
+    expect(session.eventQueue).toHaveLength(1)
+    expect(session.eventQueue[0]).toMatchObject({ type: 'quiz_failure', attemptedCode: 'attempt-1' })
   })
 
   it('quiz skip writes skip evidence and queues LessonGeneration without model involvement', () => {
@@ -469,7 +500,7 @@ describe('classroom reducer', () => {
       actions: [
         {
           type: 'APPEND_LESSON_CONTENT',
-          blocks: [{ type: 'paragraph', body: [{ text: 'More detail.' }] }],
+          blocks: [{ type: 'paragraph', body: 'More detail.' }],
           now: 1002,
         },
         {
@@ -493,7 +524,7 @@ describe('classroom reducer', () => {
       currentQuiz: {
         id: 'quiz:999:0',
         conceptId: 'c',
-        prompt: [{ text: 'p' }],
+        prompt: 'p',
         starterCode: '',
         expectedOutput: '',
         matchMode: 'exact',

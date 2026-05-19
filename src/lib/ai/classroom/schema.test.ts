@@ -1,18 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { classroomEventSchema, classroomRecordSchema, classroomSessionSchema, classroomStreamItemSchema, lessonContentBlockSchema, lessonContentBlocksSchema } from './schema'
+import { classroomEventSchema, classroomRecordSchema, classroomSessionSchema, classroomStreamItemSchema, lessonContentBlockSchema, lessonContentBlocksSchema, markdownBodySchema, richTextSchema } from './schema'
 import { classroomStorageKey } from './store'
 
 describe('lesson content DSL schema', () => {
-  it('accepts structured rich lesson blocks', () => {
+  it('accepts a structured set of lesson blocks', () => {
     const result = lessonContentBlocksSchema.safeParse([
       { type: 'heading', text: 'Bindings', level: 2 },
       {
         type: 'paragraph',
-        body: [
-          { text: 'Use ' },
-          { code: 'let' },
-          { text: ' for immutable bindings.' },
-        ],
+        body: 'Use `let` for immutable bindings.',
       },
       {
         type: 'code_example',
@@ -23,7 +19,7 @@ describe('lesson content DSL schema', () => {
       {
         type: 'quiz',
         conceptId: 'cj.bindings.let',
-        prompt: [{ text: 'Print 3.' }],
+        prompt: 'Print 3.',
         starterCode: 'main() {\n    println(0)\n}',
         expectedOutput: '3',
         matchMode: 'exact',
@@ -33,16 +29,13 @@ describe('lesson content DSL schema', () => {
     expect(result.success).toBe(true)
   })
 
-  it('accepts language hints for inline and block code', () => {
+  it('accepts language hints on compare-side code blocks', () => {
     expect(lessonContentBlockSchema.safeParse({
-      type: 'paragraph',
-      body: [
-        { text: 'Use ' },
-        { code: 'let value = 1', lang: 'cangjie' },
-        { text: ' or ' },
-        { code: 'const value = 1', lang: 'typescript' },
-        { text: '.' },
-      ],
+      type: 'compare',
+      leftTitle: 'Cangjie',
+      left: [{ type: 'code', code: 'let value = 1', lang: 'cangjie' }],
+      rightTitle: 'TypeScript',
+      right: [{ type: 'code', code: 'const value = 1', lang: 'typescript' }],
     }).success).toBe(true)
 
     expect(lessonContentBlockSchema.safeParse({
@@ -59,10 +52,67 @@ describe('lesson content DSL schema', () => {
       body: '<ConceptCard className="grid" />',
     }).success).toBe(false)
 
+    // body is a string field; an object/array there is rejected.
     expect(lessonContentBlockSchema.safeParse({
       type: 'paragraph',
       body: [{ html: '<strong>unsafe</strong>' }],
     }).success).toBe(false)
+  })
+
+  it('paragraph body must be a plain string', () => {
+    const result = lessonContentBlockSchema.safeParse({
+      type: 'paragraph',
+      body: 'Use **let** for immutable bindings.',
+    })
+    expect(result.success).toBe(true)
+    if (result.success && result.data.type === 'paragraph')
+      expect(result.data.body).toBe('Use **let** for immutable bindings.')
+  })
+
+  it('quiz prompt must be a plain string', () => {
+    const result = lessonContentBlockSchema.safeParse({
+      type: 'quiz',
+      conceptId: 'cj.x',
+      prompt: 'Print 3.',
+      starterCode: '',
+      expectedOutput: '3',
+    })
+    expect(result.success).toBe(true)
+    if (result.success && result.data.type === 'quiz')
+      expect(result.data.prompt).toBe('Print 3.')
+  })
+
+  it('richTextSchema accepts a plain string and lifts it into a single text span', () => {
+    const result = richTextSchema.safeParse('just a string')
+    expect(result.success).toBe(true)
+    if (result.success)
+      expect(result.data).toEqual([{ type: 'text', text: 'just a string' }])
+  })
+
+  it('richTextSchema accepts a discriminated-union array directly', () => {
+    const result = richTextSchema.safeParse([
+      { type: 'text', text: 'Use ' },
+      { type: 'code', code: 'let', lang: 'cangjie' },
+    ])
+    expect(result.success).toBe(true)
+    if (result.success)
+      expect(result.data).toEqual([
+        { type: 'text', text: 'Use ' },
+        { type: 'code', code: 'let', lang: 'cangjie' },
+      ])
+  })
+
+  it('richTextSchema rejects legacy untagged spans (back-compat removed)', () => {
+    expect(richTextSchema.safeParse([{ text: 'Use ' }]).success).toBe(false)
+    expect(richTextSchema.safeParse([{ code: 'let', language: 'cangjie' }]).success).toBe(false)
+    expect(richTextSchema.safeParse([{ strong: 'bold' }]).success).toBe(false)
+  })
+
+  it('markdownBodySchema rejects anything that is not a string', () => {
+    expect(markdownBodySchema.safeParse(42).success).toBe(false)
+    expect(markdownBodySchema.safeParse([{ type: 'text', text: 'x' }]).success).toBe(false)
+    expect(markdownBodySchema.safeParse([]).success).toBe(false)
+    expect(markdownBodySchema.safeParse({}).success).toBe(false)
   })
 
   it.each(['sourceRefs', 'origin', 'doc_ref', 'ref', 'provenance'])(
@@ -72,7 +122,7 @@ describe('lesson content DSL schema', () => {
         type: 'concept_card',
         conceptId: 'cj.bindings.let',
         title: 'Let',
-        body: [{ text: 'Immutable binding.' }],
+        body: 'Immutable binding.',
         [field]: 'not-in-v1',
       }).success).toBe(false)
     },
@@ -132,7 +182,7 @@ describe('classroomStreamItemSchema', () => {
       quiz: {
         id: 'q1',
         conceptId: 'c',
-        prompt: [{ text: 'p' }],
+        prompt: 'p',
         starterCode: 's',
         expectedOutput: '3',
         matchMode: 'exact',
