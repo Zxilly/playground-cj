@@ -112,6 +112,8 @@ describe('llmConfigDialog', () => {
     useLLMConfigStore.setState({
       config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
+      autoQuota: null,
+      settingsDialogOpen: false,
     })
     vi.stubGlobal('fetch', vi.fn())
   })

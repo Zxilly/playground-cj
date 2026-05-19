@@ -14,11 +14,20 @@ export type { LLMConfig } from '@/lib/ai/model-provider'
 
 export const DEFAULT_LLM_CONFIG: LLMConfig = resolveProviderDefaults('openai-compatible')
 
+export interface AutoQuotaState {
+  readonly nextResetAt: number
+  readonly exhausted: boolean
+}
+
 interface LLMConfigState {
   readonly config: Readonly<LLMConfig>
   readonly keySource: LLMKeySource
+  readonly autoQuota: AutoQuotaState | null
+  readonly settingsDialogOpen: boolean
   readonly setConfig: (next: LLMConfig) => void
   readonly applyAutoKey: (next: Partial<LLMConfig> & { apiKey: string }) => void
+  readonly setAutoQuota: (next: AutoQuotaState | null) => void
+  readonly setSettingsDialogOpen: (open: boolean) => void
   readonly reset: () => void
 }
 
@@ -27,7 +36,9 @@ export const useLLMConfigStore = create<LLMConfigState>()(
     set => ({
       config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
-      setConfig: next => set({ config: normaliseLLMConfig(next), keySource: 'user' }),
+      autoQuota: null,
+      settingsDialogOpen: false,
+      setConfig: next => set({ config: normaliseLLMConfig(next), keySource: 'user', autoQuota: null }),
       applyAutoKey: next =>
         set((state) => {
           if (state.keySource !== 'auto')
@@ -36,7 +47,9 @@ export const useLLMConfigStore = create<LLMConfigState>()(
             config: normaliseLLMConfig({ ...state.config, ...next }),
           }
         }),
-      reset: () => set({ config: DEFAULT_LLM_CONFIG, keySource: 'auto' }),
+      setAutoQuota: next => set({ autoQuota: next }),
+      setSettingsDialogOpen: open => set({ settingsDialogOpen: open }),
+      reset: () => set({ config: DEFAULT_LLM_CONFIG, keySource: 'auto', autoQuota: null }),
     }),
     {
       name: 'tour-ai:config',
@@ -60,4 +73,8 @@ export function useLLMConfig(): LLMConfig {
 
 export function useLLMKeySource(): LLMKeySource {
   return useLLMConfigStore(state => state.keySource)
+}
+
+export function useAutoQuota(): AutoQuotaState | null {
+  return useLLMConfigStore(state => state.autoQuota)
 }

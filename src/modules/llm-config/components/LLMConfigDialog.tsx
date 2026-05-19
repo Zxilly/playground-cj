@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { CircleAlert, KeyRound, Loader2, RotateCw, Settings, ShieldCheck, Wallet } from 'lucide-react'
+import { CalendarClock, CircleAlert, KeyRound, Loader2, RotateCw, Settings, ShieldCheck, Wallet } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import {
@@ -20,6 +20,8 @@ import { Button } from '@/components/ui/button'
 import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
 import { providerLabel, switchProviderPreservingKey } from '@/lib/ai/model-provider'
 import type { LLMProvider } from '@/lib/ai/model-provider'
+import { formatResetMoment } from '@/modules/llm-config/runtime/format-reset-moment'
+import { fetchTokenUsage } from '@/modules/llm-config/runtime/new-api-client'
 
 interface UsageState {
   apiKey?: string
@@ -32,41 +34,35 @@ interface UsageState {
 
 const QUOTA_PER_USD = 500_000
 
-const NEW_API_BASE_URL = (process.env.NEXT_PUBLIC_NEW_API_BASE_URL || 'https://llm.learningman.top').replace(/\/$/, '')
-
 async function fetchUsage(apiKey: string): Promise<UsageState> {
-  try {
-    const url = `${NEW_API_BASE_URL}/api/usage/token/`
-    const resp = await fetch(url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${apiKey}` },
-    })
-    if (!resp.ok)
-      return { totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: false, error: `HTTP ${resp.status}` }
-    const json = await resp.json() as { data?: { total_granted?: number, total_used?: number, total_available?: number } }
-    const data = json.data ?? {}
-    return {
-      totalGranted: data.total_granted ?? 0,
-      totalUsed: data.total_used ?? 0,
-      totalAvailable: data.total_available ?? 0,
-      loading: false,
-    }
-  }
-  catch (e) {
-    return { totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: false, error: (e as Error).message }
-  }
+  const result = await fetchTokenUsage(apiKey)
+  if (!result.ok)
+    return { totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: false, error: result.error }
+  return { ...result.usage, loading: false }
 }
 
 function quotaToUSD(q: number): string {
   return `$${(q / QUOTA_PER_USD).toFixed(4)}`
 }
 
-export function LLMConfigDialog() {
+interface LLMConfigDialogProps {
+  /**
+   * When false, omit the built-in gear-icon trigger and let an external caller
+   * open the dialog via `useLLMConfigStore.setSettingsDialogOpen`. Useful when
+   * mounting the dialog inside a host that already provides its own trigger,
+   * or with surface colors the white-on-teal default trigger does not match.
+   */
+  withTrigger?: boolean
+}
+
+export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {}) {
   const config = useLLMConfigStore(state => state.config)
   const setConfig = useLLMConfigStore(state => state.setConfig)
   const reset = useLLMConfigStore(state => state.reset)
   const keySource = useLLMConfigStore(state => state.keySource)
-  const [open, setOpen] = useState(false)
+  const autoQuota = useLLMConfigStore(state => state.autoQuota)
+  const open = useLLMConfigStore(state => state.settingsDialogOpen)
+  const setOpen = useLLMConfigStore(state => state.setSettingsDialogOpen)
   const [draft, setDraft] = useState(config)
   const [usage, setUsage] = useState<UsageState>({ totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: true })
 
@@ -74,7 +70,7 @@ export function LLMConfigDialog() {
     if (next)
       setDraft(config)
     setOpen(next)
-  }, [config])
+  }, [config, setOpen])
 
   const usingAuto = keySource === 'auto'
   const showUsage = open && usingAuto && draft.apiKey === config.apiKey && draft.apiKey.length > 0
@@ -113,17 +109,22 @@ export function LLMConfigDialog() {
   const exhausted = usageReady && visibleUsage.totalAvailable === 0 && visibleUsage.totalGranted > 0
   const usagePct = visibleUsage.totalGranted > 0 ? Math.min(100, Math.round((visibleUsage.totalUsed / visibleUsage.totalGranted) * 100)) : 0
 
+  const showResetSchedule = usingAuto && autoQuota?.nextResetAt
+  const resetMoment = autoQuota ? formatResetMoment(autoQuota.nextResetAt) : ''
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <button
-          aria-label={t`LLM 设置`}
-          title={t`LLM 设置`}
-          className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200/60"
-        >
-          <Settings className="size-3.5" />
-        </button>
-      </DialogTrigger>
+      {withTrigger && (
+        <DialogTrigger asChild>
+          <button
+            aria-label={t`LLM 设置`}
+            title={t`LLM 设置`}
+            className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200/60"
+          >
+            <Settings className="size-3.5" />
+          </button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -248,6 +249,17 @@ export function LLMConfigDialog() {
                         </div>
                       )}
               </div>
+            </div>
+          )}
+
+          {showResetSchedule && (
+            <div className="flex items-center gap-2 rounded-lg border border-tour-border/60 bg-tour-bg/40 px-3 py-2 text-[11px] text-muted-foreground">
+              <CalendarClock className="size-3.5 shrink-0 text-tour-teal" />
+              <span>
+                <Trans>下次刷新：</Trans>
+                <span className="ml-1 font-mono text-foreground">{resetMoment}</span>
+                <span className="ml-1 opacity-70"><Trans>（北京时间）</Trans></span>
+              </span>
             </div>
           )}
         </div>

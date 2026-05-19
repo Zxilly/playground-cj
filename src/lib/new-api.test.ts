@@ -126,4 +126,96 @@ describe('new-api client', () => {
 
     await expect(fetchTokenKey(7)).rejects.toThrow('new-api fetch token key: missing key in response')
   })
+
+  it('resets remain_quota with a single PUT when the token is already enabled', async () => {
+    process.env.NEW_API_BASE_URL = 'https://new-api.example'
+    process.env.NEW_API_ACCESS_TOKEN = 'secret'
+    process.env.NEW_API_USER_ID = '42'
+    const detail = {
+      id: 9,
+      user_id: 42,
+      name: 'playground-cj:ip-1',
+      status: 1,
+      expired_time: -1,
+      remain_quota: 0,
+      unlimited_quota: false,
+      model_limits_enabled: false,
+      model_limits: '',
+      allow_ips: null,
+      group: 'default',
+      cross_group_retry: false,
+    }
+    const fetch = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse({ success: true, message: '', data: detail }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, message: '' }))
+    const { resetTokenRemainQuota } = await importApi()
+
+    await resetTokenRemainQuota(9, 250000)
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(fetch.mock.calls[0]?.[0]).toBe('https://new-api.example/api/token/9')
+    expect(fetch.mock.calls[1]?.[0]).toBe('https://new-api.example/api/token/')
+    const refillCall = fetch.mock.calls[1]
+    expect((refillCall?.[1] as RequestInit).method).toBe('PUT')
+    const refillBody = JSON.parse((refillCall?.[1] as RequestInit).body as string)
+    expect(refillBody).toMatchObject({
+      id: 9,
+      remain_quota: 250000,
+      status: 1,
+      name: 'playground-cj:ip-1',
+      group: 'default',
+    })
+  })
+
+  it('re-enables an exhausted token with a second status_only PUT', async () => {
+    process.env.NEW_API_BASE_URL = 'https://new-api.example'
+    process.env.NEW_API_ACCESS_TOKEN = 'secret'
+    process.env.NEW_API_USER_ID = '42'
+    const detail = {
+      id: 9,
+      user_id: 42,
+      name: 'playground-cj:ip-1',
+      status: 4, // exhausted
+      expired_time: -1,
+      remain_quota: 0,
+      unlimited_quota: false,
+      model_limits_enabled: false,
+      model_limits: '',
+      allow_ips: null,
+      group: 'default',
+      cross_group_retry: false,
+    }
+    const fetch = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse({ success: true, message: '', data: detail }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, message: '' }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, message: '' }))
+    const { resetTokenRemainQuota } = await importApi()
+
+    await resetTokenRemainQuota(9, 250000)
+
+    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(fetch.mock.calls[1]?.[0]).toBe('https://new-api.example/api/token/')
+    const refillBody = JSON.parse((fetch.mock.calls[1]?.[1] as RequestInit).body as string)
+    expect(refillBody.status).toBe(4) // preserved during refill
+    expect(refillBody.remain_quota).toBe(250000)
+
+    expect(fetch.mock.calls[2]?.[0]).toBe('https://new-api.example/api/token/?status_only=1')
+    const reenableBody = JSON.parse((fetch.mock.calls[2]?.[1] as RequestInit).body as string)
+    expect(reenableBody.status).toBe(1)
+    expect(reenableBody.remain_quota).toBe(250000)
+  })
+
+  it('surfaces errors from the token detail fetch', async () => {
+    process.env.NEW_API_BASE_URL = 'https://new-api.example'
+    process.env.NEW_API_ACCESS_TOKEN = 'secret'
+    process.env.NEW_API_USER_ID = '42'
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      jsonResponse({ success: false, message: 'not found' }),
+    )
+    const { resetTokenRemainQuota } = await importApi()
+
+    await expect(resetTokenRemainQuota(9, 250000)).rejects.toThrow(
+      'new-api fetch token detail failed: not found',
+    )
+  })
 })

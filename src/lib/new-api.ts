@@ -17,6 +17,26 @@ interface NewApiPage<T> {
   items: T[]
 }
 
+export const TOKEN_STATUS_ENABLED = 1
+export const TOKEN_STATUS_DISABLED = 2
+export const TOKEN_STATUS_EXPIRED = 3
+export const TOKEN_STATUS_EXHAUSTED = 4
+
+export interface NewApiTokenDetail {
+  id: number
+  user_id: number
+  name: string
+  status: number
+  expired_time: number
+  remain_quota: number
+  unlimited_quota: boolean
+  model_limits_enabled: boolean
+  model_limits: string
+  allow_ips: string | null
+  group: string
+  cross_group_retry: boolean
+}
+
 interface NewApiConfig {
   baseURL: string
   accessToken: string
@@ -91,6 +111,16 @@ export async function fetchTokenKey(id: number): Promise<string> {
   return data.key
 }
 
+export async function fetchTokenDetail(id: number): Promise<NewApiTokenDetail> {
+  const cfg = readConfig()
+  const url = `${cfg.baseURL}/api/token/${id}`
+  const resp = await fetch(url, { headers: authHeaders(cfg) })
+  const data = await expectSuccess<NewApiTokenDetail>(resp, 'fetch token detail')
+  if (!data)
+    throw new Error('new-api fetch token detail: empty response')
+  return data
+}
+
 export async function provisionTokenForIp(name: string, quota: number): Promise<{ tokenId: number, key: string }> {
   let tokenId = await findTokenIdByName(name)
   if (tokenId == null) {
@@ -101,4 +131,45 @@ export async function provisionTokenForIp(name: string, quota: number): Promise<
   }
   const key = await fetchTokenKey(tokenId)
   return { tokenId, key }
+}
+
+// Resets Token.RemainQuota to the given value. If the token had previously
+// reached the Exhausted state (status 4), also re-enables it. UpdateToken
+// rejects enabling an exhausted token whose cleanToken.RemainQuota is still 0,
+// so this is done in two PUT calls: first refill quota while preserving the
+// original status, then flip status to Enabled.
+export async function resetTokenRemainQuota(id: number, remainQuota: number): Promise<void> {
+  const cfg = readConfig()
+  const detail = await fetchTokenDetail(id)
+
+  const refillBody = {
+    id: detail.id,
+    name: detail.name,
+    status: detail.status,
+    expired_time: detail.expired_time,
+    remain_quota: remainQuota,
+    unlimited_quota: detail.unlimited_quota,
+    model_limits_enabled: detail.model_limits_enabled,
+    model_limits: detail.model_limits,
+    allow_ips: detail.allow_ips,
+    group: detail.group,
+    cross_group_retry: detail.cross_group_retry,
+  }
+  const refillResp = await fetch(`${cfg.baseURL}/api/token/`, {
+    method: 'PUT',
+    headers: authHeaders(cfg),
+    body: JSON.stringify(refillBody),
+  })
+  await expectSuccess<unknown>(refillResp, 'reset token quota')
+
+  if (detail.status === TOKEN_STATUS_ENABLED)
+    return
+
+  const reenableBody = { ...refillBody, status: TOKEN_STATUS_ENABLED }
+  const reenableResp = await fetch(`${cfg.baseURL}/api/token/?status_only=1`, {
+    method: 'PUT',
+    headers: authHeaders(cfg),
+    body: JSON.stringify(reenableBody),
+  })
+  await expectSuccess<unknown>(reenableResp, 're-enable token')
 }
