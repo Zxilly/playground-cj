@@ -5,7 +5,7 @@ import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper 
 import type { MonacoLanguageClient } from 'monaco-languageclient'
 import { EditorApp } from 'monaco-languageclient/editorApp'
 import type { CodeResources } from 'monaco-languageclient/editorApp'
-import { createEditorAppConfig, createLanguageClient, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, isLanguageClientAvailable } from '@/lib/monaco'
+import { createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
 import type { MonacoViewsType } from '@/lib/monaco'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
@@ -27,6 +27,10 @@ export interface MonacoEditorProps {
   locale?: string
   viewsType?: MonacoViewsType
   enableLanguageClient?: boolean
+  // Disambiguator that becomes part of the model URI so multiple editors on
+  // the same page (e.g. one per quiz) hold independent models. Same hint reuses
+  // the same model across React mounts and preserves user edits.
+  uriHint?: string
 }
 
 function createStandaloneEditorHandle(
@@ -36,15 +40,27 @@ function createStandaloneEditorHandle(
   const resource = editorAppConfig.codeResources?.modified
   const uri = monaco.Uri.parse(resource?.uri ?? 'file:///playground/src/main.cj')
   const existingModel = monaco.editor.getModel(uri)
-  let model = existingModel ?? monaco.editor.createModel(
-    resource?.text ?? '',
-    editorAppConfig.editorOptions?.language,
-    uri,
-  )
-
-  if (existingModel) {
-    model.setValue(resource?.text ?? '')
-  }
+  // Reusing an existing model preserves user edits across React mount cycles.
+  // Only seed the model text when creating it for the first time — otherwise
+  // a quiz card that re-enters the viewport would clobber whatever the user
+  // had typed earlier.
+  //
+  // Track ownership: only the handle that *created* the model is allowed to
+  // dispose it. This prevents one quiz card unmounting from killing a model
+  // another card might still want to reuse. Models created by other handles
+  // (i.e. `existingModel` was hit) stay alive — they'll be GC'd when the page
+  // unloads, and the model registry size is bounded by the number of distinct
+  // quiz URIs the learner has ever opened in this page session.
+  const ownedModelUris = new Set<string>()
+  let model = existingModel ?? (() => {
+    const created = monaco.editor.createModel(
+      resource?.text ?? '',
+      editorAppConfig.editorOptions?.language,
+      uri,
+    )
+    ownedModelUris.add(created.uri.toString())
+    return created
+  })()
 
   const editor = monaco.editor.create(container, {
     ...editorAppConfig.editorOptions,
@@ -60,15 +76,23 @@ function createStandaloneEditorHandle(
 
       const nextUri = monaco.Uri.parse(nextResource.uri ?? model.uri.toString())
       const existingNextModel = monaco.editor.getModel(nextUri)
-      const nextModel = existingNextModel ?? monaco.editor.createModel(
-        nextResource.text ?? model.getValue(),
-        nextResource.enforceLanguageId ?? model.getLanguageId(),
-        nextUri,
-      )
+      const nextModel = existingNextModel ?? (() => {
+        const created = monaco.editor.createModel(
+          nextResource.text ?? model.getValue(),
+          nextResource.enforceLanguageId ?? model.getLanguageId(),
+          nextUri,
+        )
+        ownedModelUris.add(created.uri.toString())
+        return created
+      })()
 
-      if (existingNextModel && nextResource.text !== undefined) {
-        nextModel.setValue(nextResource.text)
-      }
+      // Critical: do NOT setValue on a pre-existing model. The model URI
+      // identifies the learner's draft; an unconditional setValue here would
+      // clobber typed code whenever upstream props change (e.g. on a locale
+      // toggle the editorAppConfig regenerates with a localized starter, and
+      // the same-URI model already exists). The caller seeds a fresh model
+      // via createModel above when there is none — preserving in-flight
+      // edits is the intentional behavior of model reuse.
 
       if (nextResource.enforceLanguageId)
         monaco.editor.setModelLanguage(nextModel, nextResource.enforceLanguageId)
@@ -79,6 +103,18 @@ function createStandaloneEditorHandle(
     },
     dispose: () => {
       editor.dispose()
+      // Intentionally do NOT dispose models here. Virtuoso virtualizes quiz
+      // cards in and out of the DOM constantly during scroll — disposing the
+      // model on every unmount would wipe the learner's in-progress code as
+      // soon as they scrolled past their own quiz. Models survive the page
+      // session; the localStorage draft store (cleared on quiz success/skip
+      // in QuizPracticeCard) is the only persistence layer with a bounded
+      // size. The Monaco model registry is bounded by the count of distinct
+      // quiz URIs the learner has opened in this page session, which is
+      // small enough that retaining them until page unload is fine.
+      // `ownedModelUris` is tracked for the future case where we want to
+      // explicitly drop models for definitively-finished quizzes (e.g. a
+      // session-level cleanup hook), but is otherwise unused.
     },
   }
 }
@@ -90,8 +126,9 @@ export function MonacoEditorReactComp({
   locale,
   viewsType = 'EditorService',
   enableLanguageClient = true,
+  uriHint,
 }: MonacoEditorProps) {
-  const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale), [code, locale])
+  const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale, uriHint), [code, locale, uriHint])
   const hasLanguageClient = enableLanguageClient && isLanguageClientAvailable()
 
   const isInitializingRef = useRef(false)
@@ -153,30 +190,19 @@ export function MonacoEditorReactComp({
       }
     }
 
-    const disposeClient = async (client: MonacoLanguageClient) => {
-      try {
-        await client.stop()
-      }
-      catch {}
-
-      try {
-        await client.dispose()
-      }
-      catch {}
-    }
-
+    // Per-editor lifecycle no longer owns the MonacoLanguageClient. The
+    // singleton in `ensureLanguageClient` is shared across every editor on the
+    // page; this function just makes sure it's booted against the current
+    // editor port. Multiple editors used to fight over the same MessagePort
+    // (MessagePort.onmessage is single-consumer), starving secondary editors
+    // of LSP service — keeping the client global eliminates that race.
     const reconcileLanguageClient = async (target: number) => {
       if (!hasLanguageClient || !isActive())
         return
 
-      const prev = languageClientRef.current
       languageClientRef.current = null
-      if (prev)
-        await disposeClient(prev)
-
-      if (!isActive() || target === 0)
+      if (target === 0)
         return
-
       if (boundGenerationRef.current !== target)
         return
 
@@ -184,29 +210,11 @@ export function MonacoEditorReactComp({
       if (!port)
         return
 
-      const client = await createLanguageClient(port)
+      const client = await ensureLanguageClient(port)
       if (!client)
         return
-
-      if (!isActive()) {
-        await disposeClient(client)
+      if (!isActive() || boundGenerationRef.current !== target)
         return
-      }
-
-      try {
-        await client.start()
-      }
-      catch (e) {
-        const m = e instanceof Error ? e.message : JSON.stringify(e)
-        console.warn(`[LSP] MonacoLanguageClient.start failed: ${m}`)
-        await disposeClient(client)
-        return
-      }
-
-      if (!isActive() || boundGenerationRef.current !== target) {
-        await disposeClient(client)
-        return
-      }
 
       languageClientRef.current = client
     }
@@ -386,24 +394,16 @@ export function MonacoEditorReactComp({
         statusBarRef.current = null
         const editorApp = editorAppRef.current
         editorAppRef.current = null
-        const client = languageClientRef.current
+        // Forget the shared MonacoLanguageClient reference — but do NOT
+        // stop/dispose it. The client is page-scoped (see ensureLanguageClient)
+        // and other editors on the page may still depend on it. The singleton
+        // lives until page unload.
         languageClientRef.current = null
         const vscodeApiWrapper = vscodeApiWrapperRef.current
         vscodeApiWrapperRef.current = null
 
         statusBar?.dispose()
         await editorApp?.dispose()
-        if (client) {
-          try {
-            await client.stop()
-          }
-          catch {}
-
-          try {
-            await client.dispose()
-          }
-          catch {}
-        }
         await vscodeApiWrapper?.dispose()
       }
       catch {

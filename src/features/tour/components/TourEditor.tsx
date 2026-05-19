@@ -19,6 +19,17 @@ interface TourEditorProps {
   locale: string
   layout?: 'full' | 'editorOnly'
   enableLanguageClient?: boolean
+  // Disambiguator for the Monaco model URI. When set, this TourEditor owns a
+  // model that persists across React mounts (so the user's edits survive when
+  // the host card unmounts and re-mounts), AND the bridge.editor registration
+  // is delegated to the caller via onEditorReady — useful for surfaces like
+  // the AI classroom where multiple editors live on one page.
+  uriHint?: string
+  readOnly?: boolean
+  // When provided, the caller takes responsibility for bridge.editor registration
+  // and for invoking handlers like reset/run against the supplied handle.
+  // TourEditor stops touching bridge.editor.
+  onEditorReady?: (handle: MonacoEditorHandle) => void
 }
 
 const TOUR_RUN_MARKER_OWNER = 'tour-run'
@@ -137,11 +148,20 @@ export function TourEditor({
   locale,
   layout = 'full',
   enableLanguageClient = true,
+  uriHint,
+  readOnly = false,
+  onEditorReady,
 }: TourEditorProps) {
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
   const codeRef = useRef(code)
   const ansiRef = useRef(new AnsiUp())
   const bridge = useEditorBridge()
+  // Caller-owned instances skip bridge registration AND skip the code-prop
+  // auto-reset effect — both behaviours are surface-specific to the singleton
+  // tour-page editor and would otherwise clobber per-quiz state.
+  const callerOwned = onEditorReady !== undefined
+  const onEditorReadyRef = useRef(onEditorReady)
+  onEditorReadyRef.current = onEditorReady
 
   const toolOutput = useTourEditorStore(state => state.compilerOutput)
   const programOutput = useTourEditorStore(state => state.programOutput)
@@ -177,6 +197,11 @@ export function TourEditor({
 
   useEffect(() => {
     codeRef.current = code
+    // Caller-owned instances (e.g. classroom quizzes) keep model state across
+    // mount/unmount; auto-resetting on code prop change would erase the user's
+    // edits any time the host card re-renders. They use the reset button instead.
+    if (callerOwned)
+      return
     setInitialCode(code)
     const editor = editorAppRef.current?.getEditor()
     const model = editor?.getModel()
@@ -188,7 +213,7 @@ export function TourEditor({
 
     resetOutputs()
     clearCompilerMarkers()
-  }, [clearCompilerMarkers, code, resetOutputs, setInitialCode])
+  }, [callerOwned, clearCompilerMarkers, code, resetOutputs, setInitialCode])
 
   useEffect(() => {
     syncCompilerMarkers(toolOutput)
@@ -197,14 +222,27 @@ export function TourEditor({
   useEffect(() => {
     return () => {
       clearCompilerMarkers()
-      bridge.editor.setEditor(undefined)
+      if (!callerOwned)
+        bridge.editor.setEditor(undefined)
     }
-  }, [clearCompilerMarkers, bridge.editor])
+  }, [callerOwned, clearCompilerMarkers, bridge.editor])
+
+  // Toggle readOnly via Monaco's runtime options so changing isActive on a
+  // mounted quiz card doesn't require tearing down the editor.
+  useEffect(() => {
+    editorAppRef.current?.getEditor()?.updateOptions({ readOnly })
+  }, [readOnly])
 
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     editorAppRef.current = editorApp
     const ed = editorApp.getEditor()
-    bridge.editor.setEditor(ed ?? undefined)
+    ed?.updateOptions({ readOnly })
+    if (onEditorReadyRef.current) {
+      onEditorReadyRef.current(editorApp)
+    }
+    else {
+      bridge.editor.setEditor(ed ?? undefined)
+    }
     if (layout === 'full') {
       const store = useTourEditorStore.getState()
       updateEditor({
@@ -214,7 +252,7 @@ export function TourEditor({
       })
       syncCompilerMarkers(useTourEditorStore.getState().compilerOutput)
     }
-  }, [bridge.editor, layout, syncCompilerMarkers])
+  }, [bridge.editor, layout, readOnly, syncCompilerMarkers])
 
   const handleRun = useCallback(() => {
     editorAppRef.current?.getEditor()?.getAction('cangjie.compile.run')?.run()
@@ -245,6 +283,7 @@ export function TourEditor({
           onLoad={onLoad}
           locale={locale}
           enableLanguageClient={enableLanguageClient}
+          uriHint={uriHint}
         />
       </div>
     )

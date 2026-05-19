@@ -96,10 +96,14 @@ export function createMonacoVscodeApiConfig(
   }
 }
 
-export function createEditorAppConfig(shareCode?: string, locale?: string): EditorAppConfig {
+// uriHint disambiguates editors that need to live side-by-side (one per quiz,
+// for example) so each gets its own persistent Monaco model. Same hint → same
+// model (preserved across React mounts); different hints → different models.
+export function createEditorAppConfig(shareCode?: string, locale?: string, uriHint?: string): EditorAppConfig {
   const helloWorldExample = examples.find(([key]) => key === 'hello-world')?.[1]
   const localizedContent = locale === 'en' ? helloWorldExample?.en.content : helloWorldExample?.zh.content
   const defaultCode = shareCode ?? localizedContent ?? ''
+  const slot = uriHint ? `quiz-${encodeURIComponent(uriHint)}` : 'src'
 
   return {
     overrideAutomaticLayout: true,
@@ -112,7 +116,7 @@ export function createEditorAppConfig(shareCode?: string, locale?: string): Edit
       modified: {
         text: defaultCode,
         enforceLanguageId: CANGJIE_LANGUAGE_ID,
-        uri: 'file:///playground/src/main.cj',
+        uri: `file:///playground/${slot}/main.cj`,
       },
     },
   }

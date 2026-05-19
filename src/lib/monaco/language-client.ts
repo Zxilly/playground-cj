@@ -51,6 +51,10 @@ function buildWorkspaceFolder() {
  * Caller owns lifecycle: call `.start()` then `.stop()` / `.dispose()` when done.
  *
  * Returns `undefined` on mobile (LSP is disabled there).
+ *
+ * Prefer `ensureLanguageClient` over this for app-level use — `createLanguageClient`
+ * is exported for tests and lower-level callers that explicitly need a fresh
+ * instance.
  */
 export async function createLanguageClient(port: MessagePort): Promise<MonacoLanguageClient | undefined> {
   if (isMobile({ tablet: true, featureDetect: true }))
@@ -80,6 +84,83 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
       writer: new BrowserMessageWriter(port),
     },
   })
+}
+
+// Singleton language client per page. Multiple editors on the same page (e.g.
+// the main tour editor + N quiz cards) MUST share a single MonacoLanguageClient
+// — each client wraps a `BrowserMessageReader` on the same MessagePort, and a
+// MessagePort only has one effective `onmessage` consumer at a time. Two
+// clients on the same port produces protocol corruption and stalled LSP.
+//
+// The client's `documentSelector` is `[CANGJIE_LANGUAGE_ID]` (above) so it
+// serves ALL Cangjie models in the registry regardless of URI — no need for
+// per-editor clients. Quiz editors keep `enableLanguageClient={false}` to skip
+// per-editor lifecycle, but the singleton client below covers them.
+interface SharedClientSlot {
+  client: MonacoLanguageClient | undefined
+  port: MessagePort | undefined
+  startedPromise: Promise<MonacoLanguageClient | undefined> | undefined
+}
+
+const sharedClient = hmrSlot<SharedClientSlot>(HMR_SLOT_KEYS.LSP_LANGUAGE_CLIENT, () => ({
+  client: undefined,
+  port: undefined,
+  startedPromise: undefined,
+}))
+
+/**
+ * Ensure a single, page-wide MonacoLanguageClient is started against `port`
+ * and serves every Cangjie model on the page. Idempotent — repeated calls
+ * with the same port return the same client; if the port has changed
+ * (LSP restart), the old client is torn down first.
+ */
+export async function ensureLanguageClient(port: MessagePort): Promise<MonacoLanguageClient | undefined> {
+  if (isMobile({ tablet: true, featureDetect: true }))
+    return undefined
+
+  if (sharedClient.client && sharedClient.port === port)
+    return sharedClient.client
+
+  // Port changed mid-session (LSP server restart). Tear down the old client
+  // first; until the new one finishes booting, callers see `undefined`.
+  if (sharedClient.client) {
+    const prev = sharedClient.client
+    sharedClient.client = undefined
+    sharedClient.port = undefined
+    sharedClient.startedPromise = undefined
+    try {
+      await prev.stop()
+    }
+    catch {}
+    try {
+      await prev.dispose()
+    }
+    catch {}
+  }
+
+  if (!sharedClient.startedPromise || sharedClient.port !== port) {
+    sharedClient.port = port
+    sharedClient.startedPromise = (async () => {
+      const client = await createLanguageClient(port)
+      if (!client)
+        return undefined
+      try {
+        await client.start()
+      }
+      catch (e) {
+        const m = e instanceof Error ? e.message : JSON.stringify(e)
+        console.warn(`[LSP] ensureLanguageClient: client.start() failed: ${m}`)
+        try {
+          await client.dispose()
+        }
+        catch {}
+        return undefined
+      }
+      sharedClient.client = client
+      return client
+    })()
+  }
+  return sharedClient.startedPromise
 }
 
 export function isLanguageClientAvailable(): boolean {
