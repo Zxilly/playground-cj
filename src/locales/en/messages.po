@@ -13,23 +13,13 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:102
+#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:114
 msgid ""
 "\n"
 "失败：{errorMessage}"
 msgstr ""
 "\n"
 "Failed: {errorMessage}"
-
-#: src/lib/ai/lesson-generation-runner.ts:35
-msgid ""
-"\n"
-"调用工具：{toolName}\n"
-""
-msgstr ""
-"\n"
-"Calling tool: {toolName}\n"
-""
 
 #: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:69
 msgid ""
@@ -39,13 +29,21 @@ msgstr ""
 "\n"
 "Error: {lastError}"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:97
+#: src/features/tour-ai/components/ClassroomStream.tsx:125
 msgid "(empty)"
 msgstr "(empty)"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:273
+msgid "（北京时间）"
+msgstr "(Beijing time)"
 
 #: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:30
 msgid "（手动）"
 msgstr " (manual)"
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:289
+msgid "（空）"
+msgstr ""
 
 #: src/lib/ai/model-test.ts:61
 msgid "{currentProviderLabel} 连接正常。"
@@ -61,19 +59,19 @@ msgid "AI 助教"
 msgstr "AI Tutor"
 
 #: src/features/tour-ai/components/ClassroomBrandChip.tsx:7
-#: src/features/tour-ai/components/TourAIWrapper.tsx:18
+#: src/features/tour-ai/components/TourAIWrapper.tsx:33
 msgid "AI 课堂"
 msgstr "AI Classroom"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:172
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:189
 msgid "API Base"
 msgstr "API Base"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:184
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:201
 msgid "API Key"
 msgstr "API Key"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:155
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:172
 msgid "API 风格"
 msgstr "API style"
 
@@ -89,17 +87,17 @@ msgstr "Close"
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
-#: src/features/tour-ai/components/QuizPracticeCard.tsx:99
-msgid "Expected output:"
-msgstr "Expected output:"
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:238
+msgid "Expected output"
+msgstr ""
 
 #: src/features/playground/components/ShareButton.tsx:80
 msgid "Hash 方式"
 msgstr "Hash Method"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:116
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:117
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:127
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:133
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:134
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:144
 msgid "LLM 设置"
 msgstr "LLM settings"
 
@@ -131,16 +129,15 @@ msgstr "LSP stopped (manual)"
 msgid "LSP 重启中"
 msgstr "LSP restarting"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:197
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:214
 msgid "Model"
 msgstr "Model"
 
-#: src/features/tour-ai/components/QuizPracticeCard.tsx:82
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:128
 msgid "Practice"
 msgstr "Practice"
 
-#: src/features/tour-ai/components/QuizPracticeCard.tsx:84
-#: src/features/tour-ai/components/QuizPracticeCard.tsx:90
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:130
 msgid "Quiz"
 msgstr "Quiz"
 
@@ -148,7 +145,7 @@ msgstr "Quiz"
 msgid "Result:"
 msgstr "Result:"
 
-#: src/features/tour-ai/components/QuizPracticeCard.tsx:124
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:168
 msgid "Skip"
 msgstr "Skip"
 
@@ -159,6 +156,10 @@ msgstr "Update"
 #: src/features/playground/components/ShareButton.tsx:72
 msgid "URL 方式"
 msgstr "URL Method"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:271
+msgid "下次刷新："
+msgstr "Next refresh:"
 
 #: src/features/tour-ai/components/ClassroomThemeToggle.tsx:20
 msgid "主题：浅色"
@@ -172,12 +173,16 @@ msgstr "Theme: dark"
 msgid "主题：跟随系统"
 msgstr "Theme: follow system"
 
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:71
+msgid "今日 AI 额度已用完"
+msgstr "Daily AI quota exhausted"
+
 #: src/modules/assistant-ui/chat/ThreadWelcome.tsx:15
 msgid "从这里开始你的仓颉之旅"
 msgstr "Start your Cangjie tour here"
 
-#: src/features/playground/components/PlaygroundHeader.tsx:58
-#: src/features/playground/components/PlaygroundHeader.tsx:96
+#: src/features/playground/components/PlaygroundHeader.tsx:59
+#: src/features/playground/components/PlaygroundHeader.tsx:97
 msgid "仓颉 Playground"
 msgstr "Cangjie Playground"
 
@@ -311,15 +316,23 @@ msgstr ""
 "Status: Restarting{originSuffix}\n"
 "{moduleInfo}"
 
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:142
+msgid "代码"
+msgstr ""
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:102
+msgid "使用自带 Key"
+msgstr "Use my own key"
+
 #: src/components/ui/sidebar.tsx:203
 msgid "侧边栏"
 msgstr "Sidebar"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:260
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:288
 msgid "保存"
 msgstr "Save"
 
-#: src/lib/monaco/actions.ts:141
+#: src/lib/monaco/actions.ts:142
 msgid "保存代码"
 msgstr "Save Code"
 
@@ -327,9 +340,13 @@ msgstr "Save Code"
 msgid "停止"
 msgstr "Stop"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:139
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:156
 msgid "共享额度"
 msgstr "Shared quota"
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:74
+msgid "共享额度每日 0 点（北京时间）自动刷新。"
+msgstr "Shared quota resets every day at midnight (Beijing time)."
 
 #: src/components/ui/dialog.tsx:77
 #: src/components/ui/sheet.tsx:84
@@ -337,24 +354,28 @@ msgstr "Shared quota"
 msgid "关闭"
 msgstr "Close"
 
-#: src/features/tour-ai/components/ClassroomChatSidebar.tsx:15
+#: src/features/tour-ai/components/ClassroomChatSidebar.tsx:36
 msgid "关闭聊天"
 msgstr "Close chat"
+
+#: src/features/tour-ai/components/ClassroomChatSidebar.tsx:15
+msgid "关闭聊天浮层"
+msgstr ""
 
 #: src/features/playground/components/ShareButton.tsx:59
 msgid "分享"
 msgstr "Share"
 
-#: src/lib/monaco/actions.ts:120
+#: src/lib/monaco/actions.ts:121
 msgid "分享 (Hash 方式)"
 msgstr "Share (Hash Method)"
 
-#: src/lib/monaco/actions.ts:107
+#: src/lib/monaco/actions.ts:108
 msgid "分享 (URL 方式)"
 msgstr "Share (URL Method)"
 
 #: src/features/playground/components/ShareButton.tsx:45
-#: src/lib/monaco/actions.ts:130
+#: src/lib/monaco/actions.ts:131
 msgid "分享中..."
 msgstr "Sharing..."
 
@@ -362,28 +383,28 @@ msgstr "Sharing..."
 msgid "分享代码"
 msgstr "Share Code"
 
-#: src/lib/monaco/actions.ts:61
-#: src/lib/monaco/actions.ts:77
+#: src/lib/monaco/actions.ts:62
+#: src/lib/monaco/actions.ts:78
 msgid "分享代码加载中..."
 msgstr "Loading shared code..."
 
-#: src/lib/monaco/actions.ts:72
-#: src/lib/monaco/actions.ts:79
+#: src/lib/monaco/actions.ts:73
+#: src/lib/monaco/actions.ts:80
 msgid "分享代码加载失败"
 msgstr "Failed to load shared code"
 
-#: src/lib/monaco/actions.ts:67
-#: src/lib/monaco/actions.ts:78
+#: src/lib/monaco/actions.ts:68
+#: src/lib/monaco/actions.ts:79
 msgid "分享代码加载成功"
 msgstr "Shared code loaded successfully"
 
 #: src/features/playground/components/ShareButton.tsx:47
-#: src/lib/monaco/actions.ts:132
+#: src/lib/monaco/actions.ts:133
 msgid "分享失败"
 msgstr "Share failed"
 
 #: src/features/playground/components/ShareButton.tsx:46
-#: src/lib/monaco/actions.ts:131
+#: src/lib/monaco/actions.ts:132
 msgid "分享成功"
 msgstr "Share successful"
 
@@ -396,11 +417,15 @@ msgstr "Toggle Sidebar"
 msgid "切换到 AI 助教"
 msgstr "Switch to AI Tutor"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:229
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:246
 msgid "剩余"
 msgstr "Remaining"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:258
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:86
+msgid "即将刷新…"
+msgstr "Refreshing soon…"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:286
 msgid "取消"
 msgstr "Cancel"
 
@@ -428,13 +453,13 @@ msgstr "Copy share link"
 msgid "复制分享链接失败"
 msgstr "Failed to copy share link"
 
-#: src/lib/ai/lesson-generation-runner.ts:39
-msgid ""
-"完成工具：{toolName}\n"
-""
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:178
+msgid "失败"
 msgstr ""
-"Completed tool: {toolName}\n"
-""
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:91
+msgid "如需立刻继续使用，可在 LLM 设置中填写你自己的 API Key。"
+msgstr "To keep using right away, set your own API Key in LLM settings."
 
 #: src/features/tour/components/mdx/LanguagePicker.tsx:30
 msgid "对比"
@@ -452,23 +477,15 @@ msgstr "Export as Markdown"
 msgid "导向"
 msgstr "Guide"
 
-#: src/features/tour-ai/components/ClassroomChapterIndex.tsx:42
+#: src/features/tour-ai/components/ClassroomChapterIndex.tsx:52
 msgid "尚无章节"
 msgstr "No chapters yet"
-
-#: src/lib/ai/lesson-generation-runner.ts:43
-msgid ""
-"工具失败：{toolName}\n"
-""
-msgstr ""
-"Tool failed: {toolName}\n"
-""
 
 #: src/features/playground/components/OutputPanel.tsx:27
 msgid "工具输出"
 msgstr "Tool Output"
 
-#: src/lib/monaco/actions.ts:147
+#: src/lib/monaco/actions.ts:148
 msgid "已保存代码"
 msgstr "Code saved"
 
@@ -476,7 +493,11 @@ msgstr "Code saved"
 msgid "已复制分享链接"
 msgstr "Share link copied"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:107
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:177
+msgid "已完成"
+msgstr ""
+
+#: src/features/tour-ai/components/ClassroomStream.tsx:135
 msgid "已记录："
 msgstr "Recorded:"
 
@@ -484,28 +505,44 @@ msgstr "Recorded:"
 msgid "我了解这些语言"
 msgstr "I know these languages"
 
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:98
+msgid "我知道了"
+msgstr "Got it"
+
 #: src/features/tour-ai/components/ClassroomHeader.tsx:43
 msgid "打开聊天"
 msgstr "Open chat"
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:194
+msgid "提交"
+msgstr ""
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:271
+msgid "提交结果：正确"
+msgstr ""
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:271
+msgid "提交结果：错误"
+msgstr ""
 
 #: src/features/playground/components/ExamplesDropdown.tsx:44
 msgid "搜索示例..."
 msgstr "Search examples..."
 
-#: src/features/playground/components/PlaygroundHeader.tsx:65
-#: src/features/playground/components/PlaygroundHeader.tsx:103
+#: src/features/playground/components/PlaygroundHeader.tsx:66
+#: src/features/playground/components/PlaygroundHeader.tsx:104
 msgid "教程"
 msgstr "Tour"
 
-#: src/features/tour-ai/components/ClassroomScrollFollower.tsx:23
+#: src/features/tour-ai/components/ClassroomScrollFollower.tsx:31
 msgid "新内容"
 msgstr "New content"
 
-#: src/features/tour-ai/components/TourAIChat.tsx:44
+#: src/features/tour-ai/components/TourAIChat.tsx:72
 msgid "无法获取 AI 配额，请在设置里填入自带 Key。"
 msgstr "Could not get AI quota. Add your own key in settings."
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:222
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:239
 msgid "无法读取剩余额度："
 msgstr "Could not read remaining quota:"
 
@@ -517,7 +554,7 @@ msgstr "Show"
 msgid "显示移动端侧边栏。"
 msgstr "Displays the mobile sidebar."
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:20
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:42
 msgid "暂无进度详情"
 msgstr "No progress details yet"
 
@@ -527,11 +564,11 @@ msgstr "No progress details yet"
 msgid "更多"
 msgstr "More"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:130
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:147
 msgid "未填写 API Key 时将自动使用基于访客 IP 颁发的限额 Key。"
 msgstr "When no API key is provided, a quota-limited key issued by visitor IP will be used automatically."
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:149
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:166
 msgid "未填写模型"
 msgstr "No model set"
 
@@ -547,8 +584,8 @@ msgstr "No languages found."
 msgid "标准库模块：{loadedModules}/{totalModules}"
 msgstr "Stdlib modules: {loadedModules}/{totalModules}"
 
-#: src/features/playground/components/PlaygroundHeader.tsx:76
-#: src/features/playground/components/PlaygroundHeader.tsx:119
+#: src/features/playground/components/PlaygroundHeader.tsx:77
+#: src/features/playground/components/PlaygroundHeader.tsx:120
 msgid "格式化"
 msgstr "Format"
 
@@ -569,19 +606,19 @@ msgstr "Model returned: {text}"
 msgid "模型连接测试失败，未返回可读错误信息。"
 msgstr "Model connection test failed without a readable error message."
 
-#: src/features/tour-ai/components/TourAIChat.tsx:61
+#: src/features/tour-ai/components/TourAIChat.tsx:96
 msgid "正在准备聊天"
 msgstr "Preparing chat"
 
-#: src/features/tour-ai/components/TourAIWrapper.tsx:20
+#: src/features/tour-ai/components/TourAIWrapper.tsx:35
 msgid "正在加载 AI 课堂"
 msgstr "Loading AI classroom"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:218
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:235
 msgid "正在加载剩余额度…"
 msgstr "Loading remaining quota..."
 
-#: src/features/tour-ai/components/ClassroomLoadingSkeleton.tsx:5
+#: src/features/tour-ai/components/ClassroomLoadingSkeleton.tsx:18
 msgid "正在加载课程内容"
 msgstr "Loading lesson content"
 
@@ -589,11 +626,11 @@ msgstr "Loading lesson content"
 msgid "正在格式化..."
 msgstr "Formatting..."
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:52
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:166
 msgid "正在编写课程"
 msgstr "Writing lesson content"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:31
+#: src/features/tour-ai/components/ClassroomStream.tsx:39
 msgid "正在规划下一步"
 msgstr "Planning the next step"
 
@@ -609,6 +646,14 @@ msgstr "Test failed"
 msgid "测试成功"
 msgstr "Test successful"
 
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:210
+msgid "测试用例"
+msgstr ""
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:220
+msgid "测试结果"
+msgstr ""
+
 #: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:131
 msgid "清除 WASM 与标准库缓存后重启"
 msgstr "Clears WASM + stdlib caches, then restarts"
@@ -617,19 +662,19 @@ msgstr "Clears WASM + stdlib caches, then restarts"
 msgid "清除缓存并重启"
 msgstr "Clear Cache and Restart"
 
-#: src/features/tour-ai/components/ClassroomScrollFollower.tsx:18
+#: src/features/tour-ai/components/ClassroomScrollFollower.tsx:20
 msgid "滚动到最新内容"
 msgstr "Scroll to latest content"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:54
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:168
 msgid "生成失败"
 msgstr "Generation failed"
 
-#: src/features/tour-ai/components/TourAIChat.tsx:27
+#: src/features/tour-ai/components/TourAIChat.tsx:30
 msgid "用户只和这里聊天"
 msgstr "The learner only chats here"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:192
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:209
 msgid "留空使用共享额度"
 msgstr "Leave blank to use shared quota"
 
@@ -637,13 +682,21 @@ msgstr "Leave blank to use shared quota"
 msgid "程序输出"
 msgstr "Program Output"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:55
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:37
+msgid "等待 API Key"
+msgstr ""
+
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:169
 msgid "等待开始"
 msgstr "Waiting to start"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:20
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:42
 msgid "等待生成进度..."
 msgstr "Waiting for generation progress..."
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:85
+msgid "约 {hours} 小时 {minutes} 分钟后刷新"
+msgstr "Refresh in ~{hours}h {minutes}m"
 
 #: src/features/tour-ai/components/ClassroomHeader.tsx:60
 msgid "练习"
@@ -657,7 +710,7 @@ msgstr "Compiling"
 msgid "编译失败"
 msgstr "Compilation failed"
 
-#: src/lib/monaco/actions.ts:91
+#: src/lib/monaco/actions.ts:92
 msgid "编译运行"
 msgstr "Compile & Run"
 
@@ -665,13 +718,13 @@ msgstr "Compile & Run"
 msgid "编辑"
 msgstr "Edit"
 
-#: src/features/tour-ai/components/ClassroomChatSidebar.tsx:12
+#: src/features/tour-ai/components/ClassroomChatSidebar.tsx:33
 #: src/features/tour-ai/components/ClassroomHeader.tsx:48
-#: src/features/tour-ai/components/TourAIChat.tsx:26
+#: src/features/tour-ai/components/TourAIChat.tsx:29
 msgid "聊天"
 msgstr "Chat"
 
-#: src/features/tour-ai/components/TourAIClassroomShell.tsx:119
+#: src/features/tour-ai/components/TourAIClassroomShell.tsx:152
 msgid "聊天标注已过期"
 msgstr "Chat annotations are stale"
 
@@ -679,9 +732,13 @@ msgstr "Chat annotations are stale"
 msgid "自主教学"
 msgstr "Self-guided teaching"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:145
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:162
 msgid "自带 Key"
 msgstr "Own key"
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:158
+msgid "行 1，列 1"
+msgstr ""
 
 #: src/modules/assistant-ui/chat/ThreadComposer.tsx:12
 msgid "让 AI 帮你学这一节..."
@@ -699,40 +756,47 @@ msgstr "Fill in {missingText} before testing the {currentProviderLabel} connecti
 msgid "请先输入代码"
 msgstr "Please enter code first"
 
-#: src/features/tour-ai/components/TourAIChat.tsx:53
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:41
+msgid "请在设置中配置 API Key 后继续生成课程。"
+msgstr ""
+
+#: src/features/tour-ai/components/TourAIChat.tsx:81
 msgid "请在设置里填入 AI 服务的 API Key 后开始聊天。"
 msgstr "Add an AI service API Key in settings to start chatting."
 
-#: src/features/tour-ai/components/TourAIWrapper.tsx:17
+#: src/features/tour-ai/components/TourAIWrapper.tsx:32
 msgid "课堂内容"
 msgstr "Classroom content"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:53
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:167
 msgid "课程内容已生成"
 msgstr "Lesson content generated"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:122
-#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:31
+#: src/features/tour-ai/components/ClassroomStream.tsx:150
+#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:42
 msgid "课程生成失败：{errorSummary}"
 msgstr "Lesson generation failed: {errorSummary}"
 
-#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:18
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:35
 msgid "课程生成进度"
 msgstr "Lesson generation progress"
 
-#: src/features/tour-ai/components/ClassroomChapterIndex.tsx:31
+#: src/features/tour-ai/components/ClassroomChapterIndex.tsx:33
 msgid "课程目录"
 msgstr "Lesson outline"
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:96
+#: src/features/tour-ai/components/ClassroomStream.tsx:124
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:288
 msgid "输出："
 msgstr "Output:"
 
-#: src/features/playground/components/PlaygroundHeader.tsx:73
-#: src/features/playground/components/PlaygroundHeader.tsx:116
+#: src/features/playground/components/PlaygroundHeader.tsx:74
+#: src/features/playground/components/PlaygroundHeader.tsx:117
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:181
 msgid "运行"
 msgstr "Run"
 
+#: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:176
 #: src/service/run.ts:60
 msgid "运行中"
 msgstr "Running"
@@ -746,13 +810,21 @@ msgstr "Run failed"
 msgid "运行成功"
 msgstr "Run successful"
 
-#: src/features/tour-ai/components/QuizPracticeCard.tsx:115
-msgid "运行检查"
-msgstr "Run check"
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:283
+msgid "运行或提交后查看测试结果。"
+msgstr ""
 
-#: src/features/tour-ai/components/ClassroomStream.tsx:94
+#: src/features/tour-ai/components/ClassroomStream.tsx:122
 msgid "运行结果"
 msgstr "Run result"
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:270
+msgid "运行结果：正确"
+msgstr ""
+
+#: src/features/tour-ai/components/QuizPracticeCard.tsx:270
+msgid "运行结果：错误"
+msgstr ""
 
 #: src/lib/ai/model-test.ts:41
 msgid "配置不完整"
@@ -766,11 +838,11 @@ msgstr "Restart"
 msgid "重新生成"
 msgstr "Regenerate"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:254
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:282
 msgid "重置默认"
 msgstr "Reset defaults"
 
-#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:41
+#: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:52
 msgid "重试课程生成"
 msgstr "Retry lesson generation"
 
