@@ -67,7 +67,7 @@ vi.mock('@/lib/ai/lesson-generation-runner', () => ({
         type: 'APPEND_LESSON_CONTENT',
         blocks: [
           { type: 'heading', text: 'Let bindings', level: 2 },
-          { type: 'paragraph', body: [{ text: 'Use let for immutable values.' }] },
+          { type: 'paragraph', body: 'Use let for immutable values.' },
         ],
         now: 1001,
       })
@@ -76,7 +76,7 @@ vi.mock('@/lib/ai/lesson-generation-runner', () => ({
         quiz: {
           type: 'quiz',
           conceptId: 'cj.bindings.let',
-          prompt: [{ text: 'Print 3.' }],
+          prompt: 'Print 3.',
           starterCode: 'main() {\n    println(0)\n}',
           expectedOutput: '3',
           matchMode: 'exact',
@@ -92,7 +92,7 @@ function appendFirstQuiz(bridge: Parameters<typeof runLessonGenerationStep>[0]['
     type: 'APPEND_LESSON_CONTENT',
     blocks: [
       { type: 'heading', text: 'Let bindings', level: 2 },
-      { type: 'paragraph', body: [{ text: 'Use let for immutable values.' }] },
+      { type: 'paragraph', body: 'Use let for immutable values.' },
     ],
     now: 1001,
   })
@@ -101,7 +101,7 @@ function appendFirstQuiz(bridge: Parameters<typeof runLessonGenerationStep>[0]['
     quiz: {
       type: 'quiz',
       conceptId: 'cj.bindings.let',
-      prompt: [{ text: 'Print 3.' }],
+      prompt: 'Print 3.',
       starterCode: 'main() {\n    println(0)\n}',
       expectedOutput: '3',
       matchMode: 'exact',
@@ -113,7 +113,7 @@ function appendFirstQuiz(bridge: Parameters<typeof runLessonGenerationStep>[0]['
 function appendSecondQuiz(bridge: Parameters<typeof runLessonGenerationStep>[0]['bridge']) {
   bridge.classroom?.dispatch({
     type: 'APPEND_LESSON_CONTENT',
-    blocks: [{ type: 'paragraph', body: [{ text: 'Next practice.' }] }],
+    blocks: [{ type: 'paragraph', body: 'Next practice.' }],
     now: 1003,
   })
   bridge.classroom?.dispatch({
@@ -121,7 +121,7 @@ function appendSecondQuiz(bridge: Parameters<typeof runLessonGenerationStep>[0][
     quiz: {
       type: 'quiz',
       conceptId: 'cj.bindings.var',
-      prompt: [{ text: 'Print 4.' }],
+      prompt: 'Print 4.',
       starterCode: 'main() {\n    println(0)\n}',
       expectedOutput: '4',
       matchMode: 'exact',
@@ -192,7 +192,9 @@ describe('tourAIApp classroom flow', () => {
     screen.getByTestId('quiz-code-panel')
     screen.getByTestId('quiz-test-panel')
     expect(screen.getByTestId('tour-editor').getAttribute('data-layout')).toBe('editorOnly')
-    expect(screen.getByTestId('tour-editor').getAttribute('data-language-client')).toBe('false')
+    // Quiz cards now enable the (singleton) language client so each per-quiz
+    // model URI receives LSP hover/completion. See ensureLanguageClient.
+    expect(screen.getByTestId('tour-editor').getAttribute('data-language-client')).toBe('true')
     expect(screen.getByTestId('tour-editor').textContent).toContain('println')
     const codePanel = within(screen.getByTestId('quiz-code-panel'))
     codePanel.getByText('代码')
@@ -279,7 +281,7 @@ describe('tourAIApp classroom flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '运行' }))
 
     await screen.findByText('运行结果：错误')
-    await screen.findByText(/输出：2/)
+    await waitFor(() => expect(screen.getByTestId('quiz-test-result-output').textContent).toContain('输出：2'))
     expect(screen.queryByText(/^运行结果$/)).toBeNull()
     expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
     expect(screen.queryByText(/已记录：success/)).toBeNull()
@@ -319,7 +321,7 @@ describe('tourAIApp classroom flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '运行' }))
 
     await screen.findByText('运行结果：正确')
-    await screen.findByText(/输出：3/)
+    await waitFor(() => expect(screen.getByTestId('quiz-test-result-output').textContent).toContain('输出：3'))
     expect(screen.queryByText(/^运行结果$/)).toBeNull()
     expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
     expect(screen.queryByText(/已记录：success/)).toBeNull()
@@ -344,7 +346,7 @@ describe('tourAIApp classroom flow', () => {
     await waitFor(() => expect(runLessonGenerationStep).toHaveBeenCalledTimes(2))
   })
 
-  it('does not complete a quiz when a non-zero run prints the expected output', async () => {
+  it('does not complete a quiz when a non-zero run prints the expected output, and asks the agent to explain the gap', async () => {
     vi.mocked(requestRemoteAction).mockResolvedValueOnce({
       compiler_output: 'runtime failure',
       compiler_code: 0,
@@ -357,10 +359,15 @@ describe('tourAIApp classroom flow', () => {
     fireEvent.click(screen.getByRole('button', { name: '提交' }))
 
     await screen.findByText('提交结果：错误')
-    await screen.findByText(/输出：3/)
+    await waitFor(() => expect(screen.getByTestId('quiz-test-result-output').textContent).toContain('输出：3'))
     expect(screen.getAllByText('Quiz active').length).toBeGreaterThan(0)
     expect(screen.queryByText(/已记录：success/)).toBeNull()
-    expect(runLessonGenerationStep).toHaveBeenCalledTimes(1)
+    // The failed submit enqueues a quiz_failure event so the lesson agent can
+    // write a focused diagnostic. We expect exactly one extra generation call
+    // beyond the initial classroom_opened.
+    await waitFor(() => expect(runLessonGenerationStep).toHaveBeenCalledTimes(2))
+    const lastCallEvent = vi.mocked(runLessonGenerationStep).mock.calls.at(-1)?.[0]?.event
+    expect(lastCallEvent?.type).toBe('quiz_failure')
   })
 
   it('keeps older quiz cards immutable after lesson generation sets the next quiz', async () => {
@@ -380,10 +387,17 @@ describe('tourAIApp classroom flow', () => {
 
     await screen.findByText('Print 4.')
     screen.getByText('Print 3.')
-    expect(screen.getAllByTestId('tour-editor')).toHaveLength(1)
+    // Each quiz card now owns its own Monaco editor (per-quiz URI) — the
+    // previous quiz's editor stays mounted in readOnly mode rather than being
+    // swapped for a static ShikiCodeBlock.
     await waitFor(() => {
-      expect(screen.getAllByTestId('shiki-code-block').length).toBeGreaterThan(0)
+      expect(screen.getAllByTestId('tour-editor')).toHaveLength(2)
     })
+    // Only the active quiz can be submitted — older quizzes' action buttons
+    // remain disabled even though their editor is visible.
+    const submitButtons = screen.getAllByRole('button', { name: '提交' }) as HTMLButtonElement[]
+    expect(submitButtons.some(btn => btn.disabled)).toBe(true)
+    expect(submitButtons.some(btn => !btn.disabled)).toBe(true)
   })
 
   it('retains queued events when lesson generation fails and allows retry', async () => {

@@ -76,7 +76,7 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
               <a
                 href={aiHref}
                 className="flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/5 hover:bg-white/15 transition-colors text-[12px] font-medium text-white/95"
-                title={t`切换到 AI 助教`}
+                title={t`AI 助教：按你的节奏即时生成讲解和练习，与左侧固定教程互补。`}
               >
                 <Sparkles className="size-3.5 text-white/70" />
                 <span className="hidden sm:inline"><Trans>AI 助教</Trans></span>

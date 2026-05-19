@@ -5,10 +5,10 @@ export function RichTextView({ body }: { body: RichText }) {
   return (
     <>
       {body.map((span, idx) => {
-        if ('code' in span)
-          return <ShikiInlineCode key={idx} code={span.code} language={span.lang ?? span.language} />
-        if ('strong' in span)
-          return <strong key={idx}>{span.strong}</strong>
+        if (span.type === 'code')
+          return <ShikiInlineCode key={idx} code={span.code} language={span.lang} />
+        if (span.type === 'strong')
+          return <strong key={idx}>{span.text}</strong>
         return <span key={idx}>{span.text}</span>
       })}
     </>

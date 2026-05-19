@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import type { LessonContentBlock, RichText } from '@/lib/ai/classroom/types'
+import { MarkdownBody } from '@/features/tour-ai/components/MarkdownBody'
 import { RichTextView } from '@/features/tour-ai/components/RichTextView'
 import { ShikiCodeBlock } from '@/features/tour-ai/components/ShikiCode'
 import { classroomCardVariants, classroomFadeUpVariants, classroomStaggerVariants } from '@/features/tour-ai/components/classroom-motion'
@@ -21,14 +22,19 @@ export function LessonBlockView({ block, chapterId }: { block: LessonContentBloc
       </HeadingTag>
     )
   }
-  if (block.type === 'paragraph')
-    return <motion.p layout="position" variants={classroomFadeUpVariants} className="text-[15px] leading-7"><RichTextView body={block.body} /></motion.p>
+  if (block.type === 'paragraph') {
+    return (
+      <motion.div layout="position" variants={classroomFadeUpVariants}>
+        <MarkdownBody body={block.body} />
+      </motion.div>
+    )
+  }
   if (block.type === 'concept_card') {
     return (
       <motion.section layout variants={classroomCardVariants} className="rounded-md border border-tour-border bg-tour-surface p-4">
         <div className="mb-1 text-xs font-semibold text-tour-link">{block.conceptId}</div>
         <h3 className="mb-2 text-base font-semibold">{block.title}</h3>
-        <p className="text-sm leading-7"><RichTextView body={block.body} /></p>
+        <MarkdownBody body={block.body} className="text-sm" />
       </motion.section>
     )
   }
@@ -42,9 +48,9 @@ export function LessonBlockView({ block, chapterId }: { block: LessonContentBloc
   }
   if (block.type === 'callout') {
     return (
-      <motion.section layout variants={classroomCardVariants} className={cn('rounded-md border border-tour-border bg-tour-surface p-4', 'text-sm leading-7')}>
+      <motion.section layout variants={classroomCardVariants} className={cn('rounded-md border border-tour-border bg-tour-surface p-4')}>
         {block.title && <div className="mb-1 font-semibold">{block.title}</div>}
-        <RichTextView body={block.body} />
+        <MarkdownBody body={block.body} className="text-sm" />
       </motion.section>
     )
   }
@@ -65,26 +71,37 @@ export function LessonBlockView({ block, chapterId }: { block: LessonContentBloc
   if (block.type === 'compare') {
     return (
       <motion.section layout variants={classroomStaggerVariants} className="grid gap-3 md:grid-cols-2">
-        <motion.div variants={classroomCardVariants} className="rounded-md border border-tour-border bg-tour-surface p-4">
-          <div className="mb-1 font-semibold">{block.leftTitle}</div>
-          <RichTextView body={block.left} />
-        </motion.div>
-        <motion.div variants={classroomCardVariants} className="rounded-md border border-tour-border bg-tour-surface p-4">
-          <div className="mb-1 font-semibold">{block.rightTitle}</div>
-          <RichTextView body={block.right} />
-        </motion.div>
+        <CompareSide title={block.leftTitle} body={block.left} />
+        <CompareSide title={block.rightTitle} body={block.right} />
       </motion.section>
     )
   }
   return null
 }
 
+function CompareSide({ title, body }: { title: string, body: RichText }) {
+  // Compare is mostly used for "X in language A vs language B" side-by-side
+  // code views. When the AI sends the side as a single {code} part we render
+  // it as a block — RichTextView's inline rendering would collapse the
+  // newlines into spaces and drop syntax highlighting visual weight.
+  const first = body[0]
+  const onlyCode = body.length === 1 && first && first.type === 'code' ? first : null
+  return (
+    <motion.div variants={classroomCardVariants} className="rounded-md border border-tour-border bg-tour-surface p-4">
+      <div className="mb-2 font-semibold">{title}</div>
+      {onlyCode
+        ? <ShikiCodeBlock code={onlyCode.code} language={onlyCode.lang} />
+        : <RichTextView body={body} />}
+    </motion.div>
+  )
+}
+
 function richTextKey(body: RichText): string {
   return body.map((part) => {
-    if ('text' in part)
+    if (part.type === 'text')
       return `text:${part.text}`
-    if ('code' in part)
-      return `code:${part.lang ?? part.language ?? 'cangjie'}:${part.code}`
-    return `strong:${part.strong}`
+    if (part.type === 'code')
+      return `code:${part.lang ?? 'cangjie'}:${part.code}`
+    return `strong:${part.text}`
   }).join('|')
 }

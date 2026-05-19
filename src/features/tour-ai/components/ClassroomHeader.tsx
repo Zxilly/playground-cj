@@ -1,14 +1,17 @@
 'use client'
 
 import { useMemo } from 'react'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle, Settings } from 'lucide-react'
+import { useLLMConfigStore } from '@/stores/llmConfig'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import { ClassroomBrandChip } from '@/features/tour-ai/components/ClassroomBrandChip'
+import { ClassroomConceptPanel } from '@/features/tour-ai/components/ClassroomConceptPanel'
 import { ClassroomThemeToggle } from '@/features/tour-ai/components/ClassroomThemeToggle'
 import { useClassroomSession } from '@/features/tour-ai/context/classroom-session-context'
 import { deriveLatestHeading } from '@/lib/ai/classroom/selectors'
 import type { ClassroomPhase } from '@/lib/ai/classroom/types'
+import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
 
 interface ClassroomHeaderProps {
   onOpenChat: () => void
@@ -19,6 +22,7 @@ interface ClassroomHeaderProps {
 export function ClassroomHeader({ onOpenChat, chapterIndex }: ClassroomHeaderProps) {
   const { session } = useClassroomSession()
   const latestHeading = useMemo(() => deriveLatestHeading(session), [session])
+  const openSettings = useLLMConfigStore(state => state.setSettingsDialogOpen)
   return (
     <header
       data-testid="ai-classroom-header"
@@ -36,8 +40,17 @@ export function ClassroomHeader({ onOpenChat, chapterIndex }: ClassroomHeaderPro
         <PhaseBadge phase={session.phase} />
       </div>
       <div className="flex items-center gap-1">
+        <ClassroomConceptPanel lang={session.lang} />
         {chapterIndex}
         <ClassroomThemeToggle />
+        <button
+          type="button"
+          aria-label={t`LLM 设置`}
+          onClick={() => openSettings(true)}
+          className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-tour-bg"
+        >
+          <Settings className="size-4" />
+        </button>
         <button
           type="button"
           aria-label={t`打开聊天`}
@@ -48,6 +61,9 @@ export function ClassroomHeader({ onOpenChat, chapterIndex }: ClassroomHeaderPro
           <Trans>聊天</Trans>
         </button>
       </div>
+      {/* The dialog is store-controlled, so it only needs to be mounted; our
+          own settings button above drives `setSettingsDialogOpen(true)`. */}
+      <LLMConfigDialog withTrigger={false} />
     </header>
   )
 }

@@ -19,8 +19,19 @@ interface TourAIAppProps {
   lang: string
 }
 
+// Read `?topic=<id>` once at mount and freeze it. We do not subscribe to URL
+// changes because the initial classroom_opened event is only emitted on first
+// hydration; later URL edits would not retrigger it anyway.
+function readInitialTopic(): string | undefined {
+  if (typeof window === 'undefined')
+    return undefined
+  const raw = new URLSearchParams(window.location.search).get('topic')?.trim()
+  return raw && raw.length > 0 ? raw : undefined
+}
+
 export default function TourAIApp({ lang }: TourAIAppProps) {
   const { session, dispatch, hydrated } = usePersistentClassroomSession({ lang })
+  const [initialTopic] = useState<string | undefined>(() => readInitialTopic())
   const sessionRef = useRef(session)
   const [annotationState, setAnnotationState] = useState<EditorAnnotationState>(() => createEditorAnnotationState())
 
@@ -44,6 +55,7 @@ export default function TourAIApp({ lang }: TourAIAppProps) {
             dispatch={dispatch}
             hydrated={hydrated}
             annotationState={annotationState}
+            initialTopic={initialTopic}
           />
         </AIClassroomBridgeProvider>
       </EditorBridgeProvider>
