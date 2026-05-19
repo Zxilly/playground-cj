@@ -1,7 +1,7 @@
 import type { Toolkit } from '@assistant-ui/react'
 import { z } from 'zod'
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
-import { lessonContentBlockSchema, richTextSchema } from '@/lib/ai/classroom/schema'
+import { lessonContentBlockSchema, markdownBodySchema, richTextSchema } from '@/lib/ai/classroom/schema'
 import type { LessonContentBlock } from '@/lib/ai/classroom/types'
 import { failWithRetryHint } from '../fail-with-retry-hint'
 import { fail, ok } from './results'
@@ -9,34 +9,34 @@ import { requireClassroom } from './shared'
 
 const SET_CURRENT_QUIZ_EXAMPLE = {
   conceptId: 'concept_id',
-  prompt: [{ text: 'Write a function that returns the sum of two integers.' }],
+  prompt: 'Write a function that returns the sum of two integers.',
   starterCode: 'func add(a: Int64, b: Int64): Int64 { 0 }',
   expectedOutput: '7',
   matchMode: 'exact' as const,
 }
 
 const APPEND_HEADING_EXAMPLE = { text: 'Section title', level: 2 as const }
-const APPEND_PARAGRAPH_EXAMPLE = { body: [{ text: 'Cangjie supports type inference.' }] }
+const APPEND_PARAGRAPH_EXAMPLE = { body: 'Cangjie supports **type inference** for most expressions; write `let x = 25` and the type is deduced.' }
 const APPEND_CONCEPT_CARD_EXAMPLE = {
   conceptId: 'variables_constants',
   title: 'Variables and constants',
-  body: [{ text: 'Use let for immutable bindings.' }],
+  body: 'Use `let` for immutable bindings and `var` when you need to reassign.',
 }
 const APPEND_CODE_EXAMPLE_EXAMPLE = { code: 'let x = 25', title: 'Declaring a variable', language: 'cangjie' }
 const APPEND_CALLOUT_EXAMPLE = {
   tone: 'note' as const,
   title: 'Heads up',
-  body: [{ text: 'Type inference works for most expressions.' }],
+  body: 'Type inference works for **most** expressions; explicit annotations are still useful for public APIs.',
 }
 const APPEND_STEPS_EXAMPLE = {
   title: 'How to declare',
-  items: [[{ text: 'Choose let or var.' }], [{ text: 'Provide an initializer.' }]],
+  items: ['Choose `let` or `var`.', 'Provide an initializer.'],
 }
 const APPEND_COMPARE_EXAMPLE = {
   leftTitle: 'let',
-  left: [{ text: 'Immutable.' }],
+  left: 'Immutable — cannot reassign after binding.',
   rightTitle: 'var',
-  right: [{ text: 'Mutable.' }],
+  right: 'Mutable — can reassign.',
 }
 
 function appendOne(bridge: AIClassroomBridgeValue, block: LessonContentBlock) {
@@ -68,8 +68,8 @@ export function createLessonAuthoringTools(bridge: AIClassroomBridgeValue): Tool
     },
 
     append_paragraph: {
-      description: 'Append a paragraph block. body is a RichText array of {text}/{code, lang?}/{strong} objects. Use lang for non-Cangjie inline code.',
-      parameters: z.object({ body: richTextSchema }),
+      description: 'Append a paragraph block. body is a markdown string — use **bold**, `inline code`, lists, and triple-backtick fences with a language tag for code blocks.',
+      parameters: z.object({ body: markdownBodySchema }),
       execute: async ({ body }) => {
         try {
           const block = lessonContentBlockSchema.parse({ type: 'paragraph', body })
@@ -82,11 +82,11 @@ export function createLessonAuthoringTools(bridge: AIClassroomBridgeValue): Tool
     },
 
     append_concept_card: {
-      description: 'Append a concept_card block. body is a RichText array.',
+      description: 'Append a concept_card block. body is a markdown string.',
       parameters: z.object({
         conceptId: z.string(),
         title: z.string(),
-        body: richTextSchema,
+        body: markdownBodySchema,
       }),
       execute: async ({ conceptId, title, body }) => {
         try {
@@ -118,11 +118,11 @@ export function createLessonAuthoringTools(bridge: AIClassroomBridgeValue): Tool
     },
 
     append_callout: {
-      description: 'Append a callout block. tone is "note", "warning", or "tip". body is a RichText array.',
+      description: 'Append a callout block. tone is "note", "warning", or "tip". body is a markdown string.',
       parameters: z.object({
         tone: z.union([z.literal('note'), z.literal('warning'), z.literal('tip')]),
         title: z.string().optional(),
-        body: richTextSchema,
+        body: markdownBodySchema,
       }),
       execute: async ({ tone, title, body }) => {
         try {
@@ -136,7 +136,7 @@ export function createLessonAuthoringTools(bridge: AIClassroomBridgeValue): Tool
     },
 
     append_steps: {
-      description: 'Append a steps block. items is an array of RichText arrays (one per step).',
+      description: 'Append a steps block. items is an array of step strings — each step can be a plain string (with markdown inline formatting via **bold** / `code`) or a RichText array if you need finer control.',
       parameters: z.object({
         title: z.string().optional(),
         items: z.array(richTextSchema).min(1),
@@ -153,7 +153,7 @@ export function createLessonAuthoringTools(bridge: AIClassroomBridgeValue): Tool
     },
 
     append_compare: {
-      description: 'Append a compare block (left vs right). left and right are RichText arrays.',
+      description: 'Append a compare block (left vs right). Each side can be a plain string (with markdown inline formatting) or a RichText array. For side-by-side full-program code views send each side as a RichText array with a single {type:"code", code, lang} part.',
       parameters: z.object({
         leftTitle: z.string(),
         left: richTextSchema,
@@ -172,10 +172,10 @@ export function createLessonAuthoringTools(bridge: AIClassroomBridgeValue): Tool
     },
 
     set_current_quiz: {
-      description: 'Set the current active quiz. All parameters are top-level; do not wrap fields in a "quiz" key, do not stringify nested objects. prompt is a RichText array of {text}/{code, lang?}/{strong} objects.',
+      description: 'Set the current active quiz. All parameters are top-level; do not wrap fields in a "quiz" key. prompt is a short plain-text instruction (one or two sentences, no markdown — it is rendered verbatim). starterCode is plain source code with real newlines.',
       parameters: z.object({
         conceptId: z.string(),
-        prompt: richTextSchema,
+        prompt: markdownBodySchema,
         starterCode: z.string(),
         expectedOutput: z.string(),
         matchMode: z.union([z.literal('exact'), z.literal('contains'), z.literal('regex')]).optional(),

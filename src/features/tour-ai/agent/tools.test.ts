@@ -7,6 +7,16 @@ import type { ClassroomSession } from '@/lib/ai/classroom/types'
 vi.mock('@codingame/monaco-vscode-editor-api', () => ({
   editor: {
     setModelMarkers: vi.fn(),
+    // read_editor_code now consults the global Monaco registry as part of its
+    // fallback chain. The unit tests don't run real Monaco, so these stubs
+    // return empty lists — the read tool then falls through to the bridge or
+    // session-based layers.
+    getEditors: () => [],
+    getModel: () => null,
+    getModels: () => [],
+  },
+  Uri: {
+    parse: (s: string) => ({ toString: () => s }),
   },
   MarkerSeverity: {
     Hint: 1,
@@ -95,6 +105,7 @@ describe('ai classroom toolkits', () => {
       'read_editor_code',
       'read_last_run',
       'reveal_editor_line',
+      'suggest_code_change',
       'underline_editor_range',
     ].sort())
     expect(toolkit.append_lesson_content).toBeUndefined()
@@ -109,7 +120,7 @@ describe('ai classroom toolkits', () => {
     await toolkit.append_heading!.execute!({ text: 'Bindings', level: 2 }, { toolCallId: 't1', abortSignal: new AbortController().signal, human: async () => undefined })
     await toolkit.set_current_quiz!.execute!({
       conceptId: 'cj.bindings.let',
-      prompt: [{ text: 'Print 3.' }],
+      prompt: 'Print 3.',
       starterCode: 'main() {\n    println(0)\n}',
       expectedOutput: '3',
     }, { toolCallId: 't2', abortSignal: new AbortController().signal, human: async () => undefined })
@@ -154,12 +165,221 @@ describe('ai classroom toolkits', () => {
 
     const result = await toolkit.read_editor_code!.execute!({ withLineNumbers: true }, toolOptions())
 
+    // monaco.editor.getEditors() returns [] in tests, so the bridge-registered
+    // editor wins — `source: 'bridge'` reflects that.
     expect(result).toMatchObject({
       ok: true,
       code: '   1  main() {\n   2      println(3)\n   3  }',
       lineCount: 3,
       language: 'cangjie',
+      source: 'bridge',
     })
+  })
+
+  it('falls back to starter code when no live editor is registered but a quiz is active', async () => {
+    const { useQuizDraftStore } = await import('@/features/tour-ai/state/quiz-draft-store')
+    useQuizDraftStore.setState({ drafts: {} })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.io.println',
+        prompt: 'Print 7.',
+        starterCode: 'main() {\n    // 写在这里\n}',
+        expectedOutput: '7',
+      },
+      now: 1001,
+    })
+
+    const { createClassroomChatToolkit } = await import('./tools')
+    const toolkit = createClassroomChatToolkit({
+      ...bridge,
+      editor: { getEditor: () => null, setEditor: vi.fn() },
+    } as unknown as AIClassroomBridgeValue)
+
+    const result = await toolkit.read_editor_code!.execute!({}, toolOptions())
+
+    expect(result).toMatchObject({
+      ok: true,
+      code: 'main() {\n    // 写在这里\n}',
+      source: 'starter',
+      stale: true,
+    })
+  })
+
+  it('prefers the persisted draft over the starter when one exists for the active quiz', async () => {
+    const { useQuizDraftStore } = await import('@/features/tour-ai/state/quiz-draft-store')
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.io.println',
+        prompt: 'Print 7.',
+        starterCode: 'main() { /* TODO */ }',
+        expectedOutput: '7',
+      },
+      now: 1001,
+    })
+    const activeQuiz = session.currentQuiz!
+    useQuizDraftStore.setState({
+      drafts: { [activeQuiz.id]: { code: 'main() { println(7) }', updatedAt: 1002 } },
+    })
+
+    const { createClassroomChatToolkit } = await import('./tools')
+    const toolkit = createClassroomChatToolkit({
+      ...bridge,
+      editor: { getEditor: () => null, setEditor: vi.fn() },
+    } as unknown as AIClassroomBridgeValue)
+
+    const result = await toolkit.read_editor_code!.execute!({}, toolOptions())
+
+    expect(result).toMatchObject({
+      ok: true,
+      code: 'main() { println(7) }',
+      source: 'draft',
+      stale: true,
+      quizId: activeQuiz.id,
+    })
+
+    // Cleanup so subsequent tests start with a clean draft slate.
+    useQuizDraftStore.setState({ drafts: {} })
+  })
+
+  it('reads from the focused Monaco editor (layer 1) ahead of the bridge', async () => {
+    // Construct a mock focused editor via the monaco mock. Without this layer,
+    // read_editor_code would return the bridge's "main() { println(3) }".
+    const monacoMock = await import('@codingame/monaco-vscode-editor-api')
+    const focusedModel = {
+      getValue: () => 'focused-code',
+      getLineCount: () => 1,
+      getLanguageId: () => 'cangjie',
+    } as never
+    const focusedEditor = {
+      hasTextFocus: () => true,
+      getModel: () => focusedModel,
+    } as never
+    const originalGetEditors = monacoMock.editor.getEditors
+    monacoMock.editor.getEditors = () => [focusedEditor] as never
+    try {
+      const { createClassroomChatToolkit } = await import('./tools')
+      const toolkit = createClassroomChatToolkit(bridge)
+      const result = await toolkit.read_editor_code!.execute!({}, toolOptions())
+      expect(result).toMatchObject({
+        ok: true,
+        code: 'focused-code',
+        source: 'focused',
+      })
+    }
+    finally {
+      monacoMock.editor.getEditors = originalGetEditors
+    }
+  })
+
+  it('reads via URI lookup (layer 3) when bridge is empty but a model exists for the active quiz', async () => {
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.io.println',
+        prompt: 'Print 7.',
+        starterCode: 'main() { /* starter */ }',
+        expectedOutput: '7',
+      },
+      now: 1001,
+    })
+    const activeQuiz = session.currentQuiz!
+    const monacoMock = await import('@codingame/monaco-vscode-editor-api')
+    const expectedUri = `file:///playground/quiz-${encodeURIComponent(activeQuiz.id)}/main.cj`
+    const namedModel = {
+      getValue: () => 'live-from-model',
+      getLineCount: () => 1,
+      getLanguageId: () => 'cangjie',
+      uri: { toString: () => expectedUri },
+    } as never
+    const originalGetModel = monacoMock.editor.getModel
+    monacoMock.editor.getModel = ((uri: { toString: () => string }) =>
+      uri.toString() === expectedUri ? namedModel : null) as never
+    try {
+      const { createClassroomChatToolkit } = await import('./tools')
+      const toolkit = createClassroomChatToolkit({
+        ...bridge,
+        editor: { getEditor: () => null, setEditor: vi.fn() },
+      } as unknown as AIClassroomBridgeValue)
+      const result = await toolkit.read_editor_code!.execute!({}, toolOptions())
+      expect(result).toMatchObject({
+        ok: true,
+        code: 'live-from-model',
+        source: 'active_quiz_model',
+        quizId: activeQuiz.id,
+      })
+    }
+    finally {
+      monacoMock.editor.getModel = originalGetModel
+    }
+  })
+
+  it('suggest_code_change refuses when no active quiz exists', async () => {
+    const { createClassroomChatToolkit } = await import('./tools')
+    const toolkit = createClassroomChatToolkit(bridge)
+    const result = await toolkit.suggest_code_change!.execute!({
+      quizId: 'q-nonexistent',
+      code: 'main() {}',
+      explanation: 'nothing.',
+    }, toolOptions())
+    expect(result).toMatchObject({ ok: false })
+  })
+
+  it('suggest_code_change refuses when quizId mismatches the active quiz', async () => {
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.x',
+        prompt: 'p',
+        starterCode: '',
+        expectedOutput: '',
+      },
+      now: 1001,
+    })
+    const { createClassroomChatToolkit } = await import('./tools')
+    const toolkit = createClassroomChatToolkit(bridge)
+    const result = await toolkit.suggest_code_change!.execute!({
+      quizId: 'wrong-id',
+      code: 'main() {}',
+      explanation: 'wrong quiz target.',
+    }, toolOptions())
+    expect(result).toMatchObject({ ok: false })
+    expect((result as { error: string }).error).toMatch(/mismatch/i)
+  })
+
+  it('suggest_code_change stages a suggestion into the code-suggestion store on matching active quiz', async () => {
+    const { useCodeSuggestionStore } = await import('@/features/tour-ai/state/code-suggestion-store')
+    useCodeSuggestionStore.setState({ suggestion: null })
+    session = classroomReducer(session, {
+      type: 'SET_CURRENT_QUIZ',
+      quiz: {
+        type: 'quiz',
+        conceptId: 'cj.x',
+        prompt: 'p',
+        starterCode: '',
+        expectedOutput: '',
+      },
+      now: 1001,
+    })
+    const activeQuiz = session.currentQuiz!
+    const { createClassroomChatToolkit } = await import('./tools')
+    const toolkit = createClassroomChatToolkit(bridge)
+    const result = await toolkit.suggest_code_change!.execute!({
+      quizId: activeQuiz.id,
+      code: 'main() { println(7) }',
+      explanation: 'matches expected output.',
+    }, toolOptions())
+    expect(result).toMatchObject({ ok: true, staged: true })
+    expect(useCodeSuggestionStore.getState().suggestion).toMatchObject({
+      quizId: activeQuiz.id,
+      code: 'main() { println(7) }',
+    })
+    useCodeSuggestionStore.setState({ suggestion: null })
   })
 
   it('lessonGeneration read_classroom_state includes concept progress groups', async () => {
@@ -169,7 +389,7 @@ describe('ai classroom toolkits', () => {
         type: 'concept_card',
         conceptId: 'cj.bindings.let',
         title: 'Let bindings',
-        body: [{ text: 'Use let.' }],
+        body: 'Use let.',
       }],
       now: 1001,
     })
@@ -194,7 +414,7 @@ describe('ai classroom toolkits', () => {
       quiz: {
         type: 'quiz',
         conceptId: 'cj.program.main',
-        prompt: [{ text: 'Print 1.' }],
+        prompt: 'Print 1.',
         starterCode: '',
         expectedOutput: '1',
       },
@@ -206,7 +426,7 @@ describe('ai classroom toolkits', () => {
       quiz: {
         type: 'quiz',
         conceptId: 'cj.io.println',
-        prompt: [{ text: 'Print 2.' }],
+        prompt: 'Print 2.',
         starterCode: '',
         expectedOutput: '2',
       },
@@ -232,7 +452,7 @@ describe('ai classroom toolkits', () => {
       type: 'APPEND_LESSON_CONTENT',
       blocks: [
         { type: 'heading', text: 'Bindings', level: 2 },
-        { type: 'paragraph', body: [{ text: 'Intro.' }] },
+        { type: 'paragraph', body: 'Intro.' },
       ],
       now: 1001,
     })
@@ -241,7 +461,7 @@ describe('ai classroom toolkits', () => {
       quiz: {
         type: 'quiz',
         conceptId: 'cj.bindings.let',
-        prompt: [{ text: 'Print 3.' }],
+        prompt: 'Print 3.',
         starterCode: '',
         expectedOutput: '3',
       },
@@ -302,9 +522,12 @@ describe('ai classroom toolkits', () => {
       ok: false,
       error: 'Classroom state is not ready yet',
     })
+    // read_editor_code no longer reports "not ready" — when classroom is also
+    // missing it falls through every layer (Monaco focus / bridge / URI / draft
+    // / starter) and reports the situation neutrally.
     await expect(toolkit.read_editor_code!.execute!({}, toolOptions())).resolves.toEqual({
       ok: false,
-      error: 'Editor is not ready yet',
+      error: 'No code to read — no active quiz and no live editor on the page.',
     })
   })
 
@@ -510,26 +733,26 @@ describe('append_* sub-tools', () => {
     }))
   })
 
-  it('append_paragraph dispatches with [paragraph]', async () => {
+  it('append_paragraph dispatches with [paragraph] (markdown string)', async () => {
     const dispatch = vi.fn()
     const { createLessonGenerationToolkit } = await import('./tools')
     const tk = createLessonGenerationToolkit(makeBridge(dispatch))
-    const r = await tk.append_paragraph!.execute!({ body: [{ text: 'p' }] }, ctx)
+    const r = await tk.append_paragraph!.execute!({ body: 'p' }, ctx)
     expect((r as { ok: boolean }).ok).toBe(true)
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
       type: 'APPEND_LESSON_CONTENT',
-      blocks: [{ type: 'paragraph', body: [{ text: 'p' }] }],
+      blocks: [{ type: 'paragraph', body: 'p' }],
     }))
   })
 
-  it('append_concept_card dispatches with [concept_card]', async () => {
+  it('append_concept_card dispatches with [concept_card] (markdown string)', async () => {
     const dispatch = vi.fn()
     const { createLessonGenerationToolkit } = await import('./tools')
     const tk = createLessonGenerationToolkit(makeBridge(dispatch))
-    const r = await tk.append_concept_card!.execute!({ conceptId: 'c1', title: 'T', body: [{ text: 'b' }] }, ctx)
+    const r = await tk.append_concept_card!.execute!({ conceptId: 'c1', title: 'T', body: 'b' }, ctx)
     expect((r as { ok: boolean }).ok).toBe(true)
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
-      blocks: [{ type: 'concept_card', conceptId: 'c1', title: 'T', body: [{ text: 'b' }] }],
+      blocks: [{ type: 'concept_card', conceptId: 'c1', title: 'T', body: 'b' }],
     }))
   })
 
@@ -544,49 +767,77 @@ describe('append_* sub-tools', () => {
     }))
   })
 
-  it('append_callout dispatches with [callout]', async () => {
+  it('append_callout dispatches with [callout] (markdown string)', async () => {
     const dispatch = vi.fn()
     const { createLessonGenerationToolkit } = await import('./tools')
     const tk = createLessonGenerationToolkit(makeBridge(dispatch))
-    const r = await tk.append_callout!.execute!({ tone: 'note', body: [{ text: 'c' }] }, ctx)
+    const r = await tk.append_callout!.execute!({ tone: 'note', body: 'c' }, ctx)
     expect((r as { ok: boolean }).ok).toBe(true)
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
-      blocks: [{ type: 'callout', tone: 'note', body: [{ text: 'c' }] }],
+      blocks: [{ type: 'callout', tone: 'note', body: 'c' }],
     }))
   })
 
-  it('append_steps dispatches with [steps]', async () => {
+  it('append_steps dispatches with [steps] (strings lifted into text spans)', async () => {
     const dispatch = vi.fn()
     const { createLessonGenerationToolkit } = await import('./tools')
     const tk = createLessonGenerationToolkit(makeBridge(dispatch))
-    const r = await tk.append_steps!.execute!({ items: [[{ text: 's1' }], [{ text: 's2' }]] }, ctx)
+    const r = await tk.append_steps!.execute!({ items: ['s1', 's2'] }, ctx)
     expect((r as { ok: boolean }).ok).toBe(true)
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
-      blocks: [{ type: 'steps', items: [[{ text: 's1' }], [{ text: 's2' }]] }],
+      blocks: [{ type: 'steps', items: [
+        [{ type: 'text', text: 's1' }],
+        [{ type: 'text', text: 's2' }],
+      ] }],
     }))
   })
 
-  it('append_compare dispatches with [compare]', async () => {
+  it('append_steps accepts discriminated RichText items as the rich form', async () => {
+    const dispatch = vi.fn()
+    const { createLessonGenerationToolkit } = await import('./tools')
+    const tk = createLessonGenerationToolkit(makeBridge(dispatch))
+    const r = await tk.append_steps!.execute!({
+      items: [
+        [{ type: 'text', text: 'use ' }, { type: 'code', code: 'let' }],
+        's2',
+      ],
+    }, ctx)
+    expect((r as { ok: boolean }).ok).toBe(true)
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      blocks: [{ type: 'steps', items: [
+        [{ type: 'text', text: 'use ' }, { type: 'code', code: 'let' }],
+        [{ type: 'text', text: 's2' }],
+      ] }],
+    }))
+  })
+
+  it('append_compare dispatches with [compare] (strings lifted into text spans)', async () => {
     const dispatch = vi.fn()
     const { createLessonGenerationToolkit } = await import('./tools')
     const tk = createLessonGenerationToolkit(makeBridge(dispatch))
     const r = await tk.append_compare!.execute!({
       leftTitle: 'A',
-      left: [{ text: 'a' }],
+      left: 'a',
       rightTitle: 'B',
-      right: [{ text: 'b' }],
+      right: 'b',
     }, ctx)
     expect((r as { ok: boolean }).ok).toBe(true)
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
-      blocks: [{ type: 'compare', leftTitle: 'A', left: [{ text: 'a' }], rightTitle: 'B', right: [{ text: 'b' }] }],
+      blocks: [{
+        type: 'compare',
+        leftTitle: 'A',
+        left: [{ type: 'text', text: 'a' }],
+        rightTitle: 'B',
+        right: [{ type: 'text', text: 'b' }],
+      }],
     }))
   })
 
-  it('append_paragraph returns retry hint on zod fail (empty body)', async () => {
+  it('append_paragraph returns retry hint on zod fail (non-string/non-array body)', async () => {
     const dispatch = vi.fn()
     const { createLessonGenerationToolkit } = await import('./tools')
     const tk = createLessonGenerationToolkit(makeBridge(dispatch))
-    const r = await tk.append_paragraph!.execute!({ body: [] }, ctx)
+    const r = await tk.append_paragraph!.execute!({ body: 42 as unknown as string }, ctx)
     expect((r as { ok: boolean }).ok).toBe(false)
     expect((r as { expectedShape?: unknown }).expectedShape).toBeDefined()
     expect(dispatch).not.toHaveBeenCalled()
