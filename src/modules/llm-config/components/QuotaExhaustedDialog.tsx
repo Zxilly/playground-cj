@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useReducer, useState } from 'react'
+import { useEffect, useId, useReducer, useState } from 'react'
 import { Sparkles, Wallet } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
@@ -31,7 +31,10 @@ export function QuotaExhaustedDialog() {
   const setSettingsDialogOpen = useLLMConfigStore(s => s.setSettingsDialogOpen)
   const settingsOpen = useLLMConfigStore(s => s.settingsDialogOpen)
   const [dismissedFor, setDismissedFor] = useState<number | null>(null)
-  const [, forceTick] = useReducer((n: number) => n + 1, 0)
+  const [now, refreshNow] = useReducer(() => Date.now(), undefined, () => Date.now())
+  const refreshStatusId = useId()
+  const dismissDescriptionId = useId()
+  const settingsDescriptionId = useId()
 
   const shouldShow = keySource === 'auto'
     && !!autoQuota?.exhausted
@@ -41,7 +44,7 @@ export function QuotaExhaustedDialog() {
   useEffect(() => {
     if (!shouldShow)
       return
-    const id = window.setInterval(forceTick, 60_000)
+    const id = window.setInterval(refreshNow, 60_000)
     return () => window.clearInterval(id)
   }, [shouldShow])
 
@@ -58,7 +61,7 @@ export function QuotaExhaustedDialog() {
     setSettingsDialogOpen(true)
   }
 
-  const remainMs = autoQuota.nextResetAt - Date.now()
+  const remainMs = autoQuota.nextResetAt - now
   const { hours, minutes } = formatCountdown(remainMs)
   const refreshMoment = formatResetMoment(autoQuota.nextResetAt)
 
@@ -67,7 +70,7 @@ export function QuotaExhaustedDialog() {
       <DialogContent className="sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Wallet className="size-4 text-amber-500" />
+            <Wallet aria-hidden="true" className="size-4 text-amber-500" />
             <Trans>今日 AI 额度已用完</Trans>
           </DialogTitle>
           <DialogDescription>
@@ -76,8 +79,14 @@ export function QuotaExhaustedDialog() {
         </DialogHeader>
 
         <div className="space-y-2 py-2 text-sm">
-          <div className="flex items-baseline gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-amber-700 dark:text-amber-300">
-            <Sparkles className="size-3.5 self-center shrink-0" />
+          <div
+            id={refreshStatusId}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="flex items-baseline gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-amber-700 dark:text-amber-300"
+          >
+            <Sparkles aria-hidden="true" className="size-3.5 self-center shrink-0" />
             <div className="leading-relaxed">
               <div className="font-mono text-xs">{refreshMoment}</div>
               <div className="text-[11px] opacity-80">
@@ -88,18 +97,24 @@ export function QuotaExhaustedDialog() {
             </div>
           </div>
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            <Trans>如需立刻继续使用，可在 LLM 设置中填写你自己的 API Key。</Trans>
+            <Trans>如需立刻继续使用，可在 AI 服务设置中填写自己的 API Key。</Trans>
+          </p>
+          <p id={dismissDescriptionId} className="sr-only">
+            <Trans>关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。</Trans>
+          </p>
+          <p id={settingsDescriptionId} className="sr-only">
+            <Trans>打开 AI 服务设置填写自己的 API Key；不会清空已有课堂内容或练习记录。</Trans>
           </p>
         </div>
 
         <DialogFooter className="gap-2 sm:justify-end">
           <DialogClose asChild>
-            <Button type="button" variant="outline" size="sm" className="cursor-pointer">
+            <Button type="button" variant="outline" size="sm" aria-describedby={dismissDescriptionId} className="cursor-pointer">
               <Trans>我知道了</Trans>
             </Button>
           </DialogClose>
-          <Button type="button" size="sm" onClick={handleGotoSettings} className="cursor-pointer">
-            <Trans>使用自带 Key</Trans>
+          <Button type="button" size="sm" aria-describedby={`${refreshStatusId} ${settingsDescriptionId}`} onClick={handleGotoSettings} className="cursor-pointer">
+            <Trans>使用自己的 API Key</Trans>
           </Button>
         </DialogFooter>
       </DialogContent>

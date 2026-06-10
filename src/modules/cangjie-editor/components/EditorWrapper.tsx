@@ -28,9 +28,24 @@ export interface MonacoEditorProps {
   viewsType?: MonacoViewsType
   enableLanguageClient?: boolean
   // Disambiguator that becomes part of the model URI so multiple editors on
-  // the same page (e.g. one per quiz) hold independent models. Same hint reuses
+  // the same page (e.g. one per exercise) hold independent models. Same hint reuses
   // the same model across React mounts and preserves user edits.
   uriHint?: string
+}
+
+function isDuplicateExtensionRegistrationError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /extension-file:\/\/.+already exists/i.test(message)
+}
+
+async function initExtensionsAllowingDuplicateFiles(wrapper: MonacoVscodeApiWrapper): Promise<void> {
+  try {
+    await wrapper.initExtensions()
+  }
+  catch (error) {
+    if (!isDuplicateExtensionRegistrationError(error))
+      throw error
+  }
 }
 
 function createStandaloneEditorHandle(
@@ -42,15 +57,15 @@ function createStandaloneEditorHandle(
   const existingModel = monaco.editor.getModel(uri)
   // Reusing an existing model preserves user edits across React mount cycles.
   // Only seed the model text when creating it for the first time — otherwise
-  // a quiz card that re-enters the viewport would clobber whatever the user
+  // an exercise card that re-enters the viewport would clobber whatever the user
   // had typed earlier.
   //
   // Track ownership: only the handle that *created* the model is allowed to
-  // dispose it. This prevents one quiz card unmounting from killing a model
+  // dispose it. This prevents one exercise card unmounting from killing a model
   // another card might still want to reuse. Models created by other handles
   // (i.e. `existingModel` was hit) stay alive — they'll be GC'd when the page
   // unloads, and the model registry size is bounded by the number of distinct
-  // quiz URIs the learner has ever opened in this page session.
+  // exercise URIs the learner has ever opened in this page session.
   const ownedModelUris = new Set<string>()
   let model = existingModel ?? (() => {
     const created = monaco.editor.createModel(
@@ -103,17 +118,17 @@ function createStandaloneEditorHandle(
     },
     dispose: () => {
       editor.dispose()
-      // Intentionally do NOT dispose models here. Virtuoso virtualizes quiz
+      // Intentionally do NOT dispose models here. Virtuoso virtualizes exercise
       // cards in and out of the DOM constantly during scroll — disposing the
       // model on every unmount would wipe the learner's in-progress code as
-      // soon as they scrolled past their own quiz. Models survive the page
-      // session; the localStorage draft store (cleared on quiz success/skip
-      // in QuizPracticeCard) is the only persistence layer with a bounded
+      // soon as they scrolled past their own exercise. Models survive the page
+      // session; the localStorage draft store (cleared on exercise success/skip
+      // in ExercisePracticeCard) is the only persistence layer with a bounded
       // size. The Monaco model registry is bounded by the count of distinct
-      // quiz URIs the learner has opened in this page session, which is
+      // exercise URIs the learner has opened in this page session, which is
       // small enough that retaining them until page unload is fine.
       // `ownedModelUris` is tracked for the future case where we want to
-      // explicitly drop models for definitively-finished quizzes (e.g. a
+      // explicitly drop models for definitively-finished exercises (e.g. a
       // session-level cleanup hook), but is otherwise unused.
     },
   }
@@ -259,7 +274,7 @@ export function MonacoEditorReactComp({
         const shouldRegisterExtensionsAfterStart = getEnhancedMonacoEnvironment().vscodeApiInitialised === true
         await vscodeApiWrapper.start()
         if (shouldRegisterExtensionsAfterStart)
-          await vscodeApiWrapper.initExtensions()
+          await initExtensionsAllowingDuplicateFiles(vscodeApiWrapper)
         ensureCangjieMonarchTokensProvider()
         const containerAfterWrapperStart = getLiveContainer()
         if (!containerAfterWrapperStart) {

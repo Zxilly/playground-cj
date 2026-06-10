@@ -21,58 +21,51 @@ export interface LspStatusRender {
 
 export function useLspStatusRender(status: LspRuntimeStatus): LspStatusRender {
   const { i18n } = useLingui()
-  const loadedModules = status.stdlibModulesLoaded
-  const totalModules = status.stdlibModulesTotal
-  const lastError = status.lastError
-  const moduleInfo = i18n._(
-    msg`标准库模块：${loadedModules}/${totalModules}`,
-  )
   const originSuffix = status.origin === 'manual' ? i18n._(msg`（手动）`) : ''
 
   switch (status.state) {
     case 'running':
       return {
         icon: 'ready',
-        ariaLabel: i18n._(msg`LSP 已就绪`),
-        tooltip: i18n._(msg`仓颉语言服务器\n\n状态：就绪${originSuffix}\n${moduleInfo}\n\n点击查看操作`),
+        ariaLabel: i18n._(msg`代码提示已就绪`),
+        tooltip: i18n._(msg`仓颉代码提示已就绪${originSuffix}。点击管理。`),
       }
     case 'starting':
       return {
         icon: 'spinner',
-        ariaLabel: i18n._(msg`LSP 启动中`),
-        tooltip: i18n._(msg`仓颉语言服务器\n\n状态：启动中${originSuffix}\n${moduleInfo}`),
+        ariaLabel: i18n._(msg`正在启动代码提示`),
+        tooltip: i18n._(msg`正在启动仓颉代码提示${originSuffix}。`),
       }
     case 'restarting':
       return {
         icon: 'spinner',
-        ariaLabel: i18n._(msg`LSP 重启中`),
-        tooltip: i18n._(msg`仓颉语言服务器\n\n状态：重启中${originSuffix}\n${moduleInfo}`),
+        ariaLabel: i18n._(msg`正在重启代码提示`),
+        tooltip: i18n._(msg`正在重启仓颉代码提示${originSuffix}。`),
       }
     case 'stopping':
       return {
         icon: 'spinner',
-        ariaLabel: i18n._(msg`LSP 停止中`),
-        tooltip: i18n._(msg`仓颉语言服务器\n\n状态：停止中${originSuffix}`),
+        ariaLabel: i18n._(msg`正在停止代码提示`),
+        tooltip: i18n._(msg`正在停止仓颉代码提示${originSuffix}。`),
       }
     case 'stopped':
       return {
         icon: status.manuallyStopped ? 'manual-stopped' : 'stopped',
         ariaLabel: status.manuallyStopped
-          ? i18n._(msg`LSP 已手动停止`)
-          : i18n._(msg`LSP 已停止`),
+          ? i18n._(msg`代码提示已手动停止`)
+          : i18n._(msg`代码提示已停止`),
         tooltip: status.manuallyStopped
-          ? i18n._(msg`仓颉语言服务器\n\n状态：已停止（手动）\n\n点击查看操作`)
-          : i18n._(msg`仓颉语言服务器\n\n状态：已停止\n\n点击查看操作`),
+          ? i18n._(msg`仓颉代码提示已手动停止。点击管理。`)
+          : i18n._(msg`仓颉代码提示已停止。点击管理。`),
       }
     case 'crashed': {
       const exhausted = status.autoRestartAttempts >= MAX_AUTO_RESTART_ATTEMPTS
-      const errLine = lastError ? i18n._(msg`\n错误：${lastError}`) : ''
       return {
         icon: 'crashed',
-        ariaLabel: i18n._(msg`LSP 崩溃`),
+        ariaLabel: i18n._(msg`代码提示暂不可用`),
         tooltip: exhausted
-          ? i18n._(msg`仓颉语言服务器\n\n状态：崩溃（自动重启已耗尽）${errLine}\n\n点击手动重启`)
-          : i18n._(msg`仓颉语言服务器\n\n状态：崩溃 — 将自动重启${errLine}\n\n点击查看操作`),
+          ? i18n._(msg`仓颉代码提示暂不可用。请手动重启。`)
+          : i18n._(msg`仓颉代码提示暂不可用，系统会自动重启。点击管理。`),
       }
     }
   }

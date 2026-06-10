@@ -62,6 +62,11 @@ export function normaliseLLMConfig(input: Partial<LLMConfig>): LLMConfig {
   }
 }
 
+export function isLLMConfigReady(config: Partial<LLMConfig>): boolean {
+  const next = normaliseLLMConfig(config)
+  return Boolean(next.baseURL && next.apiKey && next.model)
+}
+
 export function createConfiguredModel(config: Partial<LLMConfig>, name = 'tour-llm'): LanguageModel {
   const next = normaliseLLMConfig(config)
   if (next.provider === 'anthropic') {

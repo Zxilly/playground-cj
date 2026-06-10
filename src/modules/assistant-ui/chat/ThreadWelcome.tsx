@@ -12,10 +12,10 @@ export const ThreadWelcome: FC = () => {
       <div className="aui-thread-welcome-center flex w-full grow flex-col items-center justify-center">
         <div className="aui-thread-welcome-message flex size-full flex-col justify-center px-4">
           <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both font-semibold text-2xl duration-200">
-            <Trans>从这里开始你的仓颉之旅</Trans>
+            <Trans>可以这样问</Trans>
           </h1>
           <p className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-muted-foreground text-base delay-75 duration-200">
-            <Trans>告诉我你想学什么，或选一个下面的卡片。我会读教程、写示例代码、运行并帮你修错。</Trans>
+            <Trans>可以询问当前概念、练习要求、代码问题，或让讲解更慢一些。</Trans>
           </p>
         </div>
       </div>
@@ -40,10 +40,10 @@ function ThreadSuggestionItem() {
       <SuggestionPrimitive.Trigger send asChild>
         <Button
           variant="ghost"
-          className="aui-thread-welcome-suggestion h-auto w-full @md:flex-col flex-wrap items-start justify-start gap-1 rounded-3xl border bg-background px-4 py-3 text-start text-sm transition-colors hover:bg-muted"
+          className="aui-thread-welcome-suggestion h-auto w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-md border bg-background px-3 py-2.5 text-start text-sm leading-5 transition-colors hover:bg-muted"
         >
-          <SuggestionPrimitive.Title className="aui-thread-welcome-suggestion-text-1 font-medium" />
-          <SuggestionPrimitive.Description className="aui-thread-welcome-suggestion-text-2 text-muted-foreground empty:hidden" />
+          <SuggestionPrimitive.Title className="aui-thread-welcome-suggestion-text-1 font-medium leading-5" />
+          <SuggestionPrimitive.Description className="aui-thread-welcome-suggestion-text-2 text-muted-foreground text-xs leading-4 empty:hidden" />
         </Button>
       </SuggestionPrimitive.Trigger>
     </div>

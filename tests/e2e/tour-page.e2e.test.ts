@@ -38,7 +38,7 @@ describe('tour page e2e', () => {
     await next.click()
     await page.waitForURL(url => url.pathname !== '/zh/tour/welcome/1')
 
-    expect(await page.getByRole('button', { name: /上一页/ }).isEnabled()).toBe(true)
-    expect(await page.getByText(/2\s*\/\s*\d+/).isVisible()).toBe(true)
+    await expect.poll(() => page.getByRole('button', { name: /上一页/ }).isEnabled()).toBe(true)
+    await expect.poll(() => page.getByText(/2\s*\/\s*\d+/).isVisible()).toBe(true)
   }, 120_000)
 })

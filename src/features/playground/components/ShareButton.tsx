@@ -69,7 +69,7 @@ const ShareButton = memo(() => {
               onClick={() => handleShare('url')}
             >
               <Link className="mr-2 h-4 w-4" />
-              <Trans>URL 方式</Trans>
+              <Trans>完整链接</Trans>
             </Button>
             <Button
               variant="ghost"
@@ -77,7 +77,7 @@ const ShareButton = memo(() => {
               onClick={() => handleShare('hash')}
             >
               <Hash className="mr-2 h-4 w-4" />
-              <Trans>Hash 方式</Trans>
+              <Trans>短链接</Trans>
             </Button>
           </div>
         </PopoverContent>

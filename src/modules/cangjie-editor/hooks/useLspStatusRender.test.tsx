@@ -32,35 +32,34 @@ function renderStatus(status: Partial<LspRuntimeStatus>) {
 }
 
 describe('useLspStatusRender', () => {
-  it('describes a running LSP with ready icon and module progress', () => {
+  it('describes running code assistance with ready icon', () => {
     const { result } = renderHook(() => useLspStatusRender(baseStatus), { wrapper: Wrapper })
 
     expect(result.current.icon).toBe('ready')
-    expect(result.current.ariaLabel).toBe('LSP 已就绪')
-    expect(result.current.tooltip).toContain('状态：就绪')
-    expect(result.current.tooltip).toContain('标准库模块：2/5')
+    expect(result.current.ariaLabel).toBe('代码提示已就绪')
+    expect(result.current.tooltip).toContain('仓颉代码提示已就绪')
   })
 
   it('distinguishes manual stops from automatic stops', () => {
     const result = renderStatus({ state: 'stopped', manuallyStopped: true })
 
     expect(result.icon).toBe('manual-stopped')
-    expect(result.ariaLabel).toBe('LSP 已手动停止')
-    expect(result.tooltip).toContain('已停止（手动）')
+    expect(result.ariaLabel).toBe('代码提示已手动停止')
+    expect(result.tooltip).toContain('仓颉代码提示已手动停止')
   })
 
   it('describes automatic stopped status as restartable', () => {
     const result = renderStatus({ state: 'stopped', manuallyStopped: false })
 
     expect(result.icon).toBe('stopped')
-    expect(result.ariaLabel).toBe('LSP 已停止')
-    expect(result.tooltip).toContain('点击查看操作')
+    expect(result.ariaLabel).toBe('代码提示已停止')
+    expect(result.tooltip).toContain('点击管理')
   })
 
   it.each([
-    ['starting', 'LSP 启动中', '启动中'],
-    ['restarting', 'LSP 重启中', '重启中'],
-    ['stopping', 'LSP 停止中', '停止中'],
+    ['starting', '正在启动代码提示', '正在启动仓颉代码提示'],
+    ['restarting', '正在重启代码提示', '正在重启仓颉代码提示'],
+    ['stopping', '正在停止代码提示', '正在停止仓颉代码提示'],
   ] as const)('uses spinner copy for %s state', (state, ariaLabel, tooltipText) => {
     const result = renderStatus({ state })
 
@@ -73,14 +72,14 @@ describe('useLspStatusRender', () => {
     const result = renderStatus({ state: 'crashed', autoRestartAttempts: 4, lastError: 'boom' })
 
     expect(result.icon).toBe('crashed')
-    expect(result.tooltip).toContain('自动重启已耗尽')
-    expect(result.tooltip).toContain('错误：boom')
+    expect(result.ariaLabel).toBe('代码提示暂不可用')
+    expect(result.tooltip).toContain('请手动重启')
+    expect(result.tooltip).not.toContain('boom')
   })
 
   it('describes recoverable crashes without an error line', () => {
     const result = renderStatus({ state: 'crashed', autoRestartAttempts: 1, lastError: undefined })
 
-    expect(result.tooltip).toContain('将自动重启')
-    expect(result.tooltip).not.toContain('错误：')
+    expect(result.tooltip).toContain('系统会自动重启')
   })
 })

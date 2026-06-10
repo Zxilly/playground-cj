@@ -25,6 +25,7 @@ interface LLMConfigState {
   readonly autoQuota: AutoQuotaState | null
   readonly settingsDialogOpen: boolean
   readonly setConfig: (next: LLMConfig) => void
+  readonly setSharedConfig: () => void
   readonly applyAutoKey: (next: Partial<LLMConfig> & { apiKey: string }) => void
   readonly setAutoQuota: (next: AutoQuotaState | null) => void
   readonly setSettingsDialogOpen: (open: boolean) => void
@@ -39,6 +40,11 @@ export const useLLMConfigStore = create<LLMConfigState>()(
       autoQuota: null,
       settingsDialogOpen: false,
       setConfig: next => set({ config: normaliseLLMConfig(next), keySource: 'user', autoQuota: null }),
+      setSharedConfig: () => set({
+        config: normaliseLLMConfig(DEFAULT_LLM_CONFIG),
+        keySource: 'auto',
+        autoQuota: null,
+      }),
       applyAutoKey: next =>
         set((state) => {
           if (state.keySource !== 'auto')

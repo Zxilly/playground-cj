@@ -128,7 +128,7 @@ export function LspStatusIndicator() {
           <ActionRow
             icon={<Trash2 className="h-3.5 w-3.5" />}
             label={<Trans>清除缓存并重启</Trans>}
-            description={<Trans>清除 WASM 与标准库缓存后重启</Trans>}
+            description={<Trans>重置本地缓存后重启代码提示</Trans>}
             disabled={isBusy}
             onSelect={runAction(() => clearCacheAndRestartLsp('manual'))}
           />

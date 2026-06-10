@@ -34,7 +34,9 @@ export function TooltipIconButton({
           className={cn('aui-button-icon size-6 p-1', className)}
           ref={ref}
         >
-          <Slot.Slottable>{children}</Slot.Slottable>
+          <span aria-hidden="true" className="aui-button-icon-visual inline-flex items-center justify-center">
+            <Slot.Slottable>{children}</Slot.Slottable>
+          </span>
           <span className="aui-sr-only sr-only">{tooltip}</span>
         </Button>
       </TooltipTrigger>

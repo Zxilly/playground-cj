@@ -87,14 +87,14 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
 }
 
 // Singleton language client per page. Multiple editors on the same page (e.g.
-// the main tour editor + N quiz cards) MUST share a single MonacoLanguageClient
+// the main tour editor + N exercise cards) MUST share a single MonacoLanguageClient
 // — each client wraps a `BrowserMessageReader` on the same MessagePort, and a
 // MessagePort only has one effective `onmessage` consumer at a time. Two
 // clients on the same port produces protocol corruption and stalled LSP.
 //
 // The client's `documentSelector` is `[CANGJIE_LANGUAGE_ID]` (above) so it
 // serves ALL Cangjie models in the registry regardless of URI — no need for
-// per-editor clients. Quiz editors keep `enableLanguageClient={false}` to skip
+// per-editor clients. Exercise editors keep `enableLanguageClient={false}` to skip
 // per-editor lifecycle, but the singleton client below covers them.
 interface SharedClientSlot {
   client: MonacoLanguageClient | undefined

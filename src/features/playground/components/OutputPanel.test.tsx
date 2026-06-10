@@ -26,7 +26,7 @@ describe('outputPanel', () => {
     )
     const panels = container.querySelectorAll('pre')
 
-    screen.getByText('工具输出')
+    screen.getByText('编译信息')
     screen.getByText('程序输出')
     expect(within(panels[0]).getByText('compile ok')).toBeTruthy()
     expect(within(panels[1]).getByText('hello world')).toBeTruthy()

@@ -160,4 +160,24 @@ describe('monacoEditorReactComp', () => {
     expect(vscodeWrapperInitExtensions).not.toHaveBeenCalled()
     expect(editorAppStart).toHaveBeenCalled()
   })
+
+  it('continues editor startup when extension files were already registered', async () => {
+    monacoInit.initialised = true
+    vscodeWrapperInitExtensions.mockRejectedValueOnce(
+      new Error('file "extension-file://zxilly.cangjie/extension/extension.js/" already exists'),
+    )
+
+    render(<MonacoEditorReactComp code="main() {}" locale="zh" />)
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(vscodeWrapperInitExtensions).toHaveBeenCalled()
+    expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
+    expect(editorAppStart).toHaveBeenCalled()
+  })
 })

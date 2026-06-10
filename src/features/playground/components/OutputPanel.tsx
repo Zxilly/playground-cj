@@ -24,7 +24,7 @@ export function OutputPanel({ toolOutput, programOutput }: OutputPanelProps) {
       className="flex-1 overflow-hidden flex flex-col"
     >
       <LabelContainer
-        title={i18n._(msg`工具输出`)}
+        title={i18n._(msg`编译信息`)}
         content={(
           <pre
             className="whitespace-pre min-h-0 min-w-0"

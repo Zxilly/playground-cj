@@ -23,9 +23,9 @@ describe('model connection test', () => {
 
     expect(result.ok).toBe(false)
     expect(result.title).toBe('配置不完整')
-    expect(result.message).toContain('API Base、API Key、Model')
+    expect(result.message).toContain('服务地址、API Key、模型')
     expect(result.details).toMatchObject({
-      missing: ['API Base', 'API Key', 'Model'],
+      missing: ['服务地址', 'API Key', '模型'],
       hasApiKey: false,
       apiKeyPreview: '',
     })

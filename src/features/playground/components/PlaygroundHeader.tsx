@@ -50,7 +50,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: Playgr
         <div className="flex items-center">
           <Image
             src="/icon.png"
-            alt="Logo"
+            alt=""
             width={32}
             height={32}
             className="m-4"
@@ -88,7 +88,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: Playgr
         <div className="flex items-center">
           <Image
             src="/icon.png"
-            alt="Logo"
+            alt=""
             width={24}
             height={24}
             className="m-2"

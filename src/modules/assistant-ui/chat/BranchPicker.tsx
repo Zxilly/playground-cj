@@ -1,5 +1,6 @@
 import { BranchPickerPrimitive } from '@assistant-ui/react'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import { t } from '@lingui/core/macro'
 import type { FC } from 'react'
 import { cn } from '@/lib/utils'
 import { TooltipIconButton } from '@/modules/assistant-ui/registry/TooltipIconButton'
@@ -18,7 +19,7 @@ export const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
       {...rest}
     >
       <BranchPickerPrimitive.Previous asChild>
-        <TooltipIconButton tooltip="Previous">
+        <TooltipIconButton tooltip={t`上一条回复`}>
           <ChevronLeftIcon />
         </TooltipIconButton>
       </BranchPickerPrimitive.Previous>
@@ -29,7 +30,7 @@ export const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
         <BranchPickerPrimitive.Count />
       </span>
       <BranchPickerPrimitive.Next asChild>
-        <TooltipIconButton tooltip="Next">
+        <TooltipIconButton tooltip={t`下一条回复`}>
           <ChevronRightIcon />
         </TooltipIconButton>
       </BranchPickerPrimitive.Next>

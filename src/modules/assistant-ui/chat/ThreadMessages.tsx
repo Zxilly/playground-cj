@@ -22,19 +22,6 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { BranchPicker } from '@/modules/assistant-ui/chat/BranchPicker'
 import { MarkdownText } from '@/modules/assistant-ui/registry/MarkdownText'
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningRoot,
-  ReasoningText,
-  ReasoningTrigger,
-} from '@/modules/assistant-ui/registry/Reasoning'
-import { ToolFallback } from '@/modules/assistant-ui/registry/ToolFallback'
-import {
-  ToolGroupContent,
-  ToolGroupRoot,
-  ToolGroupTrigger,
-} from '@/modules/assistant-ui/registry/ToolGroup'
 import { TooltipIconButton } from '@/modules/assistant-ui/registry/TooltipIconButton'
 import { UserMessageAttachments } from '@/modules/assistant-ui/registry/Attachment'
 
@@ -49,11 +36,27 @@ export const ThreadMessage: FC = () => {
   return <AssistantMessage />
 }
 
-function MessageError() {
+export function MessageError() {
   return (
     <MessagePrimitive.Error>
-      <ErrorPrimitive.Root className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-destructive text-sm dark:bg-destructive/5 dark:text-red-200">
-        <ErrorPrimitive.Message className="aui-message-error-message line-clamp-2" />
+      <ErrorPrimitive.Root role="alert" className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-destructive text-sm dark:bg-destructive/5 dark:text-red-200">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <ErrorPrimitive.Message className="aui-message-error-message min-w-0 flex-1 whitespace-pre-wrap break-words leading-5" />
+          <ActionBarPrimitive.Root hideWhenRunning className="aui-message-error-action shrink-0">
+            <ActionBarPrimitive.Reload asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 gap-1.5 rounded-md border-destructive/30 bg-background px-2.5 text-destructive hover:bg-destructive/10 dark:text-red-200"
+                aria-label={t`重新生成`}
+              >
+                <RefreshCwIcon aria-hidden="true" className="size-3.5" />
+                <span><Trans>重新生成</Trans></span>
+              </Button>
+            </ActionBarPrimitive.Reload>
+          </ActionBarPrimitive.Root>
+        </div>
       </ErrorPrimitive.Root>
     </MessagePrimitive.Error>
   )
@@ -82,39 +85,20 @@ function AssistantMessage() {
             return null
           }}
         >
-          {({ part, children }) => {
+          {({ part }) => {
             switch (part.type) {
               case 'group-chainOfThought':
-                return <div data-slot="aui_chain-of-thought">{children}</div>
-              case 'group-reasoning': {
-                const running = part.status.type === 'running'
-                return (
-                  <ReasoningRoot defaultOpen={running}>
-                    <ReasoningTrigger active={running} />
-                    <ReasoningContent aria-busy={running}>
-                      <ReasoningText>{children}</ReasoningText>
-                    </ReasoningContent>
-                  </ReasoningRoot>
-                )
-              }
+              case 'group-reasoning':
               case 'group-tool':
-                if (part.indices.length <= 1)
-                  return <div className="mb-4">{children}</div>
-                return (
-                  <ToolGroupRoot className="mb-4">
-                    <ToolGroupTrigger
-                      count={part.indices.length}
-                      active={part.status.type === 'running'}
-                    />
-                    <ToolGroupContent>{children}</ToolGroupContent>
-                  </ToolGroupRoot>
-                )
+                // Tool calls and reasoning traces are implementation details.
+                // The chat surface should show the learner-facing answer, not
+                // raw tool names, arguments, results, or chain-of-thought.
+                return null
               case 'text':
                 return <MarkdownText />
               case 'reasoning':
-                return <Reasoning {...part} />
               case 'tool-call':
-                return part.toolUI ?? <ToolFallback {...part} />
+                return null
               default:
                 return null
             }
@@ -172,7 +156,7 @@ function AssistantActionBar() {
         >
           <ActionBarPrimitive.ExportMarkdown asChild>
             <ActionBarMorePrimitive.Item className="aui-action-bar-more-item flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-              <DownloadIcon className="size-4" />
+              <DownloadIcon aria-hidden="true" className="size-4" />
               <Trans>导出为 Markdown</Trans>
             </ActionBarMorePrimitive.Item>
           </ActionBarPrimitive.ExportMarkdown>
@@ -234,15 +218,16 @@ function EditComposer() {
         <ComposerPrimitive.Input
           className="aui-edit-composer-input min-h-14 w-full resize-none bg-transparent p-4 text-foreground text-sm outline-none"
           autoFocus
+          aria-label={t`编辑消息`}
         />
         <div className="aui-edit-composer-footer mx-3 mb-3 flex items-center gap-2 self-end">
           <ComposerPrimitive.Cancel asChild>
             <Button variant="ghost" size="sm">
-              <Trans>Cancel</Trans>
+              <Trans>取消</Trans>
             </Button>
           </ComposerPrimitive.Cancel>
           <ComposerPrimitive.Send asChild>
-            <Button size="sm"><Trans>Update</Trans></Button>
+            <Button size="sm"><Trans>更新</Trans></Button>
           </ComposerPrimitive.Send>
         </div>
       </ComposerPrimitive.Root>

@@ -5,7 +5,11 @@ import { ThreadMessage } from '@/modules/assistant-ui/chat/ThreadMessages'
 import { ThreadScrollToBottom } from '@/modules/assistant-ui/chat/ThreadScrollToBottom'
 import { ThreadWelcome } from '@/modules/assistant-ui/chat/ThreadWelcome'
 
-export const Thread: FC = () => {
+interface ThreadProps {
+  allowAttachments?: boolean
+}
+
+export const Thread: FC<ThreadProps> = ({ allowAttachments = true }) => {
   return (
     <ThreadPrimitive.Root
       className="aui-root aui-thread-root @container flex h-full flex-col bg-background"
@@ -38,7 +42,7 @@ export const Thread: FC = () => {
 
           <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible rounded-t-(--composer-radius) bg-background pb-4 md:pb-6">
             <ThreadScrollToBottom />
-            <ThreadComposer />
+            <ThreadComposer allowAttachments={allowAttachments} />
           </ThreadPrimitive.ViewportFooter>
         </div>
       </ThreadPrimitive.Viewport>

@@ -7,6 +7,7 @@ import type { EditorAppConfig } from 'monaco-languageclient/editorApp'
 import { configureMonacoWorkers } from './workers'
 import { initializeMonacoViewsService } from './views'
 import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
+import { exerciseModelSlot, playgroundModelUri } from '@/features/tour-ai/exercise-workspace/model-identity'
 
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/grammars/Cangjie.tmLanguage.json'
@@ -96,14 +97,14 @@ export function createMonacoVscodeApiConfig(
   }
 }
 
-// uriHint disambiguates editors that need to live side-by-side (one per quiz,
+// uriHint disambiguates editors that need to live side-by-side (one per exercise,
 // for example) so each gets its own persistent Monaco model. Same hint → same
 // model (preserved across React mounts); different hints → different models.
 export function createEditorAppConfig(shareCode?: string, locale?: string, uriHint?: string): EditorAppConfig {
   const helloWorldExample = examples.find(([key]) => key === 'hello-world')?.[1]
   const localizedContent = locale === 'en' ? helloWorldExample?.en.content : helloWorldExample?.zh.content
   const defaultCode = shareCode ?? localizedContent ?? ''
-  const slot = uriHint ? `quiz-${encodeURIComponent(uriHint)}` : 'src'
+  const slot = uriHint ? exerciseModelSlot(uriHint) : 'src'
 
   return {
     overrideAutomaticLayout: true,
@@ -116,7 +117,7 @@ export function createEditorAppConfig(shareCode?: string, locale?: string, uriHi
       modified: {
         text: defaultCode,
         enforceLanguageId: CANGJIE_LANGUAGE_ID,
-        uri: `file:///playground/${slot}/main.cj`,
+        uri: playgroundModelUri(slot),
       },
     },
   }

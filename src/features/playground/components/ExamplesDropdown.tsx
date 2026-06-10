@@ -33,6 +33,7 @@ export function ExamplesDropdown({ action }: ExamplesDropdownProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-label={i18n._(msg`选择示例`)}
           className="w-full justify-between"
         >
           <span className="truncate">{selectedExample?.name ?? 'Hello World'}</span>

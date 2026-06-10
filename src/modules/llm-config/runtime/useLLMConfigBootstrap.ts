@@ -32,9 +32,25 @@ export function useLLMConfigBootstrap({
 }: UseLLMConfigBootstrapOptions = {}): LLMConfigBootstrapState {
   const apiKey = useLLMConfig().apiKey
   const keySource = useLLMConfigStore(s => s.keySource)
+  const autoQuota = useLLMConfigStore(s => s.autoQuota)
   const applyAutoKey = useLLMConfigStore(s => s.applyAutoKey)
   const setAutoQuota = useLLMConfigStore(s => s.setAutoQuota)
+  const setSharedConfig = useLLMConfigStore(s => s.setSharedConfig)
   const [error, setError] = useState<string | undefined>()
+
+  useEffect(() => {
+    if (keySource !== 'auto' || !autoQuota?.exhausted)
+      return
+
+    const delay = autoQuota.nextResetAt - Date.now()
+    if (delay <= 0) {
+      setSharedConfig()
+      return
+    }
+
+    const id = window.setTimeout(setSharedConfig, delay)
+    return () => window.clearTimeout(id)
+  }, [autoQuota?.exhausted, autoQuota?.nextResetAt, keySource, setSharedConfig])
 
   useEffect(() => {
     if (apiKey || keySource !== 'auto')
@@ -72,6 +88,8 @@ export function useLLMConfigBootstrap({
   }, [apiKey, keySource, applyAutoKey, setAutoQuota, reportErrors])
 
   if (apiKey)
+    return { status: 'ready' }
+  if (keySource !== 'auto')
     return { status: 'ready' }
   if (error)
     return { status: 'error', error }

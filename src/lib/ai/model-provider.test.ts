@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ANTHROPIC_DEFAULT_BASE_URL,
   createConfiguredModel,
+  isLLMConfigReady,
   normaliseLLMConfig,
   OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
   resolveProviderDefaults,
@@ -63,6 +64,28 @@ describe('model provider config', () => {
 
     expect(config.baseURL).toBe('')
     expect(config.model).toBe('')
+  })
+
+  it('reports readiness only when endpoint, key, and model are all present', () => {
+    expect(isLLMConfigReady({
+      provider: 'openai-compatible',
+      baseURL: 'https://api.example.test/v1',
+      apiKey: 'user-key',
+      model: 'gpt-test',
+    })).toBe(true)
+    expect(isLLMConfigReady({
+      provider: 'openai-compatible',
+      baseURL: 'https://api.example.test/v1',
+      apiKey: 'user-key',
+      model: '',
+    })).toBe(false)
+    expect(isLLMConfigReady({
+      provider: 'openai-compatible',
+      baseURL: '',
+      apiKey: 'user-key',
+      model: 'gpt-test',
+    })).toBe(false)
+    expect(isLLMConfigReady({ apiKey: '' })).toBe(false)
   })
 
   it('switches provider defaults while preserving the current api key', () => {

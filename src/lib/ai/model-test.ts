@@ -28,9 +28,9 @@ export async function testLLMConnection(config: LLMConfig): Promise<LLMTestResul
     apiKeyPreview: next.apiKey ? `${next.apiKey.slice(0, 4)}...${next.apiKey.slice(-4)}` : '',
   }
   const missing = [
-    !next.baseURL && 'API Base',
+    !next.baseURL && t`服务地址`,
     !next.apiKey && 'API Key',
-    !next.model && 'Model',
+    !next.model && t`模型`,
   ].filter(Boolean)
   const currentProviderLabel = providerLabel(next.provider)
   const missingText = missing.join('、')

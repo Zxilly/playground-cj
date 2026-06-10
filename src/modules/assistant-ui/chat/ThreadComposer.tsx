@@ -9,22 +9,26 @@ import {
 } from '@/modules/assistant-ui/registry/Attachment'
 import { TooltipIconButton } from '@/modules/assistant-ui/registry/TooltipIconButton'
 
-const tPlaceholder = () => t`让 AI 帮你学这一节...`
+const tPlaceholder = () => t`向 AI 课堂提问…`
 
-function ComposerAction() {
+interface ThreadComposerProps {
+  allowAttachments?: boolean
+}
+
+function ComposerAction({ allowAttachments }: Required<ThreadComposerProps>) {
   return (
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
-      <ComposerAddAttachment />
+      {allowAttachments && <ComposerAddAttachment />}
       <AuiIf condition={s => !s.thread.isRunning}>
         <ComposerPrimitive.Send asChild>
           <TooltipIconButton
-            tooltip="Send message"
+            tooltip={t`发送消息`}
             side="bottom"
             type="button"
             variant="default"
             size="icon"
             className="aui-composer-send size-8 rounded-full"
-            aria-label="Send message"
+            aria-label={t`发送消息`}
           >
             <ArrowUpIcon className="aui-composer-send-icon size-4" />
           </TooltipIconButton>
@@ -37,9 +41,9 @@ function ComposerAction() {
             variant="default"
             size="icon"
             className="aui-composer-cancel size-8 rounded-full"
-            aria-label="Stop generating"
+            aria-label={t`停止生成`}
           >
-            <SquareIcon className="aui-composer-cancel-icon size-3 fill-current" />
+            <SquareIcon aria-hidden="true" className="aui-composer-cancel-icon size-3 fill-current" />
           </Button>
         </ComposerPrimitive.Cancel>
       </AuiIf>
@@ -47,25 +51,29 @@ function ComposerAction() {
   )
 }
 
-export const ThreadComposer: FC = () => {
+export const ThreadComposer: FC<ThreadComposerProps> = ({ allowAttachments = true }) => {
+  const composerShell = (
+    <div
+      data-slot="aui_composer-shell"
+      className="flex w-full flex-col gap-2 rounded-(--composer-radius) border bg-background p-(--composer-padding) transition-shadow focus-within:border-ring/75 focus-within:ring-2 focus-within:ring-ring/20 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50"
+    >
+      {allowAttachments && <ComposerAttachments />}
+      <ComposerPrimitive.Input
+        placeholder={tPlaceholder()}
+        className="aui-composer-input max-h-32 min-h-10 w-full resize-none bg-transparent px-1.75 py-1 text-sm outline-none placeholder:text-muted-foreground/80"
+        rows={1}
+        autoFocus
+        aria-label={t`输入消息`}
+      />
+      <ComposerAction allowAttachments={allowAttachments} />
+    </div>
+  )
+
   return (
     <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col">
-      <ComposerPrimitive.AttachmentDropzone asChild>
-        <div
-          data-slot="aui_composer-shell"
-          className="flex w-full flex-col gap-2 rounded-(--composer-radius) border bg-background p-(--composer-padding) transition-shadow focus-within:border-ring/75 focus-within:ring-2 focus-within:ring-ring/20 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50"
-        >
-          <ComposerAttachments />
-          <ComposerPrimitive.Input
-            placeholder={tPlaceholder()}
-            className="aui-composer-input max-h-32 min-h-10 w-full resize-none bg-transparent px-1.75 py-1 text-sm outline-none placeholder:text-muted-foreground/80"
-            rows={1}
-            autoFocus
-            aria-label="Message input"
-          />
-          <ComposerAction />
-        </div>
-      </ComposerPrimitive.AttachmentDropzone>
+      {allowAttachments
+        ? <ComposerPrimitive.AttachmentDropzone asChild>{composerShell}</ComposerPrimitive.AttachmentDropzone>
+        : composerShell}
     </ComposerPrimitive.Root>
   )
 }

@@ -28,7 +28,7 @@ const regState = hmrSlot<CommandRegistrationState>(HMR_SLOT_KEYS.LSP_COMMAND_REG
   pending: null,
 }))
 
-/** Registers Cangjie LSP lifecycle commands in the Command Palette. */
+/** Registers Cangjie code assistance lifecycle commands in the Command Palette. */
 export async function registerLspCommands(): Promise<void> {
   if (regState.registered)
     return
@@ -47,22 +47,22 @@ export async function registerLspCommands(): Promise<void> {
     const actions: ActionDef[] = [
       {
         id: LSP_COMMAND_IDS.start,
-        title: i18n._(msg`仓颉：启动 LSP`),
+        title: i18n._(msg`仓颉：启动代码提示`),
         handler: () => startLsp('manual'),
       },
       {
         id: LSP_COMMAND_IDS.stop,
-        title: i18n._(msg`仓颉：停止 LSP`),
+        title: i18n._(msg`仓颉：停止代码提示`),
         handler: () => stopLsp('manual'),
       },
       {
         id: LSP_COMMAND_IDS.restart,
-        title: i18n._(msg`仓颉：重启 LSP`),
+        title: i18n._(msg`仓颉：重启代码提示`),
         handler: () => restartLsp('manual'),
       },
       {
         id: LSP_COMMAND_IDS.clearCacheRestart,
-        title: i18n._(msg`仓颉：清除缓存并重启 LSP`),
+        title: i18n._(msg`仓颉：清除缓存并重启代码提示`),
         handler: () => clearCacheAndRestartLsp('manual'),
       },
     ]

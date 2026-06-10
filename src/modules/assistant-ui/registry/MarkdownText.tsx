@@ -12,6 +12,7 @@ import remarkGfm from 'remark-gfm'
 import { memo } from 'react'
 import type { FC } from 'react'
 import { CheckIcon, CopyIcon } from 'lucide-react'
+import { t } from '@lingui/core/macro'
 
 import { useCopyToClipboard } from '@/modules/assistant-ui/registry/hooks/useCopyToClipboard'
 import { TooltipIconButton } from '@/modules/assistant-ui/registry/TooltipIconButton'
@@ -30,7 +31,7 @@ const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
       <span className="aui-code-header-language font-medium text-muted-foreground lowercase">
         {language}
       </span>
-      <TooltipIconButton tooltip="Copy" onClick={onCopy}>
+      <TooltipIconButton tooltip={t`复制代码`} onClick={onCopy}>
         {!isCopied && <CopyIcon />}
         {isCopied && <CheckIcon />}
       </TooltipIconButton>
