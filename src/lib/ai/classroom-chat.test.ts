@@ -56,6 +56,12 @@ describe('chat contract', () => {
     expect(buildClassroomChatSystemPrompt('en')).toContain('The learner is using en')
   })
 
+  it('grounds chat answers in the reusable course content instead of model memory', () => {
+    expect(CLASSROOM_CHAT_SYSTEM_PROMPT).toContain('read_course_content_pack')
+    expect(CLASSROOM_CHAT_SYSTEM_PROMPT).toContain('Do not introduce syntax, signatures, return types, APIs, or examples')
+    expect(CLASSROOM_CHAT_SYSTEM_PROMPT).toContain('never include UI artifacts such as "Copy"')
+  })
+
   it('keeps dynamic classroom state out of the static chat instructions', () => {
     expect(CLASSROOM_CHAT_SYSTEM_PROMPT).not.toContain('currentQuiz:')
     expect(CLASSROOM_CHAT_SYSTEM_PROMPT).not.toContain('lastRun:')

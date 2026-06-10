@@ -1,16 +1,34 @@
 import type { ClassroomSession, ClassroomStreamItem } from './types'
+import {
+  deriveLiveViewChapterIndex,
+  latestLiveViewHeading,
+  projectClassroomLiveView,
+} from './view-projections'
+import type { ClassroomChapterIndexEntry, ClassroomLiveViewItem } from './view-projections'
+import { deriveConceptProgress } from './concept-progress'
+import type { ConceptProgress } from './concept-progress'
+
+export {
+  type ConceptProgress,
+  type ConceptProgressEntry,
+  type ConceptReadiness,
+  deriveConceptProgress,
+  deriveConceptProgressEntries,
+} from './concept-progress'
+
+export { lessonBlockDomId } from './view-projections'
 
 type ClassroomStream = ClassroomSession['stream']
 
-const latestHeadingCache = new WeakMap<ClassroomStream, string | null>()
-const chapterIndexCache = new WeakMap<ClassroomStream, ChapterIndexEntry[]>()
+const latestHeadingCache = new WeakMap<ClassroomStream, Map<string, string | null>>()
+const chapterIndexCache = new WeakMap<ClassroomStream, Map<string, ClassroomChapterIndexEntry[]>>()
 
 export type SessionPendingWork = 'none' | 'lesson_generation' | 'awaiting_user'
 
 export function deriveSessionPendingWork(session: ClassroomSession): SessionPendingWork {
   if (session.eventQueue.length > 0)
     return 'lesson_generation'
-  if (session.currentQuiz?.status === 'active')
+  if (session.currentExercise?.status === 'active')
     return 'awaiting_user'
   return 'none'
 }
@@ -25,12 +43,6 @@ export type ClassroomPendingState
     | 'lesson_generation'
     | 'runner'
     | 'awaiting_user'
-
-export interface ConceptProgress {
-  introduced: string[]
-  practicing: string[]
-  demonstrated: string[]
-}
 
 export function deriveClassroomPendingState(
   session: ClassroomSession,
@@ -48,62 +60,45 @@ export function deriveClassroomPendingState(
   return 'idle'
 }
 
-export function deriveConceptProgress(session: ClassroomSession): ConceptProgress {
-  const progress: ConceptProgress = {
-    introduced: [],
-    practicing: [],
-    demonstrated: [],
-  }
-
-  for (const concept of Object.values(session.learner.concepts)) {
-    if (concept.status === 'introduced')
-      progress.introduced.push(concept.conceptId)
-    else if (concept.status === 'practicing')
-      progress.practicing.push(concept.conceptId)
-    else if (concept.status === 'demonstrated')
-      progress.demonstrated.push(concept.conceptId)
-  }
-
-  progress.introduced.sort()
-  progress.practicing.sort()
-  progress.demonstrated.sort()
-  return progress
-}
-
 export function deriveLatestHeading(session: ClassroomSession): string | null {
-  const cached = latestHeadingCache.get(session.stream)
+  const cached = latestHeadingCache.get(session.stream)?.get(session.lang)
   if (cached !== undefined)
     return cached
 
-  let heading: string | null = null
-  for (let i = session.stream.length - 1; i >= 0; i--) {
-    const item = session.stream[i]
-    if (item.type !== 'lesson_blocks')
-      continue
-    for (let j = item.blocks.length - 1; j >= 0; j--) {
-      const block = item.blocks[j]
-      if (block.type === 'heading') {
-        heading = block.text
-        latestHeadingCache.set(session.stream, heading)
-        return heading
-      }
-    }
+  const heading = latestLiveViewHeading(projectClassroomLiveView(session))
+  let perLang = latestHeadingCache.get(session.stream)
+  if (!perLang) {
+    perLang = new Map()
+    latestHeadingCache.set(session.stream, perLang)
   }
-  latestHeadingCache.set(session.stream, heading)
+  perLang.set(session.lang, heading)
   return heading
 }
 
-export interface ChapterIndexEntry {
-  id: string
-  text: string
-  level: 2 | 3
-  streamItemId: string
-  blockKey: string
+export function deriveActiveConceptId(session: ClassroomSession): string | null {
+  const exerciseConceptId = session.currentExercise?.conceptIds[0]
+  if (session.currentExercise?.status === 'active' && exerciseConceptId)
+    return exerciseConceptId
+  if (session.track.targetConceptId)
+    return session.track.targetConceptId
+  if (exerciseConceptId)
+    return exerciseConceptId
+  const liveView = projectClassroomLiveView(session)
+  for (let i = liveView.items.length - 1; i >= 0; i--) {
+    const item = liveView.items[i].source
+    if (item.type === 'content_reference_group' || item.type === 'skip_marker' || item.type === 'retention_marker')
+      return item.conceptId
+    if (item.type === 'bridge_note')
+      return item.conceptIds[0] ?? null
+    if (item.type === 'exercise_instance')
+      return item.exercise.conceptIds[0] ?? null
+    if (item.type === 'learning_evidence_marker')
+      return item.conceptId
+  }
+  return null
 }
 
-export function lessonBlockDomId(streamItemId: string, blockIndex: number): string {
-  return `${streamItemId}:block:${blockIndex}`
-}
+export type ChapterIndexEntry = ClassroomChapterIndexEntry
 
 export interface LessonOutlineRecentItem {
   id: string
@@ -115,9 +110,10 @@ export interface LessonOutlineRecentItem {
 export interface LessonOutline {
   chapters: ChapterIndexEntry[]
   recentItems: LessonOutlineRecentItem[]
-  activeQuiz: {
+  activeExercise: {
     id: string
-    conceptId: string
+    skillId: string
+    conceptIds: string[]
     status: string
     createdAt: number
   } | null
@@ -125,65 +121,61 @@ export interface LessonOutline {
 }
 
 export function deriveChapterIndex(session: ClassroomSession): ChapterIndexEntry[] {
-  const cached = chapterIndexCache.get(session.stream)
+  const cached = chapterIndexCache.get(session.stream)?.get(session.lang)
   if (cached)
     return cached
 
-  const out: ChapterIndexEntry[] = []
-  for (const item of session.stream) {
-    if (item.type !== 'lesson_blocks')
-      continue
-    for (const [blockIndex, block] of item.blocks.entries()) {
-      if (block.type !== 'heading')
-        continue
-      const blockKey = lessonBlockDomId(item.id, blockIndex)
-      out.push({
-        id: `${item.id}:${blockIndex}:${blockKey}`,
-        text: block.text,
-        level: block.level ?? 2,
-        streamItemId: item.id,
-        blockKey,
-      })
-    }
+  const out = deriveLiveViewChapterIndex(projectClassroomLiveView(session))
+  let perLang = chapterIndexCache.get(session.stream)
+  if (!perLang) {
+    perLang = new Map()
+    chapterIndexCache.set(session.stream, perLang)
   }
-  chapterIndexCache.set(session.stream, out)
+  perLang.set(session.lang, out)
   return out
 }
 
-function summarizeStreamItem(item: ClassroomStreamItem): string {
-  if (item.type === 'lesson_blocks') {
-    const headings = item.blocks
-      .filter(block => block.type === 'heading')
-      .map(block => block.text)
-    return headings.length > 0
-      ? `Lesson blocks: ${headings.join(' / ')}`
-      : `Lesson blocks: ${item.blocks.length} block(s)`
+function summarizeLiveViewItem(item: ClassroomLiveViewItem): string {
+  if (item.source.type === 'content_reference_group') {
+    const title = item.heading
+    return title
+      ? `Content Reference Group: ${title}`
+      : `Content Reference Group: ${item.source.references.length} block(s)`
   }
-  if (item.type === 'quiz')
-    return `Quiz ${item.quiz.status} for ${item.quiz.conceptId}`
-  if (item.type === 'run_result')
-    return `Run ${item.result.ok ? 'completed' : 'failed'}, matched: ${item.matched === true}`
-  if (item.type === 'progress_update')
-    return item.summary
-  return item.event.summary ?? item.event.type
+  const source = item.source
+  if (source.type === 'bridge_note')
+    return `Bridge Note for ${source.conceptIds.join(', ')}`
+  if (source.type === 'skip_marker')
+    return `Skipped ${source.blockIds.length} block(s) for ${source.conceptId}`
+  if (source.type === 'exercise_instance')
+    return `Exercise ${source.exercise.status} for ${source.exercise.skillId}`
+  if (source.type === 'run_result')
+    return `Run ${source.result.ok ? 'completed' : 'failed'}, matched: ${source.matched === true}`
+  if (source.type === 'learning_evidence_marker')
+    return source.summary
+  if (source.type === 'retention_marker')
+    return source.summary
+  return source.event.summary ?? source.event.type
 }
 
 export function deriveLessonOutline(session: ClassroomSession, limit = 6): LessonOutline {
   const safeLimit = Math.max(1, Math.min(limit, 20))
+  const liveView = projectClassroomLiveView(session)
   return {
     chapters: deriveChapterIndex(session),
-    recentItems: session.stream.slice(-safeLimit).map(item => ({
+    recentItems: liveView.items.slice(-safeLimit).map(item => ({
       id: item.id,
       type: item.type,
-      summary: summarizeStreamItem(item),
-      createdAt: item.createdAt,
+      summary: summarizeLiveViewItem(item),
+      createdAt: item.source.createdAt,
     })),
-    activeQuiz: session.currentQuiz
+    activeExercise: session.currentExercise
       ? {
-          id: session.currentQuiz.id,
-          conceptId: session.currentQuiz.conceptId,
-          status: session.currentQuiz.status,
-          createdAt: session.currentQuiz.createdAt,
+          id: session.currentExercise.id,
+          skillId: session.currentExercise.skillId,
+          conceptIds: session.currentExercise.conceptIds,
+          status: session.currentExercise.status,
+          createdAt: session.currentExercise.createdAt,
         }
       : null,
     conceptProgress: deriveConceptProgress(session),

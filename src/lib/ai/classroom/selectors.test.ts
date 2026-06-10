@@ -1,291 +1,382 @@
 import { describe, expect, it } from 'vitest'
+import { classroomReducer, createInitialClassroomSession } from './reducer'
 import {
+  deriveActiveConceptId,
   deriveChapterIndex,
   deriveClassroomPendingState,
   deriveConceptProgress,
+  deriveConceptProgressEntries,
   deriveLatestHeading,
   deriveLessonOutline,
   deriveSessionPendingWork,
 } from './selectors'
-import { classroomReducer, createInitialClassroomSession } from './reducer'
-import type { ClassroomSession } from './types'
+import { blockerExplanationForEvidence, statusForConcept } from './concept-progress'
+import type { ClassroomAction } from './reducer'
+import type { ClassroomSession, LearningEvidence } from './types'
+import { getDefaultCourseContentIndex } from '@/lib/ai/course-content/loader'
 
-const baseSession = (): ClassroomSession => createInitialClassroomSession({ lang: 'zh' })
+const exerciseAction: ClassroomAction = {
+  type: 'CREATE_EXERCISE_INSTANCE',
+  exercise: {
+    templateId: 'cj.io.println.print-value.cangjie',
+    templateVersion: '2026-05-28',
+    skillId: 'cj.io.println.print-value',
+    conceptIds: ['cj.io.println'],
+    prompt: 'Print Cangjie.',
+    starterCode: '',
+    expectedOutput: 'Cangjie',
+    matchMode: 'exact',
+    intent: 'mainline',
+    personalizationInputs: { summary: 'test' },
+  },
+  now: 1002,
+}
 
-const quizBlock = {
-  type: 'quiz' as const,
-  conceptId: 'cj.let',
-  prompt: 'Print 3.',
-  starterCode: 'main(){}',
-  expectedOutput: '3',
-  matchMode: 'exact' as const,
+function baseSession(): ClassroomSession {
+  return createInitialClassroomSession({ lang: 'zh' })
+}
+
+function evidence(input: Partial<LearningEvidence> & Pick<LearningEvidence, 'outcome' | 'strength' | 'createdAt'>): LearningEvidence {
+  return {
+    evidenceId: `evidence:${input.createdAt}`,
+    skillId: 'cj.io.println.print-value',
+    conceptIds: ['cj.io.println'],
+    summary: 'test evidence',
+    ...input,
+  }
+}
+
+function withConceptStatus<T>(conceptId: string, status: 'validated' | 'read_only' | 'invalid', callback: () => T): T {
+  const statuses = getDefaultCourseContentIndex().validation.conceptStatuses
+  const previous = statuses[conceptId]
+  statuses[conceptId] = status
+  try {
+    return callback()
+  }
+  finally {
+    statuses[conceptId] = previous
+  }
 }
 
 describe('deriveSessionPendingWork', () => {
-  it('returns "none" for an empty session', () => {
-    expect(deriveSessionPendingWork(baseSession())).toBe('none')
-  })
-
-  it('returns "lesson_generation" when eventQueue has items', () => {
+  it('distinguishes idle, active exercise, and queued orchestration events', () => {
     let session = baseSession()
-    session = classroomReducer(session, {
-      type: 'EMIT_CHAT_INTENT',
-      intent: 'go_deeper',
-      summary: '',
-      now: 1,
-    })
-    expect(deriveSessionPendingWork(session)).toBe('lesson_generation')
-  })
+    expect(deriveSessionPendingWork(session)).toBe('none')
 
-  it('returns "awaiting_user" when currentQuiz is active', () => {
-    let session = baseSession()
-    session = classroomReducer(session, { type: 'SET_CURRENT_QUIZ', quiz: quizBlock, now: 1 })
+    session = classroomReducer(session, exerciseAction)
     expect(deriveSessionPendingWork(session)).toBe('awaiting_user')
-  })
 
-  it('prefers eventQueue over awaiting_user when both are present', () => {
-    let session = baseSession()
-    session = classroomReducer(session, { type: 'SET_CURRENT_QUIZ', quiz: quizBlock, now: 1 })
     session = classroomReducer(session, {
       type: 'EMIT_CHAT_INTENT',
       intent: 'go_deeper',
-      summary: '',
-      now: 2,
+      summary: 'Learner asked for detail.',
+      now: 1003,
     })
     expect(deriveSessionPendingWork(session)).toBe('lesson_generation')
   })
 })
 
 describe('deriveClassroomPendingState', () => {
-  it('returns "runner" when runnerRunning is true (highest priority)', () => {
-    expect(
-      deriveClassroomPendingState(baseSession(), { generationRunning: true, runnerRunning: true }),
-    ).toBe('runner')
-  })
+  it('prioritizes runner, generation, and session work in order', () => {
+    expect(deriveClassroomPendingState(baseSession(), { generationRunning: true, runnerRunning: true })).toBe('runner')
+    expect(deriveClassroomPendingState(baseSession(), { generationRunning: true, runnerRunning: false })).toBe('lesson_generation')
 
-  it('returns "lesson_generation" when generationRunning is true', () => {
-    expect(
-      deriveClassroomPendingState(baseSession(), { generationRunning: true, runnerRunning: false }),
-    ).toBe('lesson_generation')
-  })
-
-  it('falls back to deriveSessionPendingWork when no activity', () => {
-    let session = baseSession()
-    session = classroomReducer(session, { type: 'SET_CURRENT_QUIZ', quiz: quizBlock, now: 1 })
-    expect(
-      deriveClassroomPendingState(session, { generationRunning: false, runnerRunning: false }),
-    ).toBe('awaiting_user')
-  })
-
-  it('returns "idle" for empty session and no activity', () => {
-    expect(
-      deriveClassroomPendingState(baseSession(), { generationRunning: false, runnerRunning: false }),
-    ).toBe('idle')
+    const practicing = classroomReducer(baseSession(), exerciseAction)
+    expect(deriveClassroomPendingState(practicing, { generationRunning: false, runnerRunning: false })).toBe('awaiting_user')
+    expect(deriveClassroomPendingState(baseSession(), { generationRunning: false, runnerRunning: false })).toBe('idle')
   })
 })
 
 describe('deriveConceptProgress', () => {
-  it('groups concept ids by learner status', () => {
+  it('derives concept status from exposure and evidence', () => {
     let session = baseSession()
     session = classroomReducer(session, {
-      type: 'APPEND_LESSON_CONTENT',
-      blocks: [{
-        type: 'concept_card',
-        conceptId: 'cj.introduced',
-        title: 'Introduced',
-        body: 'Intro.',
-      }],
-      now: 1,
+      type: 'APPEND_CONTENT_REFERENCE_GROUP',
+      conceptId: 'cj.io.println',
+      blockIds: ['cj.io.println.heading'],
+      now: 1001,
     })
+    session = classroomReducer(session, exerciseAction)
     session = classroomReducer(session, {
-      type: 'SET_CURRENT_QUIZ',
-      quiz: quizBlock,
-      now: 2,
-    })
-    session = classroomReducer(session, {
-      type: 'QUIZ_SUBMIT_FINISHED',
-      result: { ok: true, stdout: '3\n', stderr: '', exitCode: 0 },
-      now: 3,
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'Cangjie\n', stderr: '', exitCode: 0 },
+      now: 1003,
     })
 
-    expect(deriveConceptProgress(session)).toEqual({
-      introduced: ['cj.introduced'],
-      practicing: [],
-      demonstrated: ['cj.let'],
+    const entries = deriveConceptProgressEntries(session)
+    expect(entries.find(e => e.conceptId === 'cj.io.println')).toMatchObject({
+      status: 'demonstrated',
+      exposure: 'seen',
+      readiness: 'ready_for_next',
     })
+    expect(deriveConceptProgress(session).demonstrated).toContain('cj.io.println')
+  })
+
+  it('orders progress entries and status groups by the active learning track', () => {
+    let session = baseSession()
+    session = classroomReducer(session, {
+      type: 'APPEND_CONTENT_REFERENCE_GROUP',
+      conceptId: 'cj.io.println',
+      blockIds: ['cj.io.println.heading'],
+      skillId: 'cj.io.println.print-value',
+      now: 1001,
+    })
+    session = classroomReducer(session, {
+      type: 'APPEND_CONTENT_REFERENCE_GROUP',
+      conceptId: 'cj.program.main',
+      blockIds: ['cj.program.main.heading'],
+      skillId: 'cj.program.main.write-entry',
+      now: 1002,
+    })
+
+    expect(deriveConceptProgressEntries(session)
+      .filter(entry => entry.status === 'seen')
+      .map(entry => entry.conceptId))
+      .toEqual(['cj.program.main', 'cj.io.println'])
+    expect(deriveConceptProgress(session).seen).toEqual(['cj.program.main', 'cj.io.println'])
+  })
+
+  it('marks repeated failures as blocked', () => {
+    let session = baseSession()
+    session = classroomReducer(session, exerciseAction)
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'wrong\n', stderr: '', exitCode: 0 },
+      now: 1003,
+    })
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'still wrong\n', stderr: '', exitCode: 0 },
+      now: 1004,
+    })
+
+    const blocked = deriveConceptProgressEntries(session).find(entry => entry.conceptId === 'cj.io.println')
+    expect(blocked).toMatchObject({
+      status: 'blocked',
+      readiness: 'needs_remediation',
+      blockerExplanation: '这项练习已连续 2 次未通过，建议先看相关提示再试一次。',
+    })
+    expect(deriveConceptProgress(session).blocked).toContain('cj.io.println')
+  })
+
+  it('keeps read-only concepts review-only instead of asking for practice evidence', () => {
+    withConceptStatus('cj.io.println', 'read_only', () => {
+      let session = baseSession()
+      session = classroomReducer(session, {
+        type: 'APPEND_CONTENT_REFERENCE_GROUP',
+        conceptId: 'cj.io.println',
+        blockIds: ['cj.io.println.heading'],
+        now: 1001,
+      })
+
+      const entry = deriveConceptProgressEntries(session).find(item => item.conceptId === 'cj.io.println')
+
+      expect(entry).toMatchObject({
+        contentStatus: 'read_only',
+        status: 'seen',
+        readiness: 'review_only',
+      })
+    })
+  })
+
+  it('marks invalid concepts as unavailable instead of asking for exposure or practice', () => {
+    withConceptStatus('cj.io.println', 'invalid', () => {
+      let session = baseSession()
+      session = classroomReducer(session, {
+        type: 'APPEND_CONTENT_REFERENCE_GROUP',
+        conceptId: 'cj.io.println',
+        blockIds: ['cj.io.println.heading'],
+        now: 1001,
+      })
+
+      const entry = deriveConceptProgressEntries(session).find(item => item.conceptId === 'cj.io.println')
+
+      expect(entry).toMatchObject({
+        contentStatus: 'invalid',
+        status: 'seen',
+        readiness: 'content_unavailable',
+      })
+    })
+  })
+
+  it('lets later successful evidence recover a previously blocked concept', () => {
+    let session = baseSession()
+    session = classroomReducer(session, exerciseAction)
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'wrong\n', stderr: '', exitCode: 0 },
+      now: 1003,
+    })
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'still wrong\n', stderr: '', exitCode: 0 },
+      now: 1004,
+    })
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'Cangjie\n', stderr: '', exitCode: 0 },
+      now: 1005,
+    })
+
+    const recovered = deriveConceptProgressEntries(session).find(entry => entry.conceptId === 'cj.io.println')
+    expect(recovered).toMatchObject({
+      status: 'demonstrated',
+      readiness: 'ready_for_next',
+      blockerExplanation: null,
+    })
+    expect(deriveConceptProgress(session).demonstrated).toContain('cj.io.println')
+    expect(deriveConceptProgress(session).blocked).not.toContain('cj.io.println')
+  })
+
+  it('marks a demonstrated concept blocked again after later repeated failures', () => {
+    let session = baseSession()
+    session = classroomReducer(session, exerciseAction)
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'Cangjie\n', stderr: '', exitCode: 0 },
+      now: 1003,
+    })
+    session = classroomReducer(session, {
+      ...exerciseAction,
+      now: 1004,
+    })
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'wrong\n', stderr: '', exitCode: 0 },
+      now: 1005,
+    })
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'still wrong\n', stderr: '', exitCode: 0 },
+      now: 1006,
+    })
+
+    expect(deriveConceptProgressEntries(session).find(entry => entry.conceptId === 'cj.io.println')).toMatchObject({
+      status: 'blocked',
+      readiness: 'needs_remediation',
+    })
+    expect(deriveConceptProgress(session).blocked).toContain('cj.io.println')
+  })
+
+  it('keeps mastery evidence stronger than later non-mastery success evidence', () => {
+    expect(statusForConcept([
+      evidence({ outcome: 'success', strength: 'mastery', createdAt: 1001 }),
+      evidence({ outcome: 'success', strength: 'aided', createdAt: 1002 }),
+    ], 'seen')).toBe('mastered')
+  })
+
+  it('treats repeated failures after stale evidence as blocked', () => {
+    expect(statusForConcept([
+      evidence({ outcome: 'success', strength: 'mastery', createdAt: 1001 }),
+      evidence({ outcome: 'self_report', strength: 'stale', createdAt: 1002 }),
+      evidence({ outcome: 'failure', strength: 'independent', createdAt: 1003 }),
+      evidence({ outcome: 'failure', strength: 'independent', createdAt: 1004 }),
+    ], 'seen')).toBe('blocked')
+  })
+
+  it('lets newer stale evidence supersede older unresolved failures', () => {
+    expect(statusForConcept([
+      evidence({ outcome: 'success', strength: 'mastery', createdAt: 1001 }),
+      evidence({ outcome: 'failure', strength: 'independent', createdAt: 1002 }),
+      evidence({ outcome: 'failure', strength: 'independent', createdAt: 1003 }),
+      evidence({ outcome: 'self_report', strength: 'stale', createdAt: 1004 }),
+    ], 'seen')).toBe('stale')
+  })
+
+  it('counts only failures after the latest stale evidence in blocker explanations', () => {
+    const history = [
+      evidence({ outcome: 'success', strength: 'mastery', createdAt: 1001 }),
+      evidence({ outcome: 'failure', strength: 'independent', createdAt: 1002 }),
+      evidence({ outcome: 'failure', strength: 'independent', createdAt: 1003 }),
+      evidence({ outcome: 'self_report', strength: 'stale', createdAt: 1004 }),
+      evidence({ outcome: 'failure', strength: 'independent', createdAt: 1005 }),
+      evidence({ outcome: 'failure', strength: 'independent', createdAt: 1006 }),
+    ]
+
+    expect(statusForConcept(history, 'seen')).toBe('blocked')
+    expect(blockerExplanationForEvidence(history, 'zh')).toBe('这项练习已连续 2 次未通过，建议先看相关提示再试一次。')
   })
 })
 
-describe('deriveLessonOutline', () => {
-  it('returns chapters, bounded recent items, active quiz, and concept progress', () => {
+describe('lesson outline selectors', () => {
+  it('derives the active concept for cross-mode links and default chat scope', () => {
     let session = baseSession()
     session = classroomReducer(session, {
-      type: 'APPEND_LESSON_CONTENT',
-      blocks: [
-        { type: 'heading', text: 'Bindings', level: 2 },
-        {
-          type: 'concept_card',
-          conceptId: 'cj.bindings.let',
-          title: 'Let',
-          body: 'Use let.',
-        },
-      ],
-      now: 1,
+      type: 'APPEND_CONTENT_REFERENCE_GROUP',
+      conceptId: 'cj.program.main',
+      blockIds: ['cj.program.main.heading'],
+      now: 1001,
     })
+    expect(deriveActiveConceptId(session)).toBe('cj.program.main')
+
+    session = classroomReducer(session, exerciseAction)
+    expect(deriveActiveConceptId(session)).toBe('cj.io.println')
+  })
+
+  it('prefers the active exercise concept over a stale track target', () => {
+    const session = classroomReducer(baseSession(), exerciseAction)
+    const staleTargetSession: ClassroomSession = {
+      ...session,
+      track: {
+        ...session.track,
+        targetConceptId: 'cj.program.main',
+      },
+    }
+
+    expect(deriveActiveConceptId(staleTargetSession)).toBe('cj.io.println')
+  })
+
+  it('builds chapters from content references, not copied lesson blocks', () => {
+    let session = baseSession()
     session = classroomReducer(session, {
-      type: 'SET_CURRENT_QUIZ',
-      quiz: quizBlock,
-      now: 2,
-    })
-    session = classroomReducer(session, {
-      type: 'QUIZ_RUN_FINISHED',
-      result: { ok: true, stdout: '2\n', stderr: '', exitCode: 0 },
-      now: 3,
+      type: 'APPEND_CONTENT_REFERENCE_GROUP',
+      conceptId: 'cj.program.main',
+      blockIds: ['cj.program.main.heading', 'cj.program.main.shape'],
+      now: 1001,
     })
 
-    const outline = deriveLessonOutline(session, 2)
-
-    expect(outline.chapters.map(c => c.text)).toEqual(['Bindings'])
-    expect(outline.recentItems).toEqual([
-      expect.objectContaining({ type: 'quiz', summary: 'Quiz active for cj.let' }),
-      expect.objectContaining({ type: 'run_result', summary: 'Run completed, matched: false' }),
+    expect(deriveLatestHeading(session)).toBe('程序入口与 main')
+    expect(deriveChapterIndex(session)).toEqual([
+      expect.objectContaining({
+        text: '程序入口与 main',
+        level: 2,
+        streamItemId: 'content-group:1001:0',
+      }),
     ])
-    expect(outline.activeQuiz).toEqual(expect.objectContaining({
-      conceptId: 'cj.let',
+  })
+
+  it('returns bounded recent items and active exercise metadata', () => {
+    let session = baseSession()
+    session = classroomReducer(session, {
+      type: 'APPEND_CONTENT_REFERENCE_GROUP',
+      conceptId: 'cj.io.println',
+      blockIds: ['cj.io.println.heading'],
+      now: 1001,
+    })
+    session = classroomReducer(session, exerciseAction)
+
+    const outline = deriveLessonOutline(session, 1)
+
+    expect(outline.chapters.map(c => c.text)).toEqual(['标准输出 println'])
+    expect(outline.recentItems).toEqual([
+      expect.objectContaining({
+        type: 'exercise_instance',
+        summary: 'Exercise active for cj.io.println.print-value',
+      }),
+    ])
+    expect(outline.activeExercise).toMatchObject({
+      skillId: 'cj.io.println.print-value',
       status: 'active',
-    }))
-    expect(outline.conceptProgress).toEqual({
-      introduced: ['cj.bindings.let'],
-      practicing: ['cj.let'],
-      demonstrated: [],
     })
   })
-})
 
-describe('deriveLatestHeading', () => {
-  it('returns null when stream is empty', () => {
-    const session = createInitialClassroomSession({ lang: 'zh' })
-    expect(deriveLatestHeading(session)).toBeNull()
-  })
-
-  it('returns the last heading text from the most recent lesson_blocks item', () => {
-    const session = {
-      ...createInitialClassroomSession({ lang: 'zh' }),
-      stream: [
-        {
-          id: 's1',
-          type: 'lesson_blocks' as const,
-          createdAt: 1,
-          blocks: [
-            { type: 'heading' as const, text: '第一章', level: 2 as const },
-            { type: 'paragraph' as const, body: 'intro' },
-          ],
-        },
-        {
-          id: 's2',
-          type: 'lesson_blocks' as const,
-          createdAt: 2,
-          blocks: [
-            { type: 'heading' as const, text: '第二章', level: 2 as const },
-            { type: 'heading' as const, text: '2.1 子节', level: 3 as const },
-            { type: 'paragraph' as const, body: 'body' },
-          ],
-        },
-      ],
-    }
-    expect(deriveLatestHeading(session)).toBe('2.1 子节')
-  })
-
-  it('skips non lesson_blocks items', () => {
-    const session = {
-      ...createInitialClassroomSession({ lang: 'zh' }),
-      stream: [
-        {
-          id: 's1',
-          type: 'lesson_blocks' as const,
-          createdAt: 1,
-          blocks: [{ type: 'heading' as const, text: '只有这一条', level: 2 as const }],
-        },
-        {
-          id: 's2',
-          type: 'system_event' as const,
-          createdAt: 2,
-          event: { type: 'classroom_opened' as const, createdAt: 2 },
-        },
-      ],
-    }
-    expect(deriveLatestHeading(session)).toBe('只有这一条')
-  })
-})
-
-describe('deriveChapterIndex', () => {
-  it('returns empty array for empty stream', () => {
-    const session = createInitialClassroomSession({ lang: 'zh' })
-    expect(deriveChapterIndex(session)).toEqual([])
-  })
-
-  it('collects all heading blocks across multiple lesson_blocks items in order', () => {
-    const h1 = { type: 'heading' as const, text: 'A', level: 2 as const }
-    const h2 = { type: 'heading' as const, text: 'B', level: 3 as const }
-    const h3 = { type: 'heading' as const, text: 'C', level: 2 as const }
-    const session = {
-      ...createInitialClassroomSession({ lang: 'zh' }),
-      stream: [
-        { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [h1, h2] },
-        { id: 's2', type: 'lesson_blocks' as const, createdAt: 2, blocks: [h3] },
-      ],
-    }
-    const result = deriveChapterIndex(session)
-    expect(result).toHaveLength(3)
-    expect(result.map(e => e.text)).toEqual(['A', 'B', 'C'])
-    expect(result.map(e => e.level)).toEqual([2, 3, 2])
-    expect(result[0].streamItemId).toBe('s1')
-    expect(result[2].streamItemId).toBe('s2')
-    expect(result[0].blockKey).toBe('s1:block:0')
-  })
-
-  it('skips lesson_blocks with no heading and non-lesson_blocks items', () => {
-    const session = {
-      ...createInitialClassroomSession({ lang: 'zh' }),
-      stream: [
-        { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [{ type: 'paragraph' as const, body: 'p' }] },
-        { id: 's2', type: 'system_event' as const, createdAt: 2, event: { type: 'classroom_opened' as const, createdAt: 2 } },
-        { id: 's3', type: 'lesson_blocks' as const, createdAt: 3, blocks: [{ type: 'heading' as const, text: 'X', level: 2 as const }] },
-      ],
-    }
-    const result = deriveChapterIndex(session)
-    expect(result.map(e => e.text)).toEqual(['X'])
-  })
-
-  it('produces unique ids when two headings share text within the same lesson_blocks item', () => {
-    const session = {
-      ...createInitialClassroomSession({ lang: 'zh' }),
-      stream: [
-        {
-          id: 's1',
-          type: 'lesson_blocks' as const,
-          createdAt: 1,
-          blocks: [
-            { type: 'heading' as const, text: '示例', level: 2 as const },
-            { type: 'paragraph' as const, body: 'p' },
-            { type: 'heading' as const, text: '示例', level: 2 as const },
-          ],
-        },
-      ],
-    }
-    const result = deriveChapterIndex(session)
-    expect(result).toHaveLength(2)
-    expect(new Set(result.map(e => e.id)).size).toBe(2)
-    expect(result.map(e => e.blockKey)).toEqual(['s1:block:0', 's1:block:2'])
-  })
-
-  it('reuses the derived chapter index when the stream reference has not changed', () => {
-    const session = {
-      ...createInitialClassroomSession({ lang: 'zh' }),
-      stream: [
-        { id: 's1', type: 'lesson_blocks' as const, createdAt: 1, blocks: [{ type: 'heading' as const, text: 'A', level: 2 as const }] },
-      ],
-    }
+  it('reuses the chapter index cache while the stream reference is stable', () => {
+    const session = classroomReducer(baseSession(), {
+      type: 'APPEND_CONTENT_REFERENCE_GROUP',
+      conceptId: 'cj.io.println',
+      blockIds: ['cj.io.println.heading'],
+      now: 1001,
+    })
 
     const first = deriveChapterIndex(session)
     const second = deriveChapterIndex({ ...session, phase: 'teach' })

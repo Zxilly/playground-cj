@@ -1,108 +1,160 @@
 import { describe, expect, it } from 'vitest'
-import { migrateClassroomRecord } from './migrations'
-import { classroomRecordSchema } from './schema'
-import { classroomStorageKey } from './store'
+import {
+  decodePersistedClassroomRecord,
+  encodePersistedClassroomRecord,
+  persistedClassroomRecordKey,
+} from './persisted-record'
+import { classroomReducer, createInitialClassroomSession } from './reducer'
 
-describe('classroom record migrations', () => {
-  it('fills missing quiz ids in legacy v2 records', () => {
-    const record = {
-      key: classroomStorageKey('zh'),
+describe('persisted classroom record codec', () => {
+  it('encodes a v3 classroom record envelope', () => {
+    const session = createInitialClassroomSession({ lang: 'zh' })
+
+    expect(encodePersistedClassroomRecord(session, 1234)).toMatchObject({
+      key: persistedClassroomRecordKey('zh'),
       version: 1,
       lang: 'zh',
       updatedAt: 1234,
-      session: {
-        version: 2,
-        lang: 'zh',
-        phase: 'practice',
-        stream: [{
-          id: 'quiz:1001:0',
-          type: 'quiz',
-          quiz: {
-            conceptId: 'cj.bindings.let',
-            prompt: 'Print 3.',
-            starterCode: '',
-            expectedOutput: '3',
-            matchMode: 'exact',
-            status: 'active',
-            createdAt: 1001,
-          },
-          createdAt: 1001,
-        }],
-        learner: { concepts: {}, evidence: [], learningNotes: '' },
-        currentQuiz: {
-          conceptId: 'cj.bindings.let',
-          prompt: 'Print 3.',
-          starterCode: '',
-          expectedOutput: '3',
-          matchMode: 'exact',
-          status: 'active',
-          createdAt: 1001,
-        },
-        lastRun: null,
-        sessionSummary: '',
-        eventQueue: [],
-      },
-    }
-
-    const migrated = migrateClassroomRecord(record)
-    const parsed = classroomRecordSchema.safeParse(migrated)
-
-    expect(parsed.success).toBe(true)
-    if (!parsed.success)
-      return
-    expect(parsed.data.session.stream[0]).toMatchObject({
-      type: 'quiz',
-      quiz: { id: 'quiz:1001:0' },
+      session,
     })
-    expect(parsed.data.session.currentQuiz).toMatchObject({ id: 'quiz:1001:0' })
   })
 
-  it('normalises legacy unknown chat intents to change_topic', () => {
-    const record = {
-      key: classroomStorageKey('zh'),
+  it('decodes v3 records through the persisted record interface', () => {
+    const session = createInitialClassroomSession({ lang: 'zh' })
+    const record = encodePersistedClassroomRecord(session, 1)
+
+    const decoded = decodePersistedClassroomRecord(record, 'zh')
+
+    if (!decoded.ok)
+      throw new Error(`Expected record to decode, got ${decoded.discard.reason}`)
+    expect(decoded.record).toEqual(record)
+    expect(decoded.session).toEqual(session)
+  })
+
+  it('normalizes terminal exercise status before saving or loading', () => {
+    const active = classroomReducer(createInitialClassroomSession({ lang: 'zh' }), {
+      type: 'CREATE_EXERCISE_INSTANCE',
+      exercise: {
+        templateId: 'cj.io.println.print-value.cangjie',
+        templateVersion: '2026-05-28',
+        skillId: 'cj.io.println.print-value',
+        conceptIds: ['cj.io.println'],
+        prompt: 'Print Cangjie.',
+        starterCode: '',
+        expectedOutput: 'Cangjie',
+        matchMode: 'exact',
+        intent: 'mainline',
+        personalizationInputs: { summary: 'test' },
+      },
+      now: 1001,
+    })
+    const skipped = classroomReducer(active, { type: 'EXERCISE_SKIP', now: 1002 })
+    const mixed = {
+      ...skipped,
+      currentExercise: active.currentExercise,
+      stream: active.stream,
+    }
+
+    const encoded = encodePersistedClassroomRecord(mixed, 1)
+    const encodedExercise = encoded.session.stream.find(item => item.type === 'exercise_instance')
+    expect(encoded.session.currentExercise?.status).toBe('skip')
+    expect(encodedExercise).toMatchObject({
+      type: 'exercise_instance',
+      exercise: expect.objectContaining({ status: 'skip' }),
+    })
+
+    const decoded = decodePersistedClassroomRecord({
+      ...encoded,
+      session: mixed,
+    }, 'zh')
+
+    if (!decoded.ok)
+      throw new Error(`Expected record to decode, got ${decoded.discard.reason}`)
+    const decodedExercise = decoded.session.stream.find(item => item.type === 'exercise_instance')
+    expect(decoded.session.currentExercise?.status).toBe('skip')
+    expect(decodedExercise).toMatchObject({
+      type: 'exercise_instance',
+      exercise: expect.objectContaining({ status: 'skip' }),
+    })
+  })
+
+  it('does not migrate legacy v2 classroom sessions', () => {
+    const legacy = {
+      key: persistedClassroomRecordKey('zh'),
       version: 1,
       lang: 'zh',
-      updatedAt: 1234,
+      updatedAt: 1,
       session: {
         version: 2,
         lang: 'zh',
-        phase: 'orient',
-        stream: [{
-          id: 'event:1:0',
-          type: 'system_event',
-          event: {
-            type: 'chat_intent',
-            intent: 'custom_old_intent',
-            summary: 'old',
-            createdAt: 1,
-          },
-          createdAt: 1,
-        }],
-        learner: { concepts: {}, evidence: [], learningNotes: '' },
+        stream: [],
         currentQuiz: null,
-        lastRun: null,
-        sessionSummary: '',
-        eventQueue: [{
-          type: 'chat_intent',
-          intent: 'custom_old_intent',
-          summary: 'old',
-          createdAt: 1,
-        }],
       },
     }
 
-    const parsed = classroomRecordSchema.safeParse(migrateClassroomRecord(record))
+    const decoded = decodePersistedClassroomRecord(legacy, 'zh')
 
-    expect(parsed.success).toBe(true)
-    if (!parsed.success)
-      return
-    expect(parsed.data.session.eventQueue[0]).toMatchObject({
-      type: 'chat_intent',
-      intent: 'change_topic',
+    if (decoded.ok)
+      throw new Error('Expected legacy record to be discarded')
+    expect(decoded.discard).toEqual({
+      reason: 'unsupported_session_version',
+      version: 2,
     })
-    expect(parsed.data.session.stream[0]).toMatchObject({
-      type: 'system_event',
-      event: { type: 'chat_intent', intent: 'change_topic' },
+  })
+
+  it('reports schema validation failures after migration policy is applied', () => {
+    const decoded = decodePersistedClassroomRecord({
+      key: persistedClassroomRecordKey('zh'),
+      version: 1,
+      lang: 'zh',
+      updatedAt: 1,
+      session: { version: 3, lang: 'zh' },
+    }, 'zh')
+
+    if (decoded.ok)
+      throw new Error('Expected invalid v3 record to be discarded')
+    expect(decoded.discard.reason).toBe('schema_validation_failed')
+    expect(decoded.discard).toMatchObject({
+      issues: expect.arrayContaining([expect.stringContaining('phase')]),
+    })
+  })
+
+  it('reports language and storage key mismatches separately', () => {
+    const session = createInitialClassroomSession({ lang: 'zh' })
+    const record = encodePersistedClassroomRecord(session, 1)
+    const wrongLang = decodePersistedClassroomRecord({ ...record, lang: 'en' }, 'zh')
+    const wrongSessionLang = decodePersistedClassroomRecord({
+      ...record,
+      session: { ...record.session, lang: 'en' },
+    }, 'zh')
+    const wrongKey = decodePersistedClassroomRecord({
+      ...record,
+      key: persistedClassroomRecordKey('en'),
+    }, 'zh')
+
+    if (wrongLang.ok || wrongSessionLang.ok || wrongKey.ok)
+      throw new Error('Expected mismatched records to be discarded')
+    expect(wrongLang.discard).toEqual({
+      reason: 'lang_mismatch',
+      expected: 'zh',
+      actual: 'en',
+    })
+    expect(wrongSessionLang.discard).toEqual({
+      reason: 'lang_mismatch',
+      expected: 'zh',
+      actual: 'en',
+    })
+    expect(wrongKey.discard).toEqual({
+      reason: 'key_mismatch',
+      expected: persistedClassroomRecordKey('zh'),
+      actual: persistedClassroomRecordKey('en'),
+    })
+  })
+
+  it('reports missing records without treating them as corrupt', () => {
+    expect(decodePersistedClassroomRecord(null, 'zh')).toEqual({
+      ok: false,
+      discard: { reason: 'missing_record' },
     })
   })
 })

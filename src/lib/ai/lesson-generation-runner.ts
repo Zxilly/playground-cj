@@ -1,7 +1,8 @@
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
 import type { Toolkit } from '@assistant-ui/react'
 import type { ClassroomEvent } from './classroom/types'
-import { createLessonGeneration, createLessonGenerationEventEnvelope, isLessonAuthoringTool } from './lesson-generation'
+import { evaluateLessonOrchestrationToolResult } from '@/features/tour-ai/agent/toolkit/lesson-toolkit-metadata'
+import { createLessonGeneration, createLessonGenerationEventEnvelope } from './lesson-generation'
 import type { LessonGenerationProgressChunk } from './lesson-generation-progress'
 import type { LLMConfig } from './model-provider'
 
@@ -24,28 +25,18 @@ export async function runLessonGenerationStep({ config, toolkit, bridge, event, 
     abortSignal,
   })
 
-  let hadToolFailure = false
-  let hadAuthoringSuccess = false
-  let firstErrorDetail: string | undefined
-
-  function recordFailure(detail: unknown) {
-    hadToolFailure = true
-    if (firstErrorDetail !== undefined || detail === undefined)
-      return
-    firstErrorDetail = detail instanceof Error ? detail.message : String(detail)
-  }
+  let hadOrchestrationSuccess = false
 
   for await (const part of stream.fullStream) {
     if (abortSignal?.aborted)
       return
     if (part.type === 'text-delta') {
-      reportProgress(onProgress, { type: 'text', text: part.text })
+      // Free-form orchestration text is model scratch/status output, not a
+      // stable learner-facing UI string. The progress panel only surfaces
+      // fixed labels derived from tool activity.
     }
     else if (part.type === 'reasoning-delta') {
-      // Reasoning models (mimo, deepseek-r1, gpt-5, claude w/ extended thinking)
-      // emit their chain-of-thought through reasoning-delta. Without surfacing it
-      // the panel skips straight from idle to tool calls and looks frozen.
-      reportProgress(onProgress, { type: 'reasoning', reasoningId: part.id, text: part.text })
+      // Never surface reasoning text in the learner UI.
     }
     else if (part.type === 'tool-input-start') {
       const toolName = part.toolName
@@ -63,14 +54,14 @@ export async function runLessonGenerationStep({ config, toolkit, bridge, event, 
         toolName,
         output: part.output,
       })
-      if (isLessonAuthoringTool(toolName)) {
-        const output = part.output
-        if (output && typeof output === 'object' && (output as { ok?: unknown }).ok === true) {
-          hadAuthoringSuccess = true
+      const orchestrationResult = evaluateLessonOrchestrationToolResult(toolName, part.output)
+      if (orchestrationResult.orchestration) {
+        if (orchestrationResult.succeeded) {
+          hadOrchestrationSuccess = true
         }
         else {
-          // failWithRetryHint returns { ok: false } as a successful tool-result — count as failure for guard purposes.
-          recordFailure((output as { error?: unknown } | undefined)?.error)
+          // ToolLoopAgent can self-correct after failed tool calls. Keep
+          // consuming the stream, but do not surface raw tool failure details.
         }
       }
     }
@@ -84,7 +75,7 @@ export async function runLessonGenerationStep({ config, toolkit, bridge, event, 
         error: part.error,
       })
       // Don't throw mid-stream; ToolLoopAgent re-feeds the error so LLM can self-correct.
-      recordFailure(part.error)
+      // Keep consuming the stream; the model may recover with a later tool call.
     }
     else if ((part as { type: string }).type === 'tool-input-error') {
       // tool-input-error is emitted on UI/full-message streams but not on the typed fullStream union; narrow by cast.
@@ -96,22 +87,21 @@ export async function runLessonGenerationStep({ config, toolkit, bridge, event, 
         toolName,
         error: errPart.errorText,
       })
-      recordFailure(errPart.errorText)
+      // Keep consuming the stream; the model may recover with a later tool call.
     }
     else if ((part as { type: string }).type === 'error') {
       // Stream-level errors (e.g. provider HTTP failures like new-api 403 insufficient_user_quota)
       // arrive as their own part instead of throwing from the iterator. Re-throw so the caller sees
       // the original APICallError-shaped error and can classify it — otherwise the loop completes
-      // silently and we fall through to the generic "produced no authoring output" message.
+      // silently and we fall through to the generic "produced no orchestration output" message.
       const errPart = part as unknown as { error?: unknown }
       const raw = errPart.error
       throw raw instanceof Error ? raw : new Error(typeof raw === 'string' ? raw : JSON.stringify(raw))
     }
   }
 
-  if (!hadAuthoringSuccess) {
-    const failureContext = hadToolFailure ? ' after tool failures' : ''
-    throw new Error(`Lesson generation produced no authoring output${failureContext}${firstErrorDetail ? `: ${firstErrorDetail}` : ''}`)
+  if (!hadOrchestrationSuccess) {
+    throw new Error('lesson_generation_failed')
   }
 }
 

@@ -6,15 +6,21 @@ describe('buildTourAIChatSuggestions', () => {
     const suggestions = buildTourAIChatSuggestions('en')
 
     expect(suggestions.every(suggestion => suggestion.title.trim().length > 0)).toBe(true)
+    expect(suggestions.every(suggestion => suggestion.description.trim().length > 0)).toBe(true)
     expect(suggestions.every(suggestion => suggestion.prompt.trim().length > 0)).toBe(true)
-    expect(suggestions.at(0)?.prompt).toContain('current quiz')
+    expect(suggestions.at(0)?.prompt).toContain('current classroom focus')
+    expect(suggestions.at(0)?.prompt).toContain('If there is an exercise')
+    expect(suggestions.at(1)?.description).toContain('No code changes')
   })
 
   it('falls back to Chinese suggestions for unsupported languages', () => {
     const suggestions = buildTourAIChatSuggestions('ja')
 
     expect(suggestions.every(suggestion => suggestion.title.trim().length > 0)).toBe(true)
+    expect(suggestions.every(suggestion => suggestion.description.trim().length > 0)).toBe(true)
     expect(suggestions.every(suggestion => suggestion.prompt.trim().length > 0)).toBe(true)
-    expect(suggestions.at(0)?.title).toMatch(/题目/)
+    expect(suggestions.at(0)?.title).toMatch(/当前内容/)
+    expect(suggestions.at(0)?.prompt).toContain('如果有练习')
+    expect(suggestions.at(1)?.description).toContain('不会改代码')
   })
 })

@@ -37,7 +37,6 @@ describe('richTextToMarkdown', () => {
     ])
     expect(md).toBe('use `let` for **immutable** bindings')
   })
-
 })
 
 describe('richTextPlainText', () => {

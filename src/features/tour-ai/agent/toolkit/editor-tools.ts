@@ -3,160 +3,70 @@ import { z } from 'zod'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
 import { useCodeSuggestionStore } from '@/features/tour-ai/state/code-suggestion-store'
-import { useQuizDraftStore } from '@/features/tour-ai/state/quiz-draft-store'
+import { resolveLearnerCodeSource } from '@/features/tour-ai/exercise-workspace/learner-code-source'
 import { fail, ok } from './results'
 import { getModel, requireClassroom, targetSnippet, withLineNumbers } from './shared'
 
 const CHAT_MARKER_NAMESPACE = 'chat'
+const MAX_MARKER_LABEL_LENGTH = 80
 
-/**
- * Build the model URI a QuizPracticeCard would use for the given quiz id.
- *  Mirrors the `slot` computation in createEditorAppConfig.
- */
-function quizModelUri(quizId: string): string {
-  return `file:///playground/quiz-${encodeURIComponent(quizId)}/main.cj`
+function validateLineRange(model: monaco.editor.ITextModel, startLine: number, endLine: number): string | null {
+  const lineCount = model.getLineCount()
+  if (endLine < startLine)
+    return `Invalid editor line range: endLine ${endLine} is before startLine ${startLine}.`
+  if (startLine > lineCount || endLine > lineCount)
+    return `Editor line range ${startLine}-${endLine} is outside the current editor bounds (1-${lineCount}).`
+  return null
 }
 
-/**
- * Pick the right Monaco editor / model for "what the learner is looking at".
- *  Tries, in priority order:
- *    1. The currently focused Monaco editor (handles "user is actively typing
- *       in a quiz card right now").
- *    2. The bridge-registered editor (the active quiz card has registered
- *       itself; same signal QuizPracticeCard wires for write-tools).
- *    3. The model whose URI matches the active quiz id (handles cases where
- *       no quiz card is currently the registered one — e.g. quiz status
- *       changed to skip/success/superseded and the bridge useEffect dropped
- *       its registration, OR the chat ran before the quiz card mounted).
- *    4. Any quiz-shaped model in Monaco (multi-quiz pages where currentQuiz
- *       is null but old quiz cards still hold live models).
- *  Returns null when nothing usable exists; the caller falls further back to
- *  the persisted draft and then to the quiz's static starter code.
- */
-function resolveLearnerCodeSource(bridge: AIClassroomBridgeValue): {
-  code: string
-  lineCount: number
-  language: string
-  source: 'focused' | 'bridge' | 'active_quiz_model' | 'detached_model'
-  quizId?: string
-} | null {
-  // 1. focused
-  const editors = monaco.editor.getEditors?.() ?? []
-  const focused = editors.find(e => e.hasTextFocus?.())
-  if (focused) {
-    const m = focused.getModel()
-    if (m) {
-      return {
-        code: m.getValue(),
-        lineCount: m.getLineCount(),
-        language: m.getLanguageId(),
-        source: 'focused',
-      }
-    }
-  }
+function validateEditorRange(
+  model: monaco.editor.ITextModel,
+  startLine: number,
+  startColumn: number,
+  endLine: number,
+  endColumn: number,
+): string | null {
+  const lineError = validateLineRange(model, startLine, endLine)
+  if (lineError)
+    return lineError
+  if (endLine === startLine && endColumn <= startColumn)
+    return `Invalid editor range: endColumn ${endColumn} must be after startColumn ${startColumn}.`
 
-  // 2. bridge-registered editor
-  const bridgeEditor = bridge.editor.getEditor()
-  const bridgeModel = bridgeEditor?.getModel?.()
-  if (bridgeModel) {
-    return {
-      code: bridgeModel.getValue(),
-      lineCount: bridgeModel.getLineCount(),
-      language: bridgeModel.getLanguageId(),
-      source: 'bridge',
-    }
-  }
-
-  // 3. URI lookup for the active quiz — ignore status here so that a quiz
-  //    that just transitioned to skip/success/superseded but whose model
-  //    still holds the learner's last edit can still be read. The session
-  //    `currentQuiz` field points to the most recent quiz the system cares
-  //    about, regardless of terminal state.
-  const session = bridge.classroom?.getSession()
-  const currentQuiz = session?.currentQuiz
-  if (currentQuiz && monaco.Uri?.parse && monaco.editor.getModel) {
-    const uri = monaco.Uri.parse(quizModelUri(currentQuiz.id))
-    const m = monaco.editor.getModel(uri)
-    if (m) {
-      return {
-        code: m.getValue(),
-        lineCount: m.getLineCount(),
-        language: m.getLanguageId(),
-        source: 'active_quiz_model',
-        quizId: currentQuiz.id,
-      }
-    }
-  }
-
-  // 4. Any quiz-shaped model lying around. Order is undefined so this is a
-  //    last-resort: prefer the one whose URI matches `currentQuiz.id` if we
-  //    fell here because layer 3's strict `getModel(uri)` call failed for
-  //    some reason (e.g. URI parser disagreement). Otherwise take the first.
-  const allModels = monaco.editor.getModels?.() ?? []
-  const quizModels = allModels.filter(m => m.uri.toString().startsWith('file:///playground/quiz-'))
-  const detached = (currentQuiz
-    ? quizModels.find(m => m.uri.toString() === quizModelUri(currentQuiz.id))
-    : undefined) ?? quizModels[0]
-  if (detached) {
-    return {
-      code: detached.getValue(),
-      lineCount: detached.getLineCount(),
-      language: detached.getLanguageId(),
-      source: 'detached_model',
-    }
-  }
-
+  const maxStartColumn = model.getLineMaxColumn(startLine)
+  const maxEndColumn = model.getLineMaxColumn(endLine)
+  if (startColumn > maxStartColumn)
+    return `Start column ${startColumn} is outside line ${startLine} (1-${maxStartColumn}).`
+  if (endColumn > maxEndColumn)
+    return `End column ${endColumn} is outside line ${endLine} (1-${maxEndColumn}).`
   return null
+}
+
+function chatMarkerLabel(bridge: AIClassroomBridgeValue, label: string | undefined, fallback: 'highlight' | 'underline'): string {
+  const text = label?.trim()
+  if (text)
+    return text.length > MAX_MARKER_LABEL_LENGTH ? `${text.slice(0, MAX_MARKER_LABEL_LENGTH - 1)}…` : text
+  if (bridge.uiLang === 'en')
+    return fallback === 'highlight' ? 'AI highlight' : 'AI annotation'
+  return fallback === 'highlight' ? 'AI 高亮' : 'AI 标注'
 }
 
 export function createEditorTools(bridge: AIClassroomBridgeValue): Toolkit {
   return {
     read_editor_code: {
-      description: 'Read the learner\'s current quiz code. Always returns something — when the live editor is unavailable, falls back to the persisted draft and then to the quiz\'s starter code. Use withLineNumbers when discussing line-specific code. The returned `source` tells you whether you are looking at live focused code (`focused`), the current active-quiz model (`active_quiz_model`), a detached model, a persisted draft (`draft`), or the starter scaffold (`starter`).',
+      description: 'Read the learner\'s current exercise code. When the live editor is unavailable, falls back to the persisted draft and then to the exercise starter code. Use withLineNumbers when discussing line-specific code.',
       parameters: z.object({ withLineNumbers: z.boolean().optional() }),
       execute: async ({ withLineNumbers: numbered }) => {
         const formatCode = (code: string) => numbered ? withLineNumbers(code) : code
 
-        // Layers 1-3: live Monaco model.
-        const live = resolveLearnerCodeSource(bridge)
-        if (live) {
+        const source = resolveLearnerCodeSource(bridge)
+        if (source) {
           return ok({
-            code: formatCode(live.code),
-            lineCount: live.lineCount,
-            language: live.language,
-            source: live.source,
-            ...(live.quizId ? { quizId: live.quizId } : {}),
+            ...source,
+            code: formatCode(source.code),
           })
         }
 
-        // Layer 4: persisted draft for the active quiz.
-        const session = bridge.classroom?.getSession()
-        const activeQuiz = session?.currentQuiz
-        if (activeQuiz) {
-          const draft = useQuizDraftStore.getState().getDraft(activeQuiz.id)
-          if (draft && draft.code) {
-            return ok({
-              code: formatCode(draft.code),
-              lineCount: draft.code.split('\n').length,
-              language: 'cangjie',
-              source: 'draft' as const,
-              quizId: activeQuiz.id,
-              stale: true,
-            })
-          }
-          // Layer 5: starter code — gives the AI enough context to talk about
-          // the exercise even when the learner has not typed anything yet.
-          return ok({
-            code: formatCode(activeQuiz.starterCode),
-            lineCount: activeQuiz.starterCode.split('\n').length,
-            language: 'cangjie',
-            source: 'starter' as const,
-            quizId: activeQuiz.id,
-            stale: true,
-          })
-        }
-
-        return fail('No code to read — no active quiz and no live editor on the page.')
+        return fail('No code to read — no active exercise and no live editor on the page.')
       },
     },
 
@@ -170,6 +80,10 @@ export function createEditorTools(bridge: AIClassroomBridgeValue): Toolkit {
       execute: async ({ startLine, endLine, label }) => {
         try {
           const { model } = getModel(bridge)
+          const resolvedEndLine = endLine ?? startLine
+          const rangeError = validateLineRange(model, startLine, resolvedEndLine)
+          if (rangeError)
+            return fail(rangeError)
           requireClassroom(bridge).replaceChatAnnotations([{
             kind: 'highlight',
             startLine,
@@ -180,11 +94,11 @@ export function createEditorTools(bridge: AIClassroomBridgeValue): Toolkit {
           }])
           monaco.editor.setModelMarkers(model, CHAT_MARKER_NAMESPACE, [{
             severity: monaco.MarkerSeverity.Hint,
-            message: label ?? '聊天高亮',
+            message: chatMarkerLabel(bridge, label, 'highlight'),
             startLineNumber: startLine,
             startColumn: 1,
-            endLineNumber: endLine ?? startLine,
-            endColumn: model.getLineMaxColumn(endLine ?? startLine),
+            endLineNumber: resolvedEndLine,
+            endColumn: model.getLineMaxColumn(resolvedEndLine),
           }])
           return ok()
         }
@@ -206,6 +120,9 @@ export function createEditorTools(bridge: AIClassroomBridgeValue): Toolkit {
       execute: async ({ startLine, startColumn, endLine, endColumn, label }) => {
         try {
           const { model } = getModel(bridge)
+          const rangeError = validateEditorRange(model, startLine, startColumn, endLine, endColumn)
+          if (rangeError)
+            return fail(rangeError)
           requireClassroom(bridge).replaceChatAnnotations([{
             kind: 'underline',
             startLine,
@@ -216,7 +133,7 @@ export function createEditorTools(bridge: AIClassroomBridgeValue): Toolkit {
           }])
           monaco.editor.setModelMarkers(model, CHAT_MARKER_NAMESPACE, [{
             severity: monaco.MarkerSeverity.Info,
-            message: label ?? '聊天标注',
+            message: chatMarkerLabel(bridge, label, 'underline'),
             startLineNumber: startLine,
             startColumn,
             endLineNumber: endLine,
@@ -261,25 +178,25 @@ export function createEditorTools(bridge: AIClassroomBridgeValue): Toolkit {
     },
 
     suggest_code_change: {
-      description: 'Stage a proposed code replacement for the active quiz without applying it. The learner sees a diff banner and decides whether to apply. Use this for "here is what I would write" — never silently rewrite the learner\'s code. Pass the full replacement source in `code`, the active quiz id in `quizId` (from read_current_quiz / read_classroom_state), and a one-paragraph rationale in `explanation`.',
+      description: 'Stage a proposed code replacement for the active exercise without applying it. The learner sees a diff banner and decides whether to apply. Use this for "here is what I would write" — never silently rewrite the learner\'s code. Pass the full replacement source in `code`, the active exercise id in `exerciseId` (from read_current_exercise / read_classroom_state), and a one-paragraph rationale in `explanation`.',
       parameters: z.object({
-        quizId: z.string(),
+        exerciseId: z.string(),
         code: z.string(),
         explanation: z.string().max(800),
       }),
-      execute: async ({ quizId, code, explanation }) => {
+      execute: async ({ exerciseId, code, explanation }) => {
         try {
-          // Verify the suggestion targets the currently active quiz; refuse
+          // Verify the suggestion targets the currently active exercise; refuse
           // stale or speculative targets so old suggestions don't leak into
           // the next exercise.
           const session = requireClassroom(bridge).getSession()
-          const active = session.currentQuiz
+          const active = session.currentExercise
           if (!active || active.status !== 'active')
-            return fail('No active quiz; suggest_code_change can only run while a quiz is active.')
-          if (active.id !== quizId)
-            return fail(`Quiz id mismatch — active quiz is ${active.id}, but you targeted ${quizId}. Re-fetch via read_current_quiz before suggesting.`)
+            return fail('No active exercise; suggest_code_change can only run while an exercise is active.')
+          if (active.id !== exerciseId)
+            return fail(`Exercise id mismatch — active exercise is ${active.id}, but you targeted ${exerciseId}. Re-fetch via read_current_exercise before suggesting.`)
           useCodeSuggestionStore.getState().setSuggestion({
-            quizId,
+            exerciseId,
             code,
             explanation,
             createdAt: Date.now(),

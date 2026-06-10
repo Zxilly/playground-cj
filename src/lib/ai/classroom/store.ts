@@ -5,7 +5,7 @@ import { classroomReducer, createInitialClassroomSession } from './reducer'
 import type { ClassroomAction } from './reducer'
 import type { ClassroomSession } from './types'
 
-export const CLASSROOM_STORAGE_PREFIX = 'tour-ai:classroom:v1'
+export const CLASSROOM_STORAGE_PREFIX = 'tour-ai:classroom:v3'
 
 export function classroomStorageKey(lang: string): string {
   return `${CLASSROOM_STORAGE_PREFIX}:${lang}`

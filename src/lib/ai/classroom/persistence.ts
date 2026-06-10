@@ -1,21 +1,23 @@
-import { classroomRecordSchema } from './schema'
-import { migrateClassroomRecord } from './migrations'
-import { classroomStorageKey } from './store'
+import {
+  decodePersistedClassroomRecord,
+  describePersistedClassroomRecordDiscard,
+  encodePersistedClassroomRecord,
+  persistedClassroomRecordKey,
+  shouldWarnForPersistedClassroomRecordDiscard,
+} from './persisted-record'
 import type { ClassroomSession } from './types'
 
 export const CLASSROOM_DB_NAME = 'tour-ai-classroom'
 const CLASSROOM_STORE_NAME = 'sessions'
 const CLASSROOM_DB_VERSION = 1
 
-interface ClassroomSnapshotRecord {
-  key: string
-  version: 1
-  lang: string
-  updatedAt: number
-  session: ClassroomSession
-}
-
 type SaveClassroomSession = (session: ClassroomSession) => Promise<void>
+
+interface ClassroomPersistenceQueueOptions {
+  save?: SaveClassroomSession
+  onSaveFailed?: (error: unknown) => void
+  onSaveSucceeded?: () => void
+}
 
 let writeTail = Promise.resolve()
 
@@ -64,20 +66,21 @@ export async function loadClassroomSession(lang: string): Promise<ClassroomSessi
   try {
     const transaction = db.transaction(CLASSROOM_STORE_NAME, 'readonly')
     const store = transaction.objectStore(CLASSROOM_STORE_NAME)
-    const raw = await requestResult<unknown>(store.get(classroomStorageKey(lang)))
+    const raw = await requestResult<unknown>(store.get(persistedClassroomRecordKey(lang)))
     await transactionDone(transaction)
 
-    if (raw == null)
-      return null
-
-    const result = classroomRecordSchema.safeParse(migrateClassroomRecord(raw))
-    if (!result.success) {
-      console.warn('[AI Classroom] Persisted record failed schema validation, discarding', result.error.issues)
+    const decoded = decodePersistedClassroomRecord(raw, lang)
+    if (!decoded.ok) {
+      if (shouldWarnForPersistedClassroomRecordDiscard(decoded.discard)) {
+        console.warn(
+          '[AI Classroom] Persisted record discarded',
+          describePersistedClassroomRecordDiscard(decoded.discard),
+          decoded.discard,
+        )
+      }
       return null
     }
-    if (result.data.lang !== lang || result.data.key !== classroomStorageKey(lang))
-      return null
-    return result.data.session
+    return decoded.session
   }
   finally {
     db.close()
@@ -92,13 +95,7 @@ async function writeClassroomSession(session: ClassroomSession): Promise<void> {
   try {
     const transaction = db.transaction(CLASSROOM_STORE_NAME, 'readwrite')
     const store = transaction.objectStore(CLASSROOM_STORE_NAME)
-    store.put({
-      key: classroomStorageKey(session.lang),
-      version: 1,
-      lang: session.lang,
-      updatedAt: Date.now(),
-      session,
-    } satisfies ClassroomSnapshotRecord)
+    store.put(encodePersistedClassroomRecord(session))
     await transactionDone(transaction)
   }
   finally {
@@ -121,7 +118,7 @@ export async function clearClassroomSession(lang: string): Promise<void> {
 
   try {
     const transaction = db.transaction(CLASSROOM_STORE_NAME, 'readwrite')
-    transaction.objectStore(CLASSROOM_STORE_NAME).delete(classroomStorageKey(lang))
+    transaction.objectStore(CLASSROOM_STORE_NAME).delete(persistedClassroomRecordKey(lang))
     await transactionDone(transaction)
   }
   finally {
@@ -131,7 +128,10 @@ export async function clearClassroomSession(lang: string): Promise<void> {
 
 const PERSISTENCE_DEBOUNCE_MS = 200
 
-export function createClassroomPersistenceQueue(save: SaveClassroomSession = saveClassroomSession) {
+export function createClassroomPersistenceQueue(options: SaveClassroomSession | ClassroomPersistenceQueueOptions = saveClassroomSession) {
+  const save = typeof options === 'function' ? options : options.save ?? saveClassroomSession
+  const onSaveFailed = typeof options === 'function' ? undefined : options.onSaveFailed
+  const onSaveSucceeded = typeof options === 'function' ? undefined : options.onSaveSucceeded
   let tail = Promise.resolve()
   let cancelled = false
   let pendingSession: ClassroomSession | null = null
@@ -154,10 +154,13 @@ export function createClassroomPersistenceQueue(save: SaveClassroomSession = sav
       .then(() => {
         if (cancelled)
           return
-        return save(sessionToWrite)
+        return save(sessionToWrite).then(() => {
+          onSaveSucceeded?.()
+        })
       })
       .catch((error) => {
         console.warn('[AI Classroom] Failed to persist session', error)
+        onSaveFailed?.(error)
       })
       .finally(() => {
         for (const r of resolvers) r()

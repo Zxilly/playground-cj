@@ -2,34 +2,46 @@ import type {
   ChatIntentKind,
   ClassroomEvent,
   ClassroomPhase,
-  ClassroomQuiz,
   ClassroomSession,
-  ConceptState,
-  EvidenceOutcome,
-  LessonContentBlock,
-  QuizMatchMode,
+  ContentReference,
+  ExerciseAttemptMode,
+  ExerciseInstance,
+  ExerciseMatchMode,
+  LearningEvidence,
+  ReviewArtifact,
   RunResult,
 } from './types'
+import { evidenceStrengthForExerciseAttempt } from './exercise-attempt-evidence'
+import type { ExerciseAttemptEvidenceInput } from './exercise-attempt-evidence'
+import { getChatIntentQueueBlock } from './chat-intent-guards'
+import { getDefaultCourseContentIndex } from '@/lib/ai/course-content/loader'
 
 export type ClassroomAction
-  = | { type: 'APPEND_LESSON_CONTENT', blocks: LessonContentBlock[], now?: number }
-    | { type: 'SET_CURRENT_QUIZ', quiz: Extract<LessonContentBlock, { type: 'quiz' }>, now?: number }
-    | { type: 'QUIZ_RUN_FINISHED', result: RunResult, attemptedCode?: string, now?: number }
-    | { type: 'QUIZ_SUBMIT_FINISHED', result: RunResult, attemptedCode?: string, now?: number }
-    | { type: 'QUIZ_SUCCESS', now?: number }
-    | { type: 'QUIZ_SKIP', now?: number }
+  = | { type: 'APPEND_CONTENT_REFERENCE_GROUP', conceptId: string, blockIds: string[], skillId?: string, title?: string, now?: number }
+    | { type: 'APPEND_BRIDGE_NOTE', conceptIds: string[], body: string, now?: number }
+    | { type: 'APPEND_SKIP_MARKER', conceptId: string, blockIds: string[], reason: string, now?: number }
+    | { type: 'CREATE_EXERCISE_INSTANCE', exercise: Omit<ExerciseInstance, 'id' | 'createdAt' | 'status'> & Partial<Pick<ExerciseInstance, 'id' | 'createdAt' | 'status'>>, now?: number }
+    | { type: 'EXERCISE_RUN_FINISHED', result: RunResult, attemptedCode?: string, now?: number }
+    | { type: 'EXERCISE_SUBMIT_FINISHED', result: RunResult, attemptedCode?: string, attempt?: ExerciseAttemptEvidenceInput, now?: number }
+    | { type: 'EXERCISE_SUCCESS', attempt?: ExerciseAttemptEvidenceInput, now?: number }
+    | { type: 'EXERCISE_SKIP', now?: number }
+    | { type: 'SAVE_REVIEW_ARTIFACT', artifact: Omit<ReviewArtifact, 'artifactId' | 'createdAt'> & Partial<Pick<ReviewArtifact, 'artifactId' | 'createdAt'>>, emitMarker?: boolean, now?: number }
+    | { type: 'REMOVE_REVIEW_ARTIFACT', artifactId: string, now?: number }
+    | { type: 'RESTORE_REVIEW_ARTIFACT', artifactId: string, now?: number }
     | { type: 'LESSON_GENERATION_FAILED', error: string, now?: number }
+    | { type: 'CLEAR_LESSON_GENERATION_ERRORS', now?: number }
     | { type: 'SET_PHASE', phase: ClassroomPhase, now?: number }
-    | { type: 'SET_LEARNING_NOTES', notes: string, now?: number }
-    | { type: 'EMIT_CHAT_INTENT', intent: ChatIntentKind, summary: string, now?: number }
+    | { type: 'EMIT_CHAT_INTENT', intent: ChatIntentKind, summary: string, activeConceptId?: string, now?: number }
     | { type: 'CONSUME_EVENT', now?: number }
     | { type: 'BATCH', actions: ClassroomAction[], now?: number }
+
+type ExerciseInstanceInput = Omit<ExerciseInstance, 'id' | 'createdAt' | 'status'> & Partial<Pick<ExerciseInstance, 'id' | 'createdAt' | 'status'>>
 
 interface InitialSessionOptions {
   lang: string
 }
 
-interface QuizEvaluation {
+interface ExerciseEvaluation {
   matched: boolean
   expected: string
   actual: string
@@ -48,65 +60,41 @@ function trimTrailing(text: string): string {
   return text.replace(/\s+$/u, '')
 }
 
-function createConceptState(conceptId: string, status: ConceptState['status'], createdAt: number): ConceptState {
-  return { conceptId, status, updatedAt: createdAt }
-}
-
-const CONCEPT_STATUS_RANK: Record<ConceptState['status'], number> = {
-  unseen: 0,
-  introduced: 1,
-  practicing: 2,
-  demonstrated: 3,
-}
-
 function summarize(text: string): string {
   return text.length > 320 ? `${text.slice(0, 317)}...` : text
 }
 
-function transitionConceptStatus(
-  session: ClassroomSession,
-  conceptId: string,
-  status: ConceptState['status'],
-  createdAt: number,
-): ClassroomSession {
-  const current = session.learner.concepts[conceptId]
-  if (current && CONCEPT_STATUS_RANK[current.status] >= CONCEPT_STATUS_RANK[status])
-    return session
-
-  return {
-    ...session,
-    learner: {
-      ...session.learner,
-      concepts: {
-        ...session.learner.concepts,
-        [conceptId]: createConceptState(conceptId, status, createdAt),
-      },
-    },
-  }
-}
-
 export function createInitialClassroomSession({ lang }: InitialSessionOptions): ClassroomSession {
+  const pack = getDefaultCourseContentIndex().pack
   return {
-    version: 2,
+    version: 3,
     lang,
     phase: 'orient',
+    contentPackId: pack.packId,
+    contentVersion: pack.contentVersion,
     stream: [],
     learner: {
-      concepts: {},
       evidence: [],
-      learningNotes: '',
+      reviewExposures: {},
+      reviewArtifacts: [],
     },
-    currentQuiz: null,
+    currentExercise: null,
     lastRun: null,
     sessionSummary: `Fresh AI classroom session for ${lang}.`,
     eventQueue: [],
+    track: {
+      activeTrackId: pack.tracks[0]?.trackId ?? 'default-entry',
+      targetConceptId: pack.tracks[0]?.conceptIds[0] ?? null,
+      targetSkillId: pack.tracks[0]?.skillIds[0] ?? null,
+      adjustments: [],
+    },
   }
 }
 
-export function evaluateQuizOutput(quiz: ClassroomQuiz, output: string): QuizEvaluation {
-  const expected = trimTrailing(quiz.expectedOutput)
+export function evaluateExerciseOutput(exercise: Pick<ExerciseInstance, 'expectedOutput' | 'matchMode'>, output: string): ExerciseEvaluation {
+  const expected = trimTrailing(exercise.expectedOutput)
   const actual = trimTrailing(output)
-  const mode: QuizMatchMode = quiz.matchMode ?? 'exact'
+  const mode: ExerciseMatchMode = exercise.matchMode ?? 'exact'
   let matched = false
 
   if (mode === 'contains') {
@@ -137,155 +125,234 @@ export function evaluateQuizOutput(quiz: ClassroomQuiz, output: string): QuizEva
   }
 }
 
-function transitionLessonContentAppended(
+function referencesForBlockIds(blockIds: string[]): ContentReference[] {
+  const index = getDefaultCourseContentIndex()
+  const order = new Map(index.pack.blocks.map(block => [block.blockId, block.order]))
+  return blockIds
+    .map(blockId => index.getBlock(blockId))
+    .filter(block => block != null)
+    .sort((a, b) => {
+      if (a.conceptId === b.conceptId)
+        return (order.get(a.blockId) ?? 0) - (order.get(b.blockId) ?? 0)
+      const trackOrder = index.pack.tracks[0]?.conceptIds ?? []
+      return trackOrder.indexOf(a.conceptId) - trackOrder.indexOf(b.conceptId)
+    })
+    .map(block => ({
+      packId: index.pack.packId,
+      contentVersion: block.contentVersion,
+      blockId: block.blockId,
+      conceptId: block.conceptId,
+    }))
+}
+
+function withSeenExposures(session: ClassroomSession, references: ContentReference[], createdAt: number): ClassroomSession {
+  const nextExposures = { ...session.learner.reviewExposures }
+  for (const ref of references) {
+    nextExposures[ref.blockId] = {
+      blockId: ref.blockId,
+      conceptId: ref.conceptId,
+      contentVersion: ref.contentVersion,
+      status: 'seen',
+      updatedAt: createdAt,
+    }
+  }
+  return {
+    ...session,
+    learner: {
+      ...session.learner,
+      reviewExposures: nextExposures,
+    },
+  }
+}
+
+function withoutLessonGenerationErrorMarkers(session: ClassroomSession): ClassroomSession {
+  const stream = session.stream.filter(item =>
+    item.type !== 'system_event' || item.event.type !== 'lesson_generation_error',
+  )
+  return stream.length === session.stream.length
+    ? session
+    : { ...session, stream }
+}
+
+function transitionContentReferenceGroupAppended(
   session: ClassroomSession,
-  blocks: LessonContentBlock[],
+  conceptId: string,
+  blockIds: string[],
+  skillId: string | undefined,
+  title: string | undefined,
   createdAt: number,
 ): ClassroomSession {
+  const references = referencesForBlockIds(blockIds).filter(ref => ref.conceptId === conceptId)
+  if (references.length === 0)
+    return session
+  const baseSession = withoutLessonGenerationErrorMarkers(session)
+
   const appended: ClassroomSession = {
-    ...session,
+    ...baseSession,
     phase: 'teach',
-    sessionSummary: summarize(`Lesson content appended ${blocks.length} block(s).`),
+    sessionSummary: summarize(`Content Reference Group appended for ${conceptId}.`),
+    track: {
+      ...baseSession.track,
+      targetConceptId: conceptId,
+      targetSkillId: skillId ?? baseSession.track.targetSkillId,
+    },
     stream: [
-      ...session.stream,
+      ...baseSession.stream,
       {
-        id: createStreamItemId('lesson', createdAt, session.stream.length),
-        type: 'lesson_blocks',
-        blocks,
+        id: createStreamItemId('content-group', createdAt, baseSession.stream.length),
+        type: 'content_reference_group',
+        groupId: createStreamItemId('group', createdAt, baseSession.stream.length),
+        conceptId,
+        skillId,
+        title,
+        references,
         createdAt,
       },
     ],
   }
 
-  return blocks.reduce((nextSession, block) => {
-    if (block.type !== 'concept_card')
-      return nextSession
-    return transitionConceptStatus(nextSession, block.conceptId, 'introduced', createdAt)
-  }, appended)
+  return withSeenExposures(appended, references, createdAt)
 }
 
-function transitionQuizActivated(
+function transitionBridgeNoteAppended(session: ClassroomSession, conceptIds: string[], body: string, createdAt: number): ClassroomSession {
+  const baseSession = withoutLessonGenerationErrorMarkers(session)
+  return {
+    ...baseSession,
+    sessionSummary: summarize(`Bridge Note added for ${conceptIds.join(', ')}.`),
+    stream: [
+      ...baseSession.stream,
+      {
+        id: createStreamItemId('bridge', createdAt, baseSession.stream.length),
+        type: 'bridge_note',
+        conceptIds,
+        body,
+        createdAt,
+      },
+    ],
+  }
+}
+
+function transitionSkipMarkerAppended(session: ClassroomSession, conceptId: string, blockIds: string[], reason: string, createdAt: number): ClassroomSession {
+  const baseSession = withoutLessonGenerationErrorMarkers(session)
+  const index = getDefaultCourseContentIndex()
+  const reviewExposures = { ...baseSession.learner.reviewExposures }
+  for (const blockId of blockIds) {
+    const block = index.getBlock(blockId)
+    if (!block || block.conceptId !== conceptId)
+      continue
+    reviewExposures[blockId] = {
+      blockId,
+      conceptId,
+      contentVersion: block.contentVersion,
+      status: 'skipped',
+      updatedAt: createdAt,
+    }
+  }
+
+  return {
+    ...baseSession,
+    learner: {
+      ...baseSession.learner,
+      reviewExposures,
+    },
+    stream: [
+      ...baseSession.stream,
+      {
+        id: createStreamItemId('skip', createdAt, baseSession.stream.length),
+        type: 'skip_marker',
+        conceptId,
+        blockIds,
+        reason,
+        createdAt,
+      },
+    ],
+  }
+}
+
+function transitionExerciseCreated(
   session: ClassroomSession,
-  quizBlock: Extract<LessonContentBlock, { type: 'quiz' }>,
+  exerciseInput: ExerciseInstanceInput,
   createdAt: number,
 ): ClassroomSession {
-  const streamIndex = session.stream.length
-  const quiz: ClassroomQuiz = {
-    id: createStreamItemId('quiz', createdAt, streamIndex),
-    conceptId: quizBlock.conceptId,
-    prompt: quizBlock.prompt,
-    starterCode: quizBlock.starterCode,
-    expectedOutput: quizBlock.expectedOutput,
-    matchMode: quizBlock.matchMode ?? 'exact',
-    status: 'active',
-    createdAt,
+  const baseSession = withoutLessonGenerationErrorMarkers(session)
+  const input = exerciseInput
+  const streamIndex = baseSession.stream.length
+  const exercise: ExerciseInstance = {
+    ...input,
+    id: input.id ?? createStreamItemId('exercise', createdAt, streamIndex),
+    status: input.status ?? 'active',
+    createdAt: input.createdAt ?? createdAt,
   }
-  const stream = session.stream.map(item =>
-    item.type === 'quiz' && item.quiz.status === 'active'
-      ? { ...item, quiz: { ...item.quiz, status: 'superseded' as const } }
+  const stream = baseSession.stream.map(item =>
+    item.type === 'exercise_instance' && item.exercise.status === 'active'
+      ? { ...item, exercise: { ...item.exercise, status: 'superseded' as const } }
       : item,
   )
 
-  return transitionConceptStatus({
-    ...session,
+  return {
+    ...baseSession,
     phase: 'practice',
-    currentQuiz: quiz,
-    sessionSummary: summarize(`Practice quiz active for ${quiz.conceptId}.`),
+    currentExercise: exercise,
+    sessionSummary: summarize(`Exercise Instance active for ${exercise.skillId}.`),
+    track: {
+      ...baseSession.track,
+      targetConceptId: exercise.conceptIds[0] ?? baseSession.track.targetConceptId,
+      targetSkillId: exercise.skillId,
+    },
     stream: [
       ...stream,
       {
-        id: quiz.id,
-        type: 'quiz',
-        quiz,
+        id: exercise.id,
+        type: 'exercise_instance',
+        exercise,
         createdAt,
       },
     ],
-  }, quiz.conceptId, 'practicing', createdAt)
+  }
 }
 
-function transitionQuizCompleted(session: ClassroomSession, outcome: EvidenceOutcome, createdAt: number): ClassroomSession {
-  const quiz = session.currentQuiz
-  if (!quiz || quiz.status !== 'active')
+function updateCurrentExerciseStatus(session: ClassroomSession, status: ExerciseInstance['status']): ClassroomSession {
+  const exercise = session.currentExercise
+  if (!exercise)
     return session
-
-  const streamHasQuiz = session.stream.some(
-    item => item.type === 'quiz' && item.quiz.id === quiz.id,
-  )
-  if (!streamHasQuiz) {
-    console.warn('[Classroom] currentQuiz exists but no stream entry, skipping transition')
-    return session
-  }
-
-  const summary = outcome === 'success'
-    ? `Quiz completed successfully for ${quiz.conceptId}.`
-    : `Quiz skipped for ${quiz.conceptId}.`
-  const event: ClassroomEvent = {
-    type: outcome === 'success' ? 'quiz_success' : 'quiz_skip',
-    conceptId: quiz.conceptId,
-    summary,
-    createdAt,
-  }
-  const conceptStatus: ConceptState['status'] = outcome === 'success' ? 'demonstrated' : 'practicing'
-
-  const updated = transitionConceptStatus({
+  return {
     ...session,
-    currentQuiz: { ...quiz, status: outcome },
-    sessionSummary: summarize(`${outcome} evidence recorded for ${quiz.conceptId}.`),
-    eventQueue: [...session.eventQueue, event],
-    learner: {
-      ...session.learner,
-      evidence: [
-        ...session.learner.evidence,
-        {
-          conceptId: quiz.conceptId,
-          outcome,
-          source: 'quiz',
-          summary,
-          createdAt,
-        },
-      ],
-    },
-    stream: [
-      ...session.stream.map(item =>
-        item.type === 'quiz' && item.quiz.id === quiz.id
-          ? { ...item, quiz: { ...item.quiz, status: outcome } }
-          : item,
-      ),
-      {
-        id: createStreamItemId('progress', createdAt, session.stream.length),
-        type: 'progress_update',
-        conceptId: quiz.conceptId,
-        outcome,
-        summary,
-        createdAt,
-      },
-    ],
-  }, quiz.conceptId, conceptStatus, createdAt)
-
-  return updated
+    currentExercise: { ...exercise, status },
+    stream: session.stream.map(item =>
+      item.type === 'exercise_instance' && item.exercise.id === exercise.id
+        ? { ...item, exercise: { ...item.exercise, status } }
+        : item,
+    ),
+  }
 }
 
 function transitionRunFinished(
   session: ClassroomSession,
   result: RunResult,
+  attemptMode: ExerciseAttemptMode,
   createdAt: number,
-): { session: ClassroomSession, matched: boolean | undefined } {
-  const matched = session.currentQuiz?.status === 'active'
-    ? result.ok && evaluateQuizOutput(session.currentQuiz, result.stdout).matched
+): { session: ClassroomSession, matched: boolean | undefined, runResultId: string } {
+  const exercise = session.currentExercise
+  const matched = exercise?.status === 'active'
+    ? result.ok && evaluateExerciseOutput(exercise, result.stdout).matched
     : undefined
+  const runResultId = createStreamItemId('run', createdAt, session.stream.length)
+  const recordedResult: RunResult = { ...result, attemptMode }
 
   return {
     matched,
+    runResultId,
     session: {
       ...session,
-      lastRun: result,
-      sessionSummary: summarize(`Last run ${result.ok ? 'completed' : 'failed'}${matched ? ' and matched the current quiz' : ''}.`),
+      lastRun: recordedResult,
+      sessionSummary: summarize(`Last run ${result.ok ? 'completed' : 'failed'}${matched ? ' and matched the current exercise' : ''}.`),
       stream: [
         ...session.stream,
         {
-          id: createStreamItemId('run', createdAt, session.stream.length),
+          id: runResultId,
           type: 'run_result',
-          result,
+          exerciseInstanceId: exercise?.id,
+          result: recordedResult,
           matched,
           createdAt,
         },
@@ -294,50 +361,156 @@ function transitionRunFinished(
   }
 }
 
-function transitionQuizFailureEnqueued(
+function buildEvidence(
+  exercise: ExerciseInstance,
+  outcome: LearningEvidence['outcome'],
+  strength: LearningEvidence['strength'],
+  summary: string,
+  createdAt: number,
+  evidenceIndex: number,
+  runResultId?: string,
+): LearningEvidence {
+  return {
+    evidenceId: createStreamItemId('evidence', createdAt, evidenceIndex),
+    skillId: exercise.skillId,
+    conceptIds: exercise.conceptIds,
+    exerciseInstanceId: exercise.id,
+    exerciseIntent: exercise.intent,
+    outcome,
+    strength,
+    summary,
+    createdAt,
+    runResultId,
+  }
+}
+
+function appendEvidence(session: ClassroomSession, evidence: LearningEvidence, createdAt: number): ClassroomSession {
+  return {
+    ...session,
+    learner: {
+      ...session.learner,
+      evidence: [
+        ...session.learner.evidence,
+        evidence,
+      ],
+    },
+    stream: [
+      ...session.stream,
+      {
+        id: createStreamItemId('evidence-marker', createdAt, session.stream.length),
+        type: 'learning_evidence_marker',
+        evidenceId: evidence.evidenceId,
+        conceptId: evidence.conceptIds[0] ?? 'unknown',
+        skillId: evidence.skillId,
+        exerciseIntent: evidence.exerciseIntent,
+        outcome: evidence.outcome,
+        strength: evidence.strength,
+        summary: evidence.summary,
+        createdAt,
+      },
+    ],
+  }
+}
+
+function transitionExerciseCompleted(
+  session: ClassroomSession,
+  outcome: 'success' | 'skip',
+  createdAt: number,
+  runResultId?: string,
+  attempt?: ExerciseAttemptEvidenceInput,
+): ClassroomSession {
+  const exercise = session.currentExercise
+  if (!exercise || exercise.status !== 'active')
+    return session
+
+  const summary = outcome === 'success'
+    ? `Exercise completed successfully for ${exercise.skillId}.`
+    : `Exercise skipped for ${exercise.skillId}.`
+  const event: ClassroomEvent = {
+    type: outcome === 'success' ? 'exercise_success' : 'exercise_skip',
+    exerciseInstanceId: exercise.id,
+    exerciseIntent: exercise.intent,
+    skillId: exercise.skillId,
+    conceptIds: exercise.conceptIds,
+    summary,
+    createdAt,
+  }
+  const evidence = buildEvidence(
+    exercise,
+    outcome,
+    evidenceStrengthForExerciseAttempt(outcome, attempt, { exerciseIntent: exercise.intent }),
+    summary,
+    createdAt,
+    session.learner.evidence.length,
+    runResultId,
+  )
+
+  const completed = updateCurrentExerciseStatus({
+    ...session,
+    sessionSummary: summarize(`${outcome} evidence recorded for ${exercise.skillId}.`),
+    eventQueue: [...session.eventQueue, event],
+  }, outcome)
+
+  return appendEvidence(completed, evidence, createdAt)
+}
+
+function transitionExerciseFailureEnqueued(
   session: ClassroomSession,
   result: RunResult,
   attemptedCode: string | undefined,
   createdAt: number,
+  runResultId?: string,
+  attempt?: ExerciseAttemptEvidenceInput,
 ): ClassroomSession {
-  const quiz = session.currentQuiz
-  if (!quiz || quiz.status !== 'active')
+  const exercise = session.currentExercise
+  if (!exercise || exercise.status !== 'active')
     return session
 
-  // Coalesce repeated failures: if the same active quiz already has a pending
-  // failure event in the queue, drop this one to avoid stacking N "explain my
-  // mistake" requests every time the learner re-submits identical wrong code.
   const queuedFailureExists = session.eventQueue.some(
-    e => e.type === 'quiz_failure' && e.quizId === quiz.id,
+    e => e.type === 'exercise_failure' && e.exerciseInstanceId === exercise.id,
   )
-  if (queuedFailureExists)
-    return session
-
-  // expectedOutput is the same regardless of run success — the gap is between
-  // it and `actual`. We split actual: on a clean run the stdout is the wrong
-  // answer; on a crash, stderr carries the diagnostic.
-  const expected = quiz.expectedOutput
   const actual = result.ok ? result.stdout : (result.stderr || result.stdout)
   const reason = result.ok ? 'mismatch' : 'run_failed'
-  const summary = `Learner submission for ${quiz.conceptId} failed (${reason}); needs a focused explanation of the gap, not a new quiz.`
+  const summary = session.lang === 'en'
+    ? `This submission did not pass: ${reason === 'mismatch' ? 'the output did not match the expected result' : 'the code did not run successfully'}. AI will provide the next suggestion.`
+    : `这次提交没有通过：${reason === 'mismatch' ? '输出与预期不一致' : '代码没有成功运行'}。AI 会给出下一步建议。`
+  const evidence = buildEvidence(
+    exercise,
+    'failure',
+    evidenceStrengthForExerciseAttempt('failure', attempt, { exerciseIntent: exercise.intent }),
+    summary,
+    createdAt,
+    session.learner.evidence.length,
+    runResultId,
+  )
+
+  if (queuedFailureExists) {
+    return appendEvidence({
+      ...session,
+      sessionSummary: summarize(`Additional exercise failure recorded for ${exercise.skillId}.`),
+    }, evidence, createdAt)
+  }
 
   const event: ClassroomEvent = {
-    type: 'quiz_failure',
-    conceptId: quiz.conceptId,
-    quizId: quiz.id,
-    prompt: quiz.prompt,
+    type: 'exercise_failure',
+    exerciseInstanceId: exercise.id,
+    exerciseIntent: exercise.intent,
+    templateId: exercise.templateId,
+    skillId: exercise.skillId,
+    conceptIds: exercise.conceptIds,
+    prompt: exercise.prompt,
     attemptedCode: attemptedCode ?? '',
-    expectedOutput: expected,
+    expectedOutput: exercise.expectedOutput,
     actualOutput: actual,
     summary,
     createdAt,
   }
 
-  return {
+  return appendEvidence({
     ...session,
-    sessionSummary: summarize(`Quiz failure recorded for ${quiz.conceptId}, awaiting agent explanation.`),
+    sessionSummary: summarize(`Exercise failure recorded for ${exercise.skillId}, awaiting remediation.`),
     eventQueue: [...session.eventQueue, event],
-  }
+  }, evidence, createdAt)
 }
 
 function transitionLessonGenerationFailed(session: ClassroomSession, error: string, createdAt: number): ClassroomSession {
@@ -349,7 +522,7 @@ function transitionLessonGenerationFailed(session: ClassroomSession, error: stri
 
   return {
     ...session,
-    sessionSummary: summarize(`Lesson generation failed: ${error}`),
+    sessionSummary: summarize(`Lesson orchestration failed: ${error}`),
     stream: [
       ...session.stream,
       {
@@ -362,12 +535,93 @@ function transitionLessonGenerationFailed(session: ClassroomSession, error: stri
   }
 }
 
-function transitionLearningNotesUpdated(session: ClassroomSession, notes: string): ClassroomSession {
+function transitionReviewArtifactSaved(
+  session: ClassroomSession,
+  artifactInput: Omit<ReviewArtifact, 'artifactId' | 'createdAt'> & Partial<Pick<ReviewArtifact, 'artifactId' | 'createdAt'>>,
+  emitMarker: boolean | undefined,
+  createdAt: number,
+): ClassroomSession {
+  const baseSession = withoutLessonGenerationErrorMarkers(session)
+  const artifact: ReviewArtifact = {
+    ...artifactInput,
+    artifactId: artifactInput.artifactId ?? createStreamItemId('artifact', createdAt, baseSession.learner.reviewArtifacts.length),
+    createdAt: artifactInput.createdAt ?? createdAt,
+  }
+
+  const nextSession: ClassroomSession = {
+    ...baseSession,
+    learner: {
+      ...baseSession.learner,
+      reviewArtifacts: [
+        ...baseSession.learner.reviewArtifacts.filter(existing => existing.artifactId !== artifact.artifactId),
+        artifact,
+      ],
+    },
+    sessionSummary: summarize(`Review Artifact saved for ${artifact.conceptId}: ${artifact.summary}`),
+  }
+
+  if (emitMarker === false)
+    return nextSession
+
+  return {
+    ...nextSession,
+    stream: [
+      ...nextSession.stream,
+      {
+        id: createStreamItemId('retention', createdAt, nextSession.stream.length),
+        type: 'retention_marker',
+        artifactId: artifact.artifactId,
+        conceptId: artifact.conceptId,
+        kind: artifact.kind,
+        summary: artifact.summary,
+        createdAt,
+      },
+    ],
+  }
+}
+
+function transitionReviewArtifactRemoved(session: ClassroomSession, artifactId: string, createdAt: number): ClassroomSession {
+  let removed = false
+  const reviewArtifacts = session.learner.reviewArtifacts.map((artifact) => {
+    if (artifact.artifactId !== artifactId || artifact.removedAt != null)
+      return artifact
+    removed = true
+    return { ...artifact, removedAt: createdAt }
+  })
+
+  if (!removed)
+    return session
+
   return {
     ...session,
+    sessionSummary: summarize(`Review Artifact removed: ${artifactId}`),
     learner: {
       ...session.learner,
-      learningNotes: notes,
+      reviewArtifacts,
+    },
+  }
+}
+
+function transitionReviewArtifactRestored(session: ClassroomSession, artifactId: string): ClassroomSession {
+  let restored = false
+  const reviewArtifacts = session.learner.reviewArtifacts.map((artifact) => {
+    if (artifact.artifactId !== artifactId || artifact.removedAt == null)
+      return artifact
+    restored = true
+    const restoredArtifact = { ...artifact }
+    delete restoredArtifact.removedAt
+    return restoredArtifact
+  })
+
+  if (!restored)
+    return session
+
+  return {
+    ...session,
+    sessionSummary: summarize(`Review Artifact restored: ${artifactId}`),
+    learner: {
+      ...session.learner,
+      reviewArtifacts,
     },
   }
 }
@@ -376,8 +630,12 @@ function transitionChatIntentQueued(
   session: ClassroomSession,
   intent: ChatIntentKind,
   summary: string,
+  activeConceptId: string | undefined,
   createdAt: number,
 ): ClassroomSession {
+  if (getChatIntentQueueBlock(session, intent))
+    return session
+
   const queuedTail = session.eventQueue.at(-1)
   if (
     queuedTail?.type === 'chat_intent'
@@ -391,6 +649,7 @@ function transitionChatIntentQueued(
     type: 'chat_intent',
     intent,
     summary,
+    activeConceptId,
     createdAt,
   }
 
@@ -420,36 +679,44 @@ export function classroomReducer(session: ClassroomSession, action: ClassroomAct
   switch (action.type) {
     case 'BATCH':
       return action.actions.reduce((nextSession, childAction) => classroomReducer(nextSession, childAction), session)
-    case 'APPEND_LESSON_CONTENT':
-      return transitionLessonContentAppended(session, action.blocks, createdAt)
-    case 'SET_CURRENT_QUIZ':
-      return transitionQuizActivated(session, action.quiz, createdAt)
-    case 'QUIZ_RUN_FINISHED': {
-      const finished = transitionRunFinished(session, action.result, createdAt)
+    case 'APPEND_CONTENT_REFERENCE_GROUP':
+      return transitionContentReferenceGroupAppended(session, action.conceptId, action.blockIds, action.skillId, action.title, createdAt)
+    case 'APPEND_BRIDGE_NOTE':
+      return transitionBridgeNoteAppended(session, action.conceptIds, action.body, createdAt)
+    case 'APPEND_SKIP_MARKER':
+      return transitionSkipMarkerAppended(session, action.conceptId, action.blockIds, action.reason, createdAt)
+    case 'CREATE_EXERCISE_INSTANCE':
+      return transitionExerciseCreated(session, action.exercise, createdAt)
+    case 'EXERCISE_RUN_FINISHED': {
+      const finished = transitionRunFinished(session, action.result, 'run', createdAt)
       return finished.session
     }
-    case 'QUIZ_SUBMIT_FINISHED': {
-      const finished = transitionRunFinished(session, action.result, createdAt)
+    case 'EXERCISE_SUBMIT_FINISHED': {
+      const finished = transitionRunFinished(session, action.result, 'submit', createdAt)
+      if (action.result.failureKind === 'runner_unavailable')
+        return finished.session
       if (finished.matched)
-        return transitionQuizCompleted(finished.session, 'success', createdAt)
-      // Surface the failure to the lesson generation agent so it can write a
-      // diagnostic block instead of silently leaving the learner stuck. The
-      // event captures everything the agent needs to reason about the gap:
-      // the prompt, the learner's code, what we got vs what we expected.
-      return transitionQuizFailureEnqueued(finished.session, action.result, action.attemptedCode, createdAt)
+        return transitionExerciseCompleted(finished.session, 'success', createdAt, finished.runResultId, action.attempt)
+      return transitionExerciseFailureEnqueued(finished.session, action.result, action.attemptedCode, createdAt, finished.runResultId, action.attempt)
     }
-    case 'QUIZ_SUCCESS':
-      return transitionQuizCompleted(session, 'success', createdAt)
-    case 'QUIZ_SKIP':
-      return transitionQuizCompleted(session, 'skip', createdAt)
+    case 'EXERCISE_SUCCESS':
+      return transitionExerciseCompleted(session, 'success', createdAt, undefined, action.attempt)
+    case 'EXERCISE_SKIP':
+      return transitionExerciseCompleted(session, 'skip', createdAt)
+    case 'SAVE_REVIEW_ARTIFACT':
+      return transitionReviewArtifactSaved(session, action.artifact, action.emitMarker, createdAt)
+    case 'REMOVE_REVIEW_ARTIFACT':
+      return transitionReviewArtifactRemoved(session, action.artifactId, createdAt)
+    case 'RESTORE_REVIEW_ARTIFACT':
+      return transitionReviewArtifactRestored(session, action.artifactId)
     case 'LESSON_GENERATION_FAILED':
       return transitionLessonGenerationFailed(session, action.error, createdAt)
+    case 'CLEAR_LESSON_GENERATION_ERRORS':
+      return withoutLessonGenerationErrorMarkers(session)
     case 'SET_PHASE':
       return { ...session, phase: action.phase }
-    case 'SET_LEARNING_NOTES':
-      return transitionLearningNotesUpdated(session, action.notes)
     case 'EMIT_CHAT_INTENT':
-      return transitionChatIntentQueued(session, action.intent, action.summary, createdAt)
+      return transitionChatIntentQueued(session, action.intent, action.summary, action.activeConceptId, createdAt)
     case 'CONSUME_EVENT':
       return transitionEventConsumed(session)
     default: {
