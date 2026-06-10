@@ -253,6 +253,29 @@ async function waitForPersistedReviewArtifactRemoval(page: Page, recordKey: stri
   throw new Error(`Timed out waiting for review artifact removal=${removed}; latest=${latest}`)
 }
 
+async function readExerciseDraft(page: Page, exerciseId: string): Promise<string | null> {
+  return page.evaluate((targetExerciseId) => {
+    const raw = localStorage.getItem('tour-ai:exercise-drafts')
+    if (!raw)
+      return null
+    const parsed = JSON.parse(raw) as { state?: { drafts?: Record<string, { code?: unknown }> } }
+    const code = parsed.state?.drafts?.[targetExerciseId]?.code
+    return typeof code === 'string' ? code : null
+  }, exerciseId)
+}
+
+async function waitForExerciseDraft(page: Page, exerciseId: string, expectedFragment: string): Promise<string> {
+  const deadline = Date.now() + 5000
+  let latest = await readExerciseDraft(page, exerciseId)
+  while (Date.now() < deadline) {
+    if (latest?.includes(expectedFragment))
+      return latest
+    await page.waitForTimeout(50)
+    latest = await readExerciseDraft(page, exerciseId)
+  }
+  throw new Error(`Timed out waiting for exercise draft containing ${expectedFragment}. Latest draft: ${latest}`)
+}
+
 async function describedByText(locator: Locator): Promise<string> {
   return locator.evaluate((element) => {
     const ids = element.getAttribute('aria-describedby')?.split(/\s+/).filter(Boolean) ?? []
@@ -963,6 +986,65 @@ describe('ai classroom e2e', () => {
     await sidebar.getByRole('button', { name: '关闭聊天' }).click()
     await sidebar.waitFor({ state: 'detached' })
 
+    const persisted = await readPersistedClassroomSummary(page, persistedKey)
+    expect(persisted).toEqual(beforeChat)
+    expect(persisted.eventTypes).not.toContain('chat_intent')
+
+    const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
+    expect(hasHorizontalOverflow).toBe(false)
+  }, 120_000)
+
+  it('opens active-exercise chat on mobile without losing the editor draft or mutating progress', async () => {
+    const persistedKey = await savePersistedClassroomSession(page, createActivePrintExerciseSession())
+    await saveCompleteUserLLMConfig(page)
+    await page.setViewportSize({ width: 390, height: 840 })
+    await page.goto(`${server.url}/zh/tour/ai`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await page.getByTestId('classroom-landing-page').waitFor({ state: 'visible' })
+    await page.getByRole('button', { name: '继续上次课堂' }).click()
+    await page.getByTestId('exercise-practice-card').waitFor({ state: 'visible' })
+    await page.locator('[data-tour-editor-root] .monaco-editor').waitFor({ state: 'visible', timeout: 60_000 })
+
+    const beforeChat = await readPersistedClassroomSummary(page, persistedKey)
+    expect(beforeChat.currentExerciseStatus).toBe('active')
+    expect(beforeChat.evidenceCount).toBe(0)
+    expect(beforeChat.eventTypes).not.toContain('chat_intent')
+    const exerciseId = beforeChat.currentExerciseId
+    expect(typeof exerciseId).toBe('string')
+
+    const editedCode = 'main() {\n    println("Need chat help")\n}'
+    await page.locator('[data-tour-editor-root] .monaco-editor').click()
+    await page.keyboard.press('Control+A')
+    await page.keyboard.type(editedCode)
+    await waitForExerciseDraft(page, exerciseId!, 'Need chat help')
+
+    const chat = page.getByRole('button', { name: '打开聊天' })
+    await chat.waitFor({ state: 'visible' })
+    expect(await chat.isEnabled()).toBe(true)
+    await chat.click()
+
+    const sidebar = page.getByTestId('classroom-chat-sidebar')
+    await sidebar.waitFor({ state: 'visible' })
+    await sidebar.getByText('围绕 标准输出 println 提问').waitFor({ state: 'visible' })
+    await sidebar.getByTestId('chat-active-exercise-context').getByText('当前练习').waitFor({ state: 'visible' })
+    await sidebar.getByText('在 main 中用 println 输出 Cangjie。').waitFor({ state: 'visible' })
+    const input = sidebar.getByLabel('输入消息')
+    await input.waitFor({ state: 'visible' })
+    expect(await input.isEnabled()).toBe(true)
+    await sidebar.getByRole('button', { name: '发送消息' }).waitFor({ state: 'visible' })
+
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden')
+    const hasOverflowWithChat = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
+    expect(hasOverflowWithChat).toBe(false)
+
+    await sidebar.getByRole('button', { name: '关闭聊天' }).click()
+    await sidebar.waitFor({ state: 'detached' })
+    expect(await chat.evaluate(element => document.activeElement === element)).toBe(true)
+
+    const savedDraft = await readExerciseDraft(page, exerciseId!)
+    expect(savedDraft).toContain('Need chat help')
     const persisted = await readPersistedClassroomSummary(page, persistedKey)
     expect(persisted).toEqual(beforeChat)
     expect(persisted.eventTypes).not.toContain('chat_intent')
