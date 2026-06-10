@@ -32,9 +32,17 @@ cangjie-mcp.log
 
 # Generated local artifacts
 /smoke-*.png
+/*.png
+/.scratch/**/*.log
+/.scratch/**/*.png
+/.scratch/**/*.txt
 /wasm-dist/
 /ref_doc/
 /__pycache__/
 /tour_gen/
 /.tmp/
-/docs/
+/docs/*
+!/docs/agents/
+!/docs/agents/**
+!/docs/adr/
+!/docs/adr/**

@@ -1,0 +1,15 @@
+# AI Classroom Uses Reusable Course Content With Personalized Review Artifacts
+
+AI Classroom is a continuous tutoring experience, but the continuous Classroom Stream is not the canonical review material. We decided to keep reusable Core Content in versioned Course Content Packs, put only Core Content References, Exercise Instances, Bridge Notes, and Retention Markers into the Live View, and organize later study through a concept-based Review View made from Core Content plus retained Clarifications and Remediations.
+
+Course Content Packs are derived from the existing Static Tour rather than authored as a separate second course, so the static reading experience and AI Classroom do not drift apart. Core Content Blocks are prepared offline or at build time, not extracted by the runtime model, so block identity, source references, and content versions remain stable.
+
+This avoids regenerating or duplicating the same tutorial for every learner while preserving personalization where it matters: local track adjustments, exercise instances, chat-retained clarifications, and failure-driven remediations. The rejected alternatives were chapter-scoped AI pages, copying generated lesson text into each learner stream, maintaining a separate AI-only course, runtime extraction of reusable content, letting the model freely invent exercises, and using the raw chronological stream as the review experience; those options either fragmented learner state, made reuse and versioning hard, duplicated editorial work, made references unstable, or turned review into a noisy transcript replay.
+
+We will implement this as a complete AI Mode rebuild rather than a phased migration. The rebuild should introduce Course Content Packs, validated Core Content Blocks, Core Content References, Exercise Templates, Exercise Instances, skill-level Learning Evidence, retained Review Artifacts, Review View, and derived Concept Progress together so the data model and runtime behavior are internally consistent from the first release of the new model.
+
+The current AI Mode's continuous stream, concept graph, persistence, practice flow, and failure diagnostics are useful reference points, but the feature is still in development and has not been merged to mainline, so we will not preserve old persisted sessions or the old agent-authored lesson generation path as a compatibility mode. The rebuilt mainline should require validated content references and template-backed exercises throughout.
+
+Lesson-generation tools should be rebuilt around orchestration rather than authoring. Tools that let the model write Core Content directly, such as appending arbitrary paragraphs, code examples, concept cards, or ad hoc exercises, should be replaced by narrower tools for appending content reference groups, bridge notes, exercise instances, retention markers, clarifications, and remediations.
+
+The rebuilt data model should support multiple Learning Tracks, but the first UI can expose only the default track. Explicit learner goal changes can be captured as track intent even before a full track picker exists.
