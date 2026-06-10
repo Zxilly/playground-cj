@@ -1,16 +1,8 @@
 'use client'
 
-import type { Language } from '@/stores/knownLanguages'
-import { useIsLanguageKnown } from '@/stores/knownLanguages'
+import { isKnownLanguageId, LANGUAGE_LABELS, useIsLanguageKnown } from '@/stores/knownLanguages'
 import type { ReactNode } from 'react'
 import { Trans } from '@lingui/react/macro'
-
-const LANG_LABELS: Record<string, string> = {
-  c: 'C',
-  java: 'Java',
-  go: 'Go',
-  rust: 'Rust',
-}
 
 interface CompareWithProps {
   lang: string
@@ -18,8 +10,9 @@ interface CompareWithProps {
 }
 
 export function CompareWith({ lang, children }: CompareWithProps) {
-  const isKnown = useIsLanguageKnown(lang as Language)
-  if (!isKnown)
+  const language = isKnownLanguageId(lang) ? lang : null
+  const isKnown = useIsLanguageKnown(language)
+  if (!language || !isKnown)
     return null
 
   return (
@@ -27,7 +20,7 @@ export function CompareWith({ lang, children }: CompareWithProps) {
       <div className="tour-compare-label">
         <Trans>对比</Trans>
         {' '}
-        {LANG_LABELS[lang] ?? lang}
+        {LANGUAGE_LABELS[language]}
       </div>
       <div className="tour-compare-body">
         {children}

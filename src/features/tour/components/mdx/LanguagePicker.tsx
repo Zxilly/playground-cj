@@ -1,17 +1,12 @@
 'use client'
 
-import { useKnownLanguagesStore } from '@/stores/knownLanguages'
+import { ALL_LANGUAGES, LANGUAGE_LABELS, useKnownLanguagesStore } from '@/stores/knownLanguages'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Settings2 } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 
-const LANGUAGES = [
-  { id: 'c', label: 'C' },
-  { id: 'java', label: 'Java' },
-  { id: 'go', label: 'Go' },
-  { id: 'rust', label: 'Rust' },
-] as const
+const LANGUAGES = ALL_LANGUAGES.map(id => ({ id, label: LANGUAGE_LABELS[id] }))
 
 export function LanguagePicker() {
   const knownLanguages = useKnownLanguagesStore(state => state.knownLanguages)
@@ -28,7 +23,7 @@ export function LanguagePicker() {
           <Settings2 className="size-4" />
           <span className="hidden sm:inline">
             {knownLanguages.length > 0
-              ? knownLanguages.map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(', ')
+              ? knownLanguages.map(lang => LANGUAGE_LABELS[lang]).join(', ')
               : <Trans>对比</Trans>}
           </span>
         </button>

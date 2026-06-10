@@ -20,7 +20,7 @@
  *      handle would re-render every consumer on every editor mount.
  */
 
-export { ALL_LANGUAGES, useIsLanguageKnown, useKnownLanguagesStore } from './knownLanguages'
+export { ALL_LANGUAGES, isKnownLanguageId, LANGUAGE_LABELS, useIsLanguageKnown, useKnownLanguagesStore } from './knownLanguages'
 export type { Language } from './knownLanguages'
 
 export { DEFAULT_LLM_CONFIG, useLLMConfig, useLLMConfigStore } from './llmConfig'
