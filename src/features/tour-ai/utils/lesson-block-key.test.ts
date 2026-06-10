@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { lessonBlockKey } from './lesson-block-key'
 
 describe('lessonBlockKey', () => {
-  it('returns stable non-empty keys for every lesson block variant', () => {
+  it('returns stable non-empty keys for every core content block variant', () => {
     const blocks = [
       { type: 'heading' as const, text: 'Intro', level: 2 as const },
       { type: 'paragraph' as const, body: 'Use `let` carefully' },
@@ -14,7 +14,6 @@ describe('lessonBlockKey', () => {
         [{ type: 'code' as const, code: 'two()' }],
       ] },
       { type: 'compare' as const, leftTitle: 'let', left: [{ type: 'text' as const, text: 'a' }], rightTitle: 'var', right: [{ type: 'text' as const, text: 'b' }] },
-      { type: 'quiz' as const, conceptId: 'cj.quiz', prompt: '**Why?**', starterCode: '', expectedOutput: '' },
     ]
 
     const keys = blocks.map(block => lessonBlockKey(block))
@@ -24,14 +23,12 @@ describe('lessonBlockKey', () => {
     expect(new Set(keys).size).toBe(blocks.length)
   })
 
-  it('includes learner-visible text in paragraph and quiz keys', () => {
+  it('includes learner-visible text for paragraph keys', () => {
     expect(lessonBlockKey({ type: 'paragraph', body: 'Use let carefully' }))
       .toContain('Use let carefully')
-    expect(lessonBlockKey({ type: 'quiz', conceptId: 'cj.quiz', prompt: 'Why?', starterCode: '', expectedOutput: '' }))
-      .toContain('Why?')
   })
 
-  it('truncates code example keys so generated snippets cannot create huge React keys', () => {
+  it('truncates code example keys so snippets cannot create huge React keys', () => {
     const key = lessonBlockKey({ type: 'code_example', title: 'Example', code: 'x'.repeat(1000) })
 
     expect(key.length).toBeLessThan(120)

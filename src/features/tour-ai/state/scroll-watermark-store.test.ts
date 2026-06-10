@@ -39,4 +39,14 @@ describe('useScrollWatermarkStore', () => {
     const after = useScrollWatermarkStore.getState().watermarks
     expect(after).toBe(before)
   })
+
+  it('clearAll removes all language watermarks for a classroom reset', () => {
+    const s = useScrollWatermarkStore.getState()
+    s.setWatermark('zh', 7)
+    s.setWatermark('en', 2)
+
+    s.clearAll()
+
+    expect(useScrollWatermarkStore.getState().watermarks).toEqual({})
+  })
 })

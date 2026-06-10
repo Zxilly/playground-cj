@@ -22,6 +22,7 @@ const MAX_GENERATION_PROGRESS_ITEMS = 80
 export function appendLessonGenerationProgress(
   state: LessonGenerationProgressState,
   chunk: LessonGenerationProgressChunk,
+  lang = 'zh',
 ): LessonGenerationProgressState {
   if (!chunk)
     return state
@@ -30,7 +31,7 @@ export function appendLessonGenerationProgress(
   if (chunk.type === 'reasoning')
     return appendReasoningProgress(state, chunk.reasoningId, chunk.text)
 
-  return appendToolProgress(state, chunk)
+  return appendToolProgress(state, chunk, lang)
 }
 
 function appendTextProgress(state: LessonGenerationProgressState, chunk: string): LessonGenerationProgressState {
@@ -110,6 +111,7 @@ function appendToolProgress(
   // tool-* members — name them explicitly so TS can resolve `toolCallId` and
   // `toolName` below without union-membership errors.
   chunk: Extract<LessonGenerationProgressChunk, { type: 'tool-start' | 'tool-result' | 'tool-error' }>,
+  lang: string,
 ): LessonGenerationProgressState {
   const items = [...(state.items ?? [])]
   const existingIndex = items.findIndex(item => item.type === 'tool' && item.id === chunk.toolCallId)
@@ -117,8 +119,8 @@ function appendToolProgress(
     ? 'running'
     : chunk.type === 'tool-result' ? 'completed' : 'failed'
   const summary = chunk.type === 'tool-result'
-    ? summarizeToolOutput(chunk.output)
-    : chunk.type === 'tool-error' ? summarizeToolError(chunk.error) : undefined
+    ? summarizeToolOutput(chunk.toolName, chunk.output, lang)
+    : chunk.type === 'tool-error' ? summarizeToolError(chunk.error, lang) : undefined
   const toolItem: LessonGenerationProgressItem = {
     id: chunk.toolCallId,
     type: 'tool',
@@ -144,30 +146,41 @@ function trimItems(items: LessonGenerationProgressItem[]): LessonGenerationProgr
   return items.slice(-MAX_GENERATION_PROGRESS_ITEMS)
 }
 
-function summarizeToolOutput(output: unknown): string | undefined {
+function summarizeToolOutput(toolName: string, output: unknown, lang: string): string | undefined {
   if (output == null)
     return undefined
   if (typeof output !== 'object')
-    return String(output)
+    return lang === 'en' ? 'Completed' : '已完成'
 
   const record = output as Record<string, unknown>
   if (record.ok === false && record.error)
-    return String(record.error)
-  if (typeof record.appended === 'number')
-    return `已追加 ${record.appended} 个内容块`
-  if (typeof record.currentQuiz === 'object' && record.currentQuiz !== null)
-    return '已设置练习'
+    return lang === 'en' ? 'This step did not complete.' : '这一步未完成'
+  if (typeof record.appended === 'number') {
+    return lang === 'en'
+      ? 'Content prepared'
+      : '讲解内容已准备'
+  }
+  if (toolName === 'append_bridge_note')
+    return lang === 'en' ? 'Path note added' : '路径说明已加入'
+  if (toolName === 'append_skip_marker')
+    return lang === 'en' ? 'Skipped content recorded' : '跳过内容已记录'
+  if (toolName === 'create_exercise_instance')
+    return lang === 'en' ? 'Exercise prepared' : '练习题已准备'
+  if (toolName === 'save_clarification')
+    return lang === 'en' ? 'Review note saved' : '复习说明已保存'
+  if (toolName === 'save_remediation')
+    return lang === 'en' ? 'Practice hint saved' : '练习提示已保存'
+  if (typeof record.currentExercise === 'object' && record.currentExercise !== null)
+    return lang === 'en' ? 'Exercise set' : '已设置练习'
   if (record.phase)
-    return `阶段：${String(record.phase)}`
+    return lang === 'en' ? 'Classroom updated' : '课堂已更新'
   if (record.error)
-    return String(record.error)
+    return lang === 'en' ? 'This step did not complete.' : '这一步未完成'
   if (record.ok === true)
-    return '已完成'
+    return lang === 'en' ? 'Completed' : '已完成'
   return undefined
 }
 
-function summarizeToolError(error: unknown): string | undefined {
-  if (error == null)
-    return undefined
-  return error instanceof Error ? error.message : String(error)
+function summarizeToolError(_error: unknown, lang: string): string | undefined {
+  return lang === 'en' ? 'This step did not complete.' : '这一步未完成'
 }

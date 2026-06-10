@@ -3,23 +3,24 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-interface QuizDraft {
-  /** Latest editor content the learner has typed for this quiz. */
+interface ExerciseDraft {
+  /** Latest editor content the learner has typed for this exercise. */
   code: string
   /** Wall-clock ms, lets us drop ancient drafts if we ever want to. */
   updatedAt: number
 }
 
-interface QuizDraftStore {
-  drafts: Record<string, QuizDraft>
-  setDraft: (quizId: string, code: string) => void
-  getDraft: (quizId: string) => QuizDraft | undefined
-  clearDraft: (quizId: string) => void
+interface ExerciseDraftStore {
+  drafts: Record<string, ExerciseDraft>
+  setDraft: (exerciseId: string, code: string) => void
+  getDraft: (exerciseId: string) => ExerciseDraft | undefined
+  clearDraft: (exerciseId: string) => void
+  clearAll: () => void
 }
 
-// Per-quiz user draft. Decouples "what the learner is currently writing" from
+// Per-exercise user draft. Decouples "what the learner is currently writing" from
 // React component lifecycle, so AI tools and other readers can always answer
-// "show me the learner's code for quiz X" — even if the quiz card is no longer
+// "show me the learner's code for exercise X" — even if the exercise card is no longer
 // mounted (scrolled out of view), Monaco was torn down, or the page was just
 // reloaded.
 //
@@ -27,34 +28,40 @@ interface QuizDraftStore {
 // createStandaloneEditorHandle's existingModel branch), but those models die
 // with the page. Persisting drafts in localStorage closes that gap so a
 // learner who refreshes mid-attempt doesn't lose their work.
-export const useQuizDraftStore = create<QuizDraftStore>()(
+export const useExerciseDraftStore = create<ExerciseDraftStore>()(
   persist(
     (set, get) => ({
       drafts: {},
-      setDraft: (quizId, code) =>
+      setDraft: (exerciseId, code) =>
         set((state) => {
-          const existing = state.drafts[quizId]
+          const existing = state.drafts[exerciseId]
           if (existing && existing.code === code)
             return state
           return {
             drafts: {
               ...state.drafts,
-              [quizId]: { code, updatedAt: Date.now() },
+              [exerciseId]: { code, updatedAt: Date.now() },
             },
           }
         }),
-      getDraft: quizId => get().drafts[quizId],
-      clearDraft: quizId =>
+      getDraft: exerciseId => get().drafts[exerciseId],
+      clearDraft: exerciseId =>
         set((state) => {
-          if (!(quizId in state.drafts))
+          if (!(exerciseId in state.drafts))
             return state
           const next = { ...state.drafts }
-          delete next[quizId]
+          delete next[exerciseId]
           return { drafts: next }
+        }),
+      clearAll: () =>
+        set((state) => {
+          if (Object.keys(state.drafts).length === 0)
+            return state
+          return { drafts: {} }
         }),
     }),
     {
-      name: 'tour-ai:quiz-drafts',
+      name: 'tour-ai:exercise-drafts',
       storage: createJSONStorage(() => localStorage),
       partialize: state => ({ drafts: state.drafts }),
     },

@@ -9,10 +9,22 @@ describe('classroomSessionContext', () => {
   const annotationState = createEditorAnnotationState()
   function dispatch() {}
 
-  it('provides session/dispatch/hydrated/annotationState to subtree', () => {
+  it('provides session/dispatch/hydrated/persistence issues/actions/annotationState to subtree', () => {
+    function retrySave() {}
+    function resetSession() {}
     function wrapper({ children }: { children: React.ReactNode }) {
       return (
-        <ClassroomSessionProvider value={{ session, dispatch, hydrated: true, annotationState }}>
+        <ClassroomSessionProvider value={{
+          session,
+          dispatch,
+          hydrated: true,
+          hydrationIssue: 'timeout',
+          saveIssue: 'failed',
+          retrySave,
+          resetSession,
+          annotationState,
+        }}
+        >
           {children}
         </ClassroomSessionProvider>
       )
@@ -20,6 +32,10 @@ describe('classroomSessionContext', () => {
     const { result } = renderHook(() => useClassroomSession(), { wrapper })
     expect(result.current.session).toBe(session)
     expect(result.current.hydrated).toBe(true)
+    expect(result.current.hydrationIssue).toBe('timeout')
+    expect(result.current.saveIssue).toBe('failed')
+    expect(result.current.retrySave).toBe(retrySave)
+    expect(result.current.resetSession).toBe(resetSession)
     expect(result.current.annotationState).toBe(annotationState)
   })
 

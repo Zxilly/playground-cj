@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext } from 'react'
+import { createContext, use } from 'react'
 import type { ReactNode, RefObject } from 'react'
 
 const ViewportRefContext = createContext<RefObject<HTMLDivElement | null> | null>(null)
@@ -12,12 +12,12 @@ export function ViewportRefProvider({
   value: RefObject<HTMLDivElement | null>
   children: ReactNode
 }) {
-  return <ViewportRefContext.Provider value={value}>{children}</ViewportRefContext.Provider>
+  return <ViewportRefContext value={value}>{children}</ViewportRefContext>
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useViewportRef(): RefObject<HTMLDivElement | null> {
-  const ctx = useContext(ViewportRefContext)
+  const ctx = use(ViewportRefContext)
   if (!ctx)
     throw new Error('useViewportRef must be used inside ViewportRefProvider')
   return ctx

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useDarkMode } from '@/lib/theme/useDarkMode'
 import { readString, writeString } from '@/lib/storage'
@@ -22,7 +22,7 @@ interface ClassroomThemeValue {
 const ClassroomThemeContext = createContext<ClassroomThemeValue | null>(null)
 
 export function ClassroomThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>(() => {
+  const [mode, setMode] = useState<ThemeMode>(() => {
     const stored = readString(STORAGE_KEY, 'auto')
     return isThemeMode(stored) ? stored : 'auto'
   })
@@ -35,18 +35,18 @@ export function ClassroomThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle('dark', resolved === 'dark')
   }, [resolved])
 
-  const setMode = useCallback((next: ThemeMode) => {
-    setModeState(next)
+  const updateMode = useCallback((next: ThemeMode) => {
+    setMode(next)
     writeString(STORAGE_KEY, next)
   }, [])
 
-  const value = useMemo<ClassroomThemeValue>(() => ({ mode, setMode, resolved }), [mode, setMode, resolved])
-  return <ClassroomThemeContext.Provider value={value}>{children}</ClassroomThemeContext.Provider>
+  const value = useMemo<ClassroomThemeValue>(() => ({ mode, setMode: updateMode, resolved }), [mode, updateMode, resolved])
+  return <ClassroomThemeContext value={value}>{children}</ClassroomThemeContext>
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useClassroomTheme(): ClassroomThemeValue {
-  const ctx = useContext(ClassroomThemeContext)
+  const ctx = use(ClassroomThemeContext)
   if (!ctx)
     throw new Error('useClassroomTheme must be used inside ClassroomThemeProvider')
   return ctx

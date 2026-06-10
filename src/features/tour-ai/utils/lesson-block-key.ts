@@ -16,5 +16,6 @@ export function lessonBlockKey(block: LessonContentBlock): string {
     return `steps:${block.title ?? ''}:${block.items.map(richTextPlainText).join('|')}`
   if (block.type === 'compare')
     return `compare:${block.leftTitle}:${block.rightTitle}`
-  return `quiz:${block.conceptId}:${block.prompt}`
+  const _exhaustive: never = block
+  return _exhaustive
 }

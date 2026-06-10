@@ -1,7 +1,25 @@
 import { describe, expect, it } from 'vitest'
+import { classroomReducer, createInitialClassroomSession } from '@/lib/ai/classroom/reducer'
+import type { ClassroomAction } from '@/lib/ai/classroom/reducer'
 import type { ClassroomSession } from '@/lib/ai/classroom/types'
-import { createInitialClassroomSession } from '@/lib/ai/classroom/reducer'
 import { deriveScrollRailMarkers, visibleStream } from './scroll-rail-markers'
+
+const exerciseAction: Extract<ClassroomAction, { type: 'CREATE_EXERCISE_INSTANCE' }> = {
+  type: 'CREATE_EXERCISE_INSTANCE',
+  exercise: {
+    templateId: 'cj.io.println.print-value.cangjie',
+    templateVersion: '2026-05-28',
+    skillId: 'cj.io.println.print-value',
+    conceptIds: ['cj.io.println'],
+    prompt: 'Print Cangjie.',
+    starterCode: '',
+    expectedOutput: 'Cangjie',
+    matchMode: 'exact',
+    intent: 'mainline',
+    personalizationInputs: { summary: 'test' },
+  },
+  now: 1002,
+}
 
 function withStream(items: ClassroomSession['stream']): ClassroomSession {
   return { ...createInitialClassroomSession({ lang: 'zh' }), stream: items }
@@ -12,133 +30,103 @@ describe('deriveScrollRailMarkers', () => {
     expect(deriveScrollRailMarkers(createInitialClassroomSession({ lang: 'zh' }))).toEqual([])
   })
 
-  it('emits heading_h2 and heading_h3 markers with blockKey anchors', () => {
-    const session = withStream([
-      {
-        id: 'lesson:0',
-        type: 'lesson_blocks',
-        createdAt: 1,
-        blocks: [
-          { type: 'heading', text: 'Section', level: 2 },
-          { type: 'paragraph', body: 'Body.' },
-          { type: 'heading', text: 'Subsection', level: 3 },
-        ],
-      },
+  it('emits heading markers from content reference groups', () => {
+    let session = createInitialClassroomSession({ lang: 'zh' })
+    session = classroomReducer(session, {
+      type: 'APPEND_CONTENT_REFERENCE_GROUP',
+      conceptId: 'cj.program.main',
+      blockIds: ['cj.program.main.heading', 'cj.program.main.shape'],
+      now: 1001,
+    })
+
+    const markers = deriveScrollRailMarkers(session)
+    expect(markers).toEqual([
+      expect.objectContaining({
+        kind: 'heading_h2',
+        label: '程序入口与 main',
+        blockKey: 'content-group:1001:0:block:0',
+      }),
     ])
-    const markers = deriveScrollRailMarkers(session)
-    expect(markers.map(m => m.kind)).toEqual(['heading_h2', 'heading_h3'])
-    expect(markers[0].blockKey).toBe('lesson:0:block:0')
-    expect(markers[1].blockKey).toBe('lesson:0:block:2')
   })
 
-  it('flags the active quiz with attention=active_quiz', () => {
-    let session = withStream([
-      {
-        id: 'quiz:1',
-        type: 'quiz',
-        createdAt: 1,
-        quiz: {
-          id: 'quiz:1',
-          conceptId: 'cj.test',
-          prompt: 'do it',
-          starterCode: '',
-          expectedOutput: '',
-          matchMode: 'exact',
-          status: 'active',
-          createdAt: 1,
-        },
-      },
+  it('flags the active exercise with attention=active_exercise', () => {
+    const session = classroomReducer(createInitialClassroomSession({ lang: 'zh' }), exerciseAction)
+
+    expect(deriveScrollRailMarkers(session)).toEqual([
+      expect.objectContaining({
+        kind: 'exercise',
+        attention: 'active_exercise',
+        label: '练习',
+      }),
     ])
-    // currentQuiz mirrors the stream item so the derivation reads `active`.
-    session = {
-      ...session,
-      currentQuiz: {
-        id: 'quiz:1',
-        conceptId: 'cj.test',
-        prompt: 'do it',
-        starterCode: '',
-        expectedOutput: '',
-        matchMode: 'exact',
-        status: 'active',
-        createdAt: 1,
-      },
-    }
-    const markers = deriveScrollRailMarkers(session)
-    expect(markers).toHaveLength(1)
-    expect(markers[0]).toMatchObject({ kind: 'quiz', attention: 'active_quiz', label: 'Quiz · cj.test' })
   })
 
-  it('flags failure_pending when a quiz_failure event is queued for the quiz', () => {
-    const session: ClassroomSession = {
-      ...createInitialClassroomSession({ lang: 'zh' }),
-      stream: [
-        {
-          id: 'quiz:9',
-          type: 'quiz',
-          createdAt: 10,
-          quiz: {
-            id: 'quiz:9',
-            conceptId: 'cj.test',
-            prompt: 'do',
-            starterCode: '',
-            expectedOutput: '7',
-            matchMode: 'exact',
-            status: 'active',
-            createdAt: 10,
-          },
-        },
-      ],
-      currentQuiz: {
-        id: 'quiz:9',
-        conceptId: 'cj.test',
-        prompt: 'do',
-        starterCode: '',
-        expectedOutput: '7',
-        matchMode: 'exact',
-        status: 'active',
-        createdAt: 10,
+  it('labels review check exercise and evidence markers distinctly', () => {
+    let session = classroomReducer(createInitialClassroomSession({ lang: 'zh' }), {
+      ...exerciseAction,
+      exercise: {
+        ...exerciseAction.exercise,
+        intent: 'review_check',
       },
-      eventQueue: [{
-        type: 'quiz_failure',
-        conceptId: 'cj.test',
-        quizId: 'quiz:9',
-        prompt: 'do',
-        attemptedCode: 'main() {}',
-        expectedOutput: '7',
-        actualOutput: '',
-        summary: 'failed',
-        createdAt: 11,
-      }],
-    }
-    const markers = deriveScrollRailMarkers(session)
-    // active_quiz takes precedence over failure_pending in our priority order.
-    expect(markers[0]).toMatchObject({ kind: 'quiz', attention: 'active_quiz' })
-  })
+    })
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'Cangjie\n', stderr: '', exitCode: 0 },
+      now: 1003,
+    })
 
-  it('emits progress_success / progress_skip markers for progress_update items', () => {
-    const session = withStream([
-      {
-        id: 'progress:0',
-        type: 'progress_update',
-        conceptId: 'cj.test',
-        outcome: 'success',
-        summary: 'good',
-        createdAt: 1,
-      },
-      {
-        id: 'progress:1',
-        type: 'progress_update',
-        conceptId: 'cj.test2',
-        outcome: 'skip',
-        summary: 'meh',
-        createdAt: 2,
-      },
+    expect(deriveScrollRailMarkers(session).map(marker => marker.label)).toEqual([
+      '复习检查',
+      '复习检查通过，已记录掌握证据',
     ])
-    const markers = deriveScrollRailMarkers(session)
-    expect(markers.map(m => m.kind)).toEqual(['progress_success', 'progress_skip'])
   })
 
-  it('emits generation_error and failure markers from system_event items', () => {
+  it('emits progress and retention markers', () => {
+    let session = classroomReducer(createInitialClassroomSession({ lang: 'zh' }), exerciseAction)
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'Cangjie\n', stderr: '', exitCode: 0 },
+      now: 1003,
+    })
+    session = classroomReducer(session, {
+      type: 'SAVE_REVIEW_ARTIFACT',
+      artifact: {
+        kind: 'clarification',
+        conceptId: 'cj.io.println',
+        title: 'Print',
+        body: 'Use println.',
+        summary: 'println reminder',
+        evidenceIds: [],
+      },
+      now: 1004,
+    })
+
+    expect(deriveScrollRailMarkers(session).map(m => m.kind)).toEqual([
+      'exercise',
+      'progress_success',
+      'retained',
+    ])
+  })
+
+  it('marks failed attempt evidence as a failure target instead of completed progress', () => {
+    let session = classroomReducer(createInitialClassroomSession({ lang: 'zh' }), exerciseAction)
+    session = classroomReducer(session, {
+      type: 'EXERCISE_SUBMIT_FINISHED',
+      result: { ok: true, stdout: 'wrong\n', stderr: '', exitCode: 0 },
+      attemptedCode: 'main() {}',
+      now: 1003,
+    })
+
+    expect(deriveScrollRailMarkers(session).map(marker => ({
+      kind: marker.kind,
+      label: marker.label,
+    }))).toEqual([
+      { kind: 'exercise', label: '练习' },
+      { kind: 'failure', label: '练习尝试未通过' },
+    ])
+  })
+
+  it('emits generation_error and failure markers from system events', () => {
     const session = withStream([
       {
         id: 'sys:0',
@@ -151,9 +139,11 @@ describe('deriveScrollRailMarkers', () => {
         type: 'system_event',
         createdAt: 2,
         event: {
-          type: 'quiz_failure',
-          conceptId: 'cj.x',
-          quizId: 'q1',
+          type: 'exercise_failure',
+          exerciseInstanceId: 'exercise:1',
+          templateId: 't1',
+          skillId: 's1',
+          conceptIds: ['cj.x'],
           prompt: 'p',
           attemptedCode: '',
           expectedOutput: '',
@@ -163,29 +153,46 @@ describe('deriveScrollRailMarkers', () => {
         },
       },
     ])
+
     const markers = deriveScrollRailMarkers(session)
     expect(markers.map(m => m.kind)).toEqual(['generation_error', 'failure'])
+    expect(markers.at(-1)?.label).toBe('练习需要再检查')
   })
 
-  it('skips run_result items so marker positions line up with the visible (filtered) stream', () => {
+  it('skips run_result items so marker positions line up with the visible stream', () => {
     const session = withStream([
-      { id: 'h', type: 'lesson_blocks', createdAt: 1, blocks: [{ type: 'heading', text: 'A', level: 2 }] },
+      {
+        id: 'content:0',
+        type: 'content_reference_group',
+        groupId: 'group:0',
+        conceptId: 'cj.program.main',
+        references: [{
+          packId: 'default-entry',
+          contentVersion: '2026-05-28',
+          blockId: 'cj.program.main.heading',
+          conceptId: 'cj.program.main',
+        }],
+        createdAt: 1,
+      },
       { id: 'run:0', type: 'run_result', result: { ok: true, stdout: '', stderr: '', exitCode: 0 }, createdAt: 2 },
-      { id: 'h2', type: 'lesson_blocks', createdAt: 3, blocks: [{ type: 'heading', text: 'B', level: 2 }] },
+      {
+        id: 'content:1',
+        type: 'content_reference_group',
+        groupId: 'group:1',
+        conceptId: 'cj.io.println',
+        references: [{
+          packId: 'default-entry',
+          contentVersion: '2026-05-28',
+          blockId: 'cj.io.println.heading',
+          conceptId: 'cj.io.println',
+        }],
+        createdAt: 3,
+      },
     ])
-    // visibleStream drops run_result so visibleIndex skips the gap.
-    expect(visibleStream(session).map(i => i.id)).toEqual(['h', 'h2'])
+
+    expect(visibleStream(session).map(i => i.id)).toEqual(['content:0', 'content:1'])
     const markers = deriveScrollRailMarkers(session)
     expect(markers.map(m => m.visibleIndex)).toEqual([0, 1])
     expect(markers.every(m => m.visibleCount === 2)).toBe(true)
-  })
-
-  it('caches by stream reference: same stream + same event-queue fingerprint returns the same array', () => {
-    const session = withStream([
-      { id: 'h', type: 'lesson_blocks', createdAt: 1, blocks: [{ type: 'heading', text: 'A', level: 2 }] },
-    ])
-    const a = deriveScrollRailMarkers(session)
-    const b = deriveScrollRailMarkers(session)
-    expect(a).toBe(b)
   })
 })

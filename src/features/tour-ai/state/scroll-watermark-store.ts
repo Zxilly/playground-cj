@@ -13,6 +13,7 @@ interface ScrollWatermarkStore {
   watermarks: Record<string, number>
   setWatermark: (lang: string, visibleIndex: number) => void
   clearWatermark: (lang: string) => void
+  clearAll: () => void
 }
 
 // Persisted across reloads so opening the page resumes the learner at the
@@ -36,6 +37,12 @@ export const useScrollWatermarkStore = create<ScrollWatermarkStore>()(
           const next = { ...state.watermarks }
           delete next[lang]
           return { watermarks: next }
+        }),
+      clearAll: () =>
+        set((state) => {
+          if (Object.keys(state.watermarks).length === 0)
+            return state
+          return { watermarks: {} }
         }),
     }),
     {

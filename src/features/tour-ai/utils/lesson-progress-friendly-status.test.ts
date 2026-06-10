@@ -1,7 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { i18n as globalI18n, setupI18n } from '@lingui/core'
-import { LESSON_GENERATION_TOOL_NAMES } from '@/lib/ai/lesson-generation'
 import { CLASSROOM_CHAT_TOOL_NAMES } from '@/lib/ai/classroom-chat'
+import {
+  LESSON_GENERATION_TOOL_NAMES,
+  LESSON_ORCHESTRATION_TOOL_NAMES,
+} from '@/features/tour-ai/agent/toolkit/lesson-toolkit-metadata'
 import { friendlyToolStatus } from './lesson-progress-friendly-status'
 
 beforeAll(() => {
@@ -17,7 +20,7 @@ beforeAll(() => {
 
 describe('friendlyToolStatus', () => {
   it('returns a non-unknown category for every lesson-generation tool', () => {
-    // If this fails, a new authoring tool was added to lesson-generation
+    // If this fails, a new lesson-generation tool was added
     // without an explicit friendly label — the panel would silently show
     // "AI 正在处理…" for it. Add a mapping in lesson-progress-friendly-status.ts.
     const offenders = LESSON_GENERATION_TOOL_NAMES.filter(
@@ -39,18 +42,22 @@ describe('friendlyToolStatus', () => {
     })
   })
 
-  it('groups all authoring tools under the same authoring category + label', () => {
-    const authoring = [
-      'append_heading',
-      'append_paragraph',
-      'append_concept_card',
-      'append_code_example',
-      'append_callout',
-      'append_steps',
-      'append_compare',
-    ]
-    const labels = new Set(authoring.map(n => friendlyToolStatus(n).label))
-    expect(labels.size).toBe(1)
-    expect([...labels][0]).toMatch(/编写/)
+  it('uses specific learner-facing labels for each orchestration action', () => {
+    expect(LESSON_ORCHESTRATION_TOOL_NAMES).toEqual(new Set([
+      'append_content_reference_group',
+      'append_bridge_note',
+      'append_skip_marker',
+      'create_exercise_instance',
+      'save_clarification',
+      'save_remediation',
+    ]))
+    expect(Object.fromEntries([...LESSON_ORCHESTRATION_TOOL_NAMES].map(name => [name, friendlyToolStatus(name).label]))).toEqual({
+      append_content_reference_group: '正在准备讲解内容',
+      append_bridge_note: '正在连接学习路径',
+      append_skip_marker: '正在记录跳过内容',
+      create_exercise_instance: '正在准备练习题',
+      save_clarification: '正在保存复习说明',
+      save_remediation: '正在保存练习提示',
+    })
   })
 })

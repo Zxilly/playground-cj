@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, use, useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { ClassroomActivity } from '@/lib/ai/classroom/selectors'
 
@@ -93,15 +93,15 @@ export function ClassroomActivityProvider({ children }: { children: ReactNode })
   )
 
   return (
-    <ClassroomActivityContext.Provider value={value}>
+    <ClassroomActivityContext value={value}>
       {children}
-    </ClassroomActivityContext.Provider>
+    </ClassroomActivityContext>
   )
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useClassroomActivity(): ClassroomActivityValue {
-  const value = useContext(ClassroomActivityContext)
+  const value = use(ClassroomActivityContext)
   if (!value)
     throw new Error('useClassroomActivity must be used inside <ClassroomActivityProvider>')
   return value
