@@ -331,6 +331,27 @@ describe('lessonGenerationProgressPanel', () => {
     expect(useLLMConfigStore.getState().settingsDialogOpen).toBe(true)
   })
 
+  it('surfaces a long overall generation even while progress keeps arriving', () => {
+    render(
+      <LessonGenerationProgressPanel
+        visible
+        slow
+        progress={{
+          status: 'running',
+          expanded: true,
+          text: '',
+          items: [{ id: 'tool-create', type: 'tool', toolName: 'create_exercise_instance', status: 'completed' }],
+        }}
+        onToggle={vi.fn()}
+      />,
+    )
+
+    screen.getByText('课堂准备用时较长')
+    screen.getByText('AI 仍在继续准备内容。已经出现的内容会保留；你可以继续等待，或先检查网络和 AI 设置。')
+    screen.getByText('正在准备练习题')
+    expect(screen.queryByTestId('lesson-generation-status-hint')).toBeNull()
+  })
+
   it('keeps progress header and tool summaries readable on narrow screens', () => {
     const longSummary = `summary-${'x'.repeat(96)}`
     render(

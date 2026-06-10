@@ -1518,6 +1518,40 @@ describe('exercise practice card', () => {
     expectPoliteStatus(failureHint, '运行结果未通过，这次不会记录为练习进度。可以先查看结果和编译信息，修改后再运行或提交。')
   })
 
+  it('shows a beginner diagnostic summary before raw compiler output', async () => {
+    renderWithResult({
+      ok: false,
+      stdout: '',
+      stderr: 'error: `main` is missing\n==> /playground/src/main.cj:1:1',
+      exitCode: 1,
+      attemptMode: 'run',
+    })
+
+    fireEvent.click(screen.getByRole('tab', { name: /测试结果/ }))
+
+    const summary = screen.getByTestId('exercise-diagnostic-summary')
+    expect(summary.textContent).toContain('缺少程序入口 main')
+    expect(summary.textContent).toContain('main()')
+    const rawTrigger = screen.getByTestId('exercise-tool-output-trigger')
+    expect(summary.compareDocumentPosition(rawTrigger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('summarizes output mismatches before showing raw output details', async () => {
+    renderWithResult({
+      ok: true,
+      stdout: 'Wrong',
+      stderr: '',
+      exitCode: 0,
+      attemptMode: 'submit',
+    })
+
+    fireEvent.click(screen.getByRole('tab', { name: /测试结果/ }))
+
+    const summary = screen.getByTestId('exercise-diagnostic-summary')
+    expect(summary.textContent).toContain('输出和预期不一致')
+    expect(summary.textContent).toContain('预期输出')
+  })
+
   it('explains that a failed submit is recorded and will get AI feedback', async () => {
     renderWithResult({
       ok: true,

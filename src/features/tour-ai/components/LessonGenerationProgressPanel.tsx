@@ -17,6 +17,7 @@ export function LessonGenerationProgressPanel({
   blockedReason,
   recoveryReason = null,
   stalled = false,
+  slow = false,
   onToggle,
 }: {
   progress: LessonGenerationProgressState
@@ -24,6 +25,7 @@ export function LessonGenerationProgressPanel({
   blockedReason?: 'api_key' | 'shared_quota'
   recoveryReason?: LessonGenerationRecoveryReason | null
   stalled?: boolean
+  slow?: boolean
   onToggle: () => void
 }) {
   const headerButtonId = useId()
@@ -47,7 +49,9 @@ export function LessonGenerationProgressPanel({
       ? t`等待共享额度`
       : stalled && progress.status === 'running'
         ? t`等待 AI 响应`
-        : lessonGenerationProgressStatusLabel(progress.status)
+        : slow && progress.status === 'running'
+          ? t`课堂准备用时较长`
+          : lessonGenerationProgressStatusLabel(progress.status)
   // The api_key block is rendered as a dedicated CTA row in the body, so the
   // fallback text only needs to cover the non-blocked cases. Otherwise the
   // user would see the same configuration sentence twice.
@@ -128,7 +132,8 @@ export function LessonGenerationProgressPanel({
               <LessonGenerationRecoveryHint reason={recoveryReason} />
             )}
             {!blockedReason && !recoveryReason && stalled && <LessonGenerationStalledHint />}
-            {!blockedReason && !recoveryReason && !stalled && visibleToolItems.length === 0 && (
+            {!blockedReason && !recoveryReason && !stalled && slow && <LessonGenerationSlowHint />}
+            {!blockedReason && !recoveryReason && !stalled && !slow && visibleToolItems.length === 0 && (
               <LessonGenerationStatusHint status={progress.status} />
             )}
             {items.map((item) => {
@@ -163,6 +168,38 @@ function LessonGenerationRecoveryHint({ reason }: { reason: LessonGenerationReco
     >
       <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       <div className="min-w-0 break-words">{text}</div>
+    </div>
+  )
+}
+
+function LessonGenerationSlowHint() {
+  const openSettings = useLLMConfigStore(state => state.setSettingsDialogOpen)
+  const slowDescriptionId = useId()
+  const settingsTitle = t`打开 AI 服务设置检查服务地址、API Key、模型和额度；不会立即重试或清除已生成内容。`
+  return (
+    <div
+      data-testid="lesson-generation-slow-hint"
+      className="flex flex-col gap-3 rounded-md border border-classroom-warning-border bg-classroom-warning-bg px-3 py-2 text-xs text-classroom-warning-fg sm:flex-row sm:items-start"
+    >
+      <div
+        id={slowDescriptionId}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="min-w-0 flex-1 break-words leading-relaxed"
+      >
+        {t`AI 仍在继续准备内容。已经出现的内容会保留；你可以继续等待，或先检查网络和 AI 设置。`}
+      </div>
+      <button
+        type="button"
+        aria-describedby={slowDescriptionId}
+        title={settingsTitle}
+        onClick={() => openSettings(true)}
+        className="inline-flex w-full max-w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-classroom-warning-border bg-tour-surface px-2 py-1 font-semibold hover:brightness-95 sm:w-auto"
+      >
+        <Settings2 aria-hidden="true" className="size-3.5" />
+        <span className="min-w-0 break-words">{t`检查 AI 设置`}</span>
+      </button>
     </div>
   )
 }

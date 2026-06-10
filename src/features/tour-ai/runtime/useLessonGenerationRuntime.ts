@@ -38,6 +38,7 @@ type LessonGenerationRunOutcome = 'completed' | 'failed' | 'skipped' | 'aborted'
 export type LessonGenerationRecoveryReason = 'shared_quota_auto' | 'shared_quota_user_key'
 
 export const LESSON_GENERATION_STALLED_AFTER_MS = 20_000
+export const LESSON_GENERATION_SLOW_AFTER_MS = 30_000
 
 function learnerFacingErrorMessage(_error: unknown): string {
   return t`准备下一步失败。请重试。`
@@ -59,6 +60,7 @@ export function useLessonGenerationRuntime({
   const generationRunning = activity.generationRunning
   const [generationProgress, setGenerationProgress] = useState(EMPTY_LESSON_GENERATION_PROGRESS)
   const [generationStalled, setGenerationStalled] = useState(false)
+  const [generationSlow, setGenerationSlow] = useState(false)
   const [generationRecoveryReason, setGenerationRecoveryReason] = useState<LessonGenerationRecoveryReason | null>(null)
   const hasTriggeredInitialOpenRef = useRef(false)
   const hasAppliedTopicEntryRef = useRef(false)
@@ -66,6 +68,7 @@ export function useLessonGenerationRuntime({
   const inFlightGenerationRef = useRef<string | null>(null)
   const sharedQuotaPendingRef = useRef(false)
   const stalledTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const slowTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
   const [failedInitialEvent, setFailedInitialEvent] = useState<ClassroomEvent | null>(null)
   const sharedQuotaExhausted = keySource === 'auto' && autoQuota?.exhausted === true
@@ -87,6 +90,13 @@ export function useLessonGenerationRuntime({
     stalledTimeoutRef.current = null
   }, [])
 
+  const clearSlowTimer = useCallback(() => {
+    if (slowTimeoutRef.current == null)
+      return
+    clearTimeout(slowTimeoutRef.current)
+    slowTimeoutRef.current = null
+  }, [])
+
   const scheduleStalledTimer = useCallback(() => {
     clearStalledTimer()
     setGenerationStalled(false)
@@ -97,13 +107,24 @@ export function useLessonGenerationRuntime({
     }, LESSON_GENERATION_STALLED_AFTER_MS)
   }, [clearStalledTimer])
 
+  const scheduleSlowTimer = useCallback(() => {
+    clearSlowTimer()
+    setGenerationSlow(false)
+    slowTimeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current || inFlightGenerationRef.current == null)
+        return
+      setGenerationSlow(true)
+    }, LESSON_GENERATION_SLOW_AFTER_MS)
+  }, [clearSlowTimer])
+
   useEffect(() => {
     mountedRef.current = true
     return () => {
       mountedRef.current = false
       clearStalledTimer()
+      clearSlowTimer()
     }
-  }, [clearStalledTimer])
+  }, [clearSlowTimer, clearStalledTimer])
 
   useEffect(() => {
     if (!hydrated || !hasPendingGenerationRequest) {
@@ -137,6 +158,7 @@ export function useLessonGenerationRuntime({
       items: [],
     })
     scheduleStalledTimer()
+    scheduleSlowTimer()
     const transaction = createClassroomTransaction(bridge)
     try {
       const transactionBridge = transaction.bridge
@@ -212,13 +234,16 @@ export function useLessonGenerationRuntime({
     }
     finally {
       clearStalledTimer()
+      clearSlowTimer()
       if (mountedRef.current)
         setGenerationStalled(false)
+      if (mountedRef.current)
+        setGenerationSlow(false)
       if (inFlightGenerationRef.current === runKey)
         inFlightGenerationRef.current = null
       endGenerationRun(runKey)
     }
-  }, [beginGenerationRun, bridge, clearStalledTimer, config, configReady, dispatch, endGenerationRun, keySource, scheduleStalledTimer, scopeSignal, session.lang, sharedQuotaExhausted])
+  }, [beginGenerationRun, bridge, clearSlowTimer, clearStalledTimer, config, configReady, dispatch, endGenerationRun, keySource, scheduleSlowTimer, scheduleStalledTimer, scopeSignal, session.lang, sharedQuotaExhausted])
 
   useEffect(() => {
     if (hasTriggeredInitialOpenRef.current)
@@ -330,6 +355,7 @@ export function useLessonGenerationRuntime({
     generationProgress,
     generationRecoveryReason,
     generationStalled,
+    generationSlow,
     waitingForApiKey: hydrated && hasPendingGenerationRequest && !configReady,
     waitingForSharedQuota: hydrated && hasPendingGenerationRequest && sharedQuotaExhausted,
     hasRetryableInitialGenerationError: failedInitialEvent != null,

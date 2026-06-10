@@ -363,6 +363,9 @@ export function ExercisePracticeCard({
   // present on successful runs too, so fold it by default unless the run failed.
   const toolOutput = displayRun?.stderr ?? ''
   const runFailed = displayRun != null && !displayRun.ok
+  const diagnosticSummary = visibleFeedback && !visibleFeedback.matched && !runnerUnavailable
+    ? exerciseDiagnosticSummary(visibleFeedback, exercise, resultOutput, toolOutput)
+    : null
   // cjc emits ANSI colour escapes; render them as styled HTML the same way
   // the main playground OutputPanel does so users don't see raw "[31m" / "[0m".
   const resultOutputHtml = useMemo(() => new AnsiUp().ansi_to_html(resultOutput), [resultOutput])
@@ -506,6 +509,7 @@ export function ExercisePracticeCard({
             <button
               ref={headerSkipButtonRef}
               type="button"
+              aria-label={isReviewCheck ? t`跳过当前复习检查并记录为已跳过` : t`跳过当前练习并记录为已跳过`}
               onClick={() => requestSkip('header')}
               disabled={busy}
               aria-describedby={skipActionDescriptionId}
@@ -998,6 +1002,15 @@ export function ExercisePracticeCard({
                               : <Trans>这次提交未通过，已记录为练习证据。AI 会准备针对性提示；你也可以先修改代码后重新提交。</Trans>}
                         </div>
                       )}
+                      {diagnosticSummary && (
+                        <div
+                          data-testid="exercise-diagnostic-summary"
+                          className="rounded-md border border-classroom-warning-border bg-classroom-warning-bg px-3 py-2 text-xs leading-relaxed text-classroom-warning-fg"
+                        >
+                          <div className="font-semibold text-classroom-warning-fg"><Trans>诊断建议</Trans></div>
+                          <p className="mt-1 break-words">{diagnosticSummary}</p>
+                        </div>
+                      )}
                     </>
                   )
                 : (
@@ -1080,6 +1093,30 @@ function ExerciseResultLabel({
   if (feedback.mode === 'run')
     return feedback.matched ? <Trans>运行结果：正确</Trans> : <Trans>运行结果：错误</Trans>
   return feedback.matched ? <Trans>提交结果：正确</Trans> : <Trans>提交结果：错误</Trans>
+}
+
+function exerciseDiagnosticSummary(
+  feedback: ExerciseFeedback,
+  exercise: ExerciseInstance,
+  resultOutput: string,
+  toolOutput: string,
+): string {
+  const combinedOutput = `${toolOutput}\n${resultOutput}`.toLowerCase()
+  if (!feedback.result.ok) {
+    if (
+      combinedOutput.includes('main')
+      && /\b(?:missing|not found|undefined|no entry|cannot find)\b|缺少|找不到|未定义/.test(combinedOutput)
+    ) {
+      return t`缺少程序入口 main。先补一个 main() { ... }，再运行或提交。`
+    }
+    return t`代码还没有编译通过。先查看第一条 error 行，修正后再运行或提交。`
+  }
+
+  if (exercise.matchMode === 'exact') {
+    return t`输出和预期不一致。先对比「预期输出」和「输出」，再调整 println 内容或计算结果。`
+  }
+
+  return t`输出还没有满足这道题的判定规则。先对比测试用例和当前输出，再重新运行。`
 }
 
 function exerciseBusyStatusText(mode: ExerciseAttemptMode, isReviewCheck: boolean): string {

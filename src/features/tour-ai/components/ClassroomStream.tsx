@@ -41,6 +41,7 @@ interface ClassroomStreamProps {
 
 type StreamFooterFocus
   = | { kind: 'generation', blockedReason?: 'api_key' | 'shared_quota' }
+    | { kind: 'exercise', intent: ExerciseInstance['intent'] }
     | { kind: 'continue' }
 
 function StreamFooter({
@@ -65,7 +66,11 @@ function StreamFooter({
     >
       {focused && (
         <div
-          data-testid={focus.kind === 'generation' ? 'classroom-generation-focus-notice' : 'classroom-continue-focus-notice'}
+          data-testid={focus.kind === 'generation'
+            ? 'classroom-generation-focus-notice'
+            : focus.kind === 'exercise'
+              ? 'classroom-exercise-focus-notice'
+              : 'classroom-continue-focus-notice'}
           role="status"
           className="mb-3 rounded-md border border-tour-border bg-tour-bg px-3 py-2 text-xs font-medium leading-6 text-tour-heading"
         >
@@ -78,6 +83,12 @@ function StreamFooter({
 }
 
 function StreamFooterFocusNotice({ focus }: { focus: StreamFooterFocus }) {
+  if (focus.kind === 'exercise') {
+    return focus.intent === 'review_check'
+      ? <Trans>当前复习检查已准备好。先运行查看结果，提交或跳过后再继续复习。</Trans>
+      : <Trans>当前练习已准备好。先运行查看结果，提交或跳过后再继续下一步。</Trans>
+  }
+
   if (focus.kind === 'continue')
     return <Trans>已回到课堂。可以用下方操作继续下一步、放慢节奏或提问。</Trans>
 
@@ -102,8 +113,11 @@ export function ClassroomStream({ session, lang, dispatch, bridge, footer, focus
   const config = useLLMConfig()
   const footerRef = useRef<HTMLDivElement>(null)
   const { surface, scrollToExerciseId } = useClassroomLiveScrollSurface()
+  const activeExercise = session.currentExercise?.status === 'active' ? session.currentExercise : null
   const footerFocus: StreamFooterFocus | null = focusGenerationRequestKey != null
-    ? { kind: 'generation', blockedReason: generationFocusBlockedReason }
+    ? activeExercise
+      ? { kind: 'exercise', intent: activeExercise.intent }
+      : { kind: 'generation', blockedReason: generationFocusBlockedReason }
     : focusContinueRequestKey != null ? { kind: 'continue' } : null
 
   useEffect(() => {

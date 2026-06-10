@@ -198,6 +198,7 @@ function TourAIClassroomShellInner({
     generationProgress,
     generationRecoveryReason,
     generationRunning,
+    generationSlow,
     generationStalled,
     hasRetryableInitialGenerationError,
     retryQueuedGenerationEvent,
@@ -452,6 +453,7 @@ function TourAIClassroomShellInner({
                                               blockedReason={waitingForApiKey ? 'api_key' : waitingForSharedQuota ? 'shared_quota' : undefined}
                                               recoveryReason={generationRecoveryReason}
                                               stalled={generationStalled}
+                                              slow={generationSlow}
                                               onToggle={toggleGenerationProgress}
                                             />
                                             <ClassroomStaleChatAnnotationsNotice

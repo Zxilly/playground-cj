@@ -9,7 +9,7 @@ import { useClassroomLiveScrollSurface } from '@/features/tour-ai/context/classr
 import { projectClassroomLiveViewSurface } from '@/lib/ai/classroom/view-projections'
 import { createInitialClassroomSession } from '@/lib/ai/classroom/reducer'
 import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
-import type { ClassroomEvent, ClassroomSession, ClassroomStreamItem } from '@/lib/ai/classroom/types'
+import type { ClassroomEvent, ClassroomSession, ClassroomStreamItem, ExerciseInstance } from '@/lib/ai/classroom/types'
 import { messages as enMessages } from '@/locales/en/messages.mjs'
 import { ClassroomStream } from './ClassroomStream'
 
@@ -44,6 +44,29 @@ function sessionWithStream(stream: ClassroomStreamItem[], eventQueue: ClassroomE
     ...createInitialClassroomSession({ lang }),
     stream,
     eventQueue,
+  }
+}
+
+const ACTIVE_EXERCISE: ExerciseInstance = {
+  id: 'exercise:active',
+  templateId: 'cj.io.println.print-value.cangjie',
+  templateVersion: '2026-05-28',
+  skillId: 'cj.io.println.print-value',
+  conceptIds: ['cj.io.println'],
+  prompt: 'Print hello.',
+  starterCode: 'main() {\n    // TODO\n}',
+  expectedOutput: 'Hello',
+  matchMode: 'exact',
+  status: 'active',
+  intent: 'mainline',
+  personalizationInputs: { summary: 'test' },
+  createdAt: 1,
+}
+
+function sessionWithActiveExercise(): ClassroomSession {
+  return {
+    ...sessionWithStream([]),
+    currentExercise: ACTIVE_EXERCISE,
   }
 }
 
@@ -413,6 +436,18 @@ describe('classroom stream status markers', () => {
 
     expect(screen.getByTestId('classroom-generation-focus-notice').textContent)
       .toBe('已回到课堂准备状态。可以继续等待、重试或检查 AI 设置。')
+  })
+
+  it('does not describe classroom preparation after a focused generation has produced an active exercise', () => {
+    renderStream(sessionWithActiveExercise(), {
+      footer: <div>课堂准备进度</div>,
+      focusGenerationRequestKey: 1,
+    })
+
+    const notice = screen.getByTestId('classroom-exercise-focus-notice')
+    expect(notice.textContent)
+      .toBe('当前练习已准备好。先运行查看结果，提交或跳过后再继续下一步。')
+    expect(notice.textContent).not.toContain('课堂准备状态')
   })
 
   it('uses API key setup copy when the focused generation footer is blocked by config', () => {
