@@ -30,6 +30,7 @@ interface TourEditorProps {
   // and for invoking handlers like reset/run against the supplied handle.
   // TourEditor stops touching bridge.editor.
   onEditorReady?: (handle: MonacoEditorHandle) => void
+  onCursorPositionChange?: (position: { lineNumber: number, column: number }) => void
 }
 
 const TOUR_RUN_MARKER_OWNER = 'tour-run'
@@ -151,8 +152,10 @@ export function TourEditor({
   uriHint,
   readOnly = false,
   onEditorReady,
+  onCursorPositionChange,
 }: TourEditorProps) {
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
+  const cursorPositionDisposableRef = useRef<{ dispose: () => void } | null>(null)
   const codeRef = useRef(code)
   const ansiRef = useRef(new AnsiUp())
   const bridge = useEditorBridge()
@@ -162,6 +165,8 @@ export function TourEditor({
   const callerOwned = onEditorReady !== undefined
   const onEditorReadyRef = useRef(onEditorReady)
   onEditorReadyRef.current = onEditorReady
+  const onCursorPositionChangeRef = useRef(onCursorPositionChange)
+  onCursorPositionChangeRef.current = onCursorPositionChange
 
   const toolOutput = useTourEditorStore(state => state.compilerOutput)
   const programOutput = useTourEditorStore(state => state.programOutput)
@@ -185,6 +190,16 @@ export function TourEditor({
     const model = editorAppRef.current?.getEditor()?.getModel()
     if (model)
       monaco.editor.setModelMarkers(model, TOUR_RUN_MARKER_OWNER, [])
+  }, [])
+
+  const syncCursorPosition = useCallback(() => {
+    const position = editorAppRef.current?.getEditor()?.getPosition()
+    if (position) {
+      onCursorPositionChangeRef.current?.({
+        lineNumber: position.lineNumber,
+        column: position.column,
+      })
+    }
   }, [])
 
   const syncCompilerMarkers = useCallback((output: string) => {
@@ -221,6 +236,8 @@ export function TourEditor({
 
   useEffect(() => {
     return () => {
+      cursorPositionDisposableRef.current?.dispose()
+      cursorPositionDisposableRef.current = null
       clearCompilerMarkers()
       if (!callerOwned)
         bridge.editor.setEditor(undefined)
@@ -237,6 +254,17 @@ export function TourEditor({
     editorAppRef.current = editorApp
     const ed = editorApp.getEditor()
     ed?.updateOptions({ readOnly })
+    cursorPositionDisposableRef.current?.dispose()
+    cursorPositionDisposableRef.current = null
+    if (onCursorPositionChangeRef.current) {
+      syncCursorPosition()
+      cursorPositionDisposableRef.current = ed?.onDidChangeCursorPosition((event) => {
+        onCursorPositionChangeRef.current?.({
+          lineNumber: event.position.lineNumber,
+          column: event.position.column,
+        })
+      }) ?? null
+    }
     if (onEditorReadyRef.current) {
       onEditorReadyRef.current(editorApp)
     }
@@ -252,7 +280,7 @@ export function TourEditor({
       })
       syncCompilerMarkers(useTourEditorStore.getState().compilerOutput)
     }
-  }, [bridge.editor, layout, readOnly, syncCompilerMarkers])
+  }, [bridge.editor, layout, readOnly, syncCompilerMarkers, syncCursorPosition])
 
   const handleRun = useCallback(() => {
     editorAppRef.current?.getEditor()?.getAction('cangjie.compile.run')?.run()

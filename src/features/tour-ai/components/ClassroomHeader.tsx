@@ -183,10 +183,10 @@ export function ClassroomHeader({
                   aria-describedby={startClassroomDescriptionId}
                   title={t`开始 AI 课堂并准备下一步内容，预览内容仍可在复习页查看。`}
                   onClick={onStartClassroom ?? (() => onViewChange('live'))}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center gap-2 rounded-md border border-tour-border bg-tour-surface text-xs font-medium text-tour-heading hover:bg-tour-bg sm:w-auto sm:px-3"
+                  className="inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-md border border-tour-border bg-tour-surface px-2.5 text-xs font-medium text-tour-heading hover:bg-tour-bg sm:px-3"
                 >
                   <PlayCircle aria-hidden="true" className="size-4 shrink-0" />
-                  <span className="hidden sm:inline"><Trans>开始课堂</Trans></span>
+                  <span><Trans>开始课堂</Trans></span>
                 </button>
                 <span id={startClassroomDescriptionId} className="sr-only">
                   <Trans>开始 AI 课堂并准备下一步内容，预览内容仍可在复习页查看。</Trans>

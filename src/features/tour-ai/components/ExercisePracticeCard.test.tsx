@@ -16,6 +16,7 @@ import { requestRemoteAction } from '@/service/run'
 
 interface FakeModel {
   current: string
+  cursorPosition: { lineNumber: number, column: number }
   setValue: ReturnType<typeof vi.fn>
   focus: ReturnType<typeof vi.fn>
   listeners: Set<() => void>
@@ -31,7 +32,13 @@ function setFakeModelValue(model: FakeModel, next: string) {
 function getFakeModel(key: string): FakeModel {
   let model = fakeModels.get(key)
   if (!model) {
-    model = { current: '', setValue: vi.fn(), focus: vi.fn(), listeners: new Set() }
+    model = {
+      current: '',
+      cursorPosition: { lineNumber: 1, column: 1 },
+      setValue: vi.fn(),
+      focus: vi.fn(),
+      listeners: new Set(),
+    }
     model.setValue.mockImplementation((next: string) => {
       setFakeModelValue(model!, next)
     })
@@ -41,14 +48,26 @@ function getFakeModel(key: string): FakeModel {
 }
 
 vi.mock('@/features/tour/components/TourEditor', () => ({
-  TourEditor: ({ code, uriHint, onEditorReady }: { code: string, uriHint?: string, onEditorReady?: (h: MonacoEditorHandle) => void }) => {
+  TourEditor: ({
+    code,
+    uriHint,
+    onCursorPositionChange,
+    onEditorReady,
+  }: {
+    code: string
+    uriHint?: string
+    onCursorPositionChange?: (position: { lineNumber: number, column: number }) => void
+    onEditorReady?: (h: MonacoEditorHandle) => void
+  }) => {
     const model = getFakeModel(uriHint ?? 'default')
     useEffect(() => {
       if (!shouldMountEditor)
         return
+      onCursorPositionChange?.(model.cursorPosition)
       onEditorReady?.({
         getEditor: () => ({
           focus: model.focus,
+          getPosition: () => model.cursorPosition,
           getModel: () => ({
             setValue: model.setValue,
             getValue: () => model.current,
@@ -61,7 +80,7 @@ vi.mock('@/features/tour/components/TourEditor', () => ({
         }) as unknown as ReturnType<MonacoEditorHandle['getEditor']>,
         dispose: () => undefined,
       })
-    }, [model, onEditorReady])
+    }, [model, onCursorPositionChange, onEditorReady])
     return <div data-testid="tour-editor" data-uri-hint={uriHint}>{code}</div>
   },
 }))
@@ -314,6 +333,9 @@ describe('exercise practice card', () => {
     expect(actionBar.className).toContain('sm:flex-row')
     expect(screen.getByTestId('exercise-practice-card').hasAttribute('data-classroom-transient-panel-close-target')).toBe(true)
     expect(screen.getByTestId('exercise-code-title').querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+    expect(screen.getByTestId('exercise-action-guidance').textContent).toBe(
+      '建议先运行查看结果；确认正确后再提交，提交才会记录学习进度。跳过只记录学习路径，不代表掌握。',
+    )
 
     const headerSkip = screen.getByTestId('exercise-skip-and-read')
     expect(headerSkip.className).toContain('hidden')
@@ -334,7 +356,27 @@ describe('exercise practice card', () => {
     expect(describedByText(submit)).toBe('提交会运行当前代码，并把结果记录为这道练习的学习证据。')
     expect(submit.getAttribute('title')).toBe('提交会运行当前代码，并把结果记录为这道练习的学习证据。')
     expect(submit.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+    screen.getByText('行 1，列 1')
     expect(screen.getByTestId('exercise-code-panel').querySelector('.h-\\[320px\\]')).not.toBeNull()
+  })
+
+  it('shows the current editor cursor position instead of a fixed placeholder', () => {
+    getFakeModel(EXERCISE_BASE.id).cursorPosition = { lineNumber: 3, column: 7 }
+
+    render(
+      <Wrapper>
+        <ExercisePracticeCard
+          exercise={EXERCISE_BASE}
+          isActive
+          lang="zh"
+          dispatch={vi.fn()}
+          bridge={makeBridge()}
+          lastRun={null}
+        />
+      </Wrapper>,
+    )
+
+    screen.getByText('行 3，列 7')
   })
 
   it('exposes output tabs as linked panels and supports keyboard switching', () => {
@@ -627,14 +669,17 @@ describe('exercise practice card', () => {
     expect(describedByText(submit)).toBe('练习编辑器仍在加载，加载完成后才能提交。')
 
     const skip = screen.getByRole('button', { name: '跳过并记录' }) as HTMLButtonElement
-    expect(skip.disabled).toBe(false)
+    expect(skip.disabled).toBe(true)
+    expect(describedByText(skip)).toBe('练习编辑器仍在加载，加载完成后才能跳过并记录。')
 
     fireEvent.click(run)
     fireEvent.click(submit)
     fireEvent.click(reset)
+    fireEvent.click(skip)
 
     expect(requestRemoteActionMock).not.toHaveBeenCalled()
     expect(screen.queryByTestId('exercise-reset-confirmation')).toBeNull()
+    expect(screen.queryByTestId('exercise-skip-confirmation')).toBeNull()
   })
 
   it('keeps applying an AI suggestion disabled while code is running', async () => {

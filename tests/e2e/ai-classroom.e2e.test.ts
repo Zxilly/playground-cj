@@ -388,6 +388,7 @@ describe('ai classroom e2e', () => {
     await page.getByTestId('classroom-review-view').waitFor({ state: 'visible' })
     await page.getByText('预览模式只展示已验证课程内容。开始课堂后再使用聊天、练习验证和个性化讲解。').waitFor({ state: 'visible' })
     expect(await page.getByRole('button', { name: '开始 AI 课堂' }).count()).toBeGreaterThan(0)
+    expect(await page.getByTestId('ai-classroom-header').getByText('开始课堂', { exact: true }).isVisible()).toBe(true)
     expect(await page.getByText('个人笔记', { exact: true }).isVisible()).toBe(true)
     expect(await page.getByTestId('classroom-review-concept-rail').isVisible()).toBe(true)
 

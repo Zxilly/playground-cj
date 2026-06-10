@@ -278,14 +278,13 @@ describe('classroom header', () => {
     const start = screen.getByRole('button', { name: '开始 AI 课堂' })
     expect(start.className).toContain('shrink-0')
     expect(start.className).toContain('h-8')
-    expect(start.className).toContain('w-8')
-    expect(start.className).toContain('sm:w-auto')
+    expect(start.className).toContain('px-2.5')
+    expect(start.className).toContain('sm:px-3')
     expect(start.querySelector('svg')?.getAttribute('class')).toContain('shrink-0')
     expect(describedByText(start)).toBe('开始 AI 课堂并准备下一步内容，预览内容仍可在复习页查看。')
     expect(start.getAttribute('title')).toBe('开始 AI 课堂并准备下一步内容，预览内容仍可在复习页查看。')
     const visibleLabel = screen.getByText('开始课堂')
-    expect(visibleLabel.className).toContain('hidden')
-    expect(visibleLabel.className).toContain('sm:inline')
+    expect(visibleLabel.className).not.toContain('hidden')
     fireEvent.click(start)
     expect(onStartClassroom).toHaveBeenCalledTimes(1)
 
@@ -307,11 +306,11 @@ describe('classroom header', () => {
     expect(liveTab.getAttribute('aria-disabled')).toBe('true')
 
     const start = screen.getByRole('button', { name: 'Start AI Classroom' })
-    expect(start.className).toContain('w-8')
-    expect(start.className).toContain('sm:w-auto')
+    expect(start.className).toContain('px-2.5')
+    expect(start.className).toContain('sm:px-3')
     expect(describedByText(start)).toBe('Start AI Classroom and prepare the next step; preview content remains available in Review.')
     expect(start.getAttribute('title')).toBe('Start AI Classroom and prepare the next step; preview content remains available in Review.')
-    expect(screen.queryByText('开始课堂')).toBeNull()
+    expect(screen.getByText('Start classroom').className).not.toContain('hidden')
 
     fireEvent.click(start)
 

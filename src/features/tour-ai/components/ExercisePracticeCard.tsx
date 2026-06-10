@@ -76,6 +76,7 @@ export function ExercisePracticeCard({
   // over a singleton editor and don't lose their content when re-mounted.
   const [editorHandle, setEditorHandle] = useState<MonacoEditorHandle | undefined>()
   const [editorRevision, setEditorRevision] = useState(0)
+  const [cursorPosition, setCursorPosition] = useState({ lineNumber: 1, column: 1 })
   const headerSkipButtonRef = useRef<HTMLButtonElement | null>(null)
   const actionSkipButtonRef = useRef<HTMLButtonElement | null>(null)
   const skipCancelButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -122,7 +123,7 @@ export function ExercisePracticeCard({
   const focusNoticeVisible = isActive && focusRequestKey != null
   const hasAppliedAssistance = appliedAssistanceCount > 0
   const editorReady = editorHandle != null
-  const skipConfirming = skipConfirmExerciseId === exercise.id && isActive && !busy
+  const skipConfirming = skipConfirmExerciseId === exercise.id && isActive && !busy && editorReady
   const resetConfirming = resetConfirmExerciseId === exercise.id && isActive && !busy && editorReady
   const runActionDescription = !isActive
     ? isReviewCheck
@@ -166,17 +167,26 @@ export function ExercisePracticeCard({
             : isReviewCheck
               ? t`提交会运行当前代码，并把结果记录为这次复习检查证据。`
               : t`提交会运行当前代码，并把结果记录为这道练习的学习证据。`
-  const skipActionDescription = !isActive
-    ? isReviewCheck
-      ? t`这条复习检查记录只读，不能跳过。`
-      : t`这条练习记录只读，不能跳过。`
-    : busy
-      ? isReviewCheck
+  const skipActionDescription = (() => {
+    if (!isActive) {
+      return isReviewCheck
+        ? t`这条复习检查记录只读，不能跳过。`
+        : t`这条练习记录只读，不能跳过。`
+    }
+    if (!editorReady) {
+      return isReviewCheck
+        ? t`复习检查编辑器仍在加载，加载完成后才能跳过并记录。`
+        : t`练习编辑器仍在加载，加载完成后才能跳过并记录。`
+    }
+    if (busy) {
+      return isReviewCheck
         ? t`复习检查正在运行或提交，完成后才能跳过。`
         : t`练习正在运行或提交，完成后才能跳过。`
-      : isReviewCheck
-        ? t`会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并保留当前复习进度。`
-        : t`会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并让 AI 准备更合适的下一步。`
+    }
+    return isReviewCheck
+      ? t`会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并保留当前复习进度。`
+      : t`会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并让 AI 准备更合适的下一步。`
+  })()
   const suggestionApplyDisabled = !editorReady || busy
   const suggestionApplyDescription = !editorReady
     ? isReviewCheck
@@ -276,7 +286,7 @@ export function ExercisePracticeCard({
   }
 
   const requestSkip = (source: SkipTriggerSource) => {
-    if (busy || !isActive)
+    if (busy || !isActive || !editorReady)
       return
     closeClassroomTransientPanels()
     skipFocusReturnSourceRef.current = source
@@ -289,7 +299,7 @@ export function ExercisePracticeCard({
   }
 
   const confirmSkip = () => {
-    if (!skipConfirming)
+    if (!skipConfirming || busy || !editorReady)
       return
     setSkipConfirmExerciseId(null)
     skipFocusReturnSourceRef.current = null
@@ -357,6 +367,12 @@ export function ExercisePracticeCard({
     && currentEditorCode !== visibleFeedback.attemptedCode,
   )
   const genericStaleResultVisible = resultCodeStale && !runCorrectFeedbackStale
+  const actionGuidanceVisible = isActive && visibleFeedback == null
+  const actionGuidanceText = isReviewCheck
+    ? t`建议先运行查看结果；确认正确后再提交复习检查，提交才会记录复习证据。跳过只记录复习路径，不代表掌握。`
+    : t`建议先运行查看结果；确认正确后再提交，提交才会记录学习进度。跳过只记录学习路径，不代表掌握。`
+  const { column, lineNumber } = cursorPosition
+  const cursorPositionText = t`行 ${lineNumber}，列 ${column}`
   const runnerUnavailable = visibleFeedback?.result.failureKind === 'runner_unavailable'
   const resultOutput = displayRun?.stdout ?? ''
   // stderr here is the compiler/linker trace from the remote runner. It can be
@@ -511,7 +527,7 @@ export function ExercisePracticeCard({
               type="button"
               aria-label={isReviewCheck ? t`跳过当前复习检查并记录为已跳过` : t`跳过当前练习并记录为已跳过`}
               onClick={() => requestSkip('header')}
-              disabled={busy}
+              disabled={busy || !editorReady}
               aria-describedby={skipActionDescriptionId}
               title={skipActionDescription}
               data-testid="exercise-skip-and-read"
@@ -522,6 +538,15 @@ export function ExercisePracticeCard({
           )}
         </div>
         <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7">{exercise.prompt}</p>
+        {actionGuidanceVisible && (
+          <p
+            data-testid="exercise-action-guidance"
+            role="note"
+            className="mt-3 rounded-md border border-tour-border bg-tour-bg px-3 py-2 text-xs leading-6 text-muted-foreground"
+          >
+            {actionGuidanceText}
+          </p>
+        )}
       </div>
 
       {skipConfirming && (
@@ -554,7 +579,7 @@ export function ExercisePracticeCard({
             <button
               type="button"
               onClick={confirmSkip}
-              disabled={busy || !isActive}
+              disabled={busy || !isActive || !editorReady}
               aria-describedby={skipConfirmDescriptionId}
               className="inline-flex items-center justify-center rounded-md bg-classroom-warning-fg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
             >
@@ -735,6 +760,7 @@ export function ExercisePracticeCard({
             uriHint={exercise.id}
             readOnly={!isActive}
             onEditorReady={handleEditorReady}
+            onCursorPositionChange={setCursorPosition}
           />
         </div>
         <div
@@ -756,14 +782,14 @@ export function ExercisePracticeCard({
             </span>
           )}
           <div className="truncate text-xs text-muted-foreground">
-            <Trans>行 1，列 1</Trans>
+            {cursorPositionText}
           </div>
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
             <button
               ref={actionSkipButtonRef}
               type="button"
               onClick={() => requestSkip('action')}
-              disabled={busy || !isActive}
+              disabled={busy || !isActive || !editorReady}
               aria-describedby={skipActionDescriptionId}
               title={skipActionDescription}
               className="col-span-2 inline-flex items-center justify-center gap-2 rounded-md border border-tour-border px-3 py-2 text-sm text-muted-foreground hover:bg-tour-bg disabled:opacity-50 sm:col-span-1"

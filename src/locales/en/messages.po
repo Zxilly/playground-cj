@@ -33,7 +33,7 @@ msgstr "(Beijing time)"
 msgid "（手动）"
 msgstr " (manual)"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1025
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1051
 msgid "（空）"
 msgstr "(empty)"
 
@@ -69,7 +69,7 @@ msgstr "AI is taking longer than expected. Generated content will not be lost; y
 msgid "AI 帮助后"
 msgstr "AI-assisted"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:578
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:603
 msgid "AI 建议的修改"
 msgstr "AI suggested change"
 
@@ -298,15 +298,15 @@ msgstr "Cangjie code assistance is temporarily unavailable. Please restart it ma
 msgid "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
 msgstr "Cangjie Version 1.1.0-beta.25 | STDX Version 1.1.0-beta.25.1 | "
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:669
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:694
 msgid "代码"
 msgstr "Code"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:918
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:944
 msgid "代码已修改。当前结果来自修改前的代码，请重新运行或提交查看最新结果。"
 msgstr "Code changed. The current result is from earlier code; run or submit again to see the latest result."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:349
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:359
 msgid "代码已修改。请重新运行，确认当前代码仍然正确后再提交。"
 msgstr "Code changed. Run again to confirm the current code is still correct before submitting."
 
@@ -334,7 +334,7 @@ msgstr "Code assistance unavailable"
 msgid "代码示例"
 msgstr "Code example"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1112
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1138
 msgid "代码还没有编译通过。先查看第一条 error 行，修正后再运行或提交。"
 msgstr "The code does not compile yet. Start with the first error line, fix it, then run or submit again."
 
@@ -346,19 +346,19 @@ msgstr "This removes this group of {artifactCount} merged notes from Review. Tut
 msgid "会从复习页移除这组 {artifactCount} 条合并后的笔记，相关练习记录仍会保留。"
 msgstr "This removes this group of {artifactCount} merged notes from Review. Related practice records will be kept."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:217
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:227
 msgid "会先显示确认，不会立即改动当前代码。确认后会恢复到复习检查起始代码，并清除本次已应用的 AI 建议标记。"
 msgstr "This first shows a confirmation and will not change your current code immediately. After confirmation, it will restore the review-check starter code and clear this AI suggestion marker."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:218
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:228
 msgid "会先显示确认，不会立即改动当前代码。确认后会恢复到练习起始代码，并清除本次已应用的 AI 建议标记。"
 msgstr "This first shows a confirmation and will not change your current code immediately. After confirmation, it will restore the exercise starter code and clear this AI suggestion marker."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:178
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:187
 msgid "会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并保留当前复习进度。"
 msgstr "This first shows a confirmation and will not record immediately. After confirmation, the classroom will record it as skipped and keep the current review progress."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:179
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:188
 msgid "会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并让 AI 准备更合适的下一步。"
 msgstr "This first shows a confirmation and will not record immediately. After confirmation, the classroom will record it as skipped and ask AI to prepare a better next step."
 
@@ -419,7 +419,7 @@ msgstr "Save to use your own API Key. Clear the API Key to return to shared quot
 msgid "保存当前课堂"
 msgstr "Save current classroom"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:710
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:735
 msgid "保留当前代码"
 msgstr "Keep current code"
 
@@ -596,7 +596,7 @@ msgstr "Shared quota resets every day at midnight (Beijing time)."
 msgid "关闭"
 msgstr "Close"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:601
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:626
 msgid "关闭建议"
 msgstr "Dismiss suggestion"
 
@@ -817,7 +817,7 @@ msgstr "Refresh page"
 msgid "剩余"
 msgstr "Remaining"
 
-#: src/features/tour/components/mdx/LanguagePicker.tsx:41
+#: src/features/tour/components/mdx/LanguagePicker.tsx:36
 msgid "勾选后，教程会显示对应语言的对比说明。"
 msgstr "When selected, the tour shows comparison notes for that language."
 
@@ -853,7 +853,7 @@ msgstr "Send message"
 msgid "取消"
 msgstr "Cancel"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:192
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:202
 msgid "只会丢弃这条 AI 建议，不会改变当前代码或课堂进度。"
 msgstr "This only discards this AI suggestion. It will not change the current code or classroom progress."
 
@@ -922,7 +922,7 @@ msgstr "Back to latest content"
 msgid "回到复习检查"
 msgstr "Back to review check"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:470
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:486
 msgid "回到复习页查看这个概念的最新进度和下一步建议。"
 msgstr "Return to Review to see this concept's latest progress and next recommendation."
 
@@ -999,16 +999,16 @@ msgid "复习内容"
 msgstr "review content"
 
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:806
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:502
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:518
 #: src/features/tour-ai/components/LessonGenerationErrorRetry.tsx:343
 msgid "复习检查"
 msgstr "Review check"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1131
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1157
 msgid "复习检查中"
 msgstr "Review check in progress"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:199
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:209
 msgid "复习检查代码已在应用建议后继续修改。为避免覆盖你的编辑，撤回已暂停；当前代码会保留，后续提交仍会记录为 AI 帮助后的证据。"
 msgstr "The review-check code changed after applying the suggestion. To avoid overwriting your edits, undo is paused; current code will be kept, and later submissions will still be recorded as AI-assisted evidence."
 
@@ -1024,15 +1024,15 @@ msgstr "Review check attempt recorded"
 msgid "复习检查尝试未通过，已记录"
 msgstr "Review check attempt did not pass and was recorded"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1133
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1159
 msgid "复习检查已完成"
 msgstr "Review check completed"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1137
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1163
 msgid "复习检查已更新"
 msgstr "Review check updated"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:466
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:482
 msgid "复习检查已记录"
 msgstr "Review check recorded"
 
@@ -1048,35 +1048,35 @@ msgstr "Review check recorded, but next step preparation failed. Retry this task
 msgid "复习检查未通过，AI 会给出复习建议。"
 msgstr "Review check did not pass. AI will suggest what to review."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:141
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:142
 msgid "复习检查正在提交，完成后才能运行。"
 msgstr "The review check is submitting. You can run after it finishes."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:157
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:158
 msgid "复习检查正在提交，请勿重复提交。"
 msgstr "The review check is submitting. Do not submit it again."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:138
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:139
 msgid "复习检查正在运行，完成后才能再次运行。"
 msgstr "The review check is running. You can run it again after it finishes."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:160
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:161
 msgid "复习检查正在运行，完成后才能提交。"
 msgstr "The review check is running. You can submit after it finishes."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:187
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:197
 msgid "复习检查正在运行或提交，完成后才能应用建议，避免代码和结果不一致。"
 msgstr "The review check is running or submitting. Apply the suggestion after it finishes so code and results stay consistent."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:195
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:205
 msgid "复习检查正在运行或提交，完成后才能撤回 AI 建议，避免代码和结果不一致。"
 msgstr "The review check is running or submitting. Undo the AI suggestion after it finishes so code and results stay consistent."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:175
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:183
 msgid "复习检查正在运行或提交，完成后才能跳过。"
 msgstr "The review check is running or submitting. You can skip after it finishes."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:214
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:224
 msgid "复习检查正在运行或提交，完成后才能重置代码，避免代码和结果不一致。"
 msgstr "The review check is running or submitting. Reset code after it finishes so code and results stay consistent."
 
@@ -1084,19 +1084,23 @@ msgstr "The review check is running or submitting. Reset code after it finishes 
 msgid "复习检查结果反馈"
 msgstr "review check result feedback"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:183
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:193
 msgid "复习检查编辑器仍在加载，加载完成后才能应用建议；不会自动运行或提交。"
 msgstr "The review-check editor is still loading. You can apply the suggestion after it loads; it will not run or submit automatically."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:152
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:153
 msgid "复习检查编辑器仍在加载，加载完成后才能提交。"
 msgstr "The review-check editor is still loading. You can submit after it loads."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:133
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:178
+msgid "复习检查编辑器仍在加载，加载完成后才能跳过并记录。"
+msgstr "The review-check editor is still loading. You can skip and record after it loads."
+
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:134
 msgid "复习检查编辑器仍在加载，加载完成后才能运行代码。"
 msgstr "The review-check editor is still loading. You can run code after it loads."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:210
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:220
 msgid "复习检查编辑器仍在加载，加载完成后才能重置代码。"
 msgstr "The review-check editor is still loading. You can reset code after it loads."
 
@@ -1104,7 +1108,7 @@ msgstr "The review-check editor is still loading. You can reset code after it lo
 msgid "复习检查跳过反馈"
 msgstr "review check skip feedback"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:823
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:849
 msgid "复习检查输出"
 msgstr "Review check output"
 
@@ -1222,8 +1226,8 @@ msgstr "Complete the endpoint, API key, and model configuration to start."
 msgid "完整链接"
 msgstr "Full link"
 
-#: src/features/tour/components/mdx/CompareWith.tsx:28
-#: src/features/tour/components/mdx/LanguagePicker.tsx:32
+#: src/features/tour/components/mdx/CompareWith.tsx:21
+#: src/features/tour/components/mdx/LanguagePicker.tsx:27
 msgid "对比"
 msgstr "Compare"
 
@@ -1248,7 +1252,7 @@ msgstr "Will retry: {retryContext}"
 msgid "尚无章节"
 msgstr "No chapters yet"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:379
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:395
 msgid "展开编译信息；不会重新运行代码、改变测试结果或学习记录。"
 msgstr "Expand compiler info; this will not rerun code, change test results, or change learning records."
 
@@ -1272,11 +1276,11 @@ msgstr "Switched to a shared quota draft. Save to replace the current API Key, o
 msgid "已切换到你的 API Key，课堂正在继续准备 AI 内容。"
 msgstr "Switched to your API Key. The classroom is continuing to prepare AI content."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:455
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:471
 msgid "已回到当前复习检查。完成、跳过或提交后再继续复习。"
 msgstr "Back at the current review check. Finish, skip, or submit it before continuing review."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:456
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:472
 msgid "已回到当前练习。完成、跳过或提交后再继续复习。"
 msgstr "Back at the current exercise. Finish, skip, or submit it before continuing review."
 
@@ -1300,12 +1304,12 @@ msgstr "Back at classroom preparation. Complete AI service setup before classroo
 msgid "已复制分享链接"
 msgstr "Share link copied"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1133
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1159
 #: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:407
 msgid "已完成"
 msgstr "Completed"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:644
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:669
 msgid "已应用 AI 建议"
 msgstr "AI suggestion applied"
 
@@ -1339,7 +1343,7 @@ msgstr "Received: {requestedActionLabel}. Preparing classroom content."
 msgid "已收到重试请求，正在准备课堂内容。"
 msgstr "Retry request received. Preparing classroom content."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1138
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1164
 msgid "已更新"
 msgstr "Updated"
 
@@ -1420,7 +1424,7 @@ msgid "已跳转到 {jumpedChapterText}"
 msgstr "Jumped to {jumpedChapterText}"
 
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:1224
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1135
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1161
 msgid "已跳过"
 msgstr "Skipped"
 
@@ -1428,8 +1432,8 @@ msgstr "Skipped"
 msgid "已跳过，可在复习中查看："
 msgstr "Skipped; available in review:"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:466
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1135
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:482
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1161
 msgid "已跳过复习检查"
 msgstr "Review check skipped"
 
@@ -1462,15 +1466,15 @@ msgstr "Validated tutorial content"
 msgid "帮我看看错在哪"
 msgstr "Help me find the mistake"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:190
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:200
 msgid "应用后会替换当前复习检查编辑器代码；不会自动运行或提交。之后提交会记录为 AI 帮助后的较弱证据。"
 msgstr "Applying will replace the current review-check editor code. It will not run or submit automatically. Later submissions will be recorded as weaker AI-assisted evidence."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:191
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:201
 msgid "应用后会替换当前练习编辑器代码；不会自动运行或提交。之后提交会记录为 AI 帮助后的较弱证据。"
 msgstr "Applying will replace the current exercise editor code. It will not run or submit automatically. Later submissions will be recorded as weaker AI-assisted evidence."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:629
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:654
 msgid "应用建议"
 msgstr "Apply suggestion"
 
@@ -1481,6 +1485,14 @@ msgstr "Recommendation reason"
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:719
 msgid "建议依据：{nextStepReason}"
 msgstr "Recommendation reason: {nextStepReason}"
+
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:373
+msgid "建议先运行查看结果；确认正确后再提交，提交才会记录学习进度。跳过只记录学习路径，不代表掌握。"
+msgstr "Recommended flow: run first to inspect the result; submit only after it is correct, because submit records learning progress. Skipping only records the learning path and does not mean mastery."
+
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:372
+msgid "建议先运行查看结果；确认正确后再提交复习检查，提交才会记录复习证据。跳过只记录复习路径，不代表掌握。"
+msgstr "Recommended flow: run first to inspect the result; submit the review check only after it is correct, because submit records review evidence. Skipping only records the review path and does not mean mastery."
 
 #: src/features/tour-ai/components/ClassroomHeader.tsx:182
 #: src/features/tour-ai/components/ClassroomLandingPage.tsx:217
@@ -1608,7 +1620,7 @@ msgstr "Due"
 msgid "待处理"
 msgstr "Pending"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:617
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:642
 msgid "忽略"
 msgstr "Dismiss"
 
@@ -1624,7 +1636,7 @@ msgstr "Recovery scope: retry only prepares the failed AI task again; existing c
 msgid "恢复范围：重试只会重新准备失败的 AI 任务；已生成内容、练习结果和复习笔记会保留。"
 msgstr "Recovery scope: retry only prepares the failed AI task again; generated content, exercise results, and review notes will be kept."
 
-#: src/features/tour/components/mdx/LanguagePicker.tsx:38
+#: src/features/tour/components/mdx/LanguagePicker.tsx:33
 msgid "我熟悉的语言"
 msgstr "Languages I know"
 
@@ -1786,47 +1798,47 @@ msgstr "Open preview mode to view validated course content only. It will not sta
 msgid "掌握证据"
 msgstr "Mastery evidence"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:814
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:840
 msgid "提交"
 msgstr "Submit"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:808
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:834
 msgid "提交中"
 msgstr "Submitting"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:164
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:165
 msgid "提交会运行当前代码，并把结果记录为 AI 帮助后的较弱复习检查证据。"
 msgstr "Submit will run the current code and record the result as weaker AI-assisted review-check evidence."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:165
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:166
 msgid "提交会运行当前代码，并把结果记录为 AI 帮助后的较弱练习证据。"
 msgstr "Submit will run the current code and record the result as weaker AI-assisted exercise evidence."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:167
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:168
 msgid "提交会运行当前代码，并把结果记录为这次复习检查证据。"
 msgstr "Submit will run the current code and record the result as review-check evidence."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:168
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:169
 msgid "提交会运行当前代码，并把结果记录为这道练习的学习证据。"
 msgstr "Submit will run the current code and record the result as learning evidence for this exercise."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:970
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:996
 msgid "提交复习检查"
 msgstr "Submit review check"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:970
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:996
 msgid "提交并记录"
 msgstr "Submit and record"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1092
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1118
 msgid "提交未完成"
 msgstr "Submit incomplete"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1095
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1121
 msgid "提交结果：正确"
 msgstr "Submit result: correct"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1095
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1121
 msgid "提交结果：错误"
 msgstr "Submit result: incorrect"
 
@@ -1838,15 +1850,15 @@ msgstr "Note"
 msgid "搜索示例..."
 msgstr "Search examples..."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:202
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:212
 msgid "撤回复习检查代码到应用建议前的版本；后续提交不会继续带这次 AI 建议标记，已记录的提交不会改变。"
 msgstr "Undo the review-check code to the version before applying the suggestion. Later submissions will no longer carry this AI suggestion marker; already recorded submissions will not change."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:655
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:680
 msgid "撤回应用"
 msgstr "Undo apply"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:203
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:213
 msgid "撤回练习代码到应用建议前的版本；后续提交不会继续带这次 AI 建议标记，已记录的提交不会改变。"
 msgstr "Undo the exercise code to the version before applying the suggestion. Later submissions will no longer carry this AI suggestion marker; already recorded submissions will not change."
 
@@ -1988,7 +2000,7 @@ msgstr "Source tutorial"
 msgid "查看内容"
 msgstr "view content"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:223
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:233
 msgid "查看最近一次运行或提交结果，不会运行、提交或改动代码。"
 msgstr "View the latest run or submit result. This will not run, submit, or change code."
 
@@ -2000,7 +2012,7 @@ msgstr "View preparation progress"
 msgid "查看复习概念 {conceptTitle}，{selectedState}，进度 {progressStatus}，{exposureStatus}"
 msgstr "View review concept {conceptTitle}, {selectedState}, progress {progressStatus}, {exposureStatus}"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:478
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:494
 msgid "查看复习进度"
 msgstr "View review progress"
 
@@ -2010,7 +2022,7 @@ msgstr "View review progress"
 msgid "查看对应教程"
 msgstr "View matching tour"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:591
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:616
 msgid "查看建议代码"
 msgstr "View suggested code"
 
@@ -2022,7 +2034,7 @@ msgstr "View current review check"
 msgid "查看当前练习"
 msgstr "View current exercise"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:222
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:232
 msgid "查看测试用例，不会运行、提交或改动代码。"
 msgstr "View the test case. This will not run, submit, or change code."
 
@@ -2157,11 +2169,11 @@ msgstr "Starting code assistance"
 msgid "正在恢复课堂环境"
 msgstr "Restoring the classroom environment"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1125
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1151
 msgid "正在提交复习检查，请稍候。"
 msgstr "Submitting review check. Please wait."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1125
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1151
 msgid "正在提交练习，请稍候。"
 msgstr "Submitting exercise. Please wait."
 
@@ -2205,11 +2217,11 @@ msgstr "Reading your classroom record and preparing the learning entrance."
 msgid "正在运行..."
 msgstr "Running..."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1124
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1150
 msgid "正在运行复习检查代码，请稍候。"
 msgstr "Running review-check code. Please wait."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1124
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1150
 msgid "正在运行练习代码，请稍候。"
 msgstr "Running exercise code. Please wait."
 
@@ -2265,11 +2277,11 @@ msgstr "Test failed"
 msgid "测试成功"
 msgstr "Test successful"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:838
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:864
 msgid "测试用例"
 msgstr "Test case"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:854
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:880
 msgid "测试结果"
 msgstr "Test result"
 
@@ -2322,7 +2334,7 @@ msgstr "Click to switch to {nextLabel} theme."
 msgid "现有课堂内容仍可阅读；可以重试这次任务，或先继续复习已生成内容。"
 msgstr "Existing classroom content remains readable. Retry this task or review the generated content first."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:873
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:899
 msgid "用例 1"
 msgstr "Case 1"
 
@@ -2354,15 +2366,15 @@ msgstr "Short link"
 msgid "确认删除本机保存的 AI 课堂进度、复习内容和练习记录；静态教程不会受影响。"
 msgstr "Delete locally saved AI Classroom progress, review content, and practice records. Static tutorials are unaffected."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:561
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:586
 msgid "确认跳过"
 msgstr "Confirm skip"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:537
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:562
 msgid "确认跳过这次复习检查？"
 msgstr "Skip this review check?"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:537
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:562
 msgid "确认跳过这道练习？"
 msgstr "Skip this exercise?"
 
@@ -2370,15 +2382,15 @@ msgstr "Skip this exercise?"
 msgid "确认重新开始"
 msgstr "Confirm start over"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:718
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:743
 msgid "确认重置"
 msgstr "Confirm reset"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:697
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:722
 msgid "确认重置代码？"
 msgstr "Reset code?"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:697
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:722
 msgid "确认重置复习检查代码？"
 msgstr "Reset review-check code?"
 
@@ -2420,17 +2432,17 @@ msgstr "Refresh in ~{hours}h {minutes}m"
 
 #: src/features/tour-ai/components/ClassroomHeader.tsx:290
 #: src/features/tour-ai/components/ClassroomLandingPage.tsx:327
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:502
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:518
 msgid "练习"
 msgstr "Practice"
 
 #: src/features/tour-ai/components/ClassroomConceptPanel.tsx:107
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:1210
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1131
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1157
 msgid "练习中"
 msgstr "Practicing"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:200
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:210
 msgid "练习代码已在应用建议后继续修改。为避免覆盖你的编辑，撤回已暂停；当前代码会保留，后续提交仍会记录为 AI 帮助后的证据。"
 msgstr "The exercise code changed after applying the suggestion. To avoid overwriting your edits, undo is paused; current code will be kept, and later submissions will still be recorded as AI-assisted evidence."
 
@@ -2458,55 +2470,59 @@ msgstr "Practice suggestion"
 msgid "练习提交未通过，AI 会给出下一步建议。"
 msgstr "The exercise submission did not pass. AI will provide the next suggestion."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:142
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:143
 msgid "练习正在提交，完成后才能运行。"
 msgstr "The exercise is submitting. You can run after it finishes."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:158
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:159
 msgid "练习正在提交，请勿重复提交。"
 msgstr "The exercise is submitting. Do not submit it again."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:139
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:140
 msgid "练习正在运行，完成后才能再次运行。"
 msgstr "The exercise is running. You can run it again after it finishes."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:161
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:162
 msgid "练习正在运行，完成后才能提交。"
 msgstr "The exercise is running. You can submit after it finishes."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:188
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:198
 msgid "练习正在运行或提交，完成后才能应用建议，避免代码和结果不一致。"
 msgstr "The exercise is running or submitting. Apply the suggestion after it finishes so code and results stay consistent."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:196
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:206
 msgid "练习正在运行或提交，完成后才能撤回 AI 建议，避免代码和结果不一致。"
 msgstr "The exercise is running or submitting. Undo the AI suggestion after it finishes so code and results stay consistent."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:176
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:184
 msgid "练习正在运行或提交，完成后才能跳过。"
 msgstr "The exercise is running or submitting. You can skip after it finishes."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:215
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:225
 msgid "练习正在运行或提交，完成后才能重置代码，避免代码和结果不一致。"
 msgstr "The exercise is running or submitting. Reset code after it finishes so code and results stay consistent."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:184
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:194
 msgid "练习编辑器仍在加载，加载完成后才能应用建议；不会自动运行或提交。"
 msgstr "The exercise editor is still loading. You can apply the suggestion after it loads; it will not run or submit automatically."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:153
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:154
 msgid "练习编辑器仍在加载，加载完成后才能提交。"
 msgstr "The exercise editor is still loading. You can submit after it loads."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:134
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:179
+msgid "练习编辑器仍在加载，加载完成后才能跳过并记录。"
+msgstr "The exercise editor is still loading. You can skip and record after it loads."
+
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:135
 msgid "练习编辑器仍在加载，加载完成后才能运行代码。"
 msgstr "The exercise editor is still loading. You can run code after it loads."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:211
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:221
 msgid "练习编辑器仍在加载，加载完成后才能重置代码。"
 msgstr "The exercise editor is still loading. You can reset code after it loads."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:823
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:849
 msgid "练习输出"
 msgstr "Exercise output"
 
@@ -2540,7 +2556,7 @@ msgstr "Continue"
 msgid "继续下一步课程"
 msgstr "next lesson step"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:552
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:577
 msgid "继续复习检查"
 msgstr "Continue review check"
 
@@ -2569,7 +2585,7 @@ msgstr "Continue opening the saved classroom. Existing content, review content, 
 msgid "继续打开已保存课堂；已有内容、复习内容和练习记录会保留。聊天、生成下一步和复习检查需要先完成 AI 服务配置。"
 msgstr "Continue opening the saved classroom. Existing content, review content, and practice records will be kept. Chat, next-step generation, and review checks require AI service setup first."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:552
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:577
 msgid "继续练习"
 msgstr "Keep practicing"
 
@@ -2578,7 +2594,7 @@ msgid "编译中"
 msgstr "Compiling"
 
 #: src/features/playground/components/OutputPanel.tsx:27
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1053
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1079
 msgid "编译信息"
 msgstr "Compile info"
 
@@ -2602,7 +2618,7 @@ msgstr "Edit message"
 msgid "缺失课堂内容：{missingBlockIds}"
 msgstr "Missing classroom content: {missingBlockIds}"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1110
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1136
 msgid "缺少程序入口 main。先补一个 main() { ... }，再运行或提交。"
 msgstr "The program entry point main is missing. Add main() { ... }, then run or submit again."
 
@@ -2649,9 +2665,9 @@ msgstr "Self report"
 msgid "范围："
 msgstr "Scope: "
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:759
-msgid "行 1，列 1"
-msgstr "Line 1, column 1"
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:375
+msgid "行 {lineNumber}，列 {column}"
+msgstr "Line {lineNumber}, column {column}"
 
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:520
 msgid "补充说明"
@@ -2674,7 +2690,7 @@ msgstr "Evidence overview"
 msgid "证据概览：总计 {total}，通过 {success}，未通过 {failure}，跳过 {skip}。"
 msgstr "Evidence overview: total {total}, passed {success}, failed {failure}, skipped {skip}."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1010
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1036
 msgid "诊断建议"
 msgstr "Diagnostic suggestion"
 
@@ -2751,11 +2767,11 @@ msgstr "request targeted help"
 msgid "课堂"
 msgstr "Live"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:541
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:566
 msgid "课堂会记录为已跳过，并保留当前复习进度。"
 msgstr "The classroom will record it as skipped and keep the current review progress."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:542
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:567
 msgid "课堂会记录为已跳过，并让 AI 准备更合适的下一步。"
 msgstr "The classroom will record this as skipped and ask AI to prepare a better next step."
 
@@ -2897,19 +2913,19 @@ msgstr "Skipped content: {skipReason}"
 msgid "跳过后的下一步"
 msgstr "next step after skipping"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:772
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:798
 msgid "跳过并记录"
 msgstr "Skip and record"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:520
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:536
 msgid "跳过并记录 →"
 msgstr "Skip and record →"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:512
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:528
 msgid "跳过当前复习检查并记录为已跳过"
 msgstr "Skip the current review check and record it as skipped"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:512
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:528
 msgid "跳过当前练习并记录为已跳过"
 msgstr "Skip the current exercise and record it as skipped"
 
@@ -2922,15 +2938,15 @@ msgid "输入消息"
 msgstr "Input message"
 
 #: src/features/tour-ai/components/ClassroomStream.tsx:295
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1022
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1048
 msgid "输出："
 msgstr "Output:"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1116
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1142
 msgid "输出和预期不一致。先对比「预期输出」和「输出」，再调整 println 内容或计算结果。"
 msgstr "The output does not match the expectation. Compare Expected output with Output, then adjust the println content or calculation."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1119
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1145
 msgid "输出还没有满足这道题的判定规则。先对比测试用例和当前输出，再重新运行。"
 msgstr "The output does not satisfy this exercise's judging rule yet. Compare the test case with the current output, then run again."
 
@@ -2940,21 +2956,21 @@ msgstr "Some time has passed; review it before confirming again"
 
 #: src/features/playground/components/PlaygroundHeader.tsx:74
 #: src/features/playground/components/PlaygroundHeader.tsx:117
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:792
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:818
 msgid "运行"
 msgstr "Run"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:786
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:812
 #: src/features/tour-ai/components/LessonGenerationProgressPanel.tsx:406
 #: src/service/run.ts:60
 msgid "运行中"
 msgstr "Running"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:144
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:145
 msgid "运行只会执行当前复习检查代码并显示结果，不会记录复习检查进度。"
 msgstr "Run only executes the current review-check code and shows the result. It will not record review-check progress."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:145
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:146
 msgid "运行只会执行当前练习代码并显示结果，不会记录练习进度。"
 msgstr "Run only executes the current exercise code and shows the result. It will not record exercise progress."
 
@@ -2967,19 +2983,19 @@ msgstr "Run failed"
 msgid "运行成功"
 msgstr "Run successful"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1018
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1044
 msgid "运行或提交后查看测试结果。"
 msgstr "Run or submit to view test results."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:929
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:955
 msgid "运行服务暂时不可用，请稍后重试运行。"
 msgstr "The runner is temporarily unavailable. Retry running later."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:928
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:954
 msgid "运行服务暂时不可用，这次不会记录为学习进度。请稍后重试提交。"
 msgstr "The runner is temporarily unavailable. This will not be recorded as learning progress. Retry submitting later."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1092
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1118
 msgid "运行未完成"
 msgstr "Run incomplete"
 
@@ -2987,27 +3003,27 @@ msgstr "Run incomplete"
 msgid "运行结果"
 msgstr "Run result"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1094
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1120
 msgid "运行结果：正确"
 msgstr "Run result: correct"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1094
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1120
 msgid "运行结果：错误"
 msgstr "Run result: incorrect"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:984
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1010
 msgid "运行结果未通过，这次不会记录为复习检查进度。可以先查看结果和编译信息，修改后再运行或提交。"
 msgstr "The run result did not pass. This will not record review-check progress. You can inspect the result and compiler info, then edit and run or submit again."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:985
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1011
 msgid "运行结果未通过，这次不会记录为练习进度。可以先查看结果和编译信息，修改后再运行或提交。"
 msgstr "The run result did not pass. This will not record exercise progress. You can inspect the result and compiler info, then edit and run or submit again."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:351
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:361
 msgid "运行结果正确。点击提交后，课堂才会记录这次复习检查结果。"
 msgstr "The run result is correct. Submit to record this review check result."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:352
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:362
 msgid "运行结果正确。点击提交后，课堂才会记录这次练习进度。"
 msgstr "The run result is correct. Submit it to record this exercise progress in the classroom."
 
@@ -3027,11 +3043,11 @@ msgstr "This step is incomplete. Existing content will be kept; if preparation f
 msgid "这会删除本机保存的 AI 课堂进度、复习内容和练习记录；静态教程不会受影响。"
 msgstr "This deletes the AI Classroom progress, review content, and practice records saved on this device. The static tutorial will not be affected."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:220
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:230
 msgid "这会恢复到复习检查起始代码，并清除本次已应用的 AI 建议标记；不会自动提交或改变已记录进度。"
 msgstr "This will restore the review-check starter code and clear this AI suggestion marker. It will not submit automatically or change recorded progress."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:221
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:231
 msgid "这会恢复到练习起始代码，并清除本次已应用的 AI 建议标记；不会自动提交或改变已记录进度。"
 msgstr "This will restore the exercise starter code and clear this AI suggestion marker. It will not submit automatically or change recorded progress."
 
@@ -3043,35 +3059,35 @@ msgstr "This AI request will not directly change learning progress. If new conte
 msgid "这条历史课堂记录引用的内容块在当前内容包中找不到。课堂记录仍会保留；你可以在复习页查看当前已验证内容。缺失内容块： {missingBlockIds}。"
 msgstr "This historical classroom record references a content block that cannot be found in the current content pack. The classroom record will be kept. You can review currently validated content in Review. Missing content block: {missingBlockIds}."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:148
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:149
 msgid "这条复习检查记录只读，不能再次提交。"
 msgstr "This review-check record is read-only and cannot be submitted again."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:171
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:173
 msgid "这条复习检查记录只读，不能跳过。"
 msgstr "This review-check record is read-only and cannot be skipped."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:129
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:130
 msgid "这条复习检查记录只读，不能运行代码。"
 msgstr "This review-check record is read-only and cannot run code."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:206
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:216
 msgid "这条复习检查记录只读，不能重置代码。"
 msgstr "This review-check record is read-only and cannot reset code."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:149
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:150
 msgid "这条练习记录只读，不能再次提交。"
 msgstr "This exercise record is read-only and cannot be submitted again."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:172
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:174
 msgid "这条练习记录只读，不能跳过。"
 msgstr "This exercise record is read-only and cannot be skipped."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:130
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:131
 msgid "这条练习记录只读，不能运行代码。"
 msgstr "This exercise record is read-only and cannot run code."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:207
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:217
 msgid "这条练习记录只读，不能重置代码。"
 msgstr "This exercise record is read-only and cannot reset code."
 
@@ -3091,11 +3107,11 @@ msgstr "This review check was recorded; AI is preparing targeted feedback. You c
 msgid "这次复习检查已记录，但 AI 反馈准备失败。请先重试这次任务；你可以继续修改代码。"
 msgstr "This review check was recorded, but AI feedback preparation failed. Retry this task first; you can keep editing code."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:998
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1024
 msgid "这次复习检查未通过，已按提交时的代码记录为需要复查的证据。AI 反馈会针对那次提交；当前代码已修改，请重新提交以记录新的结果。"
 msgstr "This review check did not pass and was recorded from the submitted code as evidence that needs review. AI feedback will target that submission; current code has changed, so submit again to record a new result."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:999
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1025
 msgid "这次复习检查未通过，已记录为需要复查的证据。AI 会准备针对性反馈；你也可以先修改代码后重新提交。"
 msgstr "This review check did not pass and was recorded as evidence that needs review. AI will prepare targeted feedback; you can also edit the code and submit again."
 
@@ -3107,11 +3123,11 @@ msgstr "This submission was recorded; AI is preparing a targeted hint. You can k
 msgid "这次提交已记录，但 AI 提示准备失败。请先重试这次任务；你可以继续修改代码。"
 msgstr "This submission was recorded, but AI hint preparation failed. Retry this task first; you can keep editing code."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1001
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1027
 msgid "这次提交未通过，已按提交时的代码记录为练习证据。AI 提示会针对那次提交；当前代码已修改，请重新提交以记录新的结果。"
 msgstr "This submission did not pass and was recorded from the submitted code as exercise evidence. AI hints will target that submission; current code has changed, so submit again to record a new result."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1002
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:1028
 msgid "这次提交未通过，已记录为练习证据。AI 会准备针对性提示；你也可以先修改代码后重新提交。"
 msgstr "This submission did not pass and was recorded as exercise evidence. AI will prepare a targeted hint; you can also edit the code and submit again."
 
@@ -3148,7 +3164,7 @@ msgstr "Progress comes from viewed content, exercise submissions, and review che
 msgid "进度来自已看内容、练习提交和复习检查；聊天答疑不会直接判定掌握。"
 msgstr "Progress comes from viewed content, exercise submissions, and review checks. Chat Q&A does not directly determine mastery."
 
-#: src/features/tour/components/mdx/LanguagePicker.tsx:25
+#: src/features/tour/components/mdx/LanguagePicker.tsx:20
 msgid "选择对比语言"
 msgstr "Select comparison language"
 
@@ -3214,7 +3230,7 @@ msgstr "Start over"
 msgid "重新生成"
 msgstr "Regenerate"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:676
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:701
 msgid "重置代码"
 msgstr "Reset code"
 
@@ -3234,27 +3250,27 @@ msgstr "Retry preparing the next step"
 msgid "重试准备课堂"
 msgstr "Retry preparing classroom"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:943
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:969
 msgid "重试提交"
 msgstr "Retry submit"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:382
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:398
 msgid "重试提交会重新运行当前复习检查代码；只有成功提交后才会记录新的复习检查证据。"
 msgstr "Retry submit will rerun the current review-check code. New review-check evidence is recorded only after a successful submit."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:383
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:399
 msgid "重试提交会重新运行当前练习代码；只有成功提交后才会记录新的学习证据。"
 msgstr "Retry submit will rerun the current exercise code. New learning evidence is recorded only after a successful submit."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:943
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:969
 msgid "重试运行"
 msgstr "Retry run"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:385
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:401
 msgid "重试运行会重新执行当前复习检查代码；不会记录复习检查进度。"
 msgstr "Retry run will execute the current review-check code again. It will not record review-check progress."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:386
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:402
 msgid "重试运行会重新执行当前练习代码；不会记录练习进度。"
 msgstr "Retry run will execute the current exercise code again. It will not record exercise progress."
 
@@ -3283,7 +3299,7 @@ msgstr "Attachment preview"
 msgid "隐藏"
 msgstr "Hide"
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:378
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:394
 msgid "隐藏编译信息；不会改变代码、测试结果或学习记录。"
 msgstr "Hide compiler info; this will not change code, test results, or learning records."
 
@@ -3311,7 +3327,7 @@ msgstr "Breadcrumb"
 msgid "章节会在课堂内容生成后出现。"
 msgstr "Chapters will appear after classroom content is generated."
 
-#: src/features/tour-ai/components/ExercisePracticeCard.tsx:876
+#: src/features/tour-ai/components/ExercisePracticeCard.tsx:902
 msgid "预期输出"
 msgstr "Expected output"
 
