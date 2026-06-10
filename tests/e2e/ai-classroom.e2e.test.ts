@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { chromium } from 'playwright'
 import type { Browser, Locator, Page } from 'playwright'
 import { classroomReducer, createInitialClassroomSession } from '@/lib/ai/classroom/reducer'
@@ -7,17 +7,51 @@ import type { ClassroomSession } from '@/lib/ai/classroom/types'
 import { startNextDevServer } from '../helpers/next-dev-server'
 
 const DEFAULT_VIEWPORT = { width: 1280, height: 900 } as const
+const BACKEND_RUN_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'}/run`
 
 async function resetAIClassroomBrowserState(page: Page, serverUrl: string) {
   await page.setViewportSize(DEFAULT_VIEWPORT)
   await page.goto(`${serverUrl}/zh`, { waitUntil: 'domcontentloaded' })
   await page.evaluate(async () => {
     localStorage.clear()
-    await new Promise<void>((resolve) => {
+    const deleteResult = await new Promise<'deleted' | 'blocked' | 'error'>((resolve) => {
       const request = indexedDB.deleteDatabase('tour-ai-classroom')
-      request.onsuccess = () => resolve()
+      request.onsuccess = () => resolve('deleted')
+      request.onerror = () => resolve('error')
+      request.onblocked = () => resolve('blocked')
+    })
+    if (deleteResult === 'deleted')
+      return
+    await new Promise<void>((resolve) => {
+      const request = indexedDB.open('tour-ai-classroom', 1)
+      request.onupgradeneeded = () => {
+        const db = request.result
+        if (!db.objectStoreNames.contains('sessions'))
+          db.createObjectStore('sessions', { keyPath: 'key' })
+      }
       request.onerror = () => resolve()
-      request.onblocked = () => resolve()
+      request.onsuccess = () => {
+        const db = request.result
+        if (!db.objectStoreNames.contains('sessions')) {
+          db.close()
+          resolve()
+          return
+        }
+        const transaction = db.transaction('sessions', 'readwrite')
+        transaction.objectStore('sessions').clear()
+        transaction.oncomplete = () => {
+          db.close()
+          resolve()
+        }
+        transaction.onerror = () => {
+          db.close()
+          resolve()
+        }
+        transaction.onabort = () => {
+          db.close()
+          resolve()
+        }
+      }
     })
   })
 }
@@ -56,7 +90,7 @@ async function saveCompleteUserLLMConfig(page: Page) {
   })
 }
 
-function createActivePrintExerciseSession(): ClassroomSession {
+function createActivePrintExerciseSession(starterCode = 'main() {\n    // TODO\n}'): ClassroomSession {
   return classroomReducer(createInitialClassroomSession({ lang: 'zh' }), {
     type: 'CREATE_EXERCISE_INSTANCE',
     exercise: {
@@ -65,7 +99,7 @@ function createActivePrintExerciseSession(): ClassroomSession {
       skillId: 'cj.io.println.print-value',
       conceptIds: ['cj.io.println'],
       prompt: '在 main 中用 println 输出 Cangjie。',
-      starterCode: 'main() {\n    // TODO\n}',
+      starterCode,
       expectedOutput: 'Cangjie',
       matchMode: 'exact',
       intent: 'mainline',
@@ -224,6 +258,8 @@ async function readPersistedClassroomSummary(page: Page, recordKey: string) {
           currentExerciseStatus: null,
           eventQueueLength: -1,
           eventTypes: [],
+          lastRunAttemptMode: null,
+          lastRunOk: null,
           terminalEventExerciseIds: [],
           evidenceCount: -1,
           evidenceExerciseIds: [],
@@ -236,6 +272,7 @@ async function readPersistedClassroomSummary(page: Page, recordKey: string) {
       const learner = (session as { learner?: unknown }).learner
       const eventQueue = (session as { eventQueue?: unknown }).eventQueue
       const currentExercise = (session as { currentExercise?: unknown }).currentExercise
+      const lastRun = (session as { lastRun?: unknown }).lastRun
       const stream = (session as { stream?: unknown }).stream
       const evidence = typeof learner === 'object' && learner !== null
         ? (learner as { evidence?: unknown }).evidence
@@ -260,6 +297,12 @@ async function readPersistedClassroomSummary(page: Page, recordKey: string) {
               return typeof type === 'string' ? type : ''
             })
           : [],
+        lastRunAttemptMode: typeof lastRun === 'object' && lastRun !== null
+          ? (lastRun as { attemptMode?: unknown }).attemptMode
+          : null,
+        lastRunOk: typeof lastRun === 'object' && lastRun !== null
+          ? (lastRun as { ok?: unknown }).ok
+          : null,
         terminalEventExerciseIds: Array.isArray(eventQueue)
           ? eventQueue
               .map((item) => {
@@ -350,15 +393,20 @@ describe('ai classroom e2e', () => {
   beforeAll(async () => {
     server = await startNextDevServer()
     browser = await chromium.launch({ headless: true })
-    page = await browser.newPage({ viewport: DEFAULT_VIEWPORT })
   }, 120_000)
 
   beforeEach(async () => {
+    page = await browser.newPage({ viewport: DEFAULT_VIEWPORT })
+    await page.unroute(BACKEND_RUN_URL)
     await resetAIClassroomBrowserState(page, server.url)
   }, 120_000)
 
+  afterEach(async () => {
+    if (page && !page.isClosed())
+      await page.close()
+  })
+
   afterAll(async () => {
-    await page?.close()
     await browser?.close()
     await server?.stop()
   })
@@ -502,6 +550,77 @@ describe('ai classroom e2e', () => {
     const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
     expect(hasHorizontalOverflow).toBe(false)
     expect(consoleErrors.filter(error => /monaco-vscode-api|Services are already initialized|Editor initialization failed/i.test(error))).toEqual([])
+  }, 120_000)
+
+  it('runs without recording evidence, then submits and persists learning evidence', async () => {
+    const runRequests: string[] = []
+    await page.route(BACKEND_RUN_URL, async (route) => {
+      runRequests.push(route.request().postData() ?? '')
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          compiler_output: '',
+          compiler_code: 0,
+          bin_output: 'Cangjie',
+          bin_code: 0,
+        }),
+      })
+    })
+
+    const persistedKey = await savePersistedClassroomSession(
+      page,
+      createActivePrintExerciseSession('main() {\n    println("Cangjie")\n}'),
+    )
+    await saveIncompleteUserLLMConfig(page)
+    await page.goto(`${server.url}/zh/tour/ai`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await page.getByTestId('classroom-landing-page').waitFor({ state: 'visible' })
+    await page.getByRole('button', { name: '继续上次课堂' }).click()
+    await page.getByTestId('exercise-practice-card').waitFor({ state: 'visible' })
+    await page.locator('[data-tour-editor-root] .monaco-editor').waitFor({ state: 'visible', timeout: 60_000 })
+
+    const beforeRun = await readPersistedClassroomSummary(page, persistedKey)
+    expect(beforeRun.currentExerciseStatus).toBe('active')
+    expect(beforeRun.evidenceCount).toBe(0)
+    expect(beforeRun.eventTypes).not.toContain('exercise_success')
+
+    await page.getByRole('button', { name: '运行' }).click()
+    await page.getByText('运行结果：正确').waitFor({ state: 'visible' })
+    await page.getByText('运行结果正确。点击提交后，课堂才会记录这次练习进度。').waitFor({ state: 'visible' })
+    const afterRun = await waitForPersistedClassroomSummary(
+      page,
+      persistedKey,
+      summary => summary.lastRunAttemptMode === 'run' && summary.lastRunOk === true,
+      'run result to persist',
+    )
+    expect(afterRun.evidenceCount).toBe(0)
+    expect(afterRun.eventTypes).not.toContain('exercise_success')
+    expect(afterRun.currentExerciseStatus).toBe('active')
+
+    await page.getByRole('button', { name: '提交并记录' }).click()
+    await page.getByText('提交结果：正确').waitFor({ state: 'visible' })
+    const afterSubmit = await waitForPersistedClassroomSummary(
+      page,
+      persistedKey,
+      summary => summary.lastRunAttemptMode === 'submit'
+        && summary.evidenceCount === 1
+        && summary.currentExerciseStatus === 'success'
+        && summary.eventTypes.includes('exercise_success'),
+      'submit evidence to persist',
+    )
+    expect(afterSubmit).toEqual(expect.objectContaining({
+      currentExerciseStatus: 'success',
+      evidenceCount: 1,
+      eventTypes: expect.arrayContaining(['exercise_success']),
+      streamExerciseStatuses: expect.arrayContaining(['success']),
+    }))
+    expect(runRequests).toHaveLength(2)
+    expect(runRequests[0]).toContain('println("Cangjie")')
+    expect(runRequests[1]).toContain('println("Cangjie")')
   }, 120_000)
 
   it('opens AI service settings from mobile review actions without queueing work', async () => {
