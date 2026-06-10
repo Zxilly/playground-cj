@@ -473,6 +473,36 @@ describe('ai classroom e2e', () => {
     expect(hasHorizontalOverflow).toBe(false)
   }, 120_000)
 
+  it('continues a saved active exercise on mobile with the editor ready', async () => {
+    const consoleErrors: string[] = []
+    page.on('console', (message) => {
+      if (message.type() === 'error')
+        consoleErrors.push(message.text())
+    })
+
+    await savePersistedClassroomSession(page, createActivePrintExerciseSession())
+    await saveIncompleteUserLLMConfig(page)
+    await page.setViewportSize({ width: 390, height: 840 })
+    await page.goto(`${server.url}/zh/tour/ai`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await page.getByTestId('classroom-landing-page').waitFor({ state: 'visible' })
+    await page.getByRole('button', { name: '继续上次课堂' }).click()
+    await page.getByTestId('ai-classroom-content').waitFor({ state: 'visible' })
+    await page.getByText('在 main 中用 println 输出 Cangjie。').waitFor({ state: 'visible' })
+
+    await page.locator('[data-tour-editor-root] .monaco-editor').waitFor({ state: 'visible', timeout: 60_000 })
+    const run = page.getByRole('button', { name: '运行' })
+    await run.waitFor({ state: 'visible' })
+    expect(await run.isEnabled()).toBe(true)
+    expect(await page.getByText('练习编辑器仍在加载，加载完成后才能运行代码。').count()).toBe(0)
+
+    const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
+    expect(hasHorizontalOverflow).toBe(false)
+    expect(consoleErrors.filter(error => /monaco-vscode-api|Services are already initialized|Editor initialization failed/i.test(error))).toEqual([])
+  }, 120_000)
+
   it('opens AI service settings from mobile review actions without queueing work', async () => {
     const persistedKey = await savePersistedClassroomSession(page, createRetainedReviewNoteSession())
     await saveIncompleteUserLLMConfig(page)

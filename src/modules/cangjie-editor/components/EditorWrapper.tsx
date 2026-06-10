@@ -5,7 +5,7 @@ import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper 
 import type { MonacoLanguageClient } from 'monaco-languageclient'
 import { EditorApp } from 'monaco-languageclient/editorApp'
 import type { CodeResources } from 'monaco-languageclient/editorApp'
-import { createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
+import { configureMonacoWorkers, createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
 import type { MonacoViewsType } from '@/lib/monaco'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
@@ -36,6 +36,11 @@ export interface MonacoEditorProps {
 function isDuplicateExtensionRegistrationError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
   return /extension-file:\/\/.+already exists/i.test(message)
+}
+
+function isServicesAlreadyInitializedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /services are already initialized/i.test(message)
 }
 
 async function initExtensionsAllowingDuplicateFiles(wrapper: MonacoVscodeApiWrapper): Promise<void> {
@@ -259,6 +264,37 @@ export function MonacoEditorReactComp({
       isInitializingRef.current = true
 
       try {
+        if (!hasLanguageClient) {
+          configureMonacoWorkers()
+          ensureCangjieMonarchTokensProvider()
+          const containerAfterStandaloneInit = getLiveContainer()
+          if (!containerAfterStandaloneInit)
+            return
+
+          const editorContainer = viewsType === 'ViewsService' && standaloneHostRef.current?.isConnected
+            ? standaloneHostRef.current
+            : containerAfterStandaloneInit
+          const editorHandle = createStandaloneEditorHandle(editorContainer, editorAppConfigRef.current)
+          if (!isActive()) {
+            await editorHandle.dispose()
+            return
+          }
+
+          editorAppRef.current = editorHandle
+          onLoadRef.current?.(editorHandle)
+          updateEditorLayout()
+
+          if (resizeObserverRef.current)
+            resizeObserverRef.current.disconnect()
+          resizeObserverRef.current = new ResizeObserver(updateEditorLayout)
+          const resizeParent = containerAfterStandaloneInit.parentElement
+          if (resizeParent)
+            resizeObserverRef.current.observe(resizeParent)
+
+          isInitializedRef.current = true
+          return
+        }
+
         await getEnhancedMonacoEnvironment().vscodeApiGlobalInitAwait
         const containerAfterGlobalInit = getLiveContainer()
         if (!containerAfterGlobalInit)
@@ -270,9 +306,22 @@ export function MonacoEditorReactComp({
 
         const vscodeApiConfig = createMonacoVscodeApiConfig(containerAfterGlobalInit, viewsType)
         const vscodeApiWrapper = new MonacoVscodeApiWrapper(vscodeApiConfig)
-        vscodeApiWrapperRef.current = vscodeApiWrapper
+        let ownsVscodeApiWrapper = false
         const shouldRegisterExtensionsAfterStart = getEnhancedMonacoEnvironment().vscodeApiInitialised === true
-        await vscodeApiWrapper.start()
+        try {
+          await vscodeApiWrapper.start()
+          ownsVscodeApiWrapper = true
+          vscodeApiWrapperRef.current = vscodeApiWrapper
+        }
+        catch (error) {
+          if (!isServicesAlreadyInitializedError(error))
+            throw error
+          // Another editor already owns the global Monaco/VSC services. Treat
+          // that as an idempotent success so restored classroom editors do not
+          // strand the learner on the loading shell.
+          if (vscodeApiWrapperRef.current === vscodeApiWrapper)
+            vscodeApiWrapperRef.current = null
+        }
         if (shouldRegisterExtensionsAfterStart)
           await initExtensionsAllowingDuplicateFiles(vscodeApiWrapper)
         ensureCangjieMonarchTokensProvider()
@@ -280,7 +329,8 @@ export function MonacoEditorReactComp({
         if (!containerAfterWrapperStart) {
           if (vscodeApiWrapperRef.current === vscodeApiWrapper)
             vscodeApiWrapperRef.current = null
-          await vscodeApiWrapper.dispose()
+          if (ownsVscodeApiWrapper)
+            await vscodeApiWrapper.dispose()
           return
         }
 

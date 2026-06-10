@@ -21,6 +21,11 @@ const vscodeWrapperStart = vi.hoisted(() => vi.fn())
 const vscodeWrapperInitExtensions = vi.hoisted(() => vi.fn())
 const vscodeWrapperDispose = vi.hoisted(() => vi.fn())
 const ensureCangjieMonarchTokensProvider = vi.hoisted(() => vi.fn())
+const configureMonacoWorkers = vi.hoisted(() => vi.fn())
+const isLanguageClientAvailable = vi.hoisted(() => vi.fn())
+const monacoEditorCreate = vi.hoisted(() => vi.fn())
+const monacoEditorCreateModel = vi.hoisted(() => vi.fn())
+const monacoEditorGetModel = vi.hoisted(() => vi.fn())
 
 vi.mock('monaco-languageclient/vscodeApiWrapper', () => ({
   defaultViewsHtml: '<div id="workbench-container"></div>',
@@ -46,9 +51,9 @@ vi.mock('monaco-languageclient/editorApp', () => ({
 vi.mock('@codingame/monaco-vscode-editor-api', () => ({
   Uri: { parse: vi.fn(value => ({ toString: () => value })) },
   editor: {
-    create: vi.fn(),
-    createModel: vi.fn(),
-    getModel: vi.fn(),
+    create: monacoEditorCreate,
+    createModel: monacoEditorCreateModel,
+    getModel: monacoEditorGetModel,
     setModelLanguage: vi.fn(),
     setModelMarkers: vi.fn(),
   },
@@ -61,6 +66,7 @@ vi.mock('@codingame/monaco-vscode-editor-api', () => ({
 }))
 
 vi.mock('@/lib/monaco', () => ({
+  configureMonacoWorkers,
   createEditorAppConfig: vi.fn((code?: string) => ({
     codeResources: {
       modified: {
@@ -74,7 +80,7 @@ vi.mock('@/lib/monaco', () => ({
   createLanguageClient: vi.fn(),
   createMonacoVscodeApiConfig: vi.fn(() => ({})),
   ensureCangjieMonarchTokensProvider,
-  isLanguageClientAvailable: vi.fn(() => false),
+  isLanguageClientAvailable,
 }))
 
 vi.mock('@/lib/lsp', () => ({
@@ -107,6 +113,21 @@ describe('monacoEditorReactComp', () => {
     vscodeWrapperInitExtensions.mockReset().mockResolvedValue(undefined)
     vscodeWrapperDispose.mockReset().mockResolvedValue(undefined)
     ensureCangjieMonarchTokensProvider.mockReset()
+    configureMonacoWorkers.mockReset()
+    isLanguageClientAvailable.mockReset().mockReturnValue(true)
+    monacoEditorGetModel.mockReset().mockReturnValue(undefined)
+    monacoEditorCreateModel.mockReset().mockReturnValue({
+      getLanguageId: vi.fn(() => 'cangjie'),
+      getValue: vi.fn(() => 'main() {}'),
+      uri: { toString: () => 'file:///playground/src/main.cj' },
+    })
+    monacoEditorCreate.mockReset().mockReturnValue({
+      dispose: vi.fn(),
+      getModel: vi.fn(),
+      layout: vi.fn(),
+      setModel: vi.fn(),
+      updateOptions: vi.fn(),
+    })
     vi.stubGlobal('ResizeObserver', class {
       observe = vi.fn()
       disconnect = vi.fn()
@@ -179,5 +200,43 @@ describe('monacoEditorReactComp', () => {
     expect(vscodeWrapperInitExtensions).toHaveBeenCalled()
     expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
     expect(editorAppStart).toHaveBeenCalled()
+  })
+
+  it('continues editor startup when Monaco services were already initialized by another editor', async () => {
+    monacoInit.initialised = true
+    vscodeWrapperStart.mockRejectedValueOnce(new Error('Services are already initialized'))
+
+    render(<MonacoEditorReactComp code="main() {}" locale="zh" />)
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(vscodeWrapperStart).toHaveBeenCalled()
+    expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
+    expect(editorAppStart).toHaveBeenCalled()
+    expect(vscodeWrapperDispose).not.toHaveBeenCalled()
+  })
+
+  it('starts a standalone editor when the language client is unavailable', async () => {
+    isLanguageClientAvailable.mockReturnValue(false)
+    const onLoad = vi.fn()
+
+    render(<MonacoEditorReactComp code="main() {}" locale="zh" onLoad={onLoad} />)
+
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(configureMonacoWorkers).toHaveBeenCalled()
+    expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
+    expect(monacoEditorCreate).toHaveBeenCalled()
+    expect(onLoad).toHaveBeenCalled()
+    expect(vscodeWrapperStart).not.toHaveBeenCalled()
+    expect(editorAppStart).not.toHaveBeenCalled()
   })
 })
