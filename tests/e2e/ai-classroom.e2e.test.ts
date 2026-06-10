@@ -90,6 +90,24 @@ async function saveCompleteUserLLMConfig(page: Page) {
   })
 }
 
+async function saveExhaustedSharedLLMConfig(page: Page) {
+  await page.evaluate(() => {
+    localStorage.setItem('tour-ai:config', JSON.stringify({
+      state: {
+        config: {
+          provider: 'openai-compatible',
+          baseURL: 'https://api.example.test/v1',
+          apiKey: 'auto-key',
+          model: 'test-model',
+        },
+        keySource: 'auto',
+        autoQuota: { exhausted: true, nextResetAt: 1_800_000_000_000 },
+      },
+      version: 0,
+    }))
+  })
+}
+
 function createActivePrintExerciseSession(starterCode = 'main() {\n    // TODO\n}'): ClassroomSession {
   return classroomReducer(createInitialClassroomSession({ lang: 'zh' }), {
     type: 'CREATE_EXERCISE_INSTANCE',
@@ -509,6 +527,42 @@ describe('ai classroom e2e', () => {
     expect(savedConfig.state.keySource).toBe('user')
     expect(savedConfig.state.config.apiKey).toBe('user-key')
     expect(savedConfig.state.config.model).toBe('test-model')
+  }, 120_000)
+
+  it('blocks new classroom startup when shared quota is exhausted, then recovers after saving a user key', async () => {
+    await saveExhaustedSharedLLMConfig(page)
+    await page.goto(`${server.url}/zh/tour/ai`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await page.getByTestId('classroom-landing-page').waitFor({ state: 'visible' })
+    await page.getByText('今日共享额度已用完，暂时无法准备新的课堂内容。').waitFor({ state: 'visible' })
+    await page.getByText(/使用自己的 API Key 可立刻继续/).waitFor({ state: 'visible' })
+    expect(await page.getByRole('button', { name: '开始 AI 课堂' }).count()).toBe(0)
+    expect(await page.getByTestId('ai-classroom-content').count()).toBe(0)
+    expect(await page.getByTestId('lesson-generation-progress-panel').count()).toBe(0)
+
+    const primary = page.getByTestId('classroom-landing-primary')
+    expect(await primary.getAttribute('title')).toContain('改用自己的 API Key 后可立刻继续')
+    expect(await describedByText(primary)).toContain('今日共享额度已用完')
+    const quotaDialog = page.getByRole('dialog')
+    await quotaDialog.getByRole('heading', { name: '今日 AI 额度已用完' }).waitFor({ state: 'visible' })
+    await quotaDialog.getByText('如需立刻继续使用，可在 AI 服务设置中填写自己的 API Key。').waitFor({ state: 'visible' })
+    await quotaDialog.getByRole('button', { name: '使用自己的 API Key' }).click()
+
+    await page.getByRole('heading', { name: 'AI 服务设置' }).waitFor({ state: 'visible' })
+    await page.getByLabel('API Key').fill('user-key')
+    await page.getByRole('button', { name: '保存' }).click()
+
+    await page.getByRole('dialog').waitFor({ state: 'detached' })
+    await page.getByRole('button', { name: '开始 AI 课堂' }).waitFor({ state: 'visible' })
+    expect(await page.getByText('今日共享额度已用完，暂时无法准备新的课堂内容。').count()).toBe(0)
+    expect(await page.getByRole('button', { name: '使用自己的 API Key' }).count()).toBe(0)
+
+    const savedConfig = await page.evaluate(() => JSON.parse(localStorage.getItem('tour-ai:config') ?? 'null'))
+    expect(savedConfig.state.keySource).toBe('user')
+    expect(savedConfig.state.config.apiKey).toBe('user-key')
+    expect(savedConfig.state.autoQuota ?? null).toBeNull()
   }, 120_000)
 
   it('moves from preview to AI service setup on mobile without starting generation', async () => {
