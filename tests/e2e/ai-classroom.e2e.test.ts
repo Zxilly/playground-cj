@@ -723,6 +723,15 @@ describe('ai classroom e2e', () => {
     expect(beforeSkip.eventTypes).not.toContain('exercise_skip')
 
     const skip = page.getByTestId('exercise-action-bar').getByRole('button', { name: '跳过并记录' })
+    await page.locator('[data-tour-editor-root] .monaco-editor').waitFor({ state: 'visible', timeout: 60_000 })
+    await page.waitForFunction(() => {
+      const actionBar = document.querySelector('[data-testid="exercise-action-bar"]')
+      const button = [...(actionBar?.querySelectorAll('button') ?? [])]
+        .find(element => element.textContent?.includes('跳过并记录')) as HTMLButtonElement | undefined
+      return button != null
+        && !button.disabled
+        && button.getAttribute('title') === '会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并让 AI 准备更合适的下一步。'
+    })
     expect(await skip.getAttribute('title')).toBe('会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并让 AI 准备更合适的下一步。')
     await skip.click()
 
