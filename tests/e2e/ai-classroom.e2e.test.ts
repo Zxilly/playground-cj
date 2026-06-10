@@ -263,6 +263,10 @@ async function readPersistedClassroomSummary(page: Page, recordKey: string) {
           terminalEventExerciseIds: [],
           evidenceCount: -1,
           evidenceExerciseIds: [],
+          evidenceOutcomes: [],
+          evidenceStrengths: [],
+          failureEventActualOutputs: [],
+          failureEventSummaries: [],
           reviewArtifactCount: -1,
           streamExerciseIds: [],
           streamExerciseStatuses: [],
@@ -326,6 +330,46 @@ async function readPersistedClassroomSummary(page: Page, recordKey: string) {
                 return typeof exerciseInstanceId === 'string' ? exerciseInstanceId : null
               })
               .filter((exerciseInstanceId): exerciseInstanceId is string => exerciseInstanceId != null)
+          : [],
+        evidenceOutcomes: Array.isArray(evidence)
+          ? evidence
+              .map((item) => {
+                if (typeof item !== 'object' || item === null)
+                  return null
+                const outcome = (item as { outcome?: unknown }).outcome
+                return typeof outcome === 'string' ? outcome : null
+              })
+              .filter((outcome): outcome is string => outcome != null)
+          : [],
+        evidenceStrengths: Array.isArray(evidence)
+          ? evidence
+              .map((item) => {
+                if (typeof item !== 'object' || item === null)
+                  return null
+                const strength = (item as { strength?: unknown }).strength
+                return typeof strength === 'string' ? strength : null
+              })
+              .filter((strength): strength is string => strength != null)
+          : [],
+        failureEventActualOutputs: Array.isArray(eventQueue)
+          ? eventQueue
+              .map((item) => {
+                if (typeof item !== 'object' || item === null || (item as { type?: unknown }).type !== 'exercise_failure')
+                  return null
+                const actualOutput = (item as { actualOutput?: unknown }).actualOutput
+                return typeof actualOutput === 'string' ? actualOutput : null
+              })
+              .filter((actualOutput): actualOutput is string => actualOutput != null)
+          : [],
+        failureEventSummaries: Array.isArray(eventQueue)
+          ? eventQueue
+              .map((item) => {
+                if (typeof item !== 'object' || item === null || (item as { type?: unknown }).type !== 'exercise_failure')
+                  return null
+                const summary = (item as { summary?: unknown }).summary
+                return typeof summary === 'string' ? summary : null
+              })
+              .filter((summary): summary is string => summary != null)
           : [],
         reviewArtifactCount: Array.isArray(reviewArtifacts) ? reviewArtifacts.length : -1,
         streamExerciseIds: Array.isArray(stream)
@@ -621,6 +665,82 @@ describe('ai classroom e2e', () => {
     expect(runRequests).toHaveLength(2)
     expect(runRequests[0]).toContain('println("Cangjie")')
     expect(runRequests[1]).toContain('println("Cangjie")')
+  }, 120_000)
+
+  it('runs failed attempts without recording evidence, then submits and queues remediation evidence', async () => {
+    const runRequests: string[] = []
+    await page.route(BACKEND_RUN_URL, async (route) => {
+      runRequests.push(route.request().postData() ?? '')
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({
+          compiler_output: '',
+          compiler_code: 0,
+          bin_output: 'Wrong output',
+          bin_code: 0,
+        }),
+      })
+    })
+
+    const persistedKey = await savePersistedClassroomSession(
+      page,
+      createActivePrintExerciseSession('main() {\n    println("Wrong output")\n}'),
+    )
+    await saveIncompleteUserLLMConfig(page)
+    await page.goto(`${server.url}/zh/tour/ai`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await page.getByTestId('classroom-landing-page').waitFor({ state: 'visible' })
+    await page.getByRole('button', { name: '继续上次课堂' }).click()
+    await page.getByTestId('exercise-practice-card').waitFor({ state: 'visible' })
+    await page.locator('[data-tour-editor-root] .monaco-editor').waitFor({ state: 'visible', timeout: 60_000 })
+
+    const beforeRun = await readPersistedClassroomSummary(page, persistedKey)
+    expect(beforeRun.currentExerciseStatus).toBe('active')
+    expect(beforeRun.evidenceCount).toBe(0)
+    expect(beforeRun.eventTypes).not.toContain('exercise_failure')
+
+    await page.getByRole('button', { name: '运行' }).click()
+    await page.getByText('运行结果：错误').waitFor({ state: 'visible' })
+    await page.getByText('运行结果未通过，这次不会记录为练习进度。可以先查看结果和编译信息，修改后再运行或提交。').waitFor({ state: 'visible' })
+    const afterRun = await waitForPersistedClassroomSummary(
+      page,
+      persistedKey,
+      summary => summary.lastRunAttemptMode === 'run' && summary.lastRunOk === true,
+      'failed run result to persist',
+    )
+    expect(afterRun.evidenceCount).toBe(0)
+    expect(afterRun.eventTypes).not.toContain('exercise_failure')
+    expect(afterRun.currentExerciseStatus).toBe('active')
+
+    await page.getByTestId('exercise-action-bar').getByRole('button', { name: '提交' }).click()
+    await page.getByText('提交结果：错误').waitFor({ state: 'visible' })
+    await page.getByText('这次提交未通过，已记录为练习证据。AI 会准备针对性提示；你也可以先修改代码后重新提交。').waitFor({ state: 'visible' })
+    const afterSubmit = await waitForPersistedClassroomSummary(
+      page,
+      persistedKey,
+      summary => summary.lastRunAttemptMode === 'submit'
+        && summary.evidenceCount === 1
+        && summary.currentExerciseStatus === 'active'
+        && summary.eventTypes.includes('exercise_failure'),
+      'failed submit evidence to persist',
+    )
+    expect(afterSubmit).toEqual(expect.objectContaining({
+      currentExerciseStatus: 'active',
+      evidenceCount: 1,
+      eventTypes: expect.arrayContaining(['exercise_failure']),
+      evidenceOutcomes: ['failure'],
+      evidenceStrengths: ['independent'],
+      failureEventActualOutputs: ['Wrong output'],
+    }))
+    expect(afterSubmit.failureEventSummaries[0]).toContain('输出与预期不一致')
+    expect(afterSubmit.streamExerciseStatuses).toEqual(['active'])
+    expect(runRequests).toHaveLength(2)
+    expect(runRequests[0]).toContain('println("Wrong output")')
+    expect(runRequests[1]).toContain('println("Wrong output")')
   }, 120_000)
 
   it('opens AI service settings from mobile review actions without queueing work', async () => {
