@@ -157,6 +157,15 @@ function createRetainedReviewNoteSession(): ClassroomSession {
   return session
 }
 
+function createActiveExerciseWithMainReviewSession(): ClassroomSession {
+  return classroomReducer(createActivePrintExerciseSession(), {
+    type: 'APPEND_CONTENT_REFERENCE_GROUP',
+    conceptId: 'cj.program.main',
+    blockIds: ['cj.program.main.heading'],
+    now: 1002,
+  })
+}
+
 async function savePersistedClassroomSession(page: Page, session: ClassroomSession): Promise<string> {
   const record = encodePersistedClassroomRecord(session, 1003)
   await page.evaluate(async (nextRecord) => {
@@ -905,6 +914,54 @@ describe('ai classroom e2e', () => {
     await page.getByTestId('classroom-review-view').waitFor({ state: 'visible' })
     expect(await progress.getAttribute('aria-label')).toBe('学习进度，已证明或掌握 1 / 1 个接触过的概念')
     expect(await page.getByTestId('classroom-stream-chat-intent-marker').count()).toBe(0)
+
+    const persisted = await readPersistedClassroomSummary(page, persistedKey)
+    expect(persisted).toEqual(beforeChat)
+    expect(persisted.eventTypes).not.toContain('chat_intent')
+
+    const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)
+    expect(hasHorizontalOverflow).toBe(false)
+  }, 120_000)
+
+  it('switches a mobile review chat back to the active exercise context without mutating progress', async () => {
+    const persistedKey = await savePersistedClassroomSession(page, createActiveExerciseWithMainReviewSession())
+    await saveCompleteUserLLMConfig(page)
+    await page.setViewportSize({ width: 390, height: 840 })
+    await page.goto(`${server.url}/zh/tour/ai`, {
+      waitUntil: 'domcontentloaded',
+    })
+
+    await page.getByTestId('classroom-landing-page').waitFor({ state: 'visible' })
+    await page.getByRole('button', { name: '继续上次课堂' }).click()
+    await page.getByTestId('ai-classroom-content').waitFor({ state: 'visible' })
+    await page.getByTestId('exercise-practice-card').waitFor({ state: 'visible' })
+
+    await page.getByRole('tab', { name: '复习' }).click()
+    await page.getByTestId('classroom-review-view').waitFor({ state: 'visible' })
+    await page.getByTestId('classroom-review-concept-rail').getByRole('button', { name: /程序入口与 main/ }).click()
+    await page.getByRole('heading', { name: '程序入口与 main' }).first().waitFor({ state: 'visible' })
+    const beforeChat = await readPersistedClassroomSummary(page, persistedKey)
+    expect(beforeChat.evidenceCount).toBe(0)
+    expect(beforeChat.eventTypes).not.toContain('chat_intent')
+
+    await page.getByRole('button', { name: '围绕此概念聊天' }).click()
+
+    const sidebar = page.getByTestId('classroom-chat-sidebar')
+    await sidebar.waitFor({ state: 'visible' })
+    await sidebar.getByText('围绕 程序入口与 main 提问').waitFor({ state: 'visible' })
+    await sidebar.getByTestId('chat-active-exercise-context').getByText('当前练习').waitFor({ state: 'visible' })
+    await sidebar.getByText('在 main 中用 println 输出 Cangjie。').waitFor({ state: 'visible' })
+    const mismatch = sidebar.getByTestId('chat-context-mismatch')
+    await mismatch.getByText('聊天仍围绕 程序入口与 main；当前练习属于 标准输出 println。').waitFor({ state: 'visible' })
+    const switchScope = mismatch.getByRole('button', { name: '改为当前练习' })
+    expect(await switchScope.getAttribute('title')).toBe('将聊天范围切换到 标准输出 println；不会修改当前代码、提交练习或改变已记录进度。')
+
+    await switchScope.click()
+
+    await sidebar.getByText('围绕 标准输出 println 提问').waitFor({ state: 'visible' })
+    expect(await sidebar.getByTestId('chat-context-mismatch').count()).toBe(0)
+    await sidebar.getByRole('button', { name: '关闭聊天' }).click()
+    await sidebar.waitFor({ state: 'detached' })
 
     const persisted = await readPersistedClassroomSummary(page, persistedKey)
     expect(persisted).toEqual(beforeChat)
