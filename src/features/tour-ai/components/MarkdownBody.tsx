@@ -1,13 +1,15 @@
 'use client'
 
-import { isValidElement, type ReactNode } from 'react'
-import ReactMarkdown, { type Components } from 'react-markdown'
+import { isValidElement } from 'react'
+import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import type { ReactNode } from 'react'
+import type { Components } from 'react-markdown'
 import { cn } from '@/lib/utils'
 import { ShikiCodeBlock, ShikiInlineCode } from '@/features/tour-ai/components/ShikiCode'
 
 // Markdown renderer for lesson body fields (paragraph, concept_card, callout
-// bodies, quiz prompts). Inline code falls through to ShikiInlineCode and
+// bodies, exercise prompts). Inline code falls through to ShikiInlineCode and
 // fenced code blocks become ShikiCodeBlock so highlighting stays consistent
 // with the rest of the classroom (compare blocks, code_example, etc).
 

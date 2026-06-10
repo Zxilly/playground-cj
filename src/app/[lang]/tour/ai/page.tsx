@@ -10,7 +10,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { lang } = await params
   return {
-    title: lang === 'en' ? 'AI Tutor - Cangjie Tour' : 'AI 助教 - 仓颉之旅',
+    title: lang === 'en' ? 'AI Classroom - Cangjie Tour' : 'AI 课堂 - 仓颉之旅',
   }
 }
 

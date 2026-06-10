@@ -218,6 +218,12 @@
   --tour-code-border: #E8E2D5;
 }
 
+.ai-classroom-viewport-root {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+
 .dark .ai-classroom-root {
   --tour-bg: #1A1715;
   --tour-surface: #221E1A;

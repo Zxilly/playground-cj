@@ -55,7 +55,7 @@ export function TourAIChatRuntime({ toolkit, lang }: { toolkit: Toolkit, lang: s
   return (
     <AssistantRuntimeProvider aui={aui} runtime={runtime}>
       <TooltipProvider delayDuration={250}>
-        <Thread />
+        <Thread allowAttachments={false} />
       </TooltipProvider>
     </AssistantRuntimeProvider>
   )

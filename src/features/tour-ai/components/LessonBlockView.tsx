@@ -1,22 +1,19 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import type { LessonContentBlock, RichText } from '@/lib/ai/classroom/types'
 import { MarkdownBody } from '@/features/tour-ai/components/MarkdownBody'
 import { RichTextView } from '@/features/tour-ai/components/RichTextView'
 import { ShikiCodeBlock } from '@/features/tour-ai/components/ShikiCode'
-import { classroomCardVariants, classroomFadeUpVariants, classroomStaggerVariants } from '@/features/tour-ai/components/classroom-motion'
 
 export function LessonBlockView({ block, chapterId }: { block: LessonContentBlock, chapterId?: string }) {
   if (block.type === 'heading') {
-    const HeadingTag = block.level === 3 ? motion.h3 : motion.h2
+    const HeadingTag = block.level === 3 ? 'h3' : 'h2'
     return (
       <HeadingTag
-        layout="position"
         data-chapter-id={chapterId}
-        variants={classroomFadeUpVariants}
-        className="text-xl font-bold tracking-normal text-tour-heading"
+        tabIndex={chapterId ? -1 : undefined}
+        className="text-xl font-bold tracking-normal text-tour-heading focus:outline-none focus:ring-2 focus:ring-tour-link/35 focus:ring-offset-2 focus:ring-offset-tour-bg"
       >
         {block.text}
       </HeadingTag>
@@ -24,39 +21,38 @@ export function LessonBlockView({ block, chapterId }: { block: LessonContentBloc
   }
   if (block.type === 'paragraph') {
     return (
-      <motion.div layout="position" variants={classroomFadeUpVariants}>
+      <div>
         <MarkdownBody body={block.body} />
-      </motion.div>
+      </div>
     )
   }
   if (block.type === 'concept_card') {
     return (
-      <motion.section layout variants={classroomCardVariants} className="rounded-md border border-tour-border bg-tour-surface p-4">
-        <div className="mb-1 text-xs font-semibold text-tour-link">{block.conceptId}</div>
+      <section className="rounded-md border border-tour-border bg-tour-surface p-4">
         <h3 className="mb-2 text-base font-semibold">{block.title}</h3>
         <MarkdownBody body={block.body} className="text-sm" />
-      </motion.section>
+      </section>
     )
   }
   if (block.type === 'code_example') {
     return (
-      <motion.section layout variants={classroomFadeUpVariants}>
+      <section>
         {block.title && <div className="mb-2 text-sm font-semibold">{block.title}</div>}
         <ShikiCodeBlock code={block.code} language={block.language} highlights={block.highlights} />
-      </motion.section>
+      </section>
     )
   }
   if (block.type === 'callout') {
     return (
-      <motion.section layout variants={classroomCardVariants} className={cn('rounded-md border border-tour-border bg-tour-surface p-4')}>
+      <section className={cn('rounded-md border border-tour-border bg-tour-surface p-4')}>
         {block.title && <div className="mb-1 font-semibold">{block.title}</div>}
         <MarkdownBody body={block.body} className="text-sm" />
-      </motion.section>
+      </section>
     )
   }
   if (block.type === 'steps') {
     return (
-      <motion.section layout variants={classroomFadeUpVariants}>
+      <section>
         {block.title && <div className="mb-2 font-semibold">{block.title}</div>}
         <ol className="list-decimal space-y-2 pl-5">
           {block.items.map(item => (
@@ -65,15 +61,15 @@ export function LessonBlockView({ block, chapterId }: { block: LessonContentBloc
             </li>
           ))}
         </ol>
-      </motion.section>
+      </section>
     )
   }
   if (block.type === 'compare') {
     return (
-      <motion.section layout variants={classroomStaggerVariants} className="grid gap-3 md:grid-cols-2">
+      <section className="grid gap-3 md:grid-cols-2">
         <CompareSide title={block.leftTitle} body={block.left} />
         <CompareSide title={block.rightTitle} body={block.right} />
-      </motion.section>
+      </section>
     )
   }
   return null
@@ -87,12 +83,12 @@ function CompareSide({ title, body }: { title: string, body: RichText }) {
   const first = body[0]
   const onlyCode = body.length === 1 && first && first.type === 'code' ? first : null
   return (
-    <motion.div variants={classroomCardVariants} className="rounded-md border border-tour-border bg-tour-surface p-4">
+    <div className="rounded-md border border-tour-border bg-tour-surface p-4">
       <div className="mb-2 font-semibold">{title}</div>
       {onlyCode
         ? <ShikiCodeBlock code={onlyCode.code} language={onlyCode.lang} />
         : <RichTextView body={body} />}
-    </motion.div>
+    </div>
   )
 }
 

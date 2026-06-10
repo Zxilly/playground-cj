@@ -10,6 +10,7 @@ import { LanguagePicker } from './mdx/LanguagePicker'
 import type { FlatSection } from '@/tour/types'
 import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourPath } from '@/lib/siteHref'
 import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
+import { getStaticTourTopicEntryHref } from '@/lib/ai/course-content/static-tour-links'
 
 export interface TourHeaderProps {
   lang: string
@@ -23,7 +24,10 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
   const otherLang = lang === 'en' ? 'zh' : 'en'
   const otherLabel = lang === 'en' ? '中文' : 'EN'
   const tourHomeHref = getTourPath(lang, { servingDomain: getSiteDomain(window.location.host) })
-  const aiHref = getTourPath(lang, { rest: ['ai'], servingDomain: getSiteDomain(window.location.host) })
+  const aiHref = getStaticTourTopicEntryHref(lang, {
+    currentOrigin: window.location.origin,
+    entry: section?.aiEntry,
+  })
   const localeHref = getLocaleHref(otherLang, window.location)
   const playgroundHref = getPlaygroundHref(lang, { currentOrigin: window.location.origin })
 
@@ -41,7 +45,7 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
         </>
       )}
       <a href={tourHomeHref} className="flex items-center shrink-0">
-        <Image src="/icon.png" alt="Logo" width={22} height={22} />
+        <Image src="/icon.png" alt={t`仓颉之旅首页`} width={22} height={22} />
       </a>
       <Separator orientation="vertical" className="!h-5 !bg-white/30" />
       {section
@@ -58,7 +62,7 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
           )
         : (
             <span className="text-[15px] text-white truncate font-semibold [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
-              <Trans>AI 助教</Trans>
+              <Trans>AI 课堂</Trans>
             </span>
           )}
       <div className="flex items-center gap-1 ml-auto shrink-0">
@@ -67,7 +71,7 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
               <div className="flex items-center gap-1.5 rounded-full pl-2.5 pr-1 py-1 bg-white/20 ring-1 ring-yellow-200/40 shadow-inner">
                 <Sparkles className="size-3.5 text-yellow-200 drop-shadow-[0_0_6px_rgba(254,240,138,0.6)]" />
                 <span className="hidden sm:inline text-[12px] font-medium text-white/95">
-                  <Trans>自主教学</Trans>
+                  <Trans>课堂进行中</Trans>
                 </span>
                 <LLMConfigDialog />
               </div>
@@ -76,10 +80,10 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
               <a
                 href={aiHref}
                 className="flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/5 hover:bg-white/15 transition-colors text-[12px] font-medium text-white/95"
-                title={t`AI 助教：按你的节奏即时生成讲解和练习，与左侧固定教程互补。`}
+                title={t`打开 AI 课堂，从当前教程主题开始学习和练习。`}
               >
                 <Sparkles className="size-3.5 text-white/70" />
-                <span className="hidden sm:inline"><Trans>AI 助教</Trans></span>
+                <span className="hidden sm:inline"><Trans>AI 课堂</Trans></span>
               </a>
             )}
         <Separator orientation="vertical" className="!h-5 !bg-white/30 mx-1" />

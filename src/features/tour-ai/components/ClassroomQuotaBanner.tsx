@@ -1,17 +1,16 @@
 'use client'
 
-import { useEffect, useReducer } from 'react'
+import { useEffect, useId, useReducer } from 'react'
 import { CircleAlert, KeyRound } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import { useLLMConfigStore } from '@/stores/llmConfig'
 import { formatResetMoment } from '@/modules/llm-config/runtime/format-reset-moment'
-import { classroomCardVariants } from '@/features/tour-ai/components/classroom-motion'
 
 // Persistent strip shown across the top of the classroom whenever the shared
 // auto-quota is exhausted. The pre-existing QuotaExhaustedDialog interrupts
 // once and then dismisses, leaving the learner with no surface explaining why
-// new lessons stopped flowing. This banner stays put — quizzes are still
+// new lessons stopped flowing. This banner stays put — exercises are still
 // locally gradable and past lessons remain readable, so the experience does
 // not need to be "all or nothing".
 export function ClassroomQuotaBanner() {
@@ -19,6 +18,8 @@ export function ClassroomQuotaBanner() {
   const autoQuota = useLLMConfigStore(s => s.autoQuota)
   const openSettings = useLLMConfigStore(s => s.setSettingsDialogOpen)
   const [, forceTick] = useReducer((n: number) => n + 1, 0)
+  const titleId = useId()
+  const detailId = useId()
 
   const visible = keySource === 'auto' && !!autoQuota?.exhausted
 
@@ -35,35 +36,44 @@ export function ClassroomQuotaBanner() {
     return null
 
   const refreshMoment = formatResetMoment(autoQuota.nextResetAt)
+  const actionTitle = t`打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会排队新的 AI 请求。共享额度下次刷新：${refreshMoment}。`
 
   return (
-    <motion.div
+    <div
       data-testid="classroom-quota-banner"
-      variants={classroomCardVariants}
-      initial="hidden"
-      animate="visible"
-      className="flex flex-wrap items-center gap-3 border-b border-amber-500/30 bg-amber-500/10 px-5 py-2 text-xs text-amber-700 dark:text-amber-300"
+      role="region"
+      aria-labelledby={titleId}
+      aria-describedby={detailId}
+      className="flex min-w-0 flex-wrap items-start gap-3 border-b border-classroom-warning-border bg-classroom-warning-bg px-3 py-2 text-xs text-classroom-warning-fg sm:items-center sm:px-5"
     >
-      <CircleAlert className="size-4 shrink-0" />
-      <div className="flex-1 leading-relaxed">
-        <div className="font-semibold">
-          <Trans>今日共享额度已用完，新课程暂停生成。</Trans>
+      <CircleAlert aria-hidden="true" className="size-4 shrink-0" />
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="min-w-0 flex-1 leading-relaxed"
+      >
+        <div id={titleId} className="break-words font-semibold">
+          <Trans>今日共享额度已用完，暂时无法准备新的课堂内容。</Trans>
         </div>
-        <div className="opacity-80">
+        <div id={detailId} className="break-words opacity-80">
           <Trans>
-            你仍可以复习已生成的课程内容、做练习题，并查看测试结果。下次刷新：
+            你仍可以复习已有内容、做练习题，并查看测试结果。下次刷新：
             {refreshMoment}
+            ，刷新后课堂会自动继续准备新的 AI 内容；使用自己的 API Key 可立刻继续。
           </Trans>
         </div>
       </div>
       <button
         type="button"
+        aria-describedby={detailId}
+        title={actionTitle}
         onClick={() => openSettings(true)}
-        className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-tour-surface px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-500/10 dark:text-amber-300"
+        className="inline-flex w-full max-w-full items-center justify-center gap-1.5 rounded-md border border-classroom-warning-border bg-tour-surface px-3 py-1 text-left text-xs font-semibold text-classroom-warning-fg hover:bg-classroom-warning-bg sm:w-auto"
       >
-        <KeyRound className="size-3.5" />
-        <Trans>使用自带 Key</Trans>
+        <KeyRound aria-hidden="true" className="size-3.5 shrink-0" />
+        <span className="min-w-0 break-words"><Trans>使用自己的 API Key</Trans></span>
       </button>
-    </motion.div>
+    </div>
   )
 }

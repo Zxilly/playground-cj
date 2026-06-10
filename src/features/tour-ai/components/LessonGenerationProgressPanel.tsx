@@ -1,224 +1,292 @@
 'use client'
 
-import { CheckCircle2, ChevronDown, KeyRound, Loader2, Wrench, XCircle } from 'lucide-react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { CheckCircle2, ChevronDown, KeyRound, Loader2, Settings2, XCircle } from 'lucide-react'
 import { t } from '@lingui/core/macro'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { useId } from 'react'
 import { useLLMConfigStore } from '@/stores/llmConfig'
 import { cn } from '@/lib/utils'
 import type { LessonGenerationProgressState, LessonGenerationProgressStatus } from '@/features/tour-ai/state/lesson-generation-progress-state'
 import type { LessonGenerationProgressItem } from '@/lib/ai/lesson-generation-progress'
-import {
-  ReasoningContent,
-  ReasoningRoot,
-  ReasoningText,
-  ReasoningTrigger,
-} from '@/modules/assistant-ui/registry/reasoning-primitives'
-import {
-  classroomCardVariants,
-  classroomCollapseVariants,
-  classroomQuickTransition,
-  classroomSpinTransition,
-  classroomStaggerVariants,
-} from '@/features/tour-ai/components/classroom-motion'
 import { friendlyToolStatus } from '@/features/tour-ai/utils/lesson-progress-friendly-status'
+import { formatResetMoment } from '@/modules/llm-config/runtime/format-reset-moment'
+import type { LessonGenerationRecoveryReason } from '@/features/tour-ai/runtime/useLessonGenerationRuntime'
 
 export function LessonGenerationProgressPanel({
   progress,
   visible,
   blockedReason,
+  recoveryReason = null,
+  stalled = false,
   onToggle,
 }: {
   progress: LessonGenerationProgressState
   visible: boolean
-  blockedReason?: 'api_key'
+  blockedReason?: 'api_key' | 'shared_quota'
+  recoveryReason?: LessonGenerationRecoveryReason | null
+  stalled?: boolean
   onToggle: () => void
 }) {
+  const headerButtonId = useId()
+  const bodyId = useId()
+  const statusId = useId()
+  const blockedHeaderDescriptionId = useId()
   const shouldRender = visible && !(progress.status === 'completed' && !progress.expanded)
-  if (!shouldRender) {
-    return (
-      <AnimatePresence initial={false} />
-    )
-  }
+  if (!shouldRender)
+    return null
+  const expanded = progress.expanded || blockedReason != null
+  const blockedHeaderDescription = blockedReason === 'api_key'
+    ? t`完成 AI 服务配置前，进度面板会保持展开。`
+    : blockedReason === 'shared_quota'
+      ? t`等待共享额度期间，进度面板会保持展开。`
+      : ''
 
-  const headerLabel = t`课程生成进度`
+  const headerLabel = t`课堂准备进度`
   const statusLabel = blockedReason === 'api_key'
-    ? t`等待 API Key`
-    : lessonGenerationProgressStatusLabel(progress.status)
+    ? t`等待 AI 服务配置`
+    : blockedReason === 'shared_quota'
+      ? t`等待共享额度`
+      : stalled && progress.status === 'running'
+        ? t`等待 AI 响应`
+        : lessonGenerationProgressStatusLabel(progress.status)
   // The api_key block is rendered as a dedicated CTA row in the body, so the
   // fallback text only needs to cover the non-blocked cases. Otherwise the
-  // user would see the same "请配置 API Key" sentence twice.
+  // user would see the same configuration sentence twice.
   const bodyText = progress.text.trim()
-    || (blockedReason === 'api_key'
+    || (blockedReason
       ? ''
-      : progress.status === 'running' ? t`等待生成进度...` : t`暂无进度详情`)
+      : progress.status === 'running' ? t`正在准备下一步...` : t`暂无进度详情`)
   const items = progress.items?.length
     ? progress.items
     : bodyText ? [{ id: 'fallback-text', type: 'text' as const, text: bodyText }] : []
+  const visibleToolItems = items.filter(item => item.type === 'tool')
 
   return (
-    <AnimatePresence initial={false}>
-      <motion.section
-        key="lesson-generation-progress-panel"
-        layout
-        data-testid="lesson-generation-progress-panel"
-        variants={classroomCardVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        className="mt-5 overflow-hidden rounded-md border border-tour-border bg-tour-surface text-sm"
+    <section
+      data-testid="lesson-generation-progress-panel"
+      aria-busy={progress.status === 'running' || blockedReason != null}
+      className="mt-5 overflow-hidden rounded-md border border-tour-border bg-tour-surface text-sm"
+    >
+      <button
+        id={headerButtonId}
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={bodyId}
+        aria-describedby={blockedReason ? `${statusId} ${blockedHeaderDescriptionId}` : statusId}
+        aria-disabled={blockedReason != null || undefined}
+        aria-label={headerLabel}
+        title={blockedHeaderDescription || undefined}
+        onClick={() => {
+          if (blockedReason)
+            return
+          onToggle()
+        }}
+        className={cn(
+          'flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-tour-bg',
+          blockedReason && 'cursor-default hover:bg-transparent',
+        )}
       >
-        <button
-          type="button"
-          aria-expanded={progress.expanded}
-          aria-controls="lesson-generation-progress-body"
-          aria-label={headerLabel}
-          onClick={onToggle}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-tour-bg"
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <motion.span
-              aria-hidden="true"
-              animate={{ rotate: progress.expanded ? 0 : -90 }}
-              transition={classroomQuickTransition}
-              className="inline-flex size-4 shrink-0 items-center justify-center text-muted-foreground"
-            >
-              <ChevronDown className="size-4" />
-            </motion.span>
-            {progress.status === 'running' && <MotionSpinner className="size-3.5 text-tour-accent-fg" />}
-            <span className="font-semibold text-tour-text">{headerLabel}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden="true"
+            className={cn(
+              'inline-flex size-4 shrink-0 items-center justify-center text-muted-foreground transition-transform',
+              !expanded && '-rotate-90',
+            )}
+          >
+            <ChevronDown aria-hidden="true" className="size-4" />
           </span>
-          <span className="shrink-0 text-xs text-muted-foreground">{statusLabel}</span>
-        </button>
-        <AnimatePresence initial={false}>
-          {progress.expanded && (
-            <motion.div
-              key="lesson-generation-progress-body"
-              id="lesson-generation-progress-body"
-              variants={classroomCollapseVariants}
-              initial="collapsed"
-              animate="expanded"
-              exit="collapsed"
-              className="overflow-hidden border-t border-tour-border bg-tour-bg"
-            >
-              <motion.div
-                variants={classroomStaggerVariants}
-                initial="hidden"
-                animate="visible"
-                className="max-h-64 space-y-2 overflow-auto p-3"
-              >
-                {blockedReason === 'api_key' && <LessonGenerationApiKeyCta />}
-                <AnimatePresence initial={false}>
-                  {items.map((item, index) => {
-                    if (item.type === 'tool')
-                      return <LessonGenerationToolCall key={item.id} item={item} />
-                    if (item.type === 'reasoning') {
-                      // Shimmer the trigger only while THIS block is the one
-                      // currently being streamed — i.e. nothing has appended
-                      // after it yet and the overall run is still running.
-                      const active = progress.status === 'running' && index === items.length - 1
-                      return <LessonGenerationReasoning key={item.id} item={item} active={active} />
-                    }
-                    return <LessonGenerationTextProgress key={item.id} item={item} />
-                  })}
-                </AnimatePresence>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.section>
-    </AnimatePresence>
+          {progress.status === 'running' && <MotionSpinner className="size-3.5 text-tour-accent-fg" />}
+          <span className="min-w-0 break-words font-semibold text-tour-text">{headerLabel}</span>
+        </span>
+        <span
+          id={statusId}
+          data-testid="lesson-generation-progress-status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="min-w-0 max-w-[45%] break-words text-right text-xs text-muted-foreground"
+        >
+          {statusLabel}
+        </span>
+        {blockedReason && (
+          <span id={blockedHeaderDescriptionId} className="sr-only">
+            {blockedHeaderDescription}
+          </span>
+        )}
+      </button>
+      <div
+        id={bodyId}
+        role="region"
+        aria-labelledby={headerButtonId}
+        hidden={!expanded}
+        className="overflow-hidden border-t border-tour-border bg-tour-bg"
+      >
+        {expanded && (
+          <div className="max-h-64 space-y-2 overflow-auto p-3">
+            {blockedReason === 'api_key' && <LessonGenerationApiKeyCta />}
+            {blockedReason === 'shared_quota' && <LessonGenerationSharedQuotaCta />}
+            {!blockedReason && recoveryReason && progress.status === 'running' && (
+              <LessonGenerationRecoveryHint reason={recoveryReason} />
+            )}
+            {!blockedReason && !recoveryReason && stalled && <LessonGenerationStalledHint />}
+            {!blockedReason && !recoveryReason && !stalled && visibleToolItems.length === 0 && (
+              <LessonGenerationStatusHint status={progress.status} />
+            )}
+            {items.map((item) => {
+              if (item.type === 'tool')
+                return <LessonGenerationToolCall key={item.id} item={item} />
+              if (item.type === 'reasoning') {
+                // Reasoning chunks are internal model traces. The header
+                // already communicates that generation is running; do not
+                // expose chain-of-thought text in the learner UI.
+                return null
+              }
+              return null
+            })}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
-function LessonGenerationTextProgress({ item }: { item: Extract<LessonGenerationProgressItem, { type: 'text' }> }) {
+function LessonGenerationRecoveryHint({ reason }: { reason: LessonGenerationRecoveryReason }) {
+  const text = reason === 'shared_quota_auto'
+    ? t`共享额度已恢复，课堂正在继续准备 AI 内容。`
+    : t`已切换到你的 API Key，课堂正在继续准备 AI 内容。`
   return (
-    <motion.p layout variants={classroomCardVariants} className="whitespace-pre-wrap break-words font-mono text-xs leading-5 text-muted-foreground">
-      {item.text.trim() || item.text}
-    </motion.p>
+    <div
+      data-testid="lesson-generation-recovery-hint"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="flex items-start gap-2 rounded-md border border-classroom-success-border bg-classroom-success-bg px-3 py-2 text-xs leading-relaxed text-classroom-success-fg"
+    >
+      <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+      <div className="min-w-0 break-words">{text}</div>
+    </div>
   )
 }
 
-const REASONING_MARKDOWN_COMPONENTS = {
-  p: ({ className, ...props }: React.ComponentProps<'p'>) => (
-    <p className={cn('my-1.5 leading-relaxed first:mt-0 last:mb-0', className)} {...props} />
-  ),
-  ul: ({ className, ...props }: React.ComponentProps<'ul'>) => (
-    <ul className={cn('my-1.5 ms-4 list-disc marker:text-muted-foreground/60 [&>li]:mt-0.5', className)} {...props} />
-  ),
-  ol: ({ className, ...props }: React.ComponentProps<'ol'>) => (
-    <ol className={cn('my-1.5 ms-4 list-decimal marker:text-muted-foreground/60 [&>li]:mt-0.5', className)} {...props} />
-  ),
-  li: ({ className, ...props }: React.ComponentProps<'li'>) => (
-    <li className={cn('leading-relaxed', className)} {...props} />
-  ),
-  code: ({ className, ...props }: React.ComponentProps<'code'>) => (
-    <code className={cn('rounded border border-border/40 bg-muted/40 px-1 py-0.5 font-mono text-[0.85em]', className)} {...props} />
-  ),
-  pre: ({ className, ...props }: React.ComponentProps<'pre'>) => (
-    <pre className={cn('my-2 overflow-x-auto rounded border border-border/40 bg-muted/40 p-2 font-mono text-[0.85em] leading-relaxed [&>code]:border-0 [&>code]:bg-transparent [&>code]:p-0', className)} {...props} />
-  ),
-  a: ({ className, ...props }: React.ComponentProps<'a'>) => (
-    <a className={cn('underline underline-offset-2 hover:text-foreground', className)} target="_blank" rel="noreferrer" {...props} />
-  ),
-  blockquote: ({ className, ...props }: React.ComponentProps<'blockquote'>) => (
-    <blockquote className={cn('my-1.5 border-s-2 border-muted-foreground/30 ps-2 italic', className)} {...props} />
-  ),
-} as const
-
-function LessonGenerationReasoning({
-  item,
-  active,
-}: {
-  item: Extract<LessonGenerationProgressItem, { type: 'reasoning' }>
-  active: boolean
-}) {
-  // Reuse the same Reasoning primitives the chat side renders so the brain
-  // icon / shimmer / collapsible UX stays consistent. Reasoning content is
-  // rendered as markdown because models often emit code fences and lists.
-  const text = item.text
-  // Auto-open the *currently streaming* reasoning block so the learner can see
-  // "AI is thinking" in real time, but collapse historical reasoning blocks so
-  // the panel doesn't become a wall of past chain-of-thought. Click-to-expand
-  // remains available for anyone who wants the older traces.
+function LessonGenerationStalledHint() {
+  const openSettings = useLLMConfigStore(state => state.setSettingsDialogOpen)
+  const stalledDescriptionId = useId()
+  const settingsTitle = t`打开 AI 服务设置检查服务地址、API Key、模型和额度；不会立即重试或清除已生成内容。`
   return (
-    <motion.div layout data-testid="lesson-generation-reasoning" variants={classroomCardVariants}>
-      <ReasoningRoot variant="muted" defaultOpen={active} className="mb-0">
-        <ReasoningTrigger active={active} />
-        <ReasoningContent aria-busy={active}>
-          <ReasoningText className="max-h-48 ps-0 pt-1 pb-1 text-xs">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={REASONING_MARKDOWN_COMPONENTS}>
-              {text}
-            </ReactMarkdown>
-          </ReasoningText>
-        </ReasoningContent>
-      </ReasoningRoot>
-    </motion.div>
+    <div
+      data-testid="lesson-generation-stalled-hint"
+      className="flex flex-col gap-3 rounded-md border border-classroom-warning-border bg-classroom-warning-bg px-3 py-2 text-xs text-classroom-warning-fg sm:flex-row sm:items-start"
+    >
+      <div
+        id={stalledDescriptionId}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="min-w-0 flex-1 break-words leading-relaxed"
+      >
+        {t`AI 响应时间比预期更久。已生成内容不会丢失，你可以继续等待，或检查网络和 AI 设置。`}
+      </div>
+      <button
+        type="button"
+        aria-describedby={stalledDescriptionId}
+        title={settingsTitle}
+        onClick={() => openSettings(true)}
+        className="inline-flex w-full max-w-full shrink-0 items-center justify-center gap-1.5 rounded-md border border-classroom-warning-border bg-tour-surface px-2 py-1 font-semibold hover:brightness-95 sm:w-auto"
+      >
+        <Settings2 aria-hidden="true" className="size-3.5" />
+        <span className="min-w-0 break-words">{t`检查 AI 设置`}</span>
+      </button>
+    </div>
+  )
+}
+
+function LessonGenerationStatusHint({ status }: { status: LessonGenerationProgressStatus }) {
+  const text = status === 'failed'
+    ? t`准备失败。可以重试，或检查网络和 API 设置。`
+    : status === 'completed'
+      ? t`课堂已准备好。`
+      : t`正在连接课堂内容和练习规划，通常需要几秒。若长时间没有变化，请检查网络或 API 设置。`
+
+  return (
+    <div
+      data-testid="lesson-generation-status-hint"
+      className="break-words rounded-md border border-tour-border bg-tour-surface px-3 py-2 text-xs leading-relaxed text-muted-foreground"
+    >
+      {text}
+    </div>
   )
 }
 
 function LessonGenerationApiKeyCta() {
   const openSettings = useLLMConfigStore(state => state.setSettingsDialogOpen)
+  const descriptionId = useId()
+  const settingsTitle = t`打开 AI 服务设置完成服务地址、API Key 和模型配置；不会立即重试或清除已生成内容。`
   return (
-    <motion.div
-      layout
+    <div
       data-testid="lesson-generation-api-key-cta"
-      variants={classroomCardVariants}
-      className="flex items-start gap-3 rounded-md border border-classroom-warning-border bg-classroom-warning-bg px-3 py-2 text-xs text-classroom-warning-fg"
+      className="flex flex-col gap-3 rounded-md border border-classroom-warning-border bg-classroom-warning-bg px-3 py-2 text-xs text-classroom-warning-fg sm:flex-row sm:items-start"
     >
-      <KeyRound className="mt-0.5 size-4 shrink-0" />
-      <div className="flex-1 leading-relaxed">
-        {t`请在设置中配置 API Key 后继续生成课程。`}
+      <div className="flex min-w-0 items-start gap-3">
+        <KeyRound aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <div
+          id={descriptionId}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="min-w-0 flex-1 break-words leading-relaxed"
+        >
+          {t`请先完成 AI 服务配置后继续准备下一步。`}
+        </div>
       </div>
       <button
         type="button"
+        aria-describedby={descriptionId}
+        title={settingsTitle}
         onClick={() => openSettings(true)}
-        className="shrink-0 rounded-md border border-classroom-warning-border bg-tour-surface px-2 py-1 font-semibold hover:brightness-95"
+        className="w-full max-w-full shrink-0 rounded-md border border-classroom-warning-border bg-tour-surface px-2 py-1 font-semibold hover:brightness-95 sm:w-auto"
       >
-        {t`打开设置`}
+        <span className="min-w-0 break-words">{t`打开设置`}</span>
       </button>
-    </motion.div>
+    </div>
+  )
+}
+
+function LessonGenerationSharedQuotaCta() {
+  const openSettings = useLLMConfigStore(state => state.setSettingsDialogOpen)
+  const autoQuota = useLLMConfigStore(state => state.autoQuota)
+  const descriptionId = useId()
+  const resetMoment = autoQuota?.nextResetAt ? formatResetMoment(autoQuota.nextResetAt) : ''
+  const settingsTitle = resetMoment
+    ? t`打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会排队新的课堂任务或清除已生成内容。共享额度下次刷新：${resetMoment}。`
+    : t`打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会排队新的课堂任务或清除已生成内容。`
+  return (
+    <div
+      data-testid="lesson-generation-shared-quota-cta"
+      className="flex flex-col gap-3 rounded-md border border-classroom-warning-border bg-classroom-warning-bg px-3 py-2 text-xs text-classroom-warning-fg sm:flex-row sm:items-start"
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <KeyRound aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <div
+          id={descriptionId}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="min-w-0 flex-1 break-words leading-relaxed"
+        >
+          {resetMoment
+            ? t`共享额度已用完。下次刷新：${resetMoment}，刷新后课堂会自动继续准备下一步；使用自己的 API Key 可立刻继续。`
+            : t`共享额度已用完。刷新后课堂会自动继续准备下一步；使用自己的 API Key 可立刻继续。`}
+        </div>
+      </div>
+      <button
+        type="button"
+        aria-describedby={descriptionId}
+        title={settingsTitle}
+        onClick={() => openSettings(true)}
+        className="w-full max-w-full shrink-0 rounded-md border border-classroom-warning-border bg-tour-surface px-2 py-1 font-semibold hover:brightness-95 sm:w-auto"
+      >
+        <span className="min-w-0 break-words">{t`使用自己的 API Key`}</span>
+      </button>
+    </div>
   )
 }
 
@@ -228,19 +296,18 @@ function LessonGenerationToolCall({ item }: { item: Extract<LessonGenerationProg
     ? 'text-classroom-success-fg'
     : item.status === 'failed' ? 'text-destructive' : 'text-tour-accent-fg'
   const friendly = friendlyToolStatus(item.toolName)
+  const summary = lessonGenerationToolSummaryLabel(item, statusLabel)
 
   return (
-    <motion.div
-      layout
+    <div
       data-testid="lesson-generation-tool-call"
-      variants={classroomCardVariants}
-      className="flex items-start justify-between gap-3 rounded-md border border-tour-border bg-tour-surface px-3 py-2"
+      className="flex min-w-0 items-start justify-between gap-3 rounded-md border border-tour-border bg-tour-surface px-3 py-2"
     >
       <div className="flex min-w-0 items-start gap-2">
         <span className={cn('mt-0.5 shrink-0', statusTone)}>
           {item.status === 'completed'
-            ? <CheckCircle2 className="size-4" />
-            : item.status === 'failed' ? <XCircle className="size-4" /> : <Wrench className="size-4" />}
+            ? <CheckCircle2 aria-hidden="true" className="size-4" />
+            : item.status === 'failed' ? <XCircle aria-hidden="true" className="size-4" /> : <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
         </span>
         <div className="min-w-0">
           {/* Friendly label replaces the raw tool name (e.g. "append_concept_card")
@@ -248,37 +315,50 @@ function LessonGenerationToolCall({ item }: { item: Extract<LessonGenerationProg
               developers / power users can still inspect it on hover. */}
           <div
             className="truncate text-xs font-semibold text-tour-text"
-            title={item.toolName}
+            title={friendly.label}
             data-tool-name={item.toolName}
           >
             {friendly.label}
           </div>
-          {item.summary && <div className="mt-1 text-xs text-muted-foreground">{item.summary}</div>}
+          {summary && (
+            <div data-testid="lesson-generation-tool-summary" className="mt-0.5 break-words text-xs leading-5 text-muted-foreground">
+              {summary}
+            </div>
+          )}
         </div>
       </div>
       <span className={cn('shrink-0 text-xs font-semibold', statusTone)}>{statusLabel}</span>
-    </motion.div>
+    </div>
   )
+}
+
+function lessonGenerationToolSummaryLabel(
+  item: Extract<LessonGenerationProgressItem, { type: 'tool' }>,
+  statusLabel: string,
+): string | null {
+  if (item.status === 'failed')
+    return t`这一步未完成。已有内容会保留；如果准备失败，可以重试。`
+  if (!item.summary || item.summary === statusLabel)
+    return null
+  return item.summary
 }
 
 function MotionSpinner({ className }: { className: string }) {
   return (
-    <motion.span
+    <span
       aria-hidden="true"
-      animate={{ rotate: 360 }}
-      transition={classroomSpinTransition}
-      className="inline-flex shrink-0 items-center justify-center"
+      className="inline-flex shrink-0 animate-spin items-center justify-center"
     >
-      <Loader2 className={className} />
-    </motion.span>
+      <Loader2 aria-hidden="true" className={className} />
+    </span>
   )
 }
 
 function lessonGenerationProgressStatusLabel(status: LessonGenerationProgressStatus): string {
   const labels: Record<LessonGenerationProgressStatus, string> = {
-    running: t`正在编写课程`,
-    completed: t`课程内容已生成`,
-    failed: t`生成失败`,
+    running: t`正在准备课堂`,
+    completed: t`课堂已准备好`,
+    failed: t`准备失败`,
     idle: t`等待开始`,
   }
   return labels[status]

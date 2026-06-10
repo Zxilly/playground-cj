@@ -1,3 +1,5 @@
+import type { StaticTourCourseEntry } from '@/lib/ai/course-content/static-tour-links'
+
 export interface TourSection {
   id: string
   name: Record<string, string>
@@ -30,6 +32,7 @@ export interface FlatSection {
   markdown: Record<string, string>
   code: Record<string, string>
   mdxSource?: Record<string, any>
+  aiEntry?: StaticTourCourseEntry
 }
 
 export interface TourSectionSlim {

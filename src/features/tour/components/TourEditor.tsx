@@ -158,7 +158,7 @@ export function TourEditor({
   const bridge = useEditorBridge()
   // Caller-owned instances skip bridge registration AND skip the code-prop
   // auto-reset effect — both behaviours are surface-specific to the singleton
-  // tour-page editor and would otherwise clobber per-quiz state.
+  // tour-page editor and would otherwise clobber per-exercise state.
   const callerOwned = onEditorReady !== undefined
   const onEditorReadyRef = useRef(onEditorReady)
   onEditorReadyRef.current = onEditorReady
@@ -197,7 +197,7 @@ export function TourEditor({
 
   useEffect(() => {
     codeRef.current = code
-    // Caller-owned instances (e.g. classroom quizzes) keep model state across
+    // Caller-owned instances (e.g. classroom exercises) keep model state across
     // mount/unmount; auto-resetting on code prop change would erase the user's
     // edits any time the host card re-renders. They use the reset button instead.
     if (callerOwned)
@@ -228,7 +228,7 @@ export function TourEditor({
   }, [callerOwned, clearCompilerMarkers, bridge.editor])
 
   // Toggle readOnly via Monaco's runtime options so changing isActive on a
-  // mounted quiz card doesn't require tearing down the editor.
+  // mounted exercise card doesn't require tearing down the editor.
   useEffect(() => {
     editorAppRef.current?.getEditor()?.updateOptions({ readOnly })
   }, [readOnly])

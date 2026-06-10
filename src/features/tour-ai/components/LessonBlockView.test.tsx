@@ -28,6 +28,24 @@ describe('lessonBlockView code highlighting', () => {
     })
   })
 
+  it('makes live chapter headings programmatically focusable', () => {
+    render(
+      <LessonBlockView
+        chapterId="content-group:1:0:block:0"
+        block={{
+          type: 'heading',
+          text: '标准输出 println',
+          level: 2,
+        } as unknown as LessonContentBlock}
+      />,
+    )
+
+    const heading = screen.getByRole('heading', { name: '标准输出 println' })
+    expect(heading.getAttribute('data-chapter-id')).toBe('content-group:1:0:block:0')
+    expect(heading.getAttribute('tabindex')).toBe('-1')
+    expect(heading.className).toContain('focus:ring-2')
+  })
+
   it('renders a compare side as a Shiki code block when it is a single {code} part', async () => {
     render(
       <LessonBlockView

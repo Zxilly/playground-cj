@@ -3,6 +3,7 @@
 import type { Language } from '@/stores/knownLanguages'
 import { useIsLanguageKnown } from '@/stores/knownLanguages'
 import type { ReactNode } from 'react'
+import { Trans } from '@lingui/react/macro'
 
 const LANG_LABELS: Record<string, string> = {
   c: 'C',
@@ -24,7 +25,7 @@ export function CompareWith({ lang, children }: CompareWithProps) {
   return (
     <div className="tour-compare">
       <div className="tour-compare-label">
-        vs
+        <Trans>对比</Trans>
         {' '}
         {LANG_LABELS[lang] ?? lang}
       </div>

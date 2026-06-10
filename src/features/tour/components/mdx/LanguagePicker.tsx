@@ -4,6 +4,7 @@ import { useKnownLanguagesStore } from '@/stores/knownLanguages'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Settings2 } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
+import { t } from '@lingui/core/macro'
 
 const LANGUAGES = [
   { id: 'c', label: 'C' },
@@ -21,6 +22,7 @@ export function LanguagePicker() {
       <PopoverTrigger asChild>
         <button
           data-tour-highlight="langpicker"
+          aria-label={t`选择对比语言`}
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-white hover:bg-white/15 rounded transition-colors"
         >
           <Settings2 className="size-4" />
@@ -33,10 +35,10 @@ export function LanguagePicker() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-3">
         <div className="text-sm font-semibold mb-2 text-foreground">
-          <Trans>我了解这些语言</Trans>
+          <Trans>我熟悉的语言</Trans>
         </div>
         <div className="text-xs text-muted-foreground mb-3">
-          <Trans>对比内容将出现在文中。</Trans>
+          <Trans>勾选后，教程会显示对应语言的对比说明。</Trans>
         </div>
         <div className="space-y-1">
           {LANGUAGES.map(({ id, label }) => (

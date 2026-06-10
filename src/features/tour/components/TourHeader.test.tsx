@@ -29,7 +29,7 @@ function MockLanguagePicker() {
 }
 
 function MockLLMConfigDialog() {
-  return <button type="button">LLM 设置</button>
+  return <button type="button">AI 服务设置</button>
 }
 
 vi.mock('next/image', () => ({
@@ -104,6 +104,34 @@ describe('tour header', () => {
     expect(screen.getAllByRole('link')[0].getAttribute('href')).toBe('/zh/tour')
   })
 
+  it('deep-links the AI tutor to the current validated course concept', () => {
+    vi.stubGlobal('location', {
+      ...window.location,
+      origin: 'http://localhost:3000',
+    })
+
+    render(
+      <Wrapper>
+        <TourHeader
+          lang="zh"
+          section={{
+            chapterName: { zh: '欢迎', en: 'Welcome' },
+            subChapterName: { zh: '介绍', en: 'Intro' },
+            sectionName: { zh: '开始', en: 'Start' },
+            aiEntry: {
+              packId: 'default-entry',
+              contentVersion: '2026-05-28',
+              primaryConceptId: 'cj.program.main',
+              conceptIds: ['cj.program.main', 'cj.io.println'],
+            },
+          } as never}
+        />
+      </Wrapper>,
+    )
+
+    expect(screen.getByRole('link', { name: 'AI 课堂' }).getAttribute('href')).toBe('/zh/tour/ai?topic=cj.program.main')
+  })
+
   it('omits the sidebar trigger on the AI route because it has no sidebar provider', () => {
     render(
       <Wrapper>
@@ -112,7 +140,7 @@ describe('tour header', () => {
     )
 
     expect(screen.queryByTestId('sidebar-trigger')).toBeNull()
-    screen.getByRole('button', { name: 'LLM 设置' })
-    expect(screen.queryByRole('link', { name: 'AI 助教' })).toBeNull()
+    screen.getByRole('button', { name: 'AI 服务设置' })
+    expect(screen.queryByRole('link', { name: 'AI 课堂' })).toBeNull()
   })
 })

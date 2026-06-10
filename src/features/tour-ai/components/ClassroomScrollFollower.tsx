@@ -1,40 +1,70 @@
 'use client'
 
 import { ChevronDown } from 'lucide-react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { useId, useState } from 'react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
-import { classroomSpring } from '@/features/tour-ai/components/classroom-motion'
+import { useScrollFollower } from '@/features/tour-ai/components/use-scroll-follower'
 
 interface Props {
-  visible: boolean
-  onClick: () => void
+  visible?: boolean
+  onClick?: () => void
 }
 
-export function ClassroomScrollFollower({ visible, onClick }: Props) {
+export function ClassroomScrollFollower(props: Props = {}) {
+  if (props.visible !== undefined && props.onClick)
+    return <ClassroomScrollFollowerButton visible={props.visible} onClick={props.onClick} />
+
+  return <ClassroomScrollFollowerAdapter />
+}
+
+function ClassroomScrollFollowerAdapter() {
+  const follower = useScrollFollower()
+  return <ClassroomScrollFollowerButton visible={follower.visible} onClick={follower.scrollToBottom} />
+}
+
+function ClassroomScrollFollowerButton({ visible, onClick }: Required<Props>) {
+  const descriptionId = useId()
+  const [announcementCount, setAnnouncementCount] = useState(0)
+
+  const handleClick = () => {
+    onClick()
+    setAnnouncementCount(count => count + 1)
+  }
+
   return (
-    <AnimatePresence initial={false}>
+    <>
       {visible && (
-        <motion.button
+        <button
           type="button"
           aria-label={t`滚动到最新内容`}
-          onClick={onClick}
-          initial={{ opacity: 0, y: 12, x: '-50%' }}
-          animate={{ opacity: 1, y: 0, x: '-50%' }}
-          exit={{ opacity: 0, y: 10, x: '-50%' }}
-          whileHover={{ y: -2 }}
-          whileTap={{ scale: 0.97 }}
-          transition={classroomSpring}
+          aria-describedby={descriptionId}
+          onClick={handleClick}
           // bottom-20 keeps the pill above the sticky ClassroomIntentBar
           // (~48px tall, anchored at bottom-3) so the two surfaces don't collide.
           // z-20 puts it above the rail so an accidental click on a marker
           // doesn't intercept the pill.
-          className="absolute bottom-20 left-1/2 z-20 inline-flex items-center gap-1.5 rounded-full border border-tour-border bg-tour-surface px-3 py-1.5 text-xs font-medium text-tour-accent-fg shadow-md hover:bg-tour-bg"
+          className="absolute bottom-20 right-4 z-20 inline-flex max-w-[calc(100%-2rem)] items-center gap-1.5 rounded-full border border-tour-border bg-tour-surface px-3 py-1.5 text-xs font-medium text-tour-accent-fg shadow-md hover:bg-tour-bg sm:right-6"
         >
-          <ChevronDown className="size-3.5" />
+          <ChevronDown aria-hidden="true" className="size-3.5" />
           <Trans>新内容</Trans>
-        </motion.button>
+          <span id={descriptionId} className="sr-only">
+            <Trans>跳到课堂流底部查看新生成内容，不会改变学习进度。</Trans>
+          </span>
+        </button>
       )}
-    </AnimatePresence>
+      {announcementCount > 0 && (
+        <span
+          key={announcementCount}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-testid="classroom-scroll-follower-status"
+          className="sr-only"
+        >
+          <Trans>已跳到最新课堂内容。</Trans>
+        </span>
+      )}
+    </>
   )
 }
