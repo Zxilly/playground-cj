@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:232
+#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:234
 msgid ""
 "\n"
 "失败：{errorMessage}"
@@ -84,7 +84,7 @@ msgstr "AI 服务设置"
 msgid "AI 服务还没配置。点击任一 AI 操作会打开设置，不会排队新的请求。"
 msgstr "AI 服务还没配置。点击任一 AI 操作会打开设置，不会排队新的请求。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:187
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:199
 msgid "AI 服务配置未完成，已保存的课堂仍可查看。"
 msgstr "AI 服务配置未完成，已保存的课堂仍可查看。"
 
@@ -122,7 +122,7 @@ msgid "AI 请求已记录：{intentLabel}，范围 {conceptTitle}"
 msgstr "AI 请求已记录：{intentLabel}，范围 {conceptTitle}"
 
 #: src/features/tour-ai/components/ClassroomBrandChip.tsx:7
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:158
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:161
 #: src/features/tour-ai/components/ClassroomWelcomeCard.tsx:43
 #: src/features/tour-ai/components/TourAIApp.tsx:214
 #: src/features/tour-ai/components/TourAIWrapper.tsx:38
@@ -135,11 +135,11 @@ msgstr "AI 课堂"
 msgid "AI 课堂会从当前教程主题开始，展示讲解、练习和答疑入口。 你可以选择放慢节奏、深入讲解，或者解释刚才的错误。"
 msgstr "AI 课堂会从当前教程主题开始，展示讲解、练习和答疑入口。 你可以选择放慢节奏、深入讲解，或者解释刚才的错误。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:172
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:175
 msgid "AI 课堂会使用已验证的教程内容组织讲解、练习和答疑。需要时，你也可以回到原教程继续阅读。"
 msgstr "AI 课堂会使用已验证的教程内容组织讲解、练习和答疑。需要时，你也可以回到原教程继续阅读。"
 
-#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:219
+#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:221
 msgid "AI 额度不足"
 msgstr "AI 额度不足"
 
@@ -191,7 +191,7 @@ msgstr "下一步建议"
 msgid "下次刷新："
 msgstr "下次刷新："
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:233
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:245
 msgid "下次刷新：{quotaResetMoment}，刷新后会自动恢复；使用自己的 API Key 可立刻继续。"
 msgstr "下次刷新：{quotaResetMoment}，刷新后会自动恢复；使用自己的 API Key 可立刻继续。"
 
@@ -232,16 +232,16 @@ msgstr "仅重置当前表单；点击保存后才会生效，取消会保留已
 msgid "今日 AI 额度已用完"
 msgstr "今日 AI 额度已用完"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:229
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:241
 #: src/features/tour-ai/components/ClassroomQuotaBanner.tsx:57
 msgid "今日共享额度已用完，暂时无法准备新的课堂内容。"
 msgstr "今日共享额度已用完，暂时无法准备新的课堂内容。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:163
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:166
 msgid "从已验证课程开始学习"
 msgstr "从已验证课程开始学习"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:162
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:165
 msgid "从当前主题开始学习"
 msgstr "从当前主题开始学习"
 
@@ -362,6 +362,10 @@ msgstr "会先显示确认，不会立即记录。确认后课堂会记录为已
 msgid "会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并让 AI 准备更合适的下一步。"
 msgstr "会先显示确认，不会立即记录。确认后课堂会记录为已跳过，并让 AI 准备更合适的下一步。"
 
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:181
+msgid "会参考你在教程里选择的对比语言：{knownLanguageText}。开始后，AI 会把它作为迁移背景，不会直接记录为学习进度。"
+msgstr "会参考你在教程里选择的对比语言：{knownLanguageText}。开始后，AI 会把它作为迁移背景，不会直接记录为学习进度。"
+
 #: src/features/tour-ai/components/TourAIChat.tsx:106
 msgid "会结合当前编辑器代码回答；聊天本身不会记录练习进度。"
 msgstr "会结合当前编辑器代码回答；聊天本身不会记录练习进度。"
@@ -382,8 +386,8 @@ msgstr "你可以继续学习；如果想恢复上次记录，请刷新后重试
 msgid "你读到这里"
 msgstr "你读到这里"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:146
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:218
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:149
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:230
 #: src/features/tour-ai/components/ClassroomQuotaBanner.tsx:75
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:693
 #: src/features/tour-ai/components/ClassroomWelcomeCard.tsx:123
@@ -423,11 +427,11 @@ msgstr "保存当前课堂"
 msgid "保留当前代码"
 msgstr "保留当前代码"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:348
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:360
 msgid "保留有用的说明，之后可以回看重点内容。"
 msgstr "保留有用的说明，之后可以回看重点内容。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:278
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:290
 msgid "保留记录"
 msgstr "保留记录"
 
@@ -497,7 +501,7 @@ msgstr "先补齐核心内容，再开始练习验证。"
 msgid "先进入 AI 课堂，再打开当前复习概念的聊天；不会直接排队复习检查。"
 msgstr "先进入 AI 课堂，再打开当前复习概念的聊天；不会直接排队复习检查。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:303
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:315
 msgid "先预览课程内容"
 msgstr "先预览课程内容"
 
@@ -522,7 +526,7 @@ msgstr "共享额度已使用量"
 msgid "共享额度已恢复，课堂正在继续准备 AI 内容。"
 msgstr "共享额度已恢复，课堂正在继续准备 AI 内容。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:186
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:198
 msgid "共享额度已用完，已保存的课堂仍可查看。"
 msgstr "共享额度已用完，已保存的课堂仍可查看。"
 
@@ -604,7 +608,7 @@ msgstr "关闭建议"
 msgid "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
 msgstr "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:81
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:83
 msgid "关闭确认框并保留上次课堂记录。"
 msgstr "关闭确认框并保留上次课堂记录。"
 
@@ -712,7 +716,7 @@ msgstr "准备"
 
 #: src/features/tour-ai/components/ClassroomStream.tsx:356
 #: src/features/tour-ai/components/ClassroomStream.tsx:360
-#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:44
+#: src/features/tour-ai/runtime/useLessonGenerationRuntime.ts:45
 msgid "准备下一步失败。请重试。"
 msgstr "准备下一步失败。请重试。"
 
@@ -800,7 +804,7 @@ msgstr "切换到复习视图，查看课程预览和已保留的练习；不会
 msgid "切换到课堂视图，只查看当前课堂流；不会改变学习进度或排队新的 AI 请求。"
 msgstr "切换到课堂视图，只查看当前课堂流；不会改变学习进度或排队新的 AI 请求。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:239
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:251
 msgid "刷新后会自动恢复；使用自己的 API Key 可立刻继续。"
 msgstr "刷新后会自动恢复；使用自己的 API Key 可立刻继续。"
 
@@ -989,7 +993,7 @@ msgstr "填写自己的 API Key 时，还需要服务地址和模型。"
 #: src/features/tour-ai/components/ClassroomConceptPanel.tsx:384
 #: src/features/tour-ai/components/ClassroomHeader.tsx:135
 #: src/features/tour-ai/components/ClassroomHeader.tsx:291
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:345
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:357
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:238
 msgid "复习"
 msgstr "复习"
@@ -1165,7 +1169,7 @@ msgstr "如果现在刷新，旧课堂记录可能再次出现；当前新课堂
 msgid "如需立刻继续使用，可在 AI 服务设置中填写自己的 API Key。"
 msgstr "如需立刻继续使用，可在 AI 服务设置中填写自己的 API Key。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:318
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:330
 msgid "学习"
 msgstr "学习"
 
@@ -1213,11 +1217,11 @@ msgstr "完成 AI 服务配置后再{actionBlockedLabel}。"
 msgid "完成 AI 服务配置后再重试。"
 msgstr "完成 AI 服务配置后再重试。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:330
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:342
 msgid "完成代码练习，查看运行结果，并在需要时获得提示。"
 msgstr "完成代码练习，查看运行结果，并在需要时获得提示。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:224
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:236
 #: src/features/tour-ai/components/ClassroomWelcomeCard.tsx:142
 msgid "完成服务地址、API Key 和模型配置后即可开始。"
 msgstr "完成服务地址、API Key 和模型配置后即可开始。"
@@ -1495,7 +1499,7 @@ msgid "建议先运行查看结果；确认正确后再提交复习检查，提�
 msgstr "建议先运行查看结果；确认正确后再提交复习检查，提交才会记录复习证据。跳过只记录复习路径，不代表掌握。"
 
 #: src/features/tour-ai/components/ClassroomHeader.tsx:182
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:217
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:229
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:707
 msgid "开始 AI 课堂"
 msgstr "开始 AI 课堂"
@@ -1505,7 +1509,7 @@ msgstr "开始 AI 课堂"
 msgid "开始 AI 课堂并准备下一步内容，预览内容仍可在复习页查看。"
 msgstr "开始 AI 课堂并准备下一步内容，预览内容仍可在复习页查看。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:78
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:80
 msgid "开始 AI 课堂并准备第一步内容；之后会记录学习进度、练习结果和复习内容。"
 msgstr "开始 AI 课堂并准备第一步内容；之后会记录学习进度、练习结果和复习内容。"
 
@@ -1656,7 +1660,7 @@ msgstr "打开 AI 服务设置，填写自己的 API Key 后可继续聊天；�
 msgid "打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入课堂、排队 AI 请求或记录学习进度。"
 msgstr "打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入课堂、排队 AI 请求或记录学习进度。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:70
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:72
 msgid "打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入课堂或排队新的 AI 请求。"
 msgstr "打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入课堂或排队新的 AI 请求。"
 
@@ -1684,11 +1688,11 @@ msgstr "打开 AI 服务设置，改用自己的 API Key 后可立刻继续；�
 msgid "打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会立即重试。"
 msgstr "打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会立即重试。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:69
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:71
 msgid "打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会进入课堂或排队新的 AI 请求。"
 msgstr "打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会进入课堂或排队新的 AI 请求。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:68
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:70
 msgid "打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会进入课堂或排队新的 AI 请求。共享额度下次刷新：{quotaResetMoment}。"
 msgstr "打开 AI 服务设置，改用自己的 API Key 后可立刻继续；不会进入课堂或排队新的 AI 请求。共享额度下次刷新：{quotaResetMoment}。"
 
@@ -1755,7 +1759,7 @@ msgstr "打开学习进度面板；有 {count} 个概念需要复习、练习或
 msgid "打开对应教程"
 msgstr "打开对应教程"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:65
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:67
 msgid "打开对应静态教程；不会改变 AI 课堂进度。"
 msgstr "打开对应静态教程；不会改变 AI 课堂进度。"
 
@@ -1786,11 +1790,11 @@ msgstr "打开聊天；AI 会使用当前课堂内容作为上下文。"
 msgid "打开设置"
 msgstr "打开设置"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:80
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:82
 msgid "打开重新开始确认框；确认前不会删除本机保存的 AI 课堂进度、复习内容或练习记录。"
 msgstr "打开重新开始确认框；确认前不会删除本机保存的 AI 课堂进度、复习内容或练习记录。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:83
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:85
 msgid "打开预览视图，只查看已验证课程内容；不会启动 AI 生成、聊天或记录学习进度。"
 msgstr "打开预览视图，只查看已验证课程内容；不会启动 AI 生成、聊天或记录学习进度。"
 
@@ -2016,7 +2020,7 @@ msgstr "查看复习概念 {conceptTitle}，{selectedState}，进度 {progressSt
 msgid "查看复习进度"
 msgstr "查看复习进度"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:134
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:137
 #: src/features/tour-ai/components/TourAIApp.tsx:241
 #: src/features/tour-ai/components/TourAIWrapper.tsx:80
 msgid "查看对应教程"
@@ -2298,7 +2302,7 @@ msgstr "深色"
 msgid "添加附件"
 msgstr "添加附件"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:265
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:277
 msgid "清除上次课堂并重新开始？"
 msgstr "清除上次课堂并重新开始？"
 
@@ -2362,7 +2366,7 @@ msgstr "相关练习记录仍会保留。"
 msgid "短链接"
 msgstr "短链接"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:82
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:84
 msgid "确认删除本机保存的 AI 课堂进度、复习内容和练习记录；静态教程不会受影响。"
 msgstr "确认删除本机保存的 AI 课堂进度、复习内容和练习记录；静态教程不会受影响。"
 
@@ -2378,7 +2382,7 @@ msgstr "确认跳过这次复习检查？"
 msgid "确认跳过这道练习？"
 msgstr "确认跳过这道练习？"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:287
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:299
 msgid "确认重新开始"
 msgstr "确认重新开始"
 
@@ -2431,7 +2435,7 @@ msgid "约 {hours} 小时 {minutes} 分钟后刷新"
 msgstr "约 {hours} 小时 {minutes} 分钟后刷新"
 
 #: src/features/tour-ai/components/ClassroomHeader.tsx:290
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:327
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:339
 #: src/features/tour-ai/components/ExercisePracticeCard.tsx:518
 msgid "练习"
 msgstr "练习"
@@ -2530,19 +2534,19 @@ msgstr "练习输出"
 msgid "练习错误反馈"
 msgstr "练习错误反馈"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:217
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:229
 msgid "继续上次课堂"
 msgstr "继续上次课堂"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:200
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:212
 msgid "继续上次课堂可回看已有内容；聊天、生成下一步和复习检查需要先配置可用服务。"
 msgstr "继续上次课堂可回看已有内容；聊天、生成下一步和复习检查需要先配置可用服务。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:199
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:211
 msgid "继续上次课堂可回看已有内容；聊天、生成下一步和复习检查需要等待额度刷新，或使用自己的 API Key。"
 msgstr "继续上次课堂可回看已有内容；聊天、生成下一步和复习检查需要等待额度刷新，或使用自己的 API Key。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:193
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:205
 msgid "继续上次课堂可回看已有内容；聊天、生成下一步和复习检查需要等待额度刷新（{quotaResetMoment}），或使用自己的 API Key。"
 msgstr "继续上次课堂可回看已有内容；聊天、生成下一步和复习检查需要等待额度刷新（{quotaResetMoment}），或使用自己的 API Key。"
 
@@ -2573,15 +2577,15 @@ msgstr "继续当前复习检查"
 msgid "继续当前练习"
 msgstr "继续当前练习"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:77
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:79
 msgid "继续打开已保存课堂；不会重置进度、复习内容或练习记录。"
 msgstr "继续打开已保存课堂；不会重置进度、复习内容或练习记录。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:75
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:77
 msgid "继续打开已保存课堂；已有内容、复习内容和练习记录会保留。新的 AI 内容需要等待额度刷新或使用自己的 API Key。"
 msgstr "继续打开已保存课堂；已有内容、复习内容和练习记录会保留。新的 AI 内容需要等待额度刷新或使用自己的 API Key。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:76
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:78
 msgid "继续打开已保存课堂；已有内容、复习内容和练习记录会保留。聊天、生成下一步和复习检查需要先完成 AI 服务配置。"
 msgstr "继续打开已保存课堂；已有内容、复习内容和练习记录会保留。聊天、生成下一步和复习检查需要先完成 AI 服务配置。"
 
@@ -3039,7 +3043,7 @@ msgstr "还没有课堂内容记录或练习证据；不由 AI 聊天直接判�
 msgid "这一步未完成。已有内容会保留；如果准备失败，可以重试。"
 msgstr "这一步未完成。已有内容会保留；如果准备失败，可以重试。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:267
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:279
 msgid "这会删除本机保存的 AI 课堂进度、复习内容和练习记录；静态教程不会受影响。"
 msgstr "这会删除本机保存的 AI 课堂进度、复习内容和练习记录；静态教程不会受影响。"
 
@@ -3144,7 +3148,7 @@ msgid "这部分内容还没有进入课堂主线，先学习核心内容。"
 msgstr "这部分内容还没有进入课堂主线，先学习核心内容。"
 
 #: src/features/tour-ai/components/ClassroomConceptPanel.tsx:170
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:336
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:348
 msgid "进度"
 msgstr "进度"
 
@@ -3160,7 +3164,7 @@ msgstr "进度来源：{progressSourceSummary}"
 msgid "进度来自已看内容、练习提交和复习检查；AI 只能记录观察，不能直接判定掌握。"
 msgstr "进度来自已看内容、练习提交和复习检查；AI 只能记录观察，不能直接判定掌握。"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:339
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:351
 msgid "进度来自已看内容、练习提交和复习检查；聊天答疑不会直接判定掌握。"
 msgstr "进度来自已看内容、练习提交和复习检查；聊天答疑不会直接判定掌握。"
 
@@ -3193,13 +3197,13 @@ msgstr "通过练习证明理解的概念"
 msgid "部分课堂内容暂时无法显示"
 msgstr "部分课堂内容暂时无法显示"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:146
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:149
 #: src/features/tour-ai/components/ClassroomReviewView.tsx:695
 #: src/features/tour-ai/components/TourAIChat.tsx:293
 msgid "配置 AI 服务"
 msgstr "配置 AI 服务"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:218
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:230
 #: src/features/tour-ai/components/ClassroomWelcomeCard.tsx:123
 msgid "配置 AI 服务开始"
 msgstr "配置 AI 服务开始"
@@ -3220,7 +3224,7 @@ msgstr "重新加载记录"
 msgid "重新尝试保存"
 msgstr "重新尝试保存"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:252
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:264
 msgid "重新开始"
 msgstr "重新开始"
 
@@ -3278,7 +3282,7 @@ msgstr "重试运行会重新执行当前练习代码；不会记录练习进度
 msgid "重试这次任务"
 msgstr "重试这次任务"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:168
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:171
 msgid "链接里的主题不在已验证 AI 课堂内容中，已忽略该主题。"
 msgstr "链接里的主题不在已验证 AI 课堂内容中，已忽略该主题。"
 
@@ -3286,7 +3290,7 @@ msgstr "链接里的主题不在已验证 AI 课堂内容中，已忽略该主�
 msgid "错误讲解"
 msgstr "错误讲解"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:321
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:333
 msgid "阅读当前主题的讲解，并按进度继续后续内容。"
 msgstr "阅读当前主题的讲解，并按进度继续后续内容。"
 
@@ -3331,7 +3335,7 @@ msgstr "章节会在课堂内容生成后出现。"
 msgid "预期输出"
 msgstr "预期输出"
 
-#: src/features/tour-ai/components/ClassroomLandingPage.tsx:306
+#: src/features/tour-ai/components/ClassroomLandingPage.tsx:318
 msgid "预览只展示已验证课程内容，不会启动 AI 生成、聊天或记录学习进度。"
 msgstr "预览只展示已验证课程内容，不会启动 AI 生成、聊天或记录学习进度。"
 

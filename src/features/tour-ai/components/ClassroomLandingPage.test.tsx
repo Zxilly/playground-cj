@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { messages as enMessages } from '@/locales/en/messages.mjs'
 import { ClassroomLandingPage } from './ClassroomLandingPage'
 import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
+import { useKnownLanguagesStore } from '@/stores/knownLanguages'
 
 function Wrapper({ children }: { children: ReactNode }) {
   const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
@@ -43,6 +44,7 @@ describe('classroomLandingPage', () => {
     cleanup()
     useLLMConfigStore.getState().reset()
     useLLMConfigStore.getState().setSettingsDialogOpen(false)
+    useKnownLanguagesStore.setState({ knownLanguages: [] })
   })
 
   it('keeps header actions usable on narrow screens', () => {
@@ -169,6 +171,29 @@ describe('classroomLandingPage', () => {
 
     expect(onPreview).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole('button', { name: '配置 AI 服务' })).toBeNull()
+  })
+
+  it('surfaces static tutorial language background before starting', () => {
+    useKnownLanguagesStore.setState({ knownLanguages: ['python', 'java'] })
+    useLLMConfigStore.getState().setConfig({
+      provider: 'openai-compatible',
+      baseURL: 'https://api.example.test/v1',
+      apiKey: 'test-key',
+      model: 'test-model',
+    })
+
+    render(
+      <ClassroomLandingPage
+        hasClassroomSession={false}
+        onEnter={vi.fn()}
+        onPreview={vi.fn()}
+      />,
+      { wrapper: Wrapper },
+    )
+
+    screen.getByText(/会参考你在教程里选择的对比语言：/)
+    screen.getByText(/Python, Java/)
+    screen.getByText(/不会直接记录为学习进度。/)
   })
 
   it('uses compiled English copy for landing preview and progress policy', () => {

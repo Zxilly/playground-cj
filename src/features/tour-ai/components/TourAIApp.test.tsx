@@ -16,6 +16,7 @@ import type { AIClassroomBridgeValue } from '@/lib/ai/classroom/bridge'
 import { useCodeSuggestionStore } from '@/features/tour-ai/state/code-suggestion-store'
 import { useExerciseDraftStore } from '@/features/tour-ai/state/exercise-draft-store'
 import { useScrollWatermarkStore } from '@/features/tour-ai/state/scroll-watermark-store'
+import { useKnownLanguagesStore } from '@/stores/knownLanguages'
 import { messages as enMessages } from '@/locales/en/messages.mjs'
 
 vi.mock('next/font/local', () => ({
@@ -349,6 +350,7 @@ describe('tour ai app classroom flow', () => {
     useExerciseDraftStore.setState({ drafts: {} })
     useCodeSuggestionStore.setState({ suggestion: null, appliedAssistanceByExerciseId: {} })
     useScrollWatermarkStore.setState({ watermarks: {} })
+    useKnownLanguagesStore.setState({ knownLanguages: [] })
     await clearClassroomSession('zh')
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -387,6 +389,7 @@ describe('tour ai app classroom flow', () => {
     useExerciseDraftStore.setState({ drafts: {} })
     useCodeSuggestionStore.setState({ suggestion: null, appliedAssistanceByExerciseId: {} })
     useScrollWatermarkStore.setState({ watermarks: {} })
+    useKnownLanguagesStore.setState({ knownLanguages: [] })
     await clearClassroomSession('zh')
     useLLMConfigStore.getState().reset()
   })
@@ -780,6 +783,21 @@ describe('tour ai app classroom flow', () => {
       summary: 'Classroom opened.',
     })
     expect(openingEvent).not.toHaveProperty('requestedConceptId')
+  })
+
+  it('passes static tutorial language background into the opening event', async () => {
+    useKnownLanguagesStore.setState({ knownLanguages: ['python', 'java'] })
+
+    renderApp()
+    await enterClassroom()
+
+    await screen.findByText('标准输出 println', undefined, AI_RENDER_TIMEOUT)
+    const openingEvent = vi.mocked(runLessonGenerationStep).mock.calls.find(([args]) => args.event.type === 'classroom_opened')?.[0].event
+
+    expect(openingEvent).toMatchObject({
+      type: 'classroom_opened',
+      summary: 'Classroom opened. Learner declared familiar languages from Static Tour comparison picker: Python, Java.',
+    })
   })
 
   it('renders reusable core content references and a template-backed exercise', async () => {

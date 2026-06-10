@@ -11,6 +11,7 @@ import { ClassroomPersistenceBanner } from '@/features/tour-ai/components/Classr
 import type { ClassroomSessionHydrationIssue, ClassroomSessionSaveIssue } from '@/lib/ai/classroom/use-persistent-session'
 import { isLLMConfigReady } from '@/lib/ai/model-provider'
 import { formatResetMoment } from '@/modules/llm-config/runtime/format-reset-moment'
+import { LANGUAGE_LABELS, useKnownLanguagesStore } from '@/stores/knownLanguages'
 
 interface ClassroomLandingPageProps {
   hasClassroomSession: boolean
@@ -43,6 +44,7 @@ export function ClassroomLandingPage({
   const config = useLLMConfig()
   const keySource = useLLMConfigStore(state => state.keySource)
   const autoQuota = useLLMConfigStore(state => state.autoQuota)
+  const knownLanguages = useKnownLanguagesStore(state => state.knownLanguages)
   const openSettings = useLLMConfigStore(state => state.setSettingsDialogOpen)
   const configReady = isLLMConfigReady(config)
   const sharedQuotaExhausted = keySource === 'auto' && autoQuota?.exhausted === true
@@ -82,6 +84,7 @@ export function ClassroomLandingPage({
   const confirmResetTitle = t`确认删除本机保存的 AI 课堂进度、复习内容和练习记录；静态教程不会受影响。`
   const previewActionTitle = t`打开预览视图，只查看已验证课程内容；不会启动 AI 生成、聊天或记录学习进度。`
   const hasFocusedTopic = Boolean(topicTitle) && !topicUnavailable
+  const knownLanguageText = knownLanguages.map(lang => LANGUAGE_LABELS[lang]).join(', ')
 
   const primaryAction = () => {
     if (canEnter) {
@@ -173,6 +176,15 @@ export function ClassroomLandingPage({
                 AI 课堂会使用已验证的教程内容组织讲解、练习和答疑。需要时，你也可以回到原教程继续阅读。
               </Trans>
             </p>
+            {knownLanguageText && (
+              <p className="mt-3 max-w-2xl break-words text-sm leading-7 text-muted-foreground">
+                <Trans>
+                  会参考你在教程里选择的对比语言：
+                  {knownLanguageText}
+                  。开始后，AI 会把它作为迁移背景，不会直接记录为学习进度。
+                </Trans>
+              </p>
+            )}
 
             {hasClassroomSession && aiServiceNeedsRecovery && (
               <div

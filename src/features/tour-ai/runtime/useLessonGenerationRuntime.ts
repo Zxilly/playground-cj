@@ -12,6 +12,7 @@ import { runLessonGenerationStep } from '@/lib/ai/lesson-generation-runner'
 import { isQuotaExhaustedError } from '@/lib/ai/quota-error'
 import { nextResetAtMs } from '@/lib/quota-reset'
 import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
+import { LANGUAGE_LABELS, useKnownLanguagesStore } from '@/stores/knownLanguages'
 import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfigBootstrap'
 import { isLLMConfigReady } from '@/lib/ai/model-provider'
 import {
@@ -55,6 +56,7 @@ export function useLessonGenerationRuntime({
   const config = useLLMConfig()
   const keySource = useLLMConfigStore(s => s.keySource)
   const autoQuota = useLLMConfigStore(s => s.autoQuota)
+  const knownLanguages = useKnownLanguagesStore(s => s.knownLanguages)
   const scopeSignal = useClassroomAbortScope()
   const { activity, beginGenerationRun, endGenerationRun } = useClassroomActivity()
   const generationRunning = activity.generationRunning
@@ -259,9 +261,16 @@ export function useLessonGenerationRuntime({
     // Deep-link from the tutorial ("learn `cj.var.immutable` with AI"): pass
     // the requested concept id through so the agent anchors the opening
     // lesson on that topic instead of a generic intro.
-    const summary = initialTopic
+    const knownLanguageLabels = knownLanguages.map(lang => LANGUAGE_LABELS[lang])
+    const backgroundSummary = knownLanguageLabels.length > 0
+      ? ` Learner declared familiar languages from Static Tour comparison picker: ${knownLanguageLabels.join(', ')}.`
+      : ''
+    const baseSummary = initialTopic
       ? `Classroom opened. Learner requested to start with topic: ${initialTopic}`
       : 'Classroom opened.'
+    const summary = backgroundSummary
+      ? `${baseSummary}${baseSummary.endsWith('.') ? '' : '.'}${backgroundSummary}`
+      : baseSummary
     const classroomOpenedEvent: ClassroomEvent = {
       type: 'classroom_opened',
       createdAt: Date.now(),
@@ -270,7 +279,7 @@ export function useLessonGenerationRuntime({
     if (initialTopic)
       classroomOpenedEvent.requestedConceptId = initialTopic
     void runLessonGenerationForEvent(classroomOpenedEvent, false, 'initial:classroom_opened')
-  }, [configReady, enabled, hydrated, initialTopic, runLessonGenerationForEvent, session.eventQueue.length, session.stream.length, sharedQuotaExhausted])
+  }, [configReady, enabled, hydrated, initialTopic, knownLanguages, runLessonGenerationForEvent, session.eventQueue.length, session.stream.length, sharedQuotaExhausted])
 
   useEffect(() => {
     if (hasAppliedTopicEntryRef.current)
