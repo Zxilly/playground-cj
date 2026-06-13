@@ -1,7 +1,8 @@
 import { createContext } from 'react'
 import type { KnowledgeSource } from '@/lib/teach/knowledge/source'
-import type { EditorBridge } from '@/lib/teach/teacher/toolkit'
+import type { EditorBridge, TeacherRunner } from '@/lib/teach/teacher/toolkit'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
+import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
 
 /**
@@ -16,6 +17,9 @@ import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcom
  *    MCP) the teacher grounds factual claims against.
  *  - `editor`          — the shared Monaco bridge used by `code_task` blocks and
  *    teacher demonstrations.
+ *  - `runner`          — the remote Cangjie runner `code_task` blocks compile and
+ *    run against. Optional so document-only views and isolated tests can omit it;
+ *    when absent, interactive `code_task` blocks fall back to their own default.
  *  - `now`             — injected clock; surfaces never read `Date.now()` directly.
  *
  * Holding these behind one context keeps the views decoupled from how the shell
@@ -26,7 +30,11 @@ export interface WorkspaceContextValue {
   retrievalStore: RetrievalStoreLike
   knowledge: KnowledgeSource
   editor: EditorBridge
+  runner?: TeacherRunner
   now: () => number
 }
+
+/** Re-exported for convenience so surfaces can type a runner result. */
+export type { RunResult }
 
 export const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
