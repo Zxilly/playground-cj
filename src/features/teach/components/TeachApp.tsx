@@ -58,6 +58,7 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   const { repo } = collaborators
   const [hydration, setHydration] = useState<HydrationState>({ status: 'loading' })
   const [importError, setImportError] = useState<string | null>(null)
+  const [exportError, setExportError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const statusId = useId()
 
@@ -93,8 +94,17 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   }, [])
 
   const handleExport = useCallback(async () => {
-    const snapshot = await repo.exportAll()
-    downloadJson(`teach-workspace-${lang}.json`, JSON.stringify(snapshot, null, 2))
+    setExportError(null)
+    try {
+      const snapshot = await repo.exportAll()
+      downloadJson(`teach-workspace-${lang}.json`, JSON.stringify(snapshot, null, 2))
+    }
+    catch (error) {
+      // A resilient export can still reject (storage read failure / serialization
+      // error). Surface it instead of leaking an unhandled rejection from the
+      // `void handleExport()` call site.
+      setExportError(error instanceof Error ? error.message : String(error))
+    }
   }, [repo, lang])
 
   const handleImportFile = useCallback(
@@ -193,6 +203,12 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
             <p data-testid="workspace-import-error" role="alert" className="shrink-0 bg-destructive/10 px-4 py-1.5 text-xs text-destructive" id={statusId}>
               <Trans>导入失败：</Trans>
               {importError}
+            </p>
+          )}
+          {exportError && (
+            <p data-testid="workspace-export-error" role="alert" className="shrink-0 bg-destructive/10 px-4 py-1.5 text-xs text-destructive">
+              <Trans>导出失败：</Trans>
+              {exportError}
             </p>
           )}
           <div className="min-h-0 flex-1">

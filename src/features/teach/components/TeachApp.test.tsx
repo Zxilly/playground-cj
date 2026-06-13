@@ -111,6 +111,19 @@ describe('teachAppContent', () => {
     expect(clickSpy).toHaveBeenCalled()
   })
 
+  it('surfaces an export failure instead of leaking an unhandled rejection', async () => {
+    const exportAll = vi.fn(async (): Promise<WorkspaceSnapshot> => {
+      throw new Error('storage read failed')
+    })
+    const repo = makeRepo({ exportAll })
+    render(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
+    await screen.findByTestId('teach-workspace-shell')
+
+    fireEvent.click(screen.getByTestId('workspace-export'))
+    const banner = await screen.findByTestId('workspace-export-error')
+    expect(banner.textContent).toContain('storage read failed')
+  })
+
   it('imports a workspace snapshot from a selected JSON file', async () => {
     const importAll = vi.fn(async () => undefined)
     const repo = makeRepo({ importAll })

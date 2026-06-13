@@ -300,9 +300,15 @@ describe('teach workspace e2e', () => {
     const lessonsNav = page.getByTestId('workspace-nav-lessons')
     expect(await lessonsNav.isDisabled()).toBe(true)
 
-    // Send the first message: the teacher sets the mission and authors lesson 1.
     const composer = page.getByRole('textbox', { name: '输入消息' })
     await composer.waitFor({ state: 'visible' })
+
+    // The mission-first gate's "和老师聊聊" button seeds the chat composer through
+    // the workspace prefill signal so the learner can start the interview.
+    await page.getByTestId('mission-gate-start').click()
+    await expect.poll(() => composer.inputValue()).toBe('我想学仓颉，帮我一起把学习目标定下来。')
+
+    // Send the first message: the teacher sets the mission and authors lesson 1.
     await composer.fill('我想学仓颉，帮我定个目标')
     await composer.press('Enter')
 
