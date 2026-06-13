@@ -2,9 +2,12 @@ import type {
   Block,
   CalloutBlockSchemaType,
   CodeSampleBlockSchemaType,
+  FollowupPromptBlockSchemaType,
   GlossaryRefBlockSchemaType,
   HeadingBlockSchemaType,
+  LessonLinkBlockSchemaType,
   ProseBlockSchemaType,
+  ReferenceLinkBlockSchemaType,
 } from '@/lib/teach/lessons/blocks'
 import type { BlockOutcome } from '@/lib/teach/lessons/lesson'
 
@@ -45,3 +48,6 @@ export type HeadingBlockProps = BlockComponentProps<HeadingBlockSchemaType>
 export type CalloutBlockProps = BlockComponentProps<CalloutBlockSchemaType>
 export type CodeSampleBlockProps = BlockComponentProps<CodeSampleBlockSchemaType>
 export type GlossaryRefBlockProps = BlockComponentProps<GlossaryRefBlockSchemaType>
+export type LessonLinkBlockProps = BlockComponentProps<LessonLinkBlockSchemaType>
+export type ReferenceLinkBlockProps = BlockComponentProps<ReferenceLinkBlockSchemaType>
+export type FollowupPromptBlockProps = BlockComponentProps<FollowupPromptBlockSchemaType>
