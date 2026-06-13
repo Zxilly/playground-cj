@@ -9,7 +9,9 @@ const MUTATING_METHODS = [
   'setNotes',
   'appendLesson',
   'updateLessonState',
+  'recordBlockOutcome',
   'upsertReference',
+  'replaceRetrieval',
   'importAll',
 ] as const satisfies readonly (keyof WorkspaceRepository)[]
 

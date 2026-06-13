@@ -1,5 +1,7 @@
 import type { IDBPDatabase } from 'idb'
-import type { Lesson, LessonDraft, LessonState } from '../lessons/lesson'
+import type { z } from 'zod'
+import type { BlockOutcome, Lesson, LessonDraft, LessonState } from '../lessons/lesson'
+import type { RetrievalItem } from '../retrieval/types'
 import type { WorkspaceRepository } from './repository'
 import type {
   Glossary,
@@ -12,7 +14,14 @@ import type {
   WorkspaceSnapshot,
 } from './documents'
 import { openDB } from 'idb'
+import { lessonSchema } from '../lessons/lesson'
+import { retrievalItemSchema } from '../retrieval/types'
 import {
+  glossarySchema,
+  learningRecordSchema,
+  missionSchema,
+  notesSchema,
+  referenceDocSchema,
   WORKSPACE_SNAPSHOT_VERSION,
   workspaceSnapshotSchema,
 } from './documents'
@@ -46,6 +55,35 @@ function formatSequence(n: number): string {
 }
 
 /**
+ * Canonical key for glossary-term identity: trim surrounding whitespace and
+ * lowercase. Must stay in sync with the lookup key used by GlossaryProvider so
+ * a term has exactly one storage slot regardless of casing/whitespace.
+ */
+function normalizeTerm(term: string): string {
+  return term.trim().toLowerCase()
+}
+
+/**
+ * Keep only the records that satisfy `schema`, logging a single warning per
+ * store when any are dropped. Used by `exportAll` to make the export resilient
+ * to individually corrupt rows instead of failing the whole snapshot.
+ */
+function filterValid<T>(records: unknown[], schema: z.ZodType<T>, store: string): T[] {
+  const valid: T[] = []
+  let dropped = 0
+  for (const record of records) {
+    const result = schema.safeParse(record)
+    if (result.success)
+      valid.push(result.data)
+    else
+      dropped += 1
+  }
+  if (dropped > 0)
+    console.warn(`exportAll: dropped ${dropped} invalid record(s) from "${store}"`)
+  return valid
+}
+
+/**
  * Migration hook. Each schema version owns a branch that brings the database up
  * to that version's store layout. Bump {@link DB_VERSION} and add a branch when
  * the layout evolves.
@@ -71,11 +109,23 @@ function upgrade(db: IDBPDatabase, oldVersion: number): void {
  * {@link WorkspaceSnapshot}; `importAll` validates with `workspaceSnapshotSchema`
  * and clears every store before applying the snapshot (no merge semantics).
  */
-export function createIndexedDbWorkspaceRepository(dbName: string): WorkspaceRepository {
+export function createIndexedDbWorkspaceRepository(
+  dbName: string,
+  open: typeof openDB = openDB,
+): WorkspaceRepository {
   let dbPromise: Promise<IDBPDatabase> | null = null
 
   function getDb(): Promise<IDBPDatabase> {
-    dbPromise ??= openDB(dbName, DB_VERSION, { upgrade })
+    // Cache the in-flight/resolved open so the database is opened exactly once,
+    // but if the open REJECTS, drop the cached promise so a later call can
+    // retry. Caching a rejected promise would wedge the repository permanently:
+    // every subsequent call would re-await the same failure with no path to
+    // recovery. Assigning before attaching `.catch` keeps the open-once,
+    // concurrency-safe semantics (concurrent callers share this one promise).
+    dbPromise ??= open(dbName, DB_VERSION, { upgrade }).catch((err) => {
+      dbPromise = null
+      throw err
+    })
     return dbPromise
   }
 
@@ -167,7 +217,12 @@ export function createIndexedDbWorkspaceRepository(dbName: string): WorkspaceRep
       return enqueue(async () => {
         const db = await getDb()
         const glossary = (await db.get(META_STORE, GLOSSARY_KEY) as Glossary | undefined) ?? EMPTY_GLOSSARY
-        const terms = glossary.terms.filter(t => t.term !== term.term)
+        // Dedupe on a normalized key (trim + lowercase) so the storage
+        // uniqueness key matches how GlossaryProvider looks terms up. Without
+        // this, "Option" and "option" would coexist as two entries yet only one
+        // would ever be found — last write must replace the same concept.
+        const key = normalizeTerm(term.term)
+        const terms = glossary.terms.filter(t => normalizeTerm(t.term) !== key)
         terms.push(term)
         await db.put(META_STORE, { terms } satisfies Glossary, GLOSSARY_KEY)
       })
@@ -223,6 +278,33 @@ export function createIndexedDbWorkspaceRepository(dbName: string): WorkspaceRep
       })
     },
 
+    recordBlockOutcome(lessonId: string, blockId: string, outcome: BlockOutcome) {
+      // Read-modify-write INSIDE the serial queue: two outcome writes for
+      // different blocks of the same lesson would otherwise both read the same
+      // base state and the later put would clobber the earlier block's progress
+      // (the #6/#14 lost-update bug). Serializing the whole cycle makes the
+      // merge atomic.
+      return enqueue(async () => {
+        const db = await getDb()
+        const existing = await db.get(LESSONS_STORE, lessonId) as Lesson | undefined
+        if (!existing)
+          return null
+        const status: LessonState['status'] = existing.state.status === 'completed'
+          ? 'completed'
+          : 'in_progress'
+        const updated: Lesson = {
+          ...existing,
+          state: {
+            ...existing.state,
+            status,
+            blockProgress: { ...existing.state.blockProgress, [blockId]: outcome },
+          },
+        }
+        await db.put(LESSONS_STORE, updated)
+        return updated
+      })
+    },
+
     async listReferences() {
       const db = await getDb()
       const references = await db.getAll(REFERENCES_STORE) as ReferenceDoc[]
@@ -242,28 +324,62 @@ export function createIndexedDbWorkspaceRepository(dbName: string): WorkspaceRep
       })
     },
 
+    async listRetrieval(): Promise<RetrievalItem[]> {
+      const db = await getDb()
+      const items = await db.getAll(RETRIEVAL_STORE) as RetrievalItem[]
+      return items.sort((a, b) => a.id.localeCompare(b.id))
+    },
+
+    replaceRetrieval(items: RetrievalItem[]) {
+      return enqueue(async () => {
+        const db = await getDb()
+        // Clear + repopulate in ONE transaction so a concurrent read (reads are
+        // not enqueued) can never observe an empty schedule mid-replace.
+        const tx = db.transaction(RETRIEVAL_STORE, 'readwrite')
+        const store = tx.objectStore(RETRIEVAL_STORE)
+        void store.clear()
+        for (const item of items) void store.put(item)
+        await tx.done
+      })
+    },
+
     async exportAll(): Promise<WorkspaceSnapshot> {
       const db = await getDb()
       const [mission, glossary, notes, learningRecords, lessons, references, retrieval] = await Promise.all([
-        db.get(META_STORE, MISSION_KEY) as Promise<Mission | undefined>,
-        db.get(META_STORE, GLOSSARY_KEY) as Promise<Glossary | undefined>,
-        db.get(META_STORE, NOTES_KEY) as Promise<Notes | undefined>,
-        db.getAll(LEARNING_RECORDS_STORE) as Promise<WorkspaceSnapshot['learningRecords']>,
-        db.getAll(LESSONS_STORE) as Promise<WorkspaceSnapshot['lessons']>,
-        db.getAll(REFERENCES_STORE) as Promise<WorkspaceSnapshot['references']>,
-        db.getAll(RETRIEVAL_STORE) as Promise<WorkspaceSnapshot['retrieval']>,
+        db.get(META_STORE, MISSION_KEY) as Promise<unknown>,
+        db.get(META_STORE, GLOSSARY_KEY) as Promise<unknown>,
+        db.get(META_STORE, NOTES_KEY) as Promise<unknown>,
+        db.getAll(LEARNING_RECORDS_STORE) as Promise<unknown[]>,
+        db.getAll(LESSONS_STORE) as Promise<unknown[]>,
+        db.getAll(REFERENCES_STORE) as Promise<unknown[]>,
+        db.getAll(RETRIEVAL_STORE) as Promise<unknown[]>,
       ])
+
+      // Best-effort export: validate each record with its own item schema and
+      // drop the ones that fail, keeping every good record. A single corrupt
+      // entry (e.g. from a partially-applied migration or a hand-edited store)
+      // must never make the whole export throw and leave the user unable to
+      // back up any of their data.
+      const missionResult = missionSchema.nullable().safeParse(mission ?? null)
+      const glossaryResult = glossarySchema.safeParse(glossary ?? EMPTY_GLOSSARY)
+      const notesResult = notesSchema.safeParse(notes ?? EMPTY_NOTES)
 
       const snapshot: WorkspaceSnapshot = {
         version: WORKSPACE_SNAPSHOT_VERSION,
-        mission: mission ?? null,
-        learningRecords: [...learningRecords].sort((a, b) => a.id.localeCompare(b.id)),
-        glossary: glossary ?? EMPTY_GLOSSARY,
-        lessons: [...lessons].sort((a, b) => a.id.localeCompare(b.id)),
-        references: [...references].sort((a, b) => a.id.localeCompare(b.id)),
-        notes: notes ?? EMPTY_NOTES,
-        retrieval: [...retrieval].sort((a, b) => a.id.localeCompare(b.id)),
+        mission: missionResult.success ? missionResult.data : null,
+        learningRecords: filterValid(learningRecords, learningRecordSchema, LEARNING_RECORDS_STORE)
+          .sort((a, b) => a.id.localeCompare(b.id)),
+        glossary: glossaryResult.success ? glossaryResult.data : EMPTY_GLOSSARY,
+        lessons: filterValid(lessons, lessonSchema, LESSONS_STORE)
+          .sort((a, b) => a.id.localeCompare(b.id)),
+        references: filterValid(references, referenceDocSchema, REFERENCES_STORE)
+          .sort((a, b) => a.id.localeCompare(b.id)),
+        notes: notesResult.success ? notesResult.data : EMPTY_NOTES,
+        retrieval: filterValid(retrieval, retrievalItemSchema, RETRIEVAL_STORE)
+          .sort((a, b) => a.id.localeCompare(b.id)),
       }
+      // The filtered snapshot is built from already-validated parts, so this
+      // final parse normalizes defaults and is expected to succeed.
       return workspaceSnapshotSchema.parse(snapshot)
     },
 

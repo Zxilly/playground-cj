@@ -1,4 +1,5 @@
-import type { Lesson, LessonDraft, LessonState } from '../lessons/lesson'
+import type { BlockOutcome, Lesson, LessonDraft, LessonState } from '../lessons/lesson'
+import type { RetrievalItem } from '../retrieval/types'
 import type {
   Glossary,
   GlossaryTerm,
@@ -36,9 +37,27 @@ export interface WorkspaceRepository {
   getLesson: (id: string) => Promise<Lesson | null>
   appendLesson: (draft: LessonDraft) => Promise<Lesson>
   updateLessonState: (id: string, state: LessonState) => Promise<void>
+  /**
+   * Atomically merge a single block's outcome into a lesson's progress.
+   *
+   * Runs inside the serial write queue as a read-modify-write so concurrent
+   * outcome writes for different blocks never lose each other's update (the
+   * lost-update hazard a naive `updateLessonState` round-trip would create).
+   * Promotes `unstarted` lessons to `in_progress`; leaves `completed` lessons
+   * at `completed`. Returns the updated lesson, or `null` if it does not exist.
+   */
+  recordBlockOutcome: (lessonId: string, blockId: string, outcome: BlockOutcome) => Promise<Lesson | null>
   listReferences: () => Promise<ReferenceDoc[]>
   getReference: (id: string) => Promise<ReferenceDoc | null>
   upsertReference: (ref: ReferenceDoc) => Promise<void>
+  /** All persisted spaced-retrieval items. */
+  listRetrieval: () => Promise<RetrievalItem[]>
+  /**
+   * Replace the entire retrieval schedule. Clears the retrieval store and
+   * writes `items` in a single transaction so a concurrent read never observes
+   * an empty schedule mid-replace.
+   */
+  replaceRetrieval: (items: RetrievalItem[]) => Promise<void>
   exportAll: () => Promise<WorkspaceSnapshot>
   importAll: (snapshot: WorkspaceSnapshot) => Promise<void>
 }

@@ -48,9 +48,12 @@ function createFakeRepo(seed: {
       throw new Error('not implemented')
     },
     updateLessonState: async (_id: string, _state: LessonState) => {},
+    recordBlockOutcome: async () => null,
     listReferences: async () => [] as ReferenceDoc[],
     getReference: async () => null,
     upsertReference: async () => {},
+    listRetrieval: async () => [] as RetrievalItem[],
+    replaceRetrieval: async () => {},
     exportAll: async () => ({} as WorkspaceSnapshot),
     importAll: async () => {},
   }

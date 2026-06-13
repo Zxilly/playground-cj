@@ -25,6 +25,7 @@ function createMemoryRepo(): WorkspaceRepository {
   let notes: Notes = { body: '' }
   const lessons: Lesson[] = []
   const references: ReferenceDoc[] = []
+  const retrieval: RetrievalItem[] = []
   let recordSeq = 0
   let lessonSeq = 0
   const pad = (n: number) => String(n).padStart(4, '0')
@@ -83,6 +84,17 @@ function createMemoryRepo(): WorkspaceRepository {
       if (lesson)
         lesson.state = state
     },
+    recordBlockOutcome: async (lessonId, blockId, outcome) => {
+      const lesson = lessons.find(l => l.id === lessonId)
+      if (!lesson)
+        return null
+      lesson.state = {
+        ...lesson.state,
+        status: lesson.state.status === 'completed' ? 'completed' : 'in_progress',
+        blockProgress: { ...lesson.state.blockProgress, [blockId]: outcome },
+      }
+      return lesson
+    },
     listReferences: async () => [...references],
     getReference: async (id: string) => references.find(r => r.id === id) ?? null,
     upsertReference: async (ref: ReferenceDoc) => {
@@ -91,6 +103,11 @@ function createMemoryRepo(): WorkspaceRepository {
         references[idx] = ref
       else
         references.push(ref)
+    },
+    listRetrieval: async () => [...retrieval],
+    replaceRetrieval: async (items) => {
+      retrieval.length = 0
+      retrieval.push(...items)
     },
     exportAll: async () => ({} as WorkspaceSnapshot),
     importAll: async () => {},
