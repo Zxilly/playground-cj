@@ -1,0 +1,341 @@
+import type { KnowledgeHit, KnowledgeSource } from '../knowledge/source'
+import type { RunResult } from '../feedback/run-cangjie'
+import type { RetrievalItem } from '../retrieval/types'
+import type {
+  Glossary,
+  GlossaryTerm,
+  LearningRecord,
+  LearningRecordDraft,
+  Mission,
+  Notes,
+  ReferenceDoc,
+  WorkspaceSnapshot,
+} from '../workspace/documents'
+import type { WorkspaceRepository } from '../workspace/repository'
+import type { Lesson, LessonDraft, LessonState } from '../lessons/lesson'
+import type { EditorBridge, RetrievalStore, TeacherRunner } from './toolkit'
+import { describe, expect, it, vi } from 'vitest'
+import { createTeacherToolkit } from './toolkit'
+
+/** In-memory {@link WorkspaceRepository} fake that actually persists writes. */
+function createMemoryRepo(): WorkspaceRepository {
+  let mission: Mission | null = null
+  const learningRecords: LearningRecord[] = []
+  let glossary: Glossary = { terms: [] }
+  let notes: Notes = { body: '' }
+  const lessons: Lesson[] = []
+  const references: ReferenceDoc[] = []
+  let recordSeq = 0
+  let lessonSeq = 0
+  const pad = (n: number) => String(n).padStart(4, '0')
+
+  return {
+    getMission: async () => mission,
+    setMission: async (m) => {
+      mission = m
+    },
+    listLearningRecords: async () => [...learningRecords],
+    appendLearningRecord: async (draft: LearningRecordDraft) => {
+      recordSeq += 1
+      const record: LearningRecord = {
+        id: pad(recordSeq),
+        title: draft.title,
+        body: draft.body,
+        evidence: draft.evidence,
+        status: 'active',
+        createdAt: 1,
+      }
+      learningRecords.push(record)
+      return record
+    },
+    supersedeLearningRecord: async (id, supersededBy) => {
+      const record = learningRecords.find(r => r.id === id)
+      if (record) {
+        record.status = 'superseded'
+        record.supersededBy = supersededBy
+      }
+    },
+    getGlossary: async () => glossary,
+    upsertGlossaryTerm: async (term: GlossaryTerm) => {
+      const next = glossary.terms.filter(t => t.term !== term.term)
+      next.push(term)
+      glossary = { terms: next }
+    },
+    getNotes: async () => notes,
+    setNotes: async (n) => {
+      notes = n
+    },
+    listLessons: async () => [...lessons],
+    getLesson: async (id: string) => lessons.find(l => l.id === id) ?? null,
+    appendLesson: async (draft: LessonDraft) => {
+      lessonSeq += 1
+      const lesson: Lesson = {
+        ...draft,
+        id: pad(lessonSeq),
+        state: { status: 'unstarted', blockProgress: {} },
+        createdAt: 1,
+      }
+      lessons.push(lesson)
+      return lesson
+    },
+    updateLessonState: async (id: string, state: LessonState) => {
+      const lesson = lessons.find(l => l.id === id)
+      if (lesson)
+        lesson.state = state
+    },
+    listReferences: async () => [...references],
+    getReference: async (id: string) => references.find(r => r.id === id) ?? null,
+    upsertReference: async (ref: ReferenceDoc) => {
+      const idx = references.findIndex(r => r.id === ref.id)
+      if (idx >= 0)
+        references[idx] = ref
+      else
+        references.push(ref)
+    },
+    exportAll: async () => ({} as WorkspaceSnapshot),
+    importAll: async () => {},
+  }
+}
+
+function createFakeKnowledge(hits: KnowledgeHit[]): KnowledgeSource & { search: ReturnType<typeof vi.fn> } {
+  const search = vi.fn(async () => hits)
+  return { id: 'cangjie-mcp', search }
+}
+
+function createFakeEditor(): EditorBridge & {
+  setCode: ReturnType<typeof vi.fn>
+  getCode: ReturnType<typeof vi.fn>
+} {
+  let code = 'main() {}'
+  const setCode = vi.fn(async (next: string) => {
+    code = next
+  })
+  const getCode = vi.fn(async () => code)
+  return { setCode, getCode }
+}
+
+function createFakeRunner(result: RunResult): TeacherRunner & { run: ReturnType<typeof vi.fn> } {
+  const run = vi.fn(async () => result)
+  return { run }
+}
+
+function createMemoryRetrievalStore(seed: RetrievalItem[] = []): RetrievalStore {
+  let items = [...seed]
+  return {
+    list: async () => [...items],
+    save: async (next) => {
+      items = [...next]
+    },
+  }
+}
+
+const runResult: RunResult = { ok: true, stdout: 'hi\n', stderr: '', exitCode: 0 }
+
+function setup(overrides: {
+  knowledgeHits?: KnowledgeHit[]
+  retrieval?: RetrievalItem[]
+  now?: () => number
+} = {}) {
+  const repo = createMemoryRepo()
+  const knowledge = createFakeKnowledge(overrides.knowledgeHits ?? [])
+  const editor = createFakeEditor()
+  const runner = createFakeRunner(runResult)
+  const retrievalStore = createMemoryRetrievalStore(overrides.retrieval ?? [])
+  const now = overrides.now ?? (() => 123)
+  const toolkit = createTeacherToolkit({ repo, knowledge, editor, runner, retrievalStore, now })
+  return { repo, knowledge, editor, runner, retrievalStore, toolkit }
+}
+
+async function call<T = unknown>(tool: unknown, input: unknown): Promise<T> {
+  const execute = (tool as { execute: (input: unknown, options: unknown) => Promise<T> }).execute
+  return execute(input, { toolCallId: 't', messages: [] })
+}
+
+describe('createTeacherToolkit', () => {
+  it('exposes the full tool set', () => {
+    const { toolkit } = setup()
+    const names = Object.keys(toolkit)
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'read_mission',
+        'read_learning_records',
+        'read_glossary',
+        'read_notes',
+        'list_lessons',
+        'read_lesson',
+        'list_references',
+        'read_learner_state',
+        'set_mission',
+        'append_learning_record',
+        'supersede_learning_record',
+        'upsert_glossary_term',
+        'set_notes',
+        'upsert_reference',
+        'create_lesson',
+        'update_lesson_state',
+        'mark_lesson_complete',
+        'search_docs',
+        'set_editor_code',
+        'run_code',
+        'read_run_result',
+        'read_editor_code',
+      ]),
+    )
+  })
+
+  it('every tool has a description and an inputSchema', () => {
+    const { toolkit } = setup()
+    for (const [name, tool] of Object.entries(toolkit)) {
+      expect(typeof (tool as { description?: unknown }).description, name).toBe('string')
+      expect((tool as { inputSchema?: unknown }).inputSchema, name).toBeDefined()
+    }
+  })
+
+  it('create_lesson uses lessonDraftSchema as its inputSchema and persists, returning the id', async () => {
+    const { toolkit, repo } = setup()
+    const draft = {
+      title: 'let vs var',
+      missionLink: 'build a CLI',
+      skillFocus: 'declare bindings',
+      zpdRationale: 'knows nothing yet',
+      blocks: [{ type: 'prose', markdown: 'x' }],
+      citations: [],
+    }
+    const result = await call<{ ok: boolean, id?: string }>(toolkit.create_lesson, draft)
+    expect(result.ok).toBe(true)
+    expect(result.id).toBe('0001')
+    const lessons = await repo.listLessons()
+    expect(lessons).toHaveLength(1)
+    expect(lessons[0].title).toBe('let vs var')
+
+    // The inputSchema must reject an invalid draft (empty blocks).
+    const schema = (toolkit.create_lesson as { inputSchema: { safeParse: (v: unknown) => { success: boolean } } }).inputSchema
+    expect(schema.safeParse({ ...draft, blocks: [] }).success).toBe(false)
+    expect(schema.safeParse(draft).success).toBe(true)
+  })
+
+  it('search_docs forwards the query and limit to the knowledge source', async () => {
+    const hits: KnowledgeHit[] = [{ sourceId: 'cangjie-mcp', ref: 'std/option', title: 'Option', snippet: 's' }]
+    const { toolkit, knowledge } = setup({ knowledgeHits: hits })
+    const result = await call<{ ok: boolean, hits?: KnowledgeHit[] }>(toolkit.search_docs, { query: 'option', limit: 3 })
+    expect(knowledge.search).toHaveBeenCalledWith('option', { limit: 3 })
+    expect(result.ok).toBe(true)
+    expect(result.hits).toEqual(hits)
+  })
+
+  it('set_mission persists and read_mission reflects it (with a server-supplied timestamp)', async () => {
+    const { toolkit, repo } = setup({ now: () => 999 })
+    await call(toolkit.set_mission, {
+      topic: 'Cangjie CLI',
+      why: 'ship a tool',
+      successLooksLike: ['parse args'],
+      constraints: [],
+      outOfScope: [],
+    })
+    const mission = await repo.getMission()
+    expect(mission?.topic).toBe('Cangjie CLI')
+    expect(mission?.updatedAt).toBe(999)
+
+    const read = await call<{ ok: boolean, mission?: Mission | null }>(toolkit.read_mission, {})
+    expect(read.mission?.topic).toBe('Cangjie CLI')
+  })
+
+  it('set_editor_code drives the editor bridge', async () => {
+    const { toolkit, editor } = setup()
+    await call(toolkit.set_editor_code, { code: 'let x = 1' })
+    expect(editor.setCode).toHaveBeenCalledWith('let x = 1')
+  })
+
+  it('read_editor_code reads from the editor bridge', async () => {
+    const { toolkit, editor } = setup()
+    const result = await call<{ ok: boolean, code?: string }>(toolkit.read_editor_code, {})
+    expect(editor.getCode).toHaveBeenCalled()
+    expect(result.code).toBe('main() {}')
+  })
+
+  it('run_code runs through the runner and read_run_result returns the last result', async () => {
+    const { toolkit, runner } = setup()
+    const ran = await call<{ ok: boolean, result?: RunResult }>(toolkit.run_code, { code: 'main() {}' })
+    expect(runner.run).toHaveBeenCalledWith('main() {}')
+    expect(ran.result?.stdout).toBe('hi\n')
+
+    const last = await call<{ ok: boolean, result?: RunResult | null }>(toolkit.read_run_result, {})
+    expect(last.result?.stdout).toBe('hi\n')
+  })
+
+  it('append_learning_record persists a record and returns its id', async () => {
+    const { toolkit, repo } = setup()
+    const result = await call<{ ok: boolean, id?: string }>(toolkit.append_learning_record, {
+      title: 'understands let vs var',
+      body: 'learner explained immutability unprompted',
+    })
+    expect(result.ok).toBe(true)
+    expect(result.id).toBe('0001')
+    const records = await repo.listLearningRecords()
+    expect(records).toHaveLength(1)
+    expect(records[0].status).toBe('active')
+  })
+
+  it('upsert_glossary_term adds a term with a server timestamp', async () => {
+    const { toolkit, repo } = setup({ now: () => 555 })
+    await call(toolkit.upsert_glossary_term, { term: 'let', definition: 'immutable binding', avoid: [] })
+    const glossary = await repo.getGlossary()
+    expect(glossary.terms).toHaveLength(1)
+    expect(glossary.terms[0].term).toBe('let')
+    expect(glossary.terms[0].addedAt).toBe(555)
+  })
+
+  it('mark_lesson_complete sets the lesson status to completed', async () => {
+    const { toolkit, repo } = setup({ now: () => 777 })
+    await repo.appendLesson({
+      title: 't',
+      missionLink: 'm',
+      skillFocus: 's',
+      zpdRationale: 'z',
+      blocks: [{ type: 'prose', markdown: 'x' }],
+      citations: [],
+    })
+    const result = await call<{ ok: boolean }>(toolkit.mark_lesson_complete, { id: '0001' })
+    expect(result.ok).toBe(true)
+    const lesson = await repo.getLesson('0001')
+    expect(lesson?.state.status).toBe('completed')
+    expect(lesson?.state.completedAt).toBe(777)
+  })
+
+  it('read_learner_state aggregates repo + due retrieval against now', async () => {
+    const retrieval: RetrievalItem[] = [
+      { id: 'r1', lessonId: '0001', blockId: 'b1', kind: 'quiz', dueAt: 100, intervalDays: 1, ease: 2.5, history: [] },
+      { id: 'r2', lessonId: '0001', blockId: 'b2', kind: 'recall', dueAt: 9999, intervalDays: 1, ease: 2.5, history: [] },
+    ]
+    const { toolkit, repo } = setup({ retrieval, now: () => 1000 })
+    await repo.setMission({ topic: 't', why: 'w', successLooksLike: ['s'], constraints: [], outOfScope: [], updatedAt: 1 })
+    const result = await call<{ ok: boolean, state?: { mission: Mission | null, dueRetrieval: RetrievalItem[] } }>(
+      toolkit.read_learner_state,
+      {},
+    )
+    expect(result.ok).toBe(true)
+    expect(result.state?.mission?.topic).toBe('t')
+    expect(result.state?.dueRetrieval.map(i => i.id)).toEqual(['r1'])
+  })
+
+  it('upsert_reference persists a reference with a server timestamp', async () => {
+    const { toolkit, repo } = setup({ now: () => 444 })
+    await call(toolkit.upsert_reference, {
+      id: 'ref-1',
+      title: 'syntax card',
+      blocks: [{ type: 'prose', markdown: 'x' }],
+    })
+    const ref = await repo.getReference('ref-1')
+    expect(ref?.title).toBe('syntax card')
+    expect(ref?.updatedAt).toBe(444)
+  })
+
+  it('supersede_learning_record marks the record superseded', async () => {
+    const { toolkit, repo } = setup()
+    await repo.appendLearningRecord({ title: 'a', body: 'b' })
+    await repo.appendLearningRecord({ title: 'c', body: 'd' })
+    await call(toolkit.supersede_learning_record, { id: '0001', supersededBy: '0002' })
+    const records = await repo.listLearningRecords()
+    expect(records.find(r => r.id === '0001')?.status).toBe('superseded')
+  })
+})
