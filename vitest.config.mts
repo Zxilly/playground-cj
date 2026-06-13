@@ -135,6 +135,12 @@ export default defineConfig({
           sequence: {
             concurrent: false,
           },
+          // Each e2e file starts its own Next dev server, and Next 16 holds a
+          // per-directory dev lock (`.next/dev/lock`). Running e2e files in
+          // parallel workers makes them race for that lock — the loser exits with
+          // "Another next dev server is already running". Serialize the files so
+          // only one dev server is live at a time.
+          fileParallelism: false,
         },
       },
     ],
