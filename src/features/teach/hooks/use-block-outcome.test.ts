@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { LessonState } from '@/lib/teach/lessons/lesson'
+import type { BlockOutcome, Lesson, LessonState } from '@/lib/teach/lessons/lesson'
 import type { RetrievalItem } from '@/lib/teach/retrieval/types'
 import type { RetrievalStoreLike } from './use-block-outcome'
 import { useBlockOutcome } from './use-block-outcome'
@@ -17,66 +17,128 @@ function makeRetrievalStore(initial: RetrievalItem[] = []) {
   return store
 }
 
+/**
+ * An in-memory stand-in for the atomic `repo.recordBlockOutcome(lessonId, ...)`
+ * (bound to one lesson). It merges a single block's outcome into the lesson's
+ * persisted `blockProgress` exactly like the real repository does — reading the
+ * latest persisted state, not a caller snapshot — so it exercises the
+ * lost-update fix: two block writes never clobber each other's progress.
+ */
+function makeRecorder(lesson: Lesson) {
+  let current = lesson
+  const record = vi.fn(async (blockId: string, outcome: BlockOutcome) => {
+    current = {
+      ...current,
+      state: {
+        ...current.state,
+        status: current.state.status === 'completed' ? 'completed' : 'in_progress',
+        blockProgress: { ...current.state.blockProgress, [blockId]: outcome },
+      },
+    }
+    return current
+  })
+  return { record, current: () => current }
+}
+
+function makeLesson(state: LessonState): Lesson {
+  return {
+    id: '0001',
+    title: 't',
+    missionLink: 'm',
+    skillFocus: 's',
+    zpdRationale: 'z',
+    blocks: [{ type: 'prose', markdown: 'x' }],
+    citations: [],
+    state,
+    createdAt: 1,
+  }
+}
+
 const emptyState: LessonState = { status: 'unstarted', blockProgress: {} }
 
 describe('useBlockOutcome', () => {
-  it('persists block progress and promotes the lesson to in_progress', async () => {
-    const persist = vi.fn()
+  it('records block progress atomically and promotes the lesson to in_progress', async () => {
+    const { record, current } = makeRecorder(makeLesson(emptyState))
     const retrievalStore = makeRetrievalStore()
     const { result } = renderHook(() =>
-      useBlockOutcome({ lessonId: '0001', state: emptyState, persist, retrievalStore, now: () => 1000 }))
+      useBlockOutcome({ lessonId: '0001', state: emptyState, record, retrievalStore, now: () => 1000 }))
 
     await act(async () => {
       await result.current('b0', 'quiz', { correct: true, lastAnswer: [0] })
     })
 
-    expect(persist).toHaveBeenCalledTimes(1)
-    const saved = persist.mock.calls[0][0] as LessonState
-    expect(saved.status).toBe('in_progress')
-    expect(saved.blockProgress.b0.correct).toBe(true)
-    expect(saved.blockProgress.b0.attempts).toBe(1)
-    expect(saved.blockProgress.b0.completedAt).toBe(1000)
-    expect(saved.blockProgress.b0.lastAnswer).toEqual([0])
+    expect(record).toHaveBeenCalledTimes(1)
+    const [blockId, outcome] = record.mock.calls[0]
+    expect(blockId).toBe('b0')
+    expect(outcome).toMatchObject({ correct: true, attempts: 1, completedAt: 1000, lastAnswer: [0] })
+    expect(current().state.status).toBe('in_progress')
+    expect(current().state.blockProgress.b0.correct).toBe(true)
+  })
+
+  it('does not lose a prior block when a second block is answered', async () => {
+    // The renderer's mount-time `state` closure only knows about b0. Answering b1
+    // must NOT wipe b0: the atomic recorder merges against the *current* persisted
+    // state, so both blocks survive. This is the #6/#14 lost-update regression.
+    const stateWithB0: LessonState = {
+      status: 'in_progress',
+      blockProgress: { b0: { attempts: 1, correct: true, completedAt: 1 } },
+    }
+    const { record, current } = makeRecorder(makeLesson(stateWithB0))
+    const retrievalStore = makeRetrievalStore()
+    // The hook is mounted with a STALE snapshot that does not yet include b0 at
+    // all (simulating the snapshot captured before b0 was answered).
+    const { result } = renderHook(() =>
+      useBlockOutcome({ lessonId: '0001', state: emptyState, record, retrievalStore, now: () => 2 }))
+
+    await act(async () => {
+      await result.current('b1', 'quiz', { correct: false })
+    })
+
+    const progress = current().state.blockProgress
+    expect(progress.b0).toBeDefined()
+    expect(progress.b0.correct).toBe(true)
+    expect(progress.b1).toBeDefined()
+    expect(progress.b1.correct).toBe(false)
   })
 
   it('increments attempts across repeated outcomes for the same block', async () => {
-    const persist = vi.fn()
-    const retrievalStore = makeRetrievalStore()
     const state: LessonState = {
       status: 'in_progress',
       blockProgress: { b0: { attempts: 2, correct: false } },
     }
+    const { record } = makeRecorder(makeLesson(state))
+    const retrievalStore = makeRetrievalStore()
     const { result } = renderHook(() =>
-      useBlockOutcome({ lessonId: '0001', state, persist, retrievalStore, now: () => 5 }))
+      useBlockOutcome({ lessonId: '0001', state, record, retrievalStore, now: () => 5 }))
 
     await act(async () => {
       await result.current('b0', 'quiz', { correct: true })
     })
 
-    const saved = persist.mock.calls[0][0] as LessonState
-    expect(saved.blockProgress.b0.attempts).toBe(3)
-    expect(saved.blockProgress.b0.correct).toBe(true)
+    const [, outcome] = record.mock.calls[0]
+    expect(outcome.attempts).toBe(3)
+    expect(outcome.correct).toBe(true)
   })
 
   it('does not downgrade a completed lesson back to in_progress', async () => {
-    const persist = vi.fn()
-    const retrievalStore = makeRetrievalStore()
     const state: LessonState = { status: 'completed', blockProgress: {}, completedAt: 1 }
+    const { record, current } = makeRecorder(makeLesson(state))
+    const retrievalStore = makeRetrievalStore()
     const { result } = renderHook(() =>
-      useBlockOutcome({ lessonId: '0001', state, persist, retrievalStore, now: () => 9 }))
+      useBlockOutcome({ lessonId: '0001', state, record, retrievalStore, now: () => 9 }))
 
     await act(async () => {
       await result.current('b1', 'recall_prompt', { grade: 'good', correct: true })
     })
 
-    expect((persist.mock.calls[0][0] as LessonState).status).toBe('completed')
+    expect(current().state.status).toBe('completed')
   })
 
   it('seeds a retrieval item for a quiz block on first correct answer', async () => {
-    const persist = vi.fn()
+    const { record } = makeRecorder(makeLesson(emptyState))
     const retrievalStore = makeRetrievalStore()
     const { result } = renderHook(() =>
-      useBlockOutcome({ lessonId: '0001', state: emptyState, persist, retrievalStore, now: () => 1000 }))
+      useBlockOutcome({ lessonId: '0001', state: emptyState, record, retrievalStore, now: () => 1000 }))
 
     await act(async () => {
       await result.current('b0', 'quiz', { correct: true })
@@ -90,10 +152,10 @@ describe('useBlockOutcome', () => {
   })
 
   it('maps a recall again grade onto the schedule', async () => {
-    const persist = vi.fn()
+    const { record } = makeRecorder(makeLesson(emptyState))
     const retrievalStore = makeRetrievalStore()
     const { result } = renderHook(() =>
-      useBlockOutcome({ lessonId: '0001', state: emptyState, persist, retrievalStore, now: () => 1000 }))
+      useBlockOutcome({ lessonId: '0001', state: emptyState, record, retrievalStore, now: () => 1000 }))
 
     await act(async () => {
       await result.current('b2', 'recall_prompt', { grade: 'again', correct: false })
@@ -107,7 +169,6 @@ describe('useBlockOutcome', () => {
   })
 
   it('advances an existing retrieval item instead of duplicating it', async () => {
-    const persist = vi.fn()
     const existing: RetrievalItem = {
       id: '0001:b0',
       lessonId: '0001',
@@ -118,9 +179,10 @@ describe('useBlockOutcome', () => {
       ease: 2.5,
       history: [{ at: 0, grade: 'good' }],
     }
+    const { record } = makeRecorder(makeLesson(emptyState))
     const retrievalStore = makeRetrievalStore([existing])
     const { result } = renderHook(() =>
-      useBlockOutcome({ lessonId: '0001', state: emptyState, persist, retrievalStore, now: () => 2000 }))
+      useBlockOutcome({ lessonId: '0001', state: emptyState, record, retrievalStore, now: () => 2000 }))
 
     await act(async () => {
       await result.current('b0', 'quiz', { correct: true })
@@ -133,16 +195,31 @@ describe('useBlockOutcome', () => {
   })
 
   it('does not schedule retrieval for non-quiz/recall blocks', async () => {
-    const persist = vi.fn()
+    const { record } = makeRecorder(makeLesson(emptyState))
     const retrievalStore = makeRetrievalStore()
     const { result } = renderHook(() =>
-      useBlockOutcome({ lessonId: '0001', state: emptyState, persist, retrievalStore, now: () => 1 }))
+      useBlockOutcome({ lessonId: '0001', state: emptyState, record, retrievalStore, now: () => 1 }))
 
     await act(async () => {
       await result.current('b0', 'code_task', { correct: true })
     })
 
     expect(retrievalStore.save).not.toHaveBeenCalled()
-    expect(persist).toHaveBeenCalledTimes(1)
+    expect(record).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips retrieval scheduling when the lesson no longer exists', async () => {
+    // recordBlockOutcome returns null for a missing lesson; the hook should not
+    // then seed a retrieval item for a lesson that is gone.
+    const record = vi.fn(async () => null)
+    const retrievalStore = makeRetrievalStore()
+    const { result } = renderHook(() =>
+      useBlockOutcome({ lessonId: '9999', state: emptyState, record, retrievalStore, now: () => 1 }))
+
+    await act(async () => {
+      await result.current('b0', 'quiz', { correct: true })
+    })
+
+    expect(retrievalStore.save).not.toHaveBeenCalled()
   })
 })

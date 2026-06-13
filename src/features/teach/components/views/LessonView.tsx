@@ -3,7 +3,7 @@
 import { useCallback } from 'react'
 import { BookOpen } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
-import type { LessonState } from '@/lib/teach/lessons/lesson'
+import type { BlockOutcome } from '@/lib/teach/lessons/lesson'
 import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
@@ -21,9 +21,10 @@ export interface LessonViewProps {
  * The single-lesson central viewport. Loads the selected lesson (and the
  * glossary the renderer's `glossary_ref` blocks resolve against) from the
  * workspace repository, then renders it with {@link LessonRenderer}. Block
- * outcomes are persisted back through `repo.updateLessonState`, and interactive
- * `code_task` blocks run through the injected workspace runner so the lesson
- * shares the same remote runner the teacher drives.
+ * outcomes are committed atomically through `repo.recordBlockOutcome` (so a
+ * second block's write cannot clobber an earlier block's progress), and
+ * interactive `code_task` blocks run through the injected workspace runner so
+ * the lesson shares the same remote runner the teacher drives.
  *
  * The component is keyed by `lessonId` in the shell so switching lessons
  * remounts it with fresh state rather than carrying over the prior lesson's
@@ -37,11 +38,9 @@ export function LessonView({ lessonId }: LessonViewProps) {
   )
   const { data: glossary } = useWorkspaceResource(() => repo.getGlossary(), [repo])
 
-  const persist = useCallback(
-    (state: LessonState) => {
-      if (lessonId)
-        return repo.updateLessonState(lessonId, state)
-    },
+  const record = useCallback(
+    (blockId: string, outcome: BlockOutcome) =>
+      lessonId ? repo.recordBlockOutcome(lessonId, blockId, outcome) : Promise.resolve(null),
     [repo, lessonId],
   )
 
@@ -75,7 +74,7 @@ export function LessonView({ lessonId }: LessonViewProps) {
         </header>
         <LessonRenderer
           lesson={lesson}
-          persist={persist}
+          record={record}
           retrievalStore={retrievalStore}
           now={now}
           runCode={runCode}

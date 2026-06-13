@@ -5,7 +5,7 @@ import { Trans } from '@lingui/react/macro'
 import type { Block } from '@/lib/teach/lessons/blocks'
 import type { Lesson } from '@/lib/teach/lessons/lesson'
 import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
-import type { PersistLessonState, RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
+import type { RecordBlockOutcome, RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
 import { useBlockOutcome } from '@/features/teach/hooks/use-block-outcome'
 import type { BlockOutcomeReport } from './blocks/block-props'
 import { ProseBlock } from './blocks/ProseBlock'
@@ -28,8 +28,11 @@ function blockId(index: number): string {
 
 export interface LessonRendererProps {
   lesson: Lesson
-  /** Commit updated lesson state (Phase 9 wires this to the repository). */
-  persist: PersistLessonState
+  /**
+   * Atomically commit one block's outcome into the lesson's progress (the shell
+   * wires this to `repo.recordBlockOutcome(lesson.id, …)`).
+   */
+  record: RecordBlockOutcome
   /** Spaced-retrieval schedule store, fed by quiz/recall outcomes. */
   retrievalStore: RetrievalStoreLike
   /** Injected clock; never reads `Date.now()` directly. */
@@ -118,11 +121,11 @@ function renderBlock({ block, outcome, onOutcome, runCode }: RenderBlockArgs) {
  * `lesson.state.blockProgress`, so prior progress rehydrates a block as already
  * attempted.
  */
-export function LessonRenderer({ lesson, persist, retrievalStore, now, runCode }: LessonRendererProps) {
+export function LessonRenderer({ lesson, record, retrievalStore, now, runCode }: LessonRendererProps) {
   const onBlockOutcome = useBlockOutcome({
     lessonId: lesson.id,
     state: lesson.state,
-    persist,
+    record,
     retrievalStore,
     now,
   })

@@ -3,7 +3,7 @@ import { i18n as globalI18n, setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import type { ReactElement, ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Lesson, LessonState } from '@/lib/teach/lessons/lesson'
+import type { BlockOutcome, Lesson, LessonState } from '@/lib/teach/lessons/lesson'
 import type { RetrievalItem } from '@/lib/teach/retrieval/types'
 import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
 import { LessonRenderer } from './LessonRenderer'
@@ -54,6 +54,27 @@ function makeLesson(blocks: Lesson['blocks'], state: LessonState = baseState): L
   }
 }
 
+/**
+ * Stands in for `repo.recordBlockOutcome(lesson.id, …)`: merges a block's
+ * outcome into the seeded lesson's progress and returns the updated lesson, the
+ * same atomic contract the renderer relies on.
+ */
+function makeRecorder(lesson: Lesson) {
+  let current = lesson
+  const record = vi.fn(async (blockId: string, outcome: BlockOutcome) => {
+    current = {
+      ...current,
+      state: {
+        ...current.state,
+        status: current.state.status === 'completed' ? 'completed' : 'in_progress',
+        blockProgress: { ...current.state.blockProgress, [blockId]: outcome },
+      },
+    }
+    return current
+  })
+  return { record, current: () => current }
+}
+
 describe('lessonRenderer', () => {
   it('renders each block in order', () => {
     const lesson = makeLesson([
@@ -62,7 +83,7 @@ describe('lessonRenderer', () => {
       { type: 'code_sample', code: 'let x = 1', language: 'cangjie' },
     ])
     const { container } = render(
-      <LessonRenderer lesson={lesson} persist={vi.fn()} retrievalStore={makeRetrievalStore()} now={() => 1} />,
+      <LessonRenderer lesson={lesson} record={vi.fn(async () => null)} retrievalStore={makeRetrievalStore()} now={() => 1} />,
     )
     expect(screen.getByTestId('heading-block')).toBeTruthy()
     expect(screen.getByTestId('prose-block')).toBeTruthy()
@@ -81,14 +102,13 @@ describe('lessonRenderer', () => {
     // Bypass the typed blocks array — a persisted lesson could carry a block
     // type this client version does not understand.
     const lesson = makeLesson([{ type: 'mystery', foo: 1 } as never])
-    render(<LessonRenderer lesson={lesson} persist={vi.fn()} retrievalStore={makeRetrievalStore()} now={() => 1} />)
+    render(<LessonRenderer lesson={lesson} record={vi.fn(async () => null)} retrievalStore={makeRetrievalStore()} now={() => 1} />)
     expect(screen.getByTestId('unknown-block')).toBeTruthy()
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()
   })
 
-  it('writes a quiz outcome back through persist and seeds retrieval', async () => {
-    const persist = vi.fn()
+  it('writes a quiz outcome back through the atomic recorder and seeds retrieval', async () => {
     const retrievalStore = makeRetrievalStore()
     const lesson = makeLesson([
       {
@@ -100,18 +120,21 @@ describe('lessonRenderer', () => {
         explanation: 'let is immutable.',
       },
     ])
-    render(<LessonRenderer lesson={lesson} persist={persist} retrievalStore={retrievalStore} now={() => 1000} />)
+    const { record, current } = makeRecorder(lesson)
+    render(<LessonRenderer lesson={lesson} record={record} retrievalStore={retrievalStore} now={() => 1000} />)
 
     fireEvent.click(screen.getAllByTestId('quiz-option')[0])
     await act(async () => {
       fireEvent.click(screen.getByTestId('quiz-submit'))
     })
 
-    expect(persist).toHaveBeenCalled()
-    const saved = persist.mock.calls.at(-1)?.[0] as LessonState
-    expect(saved.status).toBe('in_progress')
+    expect(record).toHaveBeenCalled()
     // block index 0 → blockId b0
-    expect(saved.blockProgress.b0.correct).toBe(true)
+    const [blockId, outcome] = record.mock.calls.at(-1)!
+    expect(blockId).toBe('b0')
+    expect(outcome.correct).toBe(true)
+    expect(current().state.status).toBe('in_progress')
+    expect(current().state.blockProgress.b0.correct).toBe(true)
 
     const items = retrievalStore.current()
     expect(items).toHaveLength(1)
@@ -119,12 +142,12 @@ describe('lessonRenderer', () => {
   })
 
   it('updates retrieval for a recall block via self-grade', async () => {
-    const persist = vi.fn()
     const retrievalStore = makeRetrievalStore()
     const lesson = makeLesson([
       { type: 'recall_prompt', prompt: 'How to declare an immutable binding?', answer: 'use let' },
     ])
-    render(<LessonRenderer lesson={lesson} persist={persist} retrievalStore={retrievalStore} now={() => 2000} />)
+    const { record } = makeRecorder(lesson)
+    render(<LessonRenderer lesson={lesson} record={record} retrievalStore={retrievalStore} now={() => 2000} />)
 
     fireEvent.click(screen.getByTestId('recall-reveal'))
     await act(async () => {
@@ -151,7 +174,7 @@ describe('lessonRenderer', () => {
       ],
       { status: 'in_progress', blockProgress: { b0: { attempts: 1, correct: true } } },
     )
-    render(<LessonRenderer lesson={lesson} persist={vi.fn()} retrievalStore={makeRetrievalStore()} now={() => 1} />)
+    render(<LessonRenderer lesson={lesson} record={vi.fn(async () => null)} retrievalStore={makeRetrievalStore()} now={() => 1} />)
     // The quiz block itself owns its UI; the renderer simply forwards the prior
     // outcome so a completed block can present as such.
     expect(screen.getByTestId('quiz-block')).toBeTruthy()
