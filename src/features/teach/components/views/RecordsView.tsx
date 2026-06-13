@@ -16,7 +16,7 @@ import { ViewEmptyState } from './ViewEmptyState'
  */
 export function RecordsView() {
   const { repo } = useWorkspace()
-  const { data: records, loading } = useWorkspaceResource(() => repo.listLearningRecords(), [repo])
+  const { data: records, loading } = useWorkspaceResource(() => repo.listLearningRecords(), [repo], 'learningRecords')
 
   if (loading)
     return null

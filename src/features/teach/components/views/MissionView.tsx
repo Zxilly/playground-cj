@@ -44,7 +44,7 @@ function Section({
  */
 export function MissionView() {
   const { repo } = useWorkspace()
-  const { data: mission, loading } = useWorkspaceResource(() => repo.getMission(), [repo])
+  const { data: mission, loading } = useWorkspaceResource(() => repo.getMission(), [repo], 'mission')
 
   if (loading)
     return null

@@ -24,6 +24,49 @@ export type WorkspaceView
     | 'records'
     | 'notes'
 
+/**
+ * The kind of workspace document a write touches (or a read subscribes to).
+ * `useWorkspaceResource` subscribes to one scope so a glossary write only re-runs
+ * glossary reads, not every read; `'all'` is the catch-all both for reads that
+ * span document kinds and for whole-workspace writes (`importAll`).
+ */
+export type WorkspaceScope
+  = | 'mission'
+    | 'lessons'
+    | 'glossary'
+    | 'learningRecords'
+    | 'references'
+    | 'notes'
+    | 'retrieval'
+    | 'all'
+
+/** Every per-document scope, in a stable order (excludes the `'all'` catch-all). */
+export const WORKSPACE_SCOPES = [
+  'mission',
+  'lessons',
+  'glossary',
+  'learningRecords',
+  'references',
+  'notes',
+  'retrieval',
+] as const satisfies readonly Exclude<WorkspaceScope, 'all'>[]
+
+/** Per-scope monotonic revision counters, plus the catch-all `'all'`. */
+export type ScopeRevisions = Record<WorkspaceScope, number>
+
+function initialRevisions(): ScopeRevisions {
+  return {
+    mission: 0,
+    lessons: 0,
+    glossary: 0,
+    learningRecords: 0,
+    references: 0,
+    notes: 0,
+    retrieval: 0,
+    all: 0,
+  }
+}
+
 export interface WorkspaceStore {
   /** The view currently shown in the central viewport. */
   view: WorkspaceView
@@ -32,20 +75,28 @@ export interface WorkspaceStore {
   /** Id of the reference selected in the `'reference'` view, or null. */
   currentReferenceId: string | null
   /**
-   * Monotonic revision bumped whenever the workspace documents change (e.g. a
-   * teacher tool writes the mission or a lesson). Document reads
-   * ({@link useWorkspaceResource}) depend on it, so a write through chat refreshes
-   * the views and the mission-first gate without a manual reload.
+   * Per-scope monotonic revisions, bumped whenever the matching workspace
+   * documents change (e.g. a teacher tool writes the mission or a lesson).
+   * Document reads ({@link useWorkspaceResource}) subscribe to their own scope,
+   * so a write through chat refreshes only the affected views (and the
+   * mission-first gate) without a manual reload, instead of re-running every
+   * read. The `'all'` counter is bumped by every write so a span-everything read
+   * (or `importAll`) still refreshes.
    */
-  revision: number
+  revisions: ScopeRevisions
   /** Switch the central viewport to a top-level view (nav click). */
   setView: (view: WorkspaceView) => void
   /** Open a lesson: switch to the `'lesson'` view and record its id. */
   selectLesson: (lessonId: string) => void
   /** Open a reference: switch to the `'reference'` view and record its id. */
   openReference: (referenceId: string) => void
-  /** Signal that workspace documents changed so dependent reads re-run. */
-  bumpRevision: () => void
+  /**
+   * Signal that workspace documents of `scope` changed so dependent reads re-run.
+   * Bumps that scope's counter and the `'all'` counter; a `'all'` scope bumps
+   * every counter (a whole-workspace replace). Defaults to `'all'` so callers
+   * that don't care about granularity keep the prior refresh-everything behaviour.
+   */
+  bumpRevision: (scope?: WorkspaceScope) => void
 }
 
 /**
@@ -64,9 +115,26 @@ export const useWorkspaceStore = create<WorkspaceStore>()(set => ({
   view: 'lessons',
   currentLessonId: null,
   currentReferenceId: null,
-  revision: 0,
+  revisions: initialRevisions(),
   setView: view => set({ view }),
   selectLesson: lessonId => set({ view: 'lesson', currentLessonId: lessonId }),
   openReference: referenceId => set({ view: 'reference', currentReferenceId: referenceId }),
-  bumpRevision: () => set(state => ({ revision: state.revision + 1 })),
+  bumpRevision: (scope = 'all') => set((state) => {
+    if (scope === 'all') {
+      // A whole-workspace replace: bump every counter so every subscriber re-runs.
+      const bumped = {} as ScopeRevisions
+      for (const key of Object.keys(state.revisions) as WorkspaceScope[])
+        bumped[key] = state.revisions[key] + 1
+      return { revisions: bumped }
+    }
+    // A scoped write: re-run that scope's subscribers and any span-everything
+    // (`'all'`) subscriber, but leave unrelated scopes untouched.
+    return {
+      revisions: {
+        ...state.revisions,
+        [scope]: state.revisions[scope] + 1,
+        all: state.revisions.all + 1,
+      },
+    }
+  }),
 }))

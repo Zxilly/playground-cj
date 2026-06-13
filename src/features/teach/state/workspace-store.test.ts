@@ -41,4 +41,49 @@ describe('useWorkspaceStore', () => {
     expect(state.view).toBe('reference')
     expect(state.currentReferenceId).toBe('r1')
   })
+
+  it('starts every scope revision at zero', () => {
+    const { revisions } = useWorkspaceStore.getState()
+    for (const value of Object.values(revisions))
+      expect(value).toBe(0)
+  })
+
+  it('a scoped bump touches only that scope and the all counter', () => {
+    useWorkspaceStore.getState().bumpRevision('glossary')
+    const { revisions } = useWorkspaceStore.getState()
+    expect(revisions.glossary).toBe(1)
+    expect(revisions.all).toBe(1)
+    // Unrelated scopes are untouched, so their subscribers do not re-run.
+    expect(revisions.lessons).toBe(0)
+    expect(revisions.mission).toBe(0)
+    expect(revisions.references).toBe(0)
+  })
+
+  it('defaults to an all-scope bump (refresh everything) when no scope is given', () => {
+    // A caller that does not know which document changed must conservatively
+    // re-run every scope's subscribers, not just the span-everything reads.
+    useWorkspaceStore.getState().bumpRevision()
+    const { revisions } = useWorkspaceStore.getState()
+    for (const value of Object.values(revisions))
+      expect(value).toBe(1)
+  })
+
+  it('an all-scope bump re-runs every scope subscriber', () => {
+    useWorkspaceStore.getState().bumpRevision('all')
+    const { revisions } = useWorkspaceStore.getState()
+    for (const value of Object.values(revisions))
+      expect(value).toBe(1)
+  })
+
+  it('accumulates scope bumps independently', () => {
+    const store = useWorkspaceStore.getState()
+    store.bumpRevision('lessons')
+    store.bumpRevision('lessons')
+    store.bumpRevision('mission')
+    const { revisions } = useWorkspaceStore.getState()
+    expect(revisions.lessons).toBe(2)
+    expect(revisions.mission).toBe(1)
+    expect(revisions.all).toBe(3)
+    expect(revisions.glossary).toBe(0)
+  })
 })

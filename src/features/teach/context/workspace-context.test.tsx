@@ -72,11 +72,29 @@ describe('workspaceProvider', () => {
   it('exposes the injected dependencies through useWorkspace', () => {
     const deps = makeDeps()
     wrap(deps, <WorkspaceProbe />)
-    expect(captured!.repo).toBe(deps.repo)
     expect(captured!.knowledge).toBe(knowledge)
     expect(captured!.retrievalStore).toBe(retrievalStore)
     expect(captured!.editor).toBe(editor)
     expect(captured!.now()).toBe(42)
+  })
+
+  it('wraps the repository as an observable so reads pass through to the injected repo', async () => {
+    const deps = makeDeps()
+    wrap(deps, <WorkspaceProbe />)
+    // The exposed repo is the observable wrapper, not the bare injected repo, but
+    // reads still delegate to it.
+    await captured!.repo.getMission()
+    expect(deps.repo.getMission).toHaveBeenCalledTimes(1)
+  })
+
+  it('bumps the workspace revision when a write through the exposed repo changes a document', async () => {
+    const deps = makeDeps()
+    // setMission always mutates, so the observable wrapper bumps the mission scope.
+    deps.repo.setMission = vi.fn(async () => {})
+    wrap(deps, <WorkspaceProbe />)
+    const before = useWorkspaceStore.getState().revisions.mission
+    await captured!.repo.setMission({ topic: 't', why: 'w', successLooksLike: [], constraints: [], outOfScope: [], updatedAt: 1 })
+    expect(useWorkspaceStore.getState().revisions.mission).toBe(before + 1)
   })
 
   it('wires lesson navigation to the workspace store', () => {

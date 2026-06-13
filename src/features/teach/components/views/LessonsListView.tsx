@@ -29,7 +29,7 @@ function StatusIcon({ status }: { status: LessonState['status'] }) {
 export function LessonsListView() {
   const { repo } = useWorkspace()
   const { selectLesson } = useLessonNavigation()
-  const { data: lessons, loading } = useWorkspaceResource(() => repo.listLessons(), [repo])
+  const { data: lessons, loading } = useWorkspaceResource(() => repo.listLessons(), [repo], 'lessons')
 
   if (loading)
     return null

@@ -14,7 +14,7 @@ import { ViewEmptyState } from './ViewEmptyState'
  */
 export function NotesView() {
   const { repo } = useWorkspace()
-  const { data: notes, loading } = useWorkspaceResource(() => repo.getNotes(), [repo])
+  const { data: notes, loading } = useWorkspaceResource(() => repo.getNotes(), [repo], 'notes')
 
   if (loading)
     return null

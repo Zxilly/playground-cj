@@ -101,7 +101,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
   // (disabled lessons entry) and the central viewport (gate vs. lessons surface).
   // While the read is in flight the workspace is treated as not-yet-ready so the
   // gate never flashes the lessons list before the mission resolves.
-  const { data: mission, loading: missionLoading } = useWorkspaceResource(() => repo.getMission(), [repo])
+  const { data: mission, loading: missionLoading } = useWorkspaceResource(() => repo.getMission(), [repo], 'mission')
   const missionReady = !missionLoading && mission != null
 
   return (

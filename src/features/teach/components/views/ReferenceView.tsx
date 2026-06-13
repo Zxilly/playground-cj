@@ -71,8 +71,8 @@ function ReferenceBlocks({ blocks }: { blocks: Block[] }) {
 export function ReferenceView({ referenceId }: ReferenceViewProps) {
   const { repo } = useWorkspace()
   const { openReference } = useLessonNavigation()
-  const { data: references, loading } = useWorkspaceResource(() => repo.listReferences(), [repo])
-  const { data: glossary } = useWorkspaceResource(() => repo.getGlossary(), [repo])
+  const { data: references, loading } = useWorkspaceResource(() => repo.listReferences(), [repo], 'references')
+  const { data: glossary } = useWorkspaceResource(() => repo.getGlossary(), [repo], 'glossary')
 
   if (loading)
     return null

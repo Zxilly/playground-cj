@@ -16,8 +16,6 @@ import { useLLMConfig } from '@/stores/llmConfig'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
 import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
-import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
-import { createObservableRepository } from '@/features/teach/state/observable-repository'
 
 type TeacherChatMessage = InferAgentUIMessage<TeacherAgent>
 
@@ -37,8 +35,11 @@ function normalizeLang(lang: string): TeacherLang {
  * The agent's tool set is built from the workspace collaborators in context
  * (repository, knowledge source, editor bridge, runner, retrieval store, clock),
  * so a teacher tool call reads/writes the very same documents the central views
- * render. The agent runs as an AI SDK `ToolLoopAgent`; `useChatRuntime` continues
- * the loop after each complete tool-call turn
+ * render. The repository in context is already an observable repository
+ * (wrapped once in {@link WorkspaceProvider}), so a teacher tool write bumps the
+ * workspace revision and refreshes the central views without a reload — no extra
+ * wrapping here. The agent runs as an AI SDK `ToolLoopAgent`; `useChatRuntime`
+ * continues the loop after each complete tool-call turn
  * ({@link lastAssistantMessageIsCompleteWithToolCalls}).
  *
  * Every turn streams through a {@link createScopedChatTransport scoped transport}
@@ -50,14 +51,13 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
   const config = useLLMConfig()
   const { repo, knowledge, editor, runner, retrievalStore, now } = useWorkspace()
   const scopeSignal = useAbortScope()
-  const bumpRevision = useWorkspaceStore(s => s.bumpRevision)
 
   const transport = useMemo(() => {
-    // Wrap the repository so a teacher tool write bumps the workspace revision,
-    // refreshing the central views and the mission-first gate without a reload.
-    const observableRepo = createObservableRepository(repo, bumpRevision)
+    // `repo` from context is already an observable repository (wrapped in
+    // WorkspaceProvider), so a teacher tool write bumps the workspace revision
+    // and refreshes the central views without a reload.
     const toolkit = createTeacherToolkit({
-      repo: observableRepo,
+      repo,
       knowledge,
       editor,
       runner: runner ?? { run: runCangjieCode },
@@ -66,7 +66,7 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
     })
     const agent = createTeacherAgent(config, toolkit, normalizeLang(lang))
     return createScopedChatTransport<TeacherChatMessage>(agent, scopeSignal)
-  }, [config, repo, knowledge, editor, runner, retrievalStore, now, lang, scopeSignal, bumpRevision])
+  }, [config, repo, knowledge, editor, runner, retrievalStore, now, lang, scopeSignal])
 
   const runtime = useChatRuntime<TeacherChatMessage>({
     transport,

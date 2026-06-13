@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { createObservableRepository } from '@/features/teach/state/observable-repository'
 import type { LessonNavigationContextValue } from './lesson-navigation-context'
 import { LessonNavigationContext } from './lesson-navigation-context'
 import type { WorkspaceContextValue } from './workspace-context'
@@ -25,6 +26,12 @@ export interface WorkspaceProviderProps extends WorkspaceContextValue {
  * `reference_link` click (or a `followup_prompt`) drives the same view state the
  * nav and views render from. The store is a module singleton; the navigation
  * actions read its setters lazily so the value is referentially stable.
+ *
+ * The repository is wrapped once here in a {@link createObservableRepository} so
+ * that *every* write — whether from a lesson block committing an outcome or from
+ * a teacher chat tool — bumps the workspace store's per-scope revision and
+ * refreshes the affected views. (The chat runtime reads this same observed repo
+ * from context, so it does not need to wrap again.)
  */
 export function WorkspaceProvider({
   repo,
@@ -36,9 +43,17 @@ export function WorkspaceProvider({
   onPrefillChat,
   children,
 }: WorkspaceProviderProps) {
+  const bumpRevision = useWorkspaceStore(s => s.bumpRevision)
   const value = useMemo<WorkspaceContextValue>(
-    () => ({ repo, retrievalStore, knowledge, editor, runner, now }),
-    [repo, retrievalStore, knowledge, editor, runner, now],
+    () => ({
+      repo: createObservableRepository(repo, bumpRevision),
+      retrievalStore,
+      knowledge,
+      editor,
+      runner,
+      now,
+    }),
+    [repo, retrievalStore, knowledge, editor, runner, now, bumpRevision],
   )
 
   const navigation = useMemo<LessonNavigationContextValue>(

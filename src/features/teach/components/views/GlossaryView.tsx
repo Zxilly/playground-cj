@@ -14,7 +14,7 @@ import { ViewEmptyState } from './ViewEmptyState'
  */
 export function GlossaryView() {
   const { repo } = useWorkspace()
-  const { data: glossary, loading } = useWorkspaceResource(() => repo.getGlossary(), [repo])
+  const { data: glossary, loading } = useWorkspaceResource(() => repo.getGlossary(), [repo], 'glossary')
 
   if (loading)
     return null
