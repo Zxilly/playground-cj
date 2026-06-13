@@ -17,10 +17,19 @@ type RecallPromptBlockProps = BlockComponentProps<RecallPromptBlockSchemaType>
  * self-assessment grade (`again` / `good`) is forwarded so the renderer can
  * feed the spaced-retrieval scheduler.
  */
-export function RecallPromptBlock({ block, onOutcome }: RecallPromptBlockProps) {
-  const [attempt, setAttempt] = useState('')
-  const [revealed, setRevealed] = useState(false)
-  const [grade, setGrade] = useState<SelfGrade | null>(null)
+export function RecallPromptBlock({ block, outcome, onOutcome }: RecallPromptBlockProps) {
+  // Re-hydrate a previously self-graded recall: a completed outcome reveals the
+  // reference answer, restores the recorded grade (`correct` maps back to
+  // good/again — recall outcomes only persist correctness, not the raw grade),
+  // and re-fills the learner's prior attempt text when one was stored.
+  const completed = outcome?.completedAt != null
+  const priorGrade: SelfGrade | null = completed
+    ? (outcome?.correct ? 'good' : 'again')
+    : null
+  const priorAttempt = completed && typeof outcome?.lastAnswer === 'string' ? outcome.lastAnswer : ''
+  const [attempt, setAttempt] = useState(() => priorAttempt)
+  const [revealed, setRevealed] = useState(() => completed)
+  const [grade, setGrade] = useState<SelfGrade | null>(() => priorGrade)
 
   const reveal = () => setRevealed(true)
 

@@ -12,6 +12,13 @@ type QuizBlockProps = BlockComponentProps<QuizBlockSchemaType>
 
 type OptionCorrectness = 'correct' | 'incorrect-selected' | 'neutral'
 
+/** A persisted quiz answer is the sorted list of selected option indices. */
+function selectedFromOutcome(lastAnswer: unknown): number[] | null {
+  if (Array.isArray(lastAnswer) && lastAnswer.every(i => typeof i === 'number'))
+    return lastAnswer as number[]
+  return null
+}
+
 /**
  * Decide each option's correctness label after a submission. Every answer-set
  * member is marked `correct` (so the learner always sees the right answer);
@@ -42,9 +49,14 @@ const correctnessClass: Record<OptionCorrectness, string> = {
  * require the exact answer set; single quizzes accept exactly one option, where
  * a new pick replaces the previous one.
  */
-export function QuizBlock({ block, onOutcome }: QuizBlockProps) {
-  const [selected, setSelected] = useState<Set<number>>(() => new Set())
-  const [submitted, setSubmitted] = useState(false)
+export function QuizBlock({ block, outcome, onOutcome }: QuizBlockProps) {
+  // Re-hydrate a previously answered quiz: a completed outcome seeds the prior
+  // selection and a submitted state so the learner sees their answer and the
+  // correctness feedback again. `outcome` is read only at first mount, so it
+  // never clobbers an in-progress selection on later renders.
+  const prior = outcome?.completedAt != null ? selectedFromOutcome(outcome.lastAnswer) : null
+  const [selected, setSelected] = useState<Set<number>>(() => new Set(prior ?? []))
+  const [submitted, setSubmitted] = useState(() => prior != null)
 
   const answerSet = new Set(block.answerIndices)
   const isAnswerSetSelected
@@ -96,7 +108,7 @@ export function QuizBlock({ block, onOutcome }: QuizBlockProps) {
             ? correctnessFor(index, answerSet, selected)
             : 'neutral'
           return (
-            <li key={option}>
+            <li key={`${index}-${option}`}>
               <button
                 type="button"
                 data-testid="quiz-option"

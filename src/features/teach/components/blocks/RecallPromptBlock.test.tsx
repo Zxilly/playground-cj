@@ -89,4 +89,34 @@ describe('recallPromptBlock', () => {
     fireEvent.click(screen.getByTestId('recall-grade-good'))
     expect(screen.getByTestId('recall-block').getAttribute('data-grade')).toBe('good')
   })
+
+  it('rehydrates a completed outcome as revealed with the prior grade and attempt', () => {
+    render(
+      <RecallPromptBlock
+        block={block}
+        outcome={{ attempts: 1, correct: true, lastAnswer: 'let keyword', completedAt: 1000 }}
+      />,
+    )
+    // Already revealed: answer visible, reveal button gone, grade restored.
+    expect(screen.queryByTestId('recall-reveal')).toBeNull()
+    expect(screen.getByTestId('recall-answer').textContent).toContain('Use let')
+    expect(screen.getByTestId('recall-block').getAttribute('data-grade')).toBe('good')
+    expect((screen.getByTestId('recall-input') as HTMLTextAreaElement).value).toBe('let keyword')
+  })
+
+  it('rehydrates an again grade from an incorrect completed outcome', () => {
+    render(
+      <RecallPromptBlock
+        block={block}
+        outcome={{ attempts: 1, correct: false, lastAnswer: '', completedAt: 1000 }}
+      />,
+    )
+    expect(screen.getByTestId('recall-block').getAttribute('data-grade')).toBe('again')
+  })
+
+  it('does not rehydrate when the outcome is not completed', () => {
+    render(<RecallPromptBlock block={block} outcome={{ attempts: 0 }} />)
+    expect(screen.getByTestId('recall-reveal')).toBeTruthy()
+    expect(screen.queryByTestId('recall-answer')).toBeNull()
+  })
 })

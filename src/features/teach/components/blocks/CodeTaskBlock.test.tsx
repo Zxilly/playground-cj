@@ -131,6 +131,66 @@ describe('codeTaskBlock', () => {
     expect(onOutcome).not.toHaveBeenCalled()
   })
 
+  it('rehydrates a passed outcome with the prior code and a pass result', () => {
+    render(
+      <CodeTaskBlock
+        block={block}
+        runCode={vi.fn()}
+        outcome={{ attempts: 1, correct: true, lastAnswer: 'main() { println("hello") }', completedAt: 1000 }}
+      />,
+    )
+    const editor = screen.getByTestId('code-task-editor') as HTMLTextAreaElement
+    expect(editor.value).toBe('main() { println("hello") }')
+    expect(screen.getByTestId('code-task-result').getAttribute('data-status')).toBe('passed')
+  })
+
+  it('rehydrates a failed completed outcome as a fail result with the prior code', () => {
+    render(
+      <CodeTaskBlock
+        block={block}
+        runCode={vi.fn()}
+        outcome={{ attempts: 1, correct: false, lastAnswer: 'main() { println("nope") }', completedAt: 1000 }}
+      />,
+    )
+    const editor = screen.getByTestId('code-task-editor') as HTMLTextAreaElement
+    expect(editor.value).toBe('main() { println("nope") }')
+    expect(screen.getByTestId('code-task-result').getAttribute('data-status')).toBe('failed')
+  })
+
+  it('falls back to starter code when a completed outcome has no recorded answer', () => {
+    render(
+      <CodeTaskBlock
+        block={block}
+        runCode={vi.fn()}
+        outcome={{ attempts: 1, correct: true, completedAt: 1000 }}
+      />,
+    )
+    const editor = screen.getByTestId('code-task-editor') as HTMLTextAreaElement
+    expect(editor.value).toBe(block.starterCode)
+    expect(screen.getByTestId('code-task-result').getAttribute('data-status')).toBe('passed')
+  })
+
+  it('uses starter code and shows no result when the outcome is not completed', () => {
+    render(<CodeTaskBlock block={block} runCode={vi.fn()} outcome={{ attempts: 0 }} />)
+    const editor = screen.getByTestId('code-task-editor') as HTMLTextAreaElement
+    expect(editor.value).toBe(block.starterCode)
+    expect(screen.queryByTestId('code-task-result')).toBeNull()
+  })
+
+  it('renders duplicate hints without a key warning and shows every revealed hint', () => {
+    const warn = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const dupHints: CodeTaskBlockSchemaType = { ...block, hints: ['same hint', 'same hint'] }
+    render(<CodeTaskBlock block={dupHints} runCode={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('code-task-hint-button'))
+    fireEvent.click(screen.getByTestId('code-task-hint-button'))
+    expect(screen.getAllByTestId('code-task-hint')).toHaveLength(2)
+    const keyWarning = warn.mock.calls.some(call =>
+      call.some(arg => typeof arg === 'string' && arg.includes('same key')),
+    )
+    expect(keyWarning).toBe(false)
+    warn.mockRestore()
+  })
+
   it('disables run while a run is in flight', async () => {
     let resolveRun: (r: RunResult) => void = () => {}
     const runCode = vi.fn<(code: string) => Promise<RunResult>>().mockImplementation(

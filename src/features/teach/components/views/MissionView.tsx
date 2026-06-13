@@ -25,8 +25,8 @@ function Section({
         {label}
       </h3>
       <ul className="flex flex-col gap-1 ps-1">
-        {items.map(item => (
-          <li key={item} className="flex items-start gap-2 text-sm leading-6 text-muted-foreground">
+        {items.map((item, index) => (
+          <li key={`${index}-${item}`} className="flex items-start gap-2 text-sm leading-6 text-muted-foreground">
             <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/50" />
             <span className="min-w-0">{item}</span>
           </li>

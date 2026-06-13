@@ -172,11 +172,14 @@ describe('lessonRenderer', () => {
           explanation: 'e',
         },
       ],
-      { status: 'in_progress', blockProgress: { b0: { attempts: 1, correct: true } } },
+      { status: 'in_progress', blockProgress: { b0: { attempts: 1, correct: true, lastAnswer: [0], completedAt: 1000 } } },
     )
     render(<LessonRenderer lesson={lesson} record={vi.fn(async () => null)} retrievalStore={makeRetrievalStore()} now={() => 1} />)
-    // The quiz block itself owns its UI; the renderer simply forwards the prior
-    // outcome so a completed block can present as such.
+    // The quiz block itself owns its UI; the renderer forwards the prior outcome
+    // so a completed block re-hydrates as already-answered rather than fresh.
     expect(screen.getByTestId('quiz-block')).toBeTruthy()
+    expect(screen.queryByTestId('quiz-submit')).toBeNull()
+    expect(screen.getByTestId('quiz-result').getAttribute('data-correct')).toBe('true')
+    expect((screen.getAllByTestId('quiz-option')[0] as HTMLButtonElement).getAttribute('aria-pressed')).toBe('true')
   })
 })

@@ -33,10 +33,30 @@ interface CodeTaskBlockProps extends BlockComponentProps<CodeTaskBlockSchemaType
  * unreachable the block degrades to a retry-able notice rather than recording a
  * spurious failure.
  */
-export function CodeTaskBlock({ block, runCode = runCangjieCode, onOutcome }: CodeTaskBlockProps) {
-  const [code, setCode] = useState(block.starterCode)
+/**
+ * Re-hydrate a completed task into an {@link EvaluatedRun} so a re-opened lesson
+ * shows the prior pass/fail verdict. Only correctness was persisted (not the run
+ * output), so the synthetic result carries empty streams; the verdict itself is
+ * what matters. A runner-unavailable attempt was never recorded, so a stored
+ * outcome is always a genuine pass/fail.
+ */
+function evaluatedFromOutcome(outcome: BlockComponentProps<CodeTaskBlockSchemaType>['outcome']): EvaluatedRun | null {
+  if (outcome?.completedAt == null)
+    return null
+  const matched = outcome.correct === true
+  return { result: { ok: matched, stdout: '', stderr: '', exitCode: matched ? 0 : null }, matched }
+}
+
+export function CodeTaskBlock({ block, outcome, runCode = runCangjieCode, onOutcome }: CodeTaskBlockProps) {
+  // Re-hydrate a previously attempted task: a completed outcome seeds the prior
+  // code (when stored) and the recorded pass/fail verdict. `outcome` is read
+  // only at first mount so it never overwrites the learner's current edits.
+  const priorCode = outcome?.completedAt != null && typeof outcome.lastAnswer === 'string'
+    ? outcome.lastAnswer
+    : null
+  const [code, setCode] = useState(() => priorCode ?? block.starterCode)
   const [running, setRunning] = useState(false)
-  const [evaluated, setEvaluated] = useState<EvaluatedRun | null>(null)
+  const [evaluated, setEvaluated] = useState<EvaluatedRun | null>(() => evaluatedFromOutcome(outcome))
   const [revealedHints, setRevealedHints] = useState(0)
 
   const hints = block.hints ?? []
@@ -110,9 +130,9 @@ export function CodeTaskBlock({ block, runCode = runCangjieCode, onOutcome }: Co
 
       {revealedHints > 0 && (
         <ul className="mt-3 flex flex-col gap-1.5">
-          {hints.slice(0, revealedHints).map(hint => (
+          {hints.slice(0, revealedHints).map((hint, index) => (
             <li
-              key={hint}
+              key={`${index}-${hint}`}
               data-testid="code-task-hint"
               className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-xs leading-6 text-muted-foreground"
             >

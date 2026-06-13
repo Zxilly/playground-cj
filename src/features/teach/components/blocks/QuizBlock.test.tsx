@@ -141,4 +141,41 @@ describe('quizBlock', () => {
     fireEvent.click(options()[0])
     expect(options()[0].getAttribute('aria-pressed')).toBe('false')
   })
+
+  it('rehydrates as submitted from a completed outcome, restoring the prior answer and feedback', () => {
+    render(
+      <QuizBlock
+        block={singleBlock}
+        outcome={{ attempts: 1, correct: true, lastAnswer: [0], completedAt: 1000 }}
+      />,
+    )
+    // Already-submitted: no submit button, options disabled, result + explanation shown.
+    expect(screen.queryByTestId('quiz-submit')).toBeNull()
+    const opts = options()
+    expect(opts[0].getAttribute('aria-pressed')).toBe('true')
+    expect(opts.every(o => o.disabled)).toBe(true)
+    expect(screen.getByTestId('quiz-result').getAttribute('data-correct')).toBe('true')
+    expect(screen.getByTestId('quiz-explanation').textContent).toContain('let is immutable')
+    expect(opts[0].getAttribute('data-correctness')).toBe('correct')
+  })
+
+  it('rehydrates an incorrect completed outcome with the wrong answer marked and retry available', () => {
+    render(
+      <QuizBlock
+        block={singleBlock}
+        outcome={{ attempts: 1, correct: false, lastAnswer: [1], completedAt: 1000 }}
+      />,
+    )
+    expect(screen.getByTestId('quiz-result').getAttribute('data-correct')).toBe('false')
+    const opts = options()
+    expect(opts[1].getAttribute('data-correctness')).toBe('incorrect-selected')
+    expect(opts[0].getAttribute('data-correctness')).toBe('correct')
+    expect(screen.getByTestId('quiz-retry')).toBeTruthy()
+  })
+
+  it('does not rehydrate as submitted when the outcome has no recorded answer', () => {
+    render(<QuizBlock block={singleBlock} outcome={{ attempts: 0 }} />)
+    expect(screen.queryByTestId('quiz-result')).toBeNull()
+    expect(submitButton().disabled).toBe(true)
+  })
 })
