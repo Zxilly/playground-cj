@@ -17,7 +17,8 @@ export function scheduleNext(item: RetrievalItem, grade: RetrievalGrade, now: nu
   if (grade === 'good') {
     ease = Math.min(item.ease + 0.1, 3)
     intervalDays = Math.max(1, Math.round(item.intervalDays * item.ease))
-  } else {
+  }
+  else {
     ease = Math.max(1.3, item.ease - 0.2)
     intervalDays = 1
   }
@@ -33,5 +34,5 @@ export function scheduleNext(item: RetrievalItem, grade: RetrievalGrade, now: nu
 
 /** Items whose `dueAt` is at or before `now`. */
 export function dueItems(items: RetrievalItem[], now: number): RetrievalItem[] {
-  return items.filter((item) => item.dueAt <= now)
+  return items.filter(item => item.dueAt <= now)
 }

@@ -58,8 +58,6 @@ export default defineConfig({
         'src/features/tour/components/mdx/LanguagePicker.tsx',
         'src/features/tour/components/mdx/Note.tsx',
         'src/features/tour/components/mdx/index.ts',
-        'src/features/tour-ai/components/TourAIChat.tsx',
-        'src/features/tour-ai/components/TourAIChatRuntime.tsx',
         'src/modules/assistant-ui/chat/**',
         'src/modules/assistant-ui/registry/**',
         'src/modules/analytics/**',
@@ -80,9 +78,9 @@ export default defineConfig({
     projects: [
       {
         // Unit project needs the lingui macro plugin because some pure .ts
-        // utility modules (e.g. lesson-progress-friendly-status.ts) call the
-        // `t\`...\`` template macro directly — without the transform, `t`
-        // resolves to undefined and the module throws at runtime.
+        // utility modules (e.g. src/service/run.ts) call the `t\`...\``
+        // template macro directly — without the transform, `t` resolves to
+        // undefined and the module throws at runtime.
         plugins: [reactPlugin],
         resolve: sharedResolve,
         test: {

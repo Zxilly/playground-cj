@@ -7,7 +7,7 @@ import type { EditorAppConfig } from 'monaco-languageclient/editorApp'
 import { configureMonacoWorkers } from './workers'
 import { initializeMonacoViewsService } from './views'
 import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
-import { exerciseModelSlot, playgroundModelUri } from '@/features/tour-ai/exercise-workspace/model-identity'
+import { exerciseModelSlot, playgroundModelUri } from './model-identity'
 
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/grammars/Cangjie.tmLanguage.json'

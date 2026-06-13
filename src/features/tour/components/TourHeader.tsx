@@ -8,9 +8,8 @@ import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { LanguagePicker } from './mdx/LanguagePicker'
 import type { FlatSection } from '@/tour/types'
-import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourPath } from '@/lib/siteHref'
+import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourAIHref, getTourPath } from '@/lib/siteHref'
 import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
-import { getStaticTourTopicEntryHref } from '@/lib/ai/course-content/static-tour-links'
 
 export interface TourHeaderProps {
   lang: string
@@ -24,9 +23,8 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
   const otherLang = lang === 'en' ? 'zh' : 'en'
   const otherLabel = lang === 'en' ? '中文' : 'EN'
   const tourHomeHref = getTourPath(lang, { servingDomain: getSiteDomain(window.location.host) })
-  const aiHref = getStaticTourTopicEntryHref(lang, {
+  const aiHref = getTourAIHref(lang, {
     currentOrigin: window.location.origin,
-    entry: section?.aiEntry,
   })
   const localeHref = getLocaleHref(otherLang, window.location)
   const playgroundHref = getPlaygroundHref(lang, { currentOrigin: window.location.origin })

@@ -25,6 +25,6 @@ describe('scheduler', () => {
   })
   it('dueItems filters by now', () => {
     const items = [{ ...base, dueAt: 500 }, { ...base, id: 'r2', dueAt: 5000 }]
-    expect(dueItems(items, 1000).map((i) => i.id)).toEqual(['r1'])
+    expect(dueItems(items, 1000).map(i => i.id)).toEqual(['r1'])
   })
 })

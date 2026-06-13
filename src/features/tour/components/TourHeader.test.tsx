@@ -104,7 +104,7 @@ describe('tour header', () => {
     expect(screen.getAllByRole('link')[0].getAttribute('href')).toBe('/zh/tour')
   })
 
-  it('deep-links the AI tutor to the current validated course concept', () => {
+  it('links the AI tutor to the teaching workspace route', () => {
     vi.stubGlobal('location', {
       ...window.location,
       origin: 'http://localhost:3000',
@@ -118,18 +118,12 @@ describe('tour header', () => {
             chapterName: { zh: '欢迎', en: 'Welcome' },
             subChapterName: { zh: '介绍', en: 'Intro' },
             sectionName: { zh: '开始', en: 'Start' },
-            aiEntry: {
-              packId: 'default-entry',
-              contentVersion: '2026-05-28',
-              primaryConceptId: 'cj.program.main',
-              conceptIds: ['cj.program.main', 'cj.io.println'],
-            },
           } as never}
         />
       </Wrapper>,
     )
 
-    expect(screen.getByRole('link', { name: 'AI 课堂' }).getAttribute('href')).toBe('/zh/tour/ai?topic=cj.program.main')
+    expect(screen.getByRole('link', { name: 'AI 课堂' }).getAttribute('href')).toBe('/zh/tour/ai')
   })
 
   it('omits the sidebar trigger on the AI route because it has no sidebar provider', () => {

@@ -3,7 +3,6 @@ import { join } from 'node:path'
 import { serialize } from 'next-mdx-remote/serialize'
 import remarkGfm from 'remark-gfm'
 import type { FlatSection, TourChapter, TourChapterSlim, TourSection, TourSubChapter } from './types'
-import { findDefaultCourseEntryForStaticTourSection } from '@/lib/ai/course-content/static-tour-links'
 
 const TOUR_DIR = join(process.cwd(), 'tour')
 const TOP_LEVEL_DIR_RE = /^\d+-[a-z0-9-]+$/
@@ -169,11 +168,6 @@ export function flattenSections(data: TourChapter[]): FlatSection[] {
           markdown: section.markdown,
           code: section.code,
           mdxSource: section.mdxSource,
-          aiEntry: findDefaultCourseEntryForStaticTourSection({
-            chapterId: chapter.id,
-            subChapterId: sub.id,
-            sectionId: section.id,
-          }, { routeRest: [stripOrderPrefix(chapter.id), String(chapterStep)] }) ?? undefined,
         })
         chapterStep++
       }
