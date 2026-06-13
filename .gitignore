@@ -24,6 +24,10 @@ next-env.d.ts
 /.vscode/
 *.pem
 
+# Test artifacts (vitest browser failure screenshots / attachments)
+**/__screenshots__/
+/.vitest-attachments/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
