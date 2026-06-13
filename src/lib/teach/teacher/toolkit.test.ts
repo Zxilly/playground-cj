@@ -13,7 +13,7 @@ import type {
 } from '../workspace/documents'
 import type { WorkspaceRepository } from '../workspace/repository'
 import type { Lesson, LessonDraft, LessonState } from '../lessons/lesson'
-import type { EditorBridge, RetrievalStore, TeacherRunner } from './toolkit'
+import type { RetrievalStore, TeacherRunner } from './toolkit'
 import { describe, expect, it, vi } from 'vitest'
 import { createTeacherToolkit } from './toolkit'
 
@@ -122,18 +122,6 @@ function createFakeKnowledge(hits: KnowledgeHit[]): KnowledgeSource & { search: 
   return { id: 'cangjie-mcp', search }
 }
 
-function createFakeEditor(): EditorBridge & {
-  setCode: ReturnType<typeof vi.fn>
-  getCode: ReturnType<typeof vi.fn>
-} {
-  let code = 'main() {}'
-  const setCode = vi.fn(async (next: string) => {
-    code = next
-  })
-  const getCode = vi.fn(async () => code)
-  return { setCode, getCode }
-}
-
 function createFakeRunner(result: RunResult): TeacherRunner & { run: ReturnType<typeof vi.fn> } {
   const run = vi.fn(async () => result)
   return { run }
@@ -158,12 +146,11 @@ function setup(overrides: {
 } = {}) {
   const repo = createMemoryRepo()
   const knowledge = createFakeKnowledge(overrides.knowledgeHits ?? [])
-  const editor = createFakeEditor()
   const runner = createFakeRunner(runResult)
   const retrievalStore = createMemoryRetrievalStore(overrides.retrieval ?? [])
   const now = overrides.now ?? (() => 123)
-  const toolkit = createTeacherToolkit({ repo, knowledge, editor, runner, retrievalStore, now })
-  return { repo, knowledge, editor, runner, retrievalStore, toolkit }
+  const toolkit = createTeacherToolkit({ repo, knowledge, runner, retrievalStore, now })
+  return { repo, knowledge, runner, retrievalStore, toolkit }
 }
 
 async function call<T = unknown>(tool: unknown, input: unknown): Promise<T> {
@@ -195,12 +182,17 @@ describe('createTeacherToolkit', () => {
         'update_lesson_state',
         'mark_lesson_complete',
         'search_docs',
-        'set_editor_code',
         'run_code',
         'read_run_result',
-        'read_editor_code',
       ]),
     )
+  })
+
+  it('does not expose the dead editor-bridge tools (the teaching shell mounts no shared editor)', () => {
+    const { toolkit } = setup()
+    const names = Object.keys(toolkit)
+    expect(names).not.toContain('set_editor_code')
+    expect(names).not.toContain('read_editor_code')
   })
 
   it('every tool has a description and an inputSchema', () => {
@@ -258,19 +250,6 @@ describe('createTeacherToolkit', () => {
 
     const read = await call<{ ok: boolean, mission?: Mission | null }>(toolkit.read_mission, {})
     expect(read.mission?.topic).toBe('Cangjie CLI')
-  })
-
-  it('set_editor_code drives the editor bridge', async () => {
-    const { toolkit, editor } = setup()
-    await call(toolkit.set_editor_code, { code: 'let x = 1' })
-    expect(editor.setCode).toHaveBeenCalledWith('let x = 1')
-  })
-
-  it('read_editor_code reads from the editor bridge', async () => {
-    const { toolkit, editor } = setup()
-    const result = await call<{ ok: boolean, code?: string }>(toolkit.read_editor_code, {})
-    expect(editor.getCode).toHaveBeenCalled()
-    expect(result.code).toBe('main() {}')
   })
 
   it('run_code runs through the runner and read_run_result returns the last result', async () => {

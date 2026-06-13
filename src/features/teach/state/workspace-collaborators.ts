@@ -1,5 +1,5 @@
 import type { KnowledgeSource } from '@/lib/teach/knowledge/source'
-import type { EditorBridge, RetrievalStore, TeacherRunner } from '@/lib/teach/teacher/toolkit'
+import type { RetrievalStore, TeacherRunner } from '@/lib/teach/teacher/toolkit'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import { createIndexedDbWorkspaceRepository } from '@/lib/teach/workspace/indexeddb-repository'
 import { createCangjieMcpKnowledgeSource } from '@/lib/teach/knowledge/cangjie-mcp-source'
@@ -15,21 +15,8 @@ export interface WorkspaceCollaborators {
   repo: WorkspaceRepository
   retrievalStore: RetrievalStore
   knowledge: KnowledgeSource
-  editor: EditorBridge
   runner: TeacherRunner
   now: () => number
-}
-
-/**
- * A no-op {@link EditorBridge}. The teaching workspace ships before the shared
- * Monaco editor is wired into the shell (Phase 10 integration); until then,
- * `set_editor_code` / `read_editor_code` degrade to no-ops rather than throwing.
- */
-function createNoopEditorBridge(): EditorBridge {
-  return {
-    setCode: () => {},
-    getCode: () => '',
-  }
 }
 
 /**
@@ -42,7 +29,6 @@ function createNoopEditorBridge(): EditorBridge {
  *    same repo instance, so it persists across reloads and is captured by
  *    `exportAll`).
  *  - `knowledge`      — Cangjie MCP knowledge source.
- *  - `editor`         — no-op bridge until Monaco is wired (Phase 10).
  *  - `runner`         — remote Cangjie runner wrapper.
  *  - `now`            — wall clock.
  */
@@ -55,7 +41,6 @@ export function createWorkspaceCollaborators(lang: string): WorkspaceCollaborato
     repo,
     retrievalStore: createIdbRetrievalStore(repo),
     knowledge: createCangjieMcpKnowledgeSource(),
-    editor: createNoopEditorBridge(),
     runner: { run: runCangjieCode },
     now: () => Date.now(),
   }

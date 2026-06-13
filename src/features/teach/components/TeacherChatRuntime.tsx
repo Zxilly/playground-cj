@@ -34,7 +34,7 @@ function normalizeLang(lang: string): TeacherLang {
  * the vendored assistant-ui {@link Thread}.
  *
  * The agent's tool set is built from the workspace collaborators in context
- * (repository, knowledge source, editor bridge, runner, retrieval store, clock),
+ * (repository, knowledge source, runner, retrieval store, clock),
  * so a teacher tool call reads/writes the very same documents the central views
  * render. The repository in context is already an observable repository
  * (wrapped once in {@link WorkspaceProvider}), so a teacher tool write bumps the
@@ -50,7 +50,7 @@ function normalizeLang(lang: string): TeacherLang {
  */
 export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
   const config = useLLMConfig()
-  const { repo, knowledge, editor, runner, retrievalStore, now } = useWorkspace()
+  const { repo, knowledge, runner, retrievalStore, now } = useWorkspace()
   const scopeSignal = useAbortScope()
 
   const transport = useMemo(() => {
@@ -60,14 +60,13 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
     const toolkit = createTeacherToolkit({
       repo,
       knowledge,
-      editor,
       runner: runner ?? { run: runCangjieCode },
       retrievalStore,
       now,
     })
     const agent = createTeacherAgent(config, toolkit, normalizeLang(lang))
     return createScopedChatTransport<TeacherChatMessage>(agent, scopeSignal)
-  }, [config, repo, knowledge, editor, runner, retrievalStore, now, lang, scopeSignal])
+  }, [config, repo, knowledge, runner, retrievalStore, now, lang, scopeSignal])
 
   const runtime = useChatRuntime<TeacherChatMessage>({
     transport,

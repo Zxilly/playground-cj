@@ -76,7 +76,6 @@ function makeContext(): WorkspaceContextValue {
     repo: { id: 'repo' } as unknown as WorkspaceContextValue['repo'],
     retrievalStore: { list: vi.fn(async () => []), save: vi.fn() },
     knowledge: { id: 'cangjie-mcp', search: vi.fn(async () => []) },
-    editor: { setCode: vi.fn(), getCode: vi.fn(() => '') },
     runner: { run: vi.fn(async () => ({ ok: true, stdout: '', stderr: '', exitCode: 0 })) },
     now: () => 123,
   }
@@ -114,7 +113,6 @@ describe('teacherChatRuntime', () => {
     expect(runtimeMocks.createTeacherToolkit).toHaveBeenCalledWith(
       expect.objectContaining({
         knowledge: expect.objectContaining({ id: 'cangjie-mcp' }),
-        editor: expect.objectContaining({ setCode: expect.any(Function) }),
         runner: expect.objectContaining({ run: expect.any(Function) }),
         retrievalStore: expect.objectContaining({ list: expect.any(Function) }),
         now: expect.any(Function),

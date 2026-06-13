@@ -1,6 +1,6 @@
 import { createContext } from 'react'
 import type { KnowledgeSource } from '@/lib/teach/knowledge/source'
-import type { EditorBridge, TeacherRunner } from '@/lib/teach/teacher/toolkit'
+import type { TeacherRunner } from '@/lib/teach/teacher/toolkit'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
@@ -15,8 +15,6 @@ import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcom
  *    outcomes and read for "due now" review (same shape `useBlockOutcome` needs).
  *  - `knowledge`       — the pluggable {@link KnowledgeSource} (currently Cangjie
  *    MCP) the teacher grounds factual claims against.
- *  - `editor`          — the shared Monaco bridge used by `code_task` blocks and
- *    teacher demonstrations.
  *  - `runner`          — the remote Cangjie runner `code_task` blocks compile and
  *    run against. Optional so document-only views and isolated tests can omit it;
  *    when absent, interactive `code_task` blocks fall back to their own default.
@@ -29,7 +27,6 @@ export interface WorkspaceContextValue {
   repo: WorkspaceRepository
   retrievalStore: RetrievalStoreLike
   knowledge: KnowledgeSource
-  editor: EditorBridge
   runner?: TeacherRunner
   now: () => number
 }

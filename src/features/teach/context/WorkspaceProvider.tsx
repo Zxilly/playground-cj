@@ -39,7 +39,6 @@ export function WorkspaceProvider({
   repo,
   retrievalStore,
   knowledge,
-  editor,
   runner,
   now,
   onPrefillChat,
@@ -51,11 +50,10 @@ export function WorkspaceProvider({
       repo: createObservableRepository(repo, bumpRevision),
       retrievalStore,
       knowledge,
-      editor,
       runner,
       now,
     }),
-    [repo, retrievalStore, knowledge, editor, runner, now, bumpRevision],
+    [repo, retrievalStore, knowledge, runner, now, bumpRevision],
   )
 
   const navigation = useMemo<LessonNavigationContextValue>(

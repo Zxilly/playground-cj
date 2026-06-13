@@ -15,18 +15,6 @@ import {
 } from '../workspace/documents'
 import { readLearnerState } from './learner-state'
 
-/**
- * Minimal contract for driving the shared Monaco editor from a tool. The domain
- * toolkit stays decoupled from Monaco itself; the feature layer injects a real
- * bridge (see Phase 9) and tests inject a fake.
- */
-export interface EditorBridge {
-  /** Replace the editor's current contents with `code`. */
-  setCode: (code: string) => Promise<void> | void
-  /** Read the editor's current contents. */
-  getCode: () => Promise<string> | string
-}
-
 /** Minimal contract for running Cangjie code through the remote runner. */
 export interface TeacherRunner {
   /** Compile and run `code`, resolving to a normalised {@link RunResult}. */
@@ -48,7 +36,6 @@ export interface RetrievalStore {
 export interface TeacherToolkitDeps {
   repo: WorkspaceRepository
   knowledge: KnowledgeSource
-  editor: EditorBridge
   runner: TeacherRunner
   retrievalStore: RetrievalStore
   /** Injected clock; the toolkit never reads `Date.now()` directly. */
@@ -83,15 +70,15 @@ const upsertReferenceInputSchema = referenceDocSchema.omit({ updatedAt: true })
 /**
  * Build the single Teacher agent's tool set (AI SDK v6 `tool()` API). Each tool
  * delegates to one of the injected dependencies (workspace repository,
- * knowledge source, editor bridge, runner, retrieval store) and returns a
- * compact JSON payload (`{ ok, ... }`) the model can reason over.
+ * knowledge source, runner, retrieval store) and returns a compact JSON payload
+ * (`{ ok, ... }`) the model can reason over.
  *
  * `create_lesson` uses {@link lessonDraftSchema} directly as its `inputSchema`
  * so the model's lesson is zod-validated (including the equal-length quiz rule)
  * before it is persisted.
  */
 export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
-  const { repo, knowledge, editor, runner, retrievalStore, now } = deps
+  const { repo, knowledge, runner, retrievalStore, now } = deps
 
   // The last run result is held here so `read_run_result` can return it without
   // re-running. Reset implicitly when `run_code` runs again.
@@ -242,20 +229,7 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
       },
     }),
 
-    // ---- Feedback loop / editor + runner ----
-    set_editor_code: tool({
-      description: 'Replace the shared editor\'s contents with the given Cangjie code (e.g. to seed a code_task\'s starter code or demonstrate a snippet).',
-      inputSchema: z.object({ code: z.string() }),
-      execute: async ({ code }) => {
-        await editor.setCode(code)
-        return ok()
-      },
-    }),
-    read_editor_code: tool({
-      description: 'Read the shared editor\'s current contents (the learner\'s code).',
-      inputSchema: z.object({}),
-      execute: async () => ok({ code: await editor.getCode() }),
-    }),
+    // ---- Feedback loop / runner ----
     run_code: tool({
       description: 'Compile and run Cangjie code on the remote runner, returning stdout/stderr/exitCode. The result is also cached for read_run_result.',
       inputSchema: z.object({ code: z.string() }),

@@ -2,7 +2,6 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import type { KnowledgeSource } from '@/lib/teach/knowledge/source'
-import type { EditorBridge } from '@/lib/teach/teacher/toolkit'
 import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import { useLessonNavigation } from '@/features/teach/context/useLessonNavigation'
@@ -35,10 +34,9 @@ function makeRepo(): WorkspaceRepository {
 
 const knowledge: KnowledgeSource = { id: 'cangjie-mcp', search: vi.fn(async () => []) }
 const retrievalStore: RetrievalStoreLike = { list: vi.fn(async () => []), save: vi.fn() }
-const editor: EditorBridge = { setCode: vi.fn(), getCode: vi.fn(() => '') }
 
 function makeDeps() {
-  return { repo: makeRepo(), knowledge, retrievalStore, editor, now: () => 42 }
+  return { repo: makeRepo(), knowledge, retrievalStore, now: () => 42 }
 }
 
 function wrap(deps: ReturnType<typeof makeDeps>, ui: ReactNode) {
@@ -74,7 +72,6 @@ describe('workspaceProvider', () => {
     wrap(deps, <WorkspaceProbe />)
     expect(captured!.knowledge).toBe(knowledge)
     expect(captured!.retrievalStore).toBe(retrievalStore)
-    expect(captured!.editor).toBe(editor)
     expect(captured!.now()).toBe(42)
   })
 

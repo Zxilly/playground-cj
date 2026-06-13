@@ -4,7 +4,6 @@ import { I18nProvider } from '@lingui/react'
 import type { ReactElement, ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KnowledgeSource } from '@/lib/teach/knowledge/source'
-import type { EditorBridge } from '@/lib/teach/teacher/toolkit'
 import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
@@ -22,14 +21,13 @@ function makeRepo(): WorkspaceRepository {
 
 const knowledge: KnowledgeSource = { id: 'cangjie-mcp', search: vi.fn(async () => []) }
 const retrievalStore: RetrievalStoreLike = { list: vi.fn(async () => []), save: vi.fn() }
-const editor: EditorBridge = { setCode: vi.fn(), getCode: vi.fn(() => '') }
 
 function Wrapper({ children }: { children: ReactNode }) {
   const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
   i18n.activate('zh')
   return (
     <I18nProvider i18n={i18n}>
-      <WorkspaceProvider repo={makeRepo()} knowledge={knowledge} retrievalStore={retrievalStore} editor={editor} now={() => 0}>
+      <WorkspaceProvider repo={makeRepo()} knowledge={knowledge} retrievalStore={retrievalStore} now={() => 0}>
         {children}
       </WorkspaceProvider>
     </I18nProvider>

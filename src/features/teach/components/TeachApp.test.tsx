@@ -59,7 +59,6 @@ function makeCollaborators(repo: WorkspaceRepository): WorkspaceCollaborators {
     repo,
     retrievalStore: { list: vi.fn(async () => []), save: vi.fn(async () => undefined) },
     knowledge: { id: 'cangjie-mcp', search: vi.fn(async () => []) },
-    editor: { setCode: vi.fn(), getCode: vi.fn(() => '') },
     runner: { run: vi.fn(async () => ({ ok: true, stdout: '', stderr: '', exitCode: 0 })) },
     now: () => 0,
   }

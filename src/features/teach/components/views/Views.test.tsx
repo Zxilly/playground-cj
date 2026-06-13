@@ -48,7 +48,6 @@ function makeContext(repo: WorkspaceRepository): WorkspaceContextValue {
     repo,
     retrievalStore: { list: vi.fn(async () => []), save: vi.fn() },
     knowledge: { id: 'cangjie-mcp', search: vi.fn(async () => []) },
-    editor: { setCode: vi.fn(), getCode: vi.fn(() => '') },
     now: () => 0,
   }
 }
