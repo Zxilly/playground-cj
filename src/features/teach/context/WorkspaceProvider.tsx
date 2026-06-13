@@ -11,9 +11,11 @@ import { WorkspaceContext } from './workspace-context'
 
 export interface WorkspaceProviderProps extends WorkspaceContextValue {
   /**
-   * Seed the teacher chat composer (e.g. from a `followup_prompt` block's "ask
-   * the teacher" button). Wired by the shell to the chat runtime; defaults to a
-   * no-op so navigation blocks degrade gracefully before chat is mounted.
+   * Optional extra callback fired alongside the store-backed prefill signal when
+   * a navigation block seeds the chat composer (the mission-first gate or a
+   * `followup_prompt` block). The chat composer is seeded through the workspace
+   * store's `pendingPrefill` signal regardless, so this is purely additive (e.g.
+   * analytics) — wiring it is no longer required for the buttons to work.
    */
   onPrefillChat?: (prompt: string) => void
   children: ReactNode
@@ -60,7 +62,13 @@ export function WorkspaceProvider({
     () => ({
       selectLesson: lessonId => useWorkspaceStore.getState().selectLesson(lessonId),
       openReference: referenceId => useWorkspaceStore.getState().openReference(referenceId),
-      prefillChat: prompt => onPrefillChat?.(prompt),
+      // Drive the chat composer through the store's prefill signal (the chat
+      // runtime consumes it), so the button works whether or not the shell wired
+      // the optional `onPrefillChat` callback.
+      prefillChat: (prompt) => {
+        useWorkspaceStore.getState().setPendingPrefill(prompt)
+        onPrefillChat?.(prompt)
+      },
     }),
     [onPrefillChat],
   )

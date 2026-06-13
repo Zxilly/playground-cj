@@ -42,6 +42,32 @@ describe('useWorkspaceStore', () => {
     expect(state.currentReferenceId).toBe('r1')
   })
 
+  it('starts with no pending chat prefill', () => {
+    expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
+  })
+
+  it('setPendingPrefill queues a prompt for the chat composer', () => {
+    useWorkspaceStore.getState().setPendingPrefill('帮我定下学习目标')
+    expect(useWorkspaceStore.getState().pendingPrefill).toBe('帮我定下学习目标')
+  })
+
+  it('the latest setPendingPrefill wins when none was consumed yet', () => {
+    useWorkspaceStore.getState().setPendingPrefill('first')
+    useWorkspaceStore.getState().setPendingPrefill('second')
+    expect(useWorkspaceStore.getState().pendingPrefill).toBe('second')
+  })
+
+  it('consumePrefill returns the queued prompt and clears it', () => {
+    useWorkspaceStore.getState().setPendingPrefill('问老师这个问题')
+    expect(useWorkspaceStore.getState().consumePrefill()).toBe('问老师这个问题')
+    expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
+  })
+
+  it('consumePrefill returns null when nothing is queued', () => {
+    expect(useWorkspaceStore.getState().consumePrefill()).toBeNull()
+    expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
+  })
+
   it('starts every scope revision at zero', () => {
     const { revisions } = useWorkspaceStore.getState()
     for (const value of Object.values(revisions))

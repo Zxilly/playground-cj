@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
-import { AssistantRuntimeProvider } from '@assistant-ui/react'
+import { useEffect, useMemo } from 'react'
+import { AssistantRuntimeProvider, useComposerRuntime } from '@assistant-ui/react'
 import { useChatRuntime } from '@assistant-ui/react-ai-sdk'
 import { lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import type { InferAgentUIMessage } from 'ai'
@@ -15,6 +15,7 @@ import { createScopedChatTransport } from '@/lib/teach/teacher/scoped-chat-trans
 import { useLLMConfig } from '@/stores/llmConfig'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
+import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
 
 type TeacherChatMessage = InferAgentUIMessage<TeacherAgent>
@@ -75,9 +76,36 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      <ComposerPrefillBridge />
       <TooltipProvider delayDuration={250}>
         <Thread allowAttachments={false} />
       </TooltipProvider>
     </AssistantRuntimeProvider>
   )
+}
+
+/**
+ * Bridges the workspace store's `pendingPrefill` signal into the assistant-ui
+ * composer. When a navigation block ("和老师聊聊" on the mission-first gate, or
+ * "问老师" on a `followup_prompt` block) queues a prompt, this seeds it into the
+ * composer input (so the learner can review/edit before sending) and consumes
+ * the signal so it fires exactly once.
+ *
+ * Renders nothing — it must live *inside* {@link AssistantRuntimeProvider} so
+ * {@link useComposerRuntime} resolves the thread composer.
+ */
+function ComposerPrefillBridge() {
+  const composer = useComposerRuntime()
+  const pendingPrefill = useWorkspaceStore(s => s.pendingPrefill)
+  const consumePrefill = useWorkspaceStore(s => s.consumePrefill)
+
+  useEffect(() => {
+    if (pendingPrefill === null)
+      return
+    const prompt = consumePrefill()
+    if (prompt !== null)
+      composer.setText(prompt)
+  }, [pendingPrefill, consumePrefill, composer])
+
+  return null
 }

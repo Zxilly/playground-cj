@@ -1,8 +1,9 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
+import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
 
 const runtimeMocks = vi.hoisted(() => ({
@@ -13,6 +14,8 @@ const runtimeMocks = vi.hoisted(() => ({
   useAbortScope: vi.fn(() => ({ aborted: false })),
   useLLMConfig: vi.fn(() => ({ apiKey: 'test-key', model: 'test-model' })),
   sendAutomaticallyWhen: vi.fn(() => false),
+  setText: vi.fn(),
+  useComposerRuntime: vi.fn(),
 }))
 
 function MockAssistantRuntimeProvider({ children }: { children?: ReactNode }) {
@@ -29,6 +32,7 @@ function MockThread({ allowAttachments }: { allowAttachments?: boolean }) {
 
 vi.mock('@assistant-ui/react', () => ({
   AssistantRuntimeProvider: MockAssistantRuntimeProvider,
+  useComposerRuntime: runtimeMocks.useComposerRuntime,
 }))
 
 vi.mock('@assistant-ui/react-ai-sdk', () => ({
@@ -90,10 +94,13 @@ describe('teacherChatRuntime', () => {
   beforeEach(() => {
     for (const mock of Object.values(runtimeMocks))
       mock.mockClear()
+    runtimeMocks.useComposerRuntime.mockReturnValue({ setText: runtimeMocks.setText })
+    useWorkspaceStore.setState(useWorkspaceStore.getInitialState(), true)
   })
 
   afterEach(() => {
     cleanup()
+    useWorkspaceStore.setState(useWorkspaceStore.getInitialState(), true)
   })
 
   it('renders the vendored chat thread with attachments disabled', () => {
@@ -138,5 +145,26 @@ describe('teacherChatRuntime', () => {
       transport: { transport: true },
       sendAutomaticallyWhen: runtimeMocks.sendAutomaticallyWhen,
     }))
+  })
+
+  it('seeds the composer with a pending prefill prompt and clears the signal', async () => {
+    useWorkspaceStore.getState().setPendingPrefill('帮我定下学习目标')
+    renderRuntime()
+    await waitFor(() => expect(runtimeMocks.setText).toHaveBeenCalledWith('帮我定下学习目标'))
+    // The signal is consumed once so re-renders don't re-seed it.
+    expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
+  })
+
+  it('does not touch the composer when no prefill is pending', () => {
+    renderRuntime()
+    expect(runtimeMocks.setText).not.toHaveBeenCalled()
+  })
+
+  it('seeds a prefill queued after mount', async () => {
+    renderRuntime()
+    expect(runtimeMocks.setText).not.toHaveBeenCalled()
+    useWorkspaceStore.getState().setPendingPrefill('问老师这个问题')
+    await waitFor(() => expect(runtimeMocks.setText).toHaveBeenCalledWith('问老师这个问题'))
+    expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
   })
 })

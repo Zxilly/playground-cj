@@ -75,6 +75,17 @@ export interface WorkspaceStore {
   /** Id of the reference selected in the `'reference'` view, or null. */
   currentReferenceId: string | null
   /**
+   * A prompt waiting to be seeded into the teacher chat composer, or null when
+   * none is pending. Set by a navigation block ("和老师聊聊" on the
+   * mission-first gate, "问老师" on a `followup_prompt` block) via the workspace
+   * navigation context's `prefillChat`, and consumed by the teacher chat runtime
+   * which writes it into the composer input and clears it. Kept in the store
+   * (rather than a prop callback) so the producer — a lesson block deep in the
+   * central viewport — and the consumer — the chat region mounted in a sibling
+   * pane — stay decoupled.
+   */
+  pendingPrefill: string | null
+  /**
    * Per-scope monotonic revisions, bumped whenever the matching workspace
    * documents change (e.g. a teacher tool writes the mission or a lesson).
    * Document reads ({@link useWorkspaceResource}) subscribe to their own scope,
@@ -90,6 +101,16 @@ export interface WorkspaceStore {
   selectLesson: (lessonId: string) => void
   /** Open a reference: switch to the `'reference'` view and record its id. */
   openReference: (referenceId: string) => void
+  /**
+   * Queue `prompt` to be seeded into the teacher chat composer. Replaces any
+   * prompt not yet consumed (the latest click wins).
+   */
+  setPendingPrefill: (prompt: string) => void
+  /**
+   * Take the pending prefill prompt (clearing it) so the chat runtime seeds it
+   * exactly once. Returns null when nothing is queued.
+   */
+  consumePrefill: () => string | null
   /**
    * Signal that workspace documents of `scope` changed so dependent reads re-run.
    * Bumps that scope's counter and the `'all'` counter; a `'all'` scope bumps
@@ -111,14 +132,22 @@ export interface WorkspaceStore {
  * persisted: view selection is ephemeral session state, not part of the
  * portable workspace snapshot.
  */
-export const useWorkspaceStore = create<WorkspaceStore>()(set => ({
+export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
   view: 'lessons',
   currentLessonId: null,
   currentReferenceId: null,
+  pendingPrefill: null,
   revisions: initialRevisions(),
   setView: view => set({ view }),
   selectLesson: lessonId => set({ view: 'lesson', currentLessonId: lessonId }),
   openReference: referenceId => set({ view: 'reference', currentReferenceId: referenceId }),
+  setPendingPrefill: prompt => set({ pendingPrefill: prompt }),
+  consumePrefill: () => {
+    const { pendingPrefill } = get()
+    if (pendingPrefill !== null)
+      set({ pendingPrefill: null })
+    return pendingPrefill
+  },
   bumpRevision: (scope = 'all') => set((state) => {
     if (scope === 'all') {
       // A whole-workspace replace: bump every counter so every subscriber re-runs.

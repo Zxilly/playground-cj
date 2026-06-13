@@ -109,7 +109,15 @@ describe('workspaceProvider', () => {
     expect(useWorkspaceStore.getState().currentReferenceId).toBe('r9')
   })
 
-  it('routes prefillChat to the injected handler', () => {
+  it('queues prefillChat into the workspace store so the chat runtime can consume it', () => {
+    // No onPrefillChat wired: the button must still work via the store signal.
+    wrap(makeDeps(), <NavProbe />)
+    expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
+    fireEvent.click(screen.getByTestId('ask'))
+    expect(useWorkspaceStore.getState().pendingPrefill).toBe('why?')
+  })
+
+  it('also fires the optional onPrefillChat handler alongside the store signal', () => {
     const onPrefillChat = vi.fn()
     render(
       <WorkspaceProvider {...makeDeps()} onPrefillChat={onPrefillChat}>
@@ -118,6 +126,7 @@ describe('workspaceProvider', () => {
     )
     fireEvent.click(screen.getByTestId('ask'))
     expect(onPrefillChat).toHaveBeenCalledWith('why?')
+    expect(useWorkspaceStore.getState().pendingPrefill).toBe('why?')
   })
 
   it('throws when useWorkspace is used outside the provider', () => {
