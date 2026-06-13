@@ -120,6 +120,21 @@ describe('indexeddb repository', () => {
     await expect(repo.importAll({ version: 1, foo: 'bar' } as never)).rejects.toThrow()
   })
 
+  it('appends after a gapped-id import without colliding (max-id, not count)', async () => {
+    // A hand-edited export can leave id gaps (here 0001, 0003 — 0002 removed).
+    // count()+1 would hand out 0003 and overwrite the imported record; the next
+    // id must be max(id)+1 = 0004.
+    const snap = await freshRepo().exportAll()
+    snap.learningRecords.push(
+      { id: '0001', title: 'a', body: 'b', status: 'active', createdAt: 1 },
+      { id: '0003', title: 'c', body: 'd', status: 'active', createdAt: 2 },
+    )
+    await repo.importAll(snap)
+    const next = await repo.appendLearningRecord({ title: 'e', body: 'f' })
+    expect(next.id).toBe('0004')
+    expect(await repo.listLearningRecords()).toHaveLength(3)
+  })
+
   it('export reflects retrieval items round-trip', async () => {
     const snap = await repo.exportAll()
     snap.retrieval.push({ id: 'r1', lessonId: '0001', blockId: 'b1', kind: 'quiz', dueAt: 0, intervalDays: 1, ease: 2.5, history: [] })

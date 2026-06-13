@@ -64,8 +64,8 @@ function upgrade(db: IDBPDatabase, oldVersion: number): void {
  * Browser-backed {@link WorkspaceRepository} on top of IndexedDB (via `idb`).
  *
  * All mutating operations funnel through a single serial promise queue so that
- * sequence-number allocation (`count() + 1`) can never race: two concurrent
- * `appendLesson` calls observe distinct counts and receive distinct ids.
+ * sequence-number allocation (`max(id) + 1`) can never race: two concurrent
+ * `appendLesson` calls observe distinct maxima and receive distinct ids.
  *
  * `exportAll` / `importAll` move the entire workspace as one
  * {@link WorkspaceSnapshot}; `importAll` validates with `workspaceSnapshotSchema`
@@ -79,8 +79,8 @@ export function createIndexedDbWorkspaceRepository(dbName: string): WorkspaceRep
     return dbPromise
   }
 
-  // Serial write queue: every mutation chains onto the previous one so reads of
-  // `count()` used for id allocation are never interleaved.
+  // Serial write queue: every mutation chains onto the previous one so the
+  // max-id scan used for id allocation is never interleaved.
   let writeTail: Promise<unknown> = Promise.resolve()
 
   function enqueue<T>(work: () => Promise<T>): Promise<T> {
@@ -94,10 +94,19 @@ export function createIndexedDbWorkspaceRepository(dbName: string): WorkspaceRep
     return run
   }
 
+  // Next id is `max(existing numeric id) + 1`, not `count + 1`: an imported
+  // snapshot whose ids skip numbers (e.g. a hand-edited export missing `0002`)
+  // would otherwise hand out an id that collides with an existing record.
   async function nextSequence(store: typeof KEYED_STORES[number]): Promise<string> {
     const db = await getDb()
-    const count = await db.count(store)
-    return formatSequence(count + 1)
+    const keys = await db.getAllKeys(store)
+    let max = 0
+    for (const key of keys) {
+      const n = Number.parseInt(String(key), 10)
+      if (Number.isFinite(n) && n > max)
+        max = n
+    }
+    return formatSequence(max + 1)
   }
 
   return {
@@ -264,26 +273,33 @@ export function createIndexedDbWorkspaceRepository(dbName: string): WorkspaceRep
         // the returned promise and leaves existing data untouched.
         const parsed = workspaceSnapshotSchema.parse(snapshot)
         const db = await getDb()
-        // Clear every store first — import replaces, never merges.
-        await Promise.all([
-          db.clear(META_STORE),
-          ...KEYED_STORES.map(store => db.clear(store)),
-        ])
 
+        // Clear and write in a SINGLE transaction. If the clears ran in separate
+        // auto-commit transactions before the write transaction, a concurrent
+        // read (reads are not enqueued) could land in the gap and observe a
+        // fully empty workspace — flashing a blank shell or spuriously
+        // re-triggering the mission-first gate right after a successful import.
         const tx = db.transaction([META_STORE, ...KEYED_STORES], 'readwrite')
         const meta = tx.objectStore(META_STORE)
+        const records = tx.objectStore(LEARNING_RECORDS_STORE)
+        const lessons = tx.objectStore(LESSONS_STORE)
+        const references = tx.objectStore(REFERENCES_STORE)
+        const retrieval = tx.objectStore(RETRIEVAL_STORE)
+
+        // Import replaces, never merges — clear every store first, same tx.
+        void meta.clear()
+        void records.clear()
+        void lessons.clear()
+        void references.clear()
+        void retrieval.clear()
+
         if (parsed.mission)
           void meta.put(parsed.mission, MISSION_KEY)
         void meta.put(parsed.glossary, GLOSSARY_KEY)
         void meta.put(parsed.notes, NOTES_KEY)
-
-        const records = tx.objectStore(LEARNING_RECORDS_STORE)
         for (const record of parsed.learningRecords) void records.put(record)
-        const lessons = tx.objectStore(LESSONS_STORE)
         for (const lesson of parsed.lessons) void lessons.put(lesson)
-        const references = tx.objectStore(REFERENCES_STORE)
         for (const reference of parsed.references) void references.put(reference)
-        const retrieval = tx.objectStore(RETRIEVAL_STORE)
         for (const item of parsed.retrieval) void retrieval.put(item)
 
         await tx.done

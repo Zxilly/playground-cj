@@ -24,4 +24,15 @@ describe('quizBlockSchema equal-length rule', () => {
     const r = quizBlockSchema.safeParse({ type: 'quiz', question: 'q', options: ['a a', 'b b'], answerIndices: [5], multiple: false, explanation: 'e' })
     expect(r.success).toBe(false)
   })
+
+  // The teacher authors lessons through `blockSchema` (the discriminated union),
+  // never through `quizBlockSchema` directly — so the equal-length refine must
+  // still fire when a quiz is parsed via the union path, or a malformed quiz
+  // could slip into a persisted lesson.
+  it('enforces the equal-length rule through the discriminated union', () => {
+    const ok = blockSchema.safeParse({ type: 'quiz', question: 'q', options: ['let binds value', 'var binds mutable'], answerIndices: [0], multiple: false, explanation: 'e' })
+    expect(ok.success).toBe(true)
+    const bad = blockSchema.safeParse({ type: 'quiz', question: 'q', options: ['one two three', 'one two'], answerIndices: [0], multiple: false, explanation: 'e' })
+    expect(bad.success).toBe(false)
+  })
 })
