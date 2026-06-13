@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ComponentType, RefObject } from 'react'
+import dynamic from 'next/dynamic'
 import { CheckCircle2, Lightbulb, Loader2, Play, XCircle } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
@@ -8,8 +10,21 @@ import type { CodeTaskBlockSchemaType } from '@/lib/teach/lessons/blocks'
 import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
 import { evaluateOutput } from '@/lib/teach/feedback/evaluate'
+import type { ActiveEditorHandle, ActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import type { BlockComponentProps } from './block-props'
 import { cn } from '@/lib/utils'
+
+/**
+ * The real Monaco editor is loaded lazily (SSR off): it pulls in the heavy
+ * `@codingame/monaco-vscode-api` stack (including `.css` imports jsdom cannot
+ * parse), so it must never be in the static import graph of this module — that
+ * would break the jsdom (component) tests, which inject a `<textarea>` fake
+ * instead and never trigger this import.
+ */
+const CodeTaskMonacoEditor = dynamic(
+  () => import('./CodeTaskMonacoEditor').then(m => m.CodeTaskMonacoEditor),
+  { ssr: false },
+) as CodeTaskEditorComponent
 
 /** A run that has been evaluated against the task's expected output. */
 interface EvaluatedRun {
@@ -17,22 +32,66 @@ interface EvaluatedRun {
   matched: boolean
 }
 
+/**
+ * Imperative handle a code_task editor exposes so the block can read the current
+ * code at run time and register it with the active-editor registry. Identical in
+ * shape to {@link ActiveEditorHandle} — the editor *is* the active-editor source.
+ */
+export type CodeTaskEditorHandle = ActiveEditorHandle
+
+/**
+ * Props the injected code_task editor component receives. `initialCode` seeds the
+ * editor once (Monaco then owns the buffer); `handleRef` is filled with the
+ * editor's {@link CodeTaskEditorHandle} so the block (and, through it, the active
+ * editor registry) can read/write the live code. Kept minimal so a jsdom test can
+ * supply a `<textarea>` fake while the app supplies the real Monaco editor.
+ */
+export interface CodeTaskEditorProps {
+  /** The code to seed the editor with on first mount. */
+  initialCode: string
+  /** Filled with the editor's imperative read/write handle. */
+  handleRef: RefObject<CodeTaskEditorHandle | null>
+  /** UI language passed through to Monaco (locale). */
+  locale?: string
+}
+
+/** The renderer for the code input area (real Monaco in the app, a fake in tests). */
+export type CodeTaskEditorComponent = ComponentType<CodeTaskEditorProps>
+
+/**
+ * The code_task editor container DOM node, augmented with e2e-only read/write
+ * hooks. The real Monaco editor is not a `<textarea>` (so Playwright cannot
+ * `.fill()` it) and its keyboard input is reshaped by auto-indent / bracket
+ * completion, so e2e seeds code through these hooks (model `setValue`) for a
+ * deterministic write. Scoped to the element — there is no app-wide global.
+ */
+interface CodeTaskEditorContainer extends HTMLDivElement {
+  __codeTaskSetCode?: (code: string) => void
+  __codeTaskGetCode?: () => string
+}
+
 interface CodeTaskBlockProps extends BlockComponentProps<CodeTaskBlockSchemaType> {
   /**
    * Compile-and-run client. Defaults to the shared remote runner; tests inject
-   * a fake so the block can be exercised without the network or Monaco.
+   * a fake so the block can be exercised without the network.
    */
   runCode?: (code: string) => Promise<RunResult>
+  /**
+   * The editor renderer. Defaults to the real Monaco-backed editor; jsdom
+   * (component) tests inject a `<textarea>` fake since Monaco does not render
+   * under jsdom.
+   */
+  editorComponent?: CodeTaskEditorComponent
+  /**
+   * Registry the block registers its editor with while mounted, so the teacher's
+   * `read_editor_code` / `set_editor_code` tools target this code_task. Optional
+   * so isolated tests and document-only previews can omit it.
+   */
+  activeEditor?: ActiveEditorRegistry
+  /** UI locale forwarded to the Monaco editor. */
+  locale?: string
 }
 
-/**
- * Skill block: an interactive code task — the tightest feedback loop in the
- * workspace. The learner edits the seeded starter code, runs it through the
- * Cangjie runner, and the output is auto-compared against the expected output
- * under the task's match mode. Hints reveal progressively. When the runner is
- * unreachable the block degrades to a retry-able notice rather than recording a
- * spurious failure.
- */
 /**
  * Re-hydrate a completed task into an {@link EvaluatedRun} so a re-opened lesson
  * shows the prior pass/fail verdict. Only correctness was persisted (not the run
@@ -47,25 +106,85 @@ function evaluatedFromOutcome(outcome: BlockComponentProps<CodeTaskBlockSchemaTy
   return { result: { ok: matched, stdout: '', stderr: '', exitCode: matched ? 0 : null }, matched }
 }
 
-export function CodeTaskBlock({ block, outcome, runCode = runCangjieCode, onOutcome }: CodeTaskBlockProps) {
+/**
+ * Skill block: an interactive code task — the tightest feedback loop in the
+ * workspace. The learner edits the seeded starter code in a real Monaco editor
+ * (the same editor module as the playground), runs it through the Cangjie runner,
+ * and the output is auto-compared against the expected output under the task's
+ * match mode. Hints reveal progressively. When the runner is unreachable the
+ * block degrades to a retry-able notice rather than recording a spurious failure.
+ *
+ * While mounted, the block registers its editor with the workspace's
+ * {@link ActiveEditorRegistry} so the teacher agent's `read_editor_code` /
+ * `set_editor_code` tools read and seed *this* code_task's code (the last
+ * code_task the learner worked in wins). The editor itself is injected
+ * ({@link CodeTaskEditorComponent}) so jsdom component tests can swap Monaco for a
+ * `<textarea>` fake.
+ */
+export function CodeTaskBlock({
+  block,
+  outcome,
+  runCode = runCangjieCode,
+  onOutcome,
+  editorComponent: EditorComponent = CodeTaskMonacoEditor,
+  activeEditor,
+  locale,
+}: CodeTaskBlockProps) {
   // Re-hydrate a previously attempted task: a completed outcome seeds the prior
-  // code (when stored) and the recorded pass/fail verdict. `outcome` is read
-  // only at first mount so it never overwrites the learner's current edits.
+  // code (when stored) and the recorded pass/fail verdict. `outcome` is read only
+  // at first mount (via the lazy initializers) so it never overwrites the
+  // learner's current edits.
   const priorCode = outcome?.completedAt != null && typeof outcome.lastAnswer === 'string'
     ? outcome.lastAnswer
     : null
-  const [code, setCode] = useState(() => priorCode ?? block.starterCode)
+  const [initialCode] = useState(() => priorCode ?? block.starterCode)
   const [running, setRunning] = useState(false)
   const [evaluated, setEvaluated] = useState<EvaluatedRun | null>(() => evaluatedFromOutcome(outcome))
   const [revealedHints, setRevealedHints] = useState(0)
+
+  // The editor owns the live code buffer; the block reads it through this handle
+  // at run time and registers it as the active editor for the teacher's tools.
+  const handleRef = useRef<CodeTaskEditorHandle | null>(null)
+  const containerRef = useRef<CodeTaskEditorContainer | null>(null)
 
   const hints = block.hints ?? []
   const runnerUnavailable = evaluated?.result.failureKind === 'runner_unavailable'
   const passed = evaluated != null && evaluated.matched
 
+  // Register this code_task's editor as the active one while mounted. The handle
+  // is stable (a ref) so registration survives re-renders; the registry's
+  // "latest wins / only-clear-if-still-mine" semantics keep focus correct when
+  // the learner moves between code_tasks.
+  useEffect(() => {
+    if (!activeEditor)
+      return
+    return activeEditor.register({
+      getCode: () => handleRef.current?.getCode() ?? '',
+      setCode: (code: string) => handleRef.current?.setCode(code),
+    })
+  }, [activeEditor])
+
+  // Expose a deterministic read/write hook on the editor container so e2e tests
+  // can seed code into the real Monaco editor (which is not a `<textarea>`,
+  // cannot be `.fill()`ed, and whose keyboard input is mangled by auto-indent).
+  // Scoped to this DOM node — not an app-wide global — so it only exists while a
+  // code_task is mounted and never leaks across the page.
+  useEffect(() => {
+    const node = containerRef.current
+    if (!node)
+      return
+    node.__codeTaskSetCode = (code: string) => handleRef.current?.setCode(code)
+    node.__codeTaskGetCode = () => handleRef.current?.getCode() ?? ''
+    return () => {
+      delete node.__codeTaskSetCode
+      delete node.__codeTaskGetCode
+    }
+  }, [])
+
   const run = async () => {
     if (running)
       return
+    const code = handleRef.current?.getCode() ?? initialCode
     setRunning(true)
     try {
       const result = await runCode(code)
@@ -91,15 +210,9 @@ export function CodeTaskBlock({ block, outcome, runCode = runCangjieCode, onOutc
         <div className="flex items-center justify-between border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
           <span>Cangjie</span>
         </div>
-        <textarea
-          data-testid="code-task-editor"
-          value={code}
-          onChange={event => setCode(event.target.value)}
-          spellCheck={false}
-          rows={Math.max(4, block.starterCode.split('\n').length + 1)}
-          aria-label={t`代码编辑区`}
-          className="block w-full resize-y bg-transparent px-3 py-2 font-mono text-xs leading-relaxed focus:outline-none"
-        />
+        <div ref={containerRef} data-testid="code-task-editor" aria-label={t`代码编辑区`}>
+          <EditorComponent initialCode={initialCode} handleRef={handleRef} locale={locale} />
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">

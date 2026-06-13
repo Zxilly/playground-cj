@@ -6,6 +6,7 @@ import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcom
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import { useLessonNavigation } from '@/features/teach/context/useLessonNavigation'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import { useWorkspace } from './useWorkspace'
 import { WorkspaceProvider } from './WorkspaceProvider'
 
@@ -34,9 +35,10 @@ function makeRepo(): WorkspaceRepository {
 
 const knowledge: KnowledgeSource = { id: 'cangjie-mcp', search: vi.fn(async () => []) }
 const retrievalStore: RetrievalStoreLike = { list: vi.fn(async () => []), save: vi.fn() }
+const activeEditor = createActiveEditorRegistry()
 
 function makeDeps() {
-  return { repo: makeRepo(), knowledge, retrievalStore, now: () => 42 }
+  return { repo: makeRepo(), knowledge, retrievalStore, activeEditor, now: () => 42 }
 }
 
 function wrap(deps: ReturnType<typeof makeDeps>, ui: ReactNode) {
@@ -72,6 +74,7 @@ describe('workspaceProvider', () => {
     wrap(deps, <WorkspaceProbe />)
     expect(captured!.knowledge).toBe(knowledge)
     expect(captured!.retrievalStore).toBe(retrievalStore)
+    expect(captured!.activeEditor).toBe(activeEditor)
     expect(captured!.now()).toBe(42)
   })
 

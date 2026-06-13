@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
 
 const runtimeMocks = vi.hoisted(() => ({
@@ -76,12 +77,15 @@ vi.mock('@/modules/assistant-ui/chat/Thread', () => ({
   Thread: MockThread,
 }))
 
+const activeEditor = createActiveEditorRegistry()
+
 function makeContext(): WorkspaceContextValue {
   return {
     repo: { id: 'repo' } as unknown as WorkspaceContextValue['repo'],
     retrievalStore: { list: vi.fn(async () => []), save: vi.fn() },
     knowledge: { id: 'cangjie-mcp', search: vi.fn(async () => []) },
     runner: { run: vi.fn(async () => ({ ok: true, stdout: '', stderr: '', exitCode: 0 })) },
+    activeEditor,
     now: () => 123,
   }
 }
@@ -125,6 +129,9 @@ describe('teacherChatRuntime', () => {
         knowledge: expect.objectContaining({ id: 'cangjie-mcp' }),
         runner: expect.objectContaining({ run: expect.any(Function) }),
         retrievalStore: expect.objectContaining({ list: expect.any(Function) }),
+        // The active-editor registry is passed as the toolkit's editor bridge so
+        // read_editor_code / set_editor_code drive the learner's active code_task.
+        editor: activeEditor,
         now: expect.any(Function),
       }),
     )

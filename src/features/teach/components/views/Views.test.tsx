@@ -15,6 +15,7 @@ import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { LessonNavigationContext, noopLessonNavigation } from '@/features/teach/context/lesson-navigation-context'
+import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import { MissionView } from './MissionView'
 import { GlossaryView } from './GlossaryView'
 import { LessonsListView } from './LessonsListView'
@@ -48,6 +49,7 @@ function makeContext(repo: WorkspaceRepository): WorkspaceContextValue {
     repo,
     retrievalStore: { list: vi.fn(async () => []), save: vi.fn() },
     knowledge: { id: 'cangjie-mcp', search: vi.fn(async () => []) },
+    activeEditor: createActiveEditorRegistry(),
     now: () => 0,
   }
 }

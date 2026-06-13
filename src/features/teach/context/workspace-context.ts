@@ -4,6 +4,7 @@ import type { TeacherRunner } from '@/lib/teach/teacher/toolkit'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
+import type { ActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 
 /**
  * The runtime collaborators every teaching-workspace surface depends on, injected
@@ -18,6 +19,9 @@ import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcom
  *  - `runner`          — the remote Cangjie runner `code_task` blocks compile and
  *    run against. Optional so document-only views and isolated tests can omit it;
  *    when absent, interactive `code_task` blocks fall back to their own default.
+ *  - `activeEditor`    — the registry each `code_task` editor registers itself
+ *    with when the learner works in it, so the teacher's `read_editor_code` /
+ *    `set_editor_code` tools read/write whichever code_task is currently active.
  *  - `now`             — injected clock; surfaces never read `Date.now()` directly.
  *
  * Holding these behind one context keeps the views decoupled from how the shell
@@ -28,6 +32,7 @@ export interface WorkspaceContextValue {
   retrievalStore: RetrievalStoreLike
   knowledge: KnowledgeSource
   runner?: TeacherRunner
+  activeEditor: ActiveEditorRegistry
   now: () => number
 }
 

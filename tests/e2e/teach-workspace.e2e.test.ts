@@ -338,9 +338,11 @@ describe('teach workspace e2e', () => {
     await quizResult.waitFor({ state: 'visible' })
     expect(await quizResult.getAttribute('data-correct')).toBe('true')
 
-    // Solve the code task: type the passing code and run it through the mocked runner.
-    const editor = page.getByTestId('code-task-editor')
-    await editor.fill(PRINT_TASK_CODE)
+    // Solve the code task. The code_task editor is a real Monaco editor (not a
+    // <textarea>), so we seed the passing code through the editor container's
+    // deterministic write hook (which calls the model's setValue) rather than
+    // page.fill(), then run it through the mocked runner.
+    await seedCodeTask(page, PRINT_TASK_CODE)
     await page.getByTestId('code-task-run').click()
     const codeResult = page.getByTestId('code-task-result')
     await codeResult.waitFor({ state: 'visible', timeout: 30_000 })
@@ -402,6 +404,38 @@ async function enterWorkspaceFromLanding(page: Page): Promise<void> {
   await enter.waitFor({ state: 'visible', timeout: 60_000 })
   await expect.poll(() => enter.isEnabled()).toBe(true)
   await enter.click()
+}
+
+/**
+ * Seed the active code_task's Monaco editor with `code`. The code_task editor is
+ * a real Monaco editor (the cangjie-editor module), not a `<textarea>`: it has no
+ * `.fill()`-able input, and keyboard input is reshaped by auto-indent / bracket
+ * completion. The block exposes a deterministic write hook on its editor
+ * container DOM node (`__codeTaskSetCode`, backed by the model's `setValue`); poll
+ * until Monaco has mounted and the hook is attached, then write through it.
+ */
+async function seedCodeTask(page: Page, code: string): Promise<void> {
+  const container = page.getByTestId('code-task-editor')
+  await container.waitFor({ state: 'visible', timeout: 30_000 })
+  // Monaco mounts asynchronously: the write hook is attached on mount but the
+  // underlying editor model only exists once Monaco's onLoad fires, so an early
+  // setCode is a no-op. Re-issue the write each poll until the model actually
+  // holds the seeded code (write + verify), which also waits out Monaco's boot.
+  await expect
+    .poll(
+      () => container.evaluate(
+        (
+          el: HTMLElement & { __codeTaskSetCode?: (c: string) => void, __codeTaskGetCode?: () => string },
+          value: string,
+        ) => {
+          el.__codeTaskSetCode?.(value)
+          return el.__codeTaskGetCode?.() ?? ''
+        },
+        code,
+      ),
+      { timeout: 30_000 },
+    )
+    .toContain('println("仓颉")')
 }
 
 /** Mark the first lesson completed by writing its state through the live IndexedDB repository. */

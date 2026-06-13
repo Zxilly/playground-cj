@@ -35,9 +35,10 @@ function normalizeLang(lang: string): TeacherLang {
  * the vendored assistant-ui {@link Thread}.
  *
  * The agent's tool set is built from the workspace collaborators in context
- * (repository, knowledge source, runner, retrieval store, clock),
- * so a teacher tool call reads/writes the very same documents the central views
- * render. The repository in context is already an observable repository
+ * (repository, knowledge source, runner, retrieval store, active-editor bridge,
+ * clock), so a teacher tool call reads/writes the very same documents the central
+ * views render — and `read_editor_code` / `set_editor_code` target whichever
+ * code_task the learner is currently working in. The repository in context is already an observable repository
  * (wrapped once in {@link WorkspaceProvider}), so a teacher tool write bumps the
  * workspace revision and refreshes the central views without a reload — no extra
  * wrapping here. The agent runs as an AI SDK `ToolLoopAgent`; `useChatRuntime`
@@ -57,7 +58,7 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
   // the chat surface.
   useLLMConfigBootstrap({ reportErrors: false })
   const config = useLLMConfig()
-  const { repo, knowledge, runner, retrievalStore, now } = useWorkspace()
+  const { repo, knowledge, runner, retrievalStore, activeEditor, now } = useWorkspace()
   const scopeSignal = useAbortScope()
 
   const transport = useMemo(() => {
@@ -69,11 +70,15 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
       knowledge,
       runner: runner ?? { run: runCangjieCode },
       retrievalStore,
+      // The active-editor registry resolves whichever code_task the learner is
+      // currently working in, so set_editor_code / read_editor_code drive the
+      // learner's live editor.
+      editor: activeEditor,
       now,
     })
     const agent = createTeacherAgent(config, toolkit, normalizeLang(lang))
     return createScopedChatTransport<TeacherChatMessage>(agent, scopeSignal)
-  }, [config, repo, knowledge, runner, retrievalStore, now, lang, scopeSignal])
+  }, [config, repo, knowledge, runner, retrievalStore, activeEditor, now, lang, scopeSignal])
 
   const runtime = useChatRuntime<TeacherChatMessage>({
     transport,

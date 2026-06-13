@@ -4,6 +4,8 @@ import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import { createIndexedDbWorkspaceRepository } from '@/lib/teach/workspace/indexeddb-repository'
 import { createCangjieMcpKnowledgeSource } from '@/lib/teach/knowledge/cangjie-mcp-source'
 import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
+import type { ActiveEditorRegistry } from './active-editor-store'
+import { createActiveEditorRegistry } from './active-editor-store'
 import { createIdbRetrievalStore } from './retrieval-store'
 
 /**
@@ -16,6 +18,7 @@ export interface WorkspaceCollaborators {
   retrievalStore: RetrievalStore
   knowledge: KnowledgeSource
   runner: TeacherRunner
+  activeEditor: ActiveEditorRegistry
   now: () => number
 }
 
@@ -30,6 +33,8 @@ export interface WorkspaceCollaborators {
  *    `exportAll`).
  *  - `knowledge`      — Cangjie MCP knowledge source.
  *  - `runner`         — remote Cangjie runner wrapper.
+ *  - `activeEditor`   — registry the mounted `code_task` editor registers with,
+ *    so the teacher's editor tools target the learner's current code_task.
  *  - `now`            — wall clock.
  */
 export function createWorkspaceCollaborators(lang: string): WorkspaceCollaborators {
@@ -42,6 +47,7 @@ export function createWorkspaceCollaborators(lang: string): WorkspaceCollaborato
     retrievalStore: createIdbRetrievalStore(repo),
     knowledge: createCangjieMcpKnowledgeSource(),
     runner: { run: runCangjieCode },
+    activeEditor: createActiveEditorRegistry(),
     now: () => Date.now(),
   }
 }

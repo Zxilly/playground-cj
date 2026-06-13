@@ -31,7 +31,7 @@ export interface LessonViewProps {
  * in-memory progress.
  */
 export function LessonView({ lessonId }: LessonViewProps) {
-  const { repo, retrievalStore, now, runner } = useWorkspace()
+  const { repo, retrievalStore, now, runner, activeEditor } = useWorkspace()
   const { data: lesson, loading } = useWorkspaceResource(
     () => (lessonId ? repo.getLesson(lessonId) : Promise.resolve(null)),
     [repo, lessonId],
@@ -78,6 +78,7 @@ export function LessonView({ lessonId }: LessonViewProps) {
           retrievalStore={retrievalStore}
           now={now}
           runCode={runCode}
+          activeEditor={activeEditor}
         />
       </article>
     </GlossaryProvider>

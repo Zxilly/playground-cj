@@ -40,6 +40,7 @@ export function WorkspaceProvider({
   retrievalStore,
   knowledge,
   runner,
+  activeEditor,
   now,
   onPrefillChat,
   children,
@@ -51,9 +52,10 @@ export function WorkspaceProvider({
       retrievalStore,
       knowledge,
       runner,
+      activeEditor,
       now,
     }),
-    [repo, retrievalStore, knowledge, runner, now, bumpRevision],
+    [repo, retrievalStore, knowledge, runner, activeEditor, now, bumpRevision],
   )
 
   const navigation = useMemo<LessonNavigationContextValue>(

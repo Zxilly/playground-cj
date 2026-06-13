@@ -64,6 +64,9 @@ export default defineConfig({
         'src/modules/cangjie-editor/components/CodeRunner.tsx',
         'src/modules/cangjie-editor/components/EditorWrapper.tsx',
         'src/modules/cangjie-editor/components/LspStatusIndicator.tsx',
+        // Thin Monaco wrapper for code_task blocks (Monaco does not render under
+        // jsdom; the block is unit-tested with an injected fake editor instead).
+        'src/features/teach/components/blocks/CodeTaskMonacoEditor.tsx',
         'src/modules/i18n/**',
         'scripts/download-lsp-cli.mjs',
         'scripts/download-lsp.mjs',

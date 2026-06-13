@@ -7,6 +7,7 @@ import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import type { WorkspaceSnapshot } from '@/lib/teach/workspace/documents'
 import { WORKSPACE_SNAPSHOT_VERSION } from '@/lib/teach/workspace/documents'
 import { useLLMConfigStore } from '@/stores/llmConfig'
+import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import type { WorkspaceCollaborators } from './TeachApp'
 import { TeachAppContent } from './TeachApp'
 
@@ -85,6 +86,7 @@ function makeCollaborators(repo: WorkspaceRepository): WorkspaceCollaborators {
     retrievalStore: { list: vi.fn(async () => []), save: vi.fn(async () => undefined) },
     knowledge: { id: 'cangjie-mcp', search: vi.fn(async () => []) },
     runner: { run: vi.fn(async () => ({ ok: true, stdout: '', stderr: '', exitCode: 0 })) },
+    activeEditor: createActiveEditorRegistry(),
     now: () => 0,
   }
 }

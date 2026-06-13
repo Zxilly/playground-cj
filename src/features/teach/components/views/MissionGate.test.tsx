@@ -8,6 +8,7 @@ import type { RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcom
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import { MissionGate } from './MissionGate'
 
 function makeRepo(): WorkspaceRepository {
@@ -21,13 +22,14 @@ function makeRepo(): WorkspaceRepository {
 
 const knowledge: KnowledgeSource = { id: 'cangjie-mcp', search: vi.fn(async () => []) }
 const retrievalStore: RetrievalStoreLike = { list: vi.fn(async () => []), save: vi.fn() }
+const activeEditor = createActiveEditorRegistry()
 
 function Wrapper({ children }: { children: ReactNode }) {
   const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
   i18n.activate('zh')
   return (
     <I18nProvider i18n={i18n}>
-      <WorkspaceProvider repo={makeRepo()} knowledge={knowledge} retrievalStore={retrievalStore} now={() => 0}>
+      <WorkspaceProvider repo={makeRepo()} knowledge={knowledge} retrievalStore={retrievalStore} activeEditor={activeEditor} now={() => 0}>
         {children}
       </WorkspaceProvider>
     </I18nProvider>

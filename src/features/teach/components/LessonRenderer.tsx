@@ -5,6 +5,7 @@ import { Trans } from '@lingui/react/macro'
 import type { Block } from '@/lib/teach/lessons/blocks'
 import type { Lesson } from '@/lib/teach/lessons/lesson'
 import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
+import type { ActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import type { RecordBlockOutcome, RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
 import { useBlockOutcome } from '@/features/teach/hooks/use-block-outcome'
 import type { BlockOutcomeReport } from './blocks/block-props'
@@ -43,6 +44,14 @@ export interface LessonRendererProps {
    * raw_html bridge `teach:run` no-ops.
    */
   runCode?: (code: string) => Promise<RunResult>
+  /**
+   * Registry each `code_task` editor registers itself with while mounted, so the
+   * teacher's editor tools read/write the learner's active code_task. Optional so
+   * document-only previews can omit it.
+   */
+  activeEditor?: ActiveEditorRegistry
+  /** UI locale forwarded to the code_task Monaco editor. */
+  locale?: string
 }
 
 interface RenderBlockArgs {
@@ -51,6 +60,8 @@ interface RenderBlockArgs {
   outcome: Lesson['state']['blockProgress'][string] | undefined
   onOutcome: (report: BlockOutcomeReport) => void
   runCode?: (code: string) => Promise<RunResult>
+  activeEditor?: ActiveEditorRegistry
+  locale?: string
 }
 
 /**
@@ -58,7 +69,7 @@ interface RenderBlockArgs {
  * by a newer client version) degrade to a non-fabricating placeholder and log a
  * warning rather than crashing the whole lesson.
  */
-function renderBlock({ block, outcome, onOutcome, runCode }: RenderBlockArgs) {
+function renderBlock({ block, outcome, onOutcome, runCode, activeEditor, locale }: RenderBlockArgs) {
   switch (block.type) {
     case 'prose':
       return <ProseBlock block={block as Extract<Block, { type: 'prose' }>} outcome={outcome} />
@@ -81,6 +92,8 @@ function renderBlock({ block, outcome, onOutcome, runCode }: RenderBlockArgs) {
           outcome={outcome}
           onOutcome={onOutcome}
           runCode={runCode}
+          activeEditor={activeEditor}
+          locale={locale}
         />
       )
     case 'lesson_link':
@@ -121,7 +134,7 @@ function renderBlock({ block, outcome, onOutcome, runCode }: RenderBlockArgs) {
  * `lesson.state.blockProgress`, so prior progress rehydrates a block as already
  * attempted.
  */
-export function LessonRenderer({ lesson, record, retrievalStore, now, runCode }: LessonRendererProps) {
+export function LessonRenderer({ lesson, record, retrievalStore, now, runCode, activeEditor, locale }: LessonRendererProps) {
   const onBlockOutcome = useBlockOutcome({
     lessonId: lesson.id,
     state: lesson.state,
@@ -142,6 +155,8 @@ export function LessonRenderer({ lesson, record, retrievalStore, now, runCode }:
               outcome: lesson.state.blockProgress[id],
               onOutcome: report => void onBlockOutcome(id, block.type, report),
               runCode,
+              activeEditor,
+              locale,
             })}
           </div>
         )

@@ -10,6 +10,7 @@ import type { WorkspaceContextValue } from '@/features/teach/context/workspace-c
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { LessonNavigationContext, noopLessonNavigation } from '@/features/teach/context/lesson-navigation-context'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 
 type RepoOverrides = Partial<{
@@ -36,6 +37,7 @@ function makeContext(repo: WorkspaceRepository): WorkspaceContextValue {
     repo,
     retrievalStore: { list: vi.fn(async () => []), save: vi.fn() },
     knowledge: { id: 'cangjie-mcp', search: vi.fn(async () => []) },
+    activeEditor: createActiveEditorRegistry(),
     now: () => 0,
   }
 }
