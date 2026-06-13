@@ -59,7 +59,10 @@ function createMemoryRepo(): WorkspaceRepository {
     },
     getGlossary: async () => glossary,
     upsertGlossaryTerm: async (term: GlossaryTerm) => {
-      const next = glossary.terms.filter(t => t.term !== term.term)
+      // Match the production repo's normalized dedup key (trim + lowercase) so the
+      // fake stays a faithful regression guard for case/whitespace term variants.
+      const key = (t: string) => t.trim().toLowerCase()
+      const next = glossary.terms.filter(t => key(t.term) !== key(term.term))
       next.push(term)
       glossary = { terms: next }
     },
