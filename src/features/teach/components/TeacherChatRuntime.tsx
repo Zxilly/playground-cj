@@ -13,6 +13,7 @@ import type { TeacherAgent } from '@/lib/teach/teacher/agent'
 import type { TeacherLang } from '@/lib/teach/teacher/system-prompt'
 import { createScopedChatTransport } from '@/lib/teach/teacher/scoped-chat-transport'
 import { useLLMConfig } from '@/stores/llmConfig'
+import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfigBootstrap'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
@@ -49,6 +50,12 @@ function normalizeLang(lang: string): TeacherLang {
  * (their effects show up in the central viewport, not as raw chat noise).
  */
 export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
+  // Keep the shared key / quota fresh after entering the workspace: re-fetch an
+  // automatic key if one is dropped and reset the shared config once an exhausted
+  // quota window elapses. Errors are silent here — the landing gate already
+  // surfaced config problems, and a transient refresh failure should not blank
+  // the chat surface.
+  useLLMConfigBootstrap({ reportErrors: false })
   const config = useLLMConfig()
   const { repo, knowledge, runner, retrievalStore, now } = useWorkspace()
   const scopeSignal = useAbortScope()

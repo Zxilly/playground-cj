@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import type { WorkspaceSnapshot } from '@/lib/teach/workspace/documents'
 import { WORKSPACE_SNAPSHOT_VERSION } from '@/lib/teach/workspace/documents'
+import { useLLMConfigStore } from '@/stores/llmConfig'
 import type { WorkspaceCollaborators } from './TeachApp'
 import { TeachAppContent } from './TeachApp'
 
@@ -17,6 +18,30 @@ function MockTeacherChatRuntime({ lang }: { lang: string }) {
 // stays the unit under test.
 vi.mock('./TeacherChatRuntime', () => ({
   TeacherChatRuntime: MockTeacherChatRuntime,
+}))
+
+// The landing gate runs the LLM config bootstrap (network + store writes); stub
+// it so the app's hydration/enter flow is the unit under test.
+vi.mock('@/modules/llm-config/runtime/useLLMConfigBootstrap', () => ({
+  useLLMConfigBootstrap: vi.fn(() => ({ status: 'ready' as const })),
+}))
+
+function MockLLMConfigDialog({ withTrigger }: { withTrigger?: boolean }) {
+  return <div data-testid="llm-config-dialog" data-with-trigger={String(withTrigger)} />
+}
+
+function MockQuotaExhaustedDialog() {
+  return <div data-testid="quota-exhausted-dialog" />
+}
+
+// The config + quota dialogs are vendored modules with their own tests; stub
+// them to lightweight markers so the gate composition is testable in isolation.
+vi.mock('@/modules/llm-config/components/LLMConfigDialog', () => ({
+  LLMConfigDialog: MockLLMConfigDialog,
+}))
+
+vi.mock('@/modules/llm-config/components/QuotaExhaustedDialog', () => ({
+  QuotaExhaustedDialog: MockQuotaExhaustedDialog,
 }))
 
 function emptySnapshot(): WorkspaceSnapshot {
@@ -74,21 +99,55 @@ function render(ui: ReactElement) {
   return rtlRender(ui, { wrapper: Wrapper })
 }
 
+/** Seed a complete user API key so the landing gate enables "进入工作区". */
+function seedReadyConfig() {
+  useLLMConfigStore.getState().setConfig({
+    provider: 'openai-compatible',
+    baseURL: 'https://api.example.test/v1',
+    apiKey: 'test-key',
+    model: 'test-model',
+  })
+}
+
+/**
+ * Render the app, wait past hydration to the landing gate, then click into the
+ * workspace shell. Returns once the shell is mounted.
+ */
+async function enterWorkspace(ui: ReactElement) {
+  const result = render(ui)
+  const enter = await screen.findByTestId('teach-landing-enter')
+  fireEvent.click(enter)
+  await screen.findByTestId('teach-workspace-shell')
+  return result
+}
+
 beforeEach(() => {
   globalI18n.load({ zh: {} })
   globalI18n.activate('zh')
+  seedReadyConfig()
 })
 
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  useLLMConfigStore.getState().reset()
 })
 
 describe('teachAppContent', () => {
-  it('mounts the workspace shell and the teacher chat after hydration', async () => {
+  it('shows the landing gate (not the shell) after hydration before entering', async () => {
     render(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
-    expect(await screen.findByTestId('teach-workspace-shell')).toBeTruthy()
+    expect(await screen.findByTestId('teach-landing')).toBeTruthy()
+    expect(screen.queryByTestId('teach-workspace-shell')).toBeNull()
+    // The config + quota dialogs ride along with the landing gate.
+    expect(screen.getByTestId('llm-config-dialog').getAttribute('data-with-trigger')).toBe('false')
+    expect(screen.getByTestId('quota-exhausted-dialog')).toBeTruthy()
+  })
+
+  it('mounts the workspace shell and the teacher chat after entering from the landing', async () => {
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
     expect(screen.getByTestId('teacher-chat').getAttribute('data-lang')).toBe('zh')
+    // The landing gate is gone once entered.
+    expect(screen.queryByTestId('teach-landing')).toBeNull()
   })
 
   it('exports the workspace snapshot as a downloaded JSON file', async () => {
@@ -101,8 +160,7 @@ describe('teachAppContent', () => {
     vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL })
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(clickSpy)
 
-    render(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
-    await screen.findByTestId('teach-workspace-shell')
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
 
     fireEvent.click(screen.getByTestId('workspace-export'))
     await waitFor(() => expect(exportAll).toHaveBeenCalled())
@@ -115,8 +173,7 @@ describe('teachAppContent', () => {
       throw new Error('storage read failed')
     })
     const repo = makeRepo({ exportAll })
-    render(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
-    await screen.findByTestId('teach-workspace-shell')
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
 
     fireEvent.click(screen.getByTestId('workspace-export'))
     const banner = await screen.findByTestId('workspace-export-error')
@@ -126,8 +183,7 @@ describe('teachAppContent', () => {
   it('imports a workspace snapshot from a selected JSON file', async () => {
     const importAll = vi.fn(async () => undefined)
     const repo = makeRepo({ importAll })
-    render(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
-    await screen.findByTestId('teach-workspace-shell')
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
 
     const input = screen.getByTestId('workspace-import-input') as HTMLInputElement
     const file = new File([JSON.stringify(emptySnapshot())], 'workspace.json', { type: 'application/json' })
@@ -145,5 +201,6 @@ describe('teachAppContent', () => {
     render(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
     expect(await screen.findByTestId('teach-hydration-error')).toBeTruthy()
     expect(screen.queryByTestId('teach-workspace-shell')).toBeNull()
+    expect(screen.queryByTestId('teach-landing')).toBeNull()
   })
 })

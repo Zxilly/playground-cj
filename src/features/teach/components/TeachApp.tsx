@@ -9,8 +9,11 @@ import { workspaceSnapshotSchema } from '@/lib/teach/workspace/documents'
 import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
 import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
+import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
+import { QuotaExhaustedDialog } from '@/modules/llm-config/components/QuotaExhaustedDialog'
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
+import { TeachLanding } from './TeachLanding'
 
 export type { WorkspaceCollaborators }
 
@@ -47,9 +50,13 @@ function downloadJson(filename: string, text: string): void {
  *
  * On mount it probes the repository (a `getMission` read) to surface a storage
  * failure (e.g. IndexedDB blocked / corrupt) as a recovery UI rather than a
- * blank screen. Once ready, it mounts the {@link TeachWorkspaceShell} with the
- * {@link TeacherChatRuntime} as the chat region, wrapped in an
- * {@link AbortScopeProvider} so in-flight teacher turns abort on unmount.
+ * blank screen. Once ready it shows the {@link TeachLanding} entry gate (which
+ * runs the LLM-config bootstrap and only lets the learner in once a usable key
+ * is ready) alongside the {@link LLMConfigDialog} and {@link QuotaExhaustedDialog};
+ * entering mounts the {@link TeachWorkspaceShell} with the
+ * {@link TeacherChatRuntime} as the chat region. Everything is wrapped in an
+ * {@link AbortScopeProvider} and {@link WorkspaceProvider} so in-flight teacher
+ * turns abort on unmount and the gate, dialogs, and shell share one repository.
  *
  * Exported separately from the SSR-disabled {@link TeachApp default export} so it
  * can be unit-tested with injected collaborators.
@@ -57,6 +64,10 @@ function downloadJson(filename: string, text: string): void {
 export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   const { repo } = collaborators
   const [hydration, setHydration] = useState<HydrationState>({ status: 'loading' })
+  // The landing gate sits between hydration and the workspace shell: it runs the
+  // LLM config bootstrap and only lets the learner in once a usable key is ready,
+  // so the teacher agent never reaches the views without a key.
+  const [entered, setEntered] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -158,68 +169,119 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   return (
     <AbortScopeProvider>
       <WorkspaceProvider {...collaborators}>
-        <div className="flex h-full min-h-0 flex-col">
-          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-2">
-            <span className="text-sm font-semibold text-foreground">
-              <Trans>教学工作区</Trans>
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                data-testid="workspace-export"
-                onClick={() => void handleExport()}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              >
-                <Download aria-hidden="true" className="size-3.5" />
-                <Trans>导出</Trans>
-              </button>
-              <button
-                type="button"
-                data-testid="workspace-import"
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              >
-                <Upload aria-hidden="true" className="size-3.5" />
-                <Trans>导入</Trans>
-              </button>
-              <input
-                ref={fileInputRef}
-                data-testid="workspace-import-input"
-                type="file"
-                accept="application/json,.json"
-                className="hidden"
-                aria-label={t`导入工作区 JSON`}
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (file)
-                    void handleImportFile(file)
-                  // Reset so selecting the same file again re-triggers change.
-                  event.target.value = ''
-                }}
+        {!entered
+          ? (
+              <>
+                <TeachLanding onEnter={() => setEntered(true)} />
+                <LLMConfigDialog withTrigger={false} />
+                <QuotaExhaustedDialog />
+              </>
+            )
+          : (
+              <TeachWorkspace
+                lang={lang}
+                generation={generation}
+                importError={importError}
+                exportError={exportError}
+                statusId={statusId}
+                fileInputRef={fileInputRef}
+                onExport={() => void handleExport()}
+                onImportFile={handleImportFile}
               />
-            </div>
-          </header>
-          {importError && (
-            <p data-testid="workspace-import-error" role="alert" className="shrink-0 bg-destructive/10 px-4 py-1.5 text-xs text-destructive" id={statusId}>
-              <Trans>导入失败：</Trans>
-              {importError}
-            </p>
-          )}
-          {exportError && (
-            <p data-testid="workspace-export-error" role="alert" className="shrink-0 bg-destructive/10 px-4 py-1.5 text-xs text-destructive">
-              <Trans>导出失败：</Trans>
-              {exportError}
-            </p>
-          )}
-          <div className="min-h-0 flex-1">
-            <TeachWorkspaceShell
-              key={generation}
-              chat={<TeacherChatRuntime lang={lang} />}
-            />
-          </div>
-        </div>
+            )}
       </WorkspaceProvider>
     </AbortScopeProvider>
+  )
+}
+
+interface TeachWorkspaceProps {
+  lang: string
+  generation: number
+  importError: string | null
+  exportError: string | null
+  statusId: string
+  fileInputRef: React.RefObject<HTMLInputElement | null>
+  onExport: () => void
+  onImportFile: (file: File) => void | Promise<void>
+}
+
+/**
+ * The entered workspace view: export/import header + {@link TeachWorkspaceShell}
+ * with the {@link TeacherChatRuntime} as the chat region. Rendered only after the
+ * landing gate is cleared, but still inside the workspace providers so the export
+ * controls and the chat share the same repository revision.
+ */
+function TeachWorkspace({
+  lang,
+  generation,
+  importError,
+  exportError,
+  statusId,
+  fileInputRef,
+  onExport,
+  onImportFile,
+}: TeachWorkspaceProps) {
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-2">
+        <span className="text-sm font-semibold text-foreground">
+          <Trans>教学工作区</Trans>
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            data-testid="workspace-export"
+            onClick={onExport}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          >
+            <Download aria-hidden="true" className="size-3.5" />
+            <Trans>导出</Trans>
+          </button>
+          <button
+            type="button"
+            data-testid="workspace-import"
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+          >
+            <Upload aria-hidden="true" className="size-3.5" />
+            <Trans>导入</Trans>
+          </button>
+          <input
+            ref={fileInputRef}
+            data-testid="workspace-import-input"
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            aria-label={t`导入工作区 JSON`}
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file)
+                void onImportFile(file)
+              // Reset so selecting the same file again re-triggers change.
+              event.target.value = ''
+            }}
+          />
+        </div>
+      </header>
+      {importError && (
+        <p data-testid="workspace-import-error" role="alert" className="shrink-0 bg-destructive/10 px-4 py-1.5 text-xs text-destructive" id={statusId}>
+          <Trans>导入失败：</Trans>
+          {importError}
+        </p>
+      )}
+      {exportError && (
+        <p data-testid="workspace-export-error" role="alert" className="shrink-0 bg-destructive/10 px-4 py-1.5 text-xs text-destructive">
+          <Trans>导出失败：</Trans>
+          {exportError}
+        </p>
+      )}
+      <div className="min-h-0 flex-1">
+        <TeachWorkspaceShell
+          key={generation}
+          chat={<TeacherChatRuntime lang={lang} />}
+        />
+      </div>
+    </div>
   )
 }
 

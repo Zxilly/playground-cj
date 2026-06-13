@@ -13,6 +13,7 @@ const runtimeMocks = vi.hoisted(() => ({
   useChatRuntime: vi.fn(() => ({ runtime: true })),
   useAbortScope: vi.fn(() => ({ aborted: false })),
   useLLMConfig: vi.fn(() => ({ apiKey: 'test-key', model: 'test-model' })),
+  useLLMConfigBootstrap: vi.fn(() => ({ status: 'ready' as const })),
   sendAutomaticallyWhen: vi.fn(() => false),
   setText: vi.fn(),
   useComposerRuntime: vi.fn(),
@@ -67,6 +68,10 @@ vi.mock('@/stores/llmConfig', () => ({
   useLLMConfig: runtimeMocks.useLLMConfig,
 }))
 
+vi.mock('@/modules/llm-config/runtime/useLLMConfigBootstrap', () => ({
+  useLLMConfigBootstrap: runtimeMocks.useLLMConfigBootstrap,
+}))
+
 vi.mock('@/modules/assistant-ui/chat/Thread', () => ({
   Thread: MockThread,
 }))
@@ -106,6 +111,11 @@ describe('teacherChatRuntime', () => {
     renderRuntime()
     expect(screen.getByTestId('thread')).toBeTruthy()
     expect(screen.getByTestId('thread').getAttribute('data-allow-attachments')).toBe('false')
+  })
+
+  it('runs the LLM config bootstrap without surfacing errors so the key/quota stays fresh', () => {
+    renderRuntime()
+    expect(runtimeMocks.useLLMConfigBootstrap).toHaveBeenCalledWith({ reportErrors: false })
   })
 
   it('builds the teacher toolkit from the workspace collaborators', () => {

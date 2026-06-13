@@ -295,6 +295,10 @@ describe('teach workspace e2e', () => {
   it('interviews for a mission, authors and completes the first lesson, then records and round-trips the workspace', async () => {
     await page.goto(`${server.url}/zh/tour/ai`, { waitUntil: 'domcontentloaded' })
 
+    // The landing gate appears once hydrated and the seeded user key makes it
+    // ready; enter the workspace before the shell mounts.
+    await enterWorkspaceFromLanding(page)
+
     // Workspace shell mounts; mission is empty so lessons are gated.
     await page.getByTestId('teach-workspace-shell').waitFor({ state: 'visible', timeout: 60_000 })
     const lessonsNav = page.getByTestId('workspace-nav-lessons')
@@ -373,6 +377,7 @@ describe('teach workspace e2e', () => {
       })
     })
     await page.reload({ waitUntil: 'domcontentloaded' })
+    await enterWorkspaceFromLanding(page)
     await page.getByTestId('teach-workspace-shell').waitFor({ state: 'visible', timeout: 60_000 })
 
     // After the reset, mission is empty again (lessons gated).
@@ -387,6 +392,17 @@ describe('teach workspace e2e', () => {
     await expect.poll(() => page.getByText('用仓颉写一个命令行工具').isVisible()).toBe(true)
   }, 180_000)
 })
+
+/**
+ * Clear the landing gate: wait for the entry page, then click "进入工作区". The
+ * seeded user key makes the gate ready, so the enter button enables once hydrated.
+ */
+async function enterWorkspaceFromLanding(page: Page): Promise<void> {
+  const enter = page.getByTestId('teach-landing-enter')
+  await enter.waitFor({ state: 'visible', timeout: 60_000 })
+  await expect.poll(() => enter.isEnabled()).toBe(true)
+  await enter.click()
+}
 
 /** Mark the first lesson completed by writing its state through the live IndexedDB repository. */
 async function markFirstLessonCompleted(page: Page): Promise<void> {
