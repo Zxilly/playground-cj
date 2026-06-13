@@ -201,9 +201,10 @@ export function createIndexedDbWorkspaceRepository(
         const db = await getDb()
         const existing = await db.get(LEARNING_RECORDS_STORE, id) as LearningRecord | undefined
         if (!existing)
-          return
+          return false
         const updated: LearningRecord = { ...existing, status: 'superseded', supersededBy }
         await db.put(LEARNING_RECORDS_STORE, updated)
+        return true
       })
     },
 
@@ -273,8 +274,10 @@ export function createIndexedDbWorkspaceRepository(
         const db = await getDb()
         const existing = await db.get(LESSONS_STORE, id) as Lesson | undefined
         if (!existing)
-          return
-        await db.put(LESSONS_STORE, { ...existing, state })
+          return null
+        const updated: Lesson = { ...existing, state }
+        await db.put(LESSONS_STORE, updated)
+        return updated
       })
     },
 

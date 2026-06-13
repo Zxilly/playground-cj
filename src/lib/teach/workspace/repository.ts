@@ -28,7 +28,12 @@ export interface WorkspaceRepository {
   setMission: (mission: Mission) => Promise<void>
   listLearningRecords: () => Promise<LearningRecord[]>
   appendLearningRecord: (draft: LearningRecordDraft) => Promise<LearningRecord>
-  supersedeLearningRecord: (id: string, supersededBy: string) => Promise<void>
+  /**
+   * Mark a learning record as superseded by another. Returns `true` if a record
+   * with `id` existed and was updated, `false` if there was nothing to change
+   * (so observers can skip a no-op refresh).
+   */
+  supersedeLearningRecord: (id: string, supersededBy: string) => Promise<boolean>
   getGlossary: () => Promise<Glossary>
   upsertGlossaryTerm: (term: GlossaryTerm) => Promise<void>
   getNotes: () => Promise<Notes>
@@ -36,7 +41,11 @@ export interface WorkspaceRepository {
   listLessons: () => Promise<Lesson[]>
   getLesson: (id: string) => Promise<Lesson | null>
   appendLesson: (draft: LessonDraft) => Promise<Lesson>
-  updateLessonState: (id: string, state: LessonState) => Promise<void>
+  /**
+   * Replace a lesson's whole state. Returns the updated lesson, or `null` if no
+   * lesson with `id` exists (so observers can skip a no-op refresh).
+   */
+  updateLessonState: (id: string, state: LessonState) => Promise<Lesson | null>
   /**
    * Atomically merge a single block's outcome into a lesson's progress.
    *

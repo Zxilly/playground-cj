@@ -51,10 +51,11 @@ function createMemoryRepo(): WorkspaceRepository {
     },
     supersedeLearningRecord: async (id, supersededBy) => {
       const record = learningRecords.find(r => r.id === id)
-      if (record) {
-        record.status = 'superseded'
-        record.supersededBy = supersededBy
-      }
+      if (!record)
+        return false
+      record.status = 'superseded'
+      record.supersededBy = supersededBy
+      return true
     },
     getGlossary: async () => glossary,
     upsertGlossaryTerm: async (term: GlossaryTerm) => {
@@ -81,8 +82,10 @@ function createMemoryRepo(): WorkspaceRepository {
     },
     updateLessonState: async (id: string, state: LessonState) => {
       const lesson = lessons.find(l => l.id === id)
-      if (lesson)
-        lesson.state = state
+      if (!lesson)
+        return null
+      lesson.state = state
+      return lesson
     },
     recordBlockOutcome: async (lessonId, blockId, outcome) => {
       const lesson = lessons.find(l => l.id === lessonId)

@@ -30,12 +30,16 @@ describe('indexeddb repository', () => {
     expect(all.map(r => r.id)).toEqual(['0001', '0002'])
   })
 
-  it('supersedeLearningRecord marks the record superseded', async () => {
+  it('supersedeLearningRecord marks the record superseded and reports the change', async () => {
     const a = await repo.appendLearningRecord({ title: 'a', body: 'b' })
-    await repo.supersedeLearningRecord(a.id, '0002')
+    expect(await repo.supersedeLearningRecord(a.id, '0002')).toBe(true)
     const all = await repo.listLearningRecords()
     expect(all[0].status).toBe('superseded')
     expect(all[0].supersededBy).toBe('0002')
+  })
+
+  it('supersedeLearningRecord reports no change for a missing record', async () => {
+    expect(await repo.supersedeLearningRecord('9999', '0001')).toBe(false)
   })
 
   it('appendLesson assigns id + default state', async () => {
@@ -47,12 +51,17 @@ describe('indexeddb repository', () => {
     expect(await repo.getLesson('9999')).toBeNull()
   })
 
-  it('updateLessonState persists the new state', async () => {
+  it('updateLessonState persists the new state and returns the updated lesson', async () => {
     const l = await repo.appendLesson({ title: 't', missionLink: 'm', skillFocus: 's', zpdRationale: 'z', blocks: [{ type: 'prose', markdown: 'x' }], citations: [] })
-    await repo.updateLessonState(l.id, { status: 'completed', blockProgress: {}, completedAt: 42 })
+    const updated = await repo.updateLessonState(l.id, { status: 'completed', blockProgress: {}, completedAt: 42 })
+    expect(updated?.state.status).toBe('completed')
     const reloaded = await repo.getLesson(l.id)
     expect(reloaded?.state.status).toBe('completed')
     expect(reloaded?.state.completedAt).toBe(42)
+  })
+
+  it('updateLessonState returns null for a missing lesson', async () => {
+    expect(await repo.updateLessonState('9999', { status: 'completed', blockProgress: {} })).toBeNull()
   })
 
   it('glossary upsert replaces by term', async () => {

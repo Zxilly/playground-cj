@@ -37,7 +37,7 @@ function createFakeRepo(seed: {
     appendLearningRecord: async (_draft: LearningRecordDraft) => {
       throw new Error('not implemented')
     },
-    supersedeLearningRecord: async () => {},
+    supersedeLearningRecord: async () => false,
     getGlossary: async () => glossary,
     upsertGlossaryTerm: async (_term: GlossaryTerm) => {},
     getNotes: async () => notes,
@@ -47,7 +47,7 @@ function createFakeRepo(seed: {
     appendLesson: async (_draft: LessonDraft) => {
       throw new Error('not implemented')
     },
-    updateLessonState: async (_id: string, _state: LessonState) => {},
+    updateLessonState: async (_id: string, _state: LessonState) => null,
     recordBlockOutcome: async () => null,
     listReferences: async () => [] as ReferenceDoc[],
     getReference: async () => null,
