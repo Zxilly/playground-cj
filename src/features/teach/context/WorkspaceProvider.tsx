@@ -31,13 +31,14 @@ export function WorkspaceProvider({
   retrievalStore,
   knowledge,
   editor,
+  runner,
   now,
   onPrefillChat,
   children,
 }: WorkspaceProviderProps) {
   const value = useMemo<WorkspaceContextValue>(
-    () => ({ repo, retrievalStore, knowledge, editor, now }),
-    [repo, retrievalStore, knowledge, editor, now],
+    () => ({ repo, retrievalStore, knowledge, editor, runner, now }),
+    [repo, retrievalStore, knowledge, editor, runner, now],
   )
 
   const navigation = useMemo<LessonNavigationContextValue>(
