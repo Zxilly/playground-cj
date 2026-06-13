@@ -96,6 +96,19 @@ export const rawHtmlBlockSchema = z.object({
   height: z.number().int().positive().max(1200).optional(),
 })
 
+export type ProseBlockSchemaType = z.infer<typeof proseBlockSchema>
+export type HeadingBlockSchemaType = z.infer<typeof headingBlockSchema>
+export type CalloutBlockSchemaType = z.infer<typeof calloutBlockSchema>
+export type CodeSampleBlockSchemaType = z.infer<typeof codeSampleBlockSchema>
+export type GlossaryRefBlockSchemaType = z.infer<typeof glossaryRefBlockSchema>
+export type QuizBlockSchemaType = z.infer<typeof quizBlockSchema>
+export type RecallPromptBlockSchemaType = z.infer<typeof recallPromptBlockSchema>
+export type CodeTaskBlockSchemaType = z.infer<typeof codeTaskBlockSchema>
+export type LessonLinkBlockSchemaType = z.infer<typeof lessonLinkBlockSchema>
+export type ReferenceLinkBlockSchemaType = z.infer<typeof referenceLinkBlockSchema>
+export type FollowupPromptBlockSchemaType = z.infer<typeof followupPromptBlockSchema>
+export type RawHtmlBlockSchemaType = z.infer<typeof rawHtmlBlockSchema>
+
 export const blockSchema = z.discriminatedUnion('type', [
   proseBlockSchema,
   headingBlockSchema,
