@@ -78,9 +78,11 @@ function extractText(result: unknown): string | null {
 }
 
 // Matches a result header line like: "### [1] 使用 Option (error_handle/use_option) [score: 0.99]"
-// Title/ref are captured as paren-free runs and trimmed in code to keep the
-// pattern free of overlapping quantifiers (no super-linear backtracking).
-const HEADER_RE = /^#{2,4} \[\d+\] ([^()]+)\(([^()]+)\)(?: \[score:[^\]]*\])?$/
+// The title is captured lazily so it may itself contain parentheses (e.g.
+// "使用 Option(T) 处理空值"); the ref is anchored to the final paren pair on the
+// line, optionally followed by a "[score: ...]" suffix, so the split stays
+// unambiguous even when the title echoes a generic type.
+const HEADER_RE = /^#{2,4} \[\d+\] (.+?) \(([^()]+)\)(?: \[score:[^\]]*\])?$/
 
 /**
  * Parse the human-readable text payload returned by `cangjie_search_docs` into
@@ -96,8 +98,14 @@ function parseTextResults(text: string): KnowledgeHit[] {
   const flush = () => {
     if (!current)
       return
+    const titleEcho = `# ${current.title}`
     const snippet = current.body
-      .filter(line => line.trim() !== '' && line.trim() !== '---')
+      .filter((line) => {
+        const trimmed = line.trim()
+        // Drop blank lines, `---` separators, and the single-`#` markdown title
+        // echo the server prepends to each block (see docstring).
+        return trimmed !== '' && trimmed !== '---' && trimmed !== titleEcho
+      })
       .join('\n')
       .trim()
     hits.push({ sourceId: CANGJIE_MCP_SOURCE_ID, ref: current.ref, title: current.title, snippet })

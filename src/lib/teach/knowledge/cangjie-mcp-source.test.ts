@@ -67,6 +67,50 @@ describe('createCangjieMcpKnowledgeSource', () => {
     expect(hits[1]).toMatchObject({ sourceId: 'cangjie-mcp', ref: 'generic/generic_enum', title: '泛型枚举' })
   })
 
+  it('parses a result header whose title contains parentheses', async () => {
+    const text = [
+      '### [1] 使用 Option(T) 处理空值 (error_handle/use_option) [score: 0.99]',
+      '',
+      '# 使用 Option(T) 处理空值',
+      '',
+      'Option(T) 可以表示空值。',
+      '',
+      '---',
+    ].join('\n')
+    const call = vi.fn<McpCallFn>().mockResolvedValue({ content: [{ type: 'text', text }] })
+    const source = createCangjieMcpKnowledgeSource({ call })
+
+    const hits = await source.search('Option')
+
+    expect(hits).toHaveLength(1)
+    expect(hits[0]).toMatchObject({
+      sourceId: 'cangjie-mcp',
+      ref: 'error_handle/use_option',
+      title: '使用 Option(T) 处理空值',
+    })
+    expect(hits[0]?.snippet).toContain('可以表示空值')
+  })
+
+  it('strips the leading "# title" echo from the parsed snippet', async () => {
+    const text = [
+      '### [1] 使用 Option (error_handle/use_option) [score: 0.99]',
+      '',
+      '# 使用 Option',
+      '',
+      'Option 类型也可以用作错误处理。',
+      '',
+      '---',
+    ].join('\n')
+    const call = vi.fn<McpCallFn>().mockResolvedValue({ content: [{ type: 'text', text }] })
+    const source = createCangjieMcpKnowledgeSource({ call })
+
+    const hits = await source.search('Option')
+
+    expect(hits).toHaveLength(1)
+    expect(hits[0]?.snippet).not.toContain('# 使用 Option')
+    expect(hits[0]?.snippet).toContain('用作错误处理')
+  })
+
   it('honours the limit when slicing parsed results', async () => {
     const text = [
       '### [1] A (a/one) [score: 0.9]',
