@@ -13,7 +13,7 @@ import type {
 } from '../workspace/documents'
 import type { WorkspaceRepository } from '../workspace/repository'
 import type { Lesson, LessonDraft, LessonState } from '../lessons/lesson'
-import type { RetrievalStore, TeacherRunner } from './toolkit'
+import type { EditorBridge, RetrievalStore, TeacherRunner } from './toolkit'
 import { describe, expect, it, vi } from 'vitest'
 import { createTeacherToolkit } from './toolkit'
 
@@ -130,6 +130,26 @@ function createFakeRunner(result: RunResult): TeacherRunner & { run: ReturnType<
   return { run }
 }
 
+/**
+ * A fake "active code_task editor" bridge backed by a plain string. `getCode`
+ * returns null when there is no active editor (mirroring the live
+ * {@link createActiveEditorRegistry}); `setCode` reports whether the write landed.
+ */
+function createFakeEditor(initial: string | null = 'main() {}'): EditorBridge & {
+  getCode: ReturnType<typeof vi.fn>
+  setCode: ReturnType<typeof vi.fn>
+} {
+  let code = initial
+  const getCode = vi.fn(() => code)
+  const setCode = vi.fn((next: string) => {
+    if (code === null)
+      return false
+    code = next
+    return true
+  })
+  return { getCode, setCode }
+}
+
 function createMemoryRetrievalStore(seed: RetrievalItem[] = []): RetrievalStore {
   let items = [...seed]
   return {
@@ -146,14 +166,16 @@ function setup(overrides: {
   knowledgeHits?: KnowledgeHit[]
   retrieval?: RetrievalItem[]
   now?: () => number
+  editorCode?: string | null
 } = {}) {
   const repo = createMemoryRepo()
   const knowledge = createFakeKnowledge(overrides.knowledgeHits ?? [])
   const runner = createFakeRunner(runResult)
   const retrievalStore = createMemoryRetrievalStore(overrides.retrieval ?? [])
+  const editor = createFakeEditor(overrides.editorCode === undefined ? 'main() {}' : overrides.editorCode)
   const now = overrides.now ?? (() => 123)
-  const toolkit = createTeacherToolkit({ repo, knowledge, runner, retrievalStore, now })
-  return { repo, knowledge, runner, retrievalStore, toolkit }
+  const toolkit = createTeacherToolkit({ repo, knowledge, runner, retrievalStore, editor, now })
+  return { repo, knowledge, runner, retrievalStore, editor, toolkit }
 }
 
 async function call<T = unknown>(tool: unknown, input: unknown): Promise<T> {
@@ -185,17 +207,12 @@ describe('createTeacherToolkit', () => {
         'update_lesson_state',
         'mark_lesson_complete',
         'search_docs',
+        'set_editor_code',
+        'read_editor_code',
         'run_code',
         'read_run_result',
       ]),
     )
-  })
-
-  it('does not expose the dead editor-bridge tools (the teaching shell mounts no shared editor)', () => {
-    const { toolkit } = setup()
-    const names = Object.keys(toolkit)
-    expect(names).not.toContain('set_editor_code')
-    expect(names).not.toContain('read_editor_code')
   })
 
   it('every tool has a description and an inputSchema', () => {
@@ -263,6 +280,36 @@ describe('createTeacherToolkit', () => {
 
     const last = await call<{ ok: boolean, result?: RunResult | null }>(toolkit.read_run_result, {})
     expect(last.result?.stdout).toBe('hi\n')
+  })
+
+  it('read_editor_code returns the active code_task editor\'s current code', async () => {
+    const { toolkit, editor } = setup({ editorCode: 'let x = 1' })
+    const result = await call<{ ok: boolean, code?: string | null }>(toolkit.read_editor_code, {})
+    expect(editor.getCode).toHaveBeenCalled()
+    expect(result.ok).toBe(true)
+    expect(result.code).toBe('let x = 1')
+  })
+
+  it('read_editor_code reports no active editor (null code) when none is mounted', async () => {
+    const { toolkit } = setup({ editorCode: null })
+    const result = await call<{ ok: boolean, code?: string | null }>(toolkit.read_editor_code, {})
+    expect(result.ok).toBe(true)
+    expect(result.code).toBeNull()
+  })
+
+  it('set_editor_code writes into the active code_task editor', async () => {
+    const { toolkit, editor } = setup()
+    const result = await call<{ ok: boolean }>(toolkit.set_editor_code, { code: 'main() { println("hi") }' })
+    expect(editor.setCode).toHaveBeenCalledWith('main() { println("hi") }')
+    expect(result.ok).toBe(true)
+    expect(editor.getCode()).toBe('main() { println("hi") }')
+  })
+
+  it('set_editor_code fails clearly when no code_task editor is active', async () => {
+    const { toolkit } = setup({ editorCode: null })
+    const result = await call<{ ok: boolean, error?: string }>(toolkit.set_editor_code, { code: 'x' })
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/no active/i)
   })
 
   it('append_learning_record persists a record and returns its id', async () => {

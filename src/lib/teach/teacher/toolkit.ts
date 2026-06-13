@@ -22,6 +22,23 @@ export interface TeacherRunner {
 }
 
 /**
+ * Minimal contract for reading/writing the learner's *currently active*
+ * `code_task` editor. The teaching workspace has no single shared Monaco editor;
+ * instead each `code_task` block owns its own editor and registers a handle as
+ * "active" when the learner works in it (see the feature layer's active-editor
+ * registry). The domain toolkit stays decoupled from Monaco and React: it only
+ * sees `getCode` / `setCode`. `getCode` returns `null` when no code_task editor
+ * is currently active (so `read_editor_code` can say so explicitly), and
+ * `setCode` returns `false` when there is nothing to write to.
+ */
+export interface EditorBridge {
+  /** Read the active editor's contents, or null when no editor is active. */
+  getCode: () => string | null
+  /** Replace the active editor's contents; returns false when none is active. */
+  setCode: (code: string) => boolean
+}
+
+/**
  * Persistence boundary for the spaced-retrieval schedule. Kept separate from the
  * workspace repository so `read_learner_state` can fold the live schedule into
  * the learner signal without the toolkit owning storage details.
@@ -38,6 +55,12 @@ export interface TeacherToolkitDeps {
   knowledge: KnowledgeSource
   runner: TeacherRunner
   retrievalStore: RetrievalStore
+  /**
+   * Bridge to the learner's currently active `code_task` editor, backing
+   * `read_editor_code` / `set_editor_code`. The feature layer wires this to the
+   * active-editor registry; tests inject a fake.
+   */
+  editor: EditorBridge
   /** Injected clock; the toolkit never reads `Date.now()` directly. */
   now: () => number
 }
@@ -70,15 +93,15 @@ const upsertReferenceInputSchema = referenceDocSchema.omit({ updatedAt: true })
 /**
  * Build the single Teacher agent's tool set (AI SDK v6 `tool()` API). Each tool
  * delegates to one of the injected dependencies (workspace repository,
- * knowledge source, runner, retrieval store) and returns a compact JSON payload
- * (`{ ok, ... }`) the model can reason over.
+ * knowledge source, editor bridge, runner, retrieval store) and returns a compact
+ * JSON payload (`{ ok, ... }`) the model can reason over.
  *
  * `create_lesson` uses {@link lessonDraftSchema} directly as its `inputSchema`
  * so the model's lesson is zod-validated (including the equal-length quiz rule)
  * before it is persisted.
  */
 export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
-  const { repo, knowledge, runner, retrievalStore, now } = deps
+  const { repo, knowledge, runner, retrievalStore, editor, now } = deps
 
   // The last run result is held here so `read_run_result` can return it without
   // re-running. Reset implicitly when `run_code` runs again.
@@ -229,7 +252,21 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
       },
     }),
 
-    // ---- Feedback loop / runner ----
+    // ---- Feedback loop / editor + runner ----
+    read_editor_code: tool({
+      description: 'Read the learner\'s code in the currently active code_task editor (the code_task they last worked in). Returns null code when no code_task is active — author or open one first.',
+      inputSchema: z.object({}),
+      execute: async () => ok({ code: editor.getCode() }),
+    }),
+    set_editor_code: tool({
+      description: 'Replace the contents of the learner\'s currently active code_task editor (e.g. to seed a snippet to run, or demonstrate a fix). Fails when no code_task is active.',
+      inputSchema: z.object({ code: z.string() }),
+      execute: async ({ code }) => {
+        if (!editor.setCode(code))
+          return fail('No active code_task editor — open or author a code_task before setting its code.')
+        return ok()
+      },
+    }),
     run_code: tool({
       description: 'Compile and run Cangjie code on the remote runner, returning stdout/stderr/exitCode. The result is also cached for read_run_result.',
       inputSchema: z.object({ code: z.string() }),

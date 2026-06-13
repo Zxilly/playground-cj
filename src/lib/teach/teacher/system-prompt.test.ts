@@ -42,6 +42,11 @@ describe('buildTeacherSystemPrompt', () => {
       expect(prompt).toMatch(/社区/)
       expect(prompt).toMatch(/外部资源|外部/)
     })
+
+    it('describes driving the learner\'s active code_task editor', () => {
+      expect(prompt).toContain('read_editor_code')
+      expect(prompt).toContain('set_editor_code')
+    })
   })
 
   describe('en', () => {
@@ -81,6 +86,11 @@ describe('buildTeacherSystemPrompt', () => {
     it('scopes knowledge with no community/external resources', () => {
       expect(prompt).toMatch(/community/i)
       expect(prompt).toMatch(/external/i)
+    })
+
+    it('describes driving the learner\'s active code_task editor', () => {
+      expect(prompt).toContain('read_editor_code')
+      expect(prompt).toContain('set_editor_code')
     })
   })
 })
