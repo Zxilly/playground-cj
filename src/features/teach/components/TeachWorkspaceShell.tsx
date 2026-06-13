@@ -7,6 +7,8 @@ import { Trans } from '@lingui/react/macro'
 import { cn } from '@/lib/utils'
 import type { WorkspaceView } from '@/features/teach/state/workspace-store'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { useWorkspace } from '@/features/teach/context/useWorkspace'
+import type { NavView } from './WorkspaceNav'
 import { WorkspaceNav } from './WorkspaceNav'
 import { MissionView } from './views/MissionView'
 import { GlossaryView } from './views/GlossaryView'
@@ -15,6 +17,8 @@ import { RecordsView } from './views/RecordsView'
 import { ReferenceView } from './views/ReferenceView'
 import { NotesView } from './views/NotesView'
 import { LessonView } from './views/LessonView'
+import { MissionGate } from './views/MissionGate'
+import { useWorkspaceResource } from './views/use-workspace-resource'
 
 export interface TeachWorkspaceShellProps {
   /**
@@ -28,13 +32,19 @@ export interface TeachWorkspaceShellProps {
  * Render the central viewport for the active view. A single open lesson
  * (`'lesson'`) is keyed by its id so switching lessons remounts the renderer
  * with fresh per-lesson state instead of carrying over the prior lesson.
+ *
+ * Mission-first gating: while `missionReady` is false the lessons surface
+ * (`'lessons'` / `'lesson'`) is replaced by the {@link MissionGate} guidance so
+ * the learner cannot reach lessons before a mission is set with the teacher.
  */
 function CentralViewport({
   view,
+  missionReady,
   currentLessonId,
   currentReferenceId,
 }: {
   view: WorkspaceView
+  missionReady: boolean
   currentLessonId: string | null
   currentReferenceId: string | null
 }) {
@@ -42,9 +52,11 @@ function CentralViewport({
     case 'mission':
       return <MissionView />
     case 'lessons':
-      return <LessonsListView />
+      return missionReady ? <LessonsListView /> : <MissionGate />
     case 'lesson':
-      return <LessonView key={currentLessonId ?? 'none'} lessonId={currentLessonId} />
+      return missionReady
+        ? <LessonView key={currentLessonId ?? 'none'} lessonId={currentLessonId} />
+        : <MissionGate />
     case 'glossary':
       return <GlossaryView />
     case 'reference':
@@ -57,6 +69,10 @@ function CentralViewport({
       return null
   }
 }
+
+/** Nav entries gated behind a set mission, frozen so the prop stays referentially stable. */
+const MISSION_GATED_VIEWS: ReadonlySet<NavView> = new Set<NavView>(['lessons'])
+const NO_GATED_VIEWS: ReadonlySet<NavView> = new Set<NavView>()
 
 /**
  * The teaching-workspace shell: a three-region layout.
@@ -74,10 +90,19 @@ function CentralViewport({
  * inside each view.
  */
 export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
+  const { repo } = useWorkspace()
   const view = useWorkspaceStore(s => s.view)
   const currentLessonId = useWorkspaceStore(s => s.currentLessonId)
   const currentReferenceId = useWorkspaceStore(s => s.currentReferenceId)
   const [chatOpen, setChatOpen] = useState(false)
+
+  // Mission-first gating: lessons are grounded in the learner's mission, so they
+  // stay locked until a mission exists. Read it here once and drive both the nav
+  // (disabled lessons entry) and the central viewport (gate vs. lessons surface).
+  // While the read is in flight the workspace is treated as not-yet-ready so the
+  // gate never flashes the lessons list before the mission resolves.
+  const { data: mission, loading: missionLoading } = useWorkspaceResource(() => repo.getMission(), [repo])
+  const missionReady = !missionLoading && mission != null
 
   return (
     <div
@@ -96,7 +121,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
           'md:static md:flex md:w-56 md:flex-col md:gap-2 md:overflow-visible md:border-e md:border-b-0 md:p-3 md:backdrop-blur-none',
         )}
       >
-        <WorkspaceNav />
+        <WorkspaceNav disabledViews={missionReady ? NO_GATED_VIEWS : MISSION_GATED_VIEWS} />
       </aside>
 
       <main
@@ -106,6 +131,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         <div className="mx-auto w-full max-w-3xl">
           <CentralViewport
             view={view}
+            missionReady={missionReady}
             currentLessonId={currentLessonId}
             currentReferenceId={currentReferenceId}
           />

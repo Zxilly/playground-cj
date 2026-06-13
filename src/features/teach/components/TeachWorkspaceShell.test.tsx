@@ -114,7 +114,12 @@ describe('teachWorkspaceShell', () => {
   })
 
   it('renders the open lesson in the central viewport for the lesson view', async () => {
-    const repo = makeRepo({ lessons: [lesson({ id: '0007', title: 'pattern matching' })] })
+    // A mission must exist for the lessons surface to be reachable (mission-first
+    // gating); covered on its own in mission-first.test.tsx.
+    const repo = makeRepo({
+      mission: { topic: 'Cangjie CLI', why: 'ship a tool', successLooksLike: ['parse args'], constraints: [], outOfScope: [], updatedAt: 1 },
+      lessons: [lesson({ id: '0007', title: 'pattern matching' })],
+    })
     render(<TeachWorkspaceShell chat={null} />, repo)
     useWorkspaceStore.getState().selectLesson('0007')
     expect(await screen.findByTestId('lesson-renderer')).toBeTruthy()

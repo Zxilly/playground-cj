@@ -13,7 +13,7 @@ import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
  * absent — it is reached by opening a lesson from the lessons list, not from the
  * nav — so opening a lesson keeps the `'lessons'` entry highlighted.
  */
-type NavView = Exclude<WorkspaceView, 'lesson'>
+export type NavView = Exclude<WorkspaceView, 'lesson'>
 
 interface NavEntry {
   view: NavView
@@ -39,13 +39,26 @@ function activeNavView(view: WorkspaceView): NavView {
   return view === 'lesson' ? 'lessons' : view
 }
 
+export interface WorkspaceNavProps {
+  /**
+   * Nav entries to render disabled (mission-first gating). A disabled entry is
+   * non-clickable (`disabled` + `aria-disabled`) and never switches `view`, so
+   * the lessons surface stays out of reach until a mission exists.
+   */
+  disabledViews?: ReadonlySet<NavView>
+}
+
 /**
  * Left-hand workspace navigation: the six document sections (Mission / Lessons /
  * Glossary / Reference / Records / Notes). Clicking an entry switches the central
  * viewport via the workspace store. The current section is marked with
  * `aria-current="page"`. Holds no domain data — it only drives `view` state.
+ *
+ * Mission-first gating: entries in `disabledViews` (the lessons entry while no
+ * mission exists) render disabled and ignore clicks, keeping the lessons surface
+ * unreachable until the learner has set a mission with the teacher.
  */
-export function WorkspaceNav() {
+export function WorkspaceNav({ disabledViews }: WorkspaceNavProps = {}) {
   const view = useWorkspaceStore(s => s.view)
   const setView = useWorkspaceStore(s => s.setView)
   const active = activeNavView(view)
@@ -54,6 +67,7 @@ export function WorkspaceNav() {
     <nav data-testid="workspace-nav" aria-label="Workspace" className="flex flex-row gap-1 md:flex-col">
       {NAV_ENTRIES.map(({ view: entryView, icon: Icon, label }) => {
         const isActive = entryView === active
+        const isDisabled = disabledViews?.has(entryView) ?? false
         return (
           <button
             key={entryView}
@@ -61,12 +75,19 @@ export function WorkspaceNav() {
             data-testid={`workspace-nav-${entryView}`}
             data-nav-item="true"
             aria-current={isActive ? 'page' : undefined}
-            onClick={() => setView(entryView)}
+            aria-disabled={isDisabled ? 'true' : undefined}
+            disabled={isDisabled}
+            onClick={() => {
+              if (!isDisabled)
+                setView(entryView)
+            }}
             className={cn(
               'flex shrink-0 items-center gap-3 rounded-md px-3 py-2 text-start text-sm font-medium transition-colors md:w-full',
-              isActive
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+              isDisabled
+                ? 'cursor-not-allowed text-muted-foreground/40'
+                : isActive
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
             )}
           >
             <Icon aria-hidden="true" className="size-4 shrink-0" />
