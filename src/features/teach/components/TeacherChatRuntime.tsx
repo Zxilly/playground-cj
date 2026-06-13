@@ -16,6 +16,8 @@ import { useLLMConfig } from '@/stores/llmConfig'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
 import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
+import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { createObservableRepository } from '@/features/teach/state/observable-repository'
 
 type TeacherChatMessage = InferAgentUIMessage<TeacherAgent>
 
@@ -48,10 +50,14 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
   const config = useLLMConfig()
   const { repo, knowledge, editor, runner, retrievalStore, now } = useWorkspace()
   const scopeSignal = useAbortScope()
+  const bumpRevision = useWorkspaceStore(s => s.bumpRevision)
 
   const transport = useMemo(() => {
+    // Wrap the repository so a teacher tool write bumps the workspace revision,
+    // refreshing the central views and the mission-first gate without a reload.
+    const observableRepo = createObservableRepository(repo, bumpRevision)
     const toolkit = createTeacherToolkit({
-      repo,
+      repo: observableRepo,
       knowledge,
       editor,
       runner: runner ?? { run: runCangjieCode },
@@ -60,7 +66,7 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
     })
     const agent = createTeacherAgent(config, toolkit, normalizeLang(lang))
     return createScopedChatTransport<TeacherChatMessage>(agent, scopeSignal)
-  }, [config, repo, knowledge, editor, runner, retrievalStore, now, lang, scopeSignal])
+  }, [config, repo, knowledge, editor, runner, retrievalStore, now, lang, scopeSignal, bumpRevision])
 
   const runtime = useChatRuntime<TeacherChatMessage>({
     transport,

@@ -31,12 +31,21 @@ export interface WorkspaceStore {
   currentLessonId: string | null
   /** Id of the reference selected in the `'reference'` view, or null. */
   currentReferenceId: string | null
+  /**
+   * Monotonic revision bumped whenever the workspace documents change (e.g. a
+   * teacher tool writes the mission or a lesson). Document reads
+   * ({@link useWorkspaceResource}) depend on it, so a write through chat refreshes
+   * the views and the mission-first gate without a manual reload.
+   */
+  revision: number
   /** Switch the central viewport to a top-level view (nav click). */
   setView: (view: WorkspaceView) => void
   /** Open a lesson: switch to the `'lesson'` view and record its id. */
   selectLesson: (lessonId: string) => void
   /** Open a reference: switch to the `'reference'` view and record its id. */
   openReference: (referenceId: string) => void
+  /** Signal that workspace documents changed so dependent reads re-run. */
+  bumpRevision: () => void
 }
 
 /**
@@ -55,7 +64,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(set => ({
   view: 'lessons',
   currentLessonId: null,
   currentReferenceId: null,
+  revision: 0,
   setView: view => set({ view }),
   selectLesson: lessonId => set({ view: 'lesson', currentLessonId: lessonId }),
   openReference: referenceId => set({ view: 'reference', currentReferenceId: referenceId }),
+  bumpRevision: () => set(state => ({ revision: state.revision + 1 })),
 }))
