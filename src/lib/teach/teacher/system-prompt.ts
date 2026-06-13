@@ -1,28 +1,6 @@
 /** UI language the teacher should speak and write lessons in. */
 export type TeacherLang = 'zh' | 'en'
 
-/**
- * Build the system prompt (the agent's `instructions`) for the single Cangjie
- * Teacher agent. The prompt encodes the hard constraints distilled from the
- * teach skill's Knowledge + Skills philosophy:
- *
- * - **Grounding**: never trust a parametric guess about Cangjie; `search_docs`
- *   before drawing any factual conclusion and cite the resulting hits.
- * - **Mission-first**: interview the learner for a concrete mission before
- *   producing any lesson; every lesson must trace back to that mission.
- * - **Lessons are small**: short, a single visible takeaway, sitting inside the
- *   learner's zone of proximal development (ZPD).
- * - **Quiz options are equal-length** to avoid format-leaking the answer.
- * - **Prefer structured blocks**; `raw_html` is a sandboxed fallback only.
- * - **Knowledge + Skills only**: no community/forum delegation, no external
- *   resource curation — the Cangjie knowledge source is the single source.
- *
- * @param lang UI language; selects the Chinese or English prompt.
- */
-export function buildTeacherSystemPrompt(lang: TeacherLang): string {
-  return lang === 'en' ? EN_PROMPT : ZH_PROMPT
-}
-
 const ZH_PROMPT = `你是一位仓颉（Cangjie）编程语言的老师，在浏览器内的「教学工作区」中既与学习者对话，又通过工具读写工作区文档、检索仓颉文档、撰写结构化课程、驱动编辑器与运行器、记录学习。你只教仓颉，全程使用中文。
 
 # 教学哲学：Knowledge + Skills
@@ -65,3 +43,25 @@ const EN_PROMPT = `You are a teacher of the Cangjie programming language, workin
 - code_task drives the tightest "write -> run -> compare -> immediate feedback" loop via set_editor_code / run_code / read_run_result / read_editor_code.
 - Only append_learning_record when the learner genuinely understands a non-trivial concept, discloses prior knowledge, corrects a misconception, or the mission drifts; do not record mere "coverage", and do not duplicate what is already in the glossary. Add a glossary term (upsert_glossary_term) only once the learner has *genuinely mastered* it.
 - Use reference documents to capture compressed cheat-sheets the learner revisits.`
+
+/**
+ * Build the system prompt (the agent's `instructions`) for the single Cangjie
+ * Teacher agent. The prompt encodes the hard constraints distilled from the
+ * teach skill's Knowledge + Skills philosophy:
+ *
+ * - **Grounding**: never trust a parametric guess about Cangjie; `search_docs`
+ *   before drawing any factual conclusion and cite the resulting hits.
+ * - **Mission-first**: interview the learner for a concrete mission before
+ *   producing any lesson; every lesson must trace back to that mission.
+ * - **Lessons are small**: short, a single visible takeaway, sitting inside the
+ *   learner's zone of proximal development (ZPD).
+ * - **Quiz options are equal-length** to avoid format-leaking the answer.
+ * - **Prefer structured blocks**; `raw_html` is a sandboxed fallback only.
+ * - **Knowledge + Skills only**: no community/forum delegation, no external
+ *   resource curation — the Cangjie knowledge source is the single source.
+ *
+ * @param lang UI language; selects the Chinese or English prompt.
+ */
+export function buildTeacherSystemPrompt(lang: TeacherLang): string {
+  return lang === 'en' ? EN_PROMPT : ZH_PROMPT
+}

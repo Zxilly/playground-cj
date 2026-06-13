@@ -60,7 +60,7 @@ describe('buildTeacherSystemPrompt', () => {
     })
 
     it('states the equal-length quiz rule', () => {
-      expect(prompt).toMatch(/equal.length|equal length/i)
+      expect(prompt).toMatch(/equal.length/i)
     })
 
     it('mentions ZPD and single takeaway', () => {
