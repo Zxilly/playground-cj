@@ -1,7 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
-export const MCP_URL = 'https://cj-mcp.learningman.top/mcp'
+export const MCP_URL = process.env.NEXT_PUBLIC_CANGJIE_MCP_URL ?? 'https://cj-mcp.learningman.top/mcp'
 
 export interface McpToolDescriptor {
   name: string
