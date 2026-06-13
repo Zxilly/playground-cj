@@ -1,5 +1,5 @@
-import TourAIWrapper from '@/features/tour-ai/components/TourAIWrapper'
 import type { Metadata } from 'next'
+import TeachApp from '@/features/teach/components/TeachApp'
 
 interface PageProps {
   params: Promise<{
@@ -21,8 +21,8 @@ export async function generateStaticParams() {
 export default async function TourAIPage({ params }: PageProps) {
   const { lang } = await params
   return (
-    <main>
-      <TourAIWrapper lang={lang} />
+    <main className="h-dvh">
+      <TeachApp lang={lang} />
     </main>
   )
 }
