@@ -1,9 +1,52 @@
 'use client'
 
+import { isValidElement, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 import { cn } from '@/lib/utils'
+import { highlightCangjie } from '@/lib/shiki/cangjie-highlighter'
+
+function isDarkMode(): boolean {
+  if (typeof document === 'undefined')
+    return false
+  return document.documentElement.classList.contains('dark')
+}
+
+/**
+ * ```cangjie 围栏代码块：以纯文本为初始/回退状态，异步用 Shiki 高亮后替换为
+ * 同一套高亮 HTML，与 CodeSampleBlock 共享高亮器。
+ */
+function CangjieFence({ code }: { code: string }) {
+  const [html, setHtml] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void highlightCangjie(code, { dark: isDarkMode() }).then((result) => {
+      if (!cancelled)
+        setHtml(result)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [code])
+
+  if (html != null) {
+    return (
+      <div
+        className="teach-shiki my-2 overflow-x-auto rounded-md border border-border/50 bg-muted/30 p-3 text-xs leading-relaxed [&_pre]:!bg-transparent [&_pre]:font-mono"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    )
+  }
+
+  return (
+    <pre className="my-2 overflow-x-auto rounded-md border border-border/50 bg-muted/30 p-3 font-mono text-xs leading-relaxed">
+      <code className="font-mono">{code}</code>
+    </pre>
+  )
+}
 
 /**
  * Standalone markdown renderer for lesson block bodies (prose / callout).
@@ -67,15 +110,38 @@ const components: Components = {
       {...props}
     />
   ),
-  pre: ({ className, ...props }) => (
-    <pre
-      className={cn(
-        'my-2 overflow-x-auto rounded-md border border-border/50 bg-muted/30 p-3 font-mono text-xs leading-relaxed',
-        className,
-      )}
-      {...props}
-    />
-  ),
+  pre: ({ className, children, ...props }) => {
+    const fence = extractCangjieFence(children)
+    if (fence != null) {
+      return <CangjieFence code={fence} />
+    }
+    return (
+      <pre
+        className={cn(
+          'my-2 overflow-x-auto rounded-md border border-border/50 bg-muted/30 p-3 font-mono text-xs leading-relaxed',
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </pre>
+    )
+  },
+}
+
+/**
+ * 若 `<pre>` 的子节点是一个 ```cangjie 围栏代码 `<code>`，返回其纯文本代码，
+ * 否则返回 null（交由默认 `<pre>` 渲染）。
+ */
+function extractCangjieFence(children: ReactNode): string | null {
+  if (!isValidElement(children))
+    return null
+  const props = children.props as { className?: string, children?: ReactNode }
+  const lang = /language-(\w+)/.exec(props.className ?? '')?.[1]
+  if (lang !== 'cangjie' && lang !== 'cj')
+    return null
+  const code = props.children
+  return typeof code === 'string' ? code.replace(/\n$/, '') : null
 }
 
 export function TeachMarkdown({ markdown, className }: TeachMarkdownProps) {

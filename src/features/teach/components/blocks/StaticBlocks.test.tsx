@@ -1,4 +1,4 @@
-import { cleanup, render as rtlRender, screen, within } from '@testing-library/react'
+import { cleanup, render as rtlRender, screen, waitFor, within } from '@testing-library/react'
 import { i18n as globalI18n, setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import type { ReactElement, ReactNode } from 'react'
@@ -99,6 +99,24 @@ describe('codeSampleBlock', () => {
         block={{ type: 'code_sample', code: 'main() {}', language: 'cangjie' }}
       />,
     )
+    // 同步的回退状态：高亮解析前先以纯文本渲染。
+    const code = screen.getByTestId('code-sample-code')
+    expect(code.textContent).toContain('main() {}')
+    expect(code.getAttribute('data-language')).toBe('cangjie')
+  })
+
+  it('upgrades to highlighted markup once async highlighting resolves', async () => {
+    render(
+      <CodeSampleBlock
+        block={{ type: 'code_sample', code: 'main() {}', language: 'cangjie' }}
+      />,
+    )
+    // 高亮完成后容器被替换为 Shiki 生成的 <pre>，data-testid 与 data-language 保留，
+    // 代码文本（可能被拆分到多个 token span）仍可通过 textContent 读取。
+    await waitFor(() => {
+      const code = screen.getByTestId('code-sample-code')
+      expect(code.querySelector('pre')).not.toBeNull()
+    })
     const code = screen.getByTestId('code-sample-code')
     expect(code.textContent).toContain('main() {}')
     expect(code.getAttribute('data-language')).toBe('cangjie')
