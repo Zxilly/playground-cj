@@ -177,34 +177,36 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   }
 
   return (
-    <AbortScopeProvider>
-      <WorkspaceProvider {...collaborators}>
-        {stage === 'landing' && <TeachLanding onStart={() => setStage('config')} />}
-        {stage === 'config' && (
-          <TeachConfigWizard onEnter={() => setStage('workspace')} onBack={() => setStage('landing')} />
-        )}
-        {stage === 'workspace' && (
-          <>
-            <TeachWorkspace
-              lang={lang}
-              generation={generation}
-              importError={importError}
-              exportError={exportError}
-              statusId={statusId}
-              fileInputRef={fileInputRef}
-              onExport={() => void handleExport()}
-              onImportFile={handleImportFile}
-            />
-            {/* Mid-session quota safety net: the watcher in TeacherChatRuntime
-                flips autoQuota.exhausted when the shared quota runs out, which
-                surfaces this dialog; its "use a custom key" action opens the
-                config dialog. */}
-            <QuotaExhaustedDialog />
-            <LLMConfigDialog withTrigger={false} />
-          </>
-        )}
-      </WorkspaceProvider>
-    </AbortScopeProvider>
+    <div className="teach-workspace-root contents">
+      <AbortScopeProvider>
+        <WorkspaceProvider {...collaborators}>
+          {stage === 'landing' && <TeachLanding onStart={() => setStage('config')} />}
+          {stage === 'config' && (
+            <TeachConfigWizard onEnter={() => setStage('workspace')} onBack={() => setStage('landing')} />
+          )}
+          {stage === 'workspace' && (
+            <>
+              <TeachWorkspace
+                lang={lang}
+                generation={generation}
+                importError={importError}
+                exportError={exportError}
+                statusId={statusId}
+                fileInputRef={fileInputRef}
+                onExport={() => void handleExport()}
+                onImportFile={handleImportFile}
+              />
+              {/* Mid-session quota safety net: the watcher in TeacherChatRuntime
+                  flips autoQuota.exhausted when the shared quota runs out, which
+                  surfaces this dialog; its "use a custom key" action opens the
+                  config dialog. */}
+              <QuotaExhaustedDialog />
+              <LLMConfigDialog withTrigger={false} />
+            </>
+          )}
+        </WorkspaceProvider>
+      </AbortScopeProvider>
+    </div>
   )
 }
 

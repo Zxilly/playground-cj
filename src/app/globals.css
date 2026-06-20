@@ -224,6 +224,29 @@
   min-height: 0;
 }
 
+/* Scope the teaching-workspace (teach) UI to the tour's teal tone: remap the
+   semantic primary/accent/ring tokens so every teach component picks up teal via
+   its existing bg-primary/border-primary/text-primary classes. Only applies
+   under .teach-workspace-root, so tour pages stay unaffected.
+   --color-tour-teal-deep (#2E9585) on #fff text is the safest light-mode primary
+   (passes WCAG AA for UI/large text); dark mode flips to the lighter tour-accent
+   on a near-black teal foreground for legible button labels. */
+.teach-workspace-root {
+  --primary: var(--color-tour-teal-deep);
+  --primary-foreground: #ffffff;
+  --accent: var(--color-tour-teal);
+  --accent-foreground: #ffffff;
+  --ring: var(--color-tour-teal);
+}
+
+.dark .teach-workspace-root {
+  --primary: var(--color-tour-accent);
+  --primary-foreground: #06302a;
+  --accent: var(--color-tour-accent);
+  --accent-foreground: #06302a;
+  --ring: var(--color-tour-accent);
+}
+
 .dark .ai-classroom-root {
   --tour-bg: #1A1715;
   --tour-surface: #221E1A;
