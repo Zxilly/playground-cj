@@ -8,20 +8,26 @@ import {
   useAuiState,
 } from '@assistant-ui/react'
 import {
+  BrainIcon,
   CheckIcon,
+  ChevronDownIcon,
   CopyIcon,
   DownloadIcon,
+  LoaderIcon,
   MoreHorizontalIcon,
   PencilIcon,
   RefreshCwIcon,
 } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
-import type { FC } from 'react'
+import { useState } from 'react'
+import type { FC, PropsWithChildren } from 'react'
 import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import { BranchPicker } from '@/modules/assistant-ui/chat/BranchPicker'
 import { MarkdownText } from '@/modules/assistant-ui/registry/MarkdownText'
+import { ToolFallback } from '@/modules/assistant-ui/registry/ToolFallback'
 import { TooltipIconButton } from '@/modules/assistant-ui/registry/TooltipIconButton'
 import { UserMessageAttachments } from '@/modules/assistant-ui/registry/Attachment'
 
@@ -85,20 +91,28 @@ function AssistantMessage() {
             return null
           }}
         >
-          {({ part }) => {
+          {({ part, children }) => {
             switch (part.type) {
+              // Reasoning + tool calls are rendered faithfully (collapsed under a
+              // "思考过程" disclosure) so the learner can see what the teacher is
+              // thinking and doing, and so a tool-heavy turn shows live activity
+              // instead of a frozen gap.
               case 'group-chainOfThought':
+                return <ChainOfThought>{children}</ChainOfThought>
               case 'group-reasoning':
+                return (
+                  <div className="space-y-1 text-sm leading-relaxed text-muted-foreground [&_.aui-md]:text-muted-foreground">
+                    {children}
+                  </div>
+                )
               case 'group-tool':
-                // Tool calls and reasoning traces are implementation details.
-                // The chat surface should show the learner-facing answer, not
-                // raw tool names, arguments, results, or chain-of-thought.
-                return null
+                return <div className="flex flex-col gap-2">{children}</div>
               case 'text':
                 return <MarkdownText />
               case 'reasoning':
+                return <MarkdownText />
               case 'tool-call':
-                return null
+                return <ToolFallback {...part} />
               default:
                 return null
             }
@@ -115,6 +129,44 @@ function AssistantMessage() {
         <AssistantActionBar />
       </div>
     </MessagePrimitive.Root>
+  )
+}
+
+/**
+ * Collapsible "思考过程" disclosure wrapping a turn's reasoning and tool calls.
+ * Open while the turn is still running so the learner sees live reasoning/tool
+ * activity (otherwise a tool-heavy turn looks like a frozen gap before the
+ * answer streams); it auto-collapses once the turn completes, and the learner
+ * can toggle it either way.
+ */
+function ChainOfThought({ children }: PropsWithChildren) {
+  const running = useAuiState(s => s.message.status?.type === 'running')
+  const [userOpen, setUserOpen] = useState<boolean | null>(null)
+  const open = userOpen ?? running
+
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={setUserOpen}
+      data-slot="aui_chain-of-thought"
+      className="mb-3 rounded-md border border-border/60 bg-muted/20"
+    >
+      <CollapsibleTrigger className="group/cot flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+        {running
+          ? <LoaderIcon aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
+          : <BrainIcon aria-hidden="true" className="size-3.5 shrink-0" />}
+        <span className="grow">
+          {running ? <Trans>正在思考…</Trans> : <Trans>思考过程</Trans>}
+        </span>
+        <ChevronDownIcon
+          aria-hidden="true"
+          className="size-3.5 shrink-0 transition-transform duration-200 group-data-[state=closed]/cot:-rotate-90"
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-2 px-3 pb-3">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 

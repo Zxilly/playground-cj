@@ -361,7 +361,7 @@ msgstr "参考答案"
 msgid "发送消息"
 msgstr "发送消息"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:226
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:278
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:377
 msgid "取消"
 msgstr "取消"
@@ -414,7 +414,7 @@ msgstr "在内置编辑器中编写仓颉代码并直接运行查看结果，老
 msgid "复习巩固"
 msgstr "复习巩固"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:129
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:181
 msgid "复制"
 msgstr "复制"
 
@@ -484,7 +484,7 @@ msgstr "导入工作区 JSON"
 msgid "导出"
 msgstr "导出"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:160
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:212
 msgid "导出为 Markdown"
 msgstr "导出为 Markdown"
 
@@ -535,6 +535,10 @@ msgstr "已被取代"
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:220
 msgid "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
 msgstr "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:159
+msgid "思考过程"
+msgstr "思考过程"
 
 #: src/features/tour/components/mdx/LanguagePicker.tsx:33
 msgid "我熟悉的语言"
@@ -617,11 +621,11 @@ msgstr "显示移动端侧边栏。"
 
 #: src/components/ui/breadcrumb.tsx:110
 #: src/components/ui/ui-i18n.test.tsx:54
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:146
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:198
 msgid "更多"
 msgstr "更多"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:230
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:282
 msgid "更新"
 msgstr "更新"
 
@@ -717,6 +721,10 @@ msgstr "正在启动仓颉代码提示{originSuffix}。"
 msgid "正在启动代码提示"
 msgstr "正在启动代码提示"
 
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:159
+msgid "正在思考…"
+msgstr "正在思考…"
+
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:58
 msgid "正在格式化..."
 msgstr "正在格式化..."
@@ -794,11 +802,11 @@ msgstr "编译失败"
 msgid "编译运行"
 msgstr "编译运行"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:203
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:255
 msgid "编辑"
 msgstr "编辑"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:221
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:273
 msgid "编辑消息"
 msgstr "编辑消息"
 
@@ -923,9 +931,9 @@ msgstr "配置不完整"
 msgid "重启"
 msgstr "重启"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:52
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:55
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:139
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:58
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:61
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:191
 msgid "重新生成"
 msgstr "重新生成"
 
