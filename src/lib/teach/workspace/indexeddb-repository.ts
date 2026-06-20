@@ -391,6 +391,15 @@ export function createIndexedDbWorkspaceRepository(
         // Validate before touching the database so an invalid snapshot rejects
         // the returned promise and leaves existing data untouched.
         const parsed = workspaceSnapshotSchema.parse(snapshot)
+        // Guard the schema version *before* the wipe-and-write below: importing a
+        // snapshot from an incompatible (e.g. future) schema would otherwise pass
+        // the shape check, clear every store, and silently corrupt or destroy the
+        // current workspace. Reject with a clear message instead.
+        if (parsed.version !== WORKSPACE_SNAPSHOT_VERSION) {
+          throw new Error(
+            `不支持的工作区快照版本 ${parsed.version}（当前支持 ${WORKSPACE_SNAPSHOT_VERSION}）。请使用匹配版本的应用导入。`,
+          )
+        }
         const db = await getDb()
 
         // Clear and write in a SINGLE transaction. If the clears ran in separate

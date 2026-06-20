@@ -131,6 +131,16 @@ describe('indexeddb repository', () => {
     await expect(repo.importAll({ version: 1, foo: 'bar' } as never)).rejects.toThrow()
   })
 
+  it('importAll rejects an unsupported snapshot version without wiping existing data', async () => {
+    await repo.appendLearningRecord({ title: 'keep-me', body: 'b' })
+    const snap = await freshRepo().exportAll()
+    snap.version = 999
+    await expect(repo.importAll(snap)).rejects.toThrow(/版本/)
+    // The wipe must not have run: the pre-existing record is still there.
+    expect(await repo.listLearningRecords()).toHaveLength(1)
+    expect((await repo.listLearningRecords())[0].title).toBe('keep-me')
+  })
+
   it('appends after a gapped-id import without colliding (max-id, not count)', async () => {
     // A hand-edited export can leave id gaps (here 0001, 0003 — 0002 removed).
     // count()+1 would hand out 0003 and overwrite the imported record; the next
