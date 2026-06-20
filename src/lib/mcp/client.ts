@@ -55,8 +55,16 @@ export async function listMcpTools(): Promise<McpToolDescriptor[]> {
   }))
 }
 
-export async function callMcpTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+export async function callMcpTool(
+  name: string,
+  args: Record<string, unknown>,
+  abortSignal?: AbortSignal,
+): Promise<unknown> {
   const client = await ensureClient()
-  const res = await client.callTool({ name, arguments: args })
+  const res = await client.callTool(
+    { name, arguments: args },
+    undefined,
+    abortSignal ? { signal: abortSignal } : undefined,
+  )
   return res
 }

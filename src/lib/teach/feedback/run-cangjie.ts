@@ -35,15 +35,16 @@ interface RemoteRunMessage {
  * source to the backend `/run` endpoint; tests inject a fake. Kept local to the
  * feedback module so it does not depend on the legacy tour-ai stack.
  */
-export type RemoteRunRequest = (code: string) => Promise<RemoteRunMessage>
+export type RemoteRunRequest = (code: string, signal?: AbortSignal) => Promise<RemoteRunMessage>
 
-const defaultRequest: RemoteRunRequest = async (code) => {
+const defaultRequest: RemoteRunRequest = async (code, signal) => {
   const resp = await fetch(`${BACKEND_URL}/run`, {
     method: 'POST',
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
     },
     body: code,
+    signal,
   })
 
   if (!resp.ok) {
@@ -68,6 +69,12 @@ export interface RunCangjieCodeDeps {
   request?: RemoteRunRequest
   /** Injected clock for measuring elapsed time; defaults to {@link Date.now}. */
   now?: () => number
+  /**
+   * Abort signal for the run. When it fires the underlying request is cancelled
+   * and the abort is re-thrown (rather than reported as `runner_unavailable`) so
+   * a teacher tool call can surface a "User aborted" result.
+   */
+  signal?: AbortSignal
 }
 
 /**
@@ -82,7 +89,7 @@ export async function runCangjieCode(code: string, deps: RunCangjieCodeDeps = {}
   const startedAt = now()
 
   try {
-    const data = await request(code)
+    const data = await request(code, deps.signal)
     return {
       ok: data.compiler_code === 0 && data.bin_code === 0,
       stdout: data.bin_output,
@@ -93,6 +100,10 @@ export async function runCangjieCode(code: string, deps: RunCangjieCodeDeps = {}
     }
   }
   catch (error) {
+    // A user abort must propagate so the caller yields a "User aborted" result;
+    // any other failure degrades to a runner-unavailable run result.
+    if (deps.signal?.aborted || (error instanceof Error && error.name === 'AbortError'))
+      throw error
     return {
       ok: false,
       stdout: '',

@@ -183,6 +183,22 @@ async function call<T = unknown>(tool: unknown, input: unknown): Promise<T> {
   return execute(input, { toolCallId: 't', messages: [] })
 }
 
+/** Invoke a tool's execute with an abort signal in the call options. */
+async function callWithSignal<T = unknown>(tool: unknown, input: unknown, signal: AbortSignal): Promise<T> {
+  const execute = (tool as { execute: (input: unknown, options: unknown) => Promise<T> }).execute
+  return execute(input, { toolCallId: 't', messages: [], abortSignal: signal })
+}
+
+/** A runner whose run rejects with an AbortError, simulating a cancelled fetch. */
+function createAbortingRunner(): TeacherRunner & { run: ReturnType<typeof vi.fn> } {
+  const run = vi.fn(async () => {
+    const error = new Error('The operation was aborted')
+    error.name = 'AbortError'
+    throw error
+  })
+  return { run }
+}
+
 describe('createTeacherToolkit', () => {
   it('exposes the full tool set', () => {
     const { toolkit } = setup()
@@ -275,7 +291,7 @@ describe('createTeacherToolkit', () => {
   it('run_code runs through the runner and read_run_result returns the last result', async () => {
     const { toolkit, runner } = setup()
     const ran = await call<{ ok: boolean, result?: RunResult }>(toolkit.run_code, { code: 'main() {}' })
-    expect(runner.run).toHaveBeenCalledWith('main() {}')
+    expect(runner.run).toHaveBeenCalledWith('main() {}', undefined)
     expect(ran.result?.stdout).toBe('hi\n')
 
     const last = await call<{ ok: boolean, result?: RunResult | null }>(toolkit.read_run_result, {})
@@ -377,6 +393,47 @@ describe('createTeacherToolkit', () => {
     const ref = await repo.getReference('ref-1')
     expect(ref?.title).toBe('syntax card')
     expect(ref?.updatedAt).toBe(444)
+  })
+
+  it('run_code returns a "User aborted" result without invoking the runner when already aborted', async () => {
+    const { toolkit, runner } = setup()
+    const controller = new AbortController()
+    controller.abort()
+    const result = await callWithSignal<{ ok: boolean, error?: string, aborted?: boolean }>(
+      toolkit.run_code,
+      { code: 'main() {}' },
+      controller.signal,
+    )
+    expect(result).toMatchObject({ ok: false, error: 'User aborted', aborted: true })
+    expect(runner.run).not.toHaveBeenCalled()
+  })
+
+  it('run_code threads the abort signal to the runner and maps a runner abort to "User aborted"', async () => {
+    const repo = createMemoryRepo()
+    const runner = createAbortingRunner()
+    const toolkit = createTeacherToolkit({
+      repo,
+      knowledge: createFakeKnowledge([]),
+      runner,
+      retrievalStore: createMemoryRetrievalStore(),
+      editor: createFakeEditor(),
+      now: () => 1,
+    })
+    const controller = new AbortController()
+    const result = await callWithSignal<{ ok: boolean, error?: string }>(
+      toolkit.run_code,
+      { code: 'main() {}' },
+      controller.signal,
+    )
+    expect(runner.run).toHaveBeenCalledWith('main() {}', controller.signal)
+    expect(result).toMatchObject({ ok: false, error: 'User aborted' })
+  })
+
+  it('search_docs threads the abort signal to the knowledge source', async () => {
+    const { toolkit, knowledge } = setup()
+    const controller = new AbortController()
+    await callWithSignal(toolkit.search_docs, { query: 'option', limit: 3 }, controller.signal)
+    expect(knowledge.search).toHaveBeenCalledWith('option', { limit: 3, signal: controller.signal })
   })
 
   it('supersede_learning_record marks the record superseded', async () => {

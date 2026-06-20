@@ -13,7 +13,7 @@ describe('runCangjieCode', () => {
 
     const result = await runCangjieCode('main() {}', { request })
 
-    expect(request).toHaveBeenCalledWith('main() {}')
+    expect(request).toHaveBeenCalledWith('main() {}', undefined)
     expect(result).toMatchObject({
       ok: true,
       stdout: 'hello\n',
@@ -63,6 +63,30 @@ describe('runCangjieCode', () => {
     expect(result.exitCode).toBeNull()
     expect(result.stderr).toBe('network down')
     expect(result.failureKind).toBe('runner_unavailable')
+  })
+
+  it('forwards the abort signal to the request', async () => {
+    const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      compiler_output: '',
+      compiler_code: 0,
+      bin_output: 'ok',
+      bin_code: 0,
+    })
+    const controller = new AbortController()
+
+    await runCangjieCode('main() {}', { request, signal: controller.signal })
+
+    expect(request).toHaveBeenCalledWith('main() {}', controller.signal)
+  })
+
+  it('re-throws an abort instead of reporting runner_unavailable', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const request = vi.fn<RemoteRunRequest>().mockRejectedValue(
+      Object.assign(new Error('aborted'), { name: 'AbortError' }),
+    )
+
+    await expect(runCangjieCode('main() {}', { request, signal: controller.signal })).rejects.toThrow()
   })
 
   it('records the elapsed duration', async () => {

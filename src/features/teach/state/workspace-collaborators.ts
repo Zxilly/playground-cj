@@ -46,7 +46,9 @@ export function createWorkspaceCollaborators(lang: string): WorkspaceCollaborato
     repo,
     retrievalStore: createIdbRetrievalStore(repo),
     knowledge: createCangjieMcpKnowledgeSource(),
-    runner: { run: runCangjieCode },
+    // Route the abort signal through runCangjieCode's deps `{ signal }` rather
+    // than its positional second arg, so a stopped turn cancels the run.
+    runner: { run: (code, signal) => runCangjieCode(code, { signal }) },
     activeEditor: createActiveEditorRegistry(),
     now: () => Date.now(),
   }

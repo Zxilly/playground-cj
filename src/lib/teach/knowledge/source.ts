@@ -36,7 +36,9 @@ export interface KnowledgeSource {
    * Search the source for entries relevant to `query`.
    *
    * Implementations must resolve to an empty array (never throw) when the
-   * backing source is unavailable, so grounding failures degrade gracefully.
+   * backing source is unavailable, so grounding failures degrade gracefully —
+   * the one exception is a user abort (`opts.signal`), which must propagate so
+   * the caller can surface a "User aborted" tool result rather than empty hits.
    */
-  search: (query: string, opts?: { limit?: number }) => Promise<KnowledgeHit[]>
+  search: (query: string, opts?: { limit?: number, signal?: AbortSignal }) => Promise<KnowledgeHit[]>
 }

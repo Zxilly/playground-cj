@@ -1,4 +1,4 @@
-import type { ToolSet } from 'ai'
+import type { ToolCallOptions, ToolSet } from 'ai'
 import type { KnowledgeSource } from '../knowledge/source'
 import type { RunResult } from '../feedback/run-cangjie'
 import type { RetrievalItem } from '../retrieval/types'
@@ -17,8 +17,12 @@ import { readLearnerState } from './learner-state'
 
 /** Minimal contract for running Cangjie code through the remote runner. */
 export interface TeacherRunner {
-  /** Compile and run `code`, resolving to a normalised {@link RunResult}. */
-  run: (code: string) => Promise<RunResult>
+  /**
+   * Compile and run `code`, resolving to a normalised {@link RunResult}.
+   * `abortSignal`, when provided, cancels the in-flight run (and rejects) so a
+   * stopped turn does not leave the runner request hanging.
+   */
+  run: (code: string, abortSignal?: AbortSignal) => Promise<RunResult>
 }
 
 /**
@@ -71,6 +75,37 @@ function ok<T extends object>(extra?: T) {
 
 function fail(error: string) {
   return { ok: false as const, error }
+}
+
+/** Tool result emitted when the learner stops the turn mid tool-call. */
+interface AbortedToolResult {
+  ok: false
+  error: 'User aborted'
+  aborted: true
+}
+
+const ABORTED_RESULT: AbortedToolResult = { ok: false, error: 'User aborted', aborted: true }
+
+/**
+ * Run an interruptible tool's work under the turn's abort signal. When the
+ * learner stops the turn, the in-flight request is cancelled (`run` receives the
+ * signal to pass to fetch/MCP) and the tool resolves to a "User aborted" result
+ * instead of throwing or hanging — so the message keeps a valid tool result
+ * rather than a dangling call. Generic over the tool's own output (`Output`) so
+ * it adapts to each caller's result shape; non-abort errors propagate unchanged.
+ */
+function withAbort<Output>(
+  options: ToolCallOptions,
+  run: (signal: AbortSignal | undefined) => Promise<Output>,
+): Promise<Output | AbortedToolResult> {
+  const signal = options.abortSignal
+  if (signal?.aborted)
+    return Promise.resolve(ABORTED_RESULT)
+  return run(signal).catch((error) => {
+    if (signal?.aborted || (error instanceof Error && error.name === 'AbortError'))
+      return ABORTED_RESULT
+    throw error
+  })
 }
 
 /**
@@ -246,10 +281,10 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
     search_docs: tool({
       description: 'Search the trusted Cangjie knowledge source. You MUST call this before stating any Cangjie fact, writing a code sample, or authoring a lesson — never guess from parametric memory. Cite the returned hits in the blocks you author.',
       inputSchema: z.object({ query: z.string(), limit: z.number().int().positive().max(20).optional() }),
-      execute: async ({ query, limit }) => {
-        const hits = await knowledge.search(query, limit === undefined ? undefined : { limit })
+      execute: (input, options) => withAbort(options, async (signal) => {
+        const hits = await knowledge.search(input.query, { limit: input.limit, signal })
         return ok({ hits })
-      },
+      }),
     }),
 
     // ---- Feedback loop / editor + runner ----
@@ -270,10 +305,10 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
     run_code: tool({
       description: 'Compile and run Cangjie code on the remote runner, returning stdout/stderr/exitCode. The result is also cached for read_run_result.',
       inputSchema: z.object({ code: z.string() }),
-      execute: async ({ code }) => {
-        lastRunResult = await runner.run(code)
+      execute: (input, options) => withAbort(options, async (signal) => {
+        lastRunResult = await runner.run(input.code, signal)
         return ok({ result: lastRunResult })
-      },
+      }),
     }),
     read_run_result: tool({
       description: 'Read the most recent run_code result, or null if nothing has been run yet.',

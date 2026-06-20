@@ -69,7 +69,9 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
     const toolkit = createTeacherToolkit({
       repo,
       knowledge,
-      runner: runner ?? { run: runCangjieCode },
+      // Adapt runCangjieCode to the runner contract: its second arg is a deps
+      // object, so route the abort signal through `{ signal }` (not positionally).
+      runner: runner ?? { run: (code, signal) => runCangjieCode(code, { signal }) },
       retrievalStore,
       // The active-editor registry resolves whichever code_task the learner is
       // currently working in, so set_editor_code / read_editor_code drive the

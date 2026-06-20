@@ -14,7 +14,7 @@ const DEFAULT_LIMIT = 5
  * Minimal shape of the MCP `tools/call` invoker this source depends on. The
  * real implementation is {@link callMcpTool}; tests inject a fake.
  */
-export type McpCallFn = (name: string, args: Record<string, unknown>) => Promise<unknown>
+export type McpCallFn = (name: string, args: Record<string, unknown>, abortSignal?: AbortSignal) => Promise<unknown>
 
 export interface CangjieMcpKnowledgeSourceDeps {
   /** Injected MCP caller; defaults to the shared {@link callMcpTool}. */
@@ -155,11 +155,20 @@ export function createCangjieMcpKnowledgeSource(deps: CangjieMcpKnowledgeSourceD
     id: CANGJIE_MCP_SOURCE_ID,
     search: async (query, opts) => {
       const limit = opts?.limit ?? DEFAULT_LIMIT
+      const signal = opts?.signal
       try {
-        const result = await call(CANGJIE_SEARCH_DOCS_TOOL, { query, top_k: limit })
+        // Only forward the abort signal when present so callers/tests that don't
+        // pass one keep seeing a 2-arg call.
+        const result = signal !== undefined
+          ? await call(CANGJIE_SEARCH_DOCS_TOOL, { query, top_k: limit }, signal)
+          : await call(CANGJIE_SEARCH_DOCS_TOOL, { query, top_k: limit })
         return mapResult(result, limit)
       }
       catch (err) {
+        // A user abort must propagate (so the tool yields a "User aborted"
+        // result); a genuine source failure still degrades to empty hits.
+        if (signal?.aborted || (err instanceof Error && err.name === 'AbortError'))
+          throw err
         console.warn('[teach] cangjie MCP knowledge source unavailable', err)
         return []
       }

@@ -145,4 +145,23 @@ describe('createCangjieMcpKnowledgeSource', () => {
 
     expect(await source.search('Option')).toEqual([])
   })
+
+  it('forwards the abort signal to the MCP call', async () => {
+    const call = vi.fn<McpCallFn>().mockResolvedValue({ structuredContent: { results: [] } })
+    const source = createCangjieMcpKnowledgeSource({ call })
+    const controller = new AbortController()
+
+    await source.search('Option', { limit: 2, signal: controller.signal })
+
+    expect(call).toHaveBeenCalledWith(CANGJIE_SEARCH_DOCS_TOOL, { query: 'Option', top_k: 2 }, controller.signal)
+  })
+
+  it('propagates an abort instead of degrading to empty hits', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const call = vi.fn<McpCallFn>().mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+    const source = createCangjieMcpKnowledgeSource({ call })
+
+    await expect(source.search('Option', { signal: controller.signal })).rejects.toThrow()
+  })
 })
