@@ -1,7 +1,8 @@
 package server
 
 type ForwardMessage struct {
-	Data []byte `json:"data"`
+	Data  []byte `json:"data"`
+	Stdin []byte `json:"stdin"`
 }
 
 type FormatMessage struct {

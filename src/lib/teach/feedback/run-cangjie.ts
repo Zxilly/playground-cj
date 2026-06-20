@@ -37,16 +37,25 @@ interface RemoteRunMessage {
  * source to the backend `/run` endpoint; tests inject a fake. Kept local to the
  * feedback module so it does not depend on the legacy tour-ai stack.
  */
-export type RemoteRunRequest = (code: string, signal?: AbortSignal) => Promise<RemoteRunMessage>
+export type RemoteRunRequest = (
+  code: string,
+  opts?: { stdin?: string, signal?: AbortSignal },
+) => Promise<RemoteRunMessage>
 
-const defaultRequest: RemoteRunRequest = async (code, signal) => {
+const defaultRequest: RemoteRunRequest = async (code, opts) => {
+  // When stdin is provided the backend needs a structured body so it can route
+  // the input to the program; otherwise keep the legacy text/plain body so the
+  // raw-body `/run` path is unchanged.
+  const hasStdin = opts?.stdin != null
   const resp = await fetch(`${BACKEND_URL}/run`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Type': hasStdin
+        ? 'application/json; charset=utf-8'
+        : 'text/plain; charset=utf-8',
     },
-    body: code,
-    signal,
+    body: hasStdin ? JSON.stringify({ code, stdin: opts!.stdin }) : code,
+    signal: opts?.signal,
   })
 
   if (!resp.ok) {
@@ -69,6 +78,12 @@ const defaultRequest: RemoteRunRequest = async (code, signal) => {
 export interface RunCangjieCodeDeps {
   /** Injected remote-run client; defaults to a backend `/run` POST. */
   request?: RemoteRunRequest
+  /**
+   * Standard input piped to the running program. When set, the default request
+   * switches to a JSON body so the backend can route the input. Omitted for
+   * plain compile-and-run.
+   */
+  stdin?: string
   /** Injected clock for measuring elapsed time; defaults to {@link Date.now}. */
   now?: () => number
   /**
@@ -91,7 +106,7 @@ export async function runCangjieCode(code: string, deps: RunCangjieCodeDeps = {}
   const startedAt = now()
 
   try {
-    const data = await request(code, deps.signal)
+    const data = await request(code, { stdin: deps.stdin, signal: deps.signal })
     return {
       ok: data.compiler_code === 0 && data.bin_code === 0,
       stdout: data.bin_output,

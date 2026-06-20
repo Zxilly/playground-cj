@@ -13,7 +13,7 @@ describe('runCangjieCode', () => {
 
     const result = await runCangjieCode('main() {}', { request })
 
-    expect(request).toHaveBeenCalledWith('main() {}', undefined)
+    expect(request).toHaveBeenCalledWith('main() {}', { stdin: undefined, signal: undefined })
     expect(result).toMatchObject({
       ok: true,
       stdout: 'hello\n',
@@ -76,7 +76,20 @@ describe('runCangjieCode', () => {
 
     await runCangjieCode('main() {}', { request, signal: controller.signal })
 
-    expect(request).toHaveBeenCalledWith('main() {}', controller.signal)
+    expect(request).toHaveBeenCalledWith('main() {}', { stdin: undefined, signal: controller.signal })
+  })
+
+  it('forwards stdin to the request', async () => {
+    const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      compiler_output: '',
+      compiler_code: 0,
+      bin_output: 'ok',
+      bin_code: 0,
+    })
+
+    await runCangjieCode('main() {}', { request, stdin: '1 2\n' })
+
+    expect(request).toHaveBeenCalledWith('main() {}', { stdin: '1 2\n', signal: undefined })
   })
 
   it('re-throws an abort instead of reporting runner_unavailable', async () => {
@@ -87,6 +100,38 @@ describe('runCangjieCode', () => {
     )
 
     await expect(runCangjieCode('main() {}', { request, signal: controller.signal })).rejects.toThrow()
+  })
+
+  it('uses a text/plain body when no stdin is provided (default request)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ compiler_output: '', compiler_code: 0, bin_output: 'ok', bin_code: 0 }),
+    } as Response)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await runCangjieCode('main() {}')
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect((init.headers as Record<string, string>)['Content-Type']).toContain('text/plain')
+    expect(init.body).toBe('main() {}')
+
+    vi.unstubAllGlobals()
+  })
+
+  it('uses a JSON body with code+stdin when stdin is provided (default request)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ compiler_output: '', compiler_code: 0, bin_output: 'ok', bin_code: 0 }),
+    } as Response)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await runCangjieCode('main() {}', { stdin: '1 2\n' })
+
+    const [, init] = fetchMock.mock.calls[0]
+    expect((init.headers as Record<string, string>)['Content-Type']).toContain('application/json')
+    expect(JSON.parse(init.body as string)).toEqual({ code: 'main() {}', stdin: '1 2\n' })
+
+    vi.unstubAllGlobals()
   })
 
   it('records the elapsed duration', async () => {

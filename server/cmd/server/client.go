@@ -99,7 +99,7 @@ func (c *cappedBuffer) String() string {
 	return string(c.Bytes())
 }
 
-func runCmd(ctx context.Context, cmd string, payload []byte) ([]byte, error) {
+func runCmd(ctx context.Context, cmd string, fwd server.ForwardMessage) ([]byte, error) {
 	execCtx, cancel := context.WithTimeout(ctx, execTimeout)
 	defer cancel()
 
@@ -156,7 +156,7 @@ func runCmd(ctx context.Context, cmd string, payload []byte) ([]byte, error) {
 		}
 	}()
 
-	payloadMsg, err := json.Marshal(server.ForwardMessage{Data: payload})
+	payloadMsg, err := json.Marshal(fwd)
 	if err != nil {
 		return nil, fmt.Errorf("marshal payload: %w", err)
 	}

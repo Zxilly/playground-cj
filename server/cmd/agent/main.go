@@ -126,6 +126,9 @@ func run(fMsg server.ForwardMessage) {
 		binOut := bytes.NewBuffer(nil)
 		cmd.Stdout = binOut
 		cmd.Stderr = binOut
+		if len(fMsg.Stdin) > 0 {
+			cmd.Stdin = bytes.NewReader(fMsg.Stdin)
+		}
 		err = cmd.Run()
 
 		out := binOut.String()

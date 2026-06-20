@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -16,7 +17,22 @@ func handleRun(ctx *gin.Context) {
 		return
 	}
 
-	data, err := runCmd(ctx.Request.Context(), "run", payload)
+	var fwd server.ForwardMessage
+	if strings.HasPrefix(ctx.ContentType(), "application/json") {
+		var req struct {
+			Code  string `json:"code"`
+			Stdin string `json:"stdin"`
+		}
+		if err := json.Unmarshal(payload, &req); err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+		fwd = server.ForwardMessage{Data: []byte(req.Code), Stdin: []byte(req.Stdin)}
+	} else {
+		fwd = server.ForwardMessage{Data: payload}
+	}
+
+	data, err := runCmd(ctx.Request.Context(), "run", fwd)
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, err.Error())
 		return
@@ -38,7 +54,7 @@ func handleFormat(ctx *gin.Context) {
 		return
 	}
 
-	data, err := runCmd(ctx.Request.Context(), "format", payload)
+	data, err := runCmd(ctx.Request.Context(), "format", server.ForwardMessage{Data: payload})
 	if err != nil {
 		ctx.String(http.StatusInternalServerError, err.Error())
 		return

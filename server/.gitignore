@@ -8,4 +8,6 @@ gen
 *.tar.gz
 *.zip
 
-server
+# compiled binaries (NOT the cmd/server source dir)
+/cmd/server/server
+/cmd/agent/agent
