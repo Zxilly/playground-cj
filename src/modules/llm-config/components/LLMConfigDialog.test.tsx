@@ -161,14 +161,14 @@ describe('llmConfigDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
 
     expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(screen.getByText('共享额度')).toBeTruthy()
-    expect(screen.getByLabelText('服务地址')).toHaveProperty('value', DEFAULT_LLM_CONFIG.baseURL)
-    expect(screen.getByLabelText('服务地址')).toHaveProperty('disabled', true)
-    expect(screen.getByLabelText('API Key')).toHaveProperty('value', '')
-    expect(screen.getByLabelText('模型')).toHaveProperty('value', DEFAULT_LLM_CONFIG.model)
-    expect(screen.getByLabelText('模型')).toHaveProperty('disabled', true)
-    expect(screen.getByRole('button', { name: 'Anthropic' })).toHaveProperty('disabled', true)
-    expect(describedByText(screen.getByRole('button', { name: 'Anthropic' }))).toBe('共享额度模式下此项由系统管理；填写自己的 API Key 后可以编辑。')
+    // The shared tab is selected and only the remaining quota is shown — the
+    // specific config (API Key / service address / model / API style) is hidden
+    // behind the "自定义 API Key" tab.
+    expect(screen.getByRole('tab', { name: '共享额度' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.queryByLabelText('API Key')).toBeNull()
+    expect(screen.queryByLabelText('服务地址')).toBeNull()
+    expect(screen.queryByLabelText('模型')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Anthropic' })).toBeNull()
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/api/usage/token/'),
@@ -202,20 +202,18 @@ describe('llmConfigDialog', () => {
     screen.getByRole('heading', { name: 'AI service settings' })
     screen.getByText('Shared quota will be used when no API Key is provided; it is limited and may run out.')
     screen.getByText('Shared quota')
-    screen.getByText('The current draft uses shared quota. Enter your own API Key to edit the service address, API style, and model.')
-    expect(screen.getByLabelText('Service address')).toHaveProperty('disabled', true)
-    expect(screen.getByLabelText('API Key')).toHaveProperty('value', '')
-    expect(screen.getByLabelText('Model')).toHaveProperty('disabled', true)
-    screen.getByPlaceholderText('Leave blank to use shared quota')
-    const provider = screen.getByRole('button', { name: 'Anthropic' })
-    expect(provider).toHaveProperty('disabled', true)
-    expect(provider.getAttribute('title')).toBe('Enter your own API Key to edit the API style')
-    expect(describedByText(provider)).toBe('Shared quota mode is managed by the system. Enter your own API Key to edit it.')
+    screen.getByText('Currently using shared quota. To customize the service address, API style, and model, switch to “Custom API Key”.')
+    // Shared tab hides the specific config (it lives behind the other tab).
+    expect(screen.getByRole('tab', { name: 'Shared quota' }).getAttribute('aria-selected')).toBe('true')
+    expect(screen.queryByLabelText('API Key')).toBeNull()
+    expect(screen.queryByLabelText('Service address')).toBeNull()
+    expect(screen.queryByLabelText('Model')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Anthropic' })).toBeNull()
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     expect(screen.getByRole('status').textContent).toContain('Remaining')
     expect(screen.getByRole('progressbar', { name: 'Shared quota usage' }).getAttribute('aria-valuenow')).toBe('1000')
-    expect(screen.queryByText('共享额度模式下此项由系统管理；填写自己的 API Key 后可以编辑。')).toBeNull()
+    expect(screen.queryByText('共享额度模式下此项由系统管理；填写自定义 API Key 后可以编辑。')).toBeNull()
   })
 
   it('saves edited config as a user key and closes through store state', async () => {
@@ -226,6 +224,7 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
+    fireEvent.click(screen.getByRole('tab', { name: '自定义 API Key' }))
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'user-key' } })
     expect(screen.getByLabelText('服务地址')).toHaveProperty('disabled', false)
     expect(screen.getByRole('button', { name: 'Anthropic' })).toHaveProperty('disabled', false)
@@ -251,13 +250,14 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
+    fireEvent.click(screen.getByRole('tab', { name: '自定义 API Key' }))
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'user-key' } })
     fireEvent.change(screen.getByLabelText('服务地址'), { target: { value: '   ' } })
     fireEvent.change(screen.getByLabelText('模型'), { target: { value: '' } })
 
     const save = screen.getByRole('button', { name: '保存' })
     expect(save).toHaveProperty('disabled', true)
-    expect(describedByText(save)).toBe('填写自己的 API Key 时，还需要服务地址和模型。')
+    expect(describedByText(save)).toBe('使用自定义 API Key 时，需同时配置服务地址与模型。')
     expect(screen.getByLabelText('服务地址').getAttribute('aria-invalid')).toBe('true')
     expect(screen.getByLabelText('模型').getAttribute('aria-invalid')).toBe('true')
     screen.getByRole('alert')
@@ -290,16 +290,17 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Custom API Key' }))
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'user-key' } })
     fireEvent.change(screen.getByLabelText('Service address'), { target: { value: '' } })
     fireEvent.change(screen.getByLabelText('Model'), { target: { value: '' } })
 
     const save = screen.getByRole('button', { name: 'Save' })
     expect(save).toHaveProperty('disabled', true)
-    expect(describedByText(save)).toBe('When using your own API Key, service address and model are also required.')
+    expect(describedByText(save)).toBe('A custom API Key also requires a service address and model.')
     screen.getByRole('alert')
-    screen.getByText('When using your own API Key, service address and model are also required.')
-    expect(screen.queryByText('填写自己的 API Key 时，还需要服务地址和模型。')).toBeNull()
+    screen.getByText('A custom API Key also requires a service address and model.')
+    expect(screen.queryByText('填写自定义 API Key 时，还需要服务地址和模型。')).toBeNull()
   })
 
   it('saves a blank API key as shared quota mode', async () => {
@@ -354,11 +355,12 @@ describe('llmConfigDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
     const resetButton = screen.getByRole('button', { name: '重置默认' })
-    expect(describedByText(resetButton)).toBe('仅重置当前表单；点击保存后才会生效，取消会保留已有设置。')
+    expect(describedByText(resetButton)).toBe('仅重置当前表单；保存后生效，取消则保留原配置。')
 
     fireEvent.click(resetButton)
-    expect(screen.getByLabelText('API Key')).toHaveProperty('value', '')
-    screen.getByText('已切回共享额度草稿；点击保存才会替换当前 API Key，取消会保留原设置。')
+    // Reset returns to the shared tab, so the API Key field is hidden again.
+    expect(screen.queryByLabelText('API Key')).toBeNull()
+    screen.getByText('已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。')
     expect(useLLMConfigStore.getState().keySource).toBe('user')
     expect(useLLMConfigStore.getState().config.apiKey).toBe('user-key')
 
@@ -402,7 +404,7 @@ describe('llmConfigDialog', () => {
     expect(describedByText(resetButton)).toBe('Only resets the current form. It takes effect after Save; Cancel keeps the current settings.')
 
     fireEvent.click(resetButton)
-    expect(screen.getByLabelText('API Key')).toHaveProperty('value', '')
+    expect(screen.queryByLabelText('API Key')).toBeNull()
     screen.getByText('Switched to a shared quota draft. Save to replace the current API Key, or Cancel to keep the original settings.')
     expect(screen.queryByText('已切回共享额度草稿；点击保存才会替换当前 API Key，取消会保留原设置。')).toBeNull()
     expect(useLLMConfigStore.getState().keySource).toBe('user')
@@ -436,7 +438,8 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
-    expect(screen.getByLabelText('API Key')).toHaveProperty('value', '')
+    // Opens on the shared tab (auto key source); saving keeps shared semantics.
+    expect(screen.getByRole('tab', { name: '共享额度' }).getAttribute('aria-selected')).toBe('true')
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
     await waitFor(() => {
