@@ -1,55 +1,71 @@
 #syntax=docker/dockerfile:1
 
-ARG CJ_SDK_URL="https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-x64-1.1.0-beta.25.tar.gz&objectKey=69cb718e6e8ed61e6e07fd42"
+# Cangjie toolchain installed via cjv (https://cjv.zxilly.dev). Accepts a channel
+# (lts / sts / nightly) or an exact version; defaults to the version the project
+# currently targets so behaviour matches the old SDK download.
+ARG CJV_TOOLCHAIN="1.1.0-beta.25"
+# Pin the cjv CLI for reproducible builds (a release tag works too).
+ARG CJV_VERSION="latest"
+# stdx is fetched directly: cjv's component downloader builds the wrong release
+# tag for this beta (it requests v1.1.0-beta.25.1, but the real tag is
+# v1.1.0-beta.25), so pin the known-good archive. Bump alongside CJV_TOOLCHAIN.
 ARG CJ_STDX_URL="https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0-beta.25/cangjie-stdx-linux-x64-1.1.0-beta.25.1.zip"
 
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 
 WORKDIR /app
-COPY . .
 ENV GOPROXY="https://goproxy.cn"
+
+# Build the run agent.
+COPY . .
 RUN go build -v -o /app/agent ./cmd/agent
 
-FROM debian:12-slim AS extract
-
-ARG CJ_STDX_URL
-
-RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.tuna.tsinghua.edu.cn/debian|g' /etc/apt/sources.list.d/debian.sources && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends unzip curl ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL --retry 3 -o /tmp/stdx.zip "${CJ_STDX_URL}" && \
-    mkdir -p /tmp/stdx-raw && \
-    unzip -q /tmp/stdx.zip -d /tmp/stdx-raw && \
-    stdx_dir=$(find /tmp/stdx-raw -type d -name stdx -print -quit) && \
-    [ -n "$stdx_dir" ] || { echo "stdx dir not found in zip" >&2; exit 1; } && \
-    mkdir -p /linux_x86_64_cjnative/dynamic/stdx && \
-    cp -a "$stdx_dir"/. /linux_x86_64_cjnative/dynamic/stdx/ && \
-    rm -rf /tmp/stdx-raw /tmp/stdx.zip
+# Build the cjv toolchain manager from source — no curl|sh needed.
+ARG CJV_VERSION
+RUN go install "github.com/Zxilly/cjv/cmd/cjv@${CJV_VERSION}"
 
 FROM debian:12-slim
 
-ARG CJ_SDK_URL
+ARG CJV_TOOLCHAIN
+ARG CJ_STDX_URL
 
+# cjc needs a C toolchain + linker + openssl; curl/unzip/ca-certs fetch the SDK
+# (via cjv) and the stdx archive. TUNA mirror keeps apt fast on CN networks.
 RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.tuna.tsinghua.edu.cn/debian|g' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && \
-    apt-get install -y --no-install-recommends binutils libc-dev build-essential openssl libssl-dev curl ca-certificates && \
+    apt-get install -y --no-install-recommends binutils libc-dev build-essential openssl libssl-dev curl unzip ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL --retry 3 -o /tmp/sdk.tar.gz "${CJ_SDK_URL}" && \
-    mkdir -p /cangjie && \
-    tar -xzf /tmp/sdk.tar.gz -C /cangjie --strip-components=1 \
-        --wildcards \
-        --exclude='*/windows_x86_64_*' \
-        --exclude='*/mingw*' && \
-    rm /tmp/sdk.tar.gz
+COPY --from=builder /go/bin/cjv /usr/local/bin/cjv
 
-COPY --from=extract /linux_x86_64_cjnative/dynamic/stdx /linux_x86_64_cjnative/dynamic/stdx
+# Keep cjv's data in a fixed location and never touch shell profiles (PATH /
+# CANGJIE_HOME are wired explicitly below). CJV_MIRROR routes downloads through
+# the GitCode mirror for CN networks.
+ENV CJV_HOME="/opt/cjv"
+ENV CJV_NO_PATH_SETUP="1"
+ENV CJV_MIRROR="1"
+
+# Install the Cangjie SDK via cjv, then expose its toolchain root at /cangjie —
+# the path the agent and cjpm.toml already use — so no Go/cjpm changes are needed.
+RUN set -eu; \
+    cjv install "${CJV_TOOLCHAIN}"; \
+    cjv default "${CJV_TOOLCHAIN}"; \
+    cj_home="$(cjv which)"; \
+    test -x "$cj_home/bin/cjc"; \
+    ln -sfn "$cj_home" /cangjie
+
+# stdx ships as a separate archive whose root is linux_x86_64_cjnative/, so it
+# extracts straight to the path cjc links against (-L .../dynamic/stdx).
+RUN set -eu; \
+    curl -fsSL --retry 3 -o /tmp/stdx.zip "${CJ_STDX_URL}"; \
+    unzip -q /tmp/stdx.zip -d /; \
+    test -d /linux_x86_64_cjnative/dynamic/stdx; \
+    rm /tmp/stdx.zip
+
 COPY --from=builder /app/agent /app/agent
 
 ENV CANGJIE_HOME="/cangjie"
-ENV PATH="/cangjie/bin:/cangjie/tools/bin:/.cjpm/bin:$PATH"
+ENV PATH="/cangjie/bin:/cangjie/tools/bin:/opt/cjv/bin:$PATH"
 ENV LD_LIBRARY_PATH="/cangjie/runtime/lib/linux_x86_64_cjnative:/cangjie/tools/lib:/linux_x86_64_cjnative/dynamic/stdx"
 
 RUN mkdir -p /playground
