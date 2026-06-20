@@ -31,8 +31,12 @@ const LLM_COMPLETIONS_URL = `${LLM_BASE_URL}/chat/completions`
 /** Backend `/run` endpoint the Cangjie runner posts to. */
 const BACKEND_RUN_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'}/run`
 
-/** Cangjie documentation MCP endpoint (we never want the teacher to reach the real server). */
-const MCP_URL = 'https://cj-mcp.learningman.top/mcp'
+/**
+ * Same-origin Cangjie MCP proxy path (we never want the teacher to reach the real
+ * server). The browser now talks to this proxy instead of the upstream directly,
+ * so aborting it here keeps MCP traffic off the network entirely.
+ */
+const MCP_URL = '**/api/cangjie-mcp'
 
 const PRINT_TASK_CODE = 'main() {\n    println("仓颉")\n}'
 
