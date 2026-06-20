@@ -150,6 +150,16 @@ export function CodeTaskBlock({
   const hints = block.hints ?? []
   const runnerUnavailable = evaluated?.result.failureKind === 'runner_unavailable'
   const passed = evaluated != null && evaluated.matched
+  // A compile/run error (the program never produced output to compare) is a
+  // different failure than "ran fine but the output didn't match". Distinguish
+  // them so the learner reads the compiler message instead of a misleading
+  // empty expected/actual diff. Rehydrated outcomes carry no stderr, so they
+  // fall through to the plain "未通过" verdict.
+  const errored = evaluated != null
+    && !evaluated.matched
+    && !runnerUnavailable
+    && !evaluated.result.ok
+    && evaluated.result.stderr.trim().length > 0
 
   // Register this code_task's editor as the active one while mounted. The handle
   // is stable (a ref) so registration survives re-renders; the registry's
@@ -245,6 +255,9 @@ export function CodeTaskBlock({
         <ul className="mt-3 flex flex-col gap-1.5">
           {hints.slice(0, revealedHints).map((hint, index) => (
             <li
+              // Index-prefixed: hints can be duplicated (covered by a test) and are
+              // revealed in order, so position is their stable identity.
+              // eslint-disable-next-line react/no-array-index-key
               key={`${index}-${hint}`}
               data-testid="code-task-hint"
               className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-xs leading-6 text-muted-foreground"
@@ -282,7 +295,7 @@ export function CodeTaskBlock({
                 <>
                   <div
                     data-testid="code-task-result"
-                    data-status={passed ? 'passed' : 'failed'}
+                    data-status={passed ? 'passed' : errored ? 'errored' : 'failed'}
                     role="status"
                     aria-live="polite"
                     className={cn(
@@ -295,7 +308,9 @@ export function CodeTaskBlock({
                     {passed
                       ? <CheckCircle2 aria-hidden="true" className="size-4" />
                       : <XCircle aria-hidden="true" className="size-4" />}
-                    {passed ? <Trans>通过</Trans> : <Trans>未通过</Trans>}
+                    {passed
+                      ? <Trans>通过</Trans>
+                      : errored ? <Trans>运行出错</Trans> : <Trans>未通过</Trans>}
                   </div>
 
                   {!passed && evaluated.result.stderr && (
@@ -307,7 +322,10 @@ export function CodeTaskBlock({
                     </pre>
                   )}
 
-                  {!passed && (
+                  {/* Only show the expected/actual diff for a genuine output
+                      mismatch — for a compile/run error the actual output is
+                      empty and the diff would just be noise next to the stderr. */}
+                  {!passed && !errored && (
                     <div className="grid gap-2 sm:grid-cols-2">
                       <div>
                         <div className="mb-1 text-xs font-semibold text-muted-foreground"><Trans>预期输出</Trans></div>

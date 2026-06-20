@@ -127,14 +127,18 @@ describe('codeTaskBlock', () => {
     expect(onOutcome).toHaveBeenCalledWith(expect.objectContaining({ correct: false }))
   })
 
-  it('surfaces compiler stderr when compilation fails', async () => {
+  it('surfaces compiler stderr as a run error (not a plain output mismatch) when compilation fails', async () => {
     const runCode = vi.fn<(code: string) => Promise<RunResult>>().mockResolvedValue(compileError('error: missing main'))
     render(<CodeTaskBlock block={block} runCode={runCode} editorComponent={FakeEditor} />)
     fireEvent.click(screen.getByTestId('code-task-run'))
     await waitFor(() => {
-      expect(screen.getByTestId('code-task-result').getAttribute('data-status')).toBe('failed')
+      // A compile failure is its own state, not the output-mismatch "failed".
+      expect(screen.getByTestId('code-task-result').getAttribute('data-status')).toBe('errored')
     })
     expect(screen.getByTestId('code-task-stderr').textContent).toContain('missing main')
+    // No empty expected/actual diff distracting from the compiler message.
+    expect(screen.queryByTestId('code-task-expected')).toBeNull()
+    expect(screen.queryByTestId('code-task-actual')).toBeNull()
   })
 
   it('reveals hints one at a time on demand', () => {
