@@ -15,6 +15,7 @@ import { QuotaExhaustedDialog } from '@/modules/llm-config/components/QuotaExhau
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
 import { TeachLanding } from './TeachLanding'
+import { TeachConfigWizard } from './TeachConfigWizard'
 
 export type { WorkspaceCollaborators }
 
@@ -71,7 +72,7 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   // The landing gate sits between hydration and the workspace shell: it runs the
   // LLM config bootstrap and only lets the learner in once a usable key is ready,
   // so the teacher agent never reaches the views without a key.
-  const [entered, setEntered] = useState(false)
+  const [stage, setStage] = useState<'landing' | 'config' | 'workspace'>('landing')
   const [importError, setImportError] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -155,7 +156,7 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
         <TriangleAlert aria-hidden="true" className="size-8 text-amber-500" />
         <div className="flex max-w-md flex-col gap-1">
           <h1 className="text-lg font-semibold text-foreground">
-            <Trans>无法打开教学工作区</Trans>
+            <Trans>无法打开课堂</Trans>
           </h1>
           <p className="text-sm leading-6 text-muted-foreground">
             <Trans>读取本地工作区数据失败。可以重试，或刷新页面。如果一直失败，可能是浏览器存储被禁用或损坏。</Trans>
@@ -178,28 +179,30 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   return (
     <AbortScopeProvider>
       <WorkspaceProvider {...collaborators}>
-        {!entered
-          ? <TeachLanding onEnter={() => setEntered(true)} />
-          : (
-              <>
-                <TeachWorkspace
-                  lang={lang}
-                  generation={generation}
-                  importError={importError}
-                  exportError={exportError}
-                  statusId={statusId}
-                  fileInputRef={fileInputRef}
-                  onExport={() => void handleExport()}
-                  onImportFile={handleImportFile}
-                />
-                {/* Mid-session quota safety net: the watcher in TeacherChatRuntime
-                    flips autoQuota.exhausted when the shared quota runs out, which
-                    surfaces this dialog; its "use a custom key" action opens the
-                    config dialog. */}
-                <QuotaExhaustedDialog />
-                <LLMConfigDialog withTrigger={false} />
-              </>
-            )}
+        {stage === 'landing' && <TeachLanding onStart={() => setStage('config')} />}
+        {stage === 'config' && (
+          <TeachConfigWizard onEnter={() => setStage('workspace')} onBack={() => setStage('landing')} />
+        )}
+        {stage === 'workspace' && (
+          <>
+            <TeachWorkspace
+              lang={lang}
+              generation={generation}
+              importError={importError}
+              exportError={exportError}
+              statusId={statusId}
+              fileInputRef={fileInputRef}
+              onExport={() => void handleExport()}
+              onImportFile={handleImportFile}
+            />
+            {/* Mid-session quota safety net: the watcher in TeacherChatRuntime
+                flips autoQuota.exhausted when the shared quota runs out, which
+                surfaces this dialog; its "use a custom key" action opens the
+                config dialog. */}
+            <QuotaExhaustedDialog />
+            <LLMConfigDialog withTrigger={false} />
+          </>
+        )}
       </WorkspaceProvider>
     </AbortScopeProvider>
   )
@@ -236,7 +239,7 @@ function TeachWorkspace({
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-2">
         <span className="text-sm font-semibold text-foreground">
-          <Trans>教学工作区</Trans>
+          <Trans>课堂</Trans>
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -303,7 +306,7 @@ function TeachAppLoading() {
       className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground"
       aria-busy="true"
     >
-      <Trans>正在加载教学工作区…</Trans>
+      <Trans>正在加载课堂…</Trans>
     </div>
   )
 }

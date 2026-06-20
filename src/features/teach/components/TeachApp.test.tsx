@@ -99,10 +99,12 @@ function seedReadyConfig() {
  */
 async function enterWorkspace(ui: ReactElement) {
   const result = render(ui)
+  // landing → config wizard
+  fireEvent.click(await screen.findByTestId('teach-landing-start'))
   // A user key is seeded, so the wizard opens on the custom source: advance to
   // the credentials step (the seeded config is complete) and enter.
   fireEvent.click(await screen.findByTestId('teach-source-next'))
-  fireEvent.click(await screen.findByTestId('teach-landing-enter'))
+  fireEvent.click(await screen.findByTestId('teach-config-enter'))
   await screen.findByTestId('teach-workspace-shell')
   return result
 }
