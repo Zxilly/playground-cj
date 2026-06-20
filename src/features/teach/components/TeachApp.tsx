@@ -10,6 +10,8 @@ import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
+import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
+import { QuotaExhaustedDialog } from '@/modules/llm-config/components/QuotaExhaustedDialog'
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
 import { TeachLanding } from './TeachLanding'
@@ -53,7 +55,10 @@ function downloadJson(filename: string, text: string): void {
  * (which runs the LLM-config bootstrap and walks the learner through picking an
  * AI source — shared key or a custom one — before letting them in once a usable
  * config is ready); entering mounts the {@link TeachWorkspaceShell} with the
- * {@link TeacherChatRuntime} as the chat region. Everything is wrapped in an
+ * {@link TeacherChatRuntime} as the chat region, alongside the
+ * {@link QuotaExhaustedDialog} / {@link LLMConfigDialog} that warn when the
+ * shared quota runs out mid-session and let the learner switch to a custom key.
+ * Everything is wrapped in an
  * {@link AbortScopeProvider} and {@link WorkspaceProvider} so in-flight teacher
  * turns abort on unmount and the gate and shell share one repository.
  *
@@ -176,16 +181,24 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
         {!entered
           ? <TeachLanding onEnter={() => setEntered(true)} />
           : (
-              <TeachWorkspace
-                lang={lang}
-                generation={generation}
-                importError={importError}
-                exportError={exportError}
-                statusId={statusId}
-                fileInputRef={fileInputRef}
-                onExport={() => void handleExport()}
-                onImportFile={handleImportFile}
-              />
+              <>
+                <TeachWorkspace
+                  lang={lang}
+                  generation={generation}
+                  importError={importError}
+                  exportError={exportError}
+                  statusId={statusId}
+                  fileInputRef={fileInputRef}
+                  onExport={() => void handleExport()}
+                  onImportFile={handleImportFile}
+                />
+                {/* Mid-session quota safety net: the watcher in TeacherChatRuntime
+                    flips autoQuota.exhausted when the shared quota runs out, which
+                    surfaces this dialog; its "use a custom key" action opens the
+                    config dialog. */}
+                <QuotaExhaustedDialog />
+                <LLMConfigDialog withTrigger={false} />
+              </>
             )}
       </WorkspaceProvider>
     </AbortScopeProvider>

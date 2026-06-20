@@ -14,7 +14,11 @@ const runtimeMocks = vi.hoisted(() => ({
   useChatRuntime: vi.fn(() => ({ runtime: true })),
   useAbortScope: vi.fn(() => ({ aborted: false })),
   useLLMConfig: vi.fn(() => ({ apiKey: 'test-key', model: 'test-model' })),
+  useLLMConfigStore: vi.fn((selector: (s: { keySource: string, autoQuota: null, setAutoQuota: () => void }) => unknown) =>
+    selector({ keySource: 'auto', autoQuota: null, setAutoQuota: () => {} })),
   useLLMConfigBootstrap: vi.fn(() => ({ status: 'ready' as const })),
+  // The quota watcher reads the thread's run state; never "running" in this unit.
+  useAuiState: vi.fn(() => false),
   sendAutomaticallyWhen: vi.fn(() => false),
   setText: vi.fn(),
   useComposerRuntime: vi.fn(),
@@ -35,6 +39,7 @@ function MockThread({ allowAttachments }: { allowAttachments?: boolean }) {
 vi.mock('@assistant-ui/react', () => ({
   AssistantRuntimeProvider: MockAssistantRuntimeProvider,
   useComposerRuntime: runtimeMocks.useComposerRuntime,
+  useAuiState: runtimeMocks.useAuiState,
 }))
 
 vi.mock('@assistant-ui/react-ai-sdk', () => ({
@@ -67,6 +72,7 @@ vi.mock('@/components/ui/tooltip', () => ({
 
 vi.mock('@/stores/llmConfig', () => ({
   useLLMConfig: runtimeMocks.useLLMConfig,
+  useLLMConfigStore: runtimeMocks.useLLMConfigStore,
 }))
 
 vi.mock('@/modules/llm-config/runtime/useLLMConfigBootstrap', () => ({

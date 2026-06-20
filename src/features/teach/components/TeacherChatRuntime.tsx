@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { AssistantRuntimeProvider, useComposerRuntime } from '@assistant-ui/react'
+import { useEffect, useMemo, useRef } from 'react'
+import { AssistantRuntimeProvider, useAuiState, useComposerRuntime } from '@assistant-ui/react'
 import { useChatRuntime } from '@assistant-ui/react-ai-sdk'
 import type { InferAgentUIMessage } from 'ai'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -11,8 +11,9 @@ import { createTeacherAgent } from '@/lib/teach/teacher/agent'
 import type { TeacherAgent } from '@/lib/teach/teacher/agent'
 import type { TeacherLang } from '@/lib/teach/teacher/system-prompt'
 import { createScopedChatTransport } from '@/lib/teach/teacher/scoped-chat-transport'
-import { useLLMConfig } from '@/stores/llmConfig'
+import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
 import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfigBootstrap'
+import { probeExhaustedQuota } from '@/modules/llm-config/runtime/auto-quota'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
@@ -93,11 +94,49 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <ComposerPrefillBridge />
+      <AutoQuotaWatcher />
       <TooltipProvider delayDuration={250}>
         <Thread allowAttachments={false} />
       </TooltipProvider>
     </AssistantRuntimeProvider>
   )
+}
+
+/**
+ * Watches for the shared quota running out mid-session. The bootstrap only
+ * probes the quota while no key is set, so once the shared key is applied the
+ * exhausted flag goes stale; here we re-probe usage each time a teacher turn
+ * finishes (running → idle) and flip `autoQuota.exhausted`, which surfaces the
+ * {@link QuotaExhaustedDialog} mounted alongside the workspace. Only runs on the
+ * shared key and stops once exhaustion is recorded.
+ *
+ * Renders nothing — it must live *inside* {@link AssistantRuntimeProvider} so
+ * {@link useAuiState} resolves the thread's run state.
+ */
+function AutoQuotaWatcher() {
+  const isRunning = useAuiState(s => s.thread.isRunning)
+  const wasRunningRef = useRef(false)
+  const keySource = useLLMConfigStore(s => s.keySource)
+  const apiKey = useLLMConfig().apiKey
+  const autoQuota = useLLMConfigStore(s => s.autoQuota)
+  const setAutoQuota = useLLMConfigStore(s => s.setAutoQuota)
+
+  useEffect(() => {
+    const justFinished = wasRunningRef.current && !isRunning
+    wasRunningRef.current = isRunning
+    if (!justFinished || keySource !== 'auto' || !apiKey || autoQuota?.exhausted)
+      return
+    let cancelled = false
+    void probeExhaustedQuota(apiKey, autoQuota, Date.now()).then((next) => {
+      if (!cancelled && next)
+        setAutoQuota(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isRunning, keySource, apiKey, autoQuota, setAutoQuota])
+
+  return null
 }
 
 /**
