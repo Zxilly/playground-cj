@@ -17,6 +17,12 @@ export const DEFAULT_LLM_CONFIG: LLMConfig = resolveProviderDefaults('openai-com
 export interface AutoQuotaState {
   readonly nextResetAt: number
   readonly exhausted: boolean
+  /**
+   * The shared per-IP allowance granted each reset period (quota units). Lets the
+   * settings dialog show today's usage against today's budget instead of the
+   * token's cumulative lifetime total. Optional: absent for older cached keys.
+   */
+  readonly perPeriod?: number
 }
 
 interface LLMConfigState {

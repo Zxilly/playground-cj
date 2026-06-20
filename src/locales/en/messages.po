@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:277
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:286
 msgid "（北京时间）"
 msgstr "(Beijing time)"
 
@@ -37,13 +37,13 @@ msgstr "{outputTip} Output"
 msgid "AI 教学工作区"
 msgstr "AI Teaching Workspace"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:177
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:186
 msgid "AI 服务来源"
 msgstr "AI service source"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:155
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:156
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:167
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:164
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:165
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:176
 msgid "AI 服务设置"
 msgstr "AI service settings"
 
@@ -52,11 +52,11 @@ msgstr "AI service settings"
 msgid "AI 课堂"
 msgstr "AI Classroom"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:288
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:297
 msgid "API Key"
 msgstr "API Key"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:302
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:311
 msgid "API 风格"
 msgstr "API style"
 
@@ -84,7 +84,7 @@ msgstr "Next hint"
 msgid "下一条回复"
 msgstr "Next response"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:275
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:284
 msgid "下次刷新："
 msgstr "Next refresh:"
 
@@ -96,7 +96,7 @@ msgstr "Out of scope"
 msgid "与老师沟通"
 msgstr "Talk to the teacher"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:358
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:367
 msgid "仅重置当前表单；保存后生效，取消则保留原配置。"
 msgstr "Only resets the current form. It takes effect after Save; Cancel keeps the current settings."
 
@@ -107,6 +107,10 @@ msgstr "Daily AI quota exhausted"
 #: src/features/teach/components/TeachLanding.tsx:123
 msgid "今日共享额度已用完。"
 msgstr "Today's shared quota has been used up."
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:252
+msgid "今日剩余"
+msgstr "Remaining today"
 
 #: src/features/playground/components/PlaygroundHeader.tsx:59
 #: src/features/playground/components/PlaygroundHeader.tsx:97
@@ -191,7 +195,7 @@ msgstr "Use shared AI service"
 msgid "使用自定义 API Key"
 msgstr "Use a custom API Key"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:351
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:360
 msgid "使用自定义 API Key 时，需同时配置服务地址与模型。"
 msgstr "A custom API Key also requires a service address and model."
 
@@ -207,7 +211,7 @@ msgstr "Schedules reviews along the forgetting curve to help you retain what you
 msgid "侧边栏"
 msgstr "Sidebar"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:378
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:387
 msgid "保存"
 msgstr "Save"
 
@@ -215,7 +219,7 @@ msgstr "Save"
 msgid "保存代码"
 msgstr "Save Code"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:212
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:221
 msgid "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
 msgstr "After saving, the custom API Key will be used. To restore shared quota, switch to “Shared quota”."
 
@@ -243,11 +247,11 @@ msgstr "Set your learning goal with the teacher first"
 msgid "先明确你希望用仓颉实现的目标，老师据此安排课程，而非套用固定大纲。"
 msgstr "Define the goal you want to achieve with Cangjie first; the teacher plans lessons around it rather than applying a fixed syllabus."
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:191
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:200
 msgid "共享额度"
 msgstr "Shared quota"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:254
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:263
 msgid "共享额度已使用量"
 msgstr "Shared quota usage"
 
@@ -332,10 +336,6 @@ msgstr "Toggle Sidebar"
 msgid "刷新后会自动恢复；改用自定义 API Key 可立刻继续。"
 msgstr "It recovers automatically after the reset. Switch to a custom API Key to continue immediately."
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:243
-msgid "剩余"
-msgstr "Remaining"
-
 #: src/features/teach/components/TeachLanding.tsx:184
 msgid "动手练习"
 msgstr "Hands-on practice"
@@ -362,7 +362,7 @@ msgid "发送消息"
 msgstr "Send message"
 
 #: src/modules/assistant-ui/chat/ThreadMessages.tsx:226
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:368
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:377
 msgid "取消"
 msgstr "Cancel"
 
@@ -516,7 +516,7 @@ msgstr "No learning goal set yet. Discuss your purpose for learning Cangjie with
 msgid "已保存代码"
 msgstr "Code saved"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:210
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:219
 msgid "已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。"
 msgstr "Switched to a shared quota draft. Save to replace the current API Key, or Cancel to keep the original settings."
 
@@ -532,7 +532,7 @@ msgstr "Share link copied"
 msgid "已被取代"
 msgstr "Superseded"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:211
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:220
 msgid "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
 msgstr "Currently using shared quota. To customize the service address, API style, and model, switch to “Custom API Key”."
 
@@ -603,7 +603,7 @@ msgstr "Tour"
 msgid "无法打开教学工作区"
 msgstr "Cannot open the teaching workspace"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:237
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:246
 msgid "无法读取剩余额度，请稍后重试。"
 msgstr "Could not read remaining quota. Please try again later."
 
@@ -626,7 +626,7 @@ msgid "更新"
 msgstr "Update"
 
 #: src/lib/ai/model-test.ts:31
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:324
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:333
 msgid "服务地址"
 msgstr "Service address"
 
@@ -646,7 +646,7 @@ msgstr "No languages found."
 msgid "未通过"
 msgstr "Failed"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:170
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:179
 msgid "未配置 API Key 时使用共享额度；共享额度有限，可能耗尽。"
 msgstr "Shared quota will be used when no API Key is provided; it is limited and may run out."
 
@@ -681,7 +681,7 @@ msgid "格式化成功"
 msgstr "Format successful"
 
 #: src/lib/ai/model-test.ts:33
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:336
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:345
 msgid "模型"
 msgstr "Model"
 
@@ -701,7 +701,7 @@ msgstr "Stopping Cangjie code assistance{originSuffix}."
 msgid "正在停止代码提示"
 msgstr "Stopping code assistance"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:233
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:242
 msgid "正在加载剩余额度…"
 msgstr "Loading remaining quota..."
 
@@ -750,7 +750,7 @@ msgstr "Add attachment"
 msgid "清除缓存并重启"
 msgstr "Clear Cache and Restart"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:297
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:306
 msgid "留空使用共享额度"
 msgstr "Leave blank to use shared quota"
 
@@ -806,7 +806,7 @@ msgstr "Edit message"
 msgid "老师"
 msgstr "Teacher"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:204
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:213
 msgid "自定义 API Key"
 msgstr "Custom API Key"
 
@@ -933,7 +933,7 @@ msgstr "Regenerate"
 msgid "重置本地缓存后重启代码提示"
 msgstr "Reset local cache and restart code assistance"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:364
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:373
 msgid "重置默认"
 msgstr "Reset defaults"
 

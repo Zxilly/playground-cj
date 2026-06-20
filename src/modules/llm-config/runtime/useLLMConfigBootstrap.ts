@@ -17,7 +17,7 @@ interface AiKeyResponse {
   baseURL: string
   apiKey: string
   model: string
-  quota?: { nextResetAt?: number }
+  quota?: { nextResetAt?: number, perPeriod?: number }
 }
 
 async function probeAutoQuotaExhausted(apiKey: string): Promise<boolean | null> {
@@ -66,6 +66,7 @@ export function useLLMConfigBootstrap({
         if (cancelled)
           return
         const nextResetAt = data.quota?.nextResetAt
+        const perPeriod = data.quota?.perPeriod
         const exhausted = typeof nextResetAt === 'number'
           ? await probeAutoQuotaExhausted(data.apiKey)
           : null
@@ -75,7 +76,7 @@ export function useLLMConfigBootstrap({
         // changes config.apiKey which is a dependency of this effect — the
         // resulting re-run flips `cancelled` and would drop any later writes.
         if (typeof nextResetAt === 'number')
-          setAutoQuota({ nextResetAt, exhausted: exhausted ?? false })
+          setAutoQuota({ nextResetAt, exhausted: exhausted ?? false, perPeriod })
         applyAutoKey(data)
       })
       .catch((e: Error) => {

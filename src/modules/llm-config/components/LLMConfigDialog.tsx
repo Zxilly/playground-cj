@@ -140,9 +140,18 @@ export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {
     ? usage
     : { totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: true }
   const usageReady = !visibleUsage.loading && !visibleUsage.error
-  const lowBudget = usageReady && visibleUsage.totalAvailable > 0 && visibleUsage.totalAvailable < QUOTA_PER_USD * 0.01
-  const exhausted = usageReady && visibleUsage.totalAvailable === 0 && visibleUsage.totalGranted > 0
-  const usagePct = visibleUsage.totalGranted > 0 ? Math.min(100, Math.round((visibleUsage.totalUsed / visibleUsage.totalGranted) * 100)) : 0
+  const available = visibleUsage.totalAvailable
+  // Prefer the per-period (daily) budget so the meter shows *today's* usage, not
+  // the token's cumulative lifetime total (total_granted/total_used keep climbing
+  // across daily resets, which made a fresh user look ~half spent). Fall back to
+  // the cumulative figures only when the budget is unknown (older cached key).
+  const dailyBudget = autoQuota?.perPeriod
+  const hasDailyBudget = typeof dailyBudget === 'number' && dailyBudget > 0
+  const meterTotal = hasDailyBudget ? dailyBudget : visibleUsage.totalGranted
+  const usedAmount = hasDailyBudget ? Math.max(0, dailyBudget - available) : visibleUsage.totalUsed
+  const lowBudget = usageReady && available > 0 && available < QUOTA_PER_USD * 0.01
+  const exhausted = usageReady && available <= 0 && meterTotal > 0
+  const usagePct = meterTotal > 0 ? Math.min(100, Math.round((usedAmount / meterTotal) * 100)) : 0
 
   const showResetSchedule = usingAuto && autoQuota?.nextResetAt
   const resetMoment = autoQuota ? formatResetMoment(autoQuota.nextResetAt) : ''
@@ -240,21 +249,21 @@ export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {
                             : (
                                 <div className="space-y-1">
                                   <div className="flex items-baseline gap-1.5">
-                                    <span><Trans>剩余</Trans></span>
+                                    <span><Trans>今日剩余</Trans></span>
                                     <span className="font-mono text-sm font-semibold text-foreground">
-                                      {quotaToUSD(visibleUsage.totalAvailable)}
+                                      {quotaToUSD(available)}
                                     </span>
                                     <span className="opacity-70">
                                       {' / '}
-                                      {quotaToUSD(visibleUsage.totalGranted)}
+                                      {quotaToUSD(meterTotal)}
                                     </span>
                                   </div>
                                   <div
                                     role="progressbar"
                                     aria-label={t`共享额度已使用量`}
                                     aria-valuemin={0}
-                                    aria-valuemax={visibleUsage.totalGranted}
-                                    aria-valuenow={visibleUsage.totalUsed}
+                                    aria-valuemax={meterTotal}
+                                    aria-valuenow={usedAmount}
                                     className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
                                   >
                                     <div

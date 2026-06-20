@@ -63,6 +63,29 @@ describe('useLLMConfigBootstrap', () => {
     })
   })
 
+  it('stores the per-period daily budget from the ai-key response', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(jsonResponse({
+        baseURL: 'https://llm.test',
+        apiKey: 'auto-key',
+        model: 'auto-model',
+        quota: { nextResetAt: 1_700_000_000_000, perPeriod: 1_000_000 },
+      }))
+      .mockResolvedValueOnce(jsonResponse({
+        data: { total_granted: 2_093_700, total_used: 1_093_700, total_available: 1_000_000 },
+      }))
+
+    renderHook(() => useLLMConfigBootstrap(), { wrapper: Wrapper })
+
+    await waitFor(() => {
+      expect(useLLMConfigStore.getState().autoQuota).toEqual({
+        nextResetAt: 1_700_000_000_000,
+        exhausted: false,
+        perPeriod: 1_000_000,
+      })
+    })
+  })
+
   it('marks autoQuota as exhausted when the usage probe reports zero available', async () => {
     const nextResetAt = Date.now() + 60_000
     vi.mocked(fetch)

@@ -20,6 +20,12 @@ interface ApiResponse {
   model: string
   quota: {
     nextResetAt: number
+    /**
+     * The per-IP allowance granted each reset period (quota units), so the
+     * client can show today's usage against today's budget rather than the
+     * token's cumulative lifetime total.
+     */
+    perPeriod: number
   }
 }
 
@@ -45,7 +51,7 @@ function buildResponse(cached: CachedToken): ApiResponse {
     baseURL: publicBaseURL(),
     apiKey: cached.key,
     model: defaultModel(),
-    quota: { nextResetAt: cached.nextResetAt },
+    quota: { nextResetAt: cached.nextResetAt, perPeriod: PER_IP_QUOTA },
   }
 }
 

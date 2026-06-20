@@ -179,6 +179,40 @@ describe('llmConfigDialog', () => {
     expect(screen.getByRole('progressbar', { name: '共享额度已使用量' }).getAttribute('aria-valuenow')).toBe('1000')
   })
 
+  it('meters todays usage against the daily budget, not the cumulative lifetime total', async () => {
+    // A fresh day: the per-IP token was refilled to the daily budget (1,000,000 =
+    // $2), but its lifetime counters keep climbing. The meter must show today's
+    // usage (0) against today's budget ($2), not the cumulative $4.18.
+    useLLMConfigStore.setState({
+      config: { ...DEFAULT_LLM_CONFIG, apiKey: 'auto-key' },
+      keySource: 'auto',
+      autoQuota: { nextResetAt: 1_700_000_000_000, exhausted: false, perPeriod: 1_000_000 },
+    })
+    const fetchMock = vi.fn().mockResolvedValue(responseWithUsage({
+      total_granted: 2_093_700,
+      total_used: 1_093_700,
+      total_available: 1_000_000,
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <Wrapper>
+        <LLMConfigDialog />
+      </Wrapper>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+
+    const status = screen.getByRole('status')
+    // Today's remaining and today's budget — both the full $2, nothing spent yet.
+    expect(status.textContent).toContain('$2.0000')
+    // The cumulative lifetime total must not leak into the denominator.
+    expect(status.textContent).not.toContain('$4.1874')
+    // Used-today is zero, so the bar sits at the start.
+    expect(screen.getByRole('progressbar', { name: '共享额度已使用量' }).getAttribute('aria-valuenow')).toBe('0')
+  })
+
   it('uses compiled English copy for shared quota settings boundaries', async () => {
     useLLMConfigStore.setState({
       config: { ...DEFAULT_LLM_CONFIG, apiKey: 'auto-key' },

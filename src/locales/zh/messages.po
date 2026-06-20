@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:277
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:286
 msgid "（北京时间）"
 msgstr "（北京时间）"
 
@@ -37,13 +37,13 @@ msgstr "{outputTip}输出内容"
 msgid "AI 教学工作区"
 msgstr "AI 教学工作区"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:177
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:186
 msgid "AI 服务来源"
 msgstr "AI 服务来源"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:155
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:156
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:167
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:164
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:165
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:176
 msgid "AI 服务设置"
 msgstr "AI 服务设置"
 
@@ -52,11 +52,11 @@ msgstr "AI 服务设置"
 msgid "AI 课堂"
 msgstr "AI 课堂"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:288
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:297
 msgid "API Key"
 msgstr "API Key"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:302
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:311
 msgid "API 风格"
 msgstr "API 风格"
 
@@ -84,7 +84,7 @@ msgstr "下一个提示"
 msgid "下一条回复"
 msgstr "下一条回复"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:275
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:284
 msgid "下次刷新："
 msgstr "下次刷新："
 
@@ -96,7 +96,7 @@ msgstr "不在范围内"
 msgid "与老师沟通"
 msgstr "与老师沟通"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:358
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:367
 msgid "仅重置当前表单；保存后生效，取消则保留原配置。"
 msgstr "仅重置当前表单；点击保存后才会生效，取消会保留已有设置。"
 
@@ -107,6 +107,10 @@ msgstr "今日 AI 额度已用完"
 #: src/features/teach/components/TeachLanding.tsx:123
 msgid "今日共享额度已用完。"
 msgstr "今日共享额度已用完。"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:252
+msgid "今日剩余"
+msgstr "今日剩余"
 
 #: src/features/playground/components/PlaygroundHeader.tsx:59
 #: src/features/playground/components/PlaygroundHeader.tsx:97
@@ -191,7 +195,7 @@ msgstr "使用共享 AI 服务"
 msgid "使用自定义 API Key"
 msgstr "使用自定义 API Key"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:351
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:360
 msgid "使用自定义 API Key 时，需同时配置服务地址与模型。"
 msgstr "使用自定义 API Key 时，需同时配置服务地址与模型。"
 
@@ -207,7 +211,7 @@ msgstr "依据记忆曲线安排复习，帮助你长期留存所学内容。"
 msgid "侧边栏"
 msgstr "侧边栏"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:378
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:387
 msgid "保存"
 msgstr "保存"
 
@@ -215,7 +219,7 @@ msgstr "保存"
 msgid "保存代码"
 msgstr "保存代码"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:212
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:221
 msgid "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
 msgstr "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
 
@@ -243,11 +247,11 @@ msgstr "先和老师确定学习目标"
 msgid "先明确你希望用仓颉实现的目标，老师据此安排课程，而非套用固定大纲。"
 msgstr "先明确你希望用仓颉实现的目标，老师据此安排课程，而非套用固定大纲。"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:191
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:200
 msgid "共享额度"
 msgstr "共享额度"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:254
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:263
 msgid "共享额度已使用量"
 msgstr "共享额度已使用量"
 
@@ -332,10 +336,6 @@ msgstr "切换侧边栏"
 msgid "刷新后会自动恢复；改用自定义 API Key 可立刻继续。"
 msgstr "刷新后会自动恢复；改用自定义 API Key 可立刻继续。"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:243
-msgid "剩余"
-msgstr "剩余"
-
 #: src/features/teach/components/TeachLanding.tsx:184
 msgid "动手练习"
 msgstr "动手练习"
@@ -362,7 +362,7 @@ msgid "发送消息"
 msgstr "发送消息"
 
 #: src/modules/assistant-ui/chat/ThreadMessages.tsx:226
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:368
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:377
 msgid "取消"
 msgstr "取消"
 
@@ -516,7 +516,7 @@ msgstr "尚未设定学习目标。请先与老师沟通你学习仓颉的目的
 msgid "已保存代码"
 msgstr "已保存代码"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:210
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:219
 msgid "已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。"
 msgstr "已切回共享额度草稿；点击保存才会替换当前 API Key，取消会保留原设置。"
 
@@ -532,7 +532,7 @@ msgstr "已复制分享链接"
 msgid "已被取代"
 msgstr "已被取代"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:211
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:220
 msgid "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
 msgstr "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
 
@@ -603,7 +603,7 @@ msgstr "教程"
 msgid "无法打开教学工作区"
 msgstr "无法打开教学工作区"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:237
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:246
 msgid "无法读取剩余额度，请稍后重试。"
 msgstr "无法读取剩余额度，请稍后重试。"
 
@@ -626,7 +626,7 @@ msgid "更新"
 msgstr "更新"
 
 #: src/lib/ai/model-test.ts:31
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:324
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:333
 msgid "服务地址"
 msgstr "服务地址"
 
@@ -646,7 +646,7 @@ msgstr "未找到语言。"
 msgid "未通过"
 msgstr "未通过"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:170
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:179
 msgid "未配置 API Key 时使用共享额度；共享额度有限，可能耗尽。"
 msgstr "未填写 API Key 时将使用共享额度；共享额度有限，可能会用完。"
 
@@ -681,7 +681,7 @@ msgid "格式化成功"
 msgstr "格式化成功"
 
 #: src/lib/ai/model-test.ts:33
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:336
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:345
 msgid "模型"
 msgstr "模型"
 
@@ -701,7 +701,7 @@ msgstr "正在停止仓颉代码提示{originSuffix}。"
 msgid "正在停止代码提示"
 msgstr "正在停止代码提示"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:233
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:242
 msgid "正在加载剩余额度…"
 msgstr "正在加载剩余额度…"
 
@@ -750,7 +750,7 @@ msgstr "添加附件"
 msgid "清除缓存并重启"
 msgstr "清除缓存并重启"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:297
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:306
 msgid "留空使用共享额度"
 msgstr "留空使用共享额度"
 
@@ -806,7 +806,7 @@ msgstr "编辑消息"
 msgid "老师"
 msgstr "老师"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:204
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:213
 msgid "自定义 API Key"
 msgstr "自定义 API Key"
 
@@ -933,7 +933,7 @@ msgstr "重新生成"
 msgid "重置本地缓存后重启代码提示"
 msgstr "重置本地缓存后重启代码提示"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:364
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:373
 msgid "重置默认"
 msgstr "重置默认"
 
