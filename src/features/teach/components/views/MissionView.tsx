@@ -26,6 +26,9 @@ function Section({
       </h3>
       <ul className="flex flex-col gap-1 ps-1">
         {items.map((item, index) => (
+          // Index-prefixed: these are plain, render-only string lists that can
+          // contain duplicate entries, so a pure-content key is not unique.
+          // eslint-disable-next-line react/no-array-index-key
           <li key={`${index}-${item}`} className="flex items-start gap-2 text-sm leading-6 text-muted-foreground">
             <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-primary/50" />
             <span className="min-w-0">{item}</span>

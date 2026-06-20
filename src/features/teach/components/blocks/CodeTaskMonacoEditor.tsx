@@ -51,8 +51,13 @@ export function CodeTaskMonacoEditor({ initialCode, handleRef, locale }: CodeTas
 
   return (
     <EditorBridgeProvider lang={locale ?? 'zh'}>
-      {/* The wrapper positions Monaco absolutely; give it a bounded height. */}
-      <div className="relative h-64 w-full">
+      {/*
+        The wrapper positions Monaco absolutely, so the container's height drives
+        the editor size. A flat h-64 only fit ~10 lines; give it a roomier default
+        and let the learner drag the bottom edge taller for longer tasks
+        (resize-y needs a non-visible overflow to show the handle).
+      */}
+      <div className="relative h-80 min-h-56 w-full resize-y overflow-hidden">
         <MonacoEditorReactComp
           code={initialCode}
           locale={locale}

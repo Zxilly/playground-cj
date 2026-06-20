@@ -20,9 +20,12 @@ export function CitationList({ citations, className }: { citations: Citation[], 
       data-testid="block-citation-list"
       className={cn('mt-2 flex flex-col gap-1 border-t border-border/40 pt-2', className)}
     >
-      {citations.map(citation => (
+      {citations.map((citation, index) => (
         <li
-          key={`${citation.sourceId}:${citation.ref}:${citation.title}`}
+          // Index-prefixed: the same source ref can legitimately be cited twice in
+          // one block, so source+ref+title is not guaranteed unique.
+          // eslint-disable-next-line react/no-array-index-key
+          key={`${index}-${citation.sourceId}:${citation.ref}`}
           data-testid="block-citation"
           className="flex items-center gap-1.5 text-xs text-muted-foreground"
         >

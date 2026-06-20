@@ -108,6 +108,9 @@ export function QuizBlock({ block, outcome, onOutcome }: QuizBlockProps) {
             ? correctnessFor(index, answerSet, selected)
             : 'neutral'
           return (
+            // Index-prefixed: option text can repeat and options never reorder
+            // after authoring, so the position is the stable identity here.
+            // eslint-disable-next-line react/no-array-index-key
             <li key={`${index}-${option}`}>
               <button
                 type="button"
