@@ -1,3 +1,5 @@
+import { isUserAbort } from '../abort'
+
 /**
  * Backend base URL for the remote runner. Read from the environment directly
  * (mirroring `@/const`) so this module stays free of the heavy const barrel,
@@ -102,7 +104,7 @@ export async function runCangjieCode(code: string, deps: RunCangjieCodeDeps = {}
   catch (error) {
     // A user abort must propagate so the caller yields a "User aborted" result;
     // any other failure degrades to a runner-unavailable run result.
-    if (deps.signal?.aborted || (error instanceof Error && error.name === 'AbortError'))
+    if (isUserAbort(error, deps.signal))
       throw error
     return {
       ok: false,
@@ -113,4 +115,15 @@ export async function runCangjieCode(code: string, deps: RunCangjieCodeDeps = {}
       failureKind: 'runner_unavailable',
     }
   }
+}
+
+/**
+ * The default runner used when the workspace injects none. Adapts
+ * {@link runCangjieCode} to the teacher's `{ run(code, signal) }` runner shape,
+ * routing the abort signal through the deps object so a stopped turn cancels the
+ * run. Kept here so that adaptation lives in one place rather than inline at each
+ * call site.
+ */
+export const defaultRunner = {
+  run: (code: string, signal?: AbortSignal): Promise<RunResult> => runCangjieCode(code, { signal }),
 }

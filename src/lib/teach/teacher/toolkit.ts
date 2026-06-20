@@ -5,6 +5,7 @@ import type { RetrievalItem } from '../retrieval/types'
 import type { WorkspaceRepository } from '../workspace/repository'
 import { tool } from 'ai'
 import { z } from 'zod'
+import { isUserAbort } from '../abort'
 import { lessonDraftSchema, lessonStateSchema } from '../lessons/lesson'
 import {
   glossaryTermSchema,
@@ -102,7 +103,7 @@ function withAbort<Output>(
   if (signal?.aborted)
     return Promise.resolve(ABORTED_RESULT)
   return run(signal).catch((error) => {
-    if (signal?.aborted || (error instanceof Error && error.name === 'AbortError'))
+    if (isUserAbort(error, signal))
       return ABORTED_RESULT
     throw error
   })

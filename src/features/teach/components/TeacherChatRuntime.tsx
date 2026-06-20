@@ -16,7 +16,7 @@ import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfig
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
-import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
+import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
 
 type TeacherChatMessage = InferAgentUIMessage<TeacherAgent>
 
@@ -69,9 +69,7 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
     const toolkit = createTeacherToolkit({
       repo,
       knowledge,
-      // Adapt runCangjieCode to the runner contract: its second arg is a deps
-      // object, so route the abort signal through `{ signal }` (not positionally).
-      runner: runner ?? { run: (code, signal) => runCangjieCode(code, { signal }) },
+      runner: runner ?? defaultRunner,
       retrievalStore,
       // The active-editor registry resolves whichever code_task the learner is
       // currently working in, so set_editor_code / read_editor_code drive the

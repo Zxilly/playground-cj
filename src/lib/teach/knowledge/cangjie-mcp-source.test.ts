@@ -16,7 +16,7 @@ describe('createCangjieMcpKnowledgeSource', () => {
     await source.search('what is Option', { limit: 3 })
 
     expect(call).toHaveBeenCalledTimes(1)
-    expect(call).toHaveBeenCalledWith(CANGJIE_SEARCH_DOCS_TOOL, { query: 'what is Option', top_k: 3 })
+    expect(call).toHaveBeenCalledWith(CANGJIE_SEARCH_DOCS_TOOL, { query: 'what is Option', top_k: 3 }, undefined)
   })
 
   it('maps structured results to KnowledgeHit with sourceId cangjie-mcp', async () => {

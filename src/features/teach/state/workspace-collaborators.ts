@@ -3,7 +3,7 @@ import type { RetrievalStore, TeacherRunner } from '@/lib/teach/teacher/toolkit'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import { createIndexedDbWorkspaceRepository } from '@/lib/teach/workspace/indexeddb-repository'
 import { createCangjieMcpKnowledgeSource } from '@/lib/teach/knowledge/cangjie-mcp-source'
-import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
+import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
 import type { ActiveEditorRegistry } from './active-editor-store'
 import { createActiveEditorRegistry } from './active-editor-store'
 import { createIdbRetrievalStore } from './retrieval-store'
@@ -46,9 +46,7 @@ export function createWorkspaceCollaborators(lang: string): WorkspaceCollaborato
     repo,
     retrievalStore: createIdbRetrievalStore(repo),
     knowledge: createCangjieMcpKnowledgeSource(),
-    // Route the abort signal through runCangjieCode's deps `{ signal }` rather
-    // than its positional second arg, so a stopped turn cancels the run.
-    runner: { run: (code, signal) => runCangjieCode(code, { signal }) },
+    runner: defaultRunner,
     activeEditor: createActiveEditorRegistry(),
     now: () => Date.now(),
   }

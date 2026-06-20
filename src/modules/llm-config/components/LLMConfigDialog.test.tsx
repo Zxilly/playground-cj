@@ -258,7 +258,7 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
-    fireEvent.click(screen.getByRole('tab', { name: '自定义 API Key' }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '自定义 API Key' }))
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'user-key' } })
     expect(screen.getByLabelText('服务地址')).toHaveProperty('disabled', false)
     expect(screen.getByRole('button', { name: 'Anthropic' })).toHaveProperty('disabled', false)
@@ -284,7 +284,7 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
-    fireEvent.click(screen.getByRole('tab', { name: '自定义 API Key' }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '自定义 API Key' }))
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'user-key' } })
     fireEvent.change(screen.getByLabelText('服务地址'), { target: { value: '   ' } })
     fireEvent.change(screen.getByLabelText('模型'), { target: { value: '' } })
@@ -324,7 +324,7 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
-    fireEvent.click(screen.getByRole('tab', { name: 'Custom API Key' }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Custom API Key' }))
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'user-key' } })
     fireEvent.change(screen.getByLabelText('Service address'), { target: { value: '' } })
     fireEvent.change(screen.getByLabelText('Model'), { target: { value: '' } })

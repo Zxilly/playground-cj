@@ -1,5 +1,6 @@
 import type { KnowledgeHit, KnowledgeSource } from './source'
 import { callMcpTool } from '@/lib/mcp/client'
+import { isUserAbort } from '../abort'
 
 /** Identifier embedded into every hit produced by this source. */
 export const CANGJIE_MCP_SOURCE_ID = 'cangjie-mcp'
@@ -157,17 +158,13 @@ export function createCangjieMcpKnowledgeSource(deps: CangjieMcpKnowledgeSourceD
       const limit = opts?.limit ?? DEFAULT_LIMIT
       const signal = opts?.signal
       try {
-        // Only forward the abort signal when present so callers/tests that don't
-        // pass one keep seeing a 2-arg call.
-        const result = signal !== undefined
-          ? await call(CANGJIE_SEARCH_DOCS_TOOL, { query, top_k: limit }, signal)
-          : await call(CANGJIE_SEARCH_DOCS_TOOL, { query, top_k: limit })
+        const result = await call(CANGJIE_SEARCH_DOCS_TOOL, { query, top_k: limit }, signal)
         return mapResult(result, limit)
       }
       catch (err) {
         // A user abort must propagate (so the tool yields a "User aborted"
         // result); a genuine source failure still degrades to empty hits.
-        if (signal?.aborted || (err instanceof Error && err.name === 'AbortError'))
+        if (isUserAbort(err, signal))
           throw err
         console.warn('[teach] cangjie MCP knowledge source unavailable', err)
         return []

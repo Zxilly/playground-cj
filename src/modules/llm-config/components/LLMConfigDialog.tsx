@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
 import { providerLabel, switchProviderPreservingKey } from '@/lib/ai/model-provider'
 import type { LLMConfig, LLMProvider } from '@/lib/ai/model-provider'
@@ -181,188 +181,162 @@ export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {
         </DialogHeader>
 
         {/* Explicit source toggle: shared quota vs. a personal key. */}
-        <div
-          role="tablist"
-          aria-label={t`AI 服务来源`}
-          className="grid grid-cols-2 gap-1 rounded-md border border-border/60 bg-muted/40 p-1"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={usingShared}
-            onClick={() => setMode('shared')}
-            className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-[5px] px-3 py-1.5 text-xs font-medium transition-colors',
-              usingShared ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+        <Tabs value={mode} onValueChange={value => setMode(value as ConfigMode)}>
+          <TabsList aria-label={t`AI 服务来源`} className="grid w-full grid-cols-2">
+            <TabsTrigger value="shared">
+              <Wallet aria-hidden="true" className="size-3.5" />
+              <Trans>共享额度</Trans>
+            </TabsTrigger>
+            <TabsTrigger value="custom">
+              <ShieldCheck aria-hidden="true" className="size-3.5" />
+              <Trans>自定义 API Key</Trans>
+            </TabsTrigger>
+          </TabsList>
+          <p id={modeHelpId} className="text-xs leading-relaxed text-muted-foreground">
+            {usingShared
+              ? keySource === 'user'
+                ? <Trans>已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。</Trans>
+                : <Trans>当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。</Trans>
+              : <Trans>保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。</Trans>}
+          </p>
+
+          <TabsContent value="shared" className="grid gap-3">
+            {showUsage && (
+              <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${exhausted || lowBudget ? 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300' : 'border-border/60 bg-muted/30 text-muted-foreground'}`}
+              >
+                {visibleUsage.loading
+                  ? <Loader2 aria-hidden="true" className="size-3.5 mt-0.5 shrink-0 animate-spin text-muted-foreground" />
+                  : visibleUsage.error
+                    ? <CircleAlert aria-hidden="true" className="size-3.5 mt-0.5 shrink-0 text-amber-500" />
+                    : <Wallet aria-hidden="true" className={`size-3.5 mt-0.5 shrink-0 ${exhausted || lowBudget ? 'text-amber-500' : 'text-primary'}`} />}
+                <div className="flex-1 leading-relaxed">
+                  {visibleUsage.loading
+                    ? <Trans>正在加载剩余额度…</Trans>
+                    : visibleUsage.error
+                      ? (
+                          <span>
+                            <Trans>无法读取剩余额度，请稍后重试。</Trans>
+                          </span>
+                        )
+                      : (
+                          <div className="space-y-1">
+                            <div className="flex items-baseline gap-1.5">
+                              <span><Trans>今日剩余</Trans></span>
+                              <span className="font-mono text-sm font-semibold text-foreground">
+                                {quotaToUSD(available)}
+                              </span>
+                              <span className="opacity-70">
+                                {' / '}
+                                {quotaToUSD(meterTotal)}
+                              </span>
+                            </div>
+                            <div
+                              role="progressbar"
+                              aria-label={t`共享额度已使用量`}
+                              aria-valuemin={0}
+                              aria-valuemax={meterTotal}
+                              aria-valuenow={usedAmount}
+                              className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                            >
+                              <div
+                                className={`h-full rounded-full transition-all ${exhausted ? 'bg-amber-500' : 'bg-primary'}`}
+                                style={{ width: `${usagePct}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                </div>
+              </div>
             )}
-          >
-            <Wallet aria-hidden="true" className="size-3.5" />
-            <Trans>共享额度</Trans>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!usingShared}
-            onClick={() => setMode('custom')}
-            className={cn(
-              'inline-flex items-center justify-center gap-1.5 rounded-[5px] px-3 py-1.5 text-xs font-medium transition-colors',
-              !usingShared ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+
+            {showResetSchedule && (
+              <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+                <CalendarClock aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
+                <span>
+                  <Trans>下次刷新：</Trans>
+                  <span className="ml-1 font-mono text-foreground">{resetMoment}</span>
+                  <span className="ml-1 opacity-70"><Trans>（北京时间）</Trans></span>
+                </span>
+              </div>
             )}
-          >
-            <ShieldCheck aria-hidden="true" className="size-3.5" />
-            <Trans>自定义 API Key</Trans>
-          </button>
-        </div>
-        <p id={modeHelpId} className="text-xs leading-relaxed text-muted-foreground">
-          {usingShared
-            ? keySource === 'user'
-              ? <Trans>已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。</Trans>
-              : <Trans>当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。</Trans>
-            : <Trans>保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。</Trans>}
-        </p>
+          </TabsContent>
 
-        <div className="grid gap-3 py-1">
-          {usingShared
-            ? (
-                <>
-                  {showUsage && (
-                    <div
-                      role="status"
-                      aria-live="polite"
-                      aria-atomic="true"
-                      className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${exhausted || lowBudget ? 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300' : 'border-border/60 bg-muted/30 text-muted-foreground'}`}
-                    >
-                      {visibleUsage.loading
-                        ? <Loader2 aria-hidden="true" className="size-3.5 mt-0.5 shrink-0 animate-spin text-muted-foreground" />
-                        : visibleUsage.error
-                          ? <CircleAlert aria-hidden="true" className="size-3.5 mt-0.5 shrink-0 text-amber-500" />
-                          : <Wallet aria-hidden="true" className={`size-3.5 mt-0.5 shrink-0 ${exhausted || lowBudget ? 'text-amber-500' : 'text-primary'}`} />}
-                      <div className="flex-1 leading-relaxed">
-                        {visibleUsage.loading
-                          ? <Trans>正在加载剩余额度…</Trans>
-                          : visibleUsage.error
-                            ? (
-                                <span>
-                                  <Trans>无法读取剩余额度，请稍后重试。</Trans>
-                                </span>
-                              )
-                            : (
-                                <div className="space-y-1">
-                                  <div className="flex items-baseline gap-1.5">
-                                    <span><Trans>今日剩余</Trans></span>
-                                    <span className="font-mono text-sm font-semibold text-foreground">
-                                      {quotaToUSD(available)}
-                                    </span>
-                                    <span className="opacity-70">
-                                      {' / '}
-                                      {quotaToUSD(meterTotal)}
-                                    </span>
-                                  </div>
-                                  <div
-                                    role="progressbar"
-                                    aria-label={t`共享额度已使用量`}
-                                    aria-valuemin={0}
-                                    aria-valuemax={meterTotal}
-                                    aria-valuenow={usedAmount}
-                                    className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
-                                  >
-                                    <div
-                                      className={`h-full rounded-full transition-all ${exhausted ? 'bg-amber-500' : 'bg-primary'}`}
-                                      style={{ width: `${usagePct}%` }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                      </div>
-                    </div>
-                  )}
+          <TabsContent value="custom" className="grid gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="llm-api-key" className="flex items-center gap-1 text-xs font-medium">
+                <KeyRound aria-hidden="true" className="size-3" />
+                <Trans>API Key</Trans>
+              </Label>
+              <Input
+                id="llm-api-key"
+                type="password"
+                autoComplete="off"
+                value={draft.apiKey}
+                aria-describedby={modeHelpId}
+                onChange={e => setDraft({ ...draft, apiKey: e.target.value })}
+                placeholder={t`留空使用共享额度`}
+                className="font-mono text-xs"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <div id={providerGroupLabelId} className="text-xs font-medium"><Trans>API 风格</Trans></div>
+              <div
+                role="group"
+                aria-labelledby={providerGroupLabelId}
+                className="grid grid-cols-2 gap-2"
+              >
+                {(['openai-compatible', 'anthropic'] satisfies LLMProvider[]).map(provider => (
+                  <Button
+                    key={provider}
+                    type="button"
+                    variant={draft.provider === provider ? 'default' : 'outline'}
+                    size="sm"
+                    aria-pressed={draft.provider === provider}
+                    onClick={() => handleProviderChange(provider)}
+                    className="cursor-pointer"
+                  >
+                    {providerLabel(provider)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="llm-base-url" className="text-xs font-medium"><Trans>服务地址</Trans></Label>
+              <Input
+                id="llm-base-url"
+                value={draft.baseURL}
+                aria-invalid={missingUserEndpoint || undefined}
+                aria-describedby={missingUserEndpoint ? userConfigValidationId : undefined}
+                onChange={e => setDraft({ ...draft, baseURL: e.target.value })}
+                placeholder="https://..."
+                className="font-mono text-xs"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="llm-model" className="text-xs font-medium"><Trans>模型</Trans></Label>
+              <Input
+                id="llm-model"
+                value={draft.model}
+                aria-invalid={missingUserModel || undefined}
+                aria-describedby={missingUserModel ? userConfigValidationId : undefined}
+                onChange={e => setDraft({ ...draft, model: e.target.value })}
+                placeholder="model"
+                className="font-mono text-xs"
+              />
+            </div>
 
-                  {showResetSchedule && (
-                    <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
-                      <CalendarClock aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
-                      <span>
-                        <Trans>下次刷新：</Trans>
-                        <span className="ml-1 font-mono text-foreground">{resetMoment}</span>
-                        <span className="ml-1 opacity-70"><Trans>（北京时间）</Trans></span>
-                      </span>
-                    </div>
-                  )}
-                </>
-              )
-            : (
-                <>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="llm-api-key" className="flex items-center gap-1 text-xs font-medium">
-                      <KeyRound aria-hidden="true" className="size-3" />
-                      <Trans>API Key</Trans>
-                    </Label>
-                    <Input
-                      id="llm-api-key"
-                      type="password"
-                      autoComplete="off"
-                      value={draft.apiKey}
-                      aria-describedby={modeHelpId}
-                      onChange={e => setDraft({ ...draft, apiKey: e.target.value })}
-                      placeholder={t`留空使用共享额度`}
-                      className="font-mono text-xs"
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <div id={providerGroupLabelId} className="text-xs font-medium"><Trans>API 风格</Trans></div>
-                    <div
-                      role="group"
-                      aria-labelledby={providerGroupLabelId}
-                      className="grid grid-cols-2 gap-2"
-                    >
-                      {(['openai-compatible', 'anthropic'] satisfies LLMProvider[]).map(provider => (
-                        <Button
-                          key={provider}
-                          type="button"
-                          variant={draft.provider === provider ? 'default' : 'outline'}
-                          size="sm"
-                          aria-pressed={draft.provider === provider}
-                          onClick={() => handleProviderChange(provider)}
-                          className="cursor-pointer"
-                        >
-                          {providerLabel(provider)}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="llm-base-url" className="text-xs font-medium"><Trans>服务地址</Trans></Label>
-                    <Input
-                      id="llm-base-url"
-                      value={draft.baseURL}
-                      aria-invalid={missingUserEndpoint || undefined}
-                      aria-describedby={missingUserEndpoint ? userConfigValidationId : undefined}
-                      onChange={e => setDraft({ ...draft, baseURL: e.target.value })}
-                      placeholder="https://..."
-                      className="font-mono text-xs"
-                    />
-                  </div>
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="llm-model" className="text-xs font-medium"><Trans>模型</Trans></Label>
-                    <Input
-                      id="llm-model"
-                      value={draft.model}
-                      aria-invalid={missingUserModel || undefined}
-                      aria-describedby={missingUserModel ? userConfigValidationId : undefined}
-                      onChange={e => setDraft({ ...draft, model: e.target.value })}
-                      placeholder="model"
-                      className="font-mono text-xs"
-                    />
-                  </div>
-
-                  {userConfigIncomplete && (
-                    <p id={userConfigValidationId} role="alert" className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed text-amber-700 dark:text-amber-300">
-                      <CircleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-                      <span><Trans>使用自定义 API Key 时，需同时配置服务地址与模型。</Trans></span>
-                    </p>
-                  )}
-                </>
-              )}
-        </div>
+            {userConfigIncomplete && (
+              <p id={userConfigValidationId} role="alert" className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed text-amber-700 dark:text-amber-300">
+                <CircleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
+                <span><Trans>使用自定义 API Key 时，需同时配置服务地址与模型。</Trans></span>
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
         <p id={resetDraftHelpId} className="sr-only">
           <Trans>仅重置当前表单；保存后生效，取消则保留原配置。</Trans>
         </p>
