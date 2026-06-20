@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useId, useState } from 'react'
-import { CalendarClock, CircleAlert, KeyRound, Loader2, RotateCw, Settings, ShieldCheck, Wallet } from 'lucide-react'
+import { CalendarClock, CircleAlert, Loader2, RotateCw, Settings, ShieldCheck, Wallet } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import {
@@ -14,13 +14,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
-import { providerLabel, switchProviderPreservingKey } from '@/lib/ai/model-provider'
-import type { LLMConfig, LLMProvider } from '@/lib/ai/model-provider'
+import type { LLMConfig } from '@/lib/ai/model-provider'
+import { isUserConfigIncomplete } from '@/lib/ai/model-provider'
+import { LLMConfigFields } from '@/modules/llm-config/components/LLMConfigFields'
 import { formatResetMoment } from '@/modules/llm-config/runtime/format-reset-moment'
 import { fetchTokenUsage } from '@/modules/llm-config/runtime/new-api-client'
 
@@ -78,7 +77,6 @@ export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {
   const [mode, setMode] = useState<ConfigMode>(() => (keySource === 'user' ? 'custom' : 'shared'))
   const [usage, setUsage] = useState<UsageState>({ totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: true })
   const modeHelpId = useId()
-  const providerGroupLabelId = useId()
   const resetDraftHelpId = useId()
   const userConfigValidationId = useId()
 
@@ -92,9 +90,7 @@ export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {
 
   const usingAuto = keySource === 'auto'
   const usingShared = mode === 'shared'
-  const missingUserEndpoint = mode === 'custom' && draft.baseURL.trim().length === 0
-  const missingUserModel = mode === 'custom' && draft.model.trim().length === 0
-  const userConfigIncomplete = missingUserEndpoint || missingUserModel
+  const userConfigIncomplete = mode === 'custom' && isUserConfigIncomplete(draft)
   const usageApiKey = usingShared && usingAuto ? config.apiKey : ''
   const showUsage = open && usageApiKey.length > 0
 
@@ -131,9 +127,6 @@ export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {
   const handleReset = () => {
     setMode('shared')
     setDraft(createEditableDraft(DEFAULT_LLM_CONFIG, 'auto'))
-  }
-  const handleProviderChange = (provider: LLMProvider) => {
-    setDraft(switchProviderPreservingKey(draft, provider))
   }
 
   const visibleUsage: UsageState = usage.apiKey === usageApiKey
@@ -266,75 +259,13 @@ export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {
           </TabsContent>
 
           <TabsContent value="custom" className="grid gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="llm-api-key" className="flex items-center gap-1 text-xs font-medium">
-                <KeyRound aria-hidden="true" className="size-3" />
-                <Trans>API Key</Trans>
-              </Label>
-              <Input
-                id="llm-api-key"
-                type="password"
-                autoComplete="off"
-                value={draft.apiKey}
-                aria-describedby={modeHelpId}
-                onChange={e => setDraft({ ...draft, apiKey: e.target.value })}
-                placeholder={t`留空使用共享额度`}
-                className="font-mono text-xs"
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <div id={providerGroupLabelId} className="text-xs font-medium"><Trans>API 风格</Trans></div>
-              <div
-                role="group"
-                aria-labelledby={providerGroupLabelId}
-                className="grid grid-cols-2 gap-2"
-              >
-                {(['openai-compatible', 'anthropic'] satisfies LLMProvider[]).map(provider => (
-                  <Button
-                    key={provider}
-                    type="button"
-                    variant={draft.provider === provider ? 'default' : 'outline'}
-                    size="sm"
-                    aria-pressed={draft.provider === provider}
-                    onClick={() => handleProviderChange(provider)}
-                    className="cursor-pointer"
-                  >
-                    {providerLabel(provider)}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="llm-base-url" className="text-xs font-medium"><Trans>服务地址</Trans></Label>
-              <Input
-                id="llm-base-url"
-                value={draft.baseURL}
-                aria-invalid={missingUserEndpoint || undefined}
-                aria-describedby={missingUserEndpoint ? userConfigValidationId : undefined}
-                onChange={e => setDraft({ ...draft, baseURL: e.target.value })}
-                placeholder="https://..."
-                className="font-mono text-xs"
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="llm-model" className="text-xs font-medium"><Trans>模型</Trans></Label>
-              <Input
-                id="llm-model"
-                value={draft.model}
-                aria-invalid={missingUserModel || undefined}
-                aria-describedby={missingUserModel ? userConfigValidationId : undefined}
-                onChange={e => setDraft({ ...draft, model: e.target.value })}
-                placeholder="model"
-                className="font-mono text-xs"
-              />
-            </div>
-
-            {userConfigIncomplete && (
-              <p id={userConfigValidationId} role="alert" className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed text-amber-700 dark:text-amber-300">
-                <CircleAlert aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-                <span><Trans>使用自定义 API Key 时，需同时配置服务地址与模型。</Trans></span>
-              </p>
-            )}
+            <LLMConfigFields
+              value={draft}
+              onChange={setDraft}
+              apiKeyDescribedBy={modeHelpId}
+              apiKeyPlaceholder={t`留空使用共享额度`}
+              validationId={userConfigValidationId}
+            />
           </TabsContent>
         </Tabs>
         <p id={resetDraftHelpId} className="sr-only">

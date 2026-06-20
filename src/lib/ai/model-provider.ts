@@ -67,6 +67,16 @@ export function isLLMConfigReady(config: Partial<LLMConfig>): boolean {
   return Boolean(next.baseURL && next.apiKey && next.model)
 }
 
+/**
+ * A custom config still needs a service address and a model to be usable. The
+ * API Key is intentionally excluded: the settings dialog treats a blank key as
+ * "fall back to shared quota", so the key requirement is the caller's call (the
+ * onboarding wizard adds it via {@link isLLMConfigReady}).
+ */
+export function isUserConfigIncomplete(config: LLMConfig): boolean {
+  return config.baseURL.trim().length === 0 || config.model.trim().length === 0
+}
+
 export function createConfiguredModel(config: Partial<LLMConfig>, name = 'tour-llm'): LanguageModel {
   const next = normaliseLLMConfig(config)
   if (next.provider === 'anthropic') {
