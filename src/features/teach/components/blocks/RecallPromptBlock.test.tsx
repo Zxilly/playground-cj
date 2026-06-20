@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react'
 import { i18n as globalI18n, setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import type { ReactElement, ReactNode } from 'react'
@@ -136,5 +136,78 @@ describe('recallPromptBlock', () => {
     render(<RecallPromptBlock block={block} outcome={{ attempts: 0 }} />)
     expect(screen.getByTestId('recall-reveal')).toBeTruthy()
     expect(screen.queryByTestId('recall-answer')).toBeNull()
+  })
+})
+
+describe('recallPromptBlock with AI grading', () => {
+  it('shows the submit-grade button (not the manual reveal) when a grader is wired', () => {
+    const gradeRecall = vi.fn()
+    render(<RecallPromptBlock block={block} gradeRecall={gradeRecall} />)
+    expect(screen.getByTestId('recall-submit-grade')).toBeTruthy()
+    expect(screen.queryByTestId('recall-reveal')).toBeNull()
+  })
+
+  it('grades a correct answer: reveals reference, shows the verdict, reports onOutcome', async () => {
+    const gradeRecall = vi.fn().mockResolvedValue({ correct: true, feedback: '答得不错。' })
+    const onOutcome = vi.fn()
+    render(<RecallPromptBlock block={block} gradeRecall={gradeRecall} onOutcome={onOutcome} />)
+    fireEvent.change(screen.getByTestId('recall-input'), { target: { value: 'let keyword' } })
+    fireEvent.click(screen.getByTestId('recall-submit-grade'))
+
+    await waitFor(() => expect(screen.getByTestId('recall-verdict')).toBeTruthy())
+    expect(gradeRecall).toHaveBeenCalledWith({
+      prompt: block.prompt,
+      reference: block.answer,
+      answer: 'let keyword',
+    })
+    expect(screen.getByTestId('recall-verdict').getAttribute('data-correct')).toBe('true')
+    expect(screen.getByTestId('recall-feedback').textContent).toContain('答得不错')
+    expect(screen.getByTestId('recall-answer').textContent).toContain('Use let')
+    expect(onOutcome).toHaveBeenCalledWith({ correct: true, lastAnswer: 'let keyword' })
+    // No manual self-grade buttons on a successful AI grade.
+    expect(screen.queryByTestId('recall-grade-good')).toBeNull()
+  })
+
+  it('grades an incorrect answer: shows a待加强 verdict and reports correct:false', async () => {
+    const gradeRecall = vi.fn().mockResolvedValue({ correct: false, feedback: '缺少关键点。' })
+    const onOutcome = vi.fn()
+    render(<RecallPromptBlock block={block} gradeRecall={gradeRecall} onOutcome={onOutcome} />)
+    fireEvent.change(screen.getByTestId('recall-input'), { target: { value: 'something' } })
+    fireEvent.click(screen.getByTestId('recall-submit-grade'))
+
+    await waitFor(() => expect(screen.getByTestId('recall-verdict')).toBeTruthy())
+    expect(screen.getByTestId('recall-verdict').getAttribute('data-correct')).toBe('false')
+    expect(onOutcome).toHaveBeenCalledWith({ correct: false, lastAnswer: 'something' })
+  })
+
+  it('locks the input after submitting for grading', async () => {
+    const gradeRecall = vi.fn().mockResolvedValue({ correct: true, feedback: 'ok' })
+    render(<RecallPromptBlock block={block} gradeRecall={gradeRecall} />)
+    expect((screen.getByTestId('recall-input') as HTMLTextAreaElement).readOnly).toBe(false)
+    fireEvent.click(screen.getByTestId('recall-submit-grade'))
+    await waitFor(() =>
+      expect((screen.getByTestId('recall-input') as HTMLTextAreaElement).readOnly).toBe(true),
+    )
+  })
+
+  it('falls back to manual self-grading when grading errors', async () => {
+    const gradeRecall = vi.fn().mockRejectedValue(new Error('network down'))
+    const onOutcome = vi.fn()
+    render(<RecallPromptBlock block={block} gradeRecall={gradeRecall} onOutcome={onOutcome} />)
+    fireEvent.change(screen.getByTestId('recall-input'), { target: { value: 'let keyword' } })
+    fireEvent.click(screen.getByTestId('recall-submit-grade'))
+
+    // Error notice + reference answer + manual self-grade buttons appear.
+    await waitFor(() => expect(screen.getByTestId('recall-grade-error')).toBeTruthy())
+    expect(screen.getByTestId('recall-answer')).toBeTruthy()
+    expect(screen.getByTestId('recall-grade-good')).toBeTruthy()
+    // No AI verdict, and onOutcome not called yet — learner self-grades to proceed.
+    expect(screen.queryByTestId('recall-verdict')).toBeNull()
+    expect(onOutcome).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByTestId('recall-grade-good'))
+    expect(onOutcome).toHaveBeenCalledWith(
+      expect.objectContaining({ grade: 'good', correct: true, lastAnswer: 'let keyword' }),
+    )
   })
 })

@@ -97,6 +97,25 @@ describe('lessonRenderer', () => {
     ])
   })
 
+  it('dispatches an oj block to the OJ component', () => {
+    const lesson = makeLesson([
+      {
+        type: 'oj',
+        mode: 'stdio',
+        title: 'Echo',
+        prompt: 'Read a line and print it.',
+        starterCode: 'main() {}',
+        testCases: [{ stdin: 'hi', expectedOutput: 'hi', visible: true }],
+        matchMode: 'exact',
+      },
+    ])
+    const { container } = render(
+      <LessonRenderer lesson={lesson} record={vi.fn(async () => null)} retrievalStore={makeRetrievalStore()} now={() => 1} />,
+    )
+    const wrapper = container.querySelector('[data-block-type="oj"]')
+    expect(wrapper).toBeTruthy()
+  })
+
   it('renders a safe placeholder for an unknown block type and warns', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     // Bypass the typed blocks array — a persisted lesson could carry a block
@@ -113,11 +132,15 @@ describe('lessonRenderer', () => {
     const lesson = makeLesson([
       {
         type: 'quiz',
-        question: 'Which keyword binds an immutable value?',
-        options: ['let binds', 'var binds'],
-        answerIndices: [0],
-        multiple: false,
-        explanation: 'let is immutable.',
+        questions: [
+          {
+            question: 'Which keyword binds an immutable value?',
+            options: ['let binds', 'var binds'],
+            answerIndices: [0],
+            multiple: false,
+            explanation: 'let is immutable.',
+          },
+        ],
       },
     ])
     const { record, current } = makeRecorder(lesson)
@@ -165,14 +188,18 @@ describe('lessonRenderer', () => {
       [
         {
           type: 'quiz',
-          question: 'q',
-          options: ['a a', 'b b'],
-          answerIndices: [0],
-          multiple: false,
-          explanation: 'e',
+          questions: [
+            {
+              question: 'q',
+              options: ['a a', 'b b'],
+              answerIndices: [0],
+              multiple: false,
+              explanation: 'e',
+            },
+          ],
         },
       ],
-      { status: 'in_progress', blockProgress: { b0: { attempts: 1, correct: true, lastAnswer: [0], completedAt: 1000 } } },
+      { status: 'in_progress', blockProgress: { b0: { attempts: 1, correct: true, lastAnswer: [[0]], completedAt: 1000 } } },
     )
     render(<LessonRenderer lesson={lesson} record={vi.fn(async () => null)} retrievalStore={makeRetrievalStore()} now={() => 1} />)
     // The quiz block itself owns its UI; the renderer forwards the prior outcome

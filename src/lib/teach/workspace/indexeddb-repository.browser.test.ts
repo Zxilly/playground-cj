@@ -51,6 +51,46 @@ describe('indexeddb repository', () => {
     expect(await repo.getLesson('9999')).toBeNull()
   })
 
+  it('migrates a legacy single-question quiz lesson on read', async () => {
+    // Write a raw lesson carrying the OLD single-question quiz shape straight
+    // into the lessons store (bypassing appendLesson, which only accepts the
+    // current schema), then read it back through the repo to assert migration.
+    const dbName = `test-${crypto.randomUUID()}`
+    const db = await openDB(dbName, 1, {
+      upgrade(d) {
+        d.createObjectStore('meta')
+        d.createObjectStore('learningRecords', { keyPath: 'id' })
+        d.createObjectStore('lessons', { keyPath: 'id' })
+        d.createObjectStore('references', { keyPath: 'id' })
+        d.createObjectStore('retrieval', { keyPath: 'id' })
+      },
+    })
+    await db.put('lessons', {
+      id: '0001',
+      title: 't',
+      missionLink: 'm',
+      skillFocus: 's',
+      zpdRationale: 'z',
+      blocks: [
+        { type: 'prose', markdown: 'x' },
+        { type: 'quiz', question: 'q', options: ['let binds value', 'var binds mutable'], answerIndices: [0], multiple: false, explanation: 'e' },
+      ],
+      citations: [],
+      state: { status: 'unstarted', blockProgress: {} },
+      createdAt: 1,
+    })
+    db.close()
+
+    const legacyRepo = createIndexedDbWorkspaceRepository(dbName)
+    const lesson = await legacyRepo.getLesson('0001')
+    expect(lesson?.blocks[1]).toEqual({
+      type: 'quiz',
+      questions: [{ question: 'q', options: ['let binds value', 'var binds mutable'], answerIndices: [0], multiple: false, explanation: 'e' }],
+    })
+    const listed = await legacyRepo.listLessons()
+    expect(listed[0].blocks[1]).toMatchObject({ type: 'quiz', questions: expect.any(Array) })
+  })
+
   it('updateLessonState persists the new state and returns the updated lesson', async () => {
     const l = await repo.appendLesson({ title: 't', missionLink: 'm', skillFocus: 's', zpdRationale: 'z', blocks: [{ type: 'prose', markdown: 'x' }], citations: [] })
     const updated = await repo.updateLessonState(l.id, { status: 'completed', blockProgress: {}, completedAt: 42 })

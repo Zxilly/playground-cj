@@ -17,6 +17,7 @@ import { GlossaryRefBlock } from './blocks/GlossaryRefBlock'
 import { QuizBlock } from './blocks/QuizBlock'
 import { RecallPromptBlock } from './blocks/RecallPromptBlock'
 import { CodeTaskBlock } from './blocks/CodeTaskBlock'
+import { OJBlock } from './blocks/OJBlock'
 import { LessonLinkBlock } from './blocks/LessonLinkBlock'
 import { ReferenceLinkBlock } from './blocks/ReferenceLinkBlock'
 import { FollowupPromptBlock } from './blocks/FollowupPromptBlock'
@@ -45,6 +46,19 @@ export interface LessonRendererProps {
    */
   runCode?: (code: string) => Promise<RunResult>
   /**
+   * Optional runner for the `oj` block. Mirrors {@link runCode} but accepts
+   * per-test-case `stdin` (and an abort signal) so an online-judge problem can
+   * feed each test case's input to the compiled program. When omitted the oj
+   * block falls back to its own default remote runner.
+   */
+  runProgram?: (code: string, opts?: { stdin?: string, signal?: AbortSignal }) => Promise<RunResult>
+  /**
+   * Grade a recall_prompt free-text answer with the learner's configured LLM,
+   * returning whether the answer is correct plus feedback to show. When omitted
+   * the recall block falls back to learner self-grading.
+   */
+  gradeRecall?: (params: { prompt: string, reference: string, answer: string }) => Promise<{ correct: boolean, feedback: string }>
+  /**
    * Registry each `code_task` editor registers itself with while mounted, so the
    * teacher's editor tools read/write the learner's active code_task. Optional so
    * document-only previews can omit it.
@@ -60,6 +74,8 @@ interface RenderBlockArgs {
   outcome: Lesson['state']['blockProgress'][string] | undefined
   onOutcome: (report: BlockOutcomeReport) => void
   runCode?: (code: string) => Promise<RunResult>
+  runProgram?: (code: string, opts?: { stdin?: string, signal?: AbortSignal }) => Promise<RunResult>
+  gradeRecall?: (params: { prompt: string, reference: string, answer: string }) => Promise<{ correct: boolean, feedback: string }>
   activeEditor?: ActiveEditorRegistry
   locale?: string
 }
@@ -69,7 +85,7 @@ interface RenderBlockArgs {
  * by a newer client version) degrade to a non-fabricating placeholder and log a
  * warning rather than crashing the whole lesson.
  */
-function renderBlock({ block, outcome, onOutcome, runCode, activeEditor, locale }: RenderBlockArgs) {
+function renderBlock({ block, outcome, onOutcome, runCode, runProgram, gradeRecall, activeEditor, locale }: RenderBlockArgs) {
   switch (block.type) {
     case 'prose':
       return <ProseBlock block={block as Extract<Block, { type: 'prose' }>} outcome={outcome} />
@@ -84,7 +100,7 @@ function renderBlock({ block, outcome, onOutcome, runCode, activeEditor, locale 
     case 'quiz':
       return <QuizBlock block={block as Extract<Block, { type: 'quiz' }>} outcome={outcome} onOutcome={onOutcome} />
     case 'recall_prompt':
-      return <RecallPromptBlock block={block as Extract<Block, { type: 'recall_prompt' }>} outcome={outcome} onOutcome={onOutcome} />
+      return <RecallPromptBlock block={block as Extract<Block, { type: 'recall_prompt' }>} outcome={outcome} onOutcome={onOutcome} gradeRecall={gradeRecall} />
     case 'code_task':
       return (
         <CodeTaskBlock
@@ -92,6 +108,17 @@ function renderBlock({ block, outcome, onOutcome, runCode, activeEditor, locale 
           outcome={outcome}
           onOutcome={onOutcome}
           runCode={runCode}
+          activeEditor={activeEditor}
+          locale={locale}
+        />
+      )
+    case 'oj':
+      return (
+        <OJBlock
+          block={block as Extract<Block, { type: 'oj' }>}
+          outcome={outcome}
+          onOutcome={onOutcome}
+          runProgram={runProgram}
           activeEditor={activeEditor}
           locale={locale}
         />
@@ -134,7 +161,7 @@ function renderBlock({ block, outcome, onOutcome, runCode, activeEditor, locale 
  * `lesson.state.blockProgress`, so prior progress rehydrates a block as already
  * attempted.
  */
-export function LessonRenderer({ lesson, record, retrievalStore, now, runCode, activeEditor, locale }: LessonRendererProps) {
+export function LessonRenderer({ lesson, record, retrievalStore, now, runCode, runProgram, gradeRecall, activeEditor, locale }: LessonRendererProps) {
   const onBlockOutcome = useBlockOutcome({
     lessonId: lesson.id,
     state: lesson.state,
@@ -155,6 +182,8 @@ export function LessonRenderer({ lesson, record, retrievalStore, now, runCode, a
               outcome: lesson.state.blockProgress[id],
               onOutcome: report => void onBlockOutcome(id, block.type, report),
               runCode,
+              runProgram,
+              gradeRecall,
               activeEditor,
               locale,
             })}

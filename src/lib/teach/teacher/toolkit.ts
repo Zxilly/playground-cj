@@ -247,7 +247,7 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
 
     // ---- Lesson orchestration ----
     create_lesson: tool({
-      description: 'Author a new structured lesson. The lesson must be short, build a single takeaway, sit inside the learner\'s ZPD (justify in zpdRationale), trace back to the mission (missionLink), and cite trusted sources. Prefer structured blocks; use raw_html only as a sandboxed fallback. All quiz options must be equal length.',
+      description: 'Author a new structured lesson. The lesson must be short, build a single takeaway, sit inside the learner\'s ZPD (justify in zpdRationale), trace back to the mission (missionLink), and cite trusted sources. Prefer structured blocks; use raw_html only as a sandboxed fallback. A quiz block holds a questions[] array (each question its own options/answerIndices/multiple/explanation; you may mix single- and multiple-choice questions); within each question all options must be equal length so option length never leaks the answer. recall_prompt answers are graded automatically by the AI (the learner no longer self-grades). Use an oj block for LeetCode/Codeforces-style problems: mode "function" (learner implements a function — give starterCode as the stub, a callTemplate using ${args} to invoke and print, and testCases each with args + expectedOutput) or mode "stdio" (learner writes a full program reading stdin — testCases each with stdin + expectedOutput); visible:false test cases are hidden from the learner.',
       inputSchema: lessonDraftSchema,
       execute: async (input) => {
         const lesson = await repo.appendLesson(input)

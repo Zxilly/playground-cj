@@ -14,6 +14,7 @@ import type {
   WorkspaceSnapshot,
 } from './documents'
 import { openDB } from 'idb'
+import { migrateLegacyBlocks } from '../lessons/blocks'
 import { lessonSchema } from '../lessons/lesson'
 import { retrievalItemSchema } from '../retrieval/types'
 import {
@@ -61,6 +62,26 @@ function formatSequence(n: number): string {
  */
 function normalizeTerm(term: string): string {
   return term.trim().toLowerCase()
+}
+
+/**
+ * Forward-migrate a raw lesson record loaded from storage so legacy lessons
+ * (e.g. the old single-question quiz shape) survive the current schema. Applied
+ * right after read and before any zod validation. Returns a new object when a
+ * lesson carries a `blocks` array; passes anything else through untouched.
+ */
+function migrateLessonRecord(lesson: unknown): unknown {
+  if (
+    lesson != null
+    && typeof lesson === 'object'
+    && Array.isArray((lesson as { blocks?: unknown }).blocks)
+  ) {
+    return {
+      ...(lesson as object),
+      blocks: migrateLegacyBlocks((lesson as { blocks: unknown[] }).blocks),
+    }
+  }
+  return lesson
 }
 
 /**
@@ -244,14 +265,14 @@ export function createIndexedDbWorkspaceRepository(
 
     async listLessons() {
       const db = await getDb()
-      const lessons = await db.getAll(LESSONS_STORE) as Lesson[]
+      const lessons = (await db.getAll(LESSONS_STORE) as unknown[]).map(migrateLessonRecord) as Lesson[]
       return lessons.sort((a, b) => a.id.localeCompare(b.id))
     },
 
     async getLesson(id: string) {
       const db = await getDb()
-      const lesson = await db.get(LESSONS_STORE, id) as Lesson | undefined
-      return lesson ?? null
+      const lesson = await db.get(LESSONS_STORE, id) as unknown
+      return lesson == null ? null : migrateLessonRecord(lesson) as Lesson
     },
 
     appendLesson(draft: LessonDraft) {
@@ -373,7 +394,7 @@ export function createIndexedDbWorkspaceRepository(
         learningRecords: filterValid(learningRecords, learningRecordSchema, LEARNING_RECORDS_STORE)
           .sort((a, b) => a.id.localeCompare(b.id)),
         glossary: glossaryResult.success ? glossaryResult.data : EMPTY_GLOSSARY,
-        lessons: filterValid(lessons, lessonSchema, LESSONS_STORE)
+        lessons: filterValid(lessons.map(migrateLessonRecord), lessonSchema, LESSONS_STORE)
           .sort((a, b) => a.id.localeCompare(b.id)),
         references: filterValid(references, referenceDocSchema, REFERENCES_STORE)
           .sort((a, b) => a.id.localeCompare(b.id)),
