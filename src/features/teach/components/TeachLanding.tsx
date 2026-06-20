@@ -53,8 +53,8 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
 
   const settingsActionTitle = sharedQuotaExhausted
     ? quotaResetMoment
-      ? t`打开 AI 服务设置，改用自己的 API Key 后可立刻继续。共享额度下次刷新：${quotaResetMoment}。`
-      : t`打开 AI 服务设置，改用自己的 API Key 后可立刻继续。`
+      ? t`打开 AI 服务设置，改用自定义 API Key 后可立刻继续。共享额度下次刷新：${quotaResetMoment}。`
+      : t`打开 AI 服务设置，改用自定义 API Key 后可立刻继续。`
     : t`打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入工作区。`
 
   const enterActionTitle = canEnter
@@ -81,7 +81,7 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
           >
             {keySource === 'auto'
               ? <Trans>使用共享 AI 服务</Trans>
-              : <Trans>使用自己的 API Key</Trans>}
+              : <Trans>使用自定义 API Key</Trans>}
           </span>
           <button
             type="button"
@@ -91,7 +91,7 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
             className="inline-flex shrink-0 items-center gap-2 rounded-md border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           >
             <Settings2 aria-hidden="true" className="size-4" />
-            {sharedQuotaExhausted ? <Trans>使用自己的 API Key</Trans> : <Trans>配置 AI 服务</Trans>}
+            {sharedQuotaExhausted ? <Trans>使用自定义 API Key</Trans> : <Trans>配置 AI 服务</Trans>}
           </button>
         </div>
       </header>
@@ -104,11 +104,11 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
               <span className="min-w-0 break-words"><Trans>AI 教学工作区</Trans></span>
             </div>
             <h1 className="mt-5 break-words text-4xl font-bold tracking-normal text-foreground md:text-5xl">
-              <Trans>按你的目标安排仓颉课程</Trans>
+              <Trans>依据你的目标定制仓颉课程</Trans>
             </h1>
             <p className="mt-5 max-w-2xl break-words text-base leading-8 text-muted-foreground">
               <Trans>
-                先和老师确定你为什么想学、想做出什么，工作区会据此安排课程、练习和复习。整个工作区就是一份可以导出的文件，进度始终留在本机。
+                先与老师明确你的学习目的与预期成果，工作区将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。
               </Trans>
             </p>
 
@@ -128,10 +128,10 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
                           <Trans>
                             额度会在
                             {quotaResetMoment}
-                            刷新后自动恢复；改用自己的 API Key 可立刻继续。
+                            刷新后自动恢复；改用自定义 API Key 可立刻继续。
                           </Trans>
                         )
-                      : <Trans>刷新后会自动恢复；改用自己的 API Key 可立刻继续。</Trans>}
+                      : <Trans>刷新后会自动恢复；改用自定义 API Key 可立刻继续。</Trans>}
                   </p>
                 </div>
               </div>
@@ -160,7 +160,7 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
               )}
               {configReady && sharedQuotaExhausted && (
                 <span id={quotaHintId} className="max-w-sm text-xs leading-6 text-muted-foreground">
-                  <Trans>共享额度已用完，改用自己的 API Key 可立刻进入。</Trans>
+                  <Trans>共享额度已用完，改用自定义 API Key 可立刻进入。</Trans>
                 </span>
               )}
             </div>
@@ -175,7 +175,7 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
                 <span className="min-w-0 break-words"><Trans>目标优先</Trans></span>
               </div>
               <p className="mt-2 break-words text-sm leading-7 text-muted-foreground">
-                <Trans>先定下你想用仓颉做什么，老师据此安排课程，而不是照本宣科。</Trans>
+                <Trans>先明确你希望用仓颉实现的目标，老师据此安排课程，而非套用固定大纲。</Trans>
               </p>
             </section>
             <section className="min-w-0 rounded-md border border-border/60 bg-background p-4">
@@ -184,7 +184,7 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
                 <span className="min-w-0 break-words"><Trans>动手练习</Trans></span>
               </div>
               <p className="mt-2 break-words text-sm leading-7 text-muted-foreground">
-                <Trans>在内置编辑器里写仓颉代码、直接运行查看结果，老师会据此给出反馈。</Trans>
+                <Trans>在内置编辑器中编写仓颉代码并直接运行查看结果，老师据此给出反馈。</Trans>
               </p>
             </section>
             <section className="min-w-0 rounded-md border border-border/60 bg-background p-4">
@@ -193,7 +193,7 @@ export function TeachLanding({ onEnter }: TeachLandingProps) {
                 <span className="min-w-0 break-words"><Trans>复习巩固</Trans></span>
               </div>
               <p className="mt-2 break-words text-sm leading-7 text-muted-foreground">
-                <Trans>按记忆曲线安排复习，把学过的内容真正留下来。</Trans>
+                <Trans>依据记忆曲线安排复习，帮助你长期留存所学内容。</Trans>
               </p>
             </section>
           </div>

@@ -97,13 +97,13 @@ export function QuotaExhaustedDialog() {
             </div>
           </div>
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            <Trans>如需立刻继续使用，可在 AI 服务设置中填写自己的 API Key。</Trans>
+            <Trans>如需立刻继续使用，可在 AI 服务设置中填写自定义 API Key。</Trans>
           </p>
           <p id={dismissDescriptionId} className="sr-only">
             <Trans>关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。</Trans>
           </p>
           <p id={settingsDescriptionId} className="sr-only">
-            <Trans>打开 AI 服务设置填写自己的 API Key；不会清空已有课堂内容或练习记录。</Trans>
+            <Trans>打开 AI 服务设置填写自定义 API Key；不会清空已有课堂内容或练习记录。</Trans>
           </p>
         </div>
 
@@ -114,7 +114,7 @@ export function QuotaExhaustedDialog() {
             </Button>
           </DialogClose>
           <Button type="button" size="sm" aria-describedby={`${refreshStatusId} ${settingsDescriptionId}`} onClick={handleGotoSettings} className="cursor-pointer">
-            <Trans>使用自己的 API Key</Trans>
+            <Trans>使用自定义 API Key</Trans>
           </Button>
         </DialogFooter>
       </DialogContent>

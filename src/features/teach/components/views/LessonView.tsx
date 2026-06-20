@@ -59,7 +59,7 @@ export function LessonView({ lessonId }: LessonViewProps) {
   if (!lesson) {
     return (
       <ViewEmptyState testId="lesson-missing" icon={BookOpen}>
-        <Trans>这节课不存在或已被移除。回到课程列表选择另一节课。</Trans>
+        <Trans>该课程不存在或已被移除。请返回课程列表选择其他课程。</Trans>
       </ViewEmptyState>
     )
   }

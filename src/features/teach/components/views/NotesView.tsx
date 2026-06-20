@@ -24,7 +24,7 @@ export function NotesView() {
   if (body.length === 0) {
     return (
       <ViewEmptyState testId="notes-empty" icon={StickyNote}>
-        <Trans>还没有偏好笔记。告诉老师你喜欢怎样的教学方式，会记录在这里。</Trans>
+        <Trans>尚无偏好笔记。告知老师你偏好的教学方式后，将记录于此。</Trans>
       </ViewEmptyState>
     )
   }

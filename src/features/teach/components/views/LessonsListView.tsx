@@ -37,7 +37,7 @@ export function LessonsListView() {
   if (!lessons || lessons.length === 0) {
     return (
       <ViewEmptyState testId="lessons-empty" icon={BookOpen}>
-        <Trans>还没有课程。先和老师确定学习目标，老师会据此安排第一课。</Trans>
+        <Trans>尚无课程。请先与老师确定学习目标，老师将据此安排第一课。</Trans>
       </ViewEmptyState>
     )
   }

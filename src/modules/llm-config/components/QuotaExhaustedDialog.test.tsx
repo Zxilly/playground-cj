@@ -128,9 +128,9 @@ describe('quotaExhaustedDialog', () => {
     const dismiss = screen.getByRole('button', { name: '我知道了' })
     expect(describedByText(dismiss)).toBe('关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。')
 
-    const settings = screen.getByRole('button', { name: '使用自己的 API Key' })
+    const settings = screen.getByRole('button', { name: '使用自定义 API Key' })
     expect(describedByText(settings)).toContain(status.textContent)
-    expect(describedByText(settings)).toContain('打开 AI 服务设置填写自己的 API Key；不会清空已有课堂内容或练习记录。')
+    expect(describedByText(settings)).toContain('打开 AI 服务设置填写自定义 API Key；不会清空已有课堂内容或练习记录。')
 
     fireEvent.click(settings)
     expect(useLLMConfigStore.getState().settingsDialogOpen).toBe(true)
@@ -142,17 +142,17 @@ describe('quotaExhaustedDialog', () => {
     screen.getByRole('dialog')
     screen.getByRole('heading', { name: 'Daily AI quota exhausted' })
     screen.getByText('Shared quota resets every day at midnight (Beijing time).')
-    screen.getByText('To continue right away, enter your own API Key in AI service settings.')
+    screen.getByText('To continue immediately, enter a custom API Key in AI service settings.')
     const status = screen.getByRole('status')
     expect(status.textContent).toContain('Refresh in ~')
 
     const dismiss = screen.getByRole('button', { name: 'Got it' })
     expect(describedByText(dismiss)).toBe('You can keep viewing the current page after closing this notice. Shared quota will recover after the refresh.')
 
-    const settings = screen.getByRole('button', { name: 'Use your own API Key' })
+    const settings = screen.getByRole('button', { name: 'Use a custom API Key' })
     expect(describedByText(settings)).toContain(status.textContent)
-    expect(describedByText(settings)).toContain('Open AI service settings to enter your own API Key. Existing classroom content and practice records will be kept.')
-    expect(screen.queryByText('打开 AI 服务设置填写自己的 API Key；不会清空已有课堂内容或练习记录。')).toBeNull()
+    expect(describedByText(settings)).toContain('Open AI service settings to enter a custom API Key. Existing classroom content and practice records will be kept.')
+    expect(screen.queryByText('打开 AI 服务设置填写自定义 API Key；不会清空已有课堂内容或练习记录。')).toBeNull()
 
     fireEvent.click(settings)
     expect(useLLMConfigStore.getState().settingsDialogOpen).toBe(true)

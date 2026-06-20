@@ -55,7 +55,7 @@ export function MissionView() {
   if (!mission) {
     return (
       <ViewEmptyState testId="mission-empty" icon={Compass}>
-        <Trans>还没有学习目标。先和老师聊聊你为什么想学仓颉，一起把目标定下来。</Trans>
+        <Trans>尚未设定学习目标。请先与老师沟通你学习仓颉的目的，共同确定目标。</Trans>
       </ViewEmptyState>
     )
   }

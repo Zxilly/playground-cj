@@ -82,7 +82,7 @@ export function ReferenceView({ referenceId }: ReferenceViewProps) {
   if (refs.length === 0) {
     return (
       <ViewEmptyState testId="references-empty" icon={FileText}>
-        <Trans>还没有速查文档。老师会在合适的时候，把要点整理成可反复查阅的速查卡。</Trans>
+        <Trans>尚无速查文档。老师会在适当时机，将要点整理为可反复查阅的速查卡。</Trans>
       </ViewEmptyState>
     )
   }

@@ -61,6 +61,6 @@ describe('missionGate', () => {
     render(<MissionGate />)
     expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
     fireEvent.click(screen.getByTestId('mission-gate-start'))
-    expect(useWorkspaceStore.getState().pendingPrefill).toBe('我想学仓颉，帮我一起把学习目标定下来。')
+    expect(useWorkspaceStore.getState().pendingPrefill).toBe('我想学习仓颉，请帮我一起确定学习目标。')
   })
 })

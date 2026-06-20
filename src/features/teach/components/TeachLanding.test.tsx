@@ -98,7 +98,7 @@ describe('teachLanding', () => {
   it('shows the user key source when a personal key is configured', () => {
     configureUserKey('user-key')
     render(<TeachLanding onEnter={vi.fn()} />)
-    expect(screen.getByTestId('teach-landing-key-source').textContent).toContain('自己')
+    expect(screen.getByTestId('teach-landing-key-source').textContent).toContain('自定义')
   })
 
   it('prompts to switch to a personal key when the shared quota is exhausted', () => {

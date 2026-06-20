@@ -90,7 +90,7 @@ export function RecallPromptBlock({ block, outcome, onOutcome }: RecallPromptBlo
           </div>
           <div>
             <div className="mb-1.5 text-xs text-muted-foreground">
-              <Trans>对照后自评：你想起来了吗？</Trans>
+              <Trans>对照后自评：是否已回忆起？</Trans>
             </div>
             <div className="flex gap-2">
               <button
@@ -105,7 +105,7 @@ export function RecallPromptBlock({ block, outcome, onOutcome }: RecallPromptBlo
                     : 'border-border/60 text-foreground hover:bg-muted/40',
                 )}
               >
-                <Trans>没想起来</Trans>
+                <Trans>未回忆起</Trans>
               </button>
               <button
                 type="button"
@@ -119,7 +119,7 @@ export function RecallPromptBlock({ block, outcome, onOutcome }: RecallPromptBlo
                     : 'border-border/60 text-foreground hover:bg-muted/40',
                 )}
               >
-                <Trans>想起来了</Trans>
+                <Trans>已回忆起</Trans>
               </button>
             </div>
           </div>

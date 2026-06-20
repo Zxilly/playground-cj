@@ -29,18 +29,18 @@ export function MissionGate() {
         </h2>
         <p className="text-sm leading-6 text-muted-foreground">
           <Trans>
-            课程会紧扣你学仓颉的目标来安排。先在右侧和老师聊聊你为什么想学、想做出什么，把学习目标定下来，老师才会据此安排第一课。
+            课程将紧扣你的学习目标安排。请先在右侧与老师沟通你的学习目的与预期成果，确定学习目标后，老师才会据此安排第一课。
           </Trans>
         </p>
       </div>
       <button
         type="button"
         data-testid="mission-gate-start"
-        onClick={() => prefillChat('我想学仓颉，帮我一起把学习目标定下来。')}
+        onClick={() => prefillChat('我想学习仓颉，请帮我一起确定学习目标。')}
         className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-95"
       >
         <MessageCircle aria-hidden="true" className="size-4" />
-        <Trans>和老师聊聊</Trans>
+        <Trans>与老师沟通</Trans>
       </button>
     </div>
   )

@@ -24,7 +24,7 @@ export function GlossaryView() {
   if (terms.length === 0) {
     return (
       <ViewEmptyState testId="glossary-empty" icon={BookA}>
-        <Trans>术语表还是空的。当你真正掌握某个术语后，老师会把它收进来。</Trans>
+        <Trans>术语表暂为空。当你真正掌握某个术语后，老师会将其收录于此。</Trans>
       </ViewEmptyState>
     )
   }

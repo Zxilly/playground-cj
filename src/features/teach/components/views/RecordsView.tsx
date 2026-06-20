@@ -24,7 +24,7 @@ export function RecordsView() {
   if (!records || records.length === 0) {
     return (
       <ViewEmptyState testId="records-empty" icon={NotebookPen}>
-        <Trans>还没有学习记录。当你真正理解某个概念时，老师会记录下来，用来安排后续教学。</Trans>
+        <Trans>尚无学习记录。当你真正理解某个概念时，老师会予以记录，用于安排后续教学。</Trans>
       </ViewEmptyState>
     )
   }
