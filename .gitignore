@@ -28,6 +28,11 @@ next-env.d.ts
 **/__screenshots__/
 /.vitest-attachments/
 
+# design-sync (claude.ai/design) — staged scripts, build output, all local state
+/.ds-sync/
+/ds-bundle/
+/.design-sync/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
