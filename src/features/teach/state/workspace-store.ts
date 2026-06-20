@@ -118,6 +118,14 @@ export interface WorkspaceStore {
    * that don't care about granularity keep the prior refresh-everything behaviour.
    */
   bumpRevision: (scope?: WorkspaceScope) => void
+  /**
+   * Reset the ephemeral view/selection state back to defaults. Called after an
+   * `importAll` replaces the whole workspace: the prior `currentLessonId` /
+   * `currentReferenceId` point at documents that may no longer exist in the
+   * imported snapshot, so without this the shell would land on a missing lesson.
+   * Revisions are left untouched (the shell remounts on import anyway).
+   */
+  reset: () => void
 }
 
 /**
@@ -148,6 +156,12 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
       set({ pendingPrefill: null })
     return pendingPrefill
   },
+  reset: () => set({
+    view: 'lessons',
+    currentLessonId: null,
+    currentReferenceId: null,
+    pendingPrefill: null,
+  }),
   bumpRevision: (scope = 'all') => set((state) => {
     if (scope === 'all') {
       // A whole-workspace replace: bump every counter so every subscriber re-runs.

@@ -7,6 +7,7 @@ import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import { workspaceSnapshotSchema } from '@/lib/teach/workspace/documents'
 import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
+import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
@@ -124,6 +125,11 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
       try {
         const parsed = workspaceSnapshotSchema.parse(JSON.parse(await file.text()))
         await repo.importAll(parsed)
+        // The imported snapshot replaces every document, so the prior view
+        // selection (a specific lesson / reference id) may now dangle. Reset the
+        // ephemeral view state before remounting the shell so it lands on a valid
+        // default instead of a "lesson not found" view.
+        useWorkspaceStore.getState().reset()
         setGeneration(g => g + 1)
       }
       catch (error) {

@@ -68,6 +68,25 @@ describe('useWorkspaceStore', () => {
     expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
   })
 
+  it('reset restores the default view and clears the selection and prefill', () => {
+    const store = useWorkspaceStore.getState()
+    store.selectLesson('0007')
+    store.openReference('r9')
+    store.setPendingPrefill('pending')
+    useWorkspaceStore.getState().reset()
+    const state = useWorkspaceStore.getState()
+    expect(state.view).toBe('lessons')
+    expect(state.currentLessonId).toBeNull()
+    expect(state.currentReferenceId).toBeNull()
+    expect(state.pendingPrefill).toBeNull()
+  })
+
+  it('reset leaves revision counters untouched (the shell remounts on import)', () => {
+    useWorkspaceStore.getState().bumpRevision('lessons')
+    useWorkspaceStore.getState().reset()
+    expect(useWorkspaceStore.getState().revisions.lessons).toBe(1)
+  })
+
   it('starts every scope revision at zero', () => {
     const { revisions } = useWorkspaceStore.getState()
     for (const value of Object.values(revisions))
