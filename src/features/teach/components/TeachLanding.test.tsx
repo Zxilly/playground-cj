@@ -6,9 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
 import { TeachLanding } from './TeachLanding'
 
-// The landing page calls the LLM bootstrap hook on mount. It performs network
-// I/O (fetch /api/ai-key) and store writes that are exercised in its own unit
-// test; here we stub it so the landing's gate logic is the unit under test.
+// The wizard calls the LLM bootstrap hook on mount. It performs network I/O
+// (fetch /api/ai-key) and store writes exercised in its own unit test; here we
+// stub it so the wizard's source/credentials flow is the unit under test.
 const bootstrapMock = vi.hoisted(() => vi.fn(() => ({ status: 'ready' as const })))
 vi.mock('@/modules/llm-config/runtime/useLLMConfigBootstrap', () => ({
   useLLMConfigBootstrap: bootstrapMock,
@@ -26,6 +26,7 @@ function render(ui: ReactElement) {
   return rtlRender(ui, { wrapper: Wrapper })
 }
 
+/** Seed a complete personal key (flips keySource to 'user'). */
 function configureUserKey(apiKey: string) {
   useLLMConfigStore.getState().setConfig({
     provider: 'openai-compatible',
@@ -35,70 +36,47 @@ function configureUserKey(apiKey: string) {
   })
 }
 
+/** Seed a ready shared key (keySource stays 'auto'). */
+function seedSharedReady() {
+  useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: 'shared-key' }, keySource: 'auto' })
+}
+
 beforeEach(() => {
   bootstrapMock.mockClear()
   bootstrapMock.mockReturnValue({ status: 'ready' })
   useLLMConfigStore.getState().reset()
-  useLLMConfigStore.getState().setSettingsDialogOpen(false)
 })
 
 afterEach(() => {
   cleanup()
   useLLMConfigStore.getState().reset()
-  useLLMConfigStore.getState().setSettingsDialogOpen(false)
 })
 
-describe('teachLanding', () => {
+describe('teachLanding wizard', () => {
   it('runs the LLM config bootstrap so an automatic key can be fetched', () => {
     render(<TeachLanding onEnter={vi.fn()} />)
     expect(bootstrapMock).toHaveBeenCalled()
   })
 
-  it('disables the enter button until the LLM config is ready', () => {
-    // A blank API key (the default auto config) is not ready.
-    useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: '' } })
-    render(<TeachLanding onEnter={vi.fn()} />)
-    const enter = screen.getByTestId('teach-landing-enter')
-    expect(enter.hasAttribute('disabled')).toBe(true)
-  })
-
-  it('enables the enter button and calls onEnter once the config is ready', () => {
-    configureUserKey('user-key')
+  it('defaults to the shared source and enters directly once the shared key is ready', () => {
+    seedSharedReady()
     const onEnter = vi.fn()
     render(<TeachLanding onEnter={onEnter} />)
-    const enter = screen.getByTestId('teach-landing-enter')
-    expect(enter.hasAttribute('disabled')).toBe(false)
-    fireEvent.click(enter)
+    expect(screen.getByTestId('teach-source-shared').getAttribute('aria-checked')).toBe('true')
+    const next = screen.getByTestId('teach-source-next')
+    expect(next.hasAttribute('disabled')).toBe(false)
+    fireEvent.click(next)
     expect(onEnter).toHaveBeenCalledTimes(1)
   })
 
-  it('does not call onEnter while the config is not ready', () => {
-    useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: '' } })
+  it('blocks entry while the shared key is not ready', () => {
+    useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: '' }, keySource: 'auto' })
     const onEnter = vi.fn()
     render(<TeachLanding onEnter={onEnter} />)
-    fireEvent.click(screen.getByTestId('teach-landing-enter'))
+    const next = screen.getByTestId('teach-source-next')
+    expect(next.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(next)
     expect(onEnter).not.toHaveBeenCalled()
-  })
-
-  it('opens the LLM config dialog from the configure button', () => {
-    useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: '' } })
-    render(<TeachLanding onEnter={vi.fn()} />)
-    fireEvent.click(screen.getByTestId('teach-landing-configure'))
-    expect(useLLMConfigStore.getState().settingsDialogOpen).toBe(true)
-  })
-
-  it('shows the auto key source when using the shared key', () => {
-    configureUserKey('user-key')
-    // Force back to auto so we exercise the auto branch (setConfig flips to user).
-    useLLMConfigStore.setState({ keySource: 'auto' })
-    render(<TeachLanding onEnter={vi.fn()} />)
-    expect(screen.getByTestId('teach-landing-key-source').textContent).toContain('共享')
-  })
-
-  it('shows the user key source when a personal key is configured', () => {
-    configureUserKey('user-key')
-    render(<TeachLanding onEnter={vi.fn()} />)
-    expect(screen.getByTestId('teach-landing-key-source').textContent).toContain('自定义')
   })
 
   it('prompts to switch to a personal key when the shared quota is exhausted', () => {
@@ -108,8 +86,43 @@ describe('teachLanding', () => {
       autoQuota: { nextResetAt: Date.now() + 60_000, exhausted: true },
     })
     render(<TeachLanding onEnter={vi.fn()} />)
-    // Quota exhausted blocks entry even though an api key is present.
-    expect(screen.getByTestId('teach-landing-enter').hasAttribute('disabled')).toBe(true)
     expect(screen.getByTestId('teach-landing-quota-exhausted')).toBeTruthy()
+    expect(screen.getByTestId('teach-source-next').hasAttribute('disabled')).toBe(true)
+  })
+
+  it('walks the custom path: pick custom, fill the key, then enter', () => {
+    useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: '' }, keySource: 'auto' })
+    const onEnter = vi.fn()
+    render(<TeachLanding onEnter={onEnter} />)
+
+    fireEvent.click(screen.getByTestId('teach-source-custom'))
+    fireEvent.click(screen.getByTestId('teach-source-next'))
+    expect(screen.getByTestId('teach-wizard-step-credentials')).toBeTruthy()
+
+    // baseURL + model are seeded from the provider defaults; only the key is missing.
+    const enter = screen.getByTestId('teach-landing-enter')
+    expect(enter.hasAttribute('disabled')).toBe(true)
+    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'my-key' } })
+    expect(enter.hasAttribute('disabled')).toBe(false)
+
+    fireEvent.click(enter)
+    expect(onEnter).toHaveBeenCalledTimes(1)
+    expect(useLLMConfigStore.getState().config.apiKey).toBe('my-key')
+    expect(useLLMConfigStore.getState().keySource).toBe('user')
+  })
+
+  it('can step back from credentials to the source choice', () => {
+    render(<TeachLanding onEnter={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('teach-source-custom'))
+    fireEvent.click(screen.getByTestId('teach-source-next'))
+    expect(screen.getByTestId('teach-wizard-step-credentials')).toBeTruthy()
+    fireEvent.click(screen.getByTestId('teach-wizard-back'))
+    expect(screen.getByTestId('teach-wizard-step-source')).toBeTruthy()
+  })
+
+  it('starts on the custom source when a personal key is already configured', () => {
+    configureUserKey('user-key')
+    render(<TeachLanding onEnter={vi.fn()} />)
+    expect(screen.getByTestId('teach-source-custom').getAttribute('aria-checked')).toBe('true')
   })
 })

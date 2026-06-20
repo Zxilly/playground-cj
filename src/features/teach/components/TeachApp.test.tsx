@@ -27,24 +27,6 @@ vi.mock('@/modules/llm-config/runtime/useLLMConfigBootstrap', () => ({
   useLLMConfigBootstrap: vi.fn(() => ({ status: 'ready' as const })),
 }))
 
-function MockLLMConfigDialog({ withTrigger }: { withTrigger?: boolean }) {
-  return <div data-testid="llm-config-dialog" data-with-trigger={String(withTrigger)} />
-}
-
-function MockQuotaExhaustedDialog() {
-  return <div data-testid="quota-exhausted-dialog" />
-}
-
-// The config + quota dialogs are vendored modules with their own tests; stub
-// them to lightweight markers so the gate composition is testable in isolation.
-vi.mock('@/modules/llm-config/components/LLMConfigDialog', () => ({
-  LLMConfigDialog: MockLLMConfigDialog,
-}))
-
-vi.mock('@/modules/llm-config/components/QuotaExhaustedDialog', () => ({
-  QuotaExhaustedDialog: MockQuotaExhaustedDialog,
-}))
-
 function emptySnapshot(): WorkspaceSnapshot {
   return {
     version: WORKSPACE_SNAPSHOT_VERSION,
@@ -117,8 +99,10 @@ function seedReadyConfig() {
  */
 async function enterWorkspace(ui: ReactElement) {
   const result = render(ui)
-  const enter = await screen.findByTestId('teach-landing-enter')
-  fireEvent.click(enter)
+  // A user key is seeded, so the wizard opens on the custom source: advance to
+  // the credentials step (the seeded config is complete) and enter.
+  fireEvent.click(await screen.findByTestId('teach-source-next'))
+  fireEvent.click(await screen.findByTestId('teach-landing-enter'))
   await screen.findByTestId('teach-workspace-shell')
   return result
 }
@@ -140,9 +124,6 @@ describe('teachAppContent', () => {
     render(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
     expect(await screen.findByTestId('teach-landing')).toBeTruthy()
     expect(screen.queryByTestId('teach-workspace-shell')).toBeNull()
-    // The config + quota dialogs ride along with the landing gate.
-    expect(screen.getByTestId('llm-config-dialog').getAttribute('data-with-trigger')).toBe('false')
-    expect(screen.getByTestId('quota-exhausted-dialog')).toBeTruthy()
   })
 
   it('mounts the workspace shell and the teacher chat after entering from the landing', async () => {

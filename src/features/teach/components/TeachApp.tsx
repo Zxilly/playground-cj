@@ -10,8 +10,6 @@ import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
-import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
-import { QuotaExhaustedDialog } from '@/modules/llm-config/components/QuotaExhaustedDialog'
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
 import { TeachLanding } from './TeachLanding'
@@ -51,13 +49,13 @@ function downloadJson(filename: string, text: string): void {
  *
  * On mount it probes the repository (a `getMission` read) to surface a storage
  * failure (e.g. IndexedDB blocked / corrupt) as a recovery UI rather than a
- * blank screen. Once ready it shows the {@link TeachLanding} entry gate (which
- * runs the LLM-config bootstrap and only lets the learner in once a usable key
- * is ready) alongside the {@link LLMConfigDialog} and {@link QuotaExhaustedDialog};
- * entering mounts the {@link TeachWorkspaceShell} with the
+ * blank screen. Once ready it shows the {@link TeachLanding} onboarding wizard
+ * (which runs the LLM-config bootstrap and walks the learner through picking an
+ * AI source — shared key or a custom one — before letting them in once a usable
+ * config is ready); entering mounts the {@link TeachWorkspaceShell} with the
  * {@link TeacherChatRuntime} as the chat region. Everything is wrapped in an
  * {@link AbortScopeProvider} and {@link WorkspaceProvider} so in-flight teacher
- * turns abort on unmount and the gate, dialogs, and shell share one repository.
+ * turns abort on unmount and the gate and shell share one repository.
  *
  * Exported separately from the SSR-disabled {@link TeachApp default export} so it
  * can be unit-tested with injected collaborators.
@@ -176,13 +174,7 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
     <AbortScopeProvider>
       <WorkspaceProvider {...collaborators}>
         {!entered
-          ? (
-              <>
-                <TeachLanding onEnter={() => setEntered(true)} />
-                <LLMConfigDialog withTrigger={false} />
-                <QuotaExhaustedDialog />
-              </>
-            )
+          ? <TeachLanding onEnter={() => setEntered(true)} />
           : (
               <TeachWorkspace
                 lang={lang}

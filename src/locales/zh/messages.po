@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:286
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:255
 msgid "（北京时间）"
 msgstr "（北京时间）"
 
@@ -34,16 +34,16 @@ msgid "{outputTip}输出内容"
 msgstr "{outputTip}输出内容"
 
 #: src/features/teach/components/TeachLanding.tsx:104
-msgid "AI 教学工作区"
-msgstr "AI 教学工作区"
+#~ msgid "AI 教学工作区"
+#~ msgstr "AI 教学工作区"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:186
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:178
 msgid "AI 服务来源"
 msgstr "AI 服务来源"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:164
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:165
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:176
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:157
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:158
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:169
 msgid "AI 服务设置"
 msgstr "AI 服务设置"
 
@@ -52,11 +52,11 @@ msgstr "AI 服务设置"
 msgid "AI 课堂"
 msgstr "AI 课堂"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:297
+#: src/modules/llm-config/components/LLMConfigFields.tsx:49
 msgid "API Key"
 msgstr "API Key"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:311
+#: src/modules/llm-config/components/LLMConfigFields.tsx:63
 msgid "API 风格"
 msgstr "API 风格"
 
@@ -76,6 +76,10 @@ msgstr "结果："
 msgid "上一条回复"
 msgstr "上一条回复"
 
+#: src/features/teach/components/TeachLanding.tsx:168
+msgid "上一步"
+msgstr "上一步"
+
 #: src/features/teach/components/blocks/CodeTaskBlock.tsx:249
 msgid "下一个提示"
 msgstr "下一个提示"
@@ -84,7 +88,11 @@ msgstr "下一个提示"
 msgid "下一条回复"
 msgstr "下一条回复"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:284
+#: src/features/teach/components/TeachLanding.tsx:141
+msgid "下一步"
+msgstr "下一步"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:253
 msgid "下次刷新："
 msgstr "下次刷新："
 
@@ -96,7 +104,7 @@ msgstr "不在范围内"
 msgid "与老师沟通"
 msgstr "与老师沟通"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:367
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:272
 msgid "仅重置当前表单；保存后生效，取消则保留原配置。"
 msgstr "仅重置当前表单；点击保存后才会生效，取消会保留已有设置。"
 
@@ -104,11 +112,19 @@ msgstr "仅重置当前表单；点击保存后才会生效，取消会保留已
 msgid "今日 AI 额度已用完"
 msgstr "今日 AI 额度已用完"
 
-#: src/features/teach/components/TeachLanding.tsx:123
-msgid "今日共享额度已用完。"
-msgstr "今日共享额度已用完。"
+#: src/features/teach/components/TeachLanding.tsx:239
+msgid "今日共享额度已用完，{resetMoment} 刷新；可改用自定义 API Key。"
+msgstr "今日共享额度已用完，{resetMoment} 刷新；可改用自定义 API Key。"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:252
+#: src/features/teach/components/TeachLanding.tsx:246
+msgid "今日共享额度已用完；可改用自定义 API Key。"
+msgstr "今日共享额度已用完；可改用自定义 API Key。"
+
+#: src/features/teach/components/TeachLanding.tsx:123
+#~ msgid "今日共享额度已用完。"
+#~ msgstr "今日共享额度已用完。"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:221
 msgid "今日剩余"
 msgstr "今日剩余"
 
@@ -186,32 +202,31 @@ msgid "代码编辑区"
 msgstr "代码编辑区"
 
 #: src/features/teach/components/TeachLanding.tsx:83
-msgid "使用共享 AI 服务"
-msgstr "使用共享 AI 服务"
+#~ msgid "使用共享 AI 服务"
+#~ msgstr "使用共享 AI 服务"
 
-#: src/features/teach/components/TeachLanding.tsx:84
-#: src/features/teach/components/TeachLanding.tsx:94
+#: src/features/teach/components/TeachLanding.tsx:129
 #: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:117
 msgid "使用自定义 API Key"
 msgstr "使用自定义 API Key"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:360
+#: src/modules/llm-config/components/LLMConfigFields.tsx:108
 msgid "使用自定义 API Key 时，需同时配置服务地址与模型。"
 msgstr "使用自定义 API Key 时，需同时配置服务地址与模型。"
 
 #: src/features/teach/components/TeachLanding.tsx:107
-msgid "依据你的目标定制仓颉课程"
-msgstr "依据你的目标定制仓颉课程"
+#~ msgid "依据你的目标定制仓颉课程"
+#~ msgstr "依据你的目标定制仓颉课程"
 
 #: src/features/teach/components/TeachLanding.tsx:196
-msgid "依据记忆曲线安排复习，帮助你长期留存所学内容。"
-msgstr "依据记忆曲线安排复习，帮助你长期留存所学内容。"
+#~ msgid "依据记忆曲线安排复习，帮助你长期留存所学内容。"
+#~ msgstr "依据记忆曲线安排复习，帮助你长期留存所学内容。"
 
 #: src/components/ui/sidebar.tsx:203
 msgid "侧边栏"
 msgstr "侧边栏"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:387
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:292
 msgid "保存"
 msgstr "保存"
 
@@ -219,7 +234,7 @@ msgstr "保存"
 msgid "保存代码"
 msgstr "保存代码"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:221
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:193
 msgid "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
 msgstr "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
 
@@ -236,28 +251,40 @@ msgid "停止生成"
 msgstr "停止生成"
 
 #: src/features/teach/components/TeachLanding.tsx:110
-msgid "先与老师明确你的学习目的与预期成果，工作区将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。"
-msgstr "先与老师明确你的学习目的与预期成果，工作区将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。"
+#~ msgid "先与老师明确你的学习目的与预期成果，工作区将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。"
+#~ msgstr "先与老师明确你的学习目的与预期成果，工作区将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。"
 
 #: src/features/teach/components/views/MissionGate.tsx:28
 msgid "先和老师确定学习目标"
 msgstr "先和老师确定学习目标"
 
 #: src/features/teach/components/TeachLanding.tsx:178
-msgid "先明确你希望用仓颉实现的目标，老师据此安排课程，而非套用固定大纲。"
-msgstr "先明确你希望用仓颉实现的目标，老师据此安排课程，而非套用固定大纲。"
+#~ msgid "先明确你希望用仓颉实现的目标，老师据此安排课程，而非套用固定大纲。"
+#~ msgstr "先明确你希望用仓颉实现的目标，老师据此安排课程，而非套用固定大纲。"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:200
+#: src/features/teach/components/TeachLanding.tsx:101
+msgid "先选择驱动老师的 AI 服务"
+msgstr "先选择驱动老师的 AI 服务"
+
+#: src/features/teach/components/TeachLanding.tsx:113
+msgid "共享 AI 服务"
+msgstr "共享 AI 服务"
+
+#: src/features/teach/components/TeachLanding.tsx:263
+msgid "共享服务暂不可用，可改用自定义 API Key。"
+msgstr "共享服务暂不可用，可改用自定义 API Key。"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:181
 msgid "共享额度"
 msgstr "共享额度"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:263
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:232
 msgid "共享额度已使用量"
 msgstr "共享额度已使用量"
 
 #: src/features/teach/components/TeachLanding.tsx:163
-msgid "共享额度已用完，改用自定义 API Key 可立刻进入。"
-msgstr "共享额度已用完，改用自定义 API Key 可立刻进入。"
+#~ msgid "共享额度已用完，改用自定义 API Key 可立刻进入。"
+#~ msgstr "共享额度已用完，改用自定义 API Key 可立刻进入。"
 
 #: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:77
 msgid "共享额度每日 0 点（北京时间）自动刷新。"
@@ -333,12 +360,12 @@ msgid "切换侧边栏"
 msgstr "切换侧边栏"
 
 #: src/features/teach/components/TeachLanding.tsx:134
-msgid "刷新后会自动恢复；改用自定义 API Key 可立刻继续。"
-msgstr "刷新后会自动恢复；改用自定义 API Key 可立刻继续。"
+#~ msgid "刷新后会自动恢复；改用自定义 API Key 可立刻继续。"
+#~ msgstr "刷新后会自动恢复；改用自定义 API Key 可立刻继续。"
 
 #: src/features/teach/components/TeachLanding.tsx:184
-msgid "动手练习"
-msgstr "动手练习"
+#~ msgid "动手练习"
+#~ msgstr "动手练习"
 
 #: src/features/tour/components/mdx/LanguagePicker.tsx:36
 msgid "勾选后，教程会显示对应语言的对比说明。"
@@ -362,7 +389,7 @@ msgid "发送消息"
 msgstr "发送消息"
 
 #: src/modules/assistant-ui/chat/ThreadMessages.tsx:278
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:377
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:282
 msgid "取消"
 msgstr "取消"
 
@@ -407,12 +434,20 @@ msgid "在 GitHub 查看源代码"
 msgstr "在 GitHub 查看源代码"
 
 #: src/features/teach/components/TeachLanding.tsx:187
-msgid "在内置编辑器中编写仓颉代码并直接运行查看结果，老师据此给出反馈。"
-msgstr "在内置编辑器中编写仓颉代码并直接运行查看结果，老师据此给出反馈。"
+#~ msgid "在内置编辑器中编写仓颉代码并直接运行查看结果，老师据此给出反馈。"
+#~ msgstr "在内置编辑器中编写仓颉代码并直接运行查看结果，老师据此给出反馈。"
+
+#: src/features/teach/components/TeachLanding.tsx:157
+msgid "填写你的 API Key"
+msgstr "填写你的 API Key"
+
+#: src/features/teach/components/TeachLanding.tsx:102
+msgid "填写你的 API 服务"
+msgstr "填写你的 API 服务"
 
 #: src/features/teach/components/TeachLanding.tsx:193
-msgid "复习巩固"
-msgstr "复习巩固"
+#~ msgid "复习巩固"
+#~ msgstr "复习巩固"
 
 #: src/modules/assistant-ui/chat/ThreadMessages.tsx:181
 msgid "复制"
@@ -448,8 +483,8 @@ msgid "学习记录"
 msgstr "学习记录"
 
 #: src/features/teach/components/TeachLanding.tsx:158
-msgid "完成服务地址、API Key 和模型配置后即可进入。"
-msgstr "完成服务地址、API Key 和模型配置后即可进入。"
+#~ msgid "完成服务地址、API Key 和模型配置后即可进入。"
+#~ msgstr "完成服务地址、API Key 和模型配置后即可进入。"
 
 #: src/features/playground/components/ShareButton.tsx:72
 msgid "完整链接"
@@ -468,19 +503,19 @@ msgstr "对比"
 msgid "对照后自评：是否已回忆起？"
 msgstr "对照后自评：是否已回忆起？"
 
-#: src/features/teach/components/TeachApp.tsx:253
+#: src/features/teach/components/TeachApp.tsx:245
 msgid "导入"
 msgstr "导入"
 
-#: src/features/teach/components/TeachApp.tsx:274
+#: src/features/teach/components/TeachApp.tsx:266
 msgid "导入失败："
 msgstr "导入失败："
 
-#: src/features/teach/components/TeachApp.tsx:261
+#: src/features/teach/components/TeachApp.tsx:253
 msgid "导入工作区 JSON"
 msgstr "导入工作区 JSON"
 
-#: src/features/teach/components/TeachApp.tsx:244
+#: src/features/teach/components/TeachApp.tsx:236
 msgid "导出"
 msgstr "导出"
 
@@ -488,7 +523,7 @@ msgstr "导出"
 msgid "导出为 Markdown"
 msgstr "导出为 Markdown"
 
-#: src/features/teach/components/TeachApp.tsx:280
+#: src/features/teach/components/TeachApp.tsx:272
 msgid "导出失败："
 msgstr "导出失败："
 
@@ -516,7 +551,7 @@ msgstr "尚未设定学习目标。请先与老师沟通你学习仓颉的目的
 msgid "已保存代码"
 msgstr "已保存代码"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:219
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:191
 msgid "已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。"
 msgstr "已切回共享额度草稿；点击保存才会替换当前 API Key，取消会保留原设置。"
 
@@ -528,11 +563,15 @@ msgstr "已回忆起"
 msgid "已复制分享链接"
 msgstr "已复制分享链接"
 
+#: src/features/teach/components/TeachLanding.tsx:255
+msgid "已就绪，可直接进入"
+msgstr "已就绪，可直接进入"
+
 #: src/features/teach/components/views/RecordsView.tsx:53
 msgid "已被取代"
 msgstr "已被取代"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:220
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:192
 msgid "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
 msgstr "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
 
@@ -549,16 +588,16 @@ msgid "我知道了"
 msgstr "我知道了"
 
 #: src/features/teach/components/TeachLanding.tsx:58
-msgid "打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入工作区。"
-msgstr "打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入工作区。"
+#~ msgid "打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入工作区。"
+#~ msgstr "打开 AI 服务设置，完成服务地址、API Key 和模型配置；不会进入工作区。"
 
 #: src/features/teach/components/TeachLanding.tsx:57
-msgid "打开 AI 服务设置，改用自定义 API Key 后可立刻继续。"
-msgstr "打开 AI 服务设置，改用自定义 API Key 后可立刻继续。"
+#~ msgid "打开 AI 服务设置，改用自定义 API Key 后可立刻继续。"
+#~ msgstr "打开 AI 服务设置，改用自定义 API Key 后可立刻继续。"
 
 #: src/features/teach/components/TeachLanding.tsx:56
-msgid "打开 AI 服务设置，改用自定义 API Key 后可立刻继续。共享额度下次刷新：{quotaResetMoment}。"
-msgstr "打开 AI 服务设置，改用自定义 API Key 后可立刻继续。共享额度下次刷新：{quotaResetMoment}。"
+#~ msgid "打开 AI 服务设置，改用自定义 API Key 后可立刻继续。共享额度下次刷新：{quotaResetMoment}。"
+#~ msgstr "打开 AI 服务设置，改用自定义 API Key 后可立刻继续。共享额度下次刷新：{quotaResetMoment}。"
 
 #: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:106
 msgid "打开 AI 服务设置填写自定义 API Key；不会清空已有课堂内容或练习记录。"
@@ -571,6 +610,14 @@ msgstr "打开 AI 课堂，从当前教程主题开始学习和练习。"
 #: src/features/teach/components/TeachWorkspaceShell.tsx:184
 msgid "打开老师对话"
 msgstr "打开老师对话"
+
+#: src/features/teach/components/TeachLanding.tsx:130
+msgid "接入你自己的 OpenAI 兼容或 Anthropic 服务。"
+msgstr "接入你自己的 OpenAI 兼容或 Anthropic 服务。"
+
+#: src/features/teach/components/TeachLanding.tsx:114
+msgid "推荐 · 开箱即用，无需任何配置。"
+msgstr "推荐 · 开箱即用，无需任何配置。"
 
 #: src/features/teach/components/blocks/QuizBlock.tsx:154
 msgid "提交"
@@ -593,8 +640,8 @@ msgstr "搜索示例..."
 msgid "收起老师对话"
 msgstr "收起老师对话"
 
-#: src/features/teach/components/TeachApp.tsx:234
-#: src/features/teach/components/TeachLanding.tsx:75
+#: src/features/teach/components/TeachApp.tsx:226
+#: src/features/teach/components/TeachLanding.tsx:88
 msgid "教学工作区"
 msgstr "教学工作区"
 
@@ -603,11 +650,11 @@ msgstr "教学工作区"
 msgid "教程"
 msgstr "教程"
 
-#: src/features/teach/components/TeachApp.tsx:155
+#: src/features/teach/components/TeachApp.tsx:153
 msgid "无法打开教学工作区"
 msgstr "无法打开教学工作区"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:246
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:215
 msgid "无法读取剩余额度，请稍后重试。"
 msgstr "无法读取剩余额度，请稍后重试。"
 
@@ -630,7 +677,7 @@ msgid "更新"
 msgstr "更新"
 
 #: src/lib/ai/model-test.ts:31
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:333
+#: src/modules/llm-config/components/LLMConfigFields.tsx:81
 msgid "服务地址"
 msgstr "服务地址"
 
@@ -650,7 +697,7 @@ msgstr "未找到语言。"
 msgid "未通过"
 msgstr "未通过"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:179
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:172
 msgid "未配置 API Key 时使用共享额度；共享额度有限，可能耗尽。"
 msgstr "未填写 API Key 时将使用共享额度；共享额度有限，可能会用完。"
 
@@ -685,7 +732,7 @@ msgid "格式化成功"
 msgstr "格式化成功"
 
 #: src/lib/ai/model-test.ts:33
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:345
+#: src/modules/llm-config/components/LLMConfigFields.tsx:93
 msgid "模型"
 msgstr "模型"
 
@@ -705,11 +752,16 @@ msgstr "正在停止仓颉代码提示{originSuffix}。"
 msgid "正在停止代码提示"
 msgstr "正在停止代码提示"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:242
+#: src/features/teach/components/TeachLanding.tsx:146
+#: src/features/teach/components/TeachLanding.tsx:270
+msgid "正在准备共享服务…"
+msgstr "正在准备共享服务…"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:211
 msgid "正在加载剩余额度…"
 msgstr "正在加载剩余额度…"
 
-#: src/features/teach/components/TeachApp.tsx:301
+#: src/features/teach/components/TeachApp.tsx:293
 msgid "正在加载教学工作区…"
 msgstr "正在加载教学工作区…"
 
@@ -758,13 +810,13 @@ msgstr "添加附件"
 msgid "清除缓存并重启"
 msgstr "清除缓存并重启"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:306
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:266
 msgid "留空使用共享额度"
 msgstr "留空使用共享额度"
 
 #: src/features/teach/components/TeachLanding.tsx:175
-msgid "目标优先"
-msgstr "目标优先"
+#~ msgid "目标优先"
+#~ msgstr "目标优先"
 
 #: src/features/playground/components/ShareButton.tsx:80
 msgid "短链接"
@@ -777,6 +829,14 @@ msgstr "移除文件"
 #: src/features/playground/components/OutputPanel.tsx:38
 msgid "程序输出"
 msgstr "程序输出"
+
+#: src/features/teach/components/TeachLanding.tsx:96
+msgid "第 1 步 · 选择 AI 来源"
+msgstr "第 1 步 · 选择 AI 来源"
+
+#: src/features/teach/components/TeachLanding.tsx:97
+msgid "第 2 步 · 配置 API 服务"
+msgstr "第 2 步 · 配置 API 服务"
 
 #: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:94
 msgid "约 {hours} 小时 {minutes} 分钟后刷新"
@@ -814,7 +874,7 @@ msgstr "编辑消息"
 msgid "老师"
 msgstr "老师"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:213
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:185
 msgid "自定义 API Key"
 msgstr "自定义 API Key"
 
@@ -830,7 +890,7 @@ msgstr "请先填写 {missingText}，再测试 {currentProviderLabel} 连接。"
 msgid "请先输入代码"
 msgstr "请先输入代码"
 
-#: src/features/teach/components/TeachApp.tsx:158
+#: src/features/teach/components/TeachApp.tsx:156
 msgid "读取本地工作区数据失败。可以重试，或刷新页面。如果一直失败，可能是浏览器存储被禁用或损坏。"
 msgstr "读取本地工作区数据失败。可以重试，或刷新页面。如果一直失败，可能是浏览器存储被禁用或损坏。"
 
@@ -886,13 +946,14 @@ msgstr "运行服务暂时不可用，这次未记录进度。请稍后重试运
 msgid "这个内容块无法显示（类型未知）。请向老师反馈。"
 msgstr "这个内容块无法显示（类型未知）。请向老师反馈。"
 
-#: src/features/teach/components/TeachLanding.tsx:153
+#: src/features/teach/components/TeachLanding.tsx:141
+#: src/features/teach/components/TeachLanding.tsx:177
 msgid "进入工作区"
 msgstr "进入工作区"
 
 #: src/features/teach/components/TeachLanding.tsx:61
-msgid "进入教学工作区，开始按学习目标安排课程。"
-msgstr "进入教学工作区，开始按学习目标安排课程。"
+#~ msgid "进入教学工作区，开始按学习目标安排课程。"
+#~ msgstr "进入教学工作区，开始按学习目标安排课程。"
 
 #: src/features/tour/components/mdx/LanguagePicker.tsx:20
 msgid "选择对比语言"
@@ -920,8 +981,8 @@ msgid "避免混用"
 msgstr "避免混用"
 
 #: src/features/teach/components/TeachLanding.tsx:94
-msgid "配置 AI 服务"
-msgstr "配置 AI 服务"
+#~ msgid "配置 AI 服务"
+#~ msgstr "配置 AI 服务"
 
 #: src/lib/ai/model-test.ts:41
 msgid "配置不完整"
@@ -941,12 +1002,12 @@ msgstr "重新生成"
 msgid "重置本地缓存后重启代码提示"
 msgstr "重置本地缓存后重启代码提示"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:373
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:278
 msgid "重置默认"
 msgstr "重置默认"
 
 #: src/features/teach/components/blocks/QuizBlock.tsx:189
-#: src/features/teach/components/TeachApp.tsx:169
+#: src/features/teach/components/TeachApp.tsx:167
 msgid "重试"
 msgstr "重试"
 
@@ -980,5 +1041,5 @@ msgid "预期输出"
 msgstr "预期输出"
 
 #: src/features/teach/components/TeachLanding.tsx:128
-msgid "额度会在{quotaResetMoment}刷新后自动恢复；改用自定义 API Key 可立刻继续。"
-msgstr "额度会在{quotaResetMoment}刷新后自动恢复；改用自定义 API Key 可立刻继续。"
+#~ msgid "额度会在{quotaResetMoment}刷新后自动恢复；改用自定义 API Key 可立刻继续。"
+#~ msgstr "额度会在{quotaResetMoment}刷新后自动恢复；改用自定义 API Key 可立刻继续。"
