@@ -83,6 +83,24 @@ describe('recallPromptBlock', () => {
     expect(onOutcome).toHaveBeenCalledWith(expect.objectContaining({ lastAnswer: 'let keyword' }))
   })
 
+  it('locks the answer input after reveal so the reference answer cannot be copied in', () => {
+    render(<RecallPromptBlock block={block} />)
+    const before = screen.getByTestId('recall-input') as HTMLTextAreaElement
+    expect(before.readOnly).toBe(false)
+    fireEvent.click(screen.getByTestId('recall-reveal'))
+    expect((screen.getByTestId('recall-input') as HTMLTextAreaElement).readOnly).toBe(true)
+  })
+
+  it('keeps a rehydrated (already revealed) answer input locked', () => {
+    render(
+      <RecallPromptBlock
+        block={block}
+        outcome={{ attempts: 1, correct: true, lastAnswer: 'let keyword', completedAt: 1000 }}
+      />,
+    )
+    expect((screen.getByTestId('recall-input') as HTMLTextAreaElement).readOnly).toBe(true)
+  })
+
   it('reflects the chosen grade in the UI', () => {
     render(<RecallPromptBlock block={block} />)
     fireEvent.click(screen.getByTestId('recall-reveal'))

@@ -52,10 +52,17 @@ export function RecallPromptBlock({ block, outcome, onOutcome }: RecallPromptBlo
         data-testid="recall-input"
         value={attempt}
         onChange={event => setAttempt(event.target.value)}
+        // Lock the answer once revealed: editing after seeing the reference answer
+        // would let the learner copy it before self-grading, defeating the
+        // retrieval-practice this block exists for.
+        readOnly={revealed}
         rows={3}
         aria-label={t`回忆作答`}
         placeholder={t`写下你记得的内容…`}
-        className="mt-3 w-full resize-y rounded-md border border-border/60 bg-background px-3 py-2 text-sm leading-6 focus:outline-none focus:ring-2 focus:ring-primary/40"
+        className={cn(
+          'mt-3 w-full resize-y rounded-md border border-border/60 bg-background px-3 py-2 text-sm leading-6 focus:outline-none focus:ring-2 focus:ring-primary/40',
+          revealed && 'cursor-not-allowed resize-none bg-muted/30 text-muted-foreground',
+        )}
       />
 
       {!revealed && (
