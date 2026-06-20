@@ -146,4 +146,32 @@ describe('teachWorkspaceShell', () => {
     fireEvent.click(screen.getByTestId('workspace-chat-close'))
     expect(screen.getByTestId('workspace-chat').getAttribute('data-open')).toBe('false')
   })
+
+  it('reflects the chat open/closed state on the toggle for assistive tech', () => {
+    render(<TeachWorkspaceShell chat={<div data-testid="chat-slot" />} />, makeRepo())
+    const toggle = screen.getByTestId('workspace-chat-toggle')
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(toggle.getAttribute('aria-label')).toContain('打开')
+    expect(toggle.getAttribute('aria-controls')).toBe(screen.getByTestId('workspace-chat').id)
+    fireEvent.click(toggle)
+    const toggled = screen.getByTestId('workspace-chat-toggle')
+    expect(toggled.getAttribute('aria-expanded')).toBe('true')
+    expect(toggled.getAttribute('aria-label')).toContain('收起')
+  })
+
+  it('makes the closed chat drawer inert on mobile so it leaves the tab order', () => {
+    const originalWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 480 })
+    try {
+      render(<TeachWorkspaceShell chat={<div data-testid="chat-slot" />} />, makeRepo())
+      // Closed on a mobile-width viewport: inert (focus/AT skip the off-screen drawer).
+      expect(screen.getByTestId('workspace-chat').hasAttribute('inert')).toBe(true)
+      fireEvent.click(screen.getByTestId('workspace-chat-toggle'))
+      // Opened: interactive again.
+      expect(screen.getByTestId('workspace-chat').hasAttribute('inert')).toBe(false)
+    }
+    finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth })
+    }
+  })
 })

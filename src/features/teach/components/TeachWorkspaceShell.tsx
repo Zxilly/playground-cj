@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { MessageCircle, X } from 'lucide-react'
+import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 import type { WorkspaceView } from '@/features/teach/state/workspace-store'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
@@ -95,6 +97,13 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
   const currentLessonId = useWorkspaceStore(s => s.currentLessonId)
   const currentReferenceId = useWorkspaceStore(s => s.currentReferenceId)
   const [chatOpen, setChatOpen] = useState(false)
+  const isMobile = useIsMobile()
+  const chatRegionId = useId()
+  // On mobile the chat is an off-screen drawer when closed; mark it `inert` so its
+  // composer/buttons drop out of the tab order and the a11y tree instead of being
+  // focusable while invisible. On desktop the chat is a persistent column, so it
+  // must never be inert (chatOpen stays false there).
+  const chatInert = isMobile && !chatOpen
 
   // Mission-first gating: lessons are grounded in the learner's mission, so they
   // stay locked until a mission exists. Read it here once and drive both the nav
@@ -139,8 +148,10 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       </main>
 
       <section
+        id={chatRegionId}
         data-testid="workspace-chat"
         data-open={chatOpen ? 'true' : 'false'}
+        inert={chatInert}
         className={cn(
           // Desktop: a persistent right-hand column.
           'md:relative md:flex md:w-96 md:shrink-0 md:flex-col md:border-s md:border-border/60 md:bg-card/20',
@@ -157,7 +168,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
             type="button"
             data-testid="workspace-chat-close"
             onClick={() => setChatOpen(false)}
-            aria-label="Close chat"
+            aria-label={t`收起老师对话`}
             className="rounded-md p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
           >
             <X aria-hidden="true" className="size-4" />
@@ -170,10 +181,14 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         type="button"
         data-testid="workspace-chat-toggle"
         onClick={() => setChatOpen(open => !open)}
-        aria-label="Open chat"
+        aria-label={chatOpen ? t`收起老师对话` : t`打开老师对话`}
+        aria-expanded={chatOpen}
+        aria-controls={chatRegionId}
         className="fixed bottom-4 end-4 z-20 flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
       >
-        <MessageCircle aria-hidden="true" className="size-5" />
+        {chatOpen
+          ? <X aria-hidden="true" className="size-5" />
+          : <MessageCircle aria-hidden="true" className="size-5" />}
       </button>
     </div>
   )
