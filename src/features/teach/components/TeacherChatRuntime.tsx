@@ -3,7 +3,6 @@
 import { useEffect, useMemo } from 'react'
 import { AssistantRuntimeProvider, useComposerRuntime } from '@assistant-ui/react'
 import { useChatRuntime } from '@assistant-ui/react-ai-sdk'
-import { lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import type { InferAgentUIMessage } from 'ai'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Thread } from '@/modules/assistant-ui/chat/Thread'
@@ -41,14 +40,16 @@ function normalizeLang(lang: string): TeacherLang {
  * code_task the learner is currently working in. The repository in context is already an observable repository
  * (wrapped once in {@link WorkspaceProvider}), so a teacher tool write bumps the
  * workspace revision and refreshes the central views without a reload — no extra
- * wrapping here. The agent runs as an AI SDK `ToolLoopAgent`; `useChatRuntime`
- * continues the loop after each complete tool-call turn
- * ({@link lastAssistantMessageIsCompleteWithToolCalls}).
+ * wrapping here. The agent runs as an AI SDK `ToolLoopAgent`, which loops
+ * (model → tool → model → … → answer) internally inside a single `sendMessages`,
+ * so the runtime needs no `sendAutomaticallyWhen` continuation — one turn is one
+ * request.
  *
  * Every turn streams through a {@link createScopedChatTransport scoped transport}
  * bound to the workspace abort scope, so an in-flight request is cancelled when
- * the workspace unmounts. Tool calls themselves are hidden by the vendored Thread
- * (their effects show up in the central viewport, not as raw chat noise).
+ * the workspace unmounts — and the composer's stop button aborts the current turn
+ * (the scope signal is merged with the per-request abort signal). Tool calls and
+ * reasoning render under a collapsible "思考过程" disclosure in the thread.
  */
 export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
   // Keep the shared key / quota fresh after entering the workspace: re-fetch an
@@ -80,10 +81,14 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
     return createScopedChatTransport<TeacherChatMessage>(agent, scopeSignal)
   }, [config, repo, knowledge, runner, retrievalStore, activeEditor, now, lang, scopeSignal])
 
-  const runtime = useChatRuntime<TeacherChatMessage>({
-    transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-  })
+  // No `sendAutomaticallyWhen`: the teacher is a ToolLoopAgent whose whole
+  // tool loop (model → tool → model → … → answer) runs inside one
+  // `sendMessages` via the DirectChatTransport. Adding the runtime-driven
+  // continuation (meant for client-side tool execution) would auto-fire another
+  // turn after every tool-using turn — wasting tokens and making the agent feel
+  // unstoppable (the stop button flickers as turns auto-chain). One turn = one
+  // abortable request.
+  const runtime = useChatRuntime<TeacherChatMessage>({ transport })
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

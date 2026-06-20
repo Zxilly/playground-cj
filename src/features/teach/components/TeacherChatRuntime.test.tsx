@@ -154,12 +154,17 @@ describe('teacherChatRuntime', () => {
     )
   })
 
-  it('drives the chat runtime with the scoped transport and tool-loop continuation', () => {
+  it('drives the chat runtime with the scoped transport; the agent loops internally, so no runtime auto-continuation', () => {
     renderRuntime()
     expect(runtimeMocks.useChatRuntime).toHaveBeenCalledWith(expect.objectContaining({
       transport: { transport: true },
-      sendAutomaticallyWhen: runtimeMocks.sendAutomaticallyWhen,
     }))
+    // A `sendAutomaticallyWhen` would auto-fire another turn after every
+    // tool-using turn (the agent already loops internally), making the chat feel
+    // unstoppable; it must not be set.
+    expect(runtimeMocks.useChatRuntime).toHaveBeenCalledWith(
+      expect.not.objectContaining({ sendAutomaticallyWhen: expect.anything() }),
+    )
   })
 
   it('seeds the composer with a pending prefill prompt and clears the signal', async () => {
