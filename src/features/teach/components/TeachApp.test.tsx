@@ -112,6 +112,7 @@ async function enterWorkspace(ui: ReactElement) {
 beforeEach(() => {
   globalI18n.load({ zh: {} })
   globalI18n.activate('zh')
+  localStorage.removeItem('teach:onboarded')
   seedReadyConfig()
 })
 
@@ -132,6 +133,18 @@ describe('teachAppContent', () => {
     await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
     expect(screen.getByTestId('teacher-chat').getAttribute('data-lang')).toBe('zh')
     // The landing gate is gone once entered.
+    expect(screen.queryByTestId('teach-landing')).toBeNull()
+  })
+
+  it('records onboarding completion after entering the workspace', async () => {
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
+    expect(localStorage.getItem('teach:onboarded')).toBe('1')
+  })
+
+  it('skips onboarding and opens the workspace directly once it was completed before', async () => {
+    localStorage.setItem('teach:onboarded', '1')
+    render(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
+    expect(await screen.findByTestId('teach-workspace-shell')).toBeTruthy()
     expect(screen.queryByTestId('teach-landing')).toBeNull()
   })
 
@@ -174,8 +187,26 @@ describe('teachAppContent', () => {
     const file = new File([JSON.stringify(emptySnapshot())], 'workspace.json', { type: 'application/json' })
     Object.defineProperty(file, 'text', { value: async () => JSON.stringify(emptySnapshot()) })
     fireEvent.change(input, { target: { files: [file] } })
+    // Importing overwrites the whole workspace, so it is gated behind a confirm.
+    fireEvent.click(await screen.findByTestId('workspace-import-confirm'))
 
     await waitFor(() => expect(importAll).toHaveBeenCalledWith(expect.objectContaining({ version: WORKSPACE_SNAPSHOT_VERSION })))
+  })
+
+  it('does not import when the overwrite confirm is cancelled', async () => {
+    const importAll = vi.fn(async () => undefined)
+    const repo = makeRepo({ importAll })
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
+
+    const input = screen.getByTestId('workspace-import-input') as HTMLInputElement
+    const file = new File([JSON.stringify(emptySnapshot())], 'workspace.json', { type: 'application/json' })
+    Object.defineProperty(file, 'text', { value: async () => JSON.stringify(emptySnapshot()) })
+    fireEvent.change(input, { target: { files: [file] } })
+
+    // Cancel dismisses the dialog without touching the repository.
+    fireEvent.click(await screen.findByRole('button', { name: '取消' }))
+    await waitFor(() => expect(screen.queryByTestId('workspace-import-confirm')).toBeNull())
+    expect(importAll).not.toHaveBeenCalled()
   })
 
   it('shows a recovery UI when hydration fails', async () => {

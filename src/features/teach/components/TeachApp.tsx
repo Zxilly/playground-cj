@@ -5,6 +5,16 @@ import dynamic from 'next/dynamic'
 import { Download, RotateCcw, TriangleAlert, Upload } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { workspaceSnapshotSchema } from '@/lib/teach/workspace/documents'
 import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
@@ -45,6 +55,29 @@ function downloadJson(filename: string, text: string): void {
   URL.revokeObjectURL(url)
 }
 
+// Records that the learner has completed onboarding (the landing + AI-source
+// wizard) at least once, so returning visits open straight into the workspace
+// instead of walking the intro again. Client-only (TeachApp is dynamic ssr:false).
+const ONBOARDED_KEY = 'teach:onboarded'
+
+function hasOnboarded(): boolean {
+  try {
+    return localStorage.getItem(ONBOARDED_KEY) === '1'
+  }
+  catch {
+    return false
+  }
+}
+
+function markOnboarded(): void {
+  try {
+    localStorage.setItem(ONBOARDED_KEY, '1')
+  }
+  catch {
+    // Ignore storage failures (e.g. private mode); the learner just re-onboards.
+  }
+}
+
 /**
  * The hydrated teaching-workspace app: provider + shell + chat, plus the
  * export/import controls that move the whole workspace as a portable JSON
@@ -71,8 +104,9 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   const [hydration, setHydration] = useState<HydrationState>({ status: 'loading' })
   // The landing gate sits between hydration and the workspace shell: it runs the
   // LLM config bootstrap and only lets the learner in once a usable key is ready,
-  // so the teacher agent never reaches the views without a key.
-  const [stage, setStage] = useState<'landing' | 'config' | 'workspace'>('landing')
+  // so the teacher agent never reaches the views without a key. Once onboarding
+  // has been completed before, returning visits skip straight to the workspace.
+  const [stage, setStage] = useState<'landing' | 'config' | 'workspace'>(() => (hasOnboarded() ? 'workspace' : 'landing'))
   const [importError, setImportError] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -182,7 +216,13 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
         <WorkspaceProvider {...collaborators}>
           {stage === 'landing' && <TeachLanding onStart={() => setStage('config')} />}
           {stage === 'config' && (
-            <TeachConfigWizard onEnter={() => setStage('workspace')} onBack={() => setStage('landing')} />
+            <TeachConfigWizard
+              onEnter={() => {
+                markOnboarded()
+                setStage('workspace')
+              }}
+              onBack={() => setStage('landing')}
+            />
           )}
           {stage === 'workspace' && (
             <>
@@ -237,6 +277,9 @@ function TeachWorkspace({
   onExport,
   onImportFile,
 }: TeachWorkspaceProps) {
+  // Importing replaces the whole workspace, so gate it behind a confirm: a stray
+  // file pick (or the wrong snapshot) must not wipe the learner's work silently.
+  const [pendingImport, setPendingImport] = useState<File | null>(null)
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border/60 px-4 py-2">
@@ -272,7 +315,7 @@ function TeachWorkspace({
             onChange={(event) => {
               const file = event.target.files?.[0]
               if (file)
-                void onImportFile(file)
+                setPendingImport(file)
               // Reset so selecting the same file again re-triggers change.
               event.target.value = ''
             }}
@@ -297,6 +340,52 @@ function TeachWorkspace({
           chat={<TeacherChatRuntime lang={lang} />}
         />
       </div>
+
+      <Dialog
+        open={pendingImport !== null}
+        onOpenChange={(open) => {
+          if (!open)
+            setPendingImport(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TriangleAlert aria-hidden="true" className="size-4 text-amber-500" />
+              <Trans>导入将覆盖当前课堂</Trans>
+            </DialogTitle>
+            <DialogDescription>
+              <Trans>导入会用所选文件替换当前课堂的全部内容（学习目标、课程、术语表、学习记录、笔记等），且无法撤销。建议先导出备份。</Trans>
+            </DialogDescription>
+          </DialogHeader>
+          {pendingImport && (
+            <p className="truncate rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              {pendingImport.name}
+            </p>
+          )}
+          <DialogFooter className="gap-2 sm:justify-end">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" size="sm">
+                <Trans>取消</Trans>
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              data-testid="workspace-import-confirm"
+              onClick={() => {
+                const file = pendingImport
+                setPendingImport(null)
+                if (file)
+                  void onImportFile(file)
+              }}
+            >
+              <Trans>覆盖导入</Trans>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
