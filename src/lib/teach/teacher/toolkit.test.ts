@@ -1,4 +1,5 @@
 import type { KnowledgeHit, KnowledgeSource } from '../knowledge/source'
+import type { TourOutlineChapter, TourSource, TourStep } from '../knowledge/tour-source'
 import type { RunResult } from '../feedback/run-cangjie'
 import type { RetrievalItem } from '../retrieval/types'
 import type {
@@ -125,6 +126,21 @@ function createFakeKnowledge(hits: KnowledgeHit[]): KnowledgeSource & { search: 
   return { id: 'cangjie-mcp', search }
 }
 
+/**
+ * Fake {@link TourSource} backing `list_tour` / `read_tour`. `outline` returns the
+ * seeded chapters; `read` returns the seeded step keyed by id (null when missing),
+ * mirroring the live accessor's graceful degradation.
+ */
+function createFakeTour(overrides: {
+  outline?: TourOutlineChapter[]
+  steps?: Record<string, TourStep>
+} = {}): TourSource & { outline: ReturnType<typeof vi.fn>, read: ReturnType<typeof vi.fn> } {
+  const steps = overrides.steps ?? {}
+  const outline = vi.fn(async () => overrides.outline ?? [])
+  const read = vi.fn(async (id: string) => steps[id] ?? null)
+  return { outline, read }
+}
+
 function createFakeRunner(result: RunResult): TeacherRunner & { run: ReturnType<typeof vi.fn> } {
   const run = vi.fn(async () => result)
   return { run }
@@ -164,18 +180,23 @@ const runResult: RunResult = { ok: true, stdout: 'hi\n', stderr: '', exitCode: 0
 
 function setup(overrides: {
   knowledgeHits?: KnowledgeHit[]
+  tourOutline?: TourOutlineChapter[]
+  tourSteps?: Record<string, TourStep>
   retrieval?: RetrievalItem[]
   now?: () => number
   editorCode?: string | null
+  lang?: 'zh' | 'en'
 } = {}) {
   const repo = createMemoryRepo()
   const knowledge = createFakeKnowledge(overrides.knowledgeHits ?? [])
+  const tour = createFakeTour({ outline: overrides.tourOutline, steps: overrides.tourSteps })
   const runner = createFakeRunner(runResult)
   const retrievalStore = createMemoryRetrievalStore(overrides.retrieval ?? [])
   const editor = createFakeEditor(overrides.editorCode === undefined ? 'main() {}' : overrides.editorCode)
   const now = overrides.now ?? (() => 123)
-  const toolkit = createTeacherToolkit({ repo, knowledge, runner, retrievalStore, editor, now })
-  return { repo, knowledge, runner, retrievalStore, editor, toolkit }
+  const lang = overrides.lang ?? 'zh'
+  const toolkit = createTeacherToolkit({ repo, knowledge, tour, runner, retrievalStore, editor, lang, now })
+  return { repo, knowledge, tour, runner, retrievalStore, editor, toolkit }
 }
 
 async function call<T = unknown>(tool: unknown, input: unknown): Promise<T> {
@@ -222,6 +243,8 @@ describe('createTeacherToolkit', () => {
         'create_lesson',
         'update_lesson_state',
         'mark_lesson_complete',
+        'list_tour',
+        'read_tour',
         'search_docs',
         'set_editor_code',
         'read_editor_code',
@@ -414,9 +437,11 @@ describe('createTeacherToolkit', () => {
     const toolkit = createTeacherToolkit({
       repo,
       knowledge: createFakeKnowledge([]),
+      tour: createFakeTour(),
       runner,
       retrievalStore: createMemoryRetrievalStore(),
       editor: createFakeEditor(),
+      lang: 'zh',
       now: () => 1,
     })
     const controller = new AbortController()
@@ -434,6 +459,47 @@ describe('createTeacherToolkit', () => {
     const controller = new AbortController()
     await callWithSignal(toolkit.search_docs, { query: 'option', limit: 3 }, controller.signal)
     expect(knowledge.search).toHaveBeenCalledWith('option', { limit: 3, signal: controller.signal })
+  })
+
+  it('list_tour returns the curated outline for the workspace language', async () => {
+    const outline: TourOutlineChapter[] = [
+      { id: 'basics', title: '基础', steps: [{ id: 'basics/1', chapter: '基础', title: '绑定' }] },
+    ]
+    const { toolkit, tour } = setup({ tourOutline: outline, lang: 'zh' })
+    const result = await call<{ ok: boolean, outline?: TourOutlineChapter[] }>(toolkit.list_tour, {})
+    expect(tour.outline).toHaveBeenCalledWith('zh', { signal: undefined })
+    expect(result.ok).toBe(true)
+    expect(result.outline).toEqual(outline)
+  })
+
+  it('read_tour returns a curated step by id in the workspace language', async () => {
+    const step: TourStep = {
+      id: 'basics/1',
+      lang: 'en',
+      chapter: 'Basics',
+      title: 'Bindings',
+      markdown: '# Bindings',
+      code: 'main() {}',
+    }
+    const { toolkit, tour } = setup({ tourSteps: { 'basics/1': step }, lang: 'en' })
+    const result = await call<{ ok: boolean, step?: TourStep }>(toolkit.read_tour, { id: 'basics/1' })
+    expect(tour.read).toHaveBeenCalledWith('basics/1', 'en', { signal: undefined })
+    expect(result.ok).toBe(true)
+    expect(result.step).toEqual(step)
+  })
+
+  it('read_tour fails clearly when no step has that id', async () => {
+    const { toolkit } = setup()
+    const result = await call<{ ok: boolean, error?: string }>(toolkit.read_tour, { id: 'missing/9' })
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/no tour step/i)
+  })
+
+  it('list_tour threads the abort signal to the tour source', async () => {
+    const { toolkit, tour } = setup()
+    const controller = new AbortController()
+    await callWithSignal(toolkit.list_tour, {}, controller.signal)
+    expect(tour.outline).toHaveBeenCalledWith('zh', { signal: controller.signal })
   })
 
   it('supersede_learning_record marks the record superseded', async () => {

@@ -7,6 +7,7 @@ import type { InferAgentUIMessage } from 'ai'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Thread } from '@/modules/assistant-ui/chat/Thread'
 import { createTeacherToolkit } from '@/lib/teach/teacher/toolkit'
+import { createTourSource } from '@/lib/teach/knowledge/tour-source'
 import { createTeacherAgent } from '@/lib/teach/teacher/agent'
 import type { TeacherAgent } from '@/lib/teach/teacher/agent'
 import type { TeacherLang } from '@/lib/teach/teacher/system-prompt'
@@ -64,21 +65,27 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
   const scopeSignal = useAbortScope()
 
   const transport = useMemo(() => {
+    const teacherLang = normalizeLang(lang)
     // `repo` from context is already an observable repository (wrapped in
     // WorkspaceProvider), so a teacher tool write bumps the workspace revision
     // and refreshes the central views without a reload.
     const toolkit = createTeacherToolkit({
       repo,
       knowledge,
+      // The curated tour content (preferred grounding) reaches the browser teacher
+      // through the same-origin /api/teach/tour route; the source degrades to an
+      // empty outline / null step when the route is unavailable.
+      tour: createTourSource(),
       runner: runner ?? defaultRunner,
       retrievalStore,
       // The active-editor registry resolves whichever code_task the learner is
       // currently working in, so set_editor_code / read_editor_code drive the
       // learner's live editor.
       editor: activeEditor,
+      lang: teacherLang,
       now,
     })
-    const agent = createTeacherAgent(config, toolkit, normalizeLang(lang))
+    const agent = createTeacherAgent(config, toolkit, teacherLang)
     return createScopedChatTransport<TeacherChatMessage>(agent, scopeSignal)
   }, [config, repo, knowledge, runner, retrievalStore, activeEditor, now, lang, scopeSignal])
 

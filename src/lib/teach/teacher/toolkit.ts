@@ -1,8 +1,10 @@
 import type { ToolCallOptions, ToolSet } from 'ai'
 import type { KnowledgeSource } from '../knowledge/source'
+import type { TourSource } from '../knowledge/tour-source'
 import type { RunResult } from '../feedback/run-cangjie'
 import type { RetrievalItem } from '../retrieval/types'
 import type { WorkspaceRepository } from '../workspace/repository'
+import type { TeacherLang } from './system-prompt'
 import { tool } from 'ai'
 import { z } from 'zod'
 import { isUserAbort } from '../abort'
@@ -58,6 +60,12 @@ export interface RetrievalStore {
 export interface TeacherToolkitDeps {
   repo: WorkspaceRepository
   knowledge: KnowledgeSource
+  /**
+   * Curated, hand-written tour content source backing `list_tour` / `read_tour`.
+   * Preferred over `knowledge` (`search_docs`) as the canonical, highest-quality
+   * grounding for Cangjie concepts, examples, and ordering when authoring lessons.
+   */
+  tour: TourSource
   runner: TeacherRunner
   retrievalStore: RetrievalStore
   /**
@@ -66,6 +74,11 @@ export interface TeacherToolkitDeps {
    * active-editor registry; tests inject a fake.
    */
   editor: EditorBridge
+  /**
+   * UI language of the teaching workspace. `read_tour` uses it implicitly to pick
+   * the curated prose/code locale, so the model never has to pass a language.
+   */
+  lang: TeacherLang
   /** Injected clock; the toolkit never reads `Date.now()` directly. */
   now: () => number
 }
@@ -129,15 +142,15 @@ const upsertReferenceInputSchema = referenceDocSchema.omit({ updatedAt: true })
 /**
  * Build the single Teacher agent's tool set (AI SDK v6 `tool()` API). Each tool
  * delegates to one of the injected dependencies (workspace repository,
- * knowledge source, editor bridge, runner, retrieval store) and returns a compact
- * JSON payload (`{ ok, ... }`) the model can reason over.
+ * curated tour source, knowledge source, editor bridge, runner, retrieval store)
+ * and returns a compact JSON payload (`{ ok, ... }`) the model can reason over.
  *
  * `create_lesson` uses {@link lessonDraftSchema} directly as its `inputSchema`
  * so the model's lesson is zod-validated (including the equal-length quiz rule)
  * before it is persisted.
  */
 export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
-  const { repo, knowledge, runner, retrievalStore, editor, now } = deps
+  const { repo, knowledge, tour, runner, retrievalStore, editor, lang, now } = deps
 
   // The last run result is held here so `read_run_result` can return it without
   // re-running. Reset implicitly when `run_code` runs again.
@@ -279,8 +292,26 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
     }),
 
     // ---- Knowledge grounding ----
+    list_tour: tool({
+      description: 'List the curated, hand-written Cangjie tour outline (chapters → steps with stable ids + titles). This is the canonical, highest-quality grounding source: PREFER it over search_docs for Cangjie concepts, examples, and teaching order. Call this first to see what canonical material exists, then read_tour the relevant steps.',
+      inputSchema: z.object({}),
+      execute: (input, options) => withAbort(options, async (signal) => {
+        const outline = await tour.outline(lang, { signal })
+        return ok({ outline })
+      }),
+    }),
+    read_tour: tool({
+      description: 'Read one curated tour step by id (the stable id from list_tour, e.g. "basics/1"), returning its curated prose and Cangjie code in the workspace language. PREFER this as the canonical source when authoring lessons; fall back to search_docs only for what the tour does not cover. Returns null when no step has that id.',
+      inputSchema: z.object({ id: z.string() }),
+      execute: (input, options) => withAbort(options, async (signal) => {
+        const step = await tour.read(input.id, lang, { signal })
+        if (!step)
+          return fail(`No tour step with id ${input.id}.`)
+        return ok({ step })
+      }),
+    }),
     search_docs: tool({
-      description: 'Search the trusted Cangjie knowledge source. You MUST call this before stating any Cangjie fact, writing a code sample, or authoring a lesson — never guess from parametric memory. Cite the returned hits in the blocks you author.',
+      description: 'Search the trusted Cangjie knowledge source. Use it to supplement the curated tour (list_tour / read_tour) — call it before stating any Cangjie fact, writing a code sample, or authoring a lesson the tour does not cover, and never guess from parametric memory. Cite the returned hits in the blocks you author.',
       inputSchema: z.object({ query: z.string(), limit: z.number().int().positive().max(20).optional() }),
       execute: (input, options) => withAbort(options, async (signal) => {
         const hits = await knowledge.search(input.query, { limit: input.limit, signal })
