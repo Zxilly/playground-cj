@@ -23,6 +23,12 @@ export interface AutoQuotaState {
    * token's cumulative lifetime total. Optional: absent for older cached keys.
    */
   readonly perPeriod?: number
+  /**
+   * Remaining quota units in the current period (from the usage probe). Combined
+   * with `perPeriod` it yields "today's remaining" as a percentage. Optional:
+   * absent when the usage probe was unavailable.
+   */
+  readonly available?: number
 }
 
 interface LLMConfigState {

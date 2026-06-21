@@ -59,6 +59,7 @@ describe('useLLMConfigBootstrap', () => {
       expect(useLLMConfigStore.getState().autoQuota).toEqual({
         nextResetAt: 1_700_000_000_000,
         exhausted: false,
+        available: 249900,
       })
     })
   })
@@ -82,6 +83,7 @@ describe('useLLMConfigBootstrap', () => {
         nextResetAt: 1_700_000_000_000,
         exhausted: false,
         perPeriod: 1_000_000,
+        available: 1_000_000,
       })
     })
   })
@@ -134,6 +136,7 @@ describe('useLLMConfigBootstrap', () => {
     expect(useLLMConfigStore.getState().autoQuota).toEqual({
       nextResetAt: 2_000,
       exhausted: false,
+      available: 250000,
     })
   })
 

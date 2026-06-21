@@ -14,6 +14,11 @@ vi.mock('@/modules/llm-config/runtime/useLLMConfigBootstrap', () => ({
   useLLMConfigBootstrap: bootstrapMock,
 }))
 
+const sharedQuotaMock = vi.hoisted(() => vi.fn(() => ({ percent: null as number | null, loading: false })))
+vi.mock('@/modules/llm-config/runtime/useSharedQuota', () => ({
+  useSharedQuota: sharedQuotaMock,
+}))
+
 function Wrapper({ children }: { children: ReactNode }) {
   const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
   i18n.activate('zh')
@@ -45,6 +50,8 @@ function seedSharedReady() {
 beforeEach(() => {
   bootstrapMock.mockClear()
   bootstrapMock.mockReturnValue({ status: 'ready' })
+  sharedQuotaMock.mockClear()
+  sharedQuotaMock.mockReturnValue({ percent: null, loading: false })
   useLLMConfigStore.getState().reset()
 })
 
@@ -67,6 +74,20 @@ describe('teachConfigWizard', () => {
     expect(next.hasAttribute('disabled')).toBe(false)
     fireEvent.click(next)
     expect(onEnter).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the live remaining shared quota as a percentage when ready', () => {
+    sharedQuotaMock.mockReturnValue({ percent: 75, loading: false })
+    seedSharedReady()
+    renderWizard()
+    expect(screen.getByText('75%')).toBeTruthy()
+  })
+
+  it('shows the quota meter (with a spinner) while the live probe is loading', () => {
+    sharedQuotaMock.mockReturnValue({ percent: null, loading: true })
+    seedSharedReady()
+    renderWizard()
+    expect(screen.getByText('今日额度剩余')).toBeTruthy()
   })
 
   it('blocks entry while the shared key is not ready', () => {

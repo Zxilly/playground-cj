@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
 import { fetchTokenUsage, isUsageExhausted } from '@/modules/llm-config/runtime/new-api-client'
+import type { TokenUsage } from '@/modules/llm-config/runtime/new-api-client'
 
 export interface LLMConfigBootstrapState {
   status: 'loading' | 'ready' | 'error'
@@ -20,11 +21,11 @@ interface AiKeyResponse {
   quota?: { nextResetAt?: number, perPeriod?: number }
 }
 
-async function probeAutoQuotaExhausted(apiKey: string): Promise<boolean | null> {
+async function probeAutoQuotaUsage(apiKey: string): Promise<TokenUsage | null> {
   const result = await fetchTokenUsage(apiKey)
   if (!result.ok || result.usage.totalGranted <= 0)
     return null
-  return isUsageExhausted(result.usage)
+  return result.usage
 }
 
 export function useLLMConfigBootstrap({
@@ -67,16 +68,22 @@ export function useLLMConfigBootstrap({
           return
         const nextResetAt = data.quota?.nextResetAt
         const perPeriod = data.quota?.perPeriod
-        const exhausted = typeof nextResetAt === 'number'
-          ? await probeAutoQuotaExhausted(data.apiKey)
+        const usage = typeof nextResetAt === 'number'
+          ? await probeAutoQuotaUsage(data.apiKey)
           : null
         if (cancelled)
           return
         // Update quota state before applyAutoKey, since applying the key
         // changes config.apiKey which is a dependency of this effect — the
         // resulting re-run flips `cancelled` and would drop any later writes.
-        if (typeof nextResetAt === 'number')
-          setAutoQuota({ nextResetAt, exhausted: exhausted ?? false, perPeriod })
+        if (typeof nextResetAt === 'number') {
+          setAutoQuota({
+            nextResetAt,
+            exhausted: usage ? isUsageExhausted(usage) : false,
+            perPeriod,
+            available: usage?.totalAvailable,
+          })
+        }
         applyAutoKey(data)
       })
       .catch((e: Error) => {

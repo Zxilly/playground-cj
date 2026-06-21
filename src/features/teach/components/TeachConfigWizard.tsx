@@ -10,6 +10,7 @@ import type { LLMConfig } from '@/lib/ai/model-provider'
 import { isLLMConfigReady, resolveProviderDefaults } from '@/lib/ai/model-provider'
 import { formatResetMoment } from '@/modules/llm-config/runtime/format-reset-moment'
 import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfigBootstrap'
+import { useSharedQuota } from '@/modules/llm-config/runtime/useSharedQuota'
 import { LLMConfigFields } from '@/modules/llm-config/components/LLMConfigFields'
 
 export interface TeachConfigWizardProps {
@@ -56,6 +57,15 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
   const sharedReady = keySource === 'auto' && isLLMConfigReady(config) && !sharedQuotaExhausted
   const customComplete = isLLMConfigReady(draft)
   const quotaResetMoment = autoQuota?.nextResetAt ? formatResetMoment(autoQuota.nextResetAt) : ''
+  // Today's remaining share of the per-period budget, as a 0–100 percentage. The
+  // live probe stays fresh on returning visits (where the cached key skips the
+  // bootstrap); the bootstrap snapshot gives an instant first paint when present.
+  const liveQuota = useSharedQuota(sharedReady)
+  const snapshotPercent = autoQuota?.perPeriod && typeof autoQuota.available === 'number'
+    ? Math.max(0, Math.min(100, Math.round((autoQuota.available / autoQuota.perPeriod) * 100)))
+    : null
+  const quotaPercent = liveQuota.percent ?? snapshotPercent
+  const quotaLoading = liveQuota.loading
 
   const selectSource = (next: ConfigSource) => {
     setSource(next)
@@ -128,6 +138,8 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                       ready={sharedReady}
                       status={bootstrap.status}
                       resetMoment={quotaResetMoment}
+                      quotaPercent={quotaPercent}
+                      quotaLoading={quotaLoading}
                     />
                   </SourceOption>
 
@@ -235,10 +247,14 @@ interface SharedStatusProps {
   ready: boolean
   status: 'loading' | 'ready' | 'error'
   resetMoment: string
+  /** Today's remaining quota as a 0–100 percentage, or null when unknown. */
+  quotaPercent: number | null
+  /** True while the live quota probe is in flight (show the meter's spinner). */
+  quotaLoading: boolean
 }
 
 /** Inline readiness line for the shared-service option. */
-function SharedStatus({ exhausted, ready, status, resetMoment }: SharedStatusProps) {
+function SharedStatus({ exhausted, ready, status, resetMoment, quotaPercent, quotaLoading }: SharedStatusProps) {
   if (exhausted) {
     return (
       <span data-testid="teach-config-quota-exhausted" className="mt-1 inline-flex items-start gap-1.5 text-xs leading-6 text-amber-700 dark:text-amber-300">
@@ -259,6 +275,11 @@ function SharedStatus({ exhausted, ready, status, resetMoment }: SharedStatusPro
     )
   }
   if (ready) {
+    // The quota meter keeps a constant height across its loading and loaded
+    // states, so it replaces the ready line in place (no layout shift). Fall back
+    // to a plain ready line only when the quota probe is unavailable.
+    if (quotaPercent != null || quotaLoading)
+      return <QuotaMeter percent={quotaPercent} />
     return (
       <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
         <CheckCircle2 aria-hidden="true" className="size-3.5 shrink-0" />
@@ -278,6 +299,46 @@ function SharedStatus({ exhausted, ready, status, resetMoment }: SharedStatusPro
     <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
       <Loader2 aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
       <Trans>正在准备共享服务…</Trans>
+    </span>
+  )
+}
+
+/**
+ * A slim daily-quota meter: a labelled percentage over a thin progress bar,
+ * tinted by how much remains (emerald when healthy, amber when low, rose when
+ * nearly out). While the value is loading (`percent` is null) it shows a spinner
+ * in the same two-row footprint, so swapping to the loaded bar never shifts the
+ * card height.
+ */
+function QuotaMeter({ percent }: { percent: number | null }) {
+  if (percent === null) {
+    return (
+      <span className="mt-1 flex flex-col gap-1">
+        <span className="flex items-center justify-between">
+          <span className="text-[11px] text-muted-foreground"><Trans>今日额度剩余</Trans></span>
+          <Loader2 aria-hidden="true" className="size-3 shrink-0 animate-spin text-muted-foreground" />
+        </span>
+        <span className="h-1 rounded-full bg-muted" />
+      </span>
+    )
+  }
+  const tone = percent < 10
+    ? { text: 'text-rose-600 dark:text-rose-400', bar: 'bg-rose-500' }
+    : percent < 30
+      ? { text: 'text-amber-600 dark:text-amber-400', bar: 'bg-amber-500' }
+      : { text: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' }
+  return (
+    <span className="mt-1 flex flex-col gap-1">
+      <span className="flex items-center justify-between">
+        <span className="text-[11px] text-muted-foreground"><Trans>今日额度剩余</Trans></span>
+        <span className={cn('text-[11px] font-medium tabular-nums', tone.text)}>{`${percent}%`}</span>
+      </span>
+      <span className="h-1 overflow-hidden rounded-full bg-muted">
+        <span
+          className={cn('block h-full rounded-full transition-[width] duration-500', tone.bar)}
+          style={{ width: `${percent}%` }}
+        />
+      </span>
     </span>
   )
 }
