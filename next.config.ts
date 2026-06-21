@@ -3,9 +3,6 @@ import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-const CJ_RE = /\.cj$/i
-const MJS_RE = /\.m?js$/
-const CODINGAME_RE = /node_modules[\\/](@codingame|monaco-languageclient|vscode-languageclient)/
 const PATH_SEP_RE = /[\\/]/
 const CJO_TARGET = 'linux_x86_64_cjnative'
 const IS_DEV = process.env.NODE_ENV === 'development'
@@ -82,7 +79,23 @@ const nextConfig: NextConfig = {
     ],
   },
   reactStrictMode: false,
-  turbopack: {},
+  turbopack: {
+    rules: {
+      // .cj source files are imported as raw text.
+      '*.cj': {
+        loaders: ['raw-loader'],
+        as: '*.js',
+      },
+    },
+  },
+  // Inlined into the bundle as process.env.*. Computed at config load from the
+  // LSP assets; restart the dev server after rebuilding the wasm or adding
+  // .cjo files.
+  env: {
+    CJO_TARGET,
+    CJO_MODULES: JSON.stringify(CJO_MODULES),
+    LSP_VERSION,
+  },
   async headers() {
     return [
       {
@@ -101,45 +114,6 @@ const nextConfig: NextConfig = {
         }],
       },
     ]
-  },
-  webpack: (config, { isServer, webpack }) => {
-    config.module.rules.push({
-      test: CJ_RE,
-      type: 'asset/source',
-    })
-
-    if (!isServer) {
-      // Fix ES module resolution for @codingame packages
-      config.module.rules.push({
-        test: MJS_RE,
-        include: CODINGAME_RE,
-        resolve: {
-          fullySpecified: false,
-        },
-      })
-    }
-
-    config.module = {
-      ...config.module,
-      exprContextCritical: false,
-    }
-
-    config.resolve = config.resolve || {}
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      module: false,
-    }
-
-    // Inlined at config-load time; restart `next dev` after rebuilding the
-    // wasm or adding .cjo files.
-    config.plugins.push(new webpack.DefinePlugin({
-      __CJO_TARGET__: JSON.stringify(CJO_TARGET),
-      __CJO_MODULES__: JSON.stringify(CJO_MODULES),
-      __LSP_VERSION__: JSON.stringify(LSP_VERSION),
-    }))
-
-    return config
   },
 }
 

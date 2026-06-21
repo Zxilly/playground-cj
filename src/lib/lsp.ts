@@ -3,7 +3,9 @@ import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 // Pthread workers spawned by the emscripten module inherit the JS glue's
 // query string via `import.meta.url`, so they hit the same cached URL as
 // the main thread without extra revalidation round-trips.
-const LSP_VERSION = __LSP_VERSION__
+const LSP_VERSION = process.env.LSP_VERSION ?? 'fallback'
+const CJO_TARGET = process.env.CJO_TARGET ?? ''
+const CJO_MODULES = JSON.parse(process.env.CJO_MODULES ?? '[]') as readonly string[]
 const LSP_VERSION_QS = `?v=${LSP_VERSION}`
 const LSP_WASM_PATH = `/lsp/LSPServer-wasm.js${LSP_VERSION_QS}`
 const LSP_WASM_BINARY_PATH = `/lsp/LSPServer-wasm.wasm${LSP_VERSION_QS}`
@@ -166,9 +168,9 @@ async function initializeLspServer(
   // Directories the stdlib loader will write into. Cangjie's static init
   // (inside the wasm factory) also expects `/cangjie/modules/<target>/` to
   // exist — create everything in preRun so it's ready before main() runs.
-  const targetModulesPath = `/cangjie/modules/${__CJO_TARGET__}`
+  const targetModulesPath = `/cangjie/modules/${CJO_TARGET}`
   const moduleDirs = new Set<string>()
-  for (const modulePath of __CJO_MODULES__) {
+  for (const modulePath of CJO_MODULES) {
     const idx = modulePath.lastIndexOf('/')
     if (idx > 0) {
       moduleDirs.add(modulePath.slice(0, idx))
@@ -249,7 +251,7 @@ async function initializeLspServer(
     }
   }
 
-  await Promise.all(__CJO_MODULES__.map(async (modulePath) => {
+  await Promise.all(CJO_MODULES.map(async (modulePath) => {
     const destPath = `${targetModulesPath}/${modulePath}`
 
     try {
@@ -261,7 +263,7 @@ async function initializeLspServer(
         cached++
       }
       else {
-        const url = `${LSP_MODULES_PATH}/${__CJO_TARGET__}/${modulePath}${LSP_VERSION_QS}`
+        const url = `${LSP_MODULES_PATH}/${CJO_TARGET}/${modulePath}${LSP_VERSION_QS}`
         const response = await fetch(url)
         if (response.ok) {
           const data = new Uint8Array(await response.arrayBuffer())
@@ -282,7 +284,7 @@ async function initializeLspServer(
   }))
 
   db?.close()
-  onLog(`Loaded ${loaded}/${__CJO_MODULES__.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
+  onLog(`Loaded ${loaded}/${CJO_MODULES.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
   if (shouldAbort())
     throw new Error('aborted')
 
@@ -358,7 +360,7 @@ const STATE = hmrSlot<LspGlobalState>(HMR_SLOT_KEYS.LSP_STATE, () => ({
     origin: 'auto',
     manuallyStopped: false,
     stdlibModulesLoaded: 0,
-    stdlibModulesTotal: __CJO_MODULES__.length,
+    stdlibModulesTotal: CJO_MODULES.length,
     generation: 0,
     autoRestartAttempts: 0,
   },
