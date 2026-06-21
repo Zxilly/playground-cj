@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, FileText, NotebookPen, ScrollText, SpellCheck, Target } from 'lucide-react'
+import { BookOpen, FileText, LayoutDashboard, NotebookPen, ScrollText, SpellCheck, Target } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import type { ReactNode } from 'react'
@@ -22,6 +22,7 @@ interface NavEntry {
 }
 
 const NAV_ENTRIES: NavEntry[] = [
+  { view: 'overview', icon: LayoutDashboard, label: <Trans>概览</Trans> },
   { view: 'mission', icon: Target, label: <Trans>学习目标</Trans> },
   { view: 'lessons', icon: BookOpen, label: <Trans>课程</Trans> },
   { view: 'glossary', icon: SpellCheck, label: <Trans>术语表</Trans> },
@@ -46,6 +47,12 @@ export interface WorkspaceNavProps {
    * the lessons surface stays out of reach until a mission exists.
    */
   disabledViews?: ReadonlySet<NavView>
+  /**
+   * Nav entries to draw attention to (e.g. the lessons entry the moment a mission
+   * unlocks it). A highlighted-but-inactive entry gets a ring + a small dot so the
+   * change is not silent; the shell clears it once the learner opens that section.
+   */
+  highlightedViews?: ReadonlySet<NavView>
 }
 
 /**
@@ -58,7 +65,7 @@ export interface WorkspaceNavProps {
  * mission exists) render disabled and ignore clicks, keeping the lessons surface
  * unreachable until the learner has set a mission with the teacher.
  */
-export function WorkspaceNav({ disabledViews }: WorkspaceNavProps = {}) {
+export function WorkspaceNav({ disabledViews, highlightedViews }: WorkspaceNavProps = {}) {
   const view = useWorkspaceStore(s => s.view)
   const setView = useWorkspaceStore(s => s.setView)
   const active = activeNavView(view)
@@ -68,12 +75,15 @@ export function WorkspaceNav({ disabledViews }: WorkspaceNavProps = {}) {
       {NAV_ENTRIES.map(({ view: entryView, icon: Icon, label }) => {
         const isActive = entryView === active
         const isDisabled = disabledViews?.has(entryView) ?? false
+        // Only nudge an entry that is reachable and not already the one in view.
+        const isHighlighted = !isDisabled && !isActive && (highlightedViews?.has(entryView) ?? false)
         return (
           <button
             key={entryView}
             type="button"
             data-testid={`workspace-nav-${entryView}`}
             data-nav-item="true"
+            data-highlighted={isHighlighted ? 'true' : undefined}
             aria-current={isActive ? 'page' : undefined}
             aria-disabled={isDisabled ? 'true' : undefined}
             disabled={isDisabled}
@@ -82,16 +92,23 @@ export function WorkspaceNav({ disabledViews }: WorkspaceNavProps = {}) {
                 setView(entryView)
             }}
             className={cn(
-              'flex shrink-0 items-center gap-3 rounded-md px-3 py-2 text-start text-sm font-medium transition-colors md:w-full',
+              'relative flex shrink-0 items-center gap-3 rounded-md px-3 py-2 text-start text-sm font-medium transition-colors md:w-full',
               isDisabled
                 ? 'cursor-not-allowed text-muted-foreground/40'
                 : isActive
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+              isHighlighted && 'text-primary ring-1 ring-primary/50 ring-inset animate-pulse',
             )}
           >
             <Icon aria-hidden="true" className="size-4 shrink-0" />
-            <span className="min-w-0 flex-1 truncate">{label}</span>
+            {/* Mobile is a tight top strip: show the label only for the active
+                entry (icon-only otherwise) so all sections fit without crowding;
+                desktop always shows labels. */}
+            <span className={cn('min-w-0 truncate', isActive ? 'flex-1' : 'hidden flex-1 md:inline')}>{label}</span>
+            {isHighlighted && (
+              <span aria-hidden="true" className="absolute end-1 top-1 size-1.5 rounded-full bg-primary md:static md:ms-auto" />
+            )}
           </button>
         )
       })}

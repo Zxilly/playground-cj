@@ -1,7 +1,7 @@
 'use client'
 
-import { useId, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode, PointerEvent as ReactPointerEvent } from 'react'
 import { MessageCircle, X } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
@@ -12,6 +12,7 @@ import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import type { NavView } from './WorkspaceNav'
 import { WorkspaceNav } from './WorkspaceNav'
+import { ProgressDashboardView } from './views/ProgressDashboardView'
 import { MissionView } from './views/MissionView'
 import { GlossaryView } from './views/GlossaryView'
 import { LessonsListView } from './views/LessonsListView'
@@ -51,6 +52,8 @@ function CentralViewport({
   currentReferenceId: string | null
 }) {
   switch (view) {
+    case 'overview':
+      return <ProgressDashboardView />
     case 'mission':
       return <MissionView />
     case 'lessons':
@@ -75,6 +78,23 @@ function CentralViewport({
 /** Nav entries gated behind a set mission, frozen so the prop stays referentially stable. */
 const MISSION_GATED_VIEWS: ReadonlySet<NavView> = new Set<NavView>(['lessons'])
 const NO_GATED_VIEWS: ReadonlySet<NavView> = new Set<NavView>()
+/** The lessons entry, highlighted the moment a mission unlocks it. */
+const LESSONS_HIGHLIGHT: ReadonlySet<NavView> = new Set<NavView>(['lessons'])
+
+// Resizable teacher-chat column (desktop only). Width is clamped so the central
+// content keeps a usable minimum, and persisted so the preference sticks.
+const CHAT_WIDTH_KEY = 'teach:chat-width'
+const CHAT_MIN_WIDTH = 300
+const CHAT_MAX_WIDTH = 720
+const CHAT_DEFAULT_WIDTH = 384
+const CHAT_KEYBOARD_STEP = 24
+
+function clampChatWidth(px: number): number {
+  const cap = typeof window === 'undefined'
+    ? CHAT_MAX_WIDTH
+    : Math.max(CHAT_MIN_WIDTH, Math.min(CHAT_MAX_WIDTH, window.innerWidth - 360))
+  return Math.min(cap, Math.max(CHAT_MIN_WIDTH, Math.round(px)))
+}
 
 /**
  * The teaching-workspace shell: a three-region layout.
@@ -105,6 +125,63 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
   // must never be inert (chatOpen stays false there).
   const chatInert = isMobile && !chatOpen
 
+  // When a lesson block or a cold-start preset queues a chat prefill, surface it:
+  // on mobile the chat is a closed bottom drawer, so open it so the seeded message
+  // is visible instead of silently landing in a hidden composer.
+  const pendingPrefill = useWorkspaceStore(s => s.pendingPrefill)
+  useEffect(() => {
+    if (pendingPrefill !== null && isMobile)
+      // eslint-disable-next-line react/set-state-in-effect -- reacting to an external store event (a queued prefill) by opening the drawer; not derivable render state
+      setChatOpen(true)
+  }, [pendingPrefill, isMobile])
+
+  // Resizable chat column. Load the persisted width after mount (SSR markup stays
+  // at the default to avoid a hydration mismatch), then persist later changes.
+  const chatRef = useRef<HTMLElement>(null)
+  const [chatWidth, setChatWidth] = useState(CHAT_DEFAULT_WIDTH)
+  const persistArmedRef = useRef(false)
+  useEffect(() => {
+    const saved = Number(localStorage.getItem(CHAT_WIDTH_KEY))
+    if (Number.isFinite(saved) && saved > 0)
+      // eslint-disable-next-line react/set-state-in-effect -- one-time post-mount load of the persisted width; kept out of the useState initializer so the SSR markup stays at the default and does not hydrate-mismatch
+      setChatWidth(clampChatWidth(saved))
+  }, [])
+  useEffect(() => {
+    if (!persistArmedRef.current) {
+      persistArmedRef.current = true
+      return
+    }
+    localStorage.setItem(CHAT_WIDTH_KEY, String(chatWidth))
+  }, [chatWidth])
+
+  const startChatResize = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const rightEdge = chatRef.current?.getBoundingClientRect().right ?? window.innerWidth
+    const onMove = (ev: PointerEvent) => setChatWidth(clampChatWidth(rightEdge - ev.clientX))
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      document.body.style.removeProperty('user-select')
+      document.body.style.removeProperty('cursor')
+    }
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }, [])
+
+  const onChatHandleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLDivElement>) => {
+    // Chat sits on the right, so ArrowLeft widens it and ArrowRight narrows it.
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      setChatWidth(w => clampChatWidth(w + CHAT_KEYBOARD_STEP))
+    }
+    else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      setChatWidth(w => clampChatWidth(w - CHAT_KEYBOARD_STEP))
+    }
+  }, [])
+
   // Mission-first gating: lessons are grounded in the learner's mission, so they
   // stay locked until a mission exists. Read it here once and drive both the nav
   // (disabled lessons entry) and the central viewport (gate vs. lessons surface).
@@ -112,6 +189,31 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
   // gate never flashes the lessons list before the mission resolves.
   const { data: mission, loading: missionLoading } = useWorkspaceResource(() => repo.getMission(), [repo], 'mission')
   const missionReady = !missionLoading && mission != null
+
+  // Surface the moment lessons unlock: when the learner sets a mission *during the
+  // session* (we had been showing the gate), the lessons nav entry flips from
+  // disabled to enabled — nudge it so the change is not silent. Skipped for a
+  // returning learner who already had a mission on load (no gate was shown), and
+  // cleared once they open the lessons section.
+  const [lessonsUnlocked, setLessonsUnlocked] = useState(false)
+  const sawNoMissionRef = useRef(false)
+  const prevMissionReadyRef = useRef(false)
+  useEffect(() => {
+    if (!missionLoading && mission == null)
+      sawNoMissionRef.current = true
+    if (missionReady && !prevMissionReadyRef.current && sawNoMissionRef.current) {
+      sawNoMissionRef.current = false
+      if (view !== 'lessons' && view !== 'lesson')
+        // eslint-disable-next-line react/set-state-in-effect -- one-shot reaction to the mission-set transition (an external event), not derivable render state
+        setLessonsUnlocked(true)
+    }
+    prevMissionReadyRef.current = missionReady
+  }, [missionReady, missionLoading, mission, view])
+  useEffect(() => {
+    if (view === 'lessons' || view === 'lesson')
+      // eslint-disable-next-line react/set-state-in-effect -- clear the nudge once the learner reaches the lessons section
+      setLessonsUnlocked(false)
+  }, [view])
 
   return (
     <div
@@ -130,7 +232,10 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
           'md:static md:flex md:w-56 md:flex-col md:gap-2 md:overflow-visible md:border-e md:border-b-0 md:p-3 md:backdrop-blur-none',
         )}
       >
-        <WorkspaceNav disabledViews={missionReady ? NO_GATED_VIEWS : MISSION_GATED_VIEWS} />
+        <WorkspaceNav
+          disabledViews={missionReady ? NO_GATED_VIEWS : MISSION_GATED_VIEWS}
+          highlightedViews={lessonsUnlocked ? LESSONS_HIGHLIGHT : NO_GATED_VIEWS}
+        />
       </aside>
 
       <main
@@ -148,18 +253,35 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       </main>
 
       <section
+        ref={chatRef}
         id={chatRegionId}
         data-testid="workspace-chat"
         data-open={chatOpen ? 'true' : 'false'}
         inert={chatInert}
+        style={isMobile ? undefined : { width: chatWidth }}
         className={cn(
-          // Desktop: a persistent right-hand column.
-          'md:relative md:flex md:w-96 md:shrink-0 md:flex-col md:border-s md:border-border/60 md:bg-card/20',
+          // Desktop: a persistent, resizable right-hand column (width via style).
+          'md:relative md:flex md:shrink-0 md:flex-col md:border-s md:border-border/60 md:bg-card/20',
           // Mobile: a bottom drawer toggled by the floating button.
           'fixed inset-x-0 bottom-0 z-30 flex h-[70vh] flex-col border-t border-border/60 bg-background shadow-2xl transition-transform md:inset-auto md:h-auto md:translate-y-0 md:shadow-none',
           chatOpen ? 'translate-y-0' : 'translate-y-full md:translate-y-0',
         )}
       >
+        {/* Desktop drag handle to resize the chat column (hidden on mobile). */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t`调整对话栏宽度`}
+          aria-valuenow={Math.round(chatWidth)}
+          aria-valuemin={CHAT_MIN_WIDTH}
+          aria-valuemax={CHAT_MAX_WIDTH}
+          tabIndex={0}
+          onPointerDown={startChatResize}
+          onKeyDown={onChatHandleKeyDown}
+          className="group absolute inset-y-0 -start-1 z-20 hidden w-2 cursor-col-resize touch-none md:block"
+        >
+          <span className="absolute inset-y-0 start-1/2 w-px -translate-x-1/2 bg-border/70 transition-colors group-hover:bg-primary/60 group-focus-visible:w-0.5 group-focus-visible:bg-primary" />
+        </div>
         <div className="flex items-center justify-between border-b border-border/60 px-4 py-2 md:hidden">
           <span className="text-sm font-semibold">
             <Trans>老师</Trans>

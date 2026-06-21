@@ -96,10 +96,10 @@ describe('teachWorkspaceShell', () => {
     expect(screen.getByTestId('chat-slot')).toBeTruthy()
   })
 
-  it('exposes all six navigation entries', () => {
+  it('exposes all seven navigation entries', () => {
     render(<TeachWorkspaceShell chat={null} />, makeRepo())
     const nav = screen.getByTestId('workspace-nav')
-    expect(nav.querySelectorAll('[data-nav-item]')).toHaveLength(6)
+    expect(nav.querySelectorAll('[data-nav-item]')).toHaveLength(7)
   })
 
   it('switches the central view when a nav entry is clicked', async () => {

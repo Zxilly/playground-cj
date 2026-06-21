@@ -7,6 +7,7 @@ import { create } from 'zustand'
  * the left-nav entries plus the `'lesson'` viewport that the renderer occupies
  * when a single lesson is open (distinct from the `'lessons'` list).
  *
+ *  - `overview`   — the learner-facing progress dashboard
  *  - `mission`    — the mission document (topic / why / success criteria)
  *  - `lessons`    — the list of lessons with completion state (default landing)
  *  - `lesson`     — a single open lesson rendered by `LessonRenderer`
@@ -16,7 +17,8 @@ import { create } from 'zustand'
  *  - `notes`      — free-form teaching-preference notes
  */
 export type WorkspaceView
-  = | 'mission'
+  = | 'overview'
+    | 'mission'
     | 'lessons'
     | 'lesson'
     | 'glossary'
