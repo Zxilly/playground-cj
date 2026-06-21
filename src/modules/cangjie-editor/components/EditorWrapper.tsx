@@ -1,10 +1,8 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from 'monaco-languageclient/vscodeApiWrapper'
-import type { MonacoLanguageClient } from 'monaco-languageclient'
-import { EditorApp } from 'monaco-languageclient/editorApp'
-import type { CodeResources } from 'monaco-languageclient/editorApp'
+import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from '@/lib/monaco/vscode-api'
+import type { CodeResources, MonacoLanguageClient } from '@/lib/monaco/vscode-api'
 import { configureMonacoWorkers, createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
 import type { MonacoViewsType } from '@/lib/monaco'
 import { createCustomStatusBar } from '@/lib/statusbar'
@@ -318,9 +316,10 @@ export function MonacoEditorReactComp({
             throw error
           // Another editor already owns the global Monaco/VSC services. Treat
           // that as an idempotent success so restored classroom editors do not
-          // strand the learner on the loading shell.
-          if (vscodeApiWrapperRef.current === vscodeApiWrapper)
-            vscodeApiWrapperRef.current = null
+          // strand the learner on the loading shell. Still track this wrapper so
+          // any extension-file registrations made below are disposed on unmount
+          // instead of leaking.
+          vscodeApiWrapperRef.current = vscodeApiWrapper
         }
         if (shouldRegisterExtensionsAfterStart)
           await initExtensionsAllowingDuplicateFiles(vscodeApiWrapper)
@@ -348,15 +347,10 @@ export function MonacoEditorReactComp({
             : containerAfterWrapperStart
 
         const initialEditorAppConfig = editorAppConfigRef.current
-        let editorHandle: MonacoEditorHandle
-        if (viewsType === 'ViewsService') {
-          editorHandle = createStandaloneEditorHandle(editorContainer, initialEditorAppConfig)
-        }
-        else {
-          const editorApp = new EditorApp(initialEditorAppConfig)
-          await editorApp.start(editorContainer)
-          editorHandle = editorApp
-        }
+        // Both EditorService and ViewsService modes drive the editor directly
+        // via a standalone handle (monaco.editor.create + model reuse). The old
+        // EditorApp abstraction from monaco-languageclient is no longer used.
+        const editorHandle: MonacoEditorHandle = createStandaloneEditorHandle(editorContainer, initialEditorAppConfig)
         if (!isActive()) {
           await editorHandle.dispose()
           return

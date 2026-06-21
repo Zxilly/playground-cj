@@ -1,7 +1,7 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import { MonacoLanguageClient } from 'monaco-languageclient'
 import { BrowserMessageReader, BrowserMessageWriter, CloseAction, ErrorAction } from 'vscode-languageclient/browser'
-import type { OutputChannel } from 'vscode'
+import type { LogOutputChannel } from 'vscode'
+import { MonacoLanguageClient } from './vscode-api'
 import isMobile from 'is-mobile'
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
@@ -14,8 +14,8 @@ import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
 // Stored on globalThis so HMR module re-eval doesn't drop the existing channel
 // and create a duplicate one on the next LSP boot.
 interface OutputChannelState {
-  channel: OutputChannel | null
-  pending: Promise<OutputChannel> | null
+  channel: LogOutputChannel | null
+  pending: Promise<LogOutputChannel> | null
 }
 
 const channelState = hmrSlot<OutputChannelState>(HMR_SLOT_KEYS.LSP_OUTPUT_CHANNEL, () => ({
@@ -23,13 +23,13 @@ const channelState = hmrSlot<OutputChannelState>(HMR_SLOT_KEYS.LSP_OUTPUT_CHANNE
   pending: null,
 }))
 
-async function getSharedOutputChannel(): Promise<OutputChannel> {
+async function getSharedOutputChannel(): Promise<LogOutputChannel> {
   if (channelState.channel)
     return channelState.channel
   if (!channelState.pending) {
     channelState.pending = import('@codingame/monaco-vscode-extension-api')
       .then(({ window }) => {
-        channelState.channel = window.createOutputChannel(CANGJIE_LANGUAGE_NAME) as unknown as OutputChannel
+        channelState.channel = window.createOutputChannel(CANGJIE_LANGUAGE_NAME, { log: true }) as unknown as LogOutputChannel
         return channelState.channel
       })
       .finally(() => {

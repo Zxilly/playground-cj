@@ -15,8 +15,6 @@ const monacoInit = vi.hoisted(() => ({
   resolve: (() => {}) as () => void,
   initialised: false,
 }))
-const editorAppStart = vi.hoisted(() => vi.fn())
-const editorAppDispose = vi.hoisted(() => vi.fn())
 const vscodeWrapperStart = vi.hoisted(() => vi.fn())
 const vscodeWrapperInitExtensions = vi.hoisted(() => vi.fn())
 const vscodeWrapperDispose = vi.hoisted(() => vi.fn())
@@ -27,7 +25,7 @@ const monacoEditorCreate = vi.hoisted(() => vi.fn())
 const monacoEditorCreateModel = vi.hoisted(() => vi.fn())
 const monacoEditorGetModel = vi.hoisted(() => vi.fn())
 
-vi.mock('monaco-languageclient/vscodeApiWrapper', () => ({
+vi.mock('@/lib/monaco/vscode-api', () => ({
   defaultViewsHtml: '<div id="workbench-container"></div>',
   getEnhancedMonacoEnvironment: () => ({
     vscodeApiGlobalInitAwait: monacoInit.promise,
@@ -37,14 +35,6 @@ vi.mock('monaco-languageclient/vscodeApiWrapper', () => ({
     start = vscodeWrapperStart
     initExtensions = vscodeWrapperInitExtensions
     dispose = vscodeWrapperDispose
-  },
-}))
-
-vi.mock('monaco-languageclient/editorApp', () => ({
-  EditorApp: class {
-    start = editorAppStart
-    dispose = editorAppDispose
-    getEditor = () => ({ layout: vi.fn() })
   },
 }))
 
@@ -107,8 +97,6 @@ describe('monacoEditorReactComp', () => {
     monacoInit.promise = gate.promise
     monacoInit.resolve = gate.resolve
     monacoInit.initialised = false
-    editorAppStart.mockReset().mockResolvedValue(undefined)
-    editorAppDispose.mockReset().mockResolvedValue(undefined)
     vscodeWrapperStart.mockReset().mockResolvedValue(undefined)
     vscodeWrapperInitExtensions.mockReset().mockResolvedValue(undefined)
     vscodeWrapperDispose.mockReset().mockResolvedValue(undefined)
@@ -134,7 +122,7 @@ describe('monacoEditorReactComp', () => {
     })
   })
 
-  it('does not start EditorApp after the host unmounts during async Monaco init', async () => {
+  it('does not create the editor after the host unmounts during async Monaco init', async () => {
     const view = render(<MonacoEditorReactComp code="main() {}" locale="zh" />)
 
     view.unmount()
@@ -146,7 +134,7 @@ describe('monacoEditorReactComp', () => {
       await Promise.resolve()
     })
 
-    expect(editorAppStart).not.toHaveBeenCalled()
+    expect(monacoEditorCreate).not.toHaveBeenCalled()
   })
 
   it('re-registers extension contributions after the global Monaco API is already initialized', async () => {
@@ -163,8 +151,8 @@ describe('monacoEditorReactComp', () => {
     expect(vscodeWrapperStart).toHaveBeenCalled()
     expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
     expect(vscodeWrapperInitExtensions).toHaveBeenCalled()
-    expect(editorAppStart).toHaveBeenCalled()
-    expect(vscodeWrapperInitExtensions.mock.invocationCallOrder[0]).toBeLessThan(editorAppStart.mock.invocationCallOrder[0])
+    expect(monacoEditorCreate).toHaveBeenCalled()
+    expect(vscodeWrapperInitExtensions.mock.invocationCallOrder[0]).toBeLessThan(monacoEditorCreate.mock.invocationCallOrder[0])
   })
 
   it('does not duplicate extension file registration during the first Monaco initialization', async () => {
@@ -179,7 +167,7 @@ describe('monacoEditorReactComp', () => {
 
     expect(vscodeWrapperStart).toHaveBeenCalled()
     expect(vscodeWrapperInitExtensions).not.toHaveBeenCalled()
-    expect(editorAppStart).toHaveBeenCalled()
+    expect(monacoEditorCreate).toHaveBeenCalled()
   })
 
   it('continues editor startup when extension files were already registered', async () => {
@@ -199,7 +187,7 @@ describe('monacoEditorReactComp', () => {
 
     expect(vscodeWrapperInitExtensions).toHaveBeenCalled()
     expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
-    expect(editorAppStart).toHaveBeenCalled()
+    expect(monacoEditorCreate).toHaveBeenCalled()
   })
 
   it('continues editor startup when Monaco services were already initialized by another editor', async () => {
@@ -217,7 +205,7 @@ describe('monacoEditorReactComp', () => {
 
     expect(vscodeWrapperStart).toHaveBeenCalled()
     expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
-    expect(editorAppStart).toHaveBeenCalled()
+    expect(monacoEditorCreate).toHaveBeenCalled()
     expect(vscodeWrapperDispose).not.toHaveBeenCalled()
   })
 
@@ -237,6 +225,5 @@ describe('monacoEditorReactComp', () => {
     expect(monacoEditorCreate).toHaveBeenCalled()
     expect(onLoad).toHaveBeenCalled()
     expect(vscodeWrapperStart).not.toHaveBeenCalled()
-    expect(editorAppStart).not.toHaveBeenCalled()
   })
 })
