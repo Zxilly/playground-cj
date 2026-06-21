@@ -42,9 +42,7 @@ cangjie-mcp.log
 # Generated local artifacts
 /smoke-*.png
 /*.png
-/.scratch/**/*.log
-/.scratch/**/*.png
-/.scratch/**/*.txt
+/.scratch/
 /wasm-dist/
 /ref_doc/
 /__pycache__/
