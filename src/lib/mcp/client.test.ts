@@ -2,15 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { MCP_URL, resolveMcpUrl } from './client'
 
 describe('resolveMcpUrl', () => {
-  it('defaults to the same-origin proxy path', () => {
-    // Without a NEXT_PUBLIC_CANGJIE_MCP_URL override the client routes through the
-    // same-origin proxy so the browser can read the mcp-session-id header.
-    expect(MCP_URL).toBe('/api/cangjie-mcp')
+  it('defaults to the upstream MCP url directly', () => {
+    // Without a NEXT_PUBLIC_CANGJIE_MCP_URL override the client connects straight
+    // to the upstream (which exposes mcp-session-id via CORS).
+    expect(MCP_URL).toBe('https://cj-mcp.learningman.top/mcp')
   })
 
-  it('resolves the relative proxy path against the current origin', () => {
+  it('uses the absolute default verbatim, ignoring the origin base', () => {
     expect(resolveMcpUrl('https://playground.example.com').href).toBe(
-      'https://playground.example.com/api/cangjie-mcp',
+      'https://cj-mcp.learningman.top/mcp',
     )
   })
 
