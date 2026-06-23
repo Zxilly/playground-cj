@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -145,19 +145,19 @@ func run(fMsg server.ForwardMessage) {
 }
 
 func loadForwardMessage() server.ForwardMessage {
-	scan := bufio.NewScanner(os.Stdin)
-	scan.Split(bufio.ScanLines)
-	for scan.Scan() {
-		v := scan.Bytes()
-		msg := server.ForwardMessage{}
-		err := json.Unmarshal(v, &msg)
-		if err != nil {
-			_, _ = os.Stderr.Write([]byte(err.Error()))
-			continue
-		}
-		return msg
+	// The server writes exactly one JSON ForwardMessage then half-closes stdin,
+	// so read the whole payload to EOF. A line scanner caps the token at 64 KiB,
+	// which a large submission or stdin (base64-inflated in the JSON) would
+	// exceed — crashing the agent before it ever compiles.
+	data, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		panic(err)
 	}
-	panic("unexpected end of input")
+	msg := server.ForwardMessage{}
+	if err := json.Unmarshal(data, &msg); err != nil {
+		panic(err)
+	}
+	return msg
 }
 
 func main() {
