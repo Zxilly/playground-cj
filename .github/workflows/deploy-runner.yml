@@ -5,8 +5,8 @@ on:
   push:
     branches: [ai-mode-rebuild]
     paths:
-      - 'cj-runner/**'
-      - '.github/workflows/deploy-runner.yml'
+      - cj-runner/**
+      - .github/workflows/deploy-runner.yml
 
 permissions:
   contents: read

@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/const', () => ({ BACKEND_URL: 'https://runner.example' }))
 vi.mock('@lingui/core/macro', () => ({ t: (strings: TemplateStringsArray, ...values: unknown[]) => String.raw({ raw: strings }, ...values) }))
 
 async function importRunService() {
@@ -31,7 +30,7 @@ describe('requestRemoteAction', () => {
       formatter_code: 0,
     })
 
-    expect(fetch).toHaveBeenCalledWith('https://runner.example/format', {
+    expect(fetch).toHaveBeenCalledWith('/api/format', {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',

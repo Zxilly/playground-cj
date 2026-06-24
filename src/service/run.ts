@@ -1,4 +1,3 @@
-import { BACKEND_URL } from '@/const'
 import { t } from '@lingui/core/macro'
 
 interface FormatMessage {
@@ -20,7 +19,7 @@ export async function requestRemoteAction<
   code: string,
   action: T,
 ): Promise<T extends 'run' ? RunMessage : FormatMessage> {
-  const resp = await fetch(`${BACKEND_URL}/${action}`, {
+  const resp = await fetch(`/api/${action}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',

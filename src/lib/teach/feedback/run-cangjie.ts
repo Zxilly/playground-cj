@@ -1,12 +1,5 @@
 import { isUserAbort } from '../abort'
 
-/**
- * Backend base URL for the remote runner. Read from the environment directly
- * (mirroring `@/const`) so this module stays free of the heavy const barrel,
- * which statically imports `.cj` example assets.
- */
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'
-
 /** Why a run could not be evaluated. Currently only the runner being offline. */
 export type RunFailureKind = 'runner_unavailable'
 
@@ -47,7 +40,7 @@ const defaultRequest: RemoteRunRequest = async (code, opts) => {
   // the input to the program; otherwise keep the legacy text/plain body so the
   // raw-body `/run` path is unchanged.
   const hasStdin = opts?.stdin != null
-  const resp = await fetch(`${BACKEND_URL}/run`, {
+  const resp = await fetch(`/api/run`, {
     method: 'POST',
     headers: {
       'Content-Type': hasStdin

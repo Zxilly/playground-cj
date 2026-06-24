@@ -28,8 +28,8 @@ const DESKTOP_VIEWPORT = { width: 1280, height: 900 } as const
 const LLM_BASE_URL = process.env.NEXT_PUBLIC_LLM_BASE_URL || 'https://llm.learningman.top/v1'
 const LLM_COMPLETIONS_URL = `${LLM_BASE_URL}/chat/completions`
 
-/** Backend `/run` endpoint the Cangjie runner posts to. */
-const BACKEND_RUN_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'}/run`
+/** Same-origin `/api/run` proxy the Cangjie runner posts to (forwarded server-side). */
+const BACKEND_RUN_URL = '**/api/run'
 
 /**
  * Upstream Cangjie MCP host (we never want the teacher to reach the real server).
