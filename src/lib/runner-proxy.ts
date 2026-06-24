@@ -7,9 +7,12 @@
  * `CJ_RUNNER_URL` selects the runner; it falls back to the legacy public default
  * so a deploy without the env set keeps working against the old backend.
  */
+// `||` (not `??`) so an empty-string env var also falls through to the next
+// candidate — an accidentally-blank CJ_RUNNER_URL degrades to the legacy backend
+// rather than producing a broken relative fetch.
 const RUNNER_URL = process.env.CJ_RUNNER_URL
-  ?? process.env.NEXT_PUBLIC_BACKEND_URL
-  ?? 'https://cj-api.learningman.top'
+  || process.env.NEXT_PUBLIC_BACKEND_URL
+  || 'https://cj-api.learningman.top'
 
 export async function proxyToRunner(request: Request, action: 'run' | 'format'): Promise<Response> {
   const body = await request.text()
