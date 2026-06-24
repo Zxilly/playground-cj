@@ -20,7 +20,10 @@ WORKDIR /app
 ARG GOPROXY
 ENV GOPROXY=${GOPROXY}
 COPY . .
-RUN go build -v -o /app/fghttp ./fghttp
+# Output to /fghttp, NOT /app/fghttp — the latter collides with the ./fghttp
+# source dir, making `go build` emit /app/fghttp/fghttp and leaving /app/fghttp a
+# directory (which then gets COPY'd as the CMD target -> "is a directory").
+RUN CGO_ENABLED=0 go build -v -o /fghttp ./fghttp
 ARG CJV_VERSION
 RUN go install "github.com/Zxilly/cjv/cmd/cjv@${CJV_VERSION}"
 
@@ -66,7 +69,7 @@ RUN apt-get update && \
 COPY --from=prep /cjroot /cangjie
 COPY --from=prep /linux_x86_64_cjnative /linux_x86_64_cjnative
 COPY --from=prep /playground /playground
-COPY --from=builder /app/fghttp /usr/local/bin/fghttp
+COPY --from=builder /fghttp /usr/local/bin/fghttp
 ENV CANGJIE_HOME="/cangjie"
 ENV PATH="/cangjie/bin:/cangjie/tools/bin:/usr/local/bin:/usr/bin:/bin"
 ENV LD_LIBRARY_PATH="/cangjie/runtime/lib/linux_x86_64_cjnative:/cangjie/tools/lib:/linux_x86_64_cjnative/dynamic/stdx"
