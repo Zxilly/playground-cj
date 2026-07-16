@@ -147,6 +147,22 @@ describe('teachWorkspaceShell', () => {
     expect(screen.getByTestId('workspace-chat').getAttribute('data-open')).toBe('false')
   })
 
+  it('closes the compact chat drawer with Escape', () => {
+    const originalWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 768 })
+    try {
+      render(<TeachWorkspaceShell chat={<button type="button">chat action</button>} />, makeRepo())
+      fireEvent.click(screen.getByTestId('workspace-chat-toggle'))
+      const chat = screen.getByTestId('workspace-chat')
+      expect(chat.getAttribute('data-open')).toBe('true')
+      fireEvent.keyDown(chat, { key: 'Escape' })
+      expect(screen.getByTestId('workspace-chat').getAttribute('data-open')).toBe('false')
+    }
+    finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth })
+    }
+  })
+
   it('reflects the chat open/closed state on the toggle for assistive tech', () => {
     render(<TeachWorkspaceShell chat={<div data-testid="chat-slot" />} />, makeRepo())
     const toggle = screen.getByTestId('workspace-chat-toggle')

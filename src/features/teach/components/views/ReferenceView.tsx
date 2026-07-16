@@ -13,6 +13,7 @@ import { CodeSampleBlock } from '@/features/teach/components/blocks/CodeSampleBl
 import { GlossaryRefBlock } from '@/features/teach/components/blocks/GlossaryRefBlock'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
+import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 export interface ReferenceViewProps {
   /** The reference id selected in the workspace store, or null to list them. */
@@ -75,7 +76,7 @@ export function ReferenceView({ referenceId }: ReferenceViewProps) {
   const { data: glossary } = useWorkspaceResource(() => repo.getGlossary(), [repo], 'glossary')
 
   if (loading)
-    return null
+    return <WorkspaceViewSkeleton />
 
   const refs = references ?? []
 

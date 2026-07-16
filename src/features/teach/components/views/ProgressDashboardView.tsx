@@ -11,6 +11,7 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useLessonNavigation } from '@/features/teach/context/useLessonNavigation'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
+import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /** How many recent lessons the progress list surfaces, newest first. */
 const RECENT_LESSON_LIMIT = 5
@@ -86,7 +87,7 @@ export function ProgressDashboardView() {
   const { data: retrieval, loading: retrievalLoading } = useWorkspaceResource(() => repo.listRetrieval(), [repo], 'retrieval')
 
   if (missionLoading || lessonsLoading || glossaryLoading || recordsLoading || retrievalLoading)
-    return null
+    return <WorkspaceViewSkeleton />
 
   const lessonList = lessons ?? []
   const termCount = glossary?.terms.length ?? 0

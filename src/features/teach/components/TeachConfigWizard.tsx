@@ -1,9 +1,11 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, GraduationCap, Loader2, ShieldCheck, Wallet } from 'lucide-react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, CircleAlert, Loader2, ShieldCheck, Wallet } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
 import type { LLMConfig } from '@/lib/ai/model-provider'
@@ -12,6 +14,7 @@ import { formatResetMoment } from '@/modules/llm-config/runtime/format-reset-mom
 import { useLLMConfigBootstrap } from '@/modules/llm-config/runtime/useLLMConfigBootstrap'
 import { useSharedQuota } from '@/modules/llm-config/runtime/useSharedQuota'
 import { LLMConfigFields } from '@/modules/llm-config/components/LLMConfigFields'
+import { TeachTopBar } from './TeachTopBar'
 
 export interface TeachConfigWizardProps {
   /** Enter the classroom workspace. Only fires once a usable LLM config is ready. */
@@ -52,6 +55,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
   const [draft, setDraft] = useState<LLMConfig>(() =>
     keySource === 'user' ? { ...config } : resolveProviderDefaults('openai-compatible'))
   const validationId = useId()
+  const sourceGroupLabelId = useId()
 
   const sharedQuotaExhausted = keySource === 'auto' && autoQuota?.exhausted === true
   const sharedReady = keySource === 'auto' && isLLMConfigReady(config) && !sharedQuotaExhausted
@@ -75,6 +79,20 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
       setSharedConfig()
   }
 
+  const handleSourceKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'].includes(event.key))
+      return
+    const radios = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'))
+    const current = radios.indexOf(document.activeElement as HTMLButtonElement)
+    if (current < 0 || radios.length === 0)
+      return
+    event.preventDefault()
+    const direction = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1
+    const next = (current + direction + radios.length) % radios.length
+    radios[next]?.focus()
+    radios[next]?.click()
+  }
+
   const handleSourceNext = () => {
     if (source === 'custom') {
       setStep('credentials')
@@ -93,30 +111,24 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
 
   return (
     <div data-testid="teach-config" className="flex h-full min-h-0 flex-col bg-background text-foreground">
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 px-3 sm:px-5">
-        <button
-          type="button"
-          data-testid="teach-config-back-landing"
-          aria-label={t`返回介绍页`}
-          onClick={onBack}
-          className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-        >
-          <ArrowLeft aria-hidden="true" className="size-4" />
-        </button>
-        <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-          <GraduationCap aria-hidden="true" className="size-4 text-primary" />
-          <Trans>课堂</Trans>
-        </span>
-      </header>
+      <TeachTopBar
+        backLabel={t`返回介绍页`}
+        backTestId="teach-config-back-landing"
+        onBack={onBack}
+      />
 
-      <main className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-8">
-        <div className="w-full max-w-lg">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <main className="teach-ambient flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
+        <div className="w-full max-w-xl rounded-3xl border border-border/75 bg-card/92 p-5 shadow-[0_28px_80px_-46px_rgba(19,72,59,0.45)] backdrop-blur-sm sm:p-7">
+          <div aria-hidden="true" className="mb-6 grid grid-cols-2 gap-2">
+            <span className="h-1.5 rounded-full bg-primary" />
+            <span className={cn('h-1.5 rounded-full transition-colors', step === 'credentials' ? 'bg-primary' : 'bg-muted')} />
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary/80">
             {step === 'source'
               ? <Trans>第 1 步 · 选择 AI 来源</Trans>
               : <Trans>第 2 步 · 配置 API 服务</Trans>}
           </p>
-          <h1 className="mt-2 text-2xl font-bold text-foreground">
+          <h1 id={sourceGroupLabelId} className="mt-2 text-balance text-2xl font-bold tracking-[-0.02em] text-foreground sm:text-[1.75rem]">
             {step === 'source'
               ? <Trans>先选择驱动课堂的 AI 服务</Trans>
               : <Trans>填写你的 API 服务</Trans>}
@@ -124,7 +136,13 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
 
           {step === 'source'
             ? (
-                <div data-testid="teach-wizard-step-source" className="mt-6 flex flex-col gap-3">
+                <div
+                  data-testid="teach-wizard-step-source"
+                  role="radiogroup"
+                  aria-labelledby={sourceGroupLabelId}
+                  onKeyDown={handleSourceKeyDown}
+                  className="mt-7 flex flex-col gap-3"
+                >
                   <SourceOption
                     testId="teach-source-shared"
                     selected={source === 'shared'}
@@ -153,26 +171,22 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                   />
 
                   <div className="mt-2 flex items-center gap-3">
-                    <button
+                    <Button
                       type="button"
+                      size="lg"
                       data-testid="teach-source-next"
                       disabled={source === 'shared' && !sharedReady}
                       onClick={handleSourceNext}
-                      className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-11 rounded-xl px-5 font-semibold shadow-sm"
                     >
                       {source === 'custom' ? <Trans>下一步</Trans> : <Trans>进入工作区</Trans>}
                       <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
-                    </button>
-                    {source === 'shared' && !sharedReady && !sharedQuotaExhausted && (
-                      <span className="text-xs leading-6 text-muted-foreground">
-                        <Trans>正在准备共享服务…</Trans>
-                      </span>
-                    )}
+                    </Button>
                   </div>
                 </div>
               )
             : (
-                <div data-testid="teach-wizard-step-credentials" className="mt-6 flex flex-col gap-3">
+                <div data-testid="teach-wizard-step-credentials" className="mt-7 flex flex-col gap-4">
                   <LLMConfigFields
                     value={draft}
                     onChange={setDraft}
@@ -180,25 +194,27 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                     validationId={validationId}
                   />
                   <div className="mt-2 flex items-center justify-between gap-3">
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
                       data-testid="teach-wizard-back"
                       onClick={() => setStep('source')}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      className="rounded-xl text-muted-foreground"
                     >
                       <ArrowLeft aria-hidden="true" className="size-4 shrink-0" />
                       <Trans>上一步</Trans>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      size="lg"
                       data-testid="teach-config-enter"
                       disabled={!customComplete}
                       onClick={handleCustomEnter}
-                      className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="h-11 rounded-xl px-5 font-semibold shadow-sm"
                     >
                       <Trans>进入工作区</Trans>
                       <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -226,18 +242,32 @@ function SourceOption({ testId, selected, onSelect, icon: Icon, title, descripti
       data-testid={testId}
       role="radio"
       aria-checked={selected}
+      tabIndex={selected ? 0 : -1}
       onClick={onSelect}
       className={cn(
-        'flex w-full flex-col gap-1 rounded-lg border px-4 py-3 text-start transition-colors',
-        selected ? 'border-primary bg-primary/5' : 'border-border/60 hover:bg-muted/40',
+        'group relative flex w-full flex-col gap-1 rounded-2xl border px-4 py-4 pe-12 text-start outline-none transition-[border-color,background-color,box-shadow,transform] focus-visible:ring-2 focus-visible:ring-ring/35 motion-reduce:transform-none',
+        selected
+          ? 'border-primary/60 bg-primary/7 shadow-[0_12px_30px_-24px_rgba(16,100,82,0.55)]'
+          : 'border-border/75 bg-background/70 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/45',
       )}
     >
-      <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Icon aria-hidden="true" className="size-4 shrink-0 text-primary" />
+      <span className="flex items-center gap-2.5 text-sm font-semibold text-foreground">
+        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+          <Icon aria-hidden="true" className="size-4" />
+        </span>
         {title}
       </span>
-      <span className="text-xs leading-6 text-muted-foreground">{description}</span>
+      <span className="ps-10 text-xs leading-6 text-muted-foreground">{description}</span>
       {children}
+      <span
+        aria-hidden="true"
+        className={cn(
+          'absolute end-4 top-4 grid size-5 place-items-center rounded-full border transition-colors',
+          selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-transparent',
+        )}
+      >
+        <Check className="size-3" />
+      </span>
     </button>
   )
 }
@@ -257,7 +287,7 @@ interface SharedStatusProps {
 function SharedStatus({ exhausted, ready, status, resetMoment, quotaPercent, quotaLoading }: SharedStatusProps) {
   if (exhausted) {
     return (
-      <span data-testid="teach-config-quota-exhausted" className="mt-1 inline-flex items-start gap-1.5 text-xs leading-6 text-amber-700 dark:text-amber-300">
+      <span data-testid="teach-config-quota-exhausted" className="mt-1 inline-flex items-start gap-1.5 ps-10 text-xs leading-6 text-amber-700 dark:text-amber-300">
         <CircleAlert aria-hidden="true" className="mt-1 size-3.5 shrink-0" />
         <span>
           {resetMoment
@@ -281,7 +311,7 @@ function SharedStatus({ exhausted, ready, status, resetMoment, quotaPercent, quo
     if (quotaPercent != null || quotaLoading)
       return <QuotaMeter percent={quotaPercent} />
     return (
-      <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+      <span className="mt-1 inline-flex items-center gap-1.5 ps-10 text-xs text-emerald-700 dark:text-emerald-400">
         <CheckCircle2 aria-hidden="true" className="size-3.5 shrink-0" />
         <Trans>已就绪，可直接进入</Trans>
       </span>
@@ -289,14 +319,14 @@ function SharedStatus({ exhausted, ready, status, resetMoment, quotaPercent, quo
   }
   if (status === 'error') {
     return (
-      <span className="mt-1 inline-flex items-start gap-1.5 text-xs leading-6 text-amber-700 dark:text-amber-300">
+      <span className="mt-1 inline-flex items-start gap-1.5 ps-10 text-xs leading-6 text-amber-700 dark:text-amber-300">
         <CircleAlert aria-hidden="true" className="mt-1 size-3.5 shrink-0" />
         <Trans>共享服务暂不可用，可改用自定义 API Key。</Trans>
       </span>
     )
   }
   return (
-    <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+    <span className="mt-1 inline-flex items-center gap-1.5 ps-10 text-xs text-muted-foreground">
       <Loader2 aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
       <Trans>正在准备共享服务…</Trans>
     </span>
@@ -313,7 +343,7 @@ function SharedStatus({ exhausted, ready, status, resetMoment, quotaPercent, quo
 function QuotaMeter({ percent }: { percent: number | null }) {
   if (percent === null) {
     return (
-      <span className="mt-1 flex flex-col gap-1">
+      <span role="progressbar" aria-label={t`今日额度剩余`} className="mt-1 flex flex-col gap-1 ps-10">
         <span className="flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground"><Trans>今日额度剩余</Trans></span>
           <Loader2 aria-hidden="true" className="size-3 shrink-0 animate-spin text-muted-foreground" />
@@ -328,7 +358,14 @@ function QuotaMeter({ percent }: { percent: number | null }) {
       ? { text: 'text-amber-600 dark:text-amber-400', bar: 'bg-amber-500' }
       : { text: 'text-emerald-600 dark:text-emerald-400', bar: 'bg-emerald-500' }
   return (
-    <span className="mt-1 flex flex-col gap-1">
+    <span
+      role="progressbar"
+      aria-label={t`今日额度剩余`}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      className="mt-1 flex flex-col gap-1 ps-10"
+    >
       <span className="flex items-center justify-between">
         <span className="text-[11px] text-muted-foreground"><Trans>今日额度剩余</Trans></span>
         <span className={cn('text-[11px] font-medium tabular-nums', tone.text)}>{`${percent}%`}</span>

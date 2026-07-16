@@ -3,6 +3,7 @@ import { t } from '@lingui/core/macro'
 import { ArrowUpIcon, SquareIcon } from 'lucide-react'
 import type { FC } from 'react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   ComposerAddAttachment,
   ComposerAttachments,
@@ -17,7 +18,7 @@ interface ThreadComposerProps {
 
 function ComposerAction({ allowAttachments }: Required<ThreadComposerProps>) {
   return (
-    <div className="aui-composer-action-wrapper relative flex items-center justify-between">
+    <div className={cn('aui-composer-action-wrapper relative flex items-center', allowAttachments ? 'justify-between' : 'justify-end')}>
       {allowAttachments && <ComposerAddAttachment />}
       <AuiIf condition={s => !s.thread.isRunning}>
         <ComposerPrimitive.Send asChild>
@@ -27,7 +28,7 @@ function ComposerAction({ allowAttachments }: Required<ThreadComposerProps>) {
             type="button"
             variant="default"
             size="icon"
-            className="aui-composer-send size-8 rounded-full"
+            className="aui-composer-send size-9 rounded-xl shadow-sm"
             aria-label={t`发送消息`}
           >
             <ArrowUpIcon className="aui-composer-send-icon size-4" />
@@ -40,7 +41,7 @@ function ComposerAction({ allowAttachments }: Required<ThreadComposerProps>) {
             type="button"
             variant="default"
             size="icon"
-            className="aui-composer-cancel size-8 rounded-full"
+            className="aui-composer-cancel size-9 rounded-xl shadow-sm"
             aria-label={t`停止生成`}
           >
             <SquareIcon aria-hidden="true" className="aui-composer-cancel-icon size-3 fill-current" />
@@ -55,12 +56,12 @@ export const ThreadComposer: FC<ThreadComposerProps> = ({ allowAttachments = tru
   const composerShell = (
     <div
       data-slot="aui_composer-shell"
-      className="flex w-full flex-col gap-2 rounded-(--composer-radius) border bg-background p-(--composer-padding) transition-shadow focus-within:border-ring/75 focus-within:ring-2 focus-within:ring-ring/20 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50"
+      className="flex w-full flex-col gap-2 rounded-(--composer-radius) border border-border/80 bg-card/96 p-(--composer-padding) shadow-[0_14px_38px_-24px_rgba(9,57,45,0.5)] transition-[border-color,box-shadow] focus-within:border-ring/70 focus-within:ring-3 focus-within:ring-ring/15 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50"
     >
       {allowAttachments && <ComposerAttachments />}
       <ComposerPrimitive.Input
         placeholder={tPlaceholder()}
-        className="aui-composer-input max-h-32 min-h-10 w-full resize-none bg-transparent px-1.75 py-1 text-sm outline-none placeholder:text-muted-foreground/80"
+        className="aui-composer-input max-h-36 min-h-10 w-full resize-none bg-transparent px-1.5 py-1.5 text-sm leading-6 outline-none placeholder:text-muted-foreground/75"
         rows={1}
         autoFocus
         aria-label={t`输入消息`}

@@ -7,6 +7,7 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useLessonNavigation } from '@/features/teach/context/useLessonNavigation'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
+import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /**
  * Per-status icon for a lesson's completion state, surfacing progress at a glance
@@ -32,7 +33,7 @@ export function LessonsListView() {
   const { data: lessons, loading } = useWorkspaceResource(() => repo.listLessons(), [repo], 'lessons')
 
   if (loading)
-    return null
+    return <WorkspaceViewSkeleton />
 
   if (!lessons || lessons.length === 0) {
     return (

@@ -2,6 +2,7 @@
 
 import { BookOpen, FileText, LayoutDashboard, NotebookPen, ScrollText, SpellCheck, Target } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
@@ -71,7 +72,11 @@ export function WorkspaceNav({ disabledViews, highlightedViews }: WorkspaceNavPr
   const active = activeNavView(view)
 
   return (
-    <nav data-testid="workspace-nav" aria-label="Workspace" className="flex flex-row gap-1 md:flex-col">
+    <nav
+      data-testid="workspace-nav"
+      aria-label={t`课堂导航`}
+      className="flex min-w-max flex-row gap-1.5 lg:min-w-0 lg:flex-col"
+    >
       {NAV_ENTRIES.map(({ view: entryView, icon: Icon, label }) => {
         const isActive = entryView === active
         const isDisabled = disabledViews?.has(entryView) ?? false
@@ -92,22 +97,19 @@ export function WorkspaceNav({ disabledViews, highlightedViews }: WorkspaceNavPr
                 setView(entryView)
             }}
             className={cn(
-              'relative flex shrink-0 items-center gap-3 rounded-md px-3 py-2 text-start text-sm font-medium transition-colors md:w-full',
+              'relative flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-start text-xs font-medium outline-none transition-[background-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring/35 lg:w-full lg:gap-3 lg:text-sm',
               isDisabled
                 ? 'cursor-not-allowed text-muted-foreground/40'
                 : isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-              isHighlighted && 'text-primary ring-1 ring-primary/50 ring-inset animate-pulse',
+                  ? 'bg-primary/11 text-primary shadow-[inset_0_0_0_1px_rgba(18,112,91,0.08)]'
+                  : 'text-muted-foreground hover:bg-accent/70 hover:text-accent-foreground',
+              isHighlighted && 'text-primary ring-1 ring-primary/45 ring-inset animate-in fade-in duration-300 motion-reduce:animate-none',
             )}
           >
             <Icon aria-hidden="true" className="size-4 shrink-0" />
-            {/* Mobile is a tight top strip: show the label only for the active
-                entry (icon-only otherwise) so all sections fit without crowding;
-                desktop always shows labels. */}
-            <span className={cn('min-w-0 truncate', isActive ? 'flex-1' : 'hidden flex-1 md:inline')}>{label}</span>
+            <span className="min-w-0 max-w-20 flex-1 truncate lg:max-w-none">{label}</span>
             {isHighlighted && (
-              <span aria-hidden="true" className="absolute end-1 top-1 size-1.5 rounded-full bg-primary md:static md:ms-auto" />
+              <span aria-hidden="true" className="absolute end-1.5 top-1.5 size-1.5 rounded-full bg-primary lg:static lg:ms-auto" />
             )}
           </button>
         )

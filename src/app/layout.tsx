@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { fontFamily } from '@/app/font'
+import { uiFontFamily } from '@/app/font'
 import { Analytics } from '@vercel/analytics/react'
 import './globals.css'
 import TrackingScript from '@/modules/analytics/TrackingScript'
@@ -25,7 +25,7 @@ export default function RootLayout({ children }: Readonly<{
       </head>
       <body
         style={{
-          fontFamily,
+          fontFamily: uiFontFamily,
         }}
       >
         {children}

@@ -57,13 +57,6 @@
   --tour-compare-bg: #f7faf9;
   --tour-compare-text: #333333;
 
-  /* ── AI Classroom: warning/success semantic tokens (light) ── */
-  --classroom-warning-bg: #FFF8E8;
-  --classroom-warning-fg: #8A5A00;
-  --classroom-warning-border: #F0D6A6;
-  --classroom-success-bg: #F2FAF7;
-  --classroom-success-fg: #0A6E57;
-  --classroom-success-border: #BFE6D6;
 }
 
 .dark {
@@ -117,13 +110,6 @@
   --tour-compare-bg: #1a2420;
   --tour-compare-text: #c8c8c8;
 
-  /* ── AI Classroom: warning/success semantic tokens (dark) ── */
-  --classroom-warning-bg: #2A2014;
-  --classroom-warning-fg: #E5C16D;
-  --classroom-warning-border: #5A4220;
-  --classroom-success-bg: #1A2A22;
-  --classroom-success-fg: #4FB59A;
-  --classroom-success-border: #2A4A3C;
 }
 
 @theme inline {
@@ -191,74 +177,105 @@
   --color-tour-compare-bg: var(--tour-compare-bg);
   --color-tour-compare-text: var(--tour-compare-text);
 
-  /* ── AI Classroom: scope-local semantic tokens (auto light/dark) ── */
-  --color-classroom-warning-bg: var(--classroom-warning-bg);
-  --color-classroom-warning-fg: var(--classroom-warning-fg);
-  --color-classroom-warning-border: var(--classroom-warning-border);
-  --color-classroom-success-bg: var(--classroom-success-bg);
-  --color-classroom-success-fg: var(--classroom-success-fg);
-  --color-classroom-success-border: var(--classroom-success-border);
 }
 
 /* ═══════════════════════════════════════════════════
-   AI Classroom: scope-local brand identity (米色暖底 + 深绿)
+   AI Classroom: one scoped product theme
    ═══════════════════════════════════════════════════ */
 
-.ai-classroom-root {
-  --tour-bg: #FAF7F2;
-  --tour-surface: #FFFFFF;
-  --tour-text: #1F1B16;
-  --tour-heading: #1F1B16;
-  --tour-border: #E8E2D5;
-  --tour-border-soft: #F0EBE0;
-  --tour-accent-fg: #0F8C6E;
-  --tour-link: #0A6E57;
-  --tour-code-bg: #F4F1EB;
-  --tour-code-text: #1F1B16;
-  --tour-code-border: #E8E2D5;
-}
-
-.ai-classroom-viewport-root {
-  height: 100vh;
-  height: 100dvh;
-  min-height: 0;
-}
-
-/* Scope the teaching-workspace (teach) UI to the tour's teal tone: remap the
-   semantic primary/accent/ring tokens so every teach component picks up teal via
-   its existing bg-primary/border-primary/text-primary classes. Only applies
-   under .teach-workspace-root, so tour pages stay unaffected.
-   --color-tour-teal-deep (#2E9585) on #fff text is the safest light-mode primary
-   (passes WCAG AA for UI/large text); dark mode flips to the lighter tour-accent
-   on a near-black teal foreground for legible button labels. */
-.teach-workspace-root {
-  --primary: var(--color-tour-teal-deep);
+.teach-workspace-root,
+.teach-workspace-theme {
+  --background: hsl(42 38% 98%);
+  --foreground: hsl(158 18% 13%);
+  --card: hsl(42 30% 100%);
+  --card-foreground: hsl(158 18% 13%);
+  --popover: hsl(42 30% 100%);
+  --popover-foreground: hsl(158 18% 13%);
+  --primary: hsl(167 66% 25%);
   --primary-foreground: #ffffff;
-  --accent: var(--color-tour-teal);
-  --accent-foreground: #ffffff;
-  --ring: var(--color-tour-teal);
+  --secondary: hsl(152 24% 93%);
+  --secondary-foreground: hsl(164 45% 22%);
+  --muted: hsl(144 15% 94%);
+  --muted-foreground: hsl(158 8% 41%);
+  --accent: hsl(157 35% 90%);
+  --accent-foreground: hsl(165 55% 23%);
+  --border: hsl(150 15% 86%);
+  --input: hsl(150 15% 82%);
+  --ring: hsl(165 60% 34%);
+  --radius: 0.8rem;
+  --sidebar: hsl(145 18% 96%);
+  --sidebar-foreground: hsl(158 12% 28%);
+  --sidebar-primary: hsl(167 66% 25%);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: hsl(157 35% 90%);
+  --sidebar-accent-foreground: hsl(165 55% 23%);
+  --sidebar-border: hsl(150 15% 86%);
+  --sidebar-ring: hsl(165 60% 34%);
 }
 
-.dark .teach-workspace-root {
-  --primary: var(--color-tour-accent);
-  --primary-foreground: #06302a;
-  --accent: var(--color-tour-accent);
-  --accent-foreground: #06302a;
-  --ring: var(--color-tour-accent);
+.dark .teach-workspace-root,
+.dark .teach-workspace-theme {
+  --background: hsl(156 18% 8%);
+  --foreground: hsl(150 16% 91%);
+  --card: hsl(156 17% 11%);
+  --card-foreground: hsl(150 16% 91%);
+  --popover: hsl(156 17% 11%);
+  --popover-foreground: hsl(150 16% 91%);
+  --primary: hsl(162 50% 58%);
+  --primary-foreground: hsl(160 40% 10%);
+  --secondary: hsl(155 16% 16%);
+  --secondary-foreground: hsl(150 16% 91%);
+  --muted: hsl(155 14% 16%);
+  --muted-foreground: hsl(152 10% 67%);
+  --accent: hsl(158 23% 20%);
+  --accent-foreground: hsl(154 28% 88%);
+  --border: hsl(155 13% 22%);
+  --input: hsl(155 13% 27%);
+  --ring: hsl(162 50% 58%);
+  --sidebar: hsl(156 17% 10%);
+  --sidebar-foreground: hsl(150 14% 86%);
+  --sidebar-primary: hsl(162 50% 58%);
+  --sidebar-primary-foreground: hsl(160 40% 10%);
+  --sidebar-accent: hsl(158 23% 20%);
+  --sidebar-accent-foreground: hsl(154 28% 88%);
+  --sidebar-border: hsl(155 13% 22%);
+  --sidebar-ring: hsl(162 50% 58%);
 }
 
-.dark .ai-classroom-root {
-  --tour-bg: #1A1715;
-  --tour-surface: #221E1A;
-  --tour-text: #E0DCCF;
-  --tour-heading: #F0EBE0;
-  --tour-border: #3A322A;
-  --tour-border-soft: #2E2823;
-  --tour-accent-fg: #4FB59A;
-  --tour-link: #6FCDAF;
-  --tour-code-bg: #1F1B16;
-  --tour-code-text: #E0DCCF;
-  --tour-code-border: #3A322A;
+.teach-ambient {
+  background:
+    radial-gradient(circle at 8% 8%, rgba(23, 111, 96, 0.09), transparent 34rem),
+    radial-gradient(circle at 92% 18%, rgba(67, 176, 145, 0.07), transparent 30rem),
+    var(--background);
+}
+
+.dark .teach-ambient {
+  background:
+    radial-gradient(circle at 8% 8%, rgba(89, 199, 169, 0.09), transparent 34rem),
+    radial-gradient(circle at 92% 18%, rgba(40, 112, 91, 0.12), transparent 30rem),
+    var(--background);
+}
+
+.teach-scrollbar-hidden {
+  scrollbar-width: none;
+}
+
+.teach-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teach-workspace-root *,
+  .teach-workspace-root *::before,
+  .teach-workspace-root *::after,
+  .teach-workspace-theme *,
+  .teach-workspace-theme *::before,
+  .teach-workspace-theme *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @layer base {

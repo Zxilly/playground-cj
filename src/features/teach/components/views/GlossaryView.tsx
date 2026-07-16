@@ -5,6 +5,7 @@ import { Trans } from '@lingui/react/macro'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
+import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /**
  * The glossary view: terms the learner has *genuinely mastered*, each with its
@@ -17,7 +18,7 @@ export function GlossaryView() {
   const { data: glossary, loading } = useWorkspaceResource(() => repo.getGlossary(), [repo], 'glossary')
 
   if (loading)
-    return null
+    return <WorkspaceViewSkeleton />
 
   const terms = glossary?.terms ?? []
 

@@ -141,6 +141,17 @@ describe('teachAppContent', () => {
     expect(localStorage.getItem('teach:onboarded')).toBe('1')
   })
 
+  it('opens AI service settings from the workspace header', async () => {
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
+    expect(useLLMConfigStore.getState().settingsDialogOpen).toBe(false)
+    const settingsButton = screen.getByRole('button', { name: 'AI 服务设置' })
+    settingsButton.focus()
+    fireEvent.click(settingsButton)
+    expect(useLLMConfigStore.getState().settingsDialogOpen).toBe(true)
+    fireEvent.click(await screen.findByRole('button', { name: '关闭' }))
+    await waitFor(() => expect(document.activeElement).toBe(settingsButton))
+  })
+
   it('skips onboarding and opens the workspace directly once it was completed before', async () => {
     localStorage.setItem('teach:onboarded', '1')
     render(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)

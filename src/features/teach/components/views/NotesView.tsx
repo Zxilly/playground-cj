@@ -6,6 +6,7 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { TeachMarkdown } from '@/features/teach/components/blocks/TeachMarkdown'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
+import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /**
  * The notes view: the learner's free-form teaching-preference notes (how they
@@ -17,7 +18,7 @@ export function NotesView() {
   const { data: notes, loading } = useWorkspaceResource(() => repo.getNotes(), [repo], 'notes')
 
   if (loading)
-    return null
+    return <WorkspaceViewSkeleton />
 
   const body = notes?.body.trim() ?? ''
 

@@ -14,6 +14,7 @@ import { GlossaryProvider } from '@/features/teach/context/GlossaryProvider'
 import { LessonRenderer } from '@/features/teach/components/LessonRenderer'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
+import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 export interface LessonViewProps {
   /** Id of the lesson to open, or null when no lesson is selected. */
@@ -74,7 +75,7 @@ export function LessonView({ lessonId }: LessonViewProps) {
   )
 
   if (loading)
-    return null
+    return <WorkspaceViewSkeleton />
 
   if (!lesson) {
     return (

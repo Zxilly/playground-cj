@@ -21,7 +21,7 @@ export async function generateStaticParams() {
 export default async function TourAIPage({ params }: PageProps) {
   const { lang } = await params
   return (
-    <main className="h-dvh">
+    <main className="teach-workspace-root h-dvh overflow-hidden bg-background text-foreground">
       <TeachApp lang={lang} />
     </main>
   )

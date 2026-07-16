@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useId, useState } from 'react'
+import type { RefObject } from 'react'
 import { CalendarClock, CircleAlert, Loader2, RotateCw, Settings, ShieldCheck, Wallet } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
@@ -55,6 +56,8 @@ interface LLMConfigDialogProps {
    * or with surface colors the white-on-teal default trigger does not match.
    */
   withTrigger?: boolean
+  /** External trigger to restore focus to when `withTrigger` is false. */
+  returnFocusRef?: RefObject<HTMLElement | null>
 }
 
 function createEditableDraft(config: Readonly<LLMConfig>, keySource: 'auto' | 'user'): LLMConfig {
@@ -63,7 +66,7 @@ function createEditableDraft(config: Readonly<LLMConfig>, keySource: 'auto' | 'u
   return { ...config }
 }
 
-export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {}) {
+export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfigDialogProps = {}) {
   const config = useLLMConfigStore(state => state.config)
   const setConfig = useLLMConfigStore(state => state.setConfig)
   const setSharedConfig = useLLMConfigStore(state => state.setSharedConfig)
@@ -162,7 +165,15 @@ export function LLMConfigDialog({ withTrigger = true }: LLMConfigDialogProps = {
           </button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent
+        className="teach-workspace-theme sm:max-w-[480px]"
+        onCloseAutoFocus={(event) => {
+          if (!returnFocusRef?.current)
+            return
+          event.preventDefault()
+          returnFocusRef.current.focus()
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings aria-hidden="true" className="size-4 text-primary" />

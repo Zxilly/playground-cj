@@ -21,10 +21,12 @@ export function ViewEmptyState({
   return (
     <div
       data-testid={testId}
-      className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border/60 bg-muted/20 px-6 py-10 text-center text-sm text-muted-foreground"
+      className="flex flex-col items-center gap-3 rounded-3xl border border-border/70 bg-card/72 px-6 py-12 text-center text-sm text-muted-foreground shadow-[0_18px_55px_-42px_rgba(12,64,51,0.42)]"
     >
-      <Icon aria-hidden="true" className="size-6 text-muted-foreground/70" />
-      <p className="max-w-sm leading-6">{children}</p>
+      <span className="grid size-11 place-items-center rounded-2xl bg-primary/9 text-primary ring-1 ring-primary/10">
+        <Icon aria-hidden="true" className="size-5" />
+      </span>
+      <p className="max-w-md text-pretty leading-6">{children}</p>
     </div>
   )
 }

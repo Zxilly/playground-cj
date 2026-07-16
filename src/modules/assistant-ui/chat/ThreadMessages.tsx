@@ -76,11 +76,11 @@ function AssistantMessage() {
     <MessagePrimitive.Root
       data-slot="aui_assistant-message-root"
       data-role="assistant"
-      className="fade-in slide-in-from-bottom-1 relative animate-in duration-150"
+      className="fade-in slide-in-from-bottom-1 relative animate-in duration-150 motion-reduce:animate-none"
     >
       <div
         data-slot="aui_assistant-message-content"
-        className="wrap-break-word px-2 text-foreground leading-relaxed"
+        className="wrap-break-word px-1 text-[15px] leading-relaxed text-foreground sm:px-2"
       >
         <MessagePrimitive.GroupedParts
           groupBy={(part) => {
@@ -149,9 +149,9 @@ function ChainOfThought({ children }: PropsWithChildren) {
       open={open}
       onOpenChange={setUserOpen}
       data-slot="aui_chain-of-thought"
-      className="mb-3 rounded-md border border-border/60 bg-muted/20"
+      className="mb-3 rounded-xl border border-border/65 bg-muted/28"
     >
-      <CollapsibleTrigger className="group/cot flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+      <CollapsibleTrigger className="group/cot flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground">
         {running
           ? <LoaderIcon aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
           : <BrainIcon aria-hidden="true" className="size-3.5 shrink-0" />}
@@ -160,7 +160,7 @@ function ChainOfThought({ children }: PropsWithChildren) {
         </span>
         <ChevronDownIcon
           aria-hidden="true"
-          className="size-3.5 shrink-0 transition-transform duration-200 group-data-[state=closed]/cot:-rotate-90"
+          className="size-3.5 shrink-0 transition-transform duration-200 group-data-[state=closed]/cot:-rotate-90 motion-reduce:transition-none"
         />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-2 px-3 pb-3">
@@ -222,13 +222,13 @@ function UserMessage() {
   return (
     <MessagePrimitive.Root
       data-slot="aui_user-message-root"
-      className="fade-in slide-in-from-bottom-1 grid animate-in auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] content-start gap-y-2 px-2 duration-150 [&:where(>*)]:col-start-2"
+      className="fade-in slide-in-from-bottom-1 grid animate-in auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] content-start gap-y-2 px-1 duration-150 motion-reduce:animate-none sm:px-2 [&:where(>*)]:col-start-2"
       data-role="user"
     >
       <UserMessageAttachments />
 
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-        <div className="aui-user-message-content wrap-break-word peer rounded-2xl bg-muted px-4 py-2.5 text-foreground empty:hidden">
+        <div className="aui-user-message-content wrap-break-word peer rounded-2xl rounded-ee-md bg-primary/9 px-4 py-2.5 text-[15px] leading-6 text-foreground ring-1 ring-primary/8 empty:hidden">
           <MessagePrimitive.Parts />
         </div>
         <div className="aui-user-action-bar-wrapper absolute start-0 top-1/2 -translate-x-full -translate-y-1/2 pe-2 peer-empty:hidden rtl:translate-x-full">

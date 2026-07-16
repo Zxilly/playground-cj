@@ -67,7 +67,7 @@ export function QuotaExhaustedDialog() {
 
   return (
     <Dialog open={shouldShow} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[420px]">
+      <DialogContent className="teach-workspace-theme sm:max-w-[420px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet aria-hidden="true" className="size-4 text-amber-500" />

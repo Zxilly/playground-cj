@@ -4,6 +4,7 @@ import { Compass, GraduationCap, MessageCircle, Rocket, Smartphone, Sparkles } f
 import type { LucideIcon } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import type { ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
 import { useLessonNavigation } from '@/features/teach/context/useLessonNavigation'
 
 /**
@@ -70,28 +71,31 @@ export function MissionGate() {
   return (
     <div
       data-testid="mission-gate"
-      className="flex flex-col items-center gap-5 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-6 py-10 text-center"
+      className="relative isolate flex flex-col items-center gap-6 overflow-hidden rounded-3xl border border-primary/18 bg-card/88 px-5 py-9 text-center shadow-[0_24px_70px_-48px_rgba(12,91,73,0.55)] sm:px-8 sm:py-11"
     >
-      <Compass aria-hidden="true" className="size-8 text-primary" />
-      <div className="flex max-w-md flex-col gap-1">
-        <h2 className="text-lg font-semibold text-foreground">
+      <span aria-hidden="true" className="absolute -top-24 end-[-4rem] -z-10 size-64 rounded-full bg-primary/7 blur-3xl" />
+      <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/12">
+        <Compass aria-hidden="true" className="size-6" />
+      </span>
+      <div className="flex max-w-lg flex-col gap-2">
+        <h2 className="text-xl font-semibold tracking-[-0.02em] text-foreground">
           <Trans>先和老师确定学习目标</Trans>
         </h2>
-        <p className="text-sm leading-6 text-muted-foreground">
+        <p className="text-pretty text-sm leading-6 text-muted-foreground">
           <Trans>课程会紧扣你的学习目标安排。选一个最贴近你的起点，老师会据此与你确认目标，并安排第一课。</Trans>
         </p>
       </div>
 
-      <div className="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="grid w-full max-w-xl grid-cols-1 gap-2.5 sm:grid-cols-2">
         {COLD_STARTS.map(({ key, icon: Icon, title, desc, prompt }) => (
           <button
             key={key}
             type="button"
             data-testid={`mission-gate-preset-${key}`}
             onClick={() => prefillChat(prompt)}
-            className="group flex items-start gap-3 rounded-lg border border-border/60 bg-background/60 p-3 text-start transition-colors hover:border-primary/50 hover:bg-primary/5"
+            className="group flex min-h-20 items-start gap-3 rounded-2xl border border-border/70 bg-background/72 p-3.5 text-start outline-none transition-[border-color,background-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-primary/5 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring/35 motion-reduce:transform-none"
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Icon aria-hidden="true" className="size-4" />
             </span>
             <span className="flex min-w-0 flex-col">
@@ -102,15 +106,16 @@ export function MissionGate() {
         ))}
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
         data-testid="mission-gate-start"
         onClick={() => prefillChat('我想学习仓颉，请帮我一起确定学习目标。')}
-        className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        className="rounded-xl text-sm font-medium text-primary hover:bg-primary/8 hover:text-primary"
       >
         <MessageCircle aria-hidden="true" className="size-4" />
         <Trans>或者，自己向老师描述目标</Trans>
-      </button>
+      </Button>
     </div>
   )
 }
