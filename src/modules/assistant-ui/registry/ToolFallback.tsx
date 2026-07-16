@@ -64,7 +64,7 @@ function ToolFallbackRoot({
       open={isOpen}
       onOpenChange={handleOpenChange}
       className={cn(
-        'aui-tool-fallback-root group/tool-fallback-root w-full rounded-xl border border-border/65 bg-muted/18 py-3',
+        'aui-tool-fallback-root group/tool-fallback-root w-full rounded-md border border-border bg-background py-3',
         className,
       )}
       style={
@@ -116,7 +116,7 @@ function ToolFallbackTrigger({
     <CollapsibleTrigger
       data-slot="tool-fallback-trigger"
       className={cn(
-        'aui-tool-fallback-trigger group/trigger flex w-full items-center gap-2 px-3.5 text-xs transition-colors hover:text-foreground',
+        'aui-tool-fallback-trigger group/trigger flex w-full items-center gap-2 rounded-md px-3.5 text-xs transition-colors hover:bg-muted hover:text-foreground',
         className,
       )}
       {...props}
@@ -138,16 +138,7 @@ function ToolFallbackTrigger({
         )}
       >
         <span className="shrink-0">{label}</span>
-        <code className="truncate rounded bg-background/65 px-1.5 py-0.5 font-mono text-[11px] font-medium text-foreground/80">{toolName}</code>
-        {isRunning && (
-          <span
-            aria-hidden
-            data-slot="tool-fallback-trigger-shimmer"
-            className="aui-tool-fallback-trigger-shimmer shimmer pointer-events-none absolute inset-0 motion-reduce:animate-none"
-          >
-            <span>{label}</span>
-          </span>
-        )}
+        <code className="truncate rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[11px] font-medium text-foreground/80">{toolName}</code>
       </span>
       <ChevronDownIcon
         data-slot="tool-fallback-trigger-chevron"
@@ -184,7 +175,7 @@ function ToolFallbackContent({
       )}
       {...props}
     >
-      <div className="mt-3 flex max-h-72 flex-col gap-2 overflow-y-auto border-t border-border/65 pt-2">{children}</div>
+      <div className="mt-3 flex max-h-72 flex-col gap-2 overflow-y-auto border-t border-border pt-2">{children}</div>
     </CollapsibleContent>
   )
 }
@@ -205,7 +196,7 @@ function ToolFallbackArgs({
       className={cn('aui-tool-fallback-args px-3.5', className)}
       {...props}
     >
-      <pre className="aui-tool-fallback-args-value overflow-x-auto whitespace-pre-wrap break-words rounded-lg bg-background/65 p-2.5 font-mono text-[11px] leading-5 text-muted-foreground">
+      <pre className="aui-tool-fallback-args-value overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-muted p-2.5 font-mono text-[11px] leading-5 text-muted-foreground">
         {argsText}
       </pre>
     </div>
@@ -226,13 +217,13 @@ function ToolFallbackResult({
     <div
       data-slot="tool-fallback-result"
       className={cn(
-        'aui-tool-fallback-result border-t border-dashed border-border/70 px-3.5 pt-2',
+        'aui-tool-fallback-result border-t border-dashed border-border px-3.5 pt-2',
         className,
       )}
       {...props}
     >
       <p className="aui-tool-fallback-result-header mb-1 text-xs font-semibold"><Trans>Result:</Trans></p>
-      <pre className="aui-tool-fallback-result-content overflow-x-auto whitespace-pre-wrap break-words rounded-lg bg-background/65 p-2.5 font-mono text-[11px] leading-5 text-muted-foreground">
+      <pre className="aui-tool-fallback-result-content overflow-x-auto whitespace-pre-wrap break-words rounded-md bg-muted p-2.5 font-mono text-[11px] leading-5 text-muted-foreground">
         {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
       </pre>
     </div>
@@ -287,7 +278,7 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({
 
   return (
     <ToolFallbackRoot
-      className={cn(isCancelled && 'border-muted-foreground/30 bg-muted/30')}
+      className={cn(isCancelled && 'bg-muted')}
     >
       <ToolFallbackTrigger toolName={toolName} status={status} />
       <ToolFallbackContent>

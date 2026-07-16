@@ -28,7 +28,7 @@ function ComposerAction({ allowAttachments }: Required<ThreadComposerProps>) {
             type="button"
             variant="default"
             size="icon"
-            className="aui-composer-send size-9 rounded-xl shadow-sm"
+            className="aui-composer-send size-9 rounded-md"
             aria-label={t`发送消息`}
           >
             <ArrowUpIcon className="aui-composer-send-icon size-4" />
@@ -41,7 +41,7 @@ function ComposerAction({ allowAttachments }: Required<ThreadComposerProps>) {
             type="button"
             variant="default"
             size="icon"
-            className="aui-composer-cancel size-9 rounded-xl shadow-sm"
+            className="aui-composer-cancel size-9 rounded-md"
             aria-label={t`停止生成`}
           >
             <SquareIcon aria-hidden="true" className="aui-composer-cancel-icon size-3 fill-current" />
@@ -56,7 +56,7 @@ export const ThreadComposer: FC<ThreadComposerProps> = ({ allowAttachments = tru
   const composerShell = (
     <div
       data-slot="aui_composer-shell"
-      className="flex w-full flex-col gap-2 rounded-(--composer-radius) border border-border/80 bg-card/96 p-(--composer-padding) shadow-[0_14px_38px_-24px_rgba(9,57,45,0.5)] transition-[border-color,box-shadow] focus-within:border-ring/70 focus-within:ring-3 focus-within:ring-ring/15 data-[dragging=true]:border-ring data-[dragging=true]:border-dashed data-[dragging=true]:bg-accent/50"
+      className="flex w-full flex-col gap-2 rounded-md border border-border bg-background p-(--composer-padding) transition-colors focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/30 data-[dragging=true]:border-primary data-[dragging=true]:border-dashed data-[dragging=true]:bg-muted"
     >
       {allowAttachments && <ComposerAttachments />}
       <ComposerPrimitive.Input

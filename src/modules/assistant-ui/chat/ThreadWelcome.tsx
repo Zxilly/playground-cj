@@ -12,8 +12,8 @@ export const ThreadWelcome: FC = () => {
     <div className="aui-thread-welcome-root my-auto flex grow flex-col justify-center py-8">
       <div className="aui-thread-welcome-center flex w-full flex-col items-start justify-center">
         <div className="aui-thread-welcome-message flex w-full flex-col px-2 sm:px-3">
-          <span className="mb-4 grid size-10 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/10">
-            <Sparkles aria-hidden="true" className="size-4.5" />
+          <span className="mb-3 inline-flex text-muted-foreground">
+            <Sparkles aria-hidden="true" className="size-5" />
           </span>
           <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-xl font-semibold tracking-[-0.02em] duration-200 motion-reduce:animate-none">
             <Trans>可以这样问</Trans>
@@ -44,7 +44,7 @@ function ThreadSuggestionItem() {
       <SuggestionPrimitive.Trigger send asChild>
         <Button
           variant="ghost"
-          className="aui-thread-welcome-suggestion h-auto w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-xl border border-border/70 bg-card/70 px-3.5 py-3 text-start text-sm leading-5 transition-colors hover:border-primary/25 hover:bg-accent/55"
+          className="aui-thread-welcome-suggestion h-auto w-full flex-col items-start justify-start gap-1 whitespace-normal rounded-md border border-border bg-background px-3 py-2.5 text-start text-sm leading-5 transition-colors hover:bg-muted hover:text-foreground"
         >
           <SuggestionPrimitive.Title className="aui-thread-welcome-suggestion-text-1 font-medium leading-5" />
           <SuggestionPrimitive.Description className="aui-thread-welcome-suggestion-text-2 text-muted-foreground text-xs leading-4 empty:hidden" />

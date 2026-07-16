@@ -12,11 +12,11 @@ interface ThreadProps {
 export const Thread: FC<ThreadProps> = ({ allowAttachments = true }) => {
   return (
     <ThreadPrimitive.Root
-      className="aui-root aui-thread-root @container flex h-full flex-col bg-transparent"
+      className="aui-root aui-thread-root @container flex h-full flex-col bg-background"
       style={{
         ['--thread-max-width' as string]: '46rem',
-        ['--composer-radius' as string]: '18px',
-        ['--composer-padding' as string]: '10px',
+        ['--composer-radius' as string]: '14px',
+        ['--composer-padding' as string]: '8px',
       }}
     >
       <ThreadPrimitive.Viewport
@@ -40,7 +40,7 @@ export const Thread: FC<ThreadProps> = ({ allowAttachments = true }) => {
             </ThreadPrimitive.Messages>
           </div>
 
-          <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-3 overflow-visible bg-gradient-to-t from-background from-75% to-transparent pb-3 pt-5 sm:pb-4">
+          <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-3 overflow-visible border-t border-border bg-background pb-3 pt-3 sm:pb-4">
             <ThreadScrollToBottom />
             <ThreadComposer allowAttachments={allowAttachments} />
           </ThreadPrimitive.ViewportFooter>

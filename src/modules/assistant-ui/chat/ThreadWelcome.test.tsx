@@ -79,8 +79,8 @@ describe('threadWelcome', () => {
     const suggestion = screen.getByRole('button', { name: /Explain the current focus/ })
     expect(suggestion.className).toContain('flex-col')
     expect(suggestion.className).toContain('whitespace-normal')
-    expect(suggestion.className).toContain('rounded-xl')
-    expect(suggestion.className).not.toContain('rounded-3xl')
+    expect(suggestion.className).toContain('rounded-md')
+    expect(suggestion.className).not.toContain('rounded-xl')
 
     const description = screen.getByText('Uses classroom context only.')
     expect(description.className).toContain('text-xs')

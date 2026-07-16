@@ -149,9 +149,9 @@ function ChainOfThought({ children }: PropsWithChildren) {
       open={open}
       onOpenChange={setUserOpen}
       data-slot="aui_chain-of-thought"
-      className="mb-3 rounded-xl border border-border/65 bg-muted/28"
+      className="mb-3 rounded-md border border-border bg-background"
     >
-      <CollapsibleTrigger className="group/cot flex w-full items-center gap-2 rounded-xl px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground">
+      <CollapsibleTrigger className="group/cot flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
         {running
           ? <LoaderIcon aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
           : <BrainIcon aria-hidden="true" className="size-3.5 shrink-0" />}
@@ -228,7 +228,7 @@ function UserMessage() {
       <UserMessageAttachments />
 
       <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-        <div className="aui-user-message-content wrap-break-word peer rounded-2xl rounded-ee-md bg-primary/9 px-4 py-2.5 text-[15px] leading-6 text-foreground ring-1 ring-primary/8 empty:hidden">
+        <div className="aui-user-message-content wrap-break-word peer rounded-md border border-border bg-muted px-4 py-2.5 text-[15px] leading-6 text-foreground empty:hidden">
           <MessagePrimitive.Parts />
         </div>
         <div className="aui-user-action-bar-wrapper absolute start-0 top-1/2 -translate-x-full -translate-y-1/2 pe-2 peer-empty:hidden rtl:translate-x-full">
@@ -266,7 +266,7 @@ function EditComposer() {
       data-slot="aui_edit-composer-wrapper"
       className="flex flex-col px-2"
     >
-      <ComposerPrimitive.Root className="aui-edit-composer-root ms-auto flex w-full max-w-[85%] flex-col rounded-2xl bg-muted">
+      <ComposerPrimitive.Root className="aui-edit-composer-root ms-auto flex w-full max-w-[85%] flex-col rounded-md border border-border bg-background">
         <ComposerPrimitive.Input
           className="aui-edit-composer-input min-h-14 w-full resize-none bg-transparent p-4 text-foreground text-sm outline-none"
           autoFocus
