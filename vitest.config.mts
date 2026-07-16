@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
@@ -8,7 +9,26 @@ const sharedResolve = {
   alias: {
     '@': srcRoot,
   },
+  dedupe: ['@codingame/monaco-vscode-api'],
 }
+
+const monacoVscodePackages = [
+  '@codingame/monaco-vscode-api',
+  '@codingame/monaco-vscode-base-service-override',
+  '@codingame/monaco-vscode-configuration-service-override',
+  '@codingame/monaco-vscode-editor-api',
+  '@codingame/monaco-vscode-editor-service-override',
+  '@codingame/monaco-vscode-extension-api',
+  '@codingame/monaco-vscode-extensions-service-override',
+  '@codingame/monaco-vscode-languages-service-override',
+  '@codingame/monaco-vscode-log-service-override',
+  '@codingame/monaco-vscode-model-service-override',
+  '@codingame/monaco-vscode-textmate-service-override',
+  '@codingame/monaco-vscode-theme-defaults-default-extension',
+  '@codingame/monaco-vscode-theme-service-override',
+  '@codingame/monaco-vscode-view-status-bar-service-override',
+  '@codingame/monaco-vscode-views-service-override',
+]
 
 const reactPlugin = react({
   babel: {
@@ -16,8 +36,19 @@ const reactPlugin = react({
   },
 })
 
+const cangjieRawPlugin = {
+  name: 'cangjie-raw-source',
+  enforce: 'pre' as const,
+  load(id: string) {
+    const path = id.split('?', 1)[0]
+    if (!path.endsWith('.cj'))
+      return null
+    return `export default ${JSON.stringify(readFileSync(path, 'utf8'))}`
+  },
+}
+
 export default defineConfig({
-  plugins: [reactPlugin],
+  plugins: [reactPlugin, cangjieRawPlugin],
   test: {
     coverage: {
       provider: 'v8',
@@ -84,7 +115,7 @@ export default defineConfig({
         // utility modules (e.g. src/service/run.ts) call the `t\`...\``
         // template macro directly — without the transform, `t` resolves to
         // undefined and the module throws at runtime.
-        plugins: [reactPlugin],
+        plugins: [reactPlugin, cangjieRawPlugin],
         resolve: sharedResolve,
         test: {
           name: 'unit',
@@ -101,7 +132,7 @@ export default defineConfig({
         },
       },
       {
-        plugins: [reactPlugin],
+        plugins: [reactPlugin, cangjieRawPlugin],
         resolve: sharedResolve,
         test: {
           name: 'component',
@@ -114,11 +145,19 @@ export default defineConfig({
         },
       },
       {
-        plugins: [reactPlugin],
+        plugins: [reactPlugin, cangjieRawPlugin],
+        define: {
+          'process.env': JSON.stringify({ NODE_ENV: 'test' }),
+        },
+        optimizeDeps: {
+          exclude: monacoVscodePackages,
+        },
         resolve: sharedResolve,
         test: {
           name: 'browser',
           include: ['src/**/*.browser.test.{ts,tsx}'],
+          fileParallelism: false,
+          testTimeout: 30_000,
           browser: {
             enabled: true,
             provider: playwright(),
