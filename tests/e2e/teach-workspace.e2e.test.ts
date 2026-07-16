@@ -157,11 +157,13 @@ const FIRST_LESSON_DRAFT = {
     { type: 'prose', markdown: '仓颉用 `println` 向标准输出打印一行文本。' },
     {
       type: 'quiz',
-      question: '哪个函数会打印一行并换行？',
-      options: ['println 打印', 'readLine 读取'],
-      answerIndices: [0],
-      multiple: false,
-      explanation: 'println 打印内容并自动换行。',
+      questions: [{
+        question: '哪个函数会打印一行并换行？',
+        options: ['println 打印', 'readLine 读取'],
+        answerIndices: [0],
+        multiple: false,
+        explanation: 'println 打印内容并自动换行。',
+      }],
     },
     {
       type: 'code_task',
@@ -314,7 +316,7 @@ describe('teach workspace e2e', () => {
     // The mission-first gate's "和老师聊聊" button seeds the chat composer through
     // the workspace prefill signal so the learner can start the interview.
     await page.getByTestId('mission-gate-start').click()
-    await expect.poll(() => composer.inputValue()).toBe('我想学仓颉，帮我一起把学习目标定下来。')
+    await expect.poll(() => composer.inputValue()).toBe('我想学习仓颉，请帮我一起确定学习目标。')
 
     // Send the first message: the teacher sets the mission and authors lesson 1.
     await composer.fill('我想学仓颉，帮我定个目标')
@@ -400,12 +402,26 @@ describe('teach workspace e2e', () => {
 })
 
 /**
- * Clear the landing gate: wait for the entry page, then click "进入工作区". The
- * seeded user key makes the gate ready, so the enter button enables once hydrated.
+ * Complete onboarding when it is shown. Returning visits have `teach:onboarded`
+ * persisted and mount the workspace directly, so the helper accepts either the
+ * landing page or an already-visible workspace as its hydrated terminal state.
+ * The seeded personal config makes the custom-credentials step immediately valid.
  */
 async function enterWorkspaceFromLanding(page: Page): Promise<void> {
-  const enter = page.getByTestId('teach-landing-enter')
-  await enter.waitFor({ state: 'visible', timeout: 60_000 })
+  const landing = page.getByTestId('teach-landing')
+  const shell = page.getByTestId('teach-workspace-shell')
+  await expect.poll(async () => await landing.isVisible() || await shell.isVisible(), { timeout: 60_000 }).toBe(true)
+
+  if (await shell.isVisible())
+    return
+
+  await page.getByTestId('teach-landing-start').click()
+  await page.getByTestId('teach-wizard-step-source').waitFor({ state: 'visible' })
+  await page.getByTestId('teach-source-custom').click()
+  await page.getByTestId('teach-source-next').click()
+  await page.getByTestId('teach-wizard-step-credentials').waitFor({ state: 'visible' })
+
+  const enter = page.getByTestId('teach-config-enter')
   await expect.poll(() => enter.isEnabled()).toBe(true)
   await enter.click()
 }
@@ -496,4 +512,8 @@ async function importSnapshot(page: Page, json: string): Promise<void> {
     mimeType: 'application/json',
     buffer: Buffer.from(json, 'utf-8'),
   })
+  const confirm = page.getByTestId('workspace-import-confirm')
+  await confirm.waitFor({ state: 'visible' })
+  await confirm.click()
+  await confirm.waitFor({ state: 'hidden' })
 }
