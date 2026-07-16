@@ -13,7 +13,7 @@ export interface TeachTopBarProps {
 /** Shared classroom chrome for onboarding and the entered workspace. */
 export function TeachTopBar({ actions, backLabel, backTestId, onBack }: TeachTopBarProps) {
   return (
-    <header className="relative z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background/88 px-3 shadow-[0_1px_0_rgba(15,23,20,0.02)] backdrop-blur-xl sm:px-5">
+    <header className="relative z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-3 sm:px-5">
       <div className="flex min-w-0 items-center gap-2">
         {onBack && (
           <Button
@@ -23,17 +23,17 @@ export function TeachTopBar({ actions, backLabel, backTestId, onBack }: TeachTop
             data-testid={backTestId}
             aria-label={backLabel}
             onClick={onBack}
-            className="rounded-lg text-muted-foreground"
+            className="rounded-md text-muted-foreground"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
           </Button>
         )}
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/12">
-            <GraduationCap aria-hidden="true" className="size-4" />
+          <span className="grid size-8 shrink-0 place-items-center text-primary">
+            <GraduationCap aria-hidden="true" className="size-5" />
           </span>
           <div className="flex min-w-0 items-baseline gap-2">
-            <span className="truncate text-sm font-semibold tracking-tight text-foreground">
+            <span className="truncate text-sm font-bold tracking-tight text-foreground">
               <Trans>AI 课堂</Trans>
             </span>
             <span className="hidden text-xs text-muted-foreground sm:inline">

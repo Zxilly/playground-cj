@@ -97,12 +97,12 @@ export function WorkspaceNav({ disabledViews, highlightedViews }: WorkspaceNavPr
                 setView(entryView)
             }}
             className={cn(
-              'relative flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-start text-xs font-medium outline-none transition-[background-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring/35 lg:w-full lg:gap-3 lg:text-sm',
+              'relative flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/35 lg:w-full lg:gap-3 lg:text-sm',
               isDisabled
                 ? 'cursor-not-allowed text-muted-foreground/40'
                 : isActive
-                  ? 'bg-primary/11 text-primary shadow-[inset_0_0_0_1px_rgba(18,112,91,0.08)]'
-                  : 'text-muted-foreground hover:bg-accent/70 hover:text-accent-foreground',
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-background hover:text-foreground',
               isHighlighted && 'text-primary ring-1 ring-primary/45 ring-inset animate-in fade-in duration-300 motion-reduce:animate-none',
             )}
           >

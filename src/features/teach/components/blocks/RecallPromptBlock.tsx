@@ -86,7 +86,7 @@ export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: Re
     <section
       data-testid="recall-block"
       data-grade={grade ?? undefined}
-      className="rounded-md border border-border/60 bg-card/40 p-4"
+      className="rounded-md border border-border bg-background p-4"
     >
       <p className="text-sm font-semibold leading-7 text-foreground">{block.prompt}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">

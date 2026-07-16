@@ -84,9 +84,9 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
       <div
         data-testid="teach-hydration-error"
         role="alert"
-        className="teach-ambient flex h-full flex-col items-center justify-center gap-5 p-8 text-center"
+        className="flex h-full flex-col items-center justify-center gap-5 bg-background p-8 text-center"
       >
-        <span className="grid size-12 place-items-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-300">
+        <span className="grid size-11 place-items-center rounded-md border border-border text-amber-600 dark:text-amber-300">
           <TriangleAlert aria-hidden="true" className="size-6" />
         </span>
         <div className="flex max-w-md flex-col gap-1.5">
@@ -134,7 +134,7 @@ function TeachAppLoading() {
   return (
     <div
       data-testid="teach-app-loading"
-      className="teach-ambient flex h-full items-center justify-center gap-2.5 p-8 text-sm text-muted-foreground"
+      className="flex h-full items-center justify-center gap-2.5 bg-background p-8 text-sm text-muted-foreground"
       aria-busy="true"
     >
       <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />

@@ -17,7 +17,7 @@ export function LessonLinkBlock({ block }: LessonLinkBlockProps) {
       type="button"
       data-testid="lesson-link"
       onClick={() => selectLesson(block.lessonId)}
-      className="group inline-flex w-full items-center justify-between gap-2 rounded-md border border-border/60 bg-card/40 px-3 py-2 text-start text-sm font-semibold text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5"
+      className="group inline-flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-start text-sm font-semibold text-foreground transition-colors hover:border-primary/60 hover:bg-muted"
     >
       <span className="min-w-0 flex-1 truncate">{block.label}</span>
       <ArrowRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />

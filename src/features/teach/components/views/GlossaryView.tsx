@@ -36,7 +36,7 @@ export function GlossaryView() {
         <li
           key={term.term}
           data-testid="glossary-term"
-          className="rounded-md border border-border/60 bg-card/40 px-4 py-3"
+          className="rounded-md border border-border bg-background px-4 py-3"
         >
           <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <BookA aria-hidden="true" className="size-4 text-primary" />

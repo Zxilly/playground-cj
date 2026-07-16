@@ -41,7 +41,7 @@ export function RecordsView() {
             'rounded-md border px-4 py-3',
             record.status === 'superseded'
               ? 'border-dashed border-border/50 bg-muted/10 opacity-70'
-              : 'border-border/60 bg-card/40',
+              : 'border-border bg-background',
           )}
         >
           <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">

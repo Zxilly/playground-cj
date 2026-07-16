@@ -71,10 +71,9 @@ export function MissionGate() {
   return (
     <div
       data-testid="mission-gate"
-      className="relative isolate flex flex-col items-center gap-6 overflow-hidden rounded-3xl border border-primary/18 bg-card/88 px-5 py-9 text-center shadow-[0_24px_70px_-48px_rgba(12,91,73,0.55)] sm:px-8 sm:py-11"
+      className="flex flex-col items-center gap-6 rounded-lg border border-border bg-background px-5 py-8 text-center sm:px-8 sm:py-10"
     >
-      <span aria-hidden="true" className="absolute -top-24 end-[-4rem] -z-10 size-64 rounded-full bg-primary/7 blur-3xl" />
-      <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/12">
+      <span className="grid size-11 place-items-center rounded-md border border-border bg-background text-primary">
         <Compass aria-hidden="true" className="size-6" />
       </span>
       <div className="flex max-w-lg flex-col gap-2">
@@ -93,9 +92,9 @@ export function MissionGate() {
             type="button"
             data-testid={`mission-gate-preset-${key}`}
             onClick={() => prefillChat(prompt)}
-            className="group flex min-h-20 items-start gap-3 rounded-2xl border border-border/70 bg-background/72 p-3.5 text-start outline-none transition-[border-color,background-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-primary/5 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring/35 motion-reduce:transform-none"
+            className="group flex min-h-20 items-start gap-3 rounded-md border border-border bg-background p-3.5 text-start outline-none transition-[border-color,background-color] hover:border-primary/60 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/35"
           >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border text-primary">
               <Icon aria-hidden="true" className="size-4" />
             </span>
             <span className="flex min-w-0 flex-col">
@@ -111,7 +110,7 @@ export function MissionGate() {
         variant="ghost"
         data-testid="mission-gate-start"
         onClick={() => prefillChat('我想学习仓颉，请帮我一起确定学习目标。')}
-        className="rounded-xl text-sm font-medium text-primary hover:bg-primary/8 hover:text-primary"
+        className="rounded-md text-sm font-medium text-primary hover:bg-muted hover:text-primary"
       >
         <MessageCircle aria-hidden="true" className="size-4" />
         <Trans>或者，自己向老师描述目标</Trans>

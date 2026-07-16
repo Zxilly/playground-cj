@@ -31,7 +31,7 @@ export function NotesView() {
   }
 
   return (
-    <article data-testid="notes-view" className="rounded-md border border-border/60 bg-card/40 px-4 py-3">
+    <article data-testid="notes-view" className="rounded-md border border-border bg-background px-4 py-3">
       <TeachMarkdown markdown={body} />
     </article>
   )

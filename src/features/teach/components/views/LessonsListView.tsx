@@ -52,7 +52,7 @@ export function LessonsListView() {
             data-testid="lesson-list-item"
             data-status={lesson.state.status}
             onClick={() => selectLesson(lesson.id)}
-            className="flex w-full items-center gap-3 rounded-md border border-border/60 bg-card/40 px-4 py-3 text-start transition-colors hover:border-primary/60 hover:bg-primary/5"
+            className="flex w-full items-center gap-3 rounded-md border border-border bg-background px-4 py-3 text-start transition-colors hover:border-primary/60 hover:bg-muted"
           >
             <StatusIcon status={lesson.state.status} />
             <span className="flex min-w-0 flex-1 flex-col">

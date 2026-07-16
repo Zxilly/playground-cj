@@ -185,75 +185,65 @@
 
 .teach-workspace-root,
 .teach-workspace-theme {
-  --background: hsl(42 38% 98%);
-  --foreground: hsl(158 18% 13%);
-  --card: hsl(42 30% 100%);
-  --card-foreground: hsl(158 18% 13%);
-  --popover: hsl(42 30% 100%);
-  --popover-foreground: hsl(158 18% 13%);
-  --primary: hsl(167 66% 25%);
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 3.9%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 3.9%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(0 0% 3.9%);
+  --primary: #2a7a6e;
   --primary-foreground: #ffffff;
-  --secondary: hsl(152 24% 93%);
-  --secondary-foreground: hsl(164 45% 22%);
-  --muted: hsl(144 15% 94%);
-  --muted-foreground: hsl(158 8% 41%);
-  --accent: hsl(157 35% 90%);
-  --accent-foreground: hsl(165 55% 23%);
-  --border: hsl(150 15% 86%);
-  --input: hsl(150 15% 82%);
-  --ring: hsl(165 60% 34%);
-  --radius: 0.8rem;
-  --sidebar: hsl(145 18% 96%);
-  --sidebar-foreground: hsl(158 12% 28%);
-  --sidebar-primary: hsl(167 66% 25%);
+  --secondary: hsl(0 0% 96.1%);
+  --secondary-foreground: hsl(0 0% 9%);
+  --muted: hsl(0 0% 96.1%);
+  --muted-foreground: hsl(0 0% 45.1%);
+  --accent: hsl(0 0% 94.5%);
+  --accent-foreground: hsl(0 0% 9%);
+  --border: hsl(0 0% 87.8%);
+  --input: hsl(0 0% 87.8%);
+  --ring: #2a7a6e;
+  --radius: 0.6rem;
+  --sidebar: hsl(0 0% 97.3%);
+  --sidebar-foreground: hsl(0 0% 22%);
+  --sidebar-primary: #2a7a6e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: hsl(157 35% 90%);
-  --sidebar-accent-foreground: hsl(165 55% 23%);
-  --sidebar-border: hsl(150 15% 86%);
-  --sidebar-ring: hsl(165 60% 34%);
+  --sidebar-accent: hsl(0 0% 100%);
+  --sidebar-accent-foreground: hsl(0 0% 9%);
+  --sidebar-border: hsl(0 0% 87.8%);
+  --sidebar-ring: #2a7a6e;
 }
 
 .dark .teach-workspace-root,
 .dark .teach-workspace-theme {
-  --background: hsl(156 18% 8%);
-  --foreground: hsl(150 16% 91%);
-  --card: hsl(156 17% 11%);
-  --card-foreground: hsl(150 16% 91%);
-  --popover: hsl(156 17% 11%);
-  --popover-foreground: hsl(150 16% 91%);
-  --primary: hsl(162 50% 58%);
-  --primary-foreground: hsl(160 40% 10%);
-  --secondary: hsl(155 16% 16%);
-  --secondary-foreground: hsl(150 16% 91%);
-  --muted: hsl(155 14% 16%);
-  --muted-foreground: hsl(152 10% 67%);
-  --accent: hsl(158 23% 20%);
-  --accent-foreground: hsl(154 28% 88%);
-  --border: hsl(155 13% 22%);
-  --input: hsl(155 13% 27%);
-  --ring: hsl(162 50% 58%);
-  --sidebar: hsl(156 17% 10%);
-  --sidebar-foreground: hsl(150 14% 86%);
-  --sidebar-primary: hsl(162 50% 58%);
-  --sidebar-primary-foreground: hsl(160 40% 10%);
-  --sidebar-accent: hsl(158 23% 20%);
-  --sidebar-accent-foreground: hsl(154 28% 88%);
-  --sidebar-border: hsl(155 13% 22%);
-  --sidebar-ring: hsl(162 50% 58%);
+  --background: hsl(0 0% 3.9%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(0 0% 3.9%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(0 0% 3.9%);
+  --popover-foreground: hsl(0 0% 98%);
+  --primary: #5ec4b0;
+  --primary-foreground: hsl(0 0% 7%);
+  --secondary: hsl(0 0% 14.9%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(0 0% 14.9%);
+  --muted-foreground: hsl(0 0% 63.9%);
+  --accent: hsl(0 0% 18%);
+  --accent-foreground: hsl(0 0% 98%);
+  --border: hsl(0 0% 19%);
+  --input: hsl(0 0% 24%);
+  --ring: #5ec4b0;
+  --sidebar: hsl(0 0% 8%);
+  --sidebar-foreground: hsl(0 0% 90%);
+  --sidebar-primary: #5ec4b0;
+  --sidebar-primary-foreground: hsl(0 0% 7%);
+  --sidebar-accent: hsl(0 0% 14.9%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(0 0% 19%);
+  --sidebar-ring: #5ec4b0;
 }
 
 .teach-ambient {
-  background:
-    radial-gradient(circle at 8% 8%, rgba(23, 111, 96, 0.09), transparent 34rem),
-    radial-gradient(circle at 92% 18%, rgba(67, 176, 145, 0.07), transparent 30rem),
-    var(--background);
-}
-
-.dark .teach-ambient {
-  background:
-    radial-gradient(circle at 8% 8%, rgba(89, 199, 169, 0.09), transparent 34rem),
-    radial-gradient(circle at 92% 18%, rgba(40, 112, 91, 0.12), transparent 30rem),
-    var(--background);
+  background: var(--background);
 }
 
 .teach-scrollbar-hidden {

@@ -149,9 +149,9 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       <aside
         inert={isCompact && chatOpen}
         className={cn(
-          'teach-scrollbar-hidden shrink-0 border-border/70 bg-sidebar/92',
-          'absolute inset-x-0 top-0 z-10 overflow-x-auto border-b px-2 py-2 shadow-[0_1px_0_rgba(14,35,29,0.03)] backdrop-blur-xl',
-          'lg:static lg:flex lg:w-52 lg:flex-col lg:gap-2 lg:overflow-visible lg:border-e lg:border-b-0 lg:px-3 lg:py-4 lg:shadow-none lg:backdrop-blur-none',
+          'teach-scrollbar-hidden shrink-0 border-border bg-sidebar',
+          'absolute inset-x-0 top-0 z-10 overflow-x-auto border-b px-2 py-2',
+          'lg:static lg:flex lg:w-52 lg:flex-col lg:gap-2 lg:overflow-visible lg:border-e lg:border-b-0 lg:px-3 lg:py-4',
         )}
       >
         <WorkspaceNav
@@ -163,7 +163,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       <main
         data-testid="workspace-viewport"
         inert={isCompact && chatOpen}
-        className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-muted/18 px-4 pb-7 pt-20 sm:px-7 lg:px-10 lg:py-10"
+        className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-background px-4 pb-7 pt-20 sm:px-6 lg:px-8 lg:py-8"
       >
         <div className="mx-auto w-full max-w-4xl">
           <WorkspaceViewport
@@ -180,7 +180,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
           type="button"
           aria-label={t`收起老师对话`}
           onClick={closeChat}
-          className="fixed inset-0 z-40 cursor-default bg-foreground/20 backdrop-blur-[1px] lg:hidden"
+          className="fixed inset-0 z-40 cursor-default bg-foreground/30 lg:hidden"
         />
       )}
 
@@ -196,8 +196,8 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         style={isCompact ? undefined : { width: chatWidth }}
         onKeyDown={onChatKeyDown}
         className={cn(
-          'lg:relative lg:flex lg:shrink-0 lg:flex-col lg:border-s lg:border-border/70 lg:bg-card/65',
-          'fixed inset-x-0 bottom-0 z-40 flex h-[min(78dvh,46rem)] flex-col overflow-hidden rounded-t-3xl border-t border-border/80 bg-background shadow-[0_-24px_80px_-30px_rgba(7,38,30,0.42)] transition-transform duration-300 ease-out lg:inset-auto lg:h-auto lg:translate-y-0 lg:rounded-none lg:shadow-none',
+          'lg:relative lg:flex lg:shrink-0 lg:flex-col lg:border-s lg:border-border lg:bg-background',
+          'fixed inset-x-0 bottom-0 z-40 flex h-[min(78dvh,46rem)] flex-col overflow-hidden rounded-t-lg border-t border-border bg-background shadow-lg transition-transform duration-300 ease-out lg:inset-auto lg:h-auto lg:translate-y-0 lg:rounded-none lg:shadow-none',
           chatOpen ? 'translate-y-0' : 'translate-y-full lg:translate-y-0',
         )}
       >
@@ -216,9 +216,9 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
           <span className="absolute inset-y-0 start-1/2 w-px -translate-x-1/2 bg-border/80 transition-colors group-hover:bg-primary/60 group-focus-visible:w-0.5 group-focus-visible:bg-primary" />
         </div>
 
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/70 bg-card/75 px-4 backdrop-blur-lg">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <span className="grid size-8 shrink-0 place-items-center text-primary">
               <Sparkles aria-hidden="true" className="size-4" />
             </span>
             <div className="min-w-0">
@@ -235,7 +235,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
             data-testid="workspace-chat-close"
             onClick={closeChat}
             aria-label={t`收起老师对话`}
-            className="rounded-lg text-muted-foreground lg:hidden"
+            className="rounded-md text-muted-foreground lg:hidden"
           >
             <X aria-hidden="true" className="size-4" />
           </Button>
@@ -252,7 +252,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         aria-label={chatOpen ? t`收起老师对话` : t`打开老师对话`}
         aria-expanded={chatOpen}
         aria-controls={chatRegionId}
-        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] end-4 z-20 size-13 rounded-2xl shadow-[0_14px_35px_-12px_rgba(12,92,74,0.7)] lg:hidden"
+        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] end-4 z-20 size-12 rounded-md shadow-md lg:hidden"
       >
         {chatOpen
           ? <X aria-hidden="true" className="size-5" />

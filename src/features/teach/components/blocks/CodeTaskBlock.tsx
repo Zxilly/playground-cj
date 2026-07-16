@@ -205,7 +205,7 @@ export function CodeTaskBlock({
   }
 
   return (
-    <section data-testid="code-task-block" className="rounded-md border border-border/60 bg-card/40 p-4">
+    <section data-testid="code-task-block" className="rounded-md border border-border bg-background p-4">
       <p className="text-sm font-semibold leading-7 text-foreground">{block.prompt}</p>
 
       <div className="mt-3 overflow-hidden rounded-md border border-border/60 bg-background">

@@ -55,7 +55,7 @@ function StatCard({
   value: number
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-border/60 bg-card/40 px-4 py-3">
+    <div className="flex flex-col gap-1 rounded-md border border-border bg-background px-4 py-3">
       <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         <Icon aria-hidden="true" className="size-3.5 text-primary" />
         {label}
@@ -127,7 +127,7 @@ export function ProgressDashboardView() {
             )}
       </header>
 
-      <section className="flex flex-col gap-3 rounded-md border border-border/60 bg-card/40 px-4 py-3">
+      <section className="flex flex-col gap-3 rounded-md border border-border bg-background px-4 py-3">
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <BookOpen aria-hidden="true" className="size-4 text-primary" />
@@ -184,7 +184,7 @@ export function ProgressDashboardView() {
                   data-testid="progress-recent-lesson"
                   data-status={lesson.state.status}
                   onClick={() => selectLesson(lesson.id)}
-                  className="flex w-full items-center gap-3 rounded-md border border-border/60 bg-card/40 px-4 py-2.5 text-start transition-colors hover:border-primary/60 hover:bg-primary/5"
+                  className="flex w-full items-center gap-3 rounded-md border border-border bg-background px-4 py-2.5 text-start transition-colors hover:border-primary/60 hover:bg-muted"
                 >
                   <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{lesson.title}</span>
                   <LessonStatusChip status={lesson.state.status} />

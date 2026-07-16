@@ -117,13 +117,13 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
         onBack={onBack}
       />
 
-      <main className="teach-ambient flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
-        <div className="w-full max-w-xl rounded-3xl border border-border/75 bg-card/92 p-5 shadow-[0_28px_80px_-46px_rgba(19,72,59,0.45)] backdrop-blur-sm sm:p-7">
+      <main className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-background px-4 py-8 sm:px-6 sm:py-10">
+        <div className="w-full max-w-xl rounded-lg border border-border bg-background p-5 sm:p-6">
           <div aria-hidden="true" className="mb-6 grid grid-cols-2 gap-2">
             <span className="h-1.5 rounded-full bg-primary" />
             <span className={cn('h-1.5 rounded-full transition-colors', step === 'credentials' ? 'bg-primary' : 'bg-muted')} />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary/80">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
             {step === 'source'
               ? <Trans>第 1 步 · 选择 AI 来源</Trans>
               : <Trans>第 2 步 · 配置 API 服务</Trans>}
@@ -177,7 +177,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                       data-testid="teach-source-next"
                       disabled={source === 'shared' && !sharedReady}
                       onClick={handleSourceNext}
-                      className="h-11 rounded-xl px-5 font-semibold shadow-sm"
+                      className="h-10 rounded-md px-5 font-semibold"
                     >
                       {source === 'custom' ? <Trans>下一步</Trans> : <Trans>进入工作区</Trans>}
                       <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
@@ -199,7 +199,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                       variant="outline"
                       data-testid="teach-wizard-back"
                       onClick={() => setStep('source')}
-                      className="rounded-xl text-muted-foreground"
+                      className="rounded-md text-muted-foreground"
                     >
                       <ArrowLeft aria-hidden="true" className="size-4 shrink-0" />
                       <Trans>上一步</Trans>
@@ -210,7 +210,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                       data-testid="teach-config-enter"
                       disabled={!customComplete}
                       onClick={handleCustomEnter}
-                      className="h-11 rounded-xl px-5 font-semibold shadow-sm"
+                      className="h-10 rounded-md px-5 font-semibold"
                     >
                       <Trans>进入工作区</Trans>
                       <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
@@ -245,14 +245,14 @@ function SourceOption({ testId, selected, onSelect, icon: Icon, title, descripti
       tabIndex={selected ? 0 : -1}
       onClick={onSelect}
       className={cn(
-        'group relative flex w-full flex-col gap-1 rounded-2xl border px-4 py-4 pe-12 text-start outline-none transition-[border-color,background-color,box-shadow,transform] focus-visible:ring-2 focus-visible:ring-ring/35 motion-reduce:transform-none',
+        'group relative flex w-full flex-col gap-1 rounded-md border px-4 py-4 pe-12 text-start outline-none transition-[border-color,background-color] focus-visible:ring-2 focus-visible:ring-ring/35',
         selected
-          ? 'border-primary/60 bg-primary/7 shadow-[0_12px_30px_-24px_rgba(16,100,82,0.55)]'
-          : 'border-border/75 bg-background/70 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-muted/45',
+          ? 'border-primary bg-primary/5'
+          : 'border-border bg-background hover:border-primary/50 hover:bg-muted',
       )}
     >
       <span className="flex items-center gap-2.5 text-sm font-semibold text-foreground">
-        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+        <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-background text-primary">
           <Icon aria-hidden="true" className="size-4" />
         </span>
         {title}

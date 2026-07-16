@@ -99,7 +99,7 @@ export function ReferenceView({ referenceId }: ReferenceViewProps) {
               type="button"
               data-testid="reference-list-item"
               onClick={() => openReference(ref.id)}
-              className="flex w-full items-center gap-2 rounded-md border border-border/60 bg-card/40 px-4 py-3 text-start text-sm font-semibold text-foreground transition-colors hover:border-primary/60 hover:bg-primary/5"
+              className="flex w-full items-center gap-2 rounded-md border border-border bg-background px-4 py-3 text-start text-sm font-semibold text-foreground transition-colors hover:border-primary/60 hover:bg-muted"
             >
               <FileText aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate">{ref.title}</span>

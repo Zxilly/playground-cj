@@ -123,7 +123,7 @@ export function QuizBlock({ block, outcome, onOutcome }: QuizBlockProps) {
     <section
       data-testid="quiz-block"
       data-count={questions.length}
-      className="rounded-md border border-border/60 bg-card/40 p-4"
+      className="rounded-md border border-border bg-background p-4"
     >
       <ol className="flex flex-col gap-5">
         {questions.map((question, qIndex) => {

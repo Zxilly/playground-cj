@@ -178,7 +178,7 @@ export function OJBlock({
   const difficulty = block.difficulty
 
   return (
-    <section data-testid="oj-block" className="rounded-md border border-border/60 bg-card/40 p-4">
+    <section data-testid="oj-block" className="rounded-md border border-border bg-background p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h3 data-testid="oj-title" className="text-base font-semibold text-foreground">{block.title}</h3>
         {difficulty != null && (
