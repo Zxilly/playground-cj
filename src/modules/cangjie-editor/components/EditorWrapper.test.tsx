@@ -1,5 +1,6 @@
 import { act, render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { retainModelScope } from '@/lib/monaco/model-lifecycle'
 import { MonacoEditorReactComp } from './EditorWrapper'
 
 function deferred<T>() {
@@ -20,6 +21,7 @@ const vscodeWrapperInitExtensions = vi.hoisted(() => vi.fn())
 const vscodeWrapperDispose = vi.hoisted(() => vi.fn())
 const ensureCangjieMonarchTokensProvider = vi.hoisted(() => vi.fn())
 const configureMonacoWorkers = vi.hoisted(() => vi.fn())
+const acquireLanguageService = vi.hoisted(() => vi.fn())
 const isLanguageClientAvailable = vi.hoisted(() => vi.fn())
 const monacoEditorCreate = vi.hoisted(() => vi.fn())
 const monacoEditorCreateModel = vi.hoisted(() => vi.fn())
@@ -57,11 +59,12 @@ vi.mock('@codingame/monaco-vscode-editor-api', () => ({
 
 vi.mock('@/lib/monaco', () => ({
   configureMonacoWorkers,
-  createEditorAppConfig: vi.fn((code?: string) => ({
+  acquireLanguageService,
+  createEditorAppConfig: vi.fn((code?: string, _locale?: string, uriHint?: string) => ({
     codeResources: {
       modified: {
         text: code ?? '',
-        uri: 'file:///playground/src/main.cj',
+        uri: `file:///playground/${uriHint ?? 'src'}/main.cj`,
         enforceLanguageId: 'cangjie',
       },
     },
@@ -102,13 +105,16 @@ describe('monacoEditorReactComp', () => {
     vscodeWrapperDispose.mockReset().mockResolvedValue(undefined)
     ensureCangjieMonarchTokensProvider.mockReset()
     configureMonacoWorkers.mockReset()
+    acquireLanguageService.mockReset().mockReturnValue(vi.fn(async () => {}))
     isLanguageClientAvailable.mockReset().mockReturnValue(true)
     monacoEditorGetModel.mockReset().mockReturnValue(undefined)
-    monacoEditorCreateModel.mockReset().mockReturnValue({
+    monacoEditorCreateModel.mockReset().mockImplementation((_text, _language, uri) => ({
+      dispose: vi.fn(),
       getLanguageId: vi.fn(() => 'cangjie'),
       getValue: vi.fn(() => 'main() {}'),
-      uri: { toString: () => 'file:///playground/src/main.cj' },
-    })
+      isDisposed: vi.fn(() => false),
+      uri,
+    }))
     monacoEditorCreate.mockReset().mockReturnValue({
       dispose: vi.fn(),
       getModel: vi.fn(),
@@ -137,7 +143,7 @@ describe('monacoEditorReactComp', () => {
     expect(monacoEditorCreate).not.toHaveBeenCalled()
   })
 
-  it('re-registers extension contributions after the global Monaco API is already initialized', async () => {
+  it('reuses extension contributions after the global Monaco API is already initialized', async () => {
     monacoInit.initialised = true
     render(<MonacoEditorReactComp code="main() {}" locale="zh" />)
 
@@ -150,9 +156,8 @@ describe('monacoEditorReactComp', () => {
 
     expect(vscodeWrapperStart).toHaveBeenCalled()
     expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
-    expect(vscodeWrapperInitExtensions).toHaveBeenCalled()
+    expect(vscodeWrapperInitExtensions).not.toHaveBeenCalled()
     expect(monacoEditorCreate).toHaveBeenCalled()
-    expect(vscodeWrapperInitExtensions.mock.invocationCallOrder[0]).toBeLessThan(monacoEditorCreate.mock.invocationCallOrder[0])
   })
 
   it('does not duplicate extension file registration during the first Monaco initialization', async () => {
@@ -170,7 +175,7 @@ describe('monacoEditorReactComp', () => {
     expect(monacoEditorCreate).toHaveBeenCalled()
   })
 
-  it('continues editor startup when extension files were already registered', async () => {
+  it('does not attempt duplicate extension-file registration on later mounts', async () => {
     monacoInit.initialised = true
     vscodeWrapperInitExtensions.mockRejectedValueOnce(
       new Error('file "extension-file://zxilly.cangjie/extension/extension.js/" already exists'),
@@ -185,7 +190,7 @@ describe('monacoEditorReactComp', () => {
       await Promise.resolve()
     })
 
-    expect(vscodeWrapperInitExtensions).toHaveBeenCalled()
+    expect(vscodeWrapperInitExtensions).not.toHaveBeenCalled()
     expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
     expect(monacoEditorCreate).toHaveBeenCalled()
   })
@@ -209,21 +214,114 @@ describe('monacoEditorReactComp', () => {
     expect(vscodeWrapperDispose).not.toHaveBeenCalled()
   })
 
-  it('starts a standalone editor when the language client is unavailable', async () => {
+  it('does not re-register or dispose the page runtime when one of two editors unmounts', async () => {
+    monacoInit.initialised = true
+    const view = render(
+      <>
+        <MonacoEditorReactComp code="first" uriHint="first" />
+        <MonacoEditorReactComp code="second" uriHint="second" />
+      </>,
+    )
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    view.rerender(<MonacoEditorReactComp code="second" uriHint="second" />)
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(vscodeWrapperInitExtensions).not.toHaveBeenCalled()
+    expect(vscodeWrapperDispose).not.toHaveBeenCalled()
+  })
+
+  it('starts an editor without acquiring LSP when the language client is unavailable', async () => {
     isLanguageClientAvailable.mockReturnValue(false)
     const onLoad = vi.fn()
 
     render(<MonacoEditorReactComp code="main() {}" locale="zh" onLoad={onLoad} />)
 
     await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
       await Promise.resolve()
       await Promise.resolve()
     })
 
-    expect(configureMonacoWorkers).toHaveBeenCalled()
     expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
     expect(monacoEditorCreate).toHaveBeenCalled()
     expect(onLoad).toHaveBeenCalled()
-    expect(vscodeWrapperStart).not.toHaveBeenCalled()
+    expect(vscodeWrapperStart).toHaveBeenCalled()
+    expect(acquireLanguageService).not.toHaveBeenCalled()
+  })
+
+  it('gives unhinted editor instances distinct model URIs', async () => {
+    isLanguageClientAvailable.mockReturnValue(false)
+    render(
+      <>
+        <MonacoEditorReactComp code="first" />
+        <MonacoEditorReactComp code="second" />
+      </>,
+    )
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const uris = monacoEditorCreateModel.mock.calls.map(call => call[2].toString())
+    expect(uris).toHaveLength(2)
+    expect(new Set(uris).size).toBe(2)
+  })
+
+  it('disposes an ordinary model when its editor unmounts', async () => {
+    isLanguageClientAvailable.mockReturnValue(false)
+    const view = render(<MonacoEditorReactComp code="main() {}" uriHint="dispose-now" />)
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const model = monacoEditorCreateModel.mock.results.at(-1)!.value
+
+    view.unmount()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(model.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('retains a scoped draft across editor unmount and disposes it when the scope ends', async () => {
+    isLanguageClientAvailable.mockReturnValue(false)
+    const releaseScope = retainModelScope('lesson:test')
+    const view = render(
+      <MonacoEditorReactComp
+        code="main() {}"
+        uriHint="scoped-draft"
+        modelScope="lesson:test"
+        retainModelOnUnmount
+      />,
+    )
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const model = monacoEditorCreateModel.mock.results.at(-1)!.value
+
+    view.unmount()
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(model.dispose).not.toHaveBeenCalled()
+
+    releaseScope()
+    expect(model.dispose).toHaveBeenCalledOnce()
   })
 })

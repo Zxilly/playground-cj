@@ -146,6 +146,9 @@ importers:
       '@codingame/monaco-vscode-api':
         specifier: 34.0.3
         version: 34.0.3
+      '@codingame/monaco-vscode-base-service-override':
+        specifier: 34.0.3
+        version: 34.0.3
       '@codingame/monaco-vscode-configuration-service-override':
         specifier: 34.0.3
         version: 34.0.3

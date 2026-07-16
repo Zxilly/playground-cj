@@ -8,12 +8,12 @@ import { cn } from '@/lib/utils'
 import { useLspStatusRender } from '@/modules/cangjie-editor/hooks/useLspStatusRender'
 import type { LspStatusIcon } from '@/modules/cangjie-editor/hooks/useLspStatusRender'
 import {
-  clearCacheAndRestartLsp,
-  restartLsp,
-  startLsp,
-  stopLsp,
-  subscribeLspStatus,
-} from '@/lib/lsp'
+  clearCacheAndRestartLanguageService,
+  restartLanguageService,
+  startLanguageService,
+  stopLanguageService,
+} from '@/lib/monaco/language-service-lifecycle'
+import { subscribeLspStatus } from '@/lib/lsp'
 import type { LspRuntimeStatus } from '@/lib/lsp'
 
 const FALLBACK_STATUS: LspRuntimeStatus = {
@@ -110,19 +110,19 @@ export function LspStatusIndicator() {
             icon={<Play className="h-3.5 w-3.5" />}
             label={<Trans>启动</Trans>}
             disabled={!isStopped && status.state !== 'crashed'}
-            onSelect={runAction(() => startLsp('manual'))}
+            onSelect={runAction(() => startLanguageService('manual'))}
           />
           <ActionRow
             icon={<Square className="h-3.5 w-3.5" />}
             label={<Trans>停止</Trans>}
             disabled={isStopped || isBusy}
-            onSelect={runAction(() => stopLsp('manual'))}
+            onSelect={runAction(() => stopLanguageService('manual'))}
           />
           <ActionRow
             icon={<RefreshCw className="h-3.5 w-3.5" />}
             label={<Trans>重启</Trans>}
             disabled={isBusy}
-            onSelect={runAction(() => restartLsp('manual'))}
+            onSelect={runAction(() => restartLanguageService('manual'))}
           />
           <div className="my-0.5 h-px bg-border" />
           <ActionRow
@@ -130,7 +130,7 @@ export function LspStatusIndicator() {
             label={<Trans>清除缓存并重启</Trans>}
             description={<Trans>重置本地缓存后重启代码提示</Trans>}
             disabled={isBusy}
-            onSelect={runAction(() => clearCacheAndRestartLsp('manual'))}
+            onSelect={runAction(() => clearCacheAndRestartLanguageService('manual'))}
           />
         </div>
       </PopoverContent>

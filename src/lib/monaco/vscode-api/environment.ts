@@ -9,6 +9,10 @@ export type ViewsServiceType = 'EditorService' | 'ViewsService'
 export interface MonacoEnvironmentEnhanced extends monaco.Environment {
   vscodeApiInitialising?: boolean
   vscodeApiInitialised?: boolean
+  vscodeApiServicesInitialised?: boolean
+  vscodeApiViewsInitialised?: boolean
+  vscodeApiExtensionsInitialised?: boolean
+  vscodeApiViewsType?: ViewsServiceType
   vscodeApiGlobalInitAwait?: Promise<void>
   vscodeApiGlobalInitResolve?: (value: void | PromiseLike<void>) => void
 }
@@ -20,6 +24,9 @@ export function getEnhancedMonacoEnvironment(): MonacoEnvironmentEnhanced {
   const env = MonacoEnvironment as MonacoEnvironmentEnhanced
   env.vscodeApiInitialising ??= false
   env.vscodeApiInitialised ??= false
+  env.vscodeApiServicesInitialised ??= false
+  env.vscodeApiViewsInitialised ??= false
+  env.vscodeApiExtensionsInitialised ??= false
   return env
 }
 

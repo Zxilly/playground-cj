@@ -1,11 +1,11 @@
 import { msg } from '@lingui/core/macro'
 import { i18n } from '@/lib/i18n'
 import {
-  clearCacheAndRestartLsp,
-  restartLsp,
-  startLsp,
-  stopLsp,
-} from '@/lib/lsp'
+  clearCacheAndRestartLanguageService,
+  restartLanguageService,
+  startLanguageService,
+  stopLanguageService,
+} from '@/lib/monaco/language-service-lifecycle'
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 
 export const LSP_COMMAND_IDS = {
@@ -48,22 +48,22 @@ export async function registerLspCommands(): Promise<void> {
       {
         id: LSP_COMMAND_IDS.start,
         title: i18n._(msg`仓颉：启动代码提示`),
-        handler: () => startLsp('manual'),
+        handler: () => startLanguageService('manual'),
       },
       {
         id: LSP_COMMAND_IDS.stop,
         title: i18n._(msg`仓颉：停止代码提示`),
-        handler: () => stopLsp('manual'),
+        handler: () => stopLanguageService('manual'),
       },
       {
         id: LSP_COMMAND_IDS.restart,
         title: i18n._(msg`仓颉：重启代码提示`),
-        handler: () => restartLsp('manual'),
+        handler: () => restartLanguageService('manual'),
       },
       {
         id: LSP_COMMAND_IDS.clearCacheRestart,
         title: i18n._(msg`仓颉：清除缓存并重启代码提示`),
-        handler: () => clearCacheAndRestartLsp('manual'),
+        handler: () => clearCacheAndRestartLanguageService('manual'),
       },
     ]
 

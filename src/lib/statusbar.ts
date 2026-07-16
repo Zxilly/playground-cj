@@ -65,7 +65,6 @@ export async function createCustomStatusBar(
   const { IStatusbarService, IInstantiationService } = await import('@codingame/monaco-vscode-api/services')
 
   const container = document.createElement('footer')
-  container.id = 'custom-statusbar'
   container.className = `statusbar-container ${className}`.trim()
   if (window.getComputedStyle(parentContainer).position === 'static') {
     parentContainer.style.position = 'relative'

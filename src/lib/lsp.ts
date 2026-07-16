@@ -177,11 +177,15 @@ async function initializeLspServer(
     }
   }
 
-  const WasmModule = await import(/* webpackIgnore: true */ LSP_WASM_PATH)
+  const WasmModule = await import(/* webpackIgnore: true */ /* @vite-ignore */ LSP_WASM_PATH)
   if (shouldAbort())
     throw new Error('aborted')
 
-  const wasmMod: EmscriptenModule = await WasmModule.default({
+  let rejectInstantiation!: (error: Error) => void
+  const instantiationFailure = new Promise<never>((_resolve, reject) => {
+    rejectInstantiation = reject
+  })
+  const wasmModulePromise = WasmModule.default({
     print: (text: string) => onLog(`[stdout] ${text}`),
     printErr: (text: string) => {
       onLog(`[stderr] ${text}`)
@@ -207,10 +211,18 @@ async function initializeLspServer(
         .then(r => r.arrayBuffer())
         .then(bytes => WebAssembly.instantiate(bytes, imports))
         .then(result => successCallback(result.instance, result.module))
-        .catch(e => onError(new Error(`Failed to instantiate WASM: ${(e as Error).message}`)))
+        .catch((e) => {
+          const error = new Error(`Failed to instantiate WASM: ${(e as Error).message}`)
+          onError(error)
+          // Emscripten's async instantiateWasm contract has no error callback.
+          // Reject a parallel promise so initialization and queued teardown do
+          // not wait forever for a success callback that will never arrive.
+          rejectInstantiation(error)
+        })
       return {}
     },
   })
+  const wasmMod: EmscriptenModule = await Promise.race([wasmModulePromise, instantiationFailure])
   if (shouldAbort())
     throw new Error('aborted')
 
@@ -689,14 +701,17 @@ export function getCurrentEditorPort(): MessagePort | null {
  * preserves the original boot-on-first-use contract used by the Monaco
  * language client factory.
  */
-export function getLanguageClientPort(): MessagePort {
+export async function getLanguageClientPort(): Promise<MessagePort> {
   if (!STATE.connectionInstance) {
     if (STATE.runtimeStatus.manuallyStopped) {
       throw new Error('LSP is manually stopped; cannot obtain port')
     }
-    void startLsp('auto')
+    await startLsp('auto')
   }
-  return STATE.connectionInstance!.editorPort
+  const port = STATE.connectionInstance?.editorPort
+  if (!port)
+    throw new Error('LSP failed to create an editor port')
+  return port
 }
 
 export function getLspStatus(): LspRuntimeStatus {

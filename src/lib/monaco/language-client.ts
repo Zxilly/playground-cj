@@ -5,6 +5,7 @@ import { MonacoLanguageClient } from './vscode-api'
 import isMobile from 'is-mobile'
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
+import { LatestLanguageClientController } from './language-client-controller'
 
 // A single Output Channel shared across every LanguageClient instance.
 // When clientOptions.outputChannel is set, vscode-languageclient treats it
@@ -94,19 +95,38 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
 //
 // The client's `documentSelector` is `[CANGJIE_LANGUAGE_ID]` (above) so it
 // serves ALL Cangjie models in the registry regardless of URI — no need for
-// per-editor clients. Exercise editors keep `enableLanguageClient={false}` to skip
-// per-editor lifecycle, but the singleton client below covers them.
+// per-editor clients. Editors acquire a lightweight service lease while this
+// singleton client serves every matching model.
 interface SharedClientSlot {
-  client: MonacoLanguageClient | undefined
-  port: MessagePort | undefined
-  startedPromise: Promise<MonacoLanguageClient | undefined> | undefined
+  controller?: LatestLanguageClientController<MessagePort, MonacoLanguageClient>
+  // Pre-controller fields are retained only so an HMR update can adopt the
+  // already-running client without dropping the live server connection.
+  client?: MonacoLanguageClient
+  port?: MessagePort
+  startedPromise?: Promise<MonacoLanguageClient | undefined>
 }
 
 const sharedClient = hmrSlot<SharedClientSlot>(HMR_SLOT_KEYS.LSP_LANGUAGE_CLIENT, () => ({
-  client: undefined,
-  port: undefined,
-  startedPromise: undefined,
+  controller: new LatestLanguageClientController<MessagePort, MonacoLanguageClient>(),
 }))
+
+if (!sharedClient.controller) {
+  sharedClient.controller = new LatestLanguageClientController<MessagePort, MonacoLanguageClient>()
+  if (sharedClient.client && sharedClient.port) {
+    sharedClient.controller.adopt(sharedClient.port, sharedClient.client)
+  }
+  else if (sharedClient.startedPromise && sharedClient.port) {
+    const legacyPort = sharedClient.port
+    void sharedClient.startedPromise.then((client) => {
+      if (client) {
+        sharedClient.controller?.adopt(legacyPort, client)
+      }
+    })
+  }
+  delete sharedClient.client
+  delete sharedClient.port
+  delete sharedClient.startedPromise
+}
 
 /**
  * Ensure a single, page-wide MonacoLanguageClient is started against `port`
@@ -117,50 +137,18 @@ const sharedClient = hmrSlot<SharedClientSlot>(HMR_SLOT_KEYS.LSP_LANGUAGE_CLIENT
 export async function ensureLanguageClient(port: MessagePort): Promise<MonacoLanguageClient | undefined> {
   if (isMobile({ tablet: true, featureDetect: true }))
     return undefined
-
-  if (sharedClient.client && sharedClient.port === port)
-    return sharedClient.client
-
-  // Port changed mid-session (LSP server restart). Tear down the old client
-  // first; until the new one finishes booting, callers see `undefined`.
-  if (sharedClient.client) {
-    const prev = sharedClient.client
-    sharedClient.client = undefined
-    sharedClient.port = undefined
-    sharedClient.startedPromise = undefined
-    try {
-      await prev.stop()
-    }
-    catch {}
-    try {
-      await prev.dispose()
-    }
-    catch {}
+  try {
+    return await sharedClient.controller!.ensure(port, createLanguageClient)
   }
-
-  if (!sharedClient.startedPromise || sharedClient.port !== port) {
-    sharedClient.port = port
-    sharedClient.startedPromise = (async () => {
-      const client = await createLanguageClient(port)
-      if (!client)
-        return undefined
-      try {
-        await client.start()
-      }
-      catch (e) {
-        const m = e instanceof Error ? e.message : JSON.stringify(e)
-        console.warn(`[LSP] ensureLanguageClient: client.start() failed: ${m}`)
-        try {
-          await client.dispose()
-        }
-        catch {}
-        return undefined
-      }
-      sharedClient.client = client
-      return client
-    })()
+  catch (e) {
+    const message = e instanceof Error ? e.message : JSON.stringify(e)
+    console.warn(`[LSP] ensureLanguageClient: client.start() failed: ${message}`)
+    return undefined
   }
-  return sharedClient.startedPromise
+}
+
+export async function disposeLanguageClient(): Promise<void> {
+  await sharedClient.controller!.dispose()
 }
 
 export function isLanguageClientAvailable(): boolean {

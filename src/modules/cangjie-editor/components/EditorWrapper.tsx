@@ -1,13 +1,14 @@
 import type { CSSProperties } from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from '@/lib/monaco/vscode-api'
 import type { CodeResources, MonacoLanguageClient } from '@/lib/monaco/vscode-api'
-import { configureMonacoWorkers, createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
+import { acquireLanguageService, createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
 import type { MonacoViewsType } from '@/lib/monaco'
+import { acquireModel } from '@/lib/monaco/model-lifecycle'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
-import { getCurrentEditorPort, startLsp, subscribeLspStatus } from '@/lib/lsp'
+import { getCurrentEditorPort, subscribeLspStatus } from '@/lib/lsp'
 import { registerLspCommands } from '@/lib/lsp-commands'
 import { LspStatusIndicator } from '@/modules/cangjie-editor/components/LspStatusIndicator'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
@@ -26,14 +27,13 @@ export interface MonacoEditorProps {
   viewsType?: MonacoViewsType
   enableLanguageClient?: boolean
   // Disambiguator that becomes part of the model URI so multiple editors on
-  // the same page (e.g. one per exercise) hold independent models. Same hint reuses
-  // the same model across React mounts and preserves user edits.
+  // the same page hold independent models. Reuse across React mounts requires
+  // retainModelOnUnmount plus a parent modelScope.
   uriHint?: string
-}
-
-function isDuplicateExtensionRegistrationError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
-  return /extension-file:\/\/.+already exists/i.test(message)
+  // Models retained across editor-only unmounts belong to a parent lifecycle
+  // scope (for example one lesson) which disposes them on route/view exit.
+  modelScope?: string
+  retainModelOnUnmount?: boolean
 }
 
 function isServicesAlreadyInitializedError(error: unknown): boolean {
@@ -41,49 +41,41 @@ function isServicesAlreadyInitializedError(error: unknown): boolean {
   return /services are already initialized/i.test(message)
 }
 
-async function initExtensionsAllowingDuplicateFiles(wrapper: MonacoVscodeApiWrapper): Promise<void> {
-  try {
-    await wrapper.initExtensions()
-  }
-  catch (error) {
-    if (!isDuplicateExtensionRegistrationError(error))
-      throw error
-  }
-}
-
 function createStandaloneEditorHandle(
   container: HTMLElement,
   editorAppConfig: ReturnType<typeof createEditorAppConfig>,
+  modelScope?: string,
+  retainModelOnUnmount = false,
 ): MonacoEditorHandle {
   const resource = editorAppConfig.codeResources?.modified
   const uri = monaco.Uri.parse(resource?.uri ?? 'file:///playground/src/main.cj')
-  const existingModel = monaco.editor.getModel(uri)
-  // Reusing an existing model preserves user edits across React mount cycles.
-  // Only seed the model text when creating it for the first time — otherwise
-  // an exercise card that re-enters the viewport would clobber whatever the user
-  // had typed earlier.
-  //
-  // Track ownership: only the handle that *created* the model is allowed to
-  // dispose it. This prevents one exercise card unmounting from killing a model
-  // another card might still want to reuse. Models created by other handles
-  // (i.e. `existingModel` was hit) stay alive — they'll be GC'd when the page
-  // unloads, and the model registry size is bounded by the number of distinct
-  // exercise URIs the learner has ever opened in this page session.
-  const ownedModelUris = new Set<string>()
-  let model = existingModel ?? (() => {
-    const created = monaco.editor.createModel(
-      resource?.text ?? '',
-      editorAppConfig.editorOptions?.language,
-      uri,
-    )
-    ownedModelUris.add(created.uri.toString())
-    return created
-  })()
+  const leaseOptions = { scope: modelScope, retainWhenUnused: retainModelOnUnmount }
+  let modelLease = acquireModel(uri.toString(), () => {
+    const existingModel = monaco.editor.getModel(uri)
+    if (existingModel)
+      return { resource: existingModel, owned: false }
+    return {
+      resource: monaco.editor.createModel(
+        resource?.text ?? '',
+        editorAppConfig.editorOptions?.language,
+        uri,
+      ),
+      owned: true,
+    }
+  }, leaseOptions)
+  let model = modelLease.resource as monaco.editor.ITextModel
 
-  const editor = monaco.editor.create(container, {
-    ...editorAppConfig.editorOptions,
-    model,
-  })
+  let editor: monaco.editor.IStandaloneCodeEditor
+  try {
+    editor = monaco.editor.create(container, {
+      ...editorAppConfig.editorOptions,
+      model,
+    })
+  }
+  catch (error) {
+    modelLease.release()
+    throw error
+  }
 
   return {
     getEditor: () => editor,
@@ -93,16 +85,25 @@ function createStandaloneEditorHandle(
         return false
 
       const nextUri = monaco.Uri.parse(nextResource.uri ?? model.uri.toString())
-      const existingNextModel = monaco.editor.getModel(nextUri)
-      const nextModel = existingNextModel ?? (() => {
-        const created = monaco.editor.createModel(
-          nextResource.text ?? model.getValue(),
-          nextResource.enforceLanguageId ?? model.getLanguageId(),
-          nextUri,
-        )
-        ownedModelUris.add(created.uri.toString())
-        return created
-      })()
+      if (nextUri.toString() === model.uri.toString()) {
+        if (nextResource.enforceLanguageId)
+          monaco.editor.setModelLanguage(model, nextResource.enforceLanguageId)
+        return true
+      }
+      const nextLease = acquireModel(nextUri.toString(), () => {
+        const existingNextModel = monaco.editor.getModel(nextUri)
+        if (existingNextModel)
+          return { resource: existingNextModel, owned: false }
+        return {
+          resource: monaco.editor.createModel(
+            nextResource.text ?? model.getValue(),
+            nextResource.enforceLanguageId ?? model.getLanguageId(),
+            nextUri,
+          ),
+          owned: true,
+        }
+      }, leaseOptions)
+      const nextModel = nextLease.resource as monaco.editor.ITextModel
 
       // Critical: do NOT setValue on a pre-existing model. The model URI
       // identifies the learner's draft; an unconditional setValue here would
@@ -115,24 +116,22 @@ function createStandaloneEditorHandle(
       if (nextResource.enforceLanguageId)
         monaco.editor.setModelLanguage(nextModel, nextResource.enforceLanguageId)
 
-      editor.setModel(nextModel)
+      try {
+        editor.setModel(nextModel)
+      }
+      catch (error) {
+        nextLease.release()
+        throw error
+      }
+      const previousLease = modelLease
+      modelLease = nextLease
       model = nextModel
+      previousLease.release()
       return true
     },
     dispose: () => {
       editor.dispose()
-      // Intentionally do NOT dispose models here. Virtuoso virtualizes exercise
-      // cards in and out of the DOM constantly during scroll — disposing the
-      // model on every unmount would wipe the learner's in-progress code as
-      // soon as they scrolled past their own exercise. Models survive the page
-      // session; the localStorage draft store (cleared on exercise success/skip
-      // in ExercisePracticeCard) is the only persistence layer with a bounded
-      // size. The Monaco model registry is bounded by the count of distinct
-      // exercise URIs the learner has opened in this page session, which is
-      // small enough that retaining them until page unload is fine.
-      // `ownedModelUris` is tracked for the future case where we want to
-      // explicitly drop models for definitively-finished exercises (e.g. a
-      // session-level cleanup hook), but is otherwise unused.
+      modelLease.release()
     },
   }
 }
@@ -145,15 +144,22 @@ export function MonacoEditorReactComp({
   viewsType = 'EditorService',
   enableLanguageClient = true,
   uriHint,
+  modelScope,
+  retainModelOnUnmount = false,
 }: MonacoEditorProps) {
-  const editorAppConfig = useMemo(() => createEditorAppConfig(code, locale, uriHint), [code, locale, uriHint])
+  const instanceId = useId()
+  const effectiveUriHint = uriHint ?? `editor-${instanceId.replace(/[^\w-]/g, '')}`
+  const editorAppConfig = useMemo(
+    () => createEditorAppConfig(code, locale, effectiveUriHint),
+    [code, effectiveUriHint, locale],
+  )
   const hasLanguageClient = enableLanguageClient && isLanguageClientAvailable()
 
   const isInitializingRef = useRef(false)
   const isInitializedRef = useRef(false)
 
-  const vscodeApiWrapperRef = useRef<MonacoVscodeApiWrapper | null>(null)
   const languageClientRef = useRef<MonacoLanguageClient | null>(null)
+  const releaseLanguageServiceRef = useRef<(() => Promise<void>) | null>(null)
   const editorAppRef = useRef<MonacoEditorHandle | null>(null)
   const statusBarRef = useRef<StatusBarHandle | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -172,6 +178,10 @@ export function MonacoEditorReactComp({
   onLoadRef.current = onLoad
   const editorAppConfigRef = useRef(editorAppConfig)
   editorAppConfigRef.current = editorAppConfig
+  const modelScopeRef = useRef(modelScope)
+  modelScopeRef.current = modelScope
+  const retainModelOnUnmountRef = useRef(retainModelOnUnmount)
+  retainModelOnUnmountRef.current = retainModelOnUnmount
 
   const [indicatorHost, setIndicatorHost] = useState<HTMLElement | null>(null)
 
@@ -262,37 +272,6 @@ export function MonacoEditorReactComp({
       isInitializingRef.current = true
 
       try {
-        if (!hasLanguageClient) {
-          configureMonacoWorkers()
-          ensureCangjieMonarchTokensProvider()
-          const containerAfterStandaloneInit = getLiveContainer()
-          if (!containerAfterStandaloneInit)
-            return
-
-          const editorContainer = viewsType === 'ViewsService' && standaloneHostRef.current?.isConnected
-            ? standaloneHostRef.current
-            : containerAfterStandaloneInit
-          const editorHandle = createStandaloneEditorHandle(editorContainer, editorAppConfigRef.current)
-          if (!isActive()) {
-            await editorHandle.dispose()
-            return
-          }
-
-          editorAppRef.current = editorHandle
-          onLoadRef.current?.(editorHandle)
-          updateEditorLayout()
-
-          if (resizeObserverRef.current)
-            resizeObserverRef.current.disconnect()
-          resizeObserverRef.current = new ResizeObserver(updateEditorLayout)
-          const resizeParent = containerAfterStandaloneInit.parentElement
-          if (resizeParent)
-            resizeObserverRef.current.observe(resizeParent)
-
-          isInitializedRef.current = true
-          return
-        }
-
         await getEnhancedMonacoEnvironment().vscodeApiGlobalInitAwait
         const containerAfterGlobalInit = getLiveContainer()
         if (!containerAfterGlobalInit)
@@ -304,40 +283,24 @@ export function MonacoEditorReactComp({
 
         const vscodeApiConfig = createMonacoVscodeApiConfig(containerAfterGlobalInit, viewsType)
         const vscodeApiWrapper = new MonacoVscodeApiWrapper(vscodeApiConfig)
-        let ownsVscodeApiWrapper = false
-        const shouldRegisterExtensionsAfterStart = getEnhancedMonacoEnvironment().vscodeApiInitialised === true
         try {
           await vscodeApiWrapper.start()
-          ownsVscodeApiWrapper = true
-          vscodeApiWrapperRef.current = vscodeApiWrapper
         }
         catch (error) {
           if (!isServicesAlreadyInitializedError(error))
             throw error
-          // Another editor already owns the global Monaco/VSC services. Treat
-          // that as an idempotent success so restored classroom editors do not
-          // strand the learner on the loading shell. Still track this wrapper so
-          // any extension-file registrations made below are disposed on unmount
-          // instead of leaking.
-          vscodeApiWrapperRef.current = vscodeApiWrapper
+          // Compatibility with a runtime initialized outside this wrapper.
         }
-        if (shouldRegisterExtensionsAfterStart)
-          await initExtensionsAllowingDuplicateFiles(vscodeApiWrapper)
         ensureCangjieMonarchTokensProvider()
         const containerAfterWrapperStart = getLiveContainer()
-        if (!containerAfterWrapperStart) {
-          if (vscodeApiWrapperRef.current === vscodeApiWrapper)
-            vscodeApiWrapperRef.current = null
-          if (ownsVscodeApiWrapper)
-            await vscodeApiWrapper.dispose()
+        if (!containerAfterWrapperStart)
           return
-        }
 
         if (hasLanguageClient) {
           // Fire both concurrently: command registration does its own
           // dynamic imports and shouldn't serialize with LSP boot.
           void registerLspCommands()
-          void startLsp('auto')
+          releaseLanguageServiceRef.current ??= acquireLanguageService()
         }
 
         const editorContainer = viewsType === 'EditorService'
@@ -350,7 +313,12 @@ export function MonacoEditorReactComp({
         // Both EditorService and ViewsService modes drive the editor directly
         // via a standalone handle (monaco.editor.create + model reuse). The old
         // EditorApp abstraction from monaco-languageclient is no longer used.
-        const editorHandle: MonacoEditorHandle = createStandaloneEditorHandle(editorContainer, initialEditorAppConfig)
+        const editorHandle: MonacoEditorHandle = createStandaloneEditorHandle(
+          editorContainer,
+          initialEditorAppConfig,
+          modelScopeRef.current,
+          retainModelOnUnmountRef.current,
+        )
         if (!isActive()) {
           await editorHandle.dispose()
           return
@@ -421,8 +389,8 @@ export function MonacoEditorReactComp({
     }
 
     void initAll()
-    // Intentionally exclude `onLoad` and `editorAppConfig` — both are
-    // mirrored through refs above. Including them would force a full editor
+    // Intentionally exclude callback/config/lifecycle props — they are mirrored
+    // through refs above. Including them would force a full editor
     // teardown + rebuild on every parent re-render that produces a fresh
     // callback or memoized config (especially common during HMR).
   }, [hasLanguageClient, viewsType])
@@ -453,17 +421,16 @@ export function MonacoEditorReactComp({
         statusBarRef.current = null
         const editorApp = editorAppRef.current
         editorAppRef.current = null
-        // Forget the shared MonacoLanguageClient reference — but do NOT
-        // stop/dispose it. The client is page-scoped (see ensureLanguageClient)
-        // and other editors on the page may still depend on it. The singleton
-        // lives until page unload.
+        // Drop only this component's reference. Releasing the service lease
+        // keeps the singleton alive for other editors and shuts it down when
+        // this was the final consumer.
         languageClientRef.current = null
-        const vscodeApiWrapper = vscodeApiWrapperRef.current
-        vscodeApiWrapperRef.current = null
+        const releaseLanguageService = releaseLanguageServiceRef.current
+        releaseLanguageServiceRef.current = null
 
         statusBar?.dispose()
         await editorApp?.dispose()
-        await vscodeApiWrapper?.dispose()
+        await releaseLanguageService?.()
       }
       catch {
       }

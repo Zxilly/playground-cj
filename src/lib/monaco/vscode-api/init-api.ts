@@ -7,6 +7,7 @@ import {
 } from '@codingame/monaco-vscode-api/extensions'
 import type { IExtensionManifest, RegisterExtensionResult } from '@codingame/monaco-vscode-api/extensions'
 import { DisposableStore, setUnexpectedErrorHandler } from '@codingame/monaco-vscode-api/monaco'
+import getBaseServiceOverride from '@codingame/monaco-vscode-base-service-override'
 import getConfigurationServiceOverride, { initUserConfiguration } from '@codingame/monaco-vscode-configuration-service-override'
 import getLogServiceOverride from '@codingame/monaco-vscode-log-service-override'
 import getModelServiceOverride from '@codingame/monaco-vscode-model-service-override'
@@ -77,35 +78,46 @@ export class MonacoVscodeApiWrapper {
       env.vscodeApiInitialising = true
       this.markGlobalInit()
       try {
-        // extended highlighting services
-        const [getLanguages, getTextmate, getTheme] = await Promise.all([
-          import('@codingame/monaco-vscode-languages-service-override').then(m => m.default),
-          import('@codingame/monaco-vscode-textmate-service-override').then(m => m.default),
-          import('@codingame/monaco-vscode-theme-service-override').then(m => m.default),
-        ])
-        mergeServices(this.serviceOverrides, { ...getLanguages(), ...getTextmate(), ...getTheme() })
-
-        // views: EditorService (default) or ViewsService
-        await this.configureViewsServices()
-
-        // apply the editor-settings JSON before initialize()
-        if (this.config.userConfiguration?.json) {
-          await initUserConfiguration(this.config.userConfiguration.json)
+        const requestedViewsType = this.config.viewsConfig.$type
+        if (env.vscodeApiViewsType && env.vscodeApiViewsType !== requestedViewsType) {
+          throw new Error(
+            `vscode-api is already initialized with ${env.vscodeApiViewsType}; cannot switch to ${requestedViewsType}`,
+          )
         }
 
-        // required services + extension host, then initialize the workbench
-        await this.initAllServices()
+        if (!env.vscodeApiServicesInitialised) {
+          // extended highlighting services
+          const [getLanguages, getTextmate, getTheme] = await Promise.all([
+            import('@codingame/monaco-vscode-languages-service-override').then(m => m.default),
+            import('@codingame/monaco-vscode-textmate-service-override').then(m => m.default),
+            import('@codingame/monaco-vscode-theme-service-override').then(m => m.default),
+          ])
+          mergeServices(this.serviceOverrides, { ...getLanguages(), ...getTextmate(), ...getTheme() })
 
-        // attach workbench parts to the injected DOM (ViewsService mode)
-        await this.applyViewsPostConfig()
+          await this.configureViewsServices()
+          if (this.config.userConfiguration?.json)
+            await initUserConfiguration(this.config.userConfiguration.json)
 
-        // register the project extension(s) after services are up
-        await this.initExtensions()
+          await this.initAllServices()
+          env.vscodeApiServicesInitialised = true
+          env.vscodeApiViewsType = requestedViewsType
+        }
+
+        if (!env.vscodeApiViewsInitialised) {
+          await this.applyViewsPostConfig()
+          env.vscodeApiViewsInitialised = true
+        }
+
+        if (!env.vscodeApiExtensionsInitialised) {
+          await this.initExtensions()
+          env.vscodeApiExtensionsInitialised = true
+        }
 
         this.markGlobalInitDone()
         return
       }
       catch (e) {
+        await this.disposeOwnedRegistrations()
         // A failed boot must not leave the global-init promise pending forever —
         // EditorWrapper parks every editor on env.vscodeApiGlobalInitAwait. Settle
         // it and reset the flags so parked/later editors retry the boot instead of
@@ -146,6 +158,7 @@ export class MonacoVscodeApiWrapper {
     // monaco-vscode-api auto-loads layout/environment/extension/files/quickAccess;
     // we always add configuration/log/model + the extension host.
     const services: monaco.editor.IEditorOverrideServices = {
+      ...getBaseServiceOverride(),
       ...getConfigurationServiceOverride(),
       ...getLogServiceOverride(),
       ...getModelServiceOverride(),
@@ -188,6 +201,8 @@ export class MonacoVscodeApiWrapper {
   }
 
   async initExtensions(): Promise<void> {
+    if (getEnhancedMonacoEnvironment().vscodeApiExtensionsInitialised)
+      return
     // default theme extension (extended mode)
     await import('@codingame/monaco-vscode-theme-defaults-default-extension')
 
@@ -226,15 +241,26 @@ export class MonacoVscodeApiWrapper {
   private markGlobalInitDone(): void {
     const env = getEnhancedMonacoEnvironment()
     env.vscodeApiGlobalInitResolve?.()
+    env.vscodeApiInitialising = false
     env.vscodeApiInitialised = true
     env.vscodeApiGlobalInitAwait = undefined
     env.vscodeApiGlobalInitResolve = undefined
   }
 
-  dispose(): void {
-    this.extensionRegisterResults.forEach(r => r.dispose())
-    this.extensionRegisterResults.clear()
+  private async disposeOwnedRegistrations(): Promise<void> {
     this.disposableStore.dispose()
     this.disposableStore = new DisposableStore()
+    const registrations = [...this.extensionRegisterResults.values()]
+    this.extensionRegisterResults.clear()
+    await Promise.all(registrations.map(async registration => Promise.resolve(registration.dispose())))
+  }
+
+  /**
+   * Monaco/VSC services and their extension contributions are page-global and
+   * cannot be safely torn down per editor. Component unmount only disposes the
+   * editor/model lease; the global runtime lives until the browser page exits.
+   */
+  dispose(): void {
+    // Intentionally page-scoped.
   }
 }
