@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import type { Block } from '@/lib/teach/lessons/blocks'
@@ -8,6 +9,8 @@ import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import type { ActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import type { RecordBlockOutcome, RetrievalStoreLike } from '@/features/teach/hooks/use-block-outcome'
 import { useBlockOutcome } from '@/features/teach/hooks/use-block-outcome'
+import { lessonEditorUriHint, lessonModelScope } from '@/lib/monaco/model-identity'
+import { retainModelScope } from '@/lib/monaco/model-lifecycle'
 import type { BlockOutcomeReport } from './blocks/block-props'
 import { ProseBlock } from './blocks/ProseBlock'
 import { HeadingBlock } from './blocks/HeadingBlock'
@@ -78,6 +81,8 @@ interface RenderBlockArgs {
   gradeRecall?: (params: { prompt: string, reference: string, answer: string }) => Promise<{ correct: boolean, feedback: string }>
   activeEditor?: ActiveEditorRegistry
   locale?: string
+  editorUriHint?: string
+  editorModelScope?: string
 }
 
 /**
@@ -85,7 +90,7 @@ interface RenderBlockArgs {
  * by a newer client version) degrade to a non-fabricating placeholder and log a
  * warning rather than crashing the whole lesson.
  */
-function renderBlock({ block, outcome, onOutcome, runCode, runProgram, gradeRecall, activeEditor, locale }: RenderBlockArgs) {
+function renderBlock({ block, outcome, onOutcome, runCode, runProgram, gradeRecall, activeEditor, locale, editorUriHint, editorModelScope }: RenderBlockArgs) {
   switch (block.type) {
     case 'prose':
       return <ProseBlock block={block as Extract<Block, { type: 'prose' }>} outcome={outcome} />
@@ -110,6 +115,8 @@ function renderBlock({ block, outcome, onOutcome, runCode, runProgram, gradeReca
           runCode={runCode}
           activeEditor={activeEditor}
           locale={locale}
+          editorUriHint={editorUriHint}
+          editorModelScope={editorModelScope}
         />
       )
     case 'oj':
@@ -121,6 +128,8 @@ function renderBlock({ block, outcome, onOutcome, runCode, runProgram, gradeReca
           runProgram={runProgram}
           activeEditor={activeEditor}
           locale={locale}
+          editorUriHint={editorUriHint}
+          editorModelScope={editorModelScope}
         />
       )
     case 'lesson_link':
@@ -157,11 +166,14 @@ function renderBlock({ block, outcome, onOutcome, runCode, runProgram, gradeReca
  * Render an ordered lesson: dispatch each block to its component and wire
  * interactive outcomes (quiz / recall / code_task) back into the lesson state
  * and the spaced-retrieval schedule via {@link useBlockOutcome}. Each block is
- * keyed by its position (`b{index}`), the same key used in
- * `lesson.state.blockProgress`, so prior progress rehydrates a block as already
- * attempted.
+ * keyed by lesson plus position. The position (`b{index}`) still matches
+ * `lesson.state.blockProgress`, while the lesson prefix forces editor state to
+ * remount when the same renderer switches to a different lesson.
  */
 export function LessonRenderer({ lesson, record, retrievalStore, now, runCode, runProgram, gradeRecall, activeEditor, locale }: LessonRendererProps) {
+  const editorModelScope = lessonModelScope(lesson.id)
+  useEffect(() => retainModelScope(editorModelScope), [editorModelScope])
+
   const onBlockOutcome = useBlockOutcome({
     lessonId: lesson.id,
     state: lesson.state,
@@ -175,7 +187,7 @@ export function LessonRenderer({ lesson, record, retrievalStore, now, runCode, r
       {lesson.blocks.map((block, index) => {
         const id = blockId(index)
         return (
-          <div key={id} data-block-index={index} data-block-type={block.type}>
+          <div key={`${lesson.id}:${id}`} data-block-index={index} data-block-type={block.type}>
             {renderBlock({
               block,
               index,
@@ -186,6 +198,8 @@ export function LessonRenderer({ lesson, record, retrievalStore, now, runCode, r
               gradeRecall,
               activeEditor,
               locale,
+              editorUriHint: lessonEditorUriHint(lesson.id, id),
+              editorModelScope,
             })}
           </div>
         )

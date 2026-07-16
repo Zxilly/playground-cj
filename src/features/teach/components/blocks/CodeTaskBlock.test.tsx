@@ -36,7 +36,7 @@ afterEach(() => {
  * `{ getCode, setCode }` handle the real Monaco wrapper does (via `ref`) so the
  * block's run/register logic is exercised identically.
  */
-function FakeEditor({ initialCode, handleRef }: CodeTaskEditorProps) {
+function FakeEditor({ initialCode, handleRef, uriHint, modelScope }: CodeTaskEditorProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   useImperativeHandle(handleRef, () => ({
     getCode: () => inputRef.current?.value ?? initialCode,
@@ -49,6 +49,8 @@ function FakeEditor({ initialCode, handleRef }: CodeTaskEditorProps) {
     <textarea
       ref={inputRef}
       data-testid="fake-editor-input"
+      data-uri-hint={uriHint}
+      data-model-scope={modelScope}
       defaultValue={initialCode}
     />
   )
@@ -88,6 +90,20 @@ describe('codeTaskBlock', () => {
   it('seeds the editor with the starter code', () => {
     render(<CodeTaskBlock block={block} runCode={vi.fn()} editorComponent={FakeEditor} />)
     expect(input().value).toBe(block.starterCode)
+  })
+
+  it('forwards the stable model identity and lifecycle scope to Monaco', () => {
+    render(
+      <CodeTaskBlock
+        block={block}
+        runCode={vi.fn()}
+        editorComponent={FakeEditor}
+        editorUriHint="teach:lesson-1:b0"
+        editorModelScope="teach:lesson-1"
+      />,
+    )
+    expect(input().dataset.uriHint).toBe('teach:lesson-1:b0')
+    expect(input().dataset.modelScope).toBe('teach:lesson-1')
   })
 
   it('renders the prompt', () => {

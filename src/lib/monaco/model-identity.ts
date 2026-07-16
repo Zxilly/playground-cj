@@ -8,3 +8,11 @@ export function exerciseModelSlot(slot: string): string {
 export function playgroundModelUri(slot: string): string {
   return `${PLAYGROUND_ROOT}/${slot}/main.cj`
 }
+
+export function lessonModelScope(lessonId: string): string {
+  return `teach:${encodeURIComponent(lessonId)}`
+}
+
+export function lessonEditorUriHint(lessonId: string, blockId: string): string {
+  return `${lessonModelScope(lessonId)}:${encodeURIComponent(blockId)}`
+}

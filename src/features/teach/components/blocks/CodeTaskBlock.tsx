@@ -54,6 +54,10 @@ export interface CodeTaskEditorProps {
   handleRef: RefObject<CodeTaskEditorHandle | null>
   /** UI language passed through to Monaco (locale). */
   locale?: string
+  /** Stable domain-derived model identity; distinct blocks must not share it. */
+  uriHint?: string
+  /** Parent scope retaining drafts across editor-only remounts. */
+  modelScope?: string
 }
 
 /** The renderer for the code input area (real Monaco in the app, a fake in tests). */
@@ -91,6 +95,8 @@ interface CodeTaskBlockProps extends BlockComponentProps<CodeTaskBlockSchemaType
   activeEditor?: ActiveEditorRegistry
   /** UI locale forwarded to the Monaco editor. */
   locale?: string
+  editorUriHint?: string
+  editorModelScope?: string
 }
 
 /**
@@ -130,6 +136,8 @@ export function CodeTaskBlock({
   editorComponent: EditorComponent = CodeTaskMonacoEditor,
   activeEditor,
   locale,
+  editorUriHint,
+  editorModelScope,
 }: CodeTaskBlockProps) {
   // Re-hydrate a previously attempted task: a completed outcome seeds the prior
   // code (when stored) and the recorded pass/fail verdict. `outcome` is read only
@@ -219,7 +227,13 @@ export function CodeTaskBlock({
           onFocusCapture={activateEditor}
           onClick={activateEditor}
         >
-          <EditorComponent initialCode={initialCode} handleRef={handleRef} locale={locale} />
+          <EditorComponent
+            initialCode={initialCode}
+            handleRef={handleRef}
+            locale={locale}
+            uriHint={editorUriHint}
+            modelScope={editorModelScope}
+          />
         </div>
       </div>
 

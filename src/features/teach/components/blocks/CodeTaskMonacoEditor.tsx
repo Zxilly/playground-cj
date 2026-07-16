@@ -22,12 +22,12 @@ import type { CodeTaskEditorProps } from './CodeTaskBlock'
  * the browser/e2e projects, since Monaco does not render under jsdom — the block
  * is unit-tested with an injected `<textarea>` fake instead.
  */
-export function CodeTaskMonacoEditor({ initialCode, handleRef, locale }: CodeTaskEditorProps) {
+export function CodeTaskMonacoEditor({ initialCode, handleRef, locale, uriHint: stableUriHint, modelScope }: CodeTaskEditorProps) {
   const monacoHandleRef = useRef<MonacoEditorHandle | null>(null)
-  // A stable, unique model URI hint per code_task instance so multiple code
-  // tasks on one page never share a Monaco model.
+  // LessonRenderer supplies a domain-stable lesson/block identity. The useId
+  // fallback keeps standalone/test mounts isolated without retaining them.
   const reactId = useId()
-  const uriHint = `teach-code-task-${reactId.replace(/[^\w-]/g, '')}`
+  const uriHint = stableUriHint ?? `teach-code-task-${reactId.replace(/[^\w-]/g, '')}`
 
   // Publish the imperative read/write handle the block (and active-editor
   // registry) use. Reads/writes go straight to the live editor model so a
@@ -59,10 +59,13 @@ export function CodeTaskMonacoEditor({ initialCode, handleRef, locale }: CodeTas
       */}
       <div className="relative h-80 min-h-56 w-full resize-y overflow-hidden">
         <MonacoEditorReactComp
+          key={uriHint}
           code={initialCode}
           locale={locale}
           onLoad={onLoad}
           uriHint={uriHint}
+          modelScope={modelScope}
+          retainModelOnUnmount={modelScope != null}
         />
       </div>
     </EditorBridgeProvider>

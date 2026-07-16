@@ -35,7 +35,7 @@ afterEach(() => {
  * `{ getCode, setCode }` handle the real Monaco wrapper does, so the block's
  * run/register logic is exercised identically.
  */
-function FakeEditor({ initialCode, handleRef }: OJEditorProps) {
+function FakeEditor({ initialCode, handleRef, uriHint, modelScope }: OJEditorProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   useImperativeHandle(handleRef, () => ({
     getCode: () => inputRef.current?.value ?? initialCode,
@@ -48,6 +48,8 @@ function FakeEditor({ initialCode, handleRef }: OJEditorProps) {
     <textarea
       ref={inputRef}
       data-testid="fake-editor-input"
+      data-uri-hint={uriHint}
+      data-model-scope={modelScope}
       defaultValue={initialCode}
     />
   )
@@ -91,6 +93,19 @@ describe('oJBlock', () => {
   it('seeds the editor with the starter code', () => {
     render(<OJBlock block={functionBlock} editorComponent={FakeEditor} />)
     expect(input().value).toBe(functionBlock.starterCode)
+  })
+
+  it('forwards the stable model identity and lifecycle scope to Monaco', () => {
+    render(
+      <OJBlock
+        block={functionBlock}
+        editorComponent={FakeEditor}
+        editorUriHint="teach:lesson-1:b1"
+        editorModelScope="teach:lesson-1"
+      />,
+    )
+    expect(input().dataset.uriHint).toBe('teach:lesson-1:b1')
+    expect(input().dataset.modelScope).toBe('teach:lesson-1')
   })
 
   it('submit runs all cases and reports correct=true when all pass', async () => {

@@ -48,6 +48,8 @@ export interface OJEditorProps {
   handleRef: RefObject<OJEditorHandle | null>
   /** UI language passed through to Monaco (locale). */
   locale?: string
+  uriHint?: string
+  modelScope?: string
 }
 
 /** The renderer for the code input area (real Monaco in the app, a fake in tests). */
@@ -72,6 +74,8 @@ interface OJBlockComponentProps extends OjBlockProps {
    * under jsdom.
    */
   editorComponent?: OJEditorComponent
+  editorUriHint?: string
+  editorModelScope?: string
 }
 
 /** Which run produced the currently shown results: a sample run or a full submit. */
@@ -109,6 +113,8 @@ export function OJBlock({
   runProgram,
   activeEditor,
   locale,
+  editorUriHint,
+  editorModelScope,
   editorComponent: EditorComponent = OJMonacoEditor,
 }: OJBlockComponentProps) {
   // Re-hydrate a previously attempted problem: a completed outcome seeds the
@@ -210,7 +216,13 @@ export function OJBlock({
           onFocusCapture={activateEditor}
           onClick={activateEditor}
         >
-          <EditorComponent initialCode={initialCode} handleRef={handleRef} locale={locale} />
+          <EditorComponent
+            initialCode={initialCode}
+            handleRef={handleRef}
+            locale={locale}
+            uriHint={editorUriHint}
+            modelScope={editorModelScope}
+          />
         </div>
       </div>
 
