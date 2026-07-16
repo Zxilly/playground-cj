@@ -11,6 +11,7 @@ import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import { runCangjieCode } from '@/lib/teach/feedback/run-cangjie'
 import { evaluateOutput } from '@/lib/teach/feedback/evaluate'
 import type { ActiveEditorHandle, ActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
+import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
 import type { BlockComponentProps } from './block-props'
 import { cn } from '@/lib/utils'
 
@@ -161,18 +162,9 @@ export function CodeTaskBlock({
     && !evaluated.result.ok
     && evaluated.result.stderr.trim().length > 0
 
-  // Register this code_task's editor as the active one while mounted. The handle
-  // is stable (a ref) so registration survives re-renders; the registry's
-  // "latest wins / only-clear-if-still-mine" semantics keep focus correct when
-  // the learner moves between code_tasks.
-  useEffect(() => {
-    if (!activeEditor)
-      return
-    return activeEditor.register({
-      getCode: () => handleRef.current?.getCode() ?? '',
-      setCode: (code: string) => handleRef.current?.setCode(code),
-    })
-  }, [activeEditor])
+  // Mounting provides a deterministic initial editor; subsequent focus/click
+  // interactions make the learner's most recently used editor active.
+  const activateEditor = useActiveEditorRegistration(activeEditor, handleRef)
 
   // Expose a deterministic read/write hook on the editor container so e2e tests
   // can seed code into the real Monaco editor (which is not a `<textarea>`,
@@ -220,7 +212,13 @@ export function CodeTaskBlock({
         <div className="flex items-center justify-between border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
           <span>Cangjie</span>
         </div>
-        <div ref={containerRef} data-testid="code-task-editor" aria-label={t`代码编辑区`}>
+        <div
+          ref={containerRef}
+          data-testid="code-task-editor"
+          aria-label={t`代码编辑区`}
+          onFocusCapture={activateEditor}
+          onClick={activateEditor}
+        >
           <EditorComponent initialCode={initialCode} handleRef={handleRef} locale={locale} />
         </div>
       </div>

@@ -1,0 +1,39 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+import type { RefObject } from 'react'
+import type { ActiveEditorHandle, ActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
+
+/**
+ * Keep an editor registered while mounted and reactivate it when the learner
+ * interacts with its container. The returned callback is suitable for both
+ * `onFocusCapture` and `onClick`, so nested Monaco DOM nodes are covered too.
+ */
+export function useActiveEditorRegistration(
+  registry: ActiveEditorRegistry | undefined,
+  editorHandleRef: RefObject<ActiveEditorHandle | null>,
+) {
+  const unregisterRef = useRef<(() => void) | null>(null)
+  const handle = useMemo<ActiveEditorHandle>(() => ({
+    getCode: () => editorHandleRef.current?.getCode() ?? '',
+    setCode: code => editorHandleRef.current?.setCode(code),
+  }), [editorHandleRef])
+
+  const activateEditor = useCallback(() => {
+    if (!registry)
+      return
+
+    unregisterRef.current?.()
+    unregisterRef.current = registry.register(handle)
+  }, [handle, registry])
+
+  useEffect(() => {
+    activateEditor()
+    return () => {
+      unregisterRef.current?.()
+      unregisterRef.current = null
+    }
+  }, [activateEditor])
+
+  return activateEditor
+}

@@ -194,6 +194,42 @@ describe('oJBlock', () => {
     expect(registry.getCode()).toBe(functionBlock.starterCode)
   })
 
+  it('targets the last focused or clicked editor when multiple problems are mounted', () => {
+    const registry = createActiveEditorRegistry()
+    const secondBlock: OjBlockSchemaType = {
+      ...functionBlock,
+      title: 'Multiply',
+      starterCode: 'func multiply(a: Int64, b: Int64): Int64 { 0 }',
+    }
+
+    const view = render(
+      <>
+        <OJBlock key="a" block={functionBlock} editorComponent={FakeEditor} activeEditor={registry} />
+        <OJBlock key="b" block={secondBlock} editorComponent={FakeEditor} activeEditor={registry} />
+      </>,
+    )
+    const [editorA, editorB] = screen.getAllByTestId('fake-editor-input') as HTMLTextAreaElement[]
+
+    expect(registry.getCode()).toBe(secondBlock.starterCode)
+
+    fireEvent.focus(editorA)
+    expect(registry.getCode()).toBe(functionBlock.starterCode)
+    expect(registry.setCode('teacher updated A')).toBe(true)
+    expect(editorA.value).toBe('teacher updated A')
+    expect(editorB.value).toBe(secondBlock.starterCode)
+
+    fireEvent.click(editorB)
+    expect(registry.getCode()).toBe(secondBlock.starterCode)
+    expect(registry.setCode('teacher updated B')).toBe(true)
+    expect(editorA.value).toBe('teacher updated A')
+    expect(editorB.value).toBe('teacher updated B')
+
+    view.rerender(
+      <OJBlock key="b" block={secondBlock} editorComponent={FakeEditor} activeEditor={registry} />,
+    )
+    expect(registry.getCode()).toBe('teacher updated B')
+  })
+
   it('unregisters on unmount', () => {
     const registry = createActiveEditorRegistry()
     const view = render(<OJBlock block={functionBlock} editorComponent={FakeEditor} activeEditor={registry} />)

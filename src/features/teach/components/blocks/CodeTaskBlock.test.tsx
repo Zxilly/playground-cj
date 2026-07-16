@@ -262,6 +262,42 @@ describe('codeTaskBlock', () => {
       await waitFor(() => expect(runCode).toHaveBeenCalledWith('main() { println("hi") }'))
     })
 
+    it('targets the last focused or clicked editor when multiple tasks are mounted', () => {
+      const registry = createActiveEditorRegistry()
+      const secondBlock: CodeTaskBlockSchemaType = {
+        ...block,
+        prompt: 'Print goodbye',
+        starterCode: 'main() { println("goodbye") }',
+      }
+
+      const view = render(
+        <>
+          <CodeTaskBlock key="a" block={block} runCode={vi.fn()} editorComponent={FakeEditor} activeEditor={registry} />
+          <CodeTaskBlock key="b" block={secondBlock} runCode={vi.fn()} editorComponent={FakeEditor} activeEditor={registry} />
+        </>,
+      )
+      const [editorA, editorB] = screen.getAllByTestId('fake-editor-input') as HTMLTextAreaElement[]
+
+      expect(registry.getCode()).toBe(secondBlock.starterCode)
+
+      fireEvent.focus(editorA)
+      expect(registry.getCode()).toBe(block.starterCode)
+      expect(registry.setCode('teacher updated A')).toBe(true)
+      expect(editorA.value).toBe('teacher updated A')
+      expect(editorB.value).toBe(secondBlock.starterCode)
+
+      fireEvent.click(editorB)
+      expect(registry.getCode()).toBe(secondBlock.starterCode)
+      expect(registry.setCode('teacher updated B')).toBe(true)
+      expect(editorA.value).toBe('teacher updated A')
+      expect(editorB.value).toBe('teacher updated B')
+
+      view.rerender(
+        <CodeTaskBlock key="b" block={secondBlock} runCode={vi.fn()} editorComponent={FakeEditor} activeEditor={registry} />,
+      )
+      expect(registry.getCode()).toBe('teacher updated B')
+    })
+
     it('unregisters on unmount so a stale editor is not read after the lesson closes', () => {
       const registry = createActiveEditorRegistry()
       const view = render(<CodeTaskBlock block={block} runCode={vi.fn()} editorComponent={FakeEditor} activeEditor={registry} />)
