@@ -9,7 +9,6 @@ import { DynamicCodeTaskMonacoEditor } from '@/features/teach/components/blocks/
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
-import { retainModelScope } from '@/lib/monaco/model-lifecycle'
 import type { PlaygroundEditorHostContextValue } from './playground-editor-host-context'
 import { PlaygroundEditorHostContext } from './playground-editor-host-context'
 
@@ -95,8 +94,6 @@ export function PlaygroundEditorHost({
     }
   }, [hostElement, placeHost])
 
-  useEffect(() => retainModelScope('teach:playground'), [])
-
   useLayoutEffect(() => {
     const previousTabId = currentTabIdRef.current
     if (previousTabId === activeTab?.id)
@@ -137,7 +134,6 @@ export function PlaygroundEditorHost({
           handleRef={editorHandleRef}
           locale={i18n.locale}
           uriHint={activeTab ? `teach-playground-${activeTab.id}` : 'teach-playground-empty'}
-          modelScope="teach:playground"
           fillHeight
         />,
         hostElement,

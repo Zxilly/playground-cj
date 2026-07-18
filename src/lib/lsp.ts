@@ -1,5 +1,9 @@
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
-import { createLspDocumentMirror, PLAYGROUND_PROJECT_MANIFEST } from '@/lib/monaco/lsp-document-mirror'
+import {
+  createLspDocumentMirror,
+  PLAYGROUND_INACTIVE_DOCUMENT,
+  PLAYGROUND_PROJECT_MANIFEST,
+} from '@/lib/monaco/lsp-document-mirror'
 
 // Pthread workers spawned by the emscripten module inherit the JS glue's
 // query string via `import.meta.url`, so they hit the same cached URL as
@@ -205,7 +209,10 @@ async function initializeLspServer(
         '/playground/cjpm.toml',
         new TextEncoder().encode(PLAYGROUND_PROJECT_MANIFEST),
       )
-      mod.FS.writeFile('/playground/src/main.cj', new Uint8Array())
+      mod.FS.writeFile(
+        '/playground/src/main.cj',
+        new TextEncoder().encode(PLAYGROUND_INACTIVE_DOCUMENT),
+      )
     }],
     // Emscripten contract: async path must call successCallback() and
     // return {} — never return a Promise or exports object.
@@ -541,8 +548,10 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
       return
     const message = typeof event.data === 'string' ? event.data : JSON.stringify(event.data)
     instance.documentMirror ??= createLspDocumentMirror(instance.module.FS)
-    instance.documentMirror.handle(message)
+    const cleanupMessage = instance.documentMirror.handle(message)
     try {
+      if (cleanupMessage)
+        instance.module.processMessage(cleanupMessage)
       instance.module.processMessage(message)
     }
     catch (e) {

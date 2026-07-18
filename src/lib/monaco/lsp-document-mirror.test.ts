@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createLspDocumentMirror } from './lsp-document-mirror'
+import { createLspDocumentMirror, PLAYGROUND_INACTIVE_DOCUMENT } from './lsp-document-mirror'
 
 function message(method: string, params: object): string {
   return JSON.stringify({ jsonrpc: '2.0', method, params })
@@ -56,5 +56,28 @@ describe('lspDocumentMirror', () => {
     }))
 
     expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('retires a closed tab before the server compiles the next active document', () => {
+    const writeFile = vi.fn()
+    const mirror = createLspDocumentMirror({ mkdir: vi.fn(), writeFile })
+    const uri = 'file:///playground/src/exercise-tab-1.cj'
+    mirror.handle(message('textDocument/didOpen', {
+      textDocument: { uri, version: 4, text: 'package playground\nmain() {}' },
+    }))
+
+    const cleanup = mirror.handle(message('textDocument/didClose', {
+      textDocument: { uri },
+    }))
+
+    expect(new TextDecoder().decode(writeFile.mock.lastCall?.[1])).toBe(PLAYGROUND_INACTIVE_DOCUMENT)
+    expect(JSON.parse(cleanup ?? '{}')).toEqual({
+      jsonrpc: '2.0',
+      method: 'textDocument/didChange',
+      params: {
+        textDocument: { uri, version: 5 },
+        contentChanges: [{ text: PLAYGROUND_INACTIVE_DOCUMENT }],
+      },
+    })
   })
 })

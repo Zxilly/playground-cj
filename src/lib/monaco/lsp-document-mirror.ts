@@ -30,6 +30,13 @@ link-option = ""
 package-configuration = {}
 `
 
+export const PLAYGROUND_INACTIVE_DOCUMENT = 'package playground\n'
+
+interface MirroredDocument {
+  text: string
+  version: number
+}
+
 function mkdirP(fs: WritableWasmFs, path: string): void {
   const parts = path.split('/').filter(Boolean)
   let current = ''
@@ -87,7 +94,7 @@ function applyChanges(text: string, changes: readonly ContentChange[]): string {
  * arrives over LSP, so a protocol-only buffer otherwise gets no semantic model.
  */
 export function createLspDocumentMirror(fs: WritableWasmFs, root = '/playground') {
-  const documents = new Map<string, string>()
+  const documents = new Map<string, MirroredDocument>()
   const encoder = new TextEncoder()
 
   const write = (path: string, text: string) => {
@@ -96,11 +103,11 @@ export function createLspDocumentMirror(fs: WritableWasmFs, root = '/playground'
   }
 
   return {
-    handle(message: string): void {
+    handle(message: string): string | undefined {
       let parsed: {
         method?: string
         params?: {
-          textDocument?: { uri?: string, text?: string }
+          textDocument?: { uri?: string, text?: string, version?: number }
           contentChanges?: ContentChange[]
         }
       }
@@ -120,7 +127,8 @@ export function createLspDocumentMirror(fs: WritableWasmFs, root = '/playground'
 
       if (parsed.method === 'textDocument/didOpen') {
         const text = parsed.params?.textDocument?.text ?? ''
-        documents.set(uri, text)
+        const version = parsed.params?.textDocument?.version ?? 1
+        documents.set(uri, { text, version })
         write(path, text)
       }
       else if (parsed.method === 'textDocument/didChange') {
@@ -128,12 +136,26 @@ export function createLspDocumentMirror(fs: WritableWasmFs, root = '/playground'
         const changes = parsed.params?.contentChanges
         if (current === undefined || !changes)
           return
-        const text = applyChanges(current, changes)
-        documents.set(uri, text)
+        const text = applyChanges(current.text, changes)
+        const version = parsed.params?.textDocument?.version ?? current.version + 1
+        documents.set(uri, { text, version })
         write(path, text)
       }
       else if (parsed.method === 'textDocument/didClose') {
+        const current = documents.get(uri)
+        if (!current)
+          return
+        const version = current.version + 1
+        write(path, PLAYGROUND_INACTIVE_DOCUMENT)
         documents.delete(uri)
+        return JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'textDocument/didChange',
+          params: {
+            textDocument: { uri, version },
+            contentChanges: [{ text: PLAYGROUND_INACTIVE_DOCUMENT }],
+          },
+        })
       }
     },
   }
