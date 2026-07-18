@@ -1,24 +1,22 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { useEffect, useRef } from 'react'
-import type { ChangeEvent, ReactNode, RefObject } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
-import type { CodeTaskEditorHandle } from '@/features/teach/components/blocks/CodeTaskBlock'
+import type { CodeTaskEditorProps } from '@/features/teach/components/blocks/CodeTaskBlock'
 import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
+import { PlaygroundEditorHost } from './PlaygroundEditorHost'
 import { PlaygroundView } from './PlaygroundView'
 
 function FakePlaygroundEditor({
   initialCode,
   handleRef,
-}: {
-  initialCode: string
-  handleRef: RefObject<CodeTaskEditorHandle | null>
-}) {
+}: CodeTaskEditorProps) {
   const codeRef = useRef(initialCode)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
@@ -82,9 +80,20 @@ function Wrapper({ children }: { children: ReactNode }) {
   i18n.activate('zh')
   return (
     <I18nProvider i18n={i18n}>
-      <WorkspaceContext value={context}>{children}</WorkspaceContext>
+      <WorkspaceContext value={context}>
+        <PlaygroundEditorHost editorComponent={FakePlaygroundEditor}>
+          {children}
+        </PlaygroundEditorHost>
+      </WorkspaceContext>
     </I18nProvider>
   )
+}
+
+function PlaygroundRouteHarness() {
+  const view = useWorkspaceStore(state => state.view)
+  return view === 'playground'
+    ? <PlaygroundView />
+    : <div data-testid="other-route" />
 }
 
 beforeEach(() => {
@@ -96,6 +105,21 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('playgroundView student flow', () => {
+  it('keeps the editor instance and buffer while the Playground route page unmounts', async () => {
+    render(<PlaygroundRouteHarness />, { wrapper: Wrapper })
+    const editor = await screen.findByTestId('fake-playground-editor')
+    fireEvent.change(editor, { target: { value: 'main() { println("persistent") }' } })
+
+    act(() => useWorkspaceStore.getState().setView('glossary'))
+    expect(screen.queryByTestId('playground-view')).toBeNull()
+    expect(editor.isConnected).toBe(true)
+    expect(context.activeEditor?.getCode()).toBeNull()
+
+    act(() => useWorkspaceStore.getState().setView('playground'))
+    expect(await screen.findByTestId('fake-playground-editor')).toBe(editor)
+    expect((editor as HTMLTextAreaElement).value).toBe('main() { println("persistent") }')
+  })
+
   it('keeps tab buffers independent and runs the code from the active editor', async () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
 

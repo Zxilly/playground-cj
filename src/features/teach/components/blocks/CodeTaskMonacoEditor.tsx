@@ -51,6 +51,9 @@ export function CodeTaskMonacoEditor({
       setCode: (code: string) => {
         monacoHandleRef.current?.getEditor()?.getModel()?.setValue(code)
       },
+      layout: () => {
+        monacoHandleRef.current?.getEditor()?.layout()
+      },
     }
     return () => {
       handleRef.current = null

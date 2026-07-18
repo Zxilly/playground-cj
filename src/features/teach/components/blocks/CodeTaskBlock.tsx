@@ -35,7 +35,10 @@ interface EvaluatedRun {
  * code at run time and register it with the active-editor registry. Identical in
  * shape to {@link ActiveEditorHandle} — the editor *is* the active-editor source.
  */
-export type CodeTaskEditorHandle = ActiveEditorHandle
+export interface CodeTaskEditorHandle extends ActiveEditorHandle {
+  /** Re-measure the editor after its stable host moves into a visible slot. */
+  layout?: () => void
+}
 
 /**
  * Props the injected code_task editor component receives. `initialCode` seeds the

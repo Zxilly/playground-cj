@@ -171,19 +171,22 @@ describe('teachWorkspaceShell', () => {
     expect(closeButtons[1].getAttribute('tabindex')).toBe('-1')
   })
 
-  it('keeps the Monaco playground mounted while another workspace view is active', async () => {
+  it('keeps only the Monaco EditorHost mounted while the Playground route page unmounts', async () => {
     render(<TeachWorkspaceShell chat={null} />, makeRepo({ mission: null }))
     await screen.findByTestId('mission-gate')
 
     fireEvent.click(screen.getByTestId('workspace-nav-playground'))
-    const editor = await screen.findByTestId('playground-editor')
+    const playground = await screen.findByTestId('playground-view')
+    const editorHost = await screen.findByTestId('playground-editor-host')
 
     fireEvent.click(screen.getByTestId('workspace-nav-glossary'))
     await screen.findByTestId('glossary-empty')
-    expect(editor.isConnected).toBe(true)
+    await waitFor(() => expect(playground.isConnected).toBe(false))
+    expect(editorHost.isConnected).toBe(true)
 
     fireEvent.click(screen.getByTestId('workspace-nav-playground'))
-    expect(screen.getByTestId('playground-editor')).toBe(editor)
+    expect(await screen.findByTestId('playground-view')).not.toBe(playground)
+    expect(screen.getByTestId('playground-editor-host')).toBe(editorHost)
   })
 
   it('renders the open lesson in the central viewport for the lesson view', async () => {

@@ -101,7 +101,7 @@ describe('mission-first gating', () => {
     // Default view is 'lessons'; with no mission the gate replaces the list.
     expect(await screen.findByTestId('mission-gate')).toBeTruthy()
     await waitFor(() => expect(useWorkspaceStore.getState().view).toBe('mission'))
-    expect(screen.getAllByTestId('mission-gate')).toHaveLength(1)
+    await waitFor(() => expect(screen.getAllByTestId('mission-gate')).toHaveLength(1))
     expect(screen.queryByTestId('lessons-list-view')).toBeNull()
     expect(screen.queryByTestId('lessons-empty')).toBeNull()
   })

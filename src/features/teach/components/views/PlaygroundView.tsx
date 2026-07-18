@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { FileCode2, Loader2, Play, Plus, X } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -10,12 +10,10 @@ import { Trans } from '@lingui/react/macro'
 import type { PlaygroundTab } from '@/features/teach/state/workspace-store'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
-import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
-import type { CodeTaskEditorHandle } from '@/features/teach/components/blocks/CodeTaskBlock'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
-import { DynamicCodeTaskMonacoEditor } from '@/features/teach/components/blocks/DynamicCodeTaskMonacoEditor'
 import { AnsiOutput } from '@/components/AnsiOutput'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
+import { usePlaygroundEditorHost } from './playground-editor-host-context'
 
 const DEFAULT_OUTPUT_HEIGHT = 176
 const MIN_OUTPUT_HEIGHT = 112
@@ -31,11 +29,7 @@ function clampOutputHeight(height: number, maxHeight: number): number {
  * Ephemeral multi-buffer workspace for demonstrations, experiments, and other
  * code that should stay visible without becoming durable lesson content.
  */
-interface PlaygroundViewProps {
-  active?: boolean
-}
-
-export function PlaygroundView({ active = true }: PlaygroundViewProps) {
+export function PlaygroundView() {
   // The tab strip renders and reorders the whole collection; one collection
   // subscription is the granular state this view needs.
   // eslint-disable-next-line granular-selectors/granular-selectors
@@ -145,7 +139,6 @@ export function PlaygroundView({ active = true }: PlaygroundViewProps) {
       {activeTab
         ? (
             <PlaygroundEditorPane
-              active={active}
               tab={activeTab}
               outputHeight={outputHeight}
               onOutputHeightChange={setOutputHeight}
@@ -171,24 +164,20 @@ export function PlaygroundView({ active = true }: PlaygroundViewProps) {
 }
 
 interface PlaygroundEditorPaneProps {
-  active: boolean
   tab: PlaygroundTab
   outputHeight: number
   onOutputHeightChange: (height: number | ((current: number) => number)) => void
 }
 
 function PlaygroundEditorPane({
-  active,
   tab,
   outputHeight,
   onOutputHeightChange,
 }: PlaygroundEditorPaneProps) {
   const { i18n } = useLingui()
-  const { activeEditor, runner } = useWorkspace()
+  const { runner } = useWorkspace()
+  const { activateEditor, editorHandleRef, registerEditorSlot } = usePlaygroundEditorHost()
   const setResult = useWorkspaceStore(state => state.setPlaygroundTabResult)
-  const setCode = useWorkspaceStore(state => state.setPlaygroundTabCode)
-  const handleRef = useRef<CodeTaskEditorHandle | null>(null)
-  const currentTabIdRef = useRef(tab.id)
   const paneRef = useRef<HTMLDivElement | null>(null)
   const resizeStateRef = useRef<{
     pointerId: number
@@ -197,24 +186,6 @@ function PlaygroundEditorPane({
     maxHeight: number
   } | null>(null)
   const [running, setRunning] = useState(false)
-  const activateEditor = useActiveEditorRegistration(activeEditor, handleRef, active)
-
-  useLayoutEffect(() => {
-    const previousTabId = currentTabIdRef.current
-    if (previousTabId === tab.id)
-      return
-    const previousCode = handleRef.current?.getCode()
-    if (previousCode !== undefined)
-      setCode(previousTabId, previousCode)
-    handleRef.current?.setCode(tab.initialCode)
-    currentTabIdRef.current = tab.id
-  }, [setCode, tab.id, tab.initialCode])
-
-  useEffect(() => () => {
-    const code = handleRef.current?.getCode()
-    if (code !== undefined)
-      setCode(currentTabIdRef.current, code)
-  }, [setCode])
 
   const getMaxOutputHeight = useCallback(() => {
     const paneHeight = paneRef.current?.getBoundingClientRect().height ?? 0
@@ -283,7 +254,7 @@ function PlaygroundEditorPane({
   const run = async () => {
     if (running)
       return
-    const code = handleRef.current?.getCode() ?? tab.initialCode
+    const code = editorHandleRef.current?.getCode() ?? tab.initialCode
     setRunning(true)
     try {
       const result = await (runner ?? defaultRunner).run(code)
@@ -304,22 +275,13 @@ function PlaygroundEditorPane({
       className="flex min-h-0 flex-1 flex-col"
     >
       <div
+        ref={registerEditorSlot}
         data-testid="playground-editor"
         aria-label={t`Playground 代码编辑区`}
         onFocusCapture={activateEditor}
         onClick={activateEditor}
         className="flex min-h-0 flex-1"
-      >
-        <DynamicCodeTaskMonacoEditor
-          initialCode={tab.initialCode}
-          handleRef={handleRef}
-          locale={i18n.locale}
-          modelScope="teach:playground"
-          canonicalModel
-          replaceCodeOnMount
-          fillHeight
-        />
-      </div>
+      />
 
       <div
         data-testid="playground-output"

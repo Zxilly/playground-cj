@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 import type { NavView } from './WorkspaceNav'
 import { WorkspaceNav } from './WorkspaceNav'
 import { WorkspaceViewport } from './WorkspaceViewport'
-import { PlaygroundView } from './views/PlaygroundView'
+import { PlaygroundEditorHost } from './views/PlaygroundEditorHost'
 import { useWorkspaceResource } from './views/use-workspace-resource'
 
 export interface TeachWorkspaceShellProps {
@@ -212,26 +212,8 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         inert={isCompact && chatOpen}
         className="relative min-w-0 flex-1 overflow-hidden bg-background"
       >
-        <motion.div
-          data-testid="workspace-playground-layer"
-          data-active={view === 'playground' ? 'true' : 'false'}
-          aria-hidden={view !== 'playground'}
-          inert={view !== 'playground'}
-          initial={false}
-          animate={{ opacity: view === 'playground' ? 1 : 0 }}
-          transition={{ duration: reduceMotion ? 0 : 0.14, ease: 'easeOut' }}
-          className={cn(
-            'absolute inset-0 h-full min-h-0 w-full overflow-hidden bg-background px-0 pb-0 pt-16 lg:p-0',
-            view === 'playground' ? 'z-[1]' : 'pointer-events-none z-0',
-          )}
-        >
-          <div className="h-full min-h-0 w-full">
-            <PlaygroundView active={view === 'playground'} />
-          </div>
-        </motion.div>
-
-        <AnimatePresence initial={false} mode="wait">
-          {view !== 'playground' && (
+        <PlaygroundEditorHost>
+          <AnimatePresence initial={false} mode="sync">
             <motion.div
               key={viewTransitionKey}
               data-testid="workspace-view-transition"
@@ -240,9 +222,19 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: reduceMotion ? 0 : 0.14, ease: 'easeOut' }}
-              className="absolute inset-0 z-[1] h-full min-h-0 w-full overflow-y-auto bg-background px-4 pb-7 pt-20 sm:px-6 lg:px-8 lg:py-8"
+              className={cn(
+                'absolute inset-0 h-full min-h-0 w-full bg-background',
+                view === 'playground'
+                  ? 'overflow-hidden px-0 pb-0 pt-16 lg:p-0'
+                  : 'overflow-y-auto px-4 pb-7 pt-20 sm:px-6 lg:px-8 lg:py-8',
+              )}
             >
-              <div className="mx-auto w-full max-w-4xl">
+              <div className={cn(
+                view === 'playground'
+                  ? 'h-full min-h-0 w-full'
+                  : 'mx-auto w-full max-w-4xl',
+              )}
+              >
                 <WorkspaceViewport
                   view={view}
                   missionReady={missionReady}
@@ -251,8 +243,8 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
                 />
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </AnimatePresence>
+        </PlaygroundEditorHost>
       </main>
 
       {isCompact && chatOpen && (
