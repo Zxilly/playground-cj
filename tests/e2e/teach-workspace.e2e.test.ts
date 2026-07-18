@@ -168,10 +168,18 @@ const FIRST_LESSON_DRAFT = {
     {
       type: 'code_task',
       prompt: '在 main 中用 println 打印「仓颉」。',
-      starterCode: 'main() {\n    // TODO\n}',
+      starterCode: 'package first\n\nmain() {\n    // TODO\n}',
       expectedOutput: '仓颉',
       matchMode: 'exact' as const,
       hints: ['用 println("仓颉")。'],
+    },
+    {
+      type: 'code_task',
+      prompt: '修复这个独立代码块中的类型错误。',
+      starterCode: 'package second\n\nmain(): Int64 {\n    let value: Int64 = "wrong"\n    return value\n}',
+      expectedOutput: '',
+      matchMode: 'exact' as const,
+      hints: ['字符串不能赋值给 Int64。'],
     },
   ],
   citations: [],
@@ -336,6 +344,17 @@ describe('teach workspace e2e', () => {
     // Lesson renders its blocks (prose + quiz + code_task).
     await page.getByTestId('lesson-renderer').waitFor({ state: 'visible' })
     await page.getByTestId('quiz-block').waitFor({ state: 'visible' })
+    await expect.poll(() => page.getByTestId('code-task-block').count()).toBe(2)
+
+    // Both independent snippets are live Monaco editors backed by the same LSP
+    // process. The second snippet intentionally has a type error; its diagnostics
+    // must not make the first valid snippet inherit duplicate package/main errors.
+    const codeTasks = page.getByTestId('code-task-block')
+    await expect.poll(
+      () => codeTasks.nth(1).locator('.squiggly-error').count(),
+      { timeout: 60_000 },
+    ).toBeGreaterThan(0)
+    expect(await codeTasks.nth(0).locator('.squiggly-error').count()).toBe(0)
 
     // Answer the quiz correctly → immediate feedback.
     await page.getByTestId('quiz-option').first().click()
@@ -349,8 +368,8 @@ describe('teach workspace e2e', () => {
     // deterministic write hook (which calls the model's setValue) rather than
     // page.fill(), then run it through the mocked runner.
     await seedCodeTask(page, PRINT_TASK_CODE)
-    await page.getByTestId('code-task-run').click()
-    const codeResult = page.getByTestId('code-task-result')
+    await page.getByTestId('code-task-run').first().click()
+    const codeResult = page.getByTestId('code-task-result').first()
     await codeResult.waitFor({ state: 'visible', timeout: 30_000 })
     expect(await codeResult.getAttribute('data-status')).toBe('passed')
 
@@ -435,7 +454,7 @@ async function enterWorkspaceFromLanding(page: Page): Promise<void> {
  * until Monaco has mounted and the hook is attached, then write through it.
  */
 async function seedCodeTask(page: Page, code: string): Promise<void> {
-  const container = page.getByTestId('code-task-editor')
+  const container = page.getByTestId('code-task-editor').first()
   await container.waitFor({ state: 'visible', timeout: 30_000 })
   // Monaco mounts asynchronously: the write hook is attached on mount but the
   // underlying editor model only exists once Monaco's onLoad fires, so an early
