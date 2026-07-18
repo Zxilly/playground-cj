@@ -61,6 +61,12 @@ describe('buildTeacherSystemPrompt', () => {
       expect(prompt).toMatch(/不要.*直接 run_code/)
       expect(prompt).toContain('多个 tab')
     })
+
+    it('requires self-consistent code-task output judging without exposing schema retries', () => {
+      expect(prompt).toMatch(/expectedOutput.*逐字/)
+      expect(prompt).toMatch(/自由填写.*不得使用固定 exact/)
+      expect(prompt).toMatch(/不要.*叙述 JSON.*schema/)
+    })
   })
 
   describe('en', () => {
@@ -119,6 +125,12 @@ describe('buildTeacherSystemPrompt', () => {
       expect(prompt).toMatch(/pre-mission code.*MUST go to Playground/i)
       expect(prompt).toMatch(/multiple tabs/i)
       expect(prompt).toMatch(/Do not substitute.*direct run_code/i)
+    })
+
+    it('requires self-consistent code-task output judging without exposing schema retries', () => {
+      expect(prompt).toMatch(/expectedOutput must exactly match/i)
+      expect(prompt).toMatch(/open-ended values.*fixed exact output/i)
+      expect(prompt).toMatch(/Do not narrate JSON.*schema validation/i)
     })
   })
 })

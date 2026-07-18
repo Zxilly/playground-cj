@@ -20,7 +20,6 @@ import {
 } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
-import { useState } from 'react'
 import type { FC, PropsWithChildren } from 'react'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -134,20 +133,16 @@ function AssistantMessage() {
 
 /**
  * Collapsible "思考过程" disclosure wrapping a turn's reasoning and tool calls.
- * Open while the turn is still running so the learner sees live reasoning/tool
- * activity (otherwise a tool-heavy turn looks like a frozen gap before the
- * answer streams); it auto-collapses once the turn completes, and the learner
- * can toggle it either way.
+ * Kept collapsed by default, including while a turn is running, so internal
+ * reasoning and tool validation do not interrupt the learner-facing answer.
+ * The live status remains visible on the accessible disclosure trigger, and
+ * learners can expand it when they want the implementation detail.
  */
-function ChainOfThought({ children }: PropsWithChildren) {
+export function ChainOfThought({ children }: PropsWithChildren) {
   const running = useAuiState(s => s.message.status?.type === 'running')
-  const [userOpen, setUserOpen] = useState<boolean | null>(null)
-  const open = userOpen ?? running
 
   return (
     <Collapsible
-      open={open}
-      onOpenChange={setUserOpen}
       data-slot="aui_chain-of-thought"
       className="mb-3 rounded-md border border-border bg-background"
     >

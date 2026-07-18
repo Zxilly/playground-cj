@@ -1,7 +1,10 @@
 import * as React from 'react'
 
 const MOBILE_BREAKPOINT = 768
-const COMPACT_VIEWPORT_BREAKPOINT = 1024
+// Reserve the modal chat drawer for phone-sized viewports. Tablet and laptop
+// widths have enough room for chat to remain a secondary side column alongside
+// the primary learning workspace.
+const COMPACT_VIEWPORT_BREAKPOINT = MOBILE_BREAKPOINT
 
 function subscribeAt(breakpoint: number, onStoreChange: () => void) {
   // `matchMedia` is absent in some non-browser environments (e.g. jsdom under

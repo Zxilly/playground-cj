@@ -1,9 +1,13 @@
 import { i18n as globalI18n, setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MessageError } from './ThreadMessages'
+import { ChainOfThought, MessageError } from './ThreadMessages'
+
+const auiStateMocks = vi.hoisted(() => ({
+  messageStatus: 'running',
+}))
 
 function MockMessageErrorSlot({ children }: { children?: ReactNode }) {
   return <div data-testid="message-error-slot">{children}</div>
@@ -72,6 +76,12 @@ function MockUserMessageAttachments() {
   return null
 }
 
+function MockUseAuiState(selector: (state: unknown) => unknown) {
+  return selector({
+    message: { status: { type: auiStateMocks.messageStatus } },
+  })
+}
+
 vi.mock('@assistant-ui/react', () => ({
   ActionBarPrimitive: {
     Reload: MockActionReload,
@@ -84,6 +94,7 @@ vi.mock('@assistant-ui/react', () => ({
   MessagePrimitive: {
     Error: MockMessageErrorSlot,
   },
+  useAuiState: MockUseAuiState,
 }))
 
 vi.mock('@/components/ui/button', () => ({
@@ -138,5 +149,23 @@ describe('threadMessages', () => {
     expect(screen.getByTestId('reload-action').contains(retry)).toBe(true)
     expect(retry.className).toContain('rounded-md')
     expect(retry.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('keeps live reasoning and tool validation chatter collapsed by default', () => {
+    auiStateMocks.messageStatus = 'running'
+    render(
+      <ChainOfThought>
+        <div>internal tool validation detail</div>
+      </ChainOfThought>,
+      { wrapper: Wrapper },
+    )
+
+    const disclosure = screen.getByRole('button', { name: '正在思考…' })
+    expect(disclosure.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByText('internal tool validation detail')).toBeNull()
+
+    fireEvent.click(disclosure)
+    expect(disclosure.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByText('internal tool validation detail')).toBeTruthy()
   })
 })

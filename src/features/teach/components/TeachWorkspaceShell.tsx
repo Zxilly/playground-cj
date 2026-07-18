@@ -275,7 +275,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
           type="button"
           aria-label={t`收起老师对话`}
           onClick={closeChat}
-          className="fixed inset-0 z-40 cursor-default bg-foreground/30 lg:hidden"
+          className="fixed inset-0 z-40 cursor-default bg-foreground/30 md:hidden"
         />
       )}
 
@@ -284,6 +284,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         id={chatRegionId}
         data-testid="workspace-chat"
         data-open={chatOpen ? 'true' : 'false'}
+        data-layout={isCompact ? 'drawer' : 'side-column'}
         role={isCompact ? 'dialog' : undefined}
         aria-modal={isCompact ? true : undefined}
         aria-labelledby={chatTitleId}
@@ -291,9 +292,9 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         style={isCompact ? undefined : { width: chatWidth }}
         onKeyDown={onChatKeyDown}
         className={cn(
-          'lg:relative lg:flex lg:shrink-0 lg:flex-col lg:border-s lg:border-border lg:bg-background',
-          'fixed inset-x-0 bottom-0 z-40 flex h-[min(78dvh,46rem)] flex-col overflow-hidden rounded-t-lg border-t border-border bg-background shadow-lg transition-transform duration-300 ease-out lg:inset-auto lg:h-auto lg:translate-y-0 lg:rounded-none lg:shadow-none',
-          chatOpen ? 'translate-y-0' : 'translate-y-full lg:translate-y-0',
+          'md:relative md:flex md:shrink-0 md:flex-col md:border-s md:border-border md:bg-background',
+          'fixed inset-x-0 bottom-0 z-40 flex h-[min(78dvh,46rem)] flex-col overflow-hidden rounded-t-lg border-t border-border bg-background shadow-lg transition-transform duration-300 ease-out md:inset-auto md:h-auto md:translate-y-0 md:rounded-none md:shadow-none',
+          chatOpen ? 'translate-y-0' : 'translate-y-full md:translate-y-0',
         )}
       >
         <div
@@ -306,7 +307,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
           tabIndex={0}
           onPointerDown={startResize}
           onKeyDown={onHandleKeyDown}
-          className="group absolute inset-y-0 -start-1 z-20 hidden w-2 cursor-col-resize touch-none lg:block"
+          className="group absolute inset-y-0 -start-1 z-20 hidden w-2 cursor-col-resize touch-none md:block"
         >
           <span className="absolute inset-y-0 start-1/2 w-px -translate-x-1/2 bg-border/80 transition-colors group-hover:bg-primary/60 group-focus-visible:w-0.5 group-focus-visible:bg-primary" />
         </div>
@@ -330,7 +331,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
             data-testid="workspace-chat-close"
             onClick={closeChat}
             aria-label={t`收起老师对话`}
-            className="rounded-md text-muted-foreground lg:hidden"
+            className="rounded-md text-muted-foreground md:hidden"
           >
             <X aria-hidden="true" className="size-4" />
           </Button>
@@ -347,7 +348,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         aria-label={chatOpen ? t`收起老师对话` : t`打开老师对话`}
         aria-expanded={chatOpen}
         aria-controls={chatRegionId}
-        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] end-4 z-20 size-12 rounded-md shadow-md lg:hidden"
+        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] end-4 z-20 size-12 rounded-md shadow-md md:hidden"
       >
         {chatOpen
           ? <X aria-hidden="true" className="size-5" />

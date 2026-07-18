@@ -212,19 +212,43 @@ describe('teachWorkspaceShell', () => {
   })
 
   it('toggles the chat drawer open and closed on mobile', () => {
-    render(<TeachWorkspaceShell chat={<div data-testid="chat-slot" />} />, makeRepo())
-    const chat = screen.getByTestId('workspace-chat')
-    // Drawer starts closed on mobile (hidden) but the desktop column always shows it.
-    expect(chat.getAttribute('data-open')).toBe('false')
-    fireEvent.click(screen.getByTestId('workspace-chat-toggle'))
-    expect(screen.getByTestId('workspace-chat').getAttribute('data-open')).toBe('true')
-    fireEvent.click(screen.getByTestId('workspace-chat-close'))
-    expect(screen.getByTestId('workspace-chat').getAttribute('data-open')).toBe('false')
+    const originalWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 480 })
+    try {
+      render(<TeachWorkspaceShell chat={<div data-testid="chat-slot" />} />, makeRepo())
+      const chat = screen.getByTestId('workspace-chat')
+      // Drawer starts closed on mobile (hidden) but the desktop column always shows it.
+      expect(chat.getAttribute('data-open')).toBe('false')
+      fireEvent.click(screen.getByTestId('workspace-chat-toggle'))
+      expect(screen.getByTestId('workspace-chat').getAttribute('data-open')).toBe('true')
+      fireEvent.click(screen.getByTestId('workspace-chat-close'))
+      expect(screen.getByTestId('workspace-chat').getAttribute('data-open')).toBe('false')
+    }
+    finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth })
+    }
+  })
+
+  it('keeps teacher chat as a secondary side column at common laptop widths', () => {
+    const originalWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 996 })
+    try {
+      render(<TeachWorkspaceShell chat={<div data-testid="chat-slot" />} />, makeRepo())
+      const chat = screen.getByTestId('workspace-chat')
+
+      expect(chat.getAttribute('data-layout')).toBe('side-column')
+      expect(chat.getAttribute('role')).toBeNull()
+      expect(chat.hasAttribute('inert')).toBe(false)
+      expect(chat.style.width).toBe('400px')
+    }
+    finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth })
+    }
   })
 
   it('closes the compact chat drawer with Escape', () => {
     const originalWidth = window.innerWidth
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 768 })
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 640 })
     try {
       render(<TeachWorkspaceShell chat={<button type="button">chat action</button>} />, makeRepo())
       fireEvent.click(screen.getByTestId('workspace-chat-toggle'))
