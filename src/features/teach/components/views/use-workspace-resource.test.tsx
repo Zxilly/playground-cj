@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { useWorkspaceResource } from './use-workspace-resource'
@@ -77,5 +77,45 @@ describe('useWorkspaceResource', () => {
     const second = renderHook(() => useWorkspaceResource(owner, 'doc', load, []))
     expect(second.result.current).toEqual({ data: 'cached doc', loading: false })
     await waitFor(() => expect(load).toHaveBeenCalledTimes(2))
+  })
+
+  it('shares one in-flight read between preload and visible consumers', async () => {
+    let resolve!: (value: string) => void
+    const load = vi.fn(() => new Promise<string>((done) => {
+      resolve = done
+    }))
+    const owner = {}
+
+    const first = renderHook(() => useWorkspaceResource(owner, 'doc', load, []))
+    const second = renderHook(() => useWorkspaceResource(owner, 'doc', load, []))
+    expect(load).toHaveBeenCalledTimes(1)
+
+    await act(async () => resolve('shared'))
+    await waitFor(() => {
+      expect(first.result.current.data).toBe('shared')
+      expect(second.result.current.data).toBe('shared')
+    })
+  })
+
+  it('does not let an older revision overwrite a newer resource value', async () => {
+    const pending: Array<(value: string) => void> = []
+    const load = vi.fn(() => new Promise<string>((resolve) => {
+      pending.push(resolve)
+    }))
+    const owner = {}
+    const view = renderHook(() => useWorkspaceResource(owner, 'doc', load, [], 'notes'))
+
+    expect(load).toHaveBeenCalledTimes(1)
+    act(() => useWorkspaceStore.getState().bumpRevision('notes'))
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(2))
+
+    await act(async () => pending[1]('new'))
+    await waitFor(() => expect(view.result.current.data).toBe('new'))
+    await act(async () => pending[0]('stale'))
+    expect(view.result.current.data).toBe('new')
+
+    view.unmount()
+    const remount = renderHook(() => useWorkspaceResource(owner, 'doc', load, [], 'notes'))
+    expect(remount.result.current.data).toBe('new')
   })
 })

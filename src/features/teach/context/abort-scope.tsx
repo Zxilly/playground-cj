@@ -18,8 +18,15 @@ const AbortScopeContext = createContext<AbortSignal | null>(null)
  * (streamed through the scoped chat transport) is cancelled when the workspace
  * tears down, rather than resolving against a dead component tree.
  */
-export function AbortScopeProvider({ children }: { children: ReactNode }) {
-  const [controller] = useState(() => new AbortController())
+export function AbortScopeProvider({
+  children,
+  controller: controlledController,
+}: {
+  children: ReactNode
+  controller?: AbortController
+}) {
+  const [ownedController] = useState(() => new AbortController())
+  const controller = controlledController ?? ownedController
 
   useEffect(() => {
     return () => {

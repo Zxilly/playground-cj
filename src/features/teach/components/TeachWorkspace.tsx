@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import { workspaceSnapshotSchema } from '@/lib/teach/workspace/documents'
 import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
 import { useLLMConfigStore } from '@/stores/llmConfig'
@@ -52,7 +53,10 @@ export function TeachWorkspace({ lang }: TeachWorkspaceProps) {
   const setSettingsDialogOpen = useLLMConfigStore(state => state.setSettingsDialogOpen)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const settingsButtonRef = useRef<HTMLButtonElement>(null)
-  const [generation, setGeneration] = useState(0)
+  const [generation, setGeneration] = useState(() => ({
+    id: 0,
+    controller: new AbortController(),
+  }))
   const [pendingImport, setPendingImport] = useState<File | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
@@ -72,9 +76,17 @@ export function TeachWorkspace({ lang }: TeachWorkspaceProps) {
     setImportError(null)
     try {
       const parsed = workspaceSnapshotSchema.parse(JSON.parse(await file.text()))
-      await repo.importAll(parsed)
-      useWorkspaceStore.getState().reset()
-      setGeneration(value => value + 1)
+      generation.controller.abort()
+      try {
+        await repo.importAll(parsed)
+        useWorkspaceStore.getState().reset()
+      }
+      finally {
+        setGeneration(current => ({
+          id: current.id + 1,
+          controller: new AbortController(),
+        }))
+      }
     }
     catch (error) {
       const invalidFile = error instanceof SyntaxError || error instanceof ZodError
@@ -84,7 +96,7 @@ export function TeachWorkspace({ lang }: TeachWorkspaceProps) {
           : error instanceof Error ? error.message : String(error),
       )
     }
-  }, [repo])
+  }, [generation.controller, repo])
 
   const compactActionClass = 'size-8 rounded-md px-0 sm:w-auto sm:px-2.5'
 
@@ -161,11 +173,13 @@ export function TeachWorkspace({ lang }: TeachWorkspaceProps) {
       )}
 
       <div className="min-h-0 flex-1">
-        <WorkspaceRouteBridge />
-        <TeachWorkspaceShell
-          key={generation}
-          chat={<TeacherChatRuntime lang={lang} />}
-        />
+        <AbortScopeProvider controller={generation.controller}>
+          <WorkspaceRouteBridge />
+          <TeachWorkspaceShell
+            key={generation.id}
+            chat={<TeacherChatRuntime lang={lang} />}
+          />
+        </AbortScopeProvider>
       </div>
 
       <Dialog

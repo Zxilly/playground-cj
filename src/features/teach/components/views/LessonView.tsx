@@ -14,6 +14,7 @@ import { GlossaryProvider } from '@/features/teach/context/GlossaryProvider'
 import { LessonRenderer } from '@/features/teach/components/LessonRenderer'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
+import { useAbortScope } from '@/features/teach/context/abort-scope'
 
 export interface LessonViewProps {
   /** Id of the lesson to open, or null when no lesson is selected. */
@@ -34,6 +35,7 @@ export interface LessonViewProps {
  * in-memory progress.
  */
 export function LessonView({ lessonId }: LessonViewProps) {
+  const abortSignal = useAbortScope()
   const { repo, retrievalStore, now, runner, activeEditor } = useWorkspace()
   const config = useLLMConfig()
   const { data: lesson, loading } = useWorkspaceResource(
@@ -54,10 +56,10 @@ export function LessonView({ lessonId }: LessonViewProps) {
   const runCode = useCallback(
     (code: string): Promise<RunResult> => {
       if (!runner)
-        return runCangjieCode(code)
-      return runner.run(code)
+        return runCangjieCode(code, { signal: abortSignal })
+      return runner.run(code, abortSignal)
     },
-    [runner],
+    [abortSignal, runner],
   )
 
   // The oj block needs per-test-case stdin, which the teacher runner contract
@@ -72,8 +74,8 @@ export function LessonView({ lessonId }: LessonViewProps) {
   // block falls back to self-grading if the config is partial / grading errors.
   const gradeRecall = useCallback(
     (params: { prompt: string, reference: string, answer: string }) =>
-      gradeRecallAnswer(params, { model: createConfiguredModel(config) }),
-    [config],
+      gradeRecallAnswer(params, { model: createConfiguredModel(config), signal: abortSignal }),
+    [abortSignal, config],
   )
 
   if (loading)

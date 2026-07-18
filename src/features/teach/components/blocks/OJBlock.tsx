@@ -15,6 +15,7 @@ import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-e
 import type { OjBlockProps } from './block-props'
 import { TeachInlineMarkdown, TeachMarkdown } from './TeachMarkdown'
 import { cn } from '@/lib/utils'
+import { useAbortScope } from '@/features/teach/context/abort-scope'
 
 /**
  * The real Monaco editor is loaded lazily (SSR off): it pulls in the heavy
@@ -117,6 +118,7 @@ export function OJBlock({
   editorModelScope,
   editorComponent: EditorComponent = OJMonacoEditor,
 }: OJBlockComponentProps) {
+  const abortSignal = useAbortScope()
   // Re-hydrate a previously attempted problem: a completed outcome seeds the
   // prior code (when stored). Read only at first mount via the lazy initializer
   // so it never overwrites the learner's current edits.
@@ -170,7 +172,10 @@ export function OJBlock({
     try {
       const next = await runOjTests(code, block, selectedCases, {
         run: runProgram ?? ((c, o) => runCangjieCode(c, o)),
+        signal: abortSignal,
       })
+      if (abortSignal.aborted)
+        return
       setResult(next)
       // Only a full submit records progress; a degraded run is never recorded.
       if (which === 'submit' && !next.cases.some(c => c.runnerUnavailable))

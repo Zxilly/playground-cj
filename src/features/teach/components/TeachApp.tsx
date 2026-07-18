@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 import { RotateCcw, TriangleAlert } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
-import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import { QuotaExhaustedDialog } from '@/modules/llm-config/components/QuotaExhaustedDialog'
@@ -107,26 +106,24 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   }
 
   return (
-    <AbortScopeProvider>
-      <WorkspaceProvider {...collaborators}>
-        {stage === 'landing' && <TeachLanding onStart={() => setStage('config')} />}
-        {stage === 'config' && (
-          <TeachConfigWizard
-            onEnter={() => {
-              markOnboarded()
-              setStage('workspace')
-            }}
-            onBack={() => setStage('landing')}
-          />
-        )}
-        {stage === 'workspace' && (
-          <>
-            <TeachWorkspace lang={lang} />
-            <QuotaExhaustedDialog />
-          </>
-        )}
-      </WorkspaceProvider>
-    </AbortScopeProvider>
+    <WorkspaceProvider {...collaborators}>
+      {stage === 'landing' && <TeachLanding onStart={() => setStage('config')} />}
+      {stage === 'config' && (
+        <TeachConfigWizard
+          onEnter={() => {
+            markOnboarded()
+            setStage('workspace')
+          }}
+          onBack={() => setStage('landing')}
+        />
+      )}
+      {stage === 'workspace' && (
+        <>
+          <TeachWorkspace lang={lang} />
+          <QuotaExhaustedDialog />
+        </>
+      )}
+    </WorkspaceProvider>
   )
 }
 

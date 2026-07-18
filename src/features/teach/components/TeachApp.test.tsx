@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react'
 import { i18n as globalI18n, setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
+import { useEffect } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
@@ -8,10 +9,18 @@ import type { WorkspaceSnapshot } from '@/lib/teach/workspace/documents'
 import { WORKSPACE_SNAPSHOT_VERSION } from '@/lib/teach/workspace/documents'
 import { useLLMConfigStore } from '@/stores/llmConfig'
 import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
+import { useAbortScope } from '@/features/teach/context/abort-scope'
 import type { WorkspaceCollaborators } from './TeachApp'
 import { TeachAppContent } from './TeachApp'
 
+const chatSignals: AbortSignal[] = []
+
 function MockTeacherChatRuntime({ lang }: { lang: string }) {
+  const signal = useAbortScope()
+  useEffect(() => {
+    if (!chatSignals.includes(signal))
+      chatSignals.push(signal)
+  }, [signal])
   return <div data-testid="teacher-chat" data-lang={lang} />
 }
 
@@ -113,12 +122,14 @@ beforeEach(() => {
   globalI18n.load({ zh: {} })
   globalI18n.activate('zh')
   localStorage.removeItem('teach:onboarded')
+  chatSignals.length = 0
   seedReadyConfig()
 })
 
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   useLLMConfigStore.getState().reset()
 })
 
@@ -209,6 +220,26 @@ describe('teachAppContent', () => {
     fireEvent.click(await screen.findByTestId('workspace-import-confirm'))
 
     await waitFor(() => expect(importAll).toHaveBeenCalledWith(expect.objectContaining({ version: WORKSPACE_SNAPSHOT_VERSION })))
+  })
+
+  it('aborts the old workspace generation before an import can replace its documents', async () => {
+    const importAll = vi.fn(async () => undefined)
+    const repo = makeRepo({ importAll })
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
+    await waitFor(() => expect(chatSignals).toHaveLength(1))
+    const oldSignal = chatSignals[0]
+
+    const input = screen.getByTestId('workspace-import-input') as HTMLInputElement
+    const json = JSON.stringify(emptySnapshot())
+    const file = new File([json], 'workspace.json', { type: 'application/json' })
+    Object.defineProperty(file, 'text', { value: async () => json })
+    fireEvent.change(input, { target: { files: [file] } })
+    fireEvent.click(await screen.findByTestId('workspace-import-confirm'))
+
+    await waitFor(() => expect(importAll).toHaveBeenCalled())
+    expect(oldSignal.aborted).toBe(true)
+    await waitFor(() => expect(chatSignals.length).toBeGreaterThan(1))
+    expect(chatSignals.at(-1)?.aborted).toBe(false)
   })
 
   it('does not import when the overwrite confirm is cancelled', async () => {

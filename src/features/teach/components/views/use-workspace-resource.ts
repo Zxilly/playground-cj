@@ -11,7 +11,11 @@ interface ResourceState<T> {
 }
 
 interface ResourceCacheEntry {
-  data: unknown
+  data?: unknown
+  hasData: boolean
+  epoch: number
+  revision?: number
+  inFlight?: Promise<unknown>
 }
 
 /**
@@ -23,18 +27,59 @@ const resourceCache = new WeakMap<object, Map<string, ResourceCacheEntry>>()
 
 function readCachedState<T>(owner: object, key: string): ResourceState<T> {
   const entry = resourceCache.get(owner)?.get(key)
-  return entry
+  return entry?.hasData
     ? { data: entry.data as T, loading: false }
     : { data: undefined, loading: true }
 }
 
-function writeCachedData<T>(owner: object, key: string, data: T) {
+function getCacheEntry(owner: object, key: string): ResourceCacheEntry {
   let ownerCache = resourceCache.get(owner)
   if (!ownerCache) {
     ownerCache = new Map()
     resourceCache.set(owner, ownerCache)
   }
-  ownerCache.set(key, { data })
+  let entry = ownerCache.get(key)
+  if (!entry) {
+    entry = { hasData: false, epoch: 0 }
+    ownerCache.set(key, entry)
+  }
+  return entry
+}
+
+function loadResource<T>(
+  owner: object,
+  key: string,
+  revision: number,
+  load: () => Promise<T>,
+): Promise<T> {
+  const entry = getCacheEntry(owner, key)
+  if (entry.inFlight && entry.revision === revision)
+    return entry.inFlight as Promise<T>
+
+  const epoch = entry.epoch + 1
+  entry.epoch = epoch
+  entry.revision = revision
+  let request: Promise<T>
+  try {
+    request = Promise.resolve(load())
+  }
+  catch (error) {
+    request = Promise.reject(error)
+  }
+  entry.inFlight = request
+  void request.then(
+    (data) => {
+      if (entry.epoch !== epoch)
+        return
+      entry.data = data
+      entry.hasData = true
+    },
+    () => {},
+  ).finally(() => {
+    if (entry.epoch === epoch)
+      entry.inFlight = undefined
+  })
+  return request
 }
 
 /**
@@ -68,17 +113,18 @@ export function useWorkspaceResource<T>(
 
   useEffect(() => {
     let active = true
-    void load()
+    void loadResource(cacheOwner, cacheKey, revision, load)
       .then((result) => {
-        writeCachedData(cacheOwner, cacheKey, result)
-        if (active)
+        const entry = getCacheEntry(cacheOwner, cacheKey)
+        if (active && entry.revision === revision && entry.data === result)
           setState({ data: result, loading: false })
       })
       .catch((error) => {
         // A rejected read must not wedge `loading` on forever — that would lock
         // the mission gate and leak an unhandled rejection. Degrade to the
         // empty/default document, exactly as the docstring promises.
-        if (active) {
+        const entry = getCacheEntry(cacheOwner, cacheKey)
+        if (active && entry.revision === revision) {
           console.warn('[teach] workspace resource read failed; rendering empty state', error)
           setState(current => current.loading ? { data: undefined, loading: false } : current)
         }

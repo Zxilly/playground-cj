@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createWorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
+import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { TeachAppContent } from './TeachApp'
 
 export interface TeachAppRootProps {
@@ -15,7 +16,15 @@ export interface TeachAppRootProps {
  * import (see {@link TeachApp}) so its IndexedDB / runner dependencies never run
  * on the server.
  */
-export default function TeachAppRoot({ lang }: TeachAppRootProps) {
-  const [collaborators] = useState(() => createWorkspaceCollaborators(lang))
+function WorkspaceIdentityRoot({ lang }: TeachAppRootProps) {
+  const [collaborators] = useState(() => {
+    useWorkspaceStore.getState().reset()
+    return createWorkspaceCollaborators(lang)
+  })
   return <TeachAppContent lang={lang} collaborators={collaborators} />
+}
+
+export default function TeachAppRoot({ lang }: TeachAppRootProps) {
+  const workspaceId = lang === 'en' ? 'en' : 'zh'
+  return <WorkspaceIdentityRoot key={workspaceId} lang={workspaceId} />
 }
