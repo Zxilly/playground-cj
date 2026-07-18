@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import type { RetrievalItem } from '@/lib/teach/retrieval/types'
 import type { BlockOutcome, Lesson, LessonState } from '@/lib/teach/lessons/lesson'
 import type { RetrievalGrade } from '@/lib/teach/retrieval/scheduler'
@@ -116,6 +116,13 @@ function seedRetrievalItem(lessonId: string, blockId: string, kind: RetrievalKin
  *    (the atomic record returns `null` for a removed lesson).
  */
 export function useBlockOutcome({ lessonId, state, record, retrievalStore, now }: UseBlockOutcomeDeps) {
+  // A lesson can render several interactive blocks at once. Their outcome
+  // handlers may settle in the same tick, but the retrieval adapter exposes a
+  // whole-list read/replace contract. Serialize that read-modify-write cycle so
+  // two quick answers cannot both read the same old list and overwrite one
+  // another's newly scheduled review item.
+  const retrievalWriteQueueRef = useRef<Promise<void>>(Promise.resolve())
+
   return useCallback(
     async (blockId: string, blockType: string, report: BlockOutcomeReport) => {
       const at = now()
@@ -130,14 +137,21 @@ export function useBlockOutcome({ lessonId, state, record, retrievalStore, now }
       const kind = retrievalKindFor(blockType)
       const grade = gradeFor(report)
       if (kind && grade) {
-        const items = await retrievalStore.list()
-        const existing = items.find(item => item.lessonId === lessonId && item.blockId === blockId)
-        const base = existing ?? seedRetrievalItem(lessonId, blockId, kind, at)
-        const updated = scheduleNext(base, grade, at)
-        const nextItems = existing
-          ? items.map(item => (item.id === existing.id ? updated : item))
-          : [...items, updated]
-        await retrievalStore.save(nextItems)
+        const write = retrievalWriteQueueRef.current.then(async () => {
+          const items = await retrievalStore.list()
+          const existing = items.find(item => item.lessonId === lessonId && item.blockId === blockId)
+          const base = existing ?? seedRetrievalItem(lessonId, blockId, kind, at)
+          const updated = scheduleNext(base, grade, at)
+          const nextItems = existing
+            ? items.map(item => (item.id === existing.id ? updated : item))
+            : [...items, updated]
+          await retrievalStore.save(nextItems)
+        })
+        // A failed write is still reported to this caller, but the recovered
+        // queue lets a later learner action retry instead of inheriting a
+        // permanently rejected chain.
+        retrievalWriteQueueRef.current = write.catch(() => {})
+        await write
       }
     },
     [lessonId, state, record, retrievalStore, now],

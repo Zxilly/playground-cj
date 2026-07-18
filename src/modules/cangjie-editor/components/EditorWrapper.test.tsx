@@ -26,6 +26,8 @@ const isLanguageClientAvailable = vi.hoisted(() => vi.fn())
 const monacoEditorCreate = vi.hoisted(() => vi.fn())
 const monacoEditorCreateModel = vi.hoisted(() => vi.fn())
 const monacoEditorGetModel = vi.hoisted(() => vi.fn())
+const modelFileMirrorUpdate = vi.hoisted(() => vi.fn())
+const modelFileMirrorDispose = vi.hoisted(() => vi.fn())
 
 vi.mock('@/lib/monaco/vscode-api', () => ({
   defaultViewsHtml: '<div id="workbench-container"></div>',
@@ -38,6 +40,13 @@ vi.mock('@/lib/monaco/vscode-api', () => ({
     initExtensions = vscodeWrapperInitExtensions
     dispose = vscodeWrapperDispose
   },
+}))
+
+vi.mock('@/lib/monaco/model-file-mirror', () => ({
+  createModelFileMirror: vi.fn(async () => ({
+    update: modelFileMirrorUpdate,
+    dispose: modelFileMirrorDispose,
+  })),
 }))
 
 vi.mock('@codingame/monaco-vscode-editor-api', () => ({
@@ -110,6 +119,7 @@ describe('monacoEditorReactComp', () => {
     monacoEditorGetModel.mockReset().mockReturnValue(undefined)
     monacoEditorCreateModel.mockReset().mockImplementation((_text, _language, uri) => ({
       dispose: vi.fn(),
+      onDidChangeContent: vi.fn(() => ({ dispose: vi.fn() })),
       getLanguageId: vi.fn(() => 'cangjie'),
       getValue: vi.fn(() => 'main() {}'),
       isDisposed: vi.fn(() => false),
@@ -122,6 +132,8 @@ describe('monacoEditorReactComp', () => {
       setModel: vi.fn(),
       updateOptions: vi.fn(),
     })
+    modelFileMirrorUpdate.mockReset()
+    modelFileMirrorDispose.mockReset().mockResolvedValue(undefined)
     vi.stubGlobal('ResizeObserver', class {
       observe = vi.fn()
       disconnect = vi.fn()

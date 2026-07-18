@@ -101,6 +101,25 @@ describe('useBlockOutcome', () => {
     expect(progress.b1.correct).toBe(false)
   })
 
+  it('serializes concurrent retrieval updates so quick answers do not lose a review item', async () => {
+    const { record } = makeRecorder(makeLesson(emptyState))
+    const retrievalStore = makeRetrievalStore()
+    const { result } = renderHook(() =>
+      useBlockOutcome({ lessonId: '0001', state: emptyState, record, retrievalStore, now: () => 2 }))
+
+    await act(async () => {
+      await Promise.all([
+        result.current('b0', 'quiz', { correct: true }),
+        result.current('b1', 'recall_prompt', { grade: 'again', correct: false }),
+      ])
+    })
+
+    expect(retrievalStore.current().map(item => item.id)).toEqual([
+      '0001:b0',
+      '0001:b1',
+    ])
+  })
+
   it('increments attempts across repeated outcomes for the same block', async () => {
     const state: LessonState = {
       status: 'in_progress',

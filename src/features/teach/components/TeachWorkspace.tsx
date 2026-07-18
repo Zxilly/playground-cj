@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react'
 import { Download, Settings2, TriangleAlert, Upload } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
+import { ZodError } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -36,7 +37,12 @@ function downloadJson(filename: string, text: string): void {
   document.body.appendChild(anchor)
   anchor.click()
   anchor.remove()
-  URL.revokeObjectURL(url)
+  // The browser starts consuming blob downloads asynchronously. Revoking in
+  // the same task can invalidate the URL before Chromium's download manager
+  // opens it (and makes browser automation wait forever for a download that
+  // never starts). These snapshots are tiny; retain the URL long enough for
+  // slower browser download managers, then release it automatically.
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
 /** Entered classroom chrome plus portable workspace import/export controls. */
@@ -70,7 +76,12 @@ export function TeachWorkspace({ lang }: TeachWorkspaceProps) {
       setGeneration(value => value + 1)
     }
     catch (error) {
-      setImportError(error instanceof Error ? error.message : String(error))
+      const invalidFile = error instanceof SyntaxError || error instanceof ZodError
+      setImportError(
+        invalidFile
+          ? t`文件格式不正确或版本不兼容，当前课堂未被修改。`
+          : error instanceof Error ? error.message : String(error),
+      )
     }
   }, [repo])
 

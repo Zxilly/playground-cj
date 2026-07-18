@@ -414,6 +414,25 @@ describe('llmConfigDialog', () => {
     expect(useLLMConfigStore.getState().config).toEqual(DEFAULT_LLM_CONFIG)
   })
 
+  it('discards an abandoned draft when an external trigger reopens the dialog', async () => {
+    render(
+      <Wrapper>
+        <LLMConfigDialog withTrigger={false} />
+      </Wrapper>,
+    )
+
+    act(() => useLLMConfigStore.getState().setSettingsDialogOpen(true))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '自定义 API Key' }))
+    fireEvent.change(screen.getByLabelText('模型'), { target: { value: 'abandoned-model' } })
+    fireEvent.click(screen.getByRole('button', { name: '取消' }))
+
+    act(() => useLLMConfigStore.getState().setSettingsDialogOpen(true))
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: '共享额度' }).getAttribute('aria-selected')).toBe('true')
+    })
+    expect(screen.queryByDisplayValue('abandoned-model')).toBeNull()
+  })
+
   it('uses compiled English copy when resetting a user key to a shared-quota draft', async () => {
     useLLMConfigStore.setState({
       config: {

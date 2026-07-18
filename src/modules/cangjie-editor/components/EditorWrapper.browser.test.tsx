@@ -1,6 +1,7 @@
 import { cleanup, render, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
+import * as vscode from 'vscode'
 import { createEditorAppConfig } from '@/lib/monaco'
 import { MonacoEditorReactComp } from './EditorWrapper'
 
@@ -29,6 +30,26 @@ function Editor({ hint, code, onLoad }: { hint: string, code: string, onLoad?: (
 afterEach(() => cleanup())
 
 describe('monacoEditorReactComp browser lifecycle', () => {
+  it('backs a lesson editor model with the VS Code file service and keeps it current', async () => {
+    const hint = 'teach:0001:b4'
+    const uri = modelUri(hint)
+    let resolveLoaded!: () => void
+    const loaded = new Promise<void>((resolve) => {
+      resolveLoaded = resolve
+    })
+    render(<Editor hint={hint} code="let value = 1" onLoad={resolveLoaded} />)
+
+    await loaded
+    expect(new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.parse(uri.toString()))))
+      .toBe('let value = 1')
+
+    monaco.editor.getModel(uri)!.setValue('let value = 2')
+    await waitFor(async () => {
+      expect(new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.parse(uri.toString()))))
+        .toBe('let value = 2')
+    })
+  }, 30_000)
+
   it('isolates two models and releases only the unmounted instance', async () => {
     const firstUri = modelUri('browser-first')
     const secondUri = modelUri('browser-second')

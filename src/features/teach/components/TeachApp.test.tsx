@@ -123,6 +123,13 @@ afterEach(() => {
 })
 
 describe('teachAppContent', () => {
+  it('keeps the first paint visually quiet while local workspace hydration is pending', () => {
+    render(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
+    const loading = screen.getByTestId('teach-app-loading')
+    expect(loading.hasAttribute('aria-busy')).toBe(false)
+    expect(loading.textContent).toBe('')
+  })
+
   it('shows the landing gate (not the shell) after hydration before entering', async () => {
     render(<TeachAppContent lang="zh" collaborators={makeCollaborators(makeRepo())} />)
     expect(await screen.findByTestId('teach-landing')).toBeTruthy()
@@ -217,6 +224,23 @@ describe('teachAppContent', () => {
     // Cancel dismisses the dialog without touching the repository.
     fireEvent.click(await screen.findByRole('button', { name: '取消' }))
     await waitFor(() => expect(screen.queryByTestId('workspace-import-confirm')).toBeNull())
+    expect(importAll).not.toHaveBeenCalled()
+  })
+
+  it('rejects malformed import files without replacing the current workspace', async () => {
+    const importAll = vi.fn(async () => undefined)
+    const repo = makeRepo({ importAll })
+    await enterWorkspace(<TeachAppContent lang="zh" collaborators={makeCollaborators(repo)} />)
+
+    const input = screen.getByTestId('workspace-import-input') as HTMLInputElement
+    const file = new File(['not json'], 'broken.json', { type: 'application/json' })
+    Object.defineProperty(file, 'text', { value: async () => 'not json' })
+    fireEvent.change(input, { target: { files: [file] } })
+    fireEvent.click(await screen.findByTestId('workspace-import-confirm'))
+
+    const error = await screen.findByTestId('workspace-import-error')
+    expect(error.textContent).toContain('文件格式不正确或版本不兼容，当前课堂未被修改。')
+    expect(error.textContent).not.toContain('Unexpected token')
     expect(importAll).not.toHaveBeenCalled()
   })
 

@@ -6,6 +6,7 @@ import type { CodeResources, MonacoLanguageClient } from '@/lib/monaco/vscode-ap
 import { acquireLanguageService, createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
 import type { MonacoViewsType } from '@/lib/monaco'
 import { acquireModel } from '@/lib/monaco/model-lifecycle'
+import { createModelFileMirror } from '@/lib/monaco/model-file-mirror'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
 import { getCurrentEditorPort, subscribeLspStatus } from '@/lib/lsp'
@@ -41,17 +42,21 @@ function isServicesAlreadyInitializedError(error: unknown): boolean {
   return /services are already initialized/i.test(message)
 }
 
-function createStandaloneEditorHandle(
+async function createStandaloneEditorHandle(
   container: HTMLElement,
   editorAppConfig: ReturnType<typeof createEditorAppConfig>,
   modelScope?: string,
   retainModelOnUnmount = false,
-): MonacoEditorHandle {
+): Promise<MonacoEditorHandle> {
   const resource = editorAppConfig.codeResources?.modified
   const uri = monaco.Uri.parse(resource?.uri ?? 'file:///playground/src/main.cj')
   const leaseOptions = { scope: modelScope, retainWhenUnused: retainModelOnUnmount }
+  const existingModel = monaco.editor.getModel(uri)
+  let modelFileMirror = await createModelFileMirror(
+    uri.toString(),
+    existingModel?.getValue() ?? resource?.text ?? '',
+  )
   let modelLease = acquireModel(uri.toString(), () => {
-    const existingModel = monaco.editor.getModel(uri)
     if (existingModel)
       return { resource: existingModel, owned: false }
     return {
@@ -64,6 +69,9 @@ function createStandaloneEditorHandle(
     }
   }, leaseOptions)
   let model = modelLease.resource as monaco.editor.ITextModel
+  let modelFileSubscription = model.onDidChangeContent(() => {
+    modelFileMirror.update(model.getValue())
+  })
 
   let editor: monaco.editor.IStandaloneCodeEditor
   try {
@@ -73,6 +81,8 @@ function createStandaloneEditorHandle(
     })
   }
   catch (error) {
+    modelFileSubscription.dispose()
+    await modelFileMirror.dispose()
     modelLease.release()
     throw error
   }
@@ -90,8 +100,12 @@ function createStandaloneEditorHandle(
           monaco.editor.setModelLanguage(model, nextResource.enforceLanguageId)
         return true
       }
+      const existingNextModel = monaco.editor.getModel(nextUri)
+      const nextModelFileMirror = await createModelFileMirror(
+        nextUri.toString(),
+        existingNextModel?.getValue() ?? nextResource.text ?? model.getValue(),
+      )
       const nextLease = acquireModel(nextUri.toString(), () => {
-        const existingNextModel = monaco.editor.getModel(nextUri)
         if (existingNextModel)
           return { resource: existingNextModel, owned: false }
         return {
@@ -120,17 +134,27 @@ function createStandaloneEditorHandle(
         editor.setModel(nextModel)
       }
       catch (error) {
+        await nextModelFileMirror.dispose()
         nextLease.release()
         throw error
       }
       const previousLease = modelLease
+      const previousModelFileMirror = modelFileMirror
+      modelFileSubscription.dispose()
       modelLease = nextLease
       model = nextModel
+      modelFileMirror = nextModelFileMirror
+      modelFileSubscription = model.onDidChangeContent(() => {
+        modelFileMirror.update(model.getValue())
+      })
       previousLease.release()
+      await previousModelFileMirror.dispose()
       return true
     },
-    dispose: () => {
+    dispose: async () => {
       editor.dispose()
+      modelFileSubscription.dispose()
+      await modelFileMirror.dispose()
       modelLease.release()
     },
   }
@@ -313,7 +337,7 @@ export function MonacoEditorReactComp({
         // Both EditorService and ViewsService modes drive the editor directly
         // via a standalone handle (monaco.editor.create + model reuse). The old
         // EditorApp abstraction from monaco-languageclient is no longer used.
-        const editorHandle: MonacoEditorHandle = createStandaloneEditorHandle(
+        const editorHandle: MonacoEditorHandle = await createStandaloneEditorHandle(
           editorContainer,
           initialEditorAppConfig,
           modelScopeRef.current,

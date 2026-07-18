@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { CalendarClock, CircleAlert, Loader2, RotateCw, Settings, ShieldCheck, Wallet } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
@@ -82,6 +82,7 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
   const modeHelpId = useId()
   const resetDraftHelpId = useId()
   const userConfigValidationId = useId()
+  const wasOpenRef = useRef(false)
 
   const handleOpenChange = useCallback((next: boolean) => {
     if (next) {
@@ -90,6 +91,20 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
     }
     setOpen(next)
   }, [config, keySource, setOpen])
+
+  // Hosts with `withTrigger={false}` open the controlled dialog through the
+  // store, so Radix never calls `handleOpenChange(true)`. Recreate the draft on
+  // every closed -> open transition as well; otherwise Cancel closes the modal
+  // but the next open misleadingly restores the abandoned tab and field edits.
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      // eslint-disable-next-line react/set-state-in-effect -- reset the controlled modal draft only on a closed -> open transition
+      setDraft(createEditableDraft(config, keySource))
+      // eslint-disable-next-line react/set-state-in-effect -- keep the source tab aligned with the persisted config on external reopen
+      setMode(keySource === 'user' ? 'custom' : 'shared')
+    }
+    wasOpenRef.current = open
+  }, [config, keySource, open])
 
   const usingAuto = keySource === 'auto'
   const usingShared = mode === 'shared'
