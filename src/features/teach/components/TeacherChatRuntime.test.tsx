@@ -138,9 +138,28 @@ describe('teacherChatRuntime', () => {
         // The active-editor registry is passed as the toolkit's editor bridge so
         // read_editor_code / set_editor_code drive the learner's active code_task.
         editor: activeEditor,
+        playground: expect.objectContaining({
+          listTabs: expect.any(Function),
+          openTab: expect.any(Function),
+          selectTab: expect.any(Function),
+          recordRunResult: expect.any(Function),
+        }),
+        navigation: expect.objectContaining({
+          navigate: expect.any(Function),
+        }),
         now: expect.any(Function),
       }),
     )
+  })
+
+  it('wires full central-workspace routing into the teacher toolkit', () => {
+    renderRuntime()
+    const calls = runtimeMocks.createTeacherToolkit.mock.calls as unknown as Array<[{
+      navigation: { navigate: (route: { view: 'notes' }) => boolean }
+    }]>
+    const deps = calls[0][0]
+    expect(deps.navigation.navigate({ view: 'notes' })).toBe(true)
+    expect(useWorkspaceStore.getState().view).toBe('notes')
   })
 
   it('assembles the teacher agent from the resolved llm config, toolkit, and language', () => {

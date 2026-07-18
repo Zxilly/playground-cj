@@ -5,6 +5,7 @@ import { LessonsListView } from './views/LessonsListView'
 import { MissionGate } from './views/MissionGate'
 import { MissionView } from './views/MissionView'
 import { NotesView } from './views/NotesView'
+import { PlaygroundView } from './views/PlaygroundView'
 import { ProgressDashboardView } from './views/ProgressDashboardView'
 import { RecordsView } from './views/RecordsView'
 import { ReferenceView } from './views/ReferenceView'
@@ -27,13 +28,15 @@ export function WorkspaceViewport({
     case 'overview':
       return <ProgressDashboardView />
     case 'mission':
-      return <MissionView />
+      return missionReady ? <MissionView /> : <MissionGate />
     case 'lessons':
       return missionReady ? <LessonsListView /> : <MissionGate />
     case 'lesson':
       return missionReady
         ? <LessonView key={currentLessonId ?? 'none'} lessonId={currentLessonId} />
         : <MissionGate />
+    case 'playground':
+      return <PlaygroundView />
     case 'glossary':
       return <GlossaryView />
     case 'reference':

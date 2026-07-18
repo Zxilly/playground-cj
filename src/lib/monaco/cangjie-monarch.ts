@@ -1,6 +1,7 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { HMR_SLOT_KEYS, hmrFlag } from '@/lib/hmr-store'
-import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
+import { CANGJIE_LANGUAGE_ID } from './language'
+import { ensureCangjieCompletionProvider } from './cangjie-completions'
 
 const monarchProviderFlag = hmrFlag(HMR_SLOT_KEYS.MONACO_CANGJIE_MONARCH_PROVIDER)
 
@@ -168,6 +169,7 @@ function registerSemanticTokensProvider(languageId: string): void {
 }
 
 export function ensureCangjieMonarchTokensProvider(): void {
+  ensureCangjieCompletionProvider()
   if (monarchProviderFlag.get())
     return
   monarchProviderFlag.set(true)
@@ -180,55 +182,8 @@ export function ensureCangjieMonarchTokensProvider(): void {
       aliases: ['Cangjie', CANGJIE_LANGUAGE_ID],
     })
   }
-  if (!knownLanguages.some(language => language.id === CANGJIE_LANGUAGE_NAME)) {
-    monaco.languages.register({
-      id: CANGJIE_LANGUAGE_NAME,
-      extensions: ['.cj'],
-      aliases: ['Cangjie', CANGJIE_LANGUAGE_ID],
-    })
-  }
-
-  const cangjieMonarchLanguage: monaco.languages.IMonarchLanguage = {
-    keywords: KEYWORDS,
-    typeKeywords: TYPES,
-    tokenizer: {
-      root: [
-        [/\/\/.*$/, 'comment'],
-        [/\/\*/, 'comment', '@comment'],
-        [/"([^"\\]|\\.)*$/, 'string.invalid'],
-        [/"/, 'string', '@string'],
-        [/\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b/i, 'number'],
-        [/[{}()[\]]/, '@brackets'],
-        [/[;,.]/, 'delimiter'],
-        [/[+\-*/%=!<>|&^~?:]+/, 'operator'],
-        [/[A-Z][\w$]*/, {
-          cases: {
-            '@typeKeywords': 'type.identifier',
-            '@default': 'identifier',
-          },
-        }],
-        [/[a-z_][\w$]*/, {
-          cases: {
-            '@keywords': 'keyword',
-            '@default': 'identifier',
-          },
-        }],
-      ],
-      comment: [
-        [/[^*/]+/, 'comment'],
-        [/\*\//, 'comment', '@pop'],
-        [/[*/]/, 'comment'],
-      ],
-      string: [
-        [/[^"\\]+/, 'string'],
-        [/\\./, 'string.escape'],
-        [/"/, 'string', '@pop'],
-      ],
-    },
-  }
-
-  monaco.languages.setMonarchTokensProvider(CANGJIE_LANGUAGE_ID, cangjieMonarchLanguage)
-  monaco.languages.setMonarchTokensProvider(CANGJIE_LANGUAGE_NAME, cangjieMonarchLanguage)
+  // Syntax tokenization comes from the TextMate grammar contributed by the
+  // Cangjie extension. Installing a Monarch provider here would replace that
+  // grammar and break the workbench tokenizer. Semantic tokens layer on top.
   registerSemanticTokensProvider(CANGJIE_LANGUAGE_ID)
-  registerSemanticTokensProvider(CANGJIE_LANGUAGE_NAME)
 }

@@ -47,6 +47,20 @@ describe('buildTeacherSystemPrompt', () => {
       expect(prompt).toContain('read_editor_code')
       expect(prompt).toContain('set_editor_code')
     })
+
+    it('makes the central workspace primary and chat auxiliary', () => {
+      expect(prompt).toContain('中央工作区是主交互面')
+      expect(prompt).toMatch(/Chat.*附属|附属.*Chat/)
+      expect(prompt).toContain('navigate_workspace')
+      expect(prompt).toMatch(/整个中央工作区路由/)
+    })
+
+    it('routes temporary and pre-mission code to the visible Playground', () => {
+      expect(prompt).toContain('open_playground_tab')
+      expect(prompt).toContain('mission 确立前')
+      expect(prompt).toMatch(/不要.*直接 run_code/)
+      expect(prompt).toContain('多个 tab')
+    })
   })
 
   describe('en', () => {
@@ -91,6 +105,20 @@ describe('buildTeacherSystemPrompt', () => {
     it('describes driving the learner\'s active code_task editor', () => {
       expect(prompt).toContain('read_editor_code')
       expect(prompt).toContain('set_editor_code')
+    })
+
+    it('makes the central workspace primary and chat auxiliary', () => {
+      expect(prompt).toMatch(/central workspace.*primary interaction surface/i)
+      expect(prompt).toMatch(/Chat is auxiliary/i)
+      expect(prompt).toContain('navigate_workspace')
+      expect(prompt).toMatch(/entire central route/i)
+    })
+
+    it('routes temporary and pre-mission code to the visible Playground', () => {
+      expect(prompt).toContain('open_playground_tab')
+      expect(prompt).toMatch(/pre-mission code.*MUST go to Playground/i)
+      expect(prompt).toMatch(/multiple tabs/i)
+      expect(prompt).toMatch(/Do not substitute.*direct run_code/i)
     })
   })
 })

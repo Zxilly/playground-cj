@@ -29,10 +29,29 @@ describe('useWorkspaceStore', () => {
   })
 
   it('setView accepts every workspace view', () => {
-    for (const view of ['mission', 'lessons', 'lesson', 'glossary', 'reference', 'records', 'notes'] as const) {
+    for (const view of ['mission', 'lessons', 'lesson', 'playground', 'glossary', 'reference', 'records', 'notes'] as const) {
       useWorkspaceStore.getState().setView(view)
       expect(useWorkspaceStore.getState().view).toBe(view)
     }
+  })
+
+  it('opens and selects multiple Playground tabs while routing the central view', () => {
+    const firstId = useWorkspaceStore.getState().openPlaygroundTab({ title: 'First', code: 'first()' })
+    const secondId = useWorkspaceStore.getState().openPlaygroundTab({ title: 'Second', code: 'second()' })
+    expect(firstId).not.toBe(secondId)
+    expect(useWorkspaceStore.getState().playgroundTabs).toHaveLength(3)
+    expect(useWorkspaceStore.getState().view).toBe('playground')
+    expect(useWorkspaceStore.getState().currentPlaygroundTabId).toBe(secondId)
+
+    expect(useWorkspaceStore.getState().selectPlaygroundTab(firstId)).toBe(true)
+    expect(useWorkspaceStore.getState().currentPlaygroundTabId).toBe(firstId)
+  })
+
+  it('closes Playground tabs and selects a neighbouring tab', () => {
+    const id = useWorkspaceStore.getState().openPlaygroundTab({ title: 'Temporary', code: '' })
+    useWorkspaceStore.getState().closePlaygroundTab(id)
+    expect(useWorkspaceStore.getState().playgroundTabs.some(tab => tab.id === id)).toBe(false)
+    expect(useWorkspaceStore.getState().currentPlaygroundTabId).toBe('playground-1')
   })
 
   it('openReference switches to the reference view and records the id', () => {

@@ -29,20 +29,39 @@ export interface TeacherRunner {
 }
 
 /**
- * Minimal contract for reading/writing the learner's *currently active*
- * `code_task` editor. The teaching workspace has no single shared Monaco editor;
- * instead each `code_task` block owns its own editor and registers a handle as
- * "active" when the learner works in it (see the feature layer's active-editor
- * registry). The domain toolkit stays decoupled from Monaco and React: it only
- * sees `getCode` / `setCode`. `getCode` returns `null` when no code_task editor
- * is currently active (so `read_editor_code` can say so explicitly), and
- * `setCode` returns `false` when there is nothing to write to.
+ * Minimal contract for reading/writing the learner's currently active central
+ * editor. Lesson `code_task` blocks and Playground tabs both register through
+ * the same feature-layer registry. The domain toolkit stays decoupled from
+ * Monaco and React: it only sees `getCode` / `setCode`.
  */
 export interface EditorBridge {
   /** Read the active editor's contents, or null when no editor is active. */
   getCode: () => string | null
   /** Replace the active editor's contents; returns false when none is active. */
   setCode: (code: string) => boolean
+}
+
+/** UI routing boundary for the ephemeral, multi-tab Playground workspace. */
+export interface TeacherPlayground {
+  /** List the tabs the learner can currently see in Playground. */
+  listTabs: () => Array<{ id: string, title: string }>
+  /** Create and select a tab, routing the central viewport to Playground. */
+  openTab: (input: { title: string, code: string }) => string
+  /** Select an existing tab and route the central viewport to Playground. */
+  selectTab: (tabId: string) => boolean
+  /** Surface a model-triggered run result in the currently visible Playground tab. */
+  recordRunResult: (result: RunResult) => void
+}
+
+export type TeacherWorkspaceRoute
+  = | { view: 'overview' | 'mission' | 'lessons' | 'playground' | 'glossary' | 'records' | 'notes' }
+    | { view: 'lesson', id: string }
+    | { view: 'reference', id?: string }
+
+/** UI boundary that lets the teacher choose the learner's primary workspace surface. */
+export interface TeacherWorkspaceNavigation {
+  /** Route the central viewport; returns false only when the UI rejects the route. */
+  navigate: (route: TeacherWorkspaceRoute) => boolean
 }
 
 /**
@@ -69,11 +88,15 @@ export interface TeacherToolkitDeps {
   runner: TeacherRunner
   retrievalStore: RetrievalStore
   /**
-   * Bridge to the learner's currently active `code_task` editor, backing
+   * Bridge to the learner's currently active lesson/Playground editor, backing
    * `read_editor_code` / `set_editor_code`. The feature layer wires this to the
    * active-editor registry; tests inject a fake.
    */
   editor: EditorBridge
+  /** Controller that lets the teacher route temporary code into Playground. */
+  playground: TeacherPlayground
+  /** Controller for the entire learner-visible central workspace. */
+  navigation: TeacherWorkspaceNavigation
   /**
    * UI language of the teaching workspace. `read_tour` uses it implicitly to pick
    * the curated prose/code locale, so the model never has to pass a language.
@@ -139,6 +162,36 @@ const upsertGlossaryTermInputSchema = glossaryTermSchema.omit({ addedAt: true })
  */
 const upsertReferenceInputSchema = referenceDocSchema.omit({ updatedAt: true })
 
+const navigateWorkspaceInputSchema = z.object({
+  view: z.enum([
+    'overview',
+    'mission',
+    'lessons',
+    'lesson',
+    'playground',
+    'glossary',
+    'reference',
+    'records',
+    'notes',
+  ]),
+  id: z.string().min(1).optional(),
+}).superRefine((route, ctx) => {
+  if (route.view === 'lesson' && route.id === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['id'],
+      message: 'id is required when view is lesson',
+    })
+  }
+  else if (route.view !== 'lesson' && route.view !== 'reference' && route.id !== undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['id'],
+      message: `id is not supported when view is ${route.view}`,
+    })
+  }
+})
+
 /**
  * Build the single Teacher agent's tool set (AI SDK v6 `tool()` API). Each tool
  * delegates to one of the injected dependencies (workspace repository,
@@ -150,7 +203,7 @@ const upsertReferenceInputSchema = referenceDocSchema.omit({ updatedAt: true })
  * before it is persisted.
  */
 export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
-  const { repo, knowledge, tour, runner, retrievalStore, editor, lang, now } = deps
+  const { repo, knowledge, tour, runner, retrievalStore, editor, playground, navigation, lang, now } = deps
 
   // The last run result is held here so `read_run_result` can return it without
   // re-running. Reset implicitly when `run_code` runs again.
@@ -258,9 +311,35 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
       },
     }),
 
+    // ---- Central workspace routing ----
+    navigate_workspace: tool({
+      description: 'Route the learner-visible central workspace, which is the primary interaction surface. Use this to show overview, mission, lesson list, a specific lesson, Playground, glossary, a reference, learning records, or notes after the relevant tool work; Chat is only auxiliary. A lesson/reference id must already exist.',
+      inputSchema: navigateWorkspaceInputSchema,
+      execute: async (route) => {
+        if (route.view === 'lesson') {
+          const id = route.id!
+          if (!(await repo.getLesson(id)))
+            return fail(`No lesson with id ${id}.`)
+          return navigation.navigate({ view: 'lesson', id })
+            ? ok()
+            : fail('Could not navigate to lesson.')
+        }
+        if (route.view === 'reference') {
+          if (route.id && !(await repo.getReference(route.id)))
+            return fail(`No reference with id ${route.id}.`)
+          return navigation.navigate({ view: 'reference', id: route.id })
+            ? ok()
+            : fail('Could not navigate to reference.')
+        }
+        return navigation.navigate({ view: route.view })
+          ? ok()
+          : fail(`Could not navigate to ${route.view}.`)
+      },
+    }),
+
     // ---- Lesson orchestration ----
     create_lesson: tool({
-      description: 'Author a new structured lesson. The lesson must be short, build a single takeaway, sit inside the learner\'s ZPD (justify in zpdRationale), trace back to the mission (missionLink), and cite trusted sources. Prefer structured blocks; use raw_html only as a sandboxed fallback. A quiz block holds a questions[] array (each question its own options/answerIndices/multiple/explanation; you may mix single- and multiple-choice questions); within each question all options must be equal length so option length never leaks the answer. recall_prompt answers are graded automatically by the AI (the learner no longer self-grades). Use an oj block for LeetCode/Codeforces-style problems: mode "function" (learner implements a function — give starterCode as the stub, a callTemplate using ${args} to invoke and print, and testCases each with args + expectedOutput) or mode "stdio" (learner writes a full program reading stdin — testCases each with stdin + expectedOutput); visible:false test cases are hidden from the learner.',
+      description: 'Author a new structured lesson for the central workspace, which is the learner\'s primary interaction surface (Chat is auxiliary). The lesson must be short, build a single takeaway, sit inside the learner\'s ZPD (justify in zpdRationale), trace back to the mission (missionLink), and cite trusted sources. Prefer structured blocks; use raw_html only as a sandboxed fallback. When mission-linked instruction or practice requires code, include a code_task with starterCode in this initial draft. Temporary examples and experiments belong in Playground via open_playground_tab, not in a lesson. A quiz block holds a questions[] array (each question its own options/answerIndices/multiple/explanation; you may mix single- and multiple-choice questions); within each question all options must be equal length so option length never leaks the answer. recall_prompt answers are graded automatically by the AI (the learner no longer self-grades). Use an oj block for LeetCode/Codeforces-style problems: mode "function" (learner implements a function — give starterCode as the stub, a callTemplate using ${args} to invoke and print, and testCases each with args + expectedOutput) or mode "stdio" (learner writes a full program reading stdin — testCases each with stdin + expectedOutput); visible:false test cases are hidden from the learner.',
       inputSchema: lessonDraftSchema,
       execute: async (input) => {
         const lesson = await repo.appendLesson(input)
@@ -319,28 +398,59 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
       }),
     }),
 
-    // ---- Feedback loop / editor + runner ----
+    // ---- Playground routing / editor + runner ----
+    list_playground_tabs: tool({
+      description: 'List the learner-visible tabs in the central Playground. Temporary demonstrations, experiments, and code used before a mission exists belong here rather than in Chat or a lesson document.',
+      inputSchema: z.object({}),
+      execute: async () => ok({ tabs: playground.listTabs() }),
+    }),
+    open_playground_tab: tool({
+      description: 'Create a learner-visible Playground tab with Cangjie code and route the central workspace to it. Use this for temporary examples, demonstrations, experiments, and pre-mission code. After opening it, use run_code to run the visible editor contents; do not paste and run invisible code in Chat.',
+      inputSchema: z.object({
+        title: z.string().min(1),
+        code: z.string(),
+      }),
+      execute: async input => ok({ id: playground.openTab(input) }),
+    }),
+    select_playground_tab: tool({
+      description: 'Select an existing Playground tab by id and route the central workspace to it. Call list_playground_tabs first when you do not know the id.',
+      inputSchema: z.object({ id: z.string() }),
+      execute: async ({ id }) => playground.selectTab(id)
+        ? ok()
+        : fail(`No Playground tab with id ${id}.`),
+    }),
     read_editor_code: tool({
-      description: 'Read the learner\'s code in the currently active code_task editor (the code_task they last worked in). Returns null code when no code_task is active — author or open one first.',
+      description: 'Read the learner\'s code in the currently active central editor (a lesson code_task or Playground tab). Returns null when no editor is visible.',
       inputSchema: z.object({}),
       execute: async () => ok({ code: editor.getCode() }),
     }),
     set_editor_code: tool({
-      description: 'Replace the contents of the learner\'s currently active code_task editor (e.g. to seed a snippet to run, or demonstrate a fix). Fails when no code_task is active.',
+      description: 'Replace the contents of the learner\'s currently active central editor. If no editor is visible, this automatically creates a Playground tab and routes the learner to it, so code never exists only inside Chat.',
       inputSchema: z.object({ code: z.string() }),
       execute: async ({ code }) => {
-        if (!editor.setCode(code))
-          return fail('No active code_task editor — open or author a code_task before setting its code.')
+        if (!editor.setCode(code)) {
+          const id = playground.openTab({
+            title: lang === 'en' ? 'Temporary code' : '临时代码',
+            code,
+          })
+          return ok({ openedPlaygroundTab: id })
+        }
         return ok()
       },
     }),
     run_code: tool({
-      description: 'Compile and run Cangjie code on the remote runner, returning stdout/stderr/exitCode. The result is also cached for read_run_result.',
-      inputSchema: z.object({ code: z.string() }),
-      execute: (input, options) => withAbort(options, async (signal) => {
-        lastRunResult = await runner.run(input.code, signal)
-        return ok({ result: lastRunResult })
-      }),
+      description: 'Compile and run the code in the currently visible central editor. This tool accepts no code input: use open_playground_tab or set_editor_code first so the learner can see and edit exactly what will run. The result is cached and also displayed in the active Playground tab.',
+      inputSchema: z.object({}),
+      execute: async (_input, options) => {
+        const code = editor.getCode()
+        if (code === null)
+          return fail('No visible editor. Open a Playground tab before running code.')
+        return withAbort(options, async (signal) => {
+          lastRunResult = await runner.run(code, signal)
+          playground.recordRunResult(lastRunResult)
+          return ok({ result: lastRunResult })
+        })
+      },
     }),
     read_run_result: tool({
       description: 'Read the most recent run_code result, or null if nothing has been run yet.',

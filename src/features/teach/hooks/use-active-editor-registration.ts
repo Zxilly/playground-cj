@@ -12,6 +12,7 @@ import type { ActiveEditorHandle, ActiveEditorRegistry } from '@/features/teach/
 export function useActiveEditorRegistration(
   registry: ActiveEditorRegistry | undefined,
   editorHandleRef: RefObject<ActiveEditorHandle | null>,
+  activateOnMount = true,
 ) {
   const unregisterRef = useRef<(() => void) | null>(null)
   const handle = useMemo<ActiveEditorHandle>(() => ({
@@ -28,12 +29,13 @@ export function useActiveEditorRegistration(
   }, [handle, registry])
 
   useEffect(() => {
-    activateEditor()
+    if (activateOnMount)
+      activateEditor()
     return () => {
       unregisterRef.current?.()
       unregisterRef.current = null
     }
-  }, [activateEditor])
+  }, [activateEditor, activateOnMount])
 
   return activateEditor
 }

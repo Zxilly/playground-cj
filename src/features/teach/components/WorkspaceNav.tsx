@@ -1,6 +1,6 @@
 'use client'
 
-import { BookOpen, FileText, LayoutDashboard, NotebookPen, ScrollText, SpellCheck, Target } from 'lucide-react'
+import { BookOpen, Code2, FileText, LayoutDashboard, NotebookPen, ScrollText, SpellCheck, Target } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
@@ -26,6 +26,7 @@ const NAV_ENTRIES: NavEntry[] = [
   { view: 'overview', icon: LayoutDashboard, label: <Trans>概览</Trans> },
   { view: 'mission', icon: Target, label: <Trans>学习目标</Trans> },
   { view: 'lessons', icon: BookOpen, label: <Trans>课程</Trans> },
+  { view: 'playground', icon: Code2, label: <>Playground</> },
   { view: 'glossary', icon: SpellCheck, label: <Trans>术语表</Trans> },
   { view: 'reference', icon: FileText, label: <Trans>速查</Trans> },
   { view: 'records', icon: ScrollText, label: <Trans>学习记录</Trans> },
@@ -57,10 +58,9 @@ export interface WorkspaceNavProps {
 }
 
 /**
- * Left-hand workspace navigation: the six document sections (Mission / Lessons /
- * Glossary / Reference / Records / Notes). Clicking an entry switches the central
- * viewport via the workspace store. The current section is marked with
- * `aria-current="page"`. Holds no domain data — it only drives `view` state.
+ * Left-hand workspace navigation: durable classroom documents plus the ephemeral
+ * Playground code surface. Clicking an entry switches the central viewport via
+ * the workspace store. The current section is marked with `aria-current="page"`.
  *
  * Mission-first gating: entries in `disabledViews` (the lessons entry while no
  * mission exists) render disabled and ignore clicks, keeping the lessons surface

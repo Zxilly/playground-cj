@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef } from 'react'
 import { MonacoEditorReactComp } from '@/modules/cangjie-editor/components/EditorWrapper'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
 import { EditorBridgeProvider } from '@/modules/cangjie-editor/context/EditorBridgeProvider'
+import { cn } from '@/lib/utils'
 import type { CodeTaskEditorProps } from './CodeTaskBlock'
 
 /**
@@ -22,7 +23,7 @@ import type { CodeTaskEditorProps } from './CodeTaskBlock'
  * the browser/e2e projects, since Monaco does not render under jsdom — the block
  * is unit-tested with an injected `<textarea>` fake instead.
  */
-export function CodeTaskMonacoEditor({ initialCode, handleRef, locale, uriHint: stableUriHint, modelScope }: CodeTaskEditorProps) {
+export function CodeTaskMonacoEditor({ initialCode, handleRef, locale, uriHint: stableUriHint, modelScope, fillHeight = false }: CodeTaskEditorProps) {
   const monacoHandleRef = useRef<MonacoEditorHandle | null>(null)
   // LessonRenderer supplies a domain-stable lesson/block identity. The useId
   // fallback keeps standalone/test mounts isolated without retaining them.
@@ -57,7 +58,11 @@ export function CodeTaskMonacoEditor({ initialCode, handleRef, locale, uriHint: 
         and let the learner drag the bottom edge taller for longer tasks
         (resize-y needs a non-visible overflow to show the handle).
       */}
-      <div className="relative h-80 min-h-56 w-full resize-y overflow-hidden">
+      <div className={cn(
+        'relative w-full overflow-hidden',
+        fillHeight ? 'h-full min-h-0' : 'h-80 min-h-56 resize-y',
+      )}
+      >
         <MonacoEditorReactComp
           key={uriHint}
           code={initialCode}

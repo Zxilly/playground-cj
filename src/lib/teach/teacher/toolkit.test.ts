@@ -14,7 +14,14 @@ import type {
 } from '../workspace/documents'
 import type { WorkspaceRepository } from '../workspace/repository'
 import type { Lesson, LessonDraft, LessonState } from '../lessons/lesson'
-import type { EditorBridge, RetrievalStore, TeacherRunner } from './toolkit'
+import type {
+  EditorBridge,
+  RetrievalStore,
+  TeacherPlayground,
+  TeacherRunner,
+  TeacherWorkspaceNavigation,
+} from './toolkit'
+import { asSchema } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { createTeacherToolkit } from './toolkit'
 
@@ -176,6 +183,35 @@ function createMemoryRetrievalStore(seed: RetrievalItem[] = []): RetrievalStore 
   }
 }
 
+function createFakePlayground(): TeacherPlayground & {
+  openTab: ReturnType<typeof vi.fn>
+  selectTab: ReturnType<typeof vi.fn>
+  recordRunResult: ReturnType<typeof vi.fn>
+} {
+  const tabs: Array<{ id: string, title: string }> = [{ id: 'playground-1', title: 'Playground 1' }]
+  let sequence = 1
+  const openTab = vi.fn((input: { title: string, code: string }) => {
+    sequence += 1
+    const id = `playground-${sequence}`
+    tabs.push({ id, title: input.title })
+    return id
+  })
+  const selectTab = vi.fn((id: string) => tabs.some(tab => tab.id === id))
+  const recordRunResult = vi.fn()
+  return {
+    listTabs: () => [...tabs],
+    openTab,
+    selectTab,
+    recordRunResult,
+  }
+}
+
+function createFakeNavigation(): TeacherWorkspaceNavigation & {
+  navigate: ReturnType<typeof vi.fn>
+} {
+  return { navigate: vi.fn(() => true) }
+}
+
 const runResult: RunResult = { ok: true, stdout: 'hi\n', stderr: '', exitCode: 0 }
 
 function setup(overrides: {
@@ -193,10 +229,23 @@ function setup(overrides: {
   const runner = createFakeRunner(runResult)
   const retrievalStore = createMemoryRetrievalStore(overrides.retrieval ?? [])
   const editor = createFakeEditor(overrides.editorCode === undefined ? 'main() {}' : overrides.editorCode)
+  const playground = createFakePlayground()
+  const navigation = createFakeNavigation()
   const now = overrides.now ?? (() => 123)
   const lang = overrides.lang ?? 'zh'
-  const toolkit = createTeacherToolkit({ repo, knowledge, tour, runner, retrievalStore, editor, lang, now })
-  return { repo, knowledge, tour, runner, retrievalStore, editor, toolkit }
+  const toolkit = createTeacherToolkit({
+    repo,
+    knowledge,
+    tour,
+    runner,
+    retrievalStore,
+    editor,
+    playground,
+    navigation,
+    lang,
+    now,
+  })
+  return { repo, knowledge, tour, runner, retrievalStore, editor, playground, navigation, toolkit }
 }
 
 async function call<T = unknown>(tool: unknown, input: unknown): Promise<T> {
@@ -240,12 +289,16 @@ describe('createTeacherToolkit', () => {
         'upsert_glossary_term',
         'set_notes',
         'upsert_reference',
+        'navigate_workspace',
         'create_lesson',
         'update_lesson_state',
         'mark_lesson_complete',
         'list_tour',
         'read_tour',
         'search_docs',
+        'list_playground_tabs',
+        'open_playground_tab',
+        'select_playground_tab',
         'set_editor_code',
         'read_editor_code',
         'run_code',
@@ -312,10 +365,11 @@ describe('createTeacherToolkit', () => {
   })
 
   it('run_code runs through the runner and read_run_result returns the last result', async () => {
-    const { toolkit, runner } = setup()
-    const ran = await call<{ ok: boolean, result?: RunResult }>(toolkit.run_code, { code: 'main() {}' })
+    const { toolkit, runner, playground } = setup()
+    const ran = await call<{ ok: boolean, result?: RunResult }>(toolkit.run_code, {})
     expect(runner.run).toHaveBeenCalledWith('main() {}', undefined)
     expect(ran.result?.stdout).toBe('hi\n')
+    expect(playground.recordRunResult).toHaveBeenCalledWith(runResult)
 
     const last = await call<{ ok: boolean, result?: RunResult | null }>(toolkit.read_run_result, {})
     expect(last.result?.stdout).toBe('hi\n')
@@ -344,11 +398,77 @@ describe('createTeacherToolkit', () => {
     expect(editor.getCode()).toBe('main() { println("hi") }')
   })
 
-  it('set_editor_code fails clearly when no code_task editor is active', async () => {
-    const { toolkit } = setup({ editorCode: null })
-    const result = await call<{ ok: boolean, error?: string }>(toolkit.set_editor_code, { code: 'x' })
+  it('set_editor_code opens a visible Playground tab when no editor is active', async () => {
+    const { toolkit, playground } = setup({ editorCode: null })
+    const result = await call<{ ok: boolean, openedPlaygroundTab?: string }>(toolkit.set_editor_code, { code: 'x' })
+    expect(result.ok).toBe(true)
+    expect(result.openedPlaygroundTab).toBe('playground-2')
+    expect(playground.openTab).toHaveBeenCalledWith({ title: '临时代码', code: 'x' })
+  })
+
+  it('open_playground_tab creates a visible temporary buffer', async () => {
+    const { toolkit, playground } = setup()
+    const result = await call<{ ok: boolean, id?: string }>(toolkit.open_playground_tab, {
+      title: 'Hello',
+      code: 'main() {}',
+    })
+    expect(result).toMatchObject({ ok: true, id: 'playground-2' })
+    expect(playground.openTab).toHaveBeenCalledWith({ title: 'Hello', code: 'main() {}' })
+  })
+
+  it('navigate_workspace can route the entire primary workspace', async () => {
+    const { toolkit, navigation } = setup()
+    const result = await call<{ ok: boolean }>(toolkit.navigate_workspace, { view: 'notes' })
+    expect(result.ok).toBe(true)
+    expect(navigation.navigate).toHaveBeenCalledWith({ view: 'notes' })
+  })
+
+  it('navigate_workspace exposes a provider-compatible root object schema', async () => {
+    const { toolkit } = setup()
+    const inputSchema = (toolkit.navigate_workspace as { inputSchema: unknown }).inputSchema
+    const providerSchema = await asSchema(inputSchema as never).jsonSchema
+
+    expect(providerSchema).toMatchObject({
+      type: 'object',
+      properties: {
+        view: { type: 'string' },
+        id: { type: 'string' },
+      },
+      required: ['view'],
+    })
+  })
+
+  it('navigate_workspace validates document routes before showing them', async () => {
+    const { toolkit, repo, navigation } = setup()
+    const missing = await call<{ ok: boolean, error?: string }>(
+      toolkit.navigate_workspace,
+      { view: 'lesson', id: 'missing' },
+    )
+    expect(missing).toMatchObject({ ok: false })
+    expect(navigation.navigate).not.toHaveBeenCalled()
+
+    const lesson = await repo.appendLesson({
+      title: '路由目标',
+      missionLink: 'm',
+      skillFocus: 's',
+      zpdRationale: 'z',
+      blocks: [{ type: 'prose', markdown: 'x' }],
+      citations: [],
+    })
+    const opened = await call<{ ok: boolean }>(
+      toolkit.navigate_workspace,
+      { view: 'lesson', id: lesson.id },
+    )
+    expect(opened.ok).toBe(true)
+    expect(navigation.navigate).toHaveBeenCalledWith({ view: 'lesson', id: lesson.id })
+  })
+
+  it('run_code refuses to run invisible code when no editor is active', async () => {
+    const { toolkit, runner } = setup({ editorCode: null })
+    const result = await call<{ ok: boolean, error?: string }>(toolkit.run_code, {})
     expect(result.ok).toBe(false)
-    expect(result.error).toMatch(/no active/i)
+    expect(result.error).toMatch(/visible editor/i)
+    expect(runner.run).not.toHaveBeenCalled()
   })
 
   it('append_learning_record persists a record and returns its id', async () => {
@@ -424,7 +544,7 @@ describe('createTeacherToolkit', () => {
     controller.abort()
     const result = await callWithSignal<{ ok: boolean, error?: string, aborted?: boolean }>(
       toolkit.run_code,
-      { code: 'main() {}' },
+      {},
       controller.signal,
     )
     expect(result).toMatchObject({ ok: false, error: 'User aborted', aborted: true })
@@ -441,13 +561,15 @@ describe('createTeacherToolkit', () => {
       runner,
       retrievalStore: createMemoryRetrievalStore(),
       editor: createFakeEditor(),
+      playground: createFakePlayground(),
+      navigation: createFakeNavigation(),
       lang: 'zh',
       now: () => 1,
     })
     const controller = new AbortController()
     const result = await callWithSignal<{ ok: boolean, error?: string }>(
       toolkit.run_code,
-      { code: 'main() {}' },
+      {},
       controller.signal,
     )
     expect(runner.run).toHaveBeenCalledWith('main() {}', controller.signal)

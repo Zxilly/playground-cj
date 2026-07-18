@@ -7,6 +7,7 @@ import type { InferAgentUIMessage } from 'ai'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Thread } from '@/modules/assistant-ui/chat/Thread'
 import { createTeacherToolkit } from '@/lib/teach/teacher/toolkit'
+import type { TeacherWorkspaceRoute } from '@/lib/teach/teacher/toolkit'
 import { createTourSource } from '@/lib/teach/knowledge/tour-source'
 import { createTeacherAgent } from '@/lib/teach/teacher/agent'
 import type { TeacherAgent } from '@/lib/teach/teacher/agent'
@@ -19,6 +20,7 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
+import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 
 type TeacherChatMessage = InferAgentUIMessage<TeacherAgent>
 
@@ -54,15 +56,38 @@ function normalizeLang(lang: string): TeacherLang {
  * reasoning render under a collapsible "思考过程" disclosure in the thread.
  */
 export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
-  // Keep the shared key / quota fresh after entering the workspace: re-fetch an
-  // automatic key if one is dropped and reset the shared config once an exhausted
-  // quota window elapses. Errors are silent here — the landing gate already
-  // surfaced config problems, and a transient refresh failure should not blank
-  // the chat surface.
+  // Keep the server-managed model, endpoint, key, and quota fresh after entering
+  // the workspace, and reset the shared config once an exhausted quota window
+  // elapses. Errors are silent here — the landing gate already surfaced config
+  // problems, and a transient refresh failure should not blank the chat surface.
   useLLMConfigBootstrap({ reportErrors: false })
   const config = useLLMConfig()
   const { repo, knowledge, runner, retrievalStore, activeEditor, now } = useWorkspace()
   const scopeSignal = useAbortScope()
+  const playground = useMemo(() => ({
+    listTabs: () => useWorkspaceStore.getState().playgroundTabs.map(({ id, title }) => ({ id, title })),
+    openTab: (input: { title: string, code: string }) =>
+      useWorkspaceStore.getState().openPlaygroundTab(input),
+    selectTab: (tabId: string) =>
+      useWorkspaceStore.getState().selectPlaygroundTab(tabId),
+    recordRunResult: (result: RunResult) => {
+      const state = useWorkspaceStore.getState()
+      if (state.view === 'playground' && state.currentPlaygroundTabId)
+        state.setPlaygroundTabResult(state.currentPlaygroundTabId, result)
+    },
+  }), [])
+  const navigation = useMemo(() => ({
+    navigate: (route: TeacherWorkspaceRoute) => {
+      const state = useWorkspaceStore.getState()
+      if (route.view === 'lesson')
+        state.selectLesson(route.id)
+      else if (route.view === 'reference' && route.id)
+        state.openReference(route.id)
+      else
+        state.setView(route.view)
+      return true
+    },
+  }), [])
 
   const transport = useMemo(() => {
     const teacherLang = normalizeLang(lang)
@@ -82,12 +107,20 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
       // currently working in, so set_editor_code / read_editor_code drive the
       // learner's live editor.
       editor: activeEditor,
+      // Temporary examples live in learner-visible Playground tabs. These
+      // actions also switch the central workspace, giving the teacher explicit
+      // route control without coupling the domain toolkit to Zustand.
+      playground,
+      // The teacher can route the whole primary workspace, not just temporary
+      // code. Lesson/reference ids are validated by the toolkit before this UI
+      // boundary updates the Zustand selection.
+      navigation,
       lang: teacherLang,
       now,
     })
     const agent = createTeacherAgent(config, toolkit, teacherLang)
     return createScopedChatTransport<TeacherChatMessage>(agent, scopeSignal)
-  }, [config, repo, knowledge, runner, retrievalStore, activeEditor, now, lang, scopeSignal])
+  }, [config, repo, knowledge, runner, retrievalStore, activeEditor, playground, navigation, now, lang, scopeSignal])
 
   // No `sendAutomaticallyWhen`: the teacher is a ToolLoopAgent whose whole
   // tool loop (model → tool → model → … → answer) runs inside one
@@ -111,11 +144,11 @@ export function TeacherChatRuntime({ lang }: TeacherChatRuntimeProps) {
 
 /**
  * Watches for the shared quota running out mid-session. The bootstrap only
- * probes the quota while no key is set, so once the shared key is applied the
- * exhausted flag goes stale; here we re-probe usage each time a teacher turn
- * finishes (running → idle) and flip `autoQuota.exhausted`, which surfaces the
- * {@link QuotaExhaustedDialog} mounted alongside the workspace. Only runs on the
- * shared key and stops once exhaustion is recorded.
+ * probes the quota when the shared config is loaded, so the exhausted flag can
+ * become stale during a long session; here we re-probe usage each time a teacher
+ * turn finishes (running → idle) and flip `autoQuota.exhausted`, which surfaces
+ * the {@link QuotaExhaustedDialog} mounted alongside the workspace. Only runs on
+ * the shared key and stops once exhaustion is recorded.
  *
  * Renders nothing — it must live *inside* {@link AssistantRuntimeProvider} so
  * {@link useAuiState} resolves the thread's run state.
