@@ -23,6 +23,7 @@ import { useLLMConfigStore } from '@/stores/llmConfig'
 import { TeachTopBar } from './TeachTopBar'
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
+import { WorkspaceRouteBridge } from './WorkspaceRouteBridge'
 
 export interface TeachWorkspaceProps {
   lang: string
@@ -160,6 +161,7 @@ export function TeachWorkspace({ lang }: TeachWorkspaceProps) {
       )}
 
       <div className="min-h-0 flex-1">
+        <WorkspaceRouteBridge />
         <TeachWorkspaceShell
           key={generation}
           chat={<TeacherChatRuntime lang={lang} />}
