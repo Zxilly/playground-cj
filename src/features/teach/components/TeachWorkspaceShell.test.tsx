@@ -171,6 +171,21 @@ describe('teachWorkspaceShell', () => {
     expect(closeButtons[1].getAttribute('tabindex')).toBe('-1')
   })
 
+  it('keeps the Monaco playground mounted while another workspace view is active', async () => {
+    render(<TeachWorkspaceShell chat={null} />, makeRepo({ mission: null }))
+    await screen.findByTestId('mission-gate')
+
+    fireEvent.click(screen.getByTestId('workspace-nav-playground'))
+    const editor = await screen.findByTestId('playground-editor')
+
+    fireEvent.click(screen.getByTestId('workspace-nav-glossary'))
+    await screen.findByTestId('glossary-empty')
+    expect(editor.isConnected).toBe(true)
+
+    fireEvent.click(screen.getByTestId('workspace-nav-playground'))
+    expect(screen.getByTestId('playground-editor')).toBe(editor)
+  })
+
   it('renders the open lesson in the central viewport for the lesson view', async () => {
     // A mission must exist for the lessons surface to be reachable (mission-first
     // gating); covered on its own in mission-first.test.tsx.

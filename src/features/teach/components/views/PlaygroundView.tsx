@@ -31,7 +31,11 @@ function clampOutputHeight(height: number, maxHeight: number): number {
  * Ephemeral multi-buffer workspace for demonstrations, experiments, and other
  * code that should stay visible without becoming durable lesson content.
  */
-export function PlaygroundView() {
+interface PlaygroundViewProps {
+  active?: boolean
+}
+
+export function PlaygroundView({ active = true }: PlaygroundViewProps) {
   // The tab strip renders and reorders the whole collection; one collection
   // subscription is the granular state this view needs.
   // eslint-disable-next-line granular-selectors/granular-selectors
@@ -141,6 +145,7 @@ export function PlaygroundView() {
       {activeTab
         ? (
             <PlaygroundEditorPane
+              active={active}
               tab={activeTab}
               outputHeight={outputHeight}
               onOutputHeightChange={setOutputHeight}
@@ -166,12 +171,14 @@ export function PlaygroundView() {
 }
 
 interface PlaygroundEditorPaneProps {
+  active: boolean
   tab: PlaygroundTab
   outputHeight: number
   onOutputHeightChange: (height: number | ((current: number) => number)) => void
 }
 
 function PlaygroundEditorPane({
+  active,
   tab,
   outputHeight,
   onOutputHeightChange,
@@ -190,11 +197,7 @@ function PlaygroundEditorPane({
     maxHeight: number
   } | null>(null)
   const [running, setRunning] = useState(false)
-  const activateEditor = useActiveEditorRegistration(activeEditor, handleRef, false)
-
-  useEffect(() => {
-    activateEditor()
-  }, [activateEditor])
+  const activateEditor = useActiveEditorRegistration(activeEditor, handleRef, active)
 
   useLayoutEffect(() => {
     const previousTabId = currentTabIdRef.current
