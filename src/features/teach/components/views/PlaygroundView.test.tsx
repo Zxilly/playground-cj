@@ -51,6 +51,7 @@ const runner = {
     ok: true,
     stdout: `output:${code}`,
     stderr: '',
+    compilerOutput: `compiler:${code}`,
     exitCode: 0,
   })),
 }
@@ -99,6 +100,7 @@ describe('playgroundView student flow', () => {
     fireEvent.click(screen.getByTestId('playground-run'))
     await waitFor(() => expect(runner.run).toHaveBeenLastCalledWith('main() { println("first") }'))
     expect(await screen.findByText('output:main() { println("first") }')).toBeTruthy()
+    expect(screen.getByText('compiler:main() { println("first") }')).toBeTruthy()
 
     fireEvent.click(screen.getByTestId('playground-new-tab'))
     const editors = screen.getAllByTestId('fake-playground-editor')
@@ -109,6 +111,28 @@ describe('playgroundView student flow', () => {
 
     fireEvent.click(screen.getAllByRole('tab')[0])
     expect(screen.getByText('output:main() { println("first") }')).toBeTruthy()
+  })
+
+  it('lets the learner resize the output panel with the keyboard and reset it', () => {
+    render(<PlaygroundView />, { wrapper: Wrapper })
+
+    const output = screen.getByTestId('playground-output')
+    const resizer = screen.getByTestId('playground-output-resizer')
+    expect(output.style.height).toBe('176px')
+    expect(resizer.getAttribute('aria-valuenow')).toBe('176')
+
+    fireEvent.keyDown(resizer, { key: 'ArrowUp' })
+    expect(output.style.height).toBe('200px')
+    expect(resizer.getAttribute('aria-valuenow')).toBe('200')
+
+    fireEvent.keyDown(resizer, { key: 'Home' })
+    expect(output.style.height).toBe('112px')
+
+    fireEvent.keyDown(resizer, { key: 'End' })
+    expect(output.style.height).toBe('480px')
+
+    fireEvent.doubleClick(resizer)
+    expect(output.style.height).toBe('176px')
   })
 
   it('shows the clean compiler diagnostic first and keeps runner noise collapsed', async () => {

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import type { KeyboardEvent } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { FileCode2, Loader2, Play, Plus, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { t } from '@lingui/core/macro'
@@ -14,7 +14,18 @@ import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-e
 import type { CodeTaskEditorHandle } from '@/features/teach/components/blocks/CodeTaskBlock'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
 import { DynamicCodeTaskMonacoEditor } from '@/features/teach/components/blocks/DynamicCodeTaskMonacoEditor'
+import { stripTerminalSequences } from '@/lib/teach/feedback/compiler-output'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
+
+const DEFAULT_OUTPUT_HEIGHT = 176
+const MIN_OUTPUT_HEIGHT = 112
+const MIN_EDITOR_HEIGHT = 160
+const FALLBACK_MAX_OUTPUT_HEIGHT = 480
+const OUTPUT_KEYBOARD_STEP = 24
+
+function clampOutputHeight(height: number, maxHeight: number): number {
+  return Math.min(Math.max(height, MIN_OUTPUT_HEIGHT), maxHeight)
+}
 
 /**
  * Ephemeral multi-buffer workspace for demonstrations, experiments, and other
@@ -31,6 +42,7 @@ export function PlaygroundView() {
   const closeTab = useWorkspaceStore(state => state.closePlaygroundTab)
   const activeTab = tabs.find(tab => tab.id === activeId) ?? null
   const tabElementRef = useRef(new Map<string, HTMLDivElement>())
+  const [outputHeight, setOutputHeight] = useState(DEFAULT_OUTPUT_HEIGHT)
 
   const focusTab = (id: string) => {
     selectTab(id)
@@ -132,6 +144,8 @@ export function PlaygroundView() {
               key={tab.id}
               tab={tab}
               active={tab.id === activeId}
+              outputHeight={outputHeight}
+              onOutputHeightChange={setOutputHeight}
             />
           ))
         : (
@@ -153,11 +167,30 @@ export function PlaygroundView() {
   )
 }
 
-function PlaygroundEditorPane({ tab, active }: { tab: PlaygroundTab, active: boolean }) {
+interface PlaygroundEditorPaneProps {
+  tab: PlaygroundTab
+  active: boolean
+  outputHeight: number
+  onOutputHeightChange: (height: number | ((current: number) => number)) => void
+}
+
+function PlaygroundEditorPane({
+  tab,
+  active,
+  outputHeight,
+  onOutputHeightChange,
+}: PlaygroundEditorPaneProps) {
   const { i18n } = useLingui()
   const { activeEditor, runner } = useWorkspace()
   const setResult = useWorkspaceStore(state => state.setPlaygroundTabResult)
   const handleRef = useRef<CodeTaskEditorHandle | null>(null)
+  const paneRef = useRef<HTMLDivElement | null>(null)
+  const resizeStateRef = useRef<{
+    pointerId: number
+    startY: number
+    startHeight: number
+    maxHeight: number
+  } | null>(null)
   const [running, setRunning] = useState(false)
   // All Playground editors stay mounted so switching tabs never tears down the
   // shared Cangjie language service. Only the visible tab becomes the teacher's
@@ -168,6 +201,70 @@ function PlaygroundEditorPane({ tab, active }: { tab: PlaygroundTab, active: boo
     if (active)
       activateEditor()
   }, [active, activateEditor])
+
+  const getMaxOutputHeight = useCallback(() => {
+    const paneHeight = paneRef.current?.getBoundingClientRect().height ?? 0
+    return paneHeight > MIN_EDITOR_HEIGHT + MIN_OUTPUT_HEIGHT
+      ? paneHeight - MIN_EDITOR_HEIGHT
+      : FALLBACK_MAX_OUTPUT_HEIGHT
+  }, [])
+
+  useEffect(() => {
+    if (!active || typeof ResizeObserver === 'undefined' || !paneRef.current)
+      return
+    const observer = new ResizeObserver(([entry]) => {
+      const maxHeight = Math.max(MIN_OUTPUT_HEIGHT, entry.contentRect.height - MIN_EDITOR_HEIGHT)
+      onOutputHeightChange(current => clampOutputHeight(current, maxHeight))
+    })
+    observer.observe(paneRef.current)
+    return () => observer.disconnect()
+  }, [active, onOutputHeightChange])
+
+  const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    resizeStateRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeight: outputHeight,
+      maxHeight: getMaxOutputHeight(),
+    }
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }
+
+  const handleResizePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const resize = resizeStateRef.current
+    if (!resize || resize.pointerId !== event.pointerId)
+      return
+    onOutputHeightChange(clampOutputHeight(
+      resize.startHeight + resize.startY - event.clientY,
+      resize.maxHeight,
+    ))
+  }
+
+  const stopResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (resizeStateRef.current?.pointerId !== event.pointerId)
+      return
+    resizeStateRef.current = null
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+  }
+
+  const handleResizeKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const maxHeight = getMaxOutputHeight()
+    let nextHeight: number | null = null
+    if (event.key === 'ArrowUp')
+      nextHeight = outputHeight + (event.shiftKey ? OUTPUT_KEYBOARD_STEP * 2 : OUTPUT_KEYBOARD_STEP)
+    else if (event.key === 'ArrowDown')
+      nextHeight = outputHeight - (event.shiftKey ? OUTPUT_KEYBOARD_STEP * 2 : OUTPUT_KEYBOARD_STEP)
+    else if (event.key === 'Home')
+      nextHeight = MIN_OUTPUT_HEIGHT
+    else if (event.key === 'End')
+      nextHeight = maxHeight
+
+    if (nextHeight === null)
+      return
+    event.preventDefault()
+    onOutputHeightChange(clampOutputHeight(nextHeight, maxHeight))
+  }
 
   const run = async () => {
     if (running)
@@ -185,11 +282,13 @@ function PlaygroundEditorPane({ tab, active }: { tab: PlaygroundTab, active: boo
 
   return (
     <div
+      ref={paneRef}
       id={`playground-panel-${tab.id}`}
       role="tabpanel"
       aria-labelledby={`playground-tab-${tab.id}`}
       hidden={!active}
       aria-hidden={!active}
+      data-testid="playground-editor-pane"
       className="flex min-h-0 flex-1 flex-col"
     >
       <div
@@ -209,7 +308,31 @@ function PlaygroundEditorPane({ tab, active }: { tab: PlaygroundTab, active: boo
         />
       </div>
 
-      <div data-testid="playground-output" className="flex h-44 shrink-0 flex-col border-t border-border bg-background">
+      <div
+        data-testid="playground-output"
+        className="relative flex shrink-0 flex-col border-t border-border bg-background"
+        style={{ height: outputHeight }}
+      >
+        <div
+          role="separator"
+          aria-label={t`调整输出面板高度`}
+          aria-orientation="horizontal"
+          aria-valuemin={MIN_OUTPUT_HEIGHT}
+          aria-valuemax={Math.round(getMaxOutputHeight())}
+          aria-valuenow={Math.round(outputHeight)}
+          aria-valuetext={`${Math.round(outputHeight)} px`}
+          tabIndex={0}
+          data-testid="playground-output-resizer"
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={stopResize}
+          onPointerCancel={stopResize}
+          onDoubleClick={() => onOutputHeightChange(DEFAULT_OUTPUT_HEIGHT)}
+          onKeyDown={handleResizeKeyDown}
+          className="group absolute inset-x-0 -top-1 z-10 h-2 cursor-row-resize touch-none outline-none"
+        >
+          <span className="absolute inset-x-0 top-1 h-px bg-border transition-colors group-hover:bg-primary/60 group-focus-visible:h-0.5 group-focus-visible:bg-primary" />
+        </div>
         <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-muted/20 px-2">
           <button
             type="button"
@@ -223,25 +346,60 @@ function PlaygroundEditorPane({ tab, active }: { tab: PlaygroundTab, active: boo
               : <Play aria-hidden="true" className="size-3.5" />}
             {running ? <Trans>运行中</Trans> : <Trans>运行</Trans>}
           </button>
-          <span className="text-xs font-semibold text-muted-foreground"><Trans>程序输出</Trans></span>
+          <span className="text-xs font-semibold text-muted-foreground"><Trans>运行结果</Trans></span>
         </div>
-        <div className="min-h-0 flex-1 overflow-auto p-3">
-          {tab.result
-            ? (
-                tab.result.ok
-                  ? (
-                      <pre className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground">
-                        {tab.result.stdout || tab.result.stderr || '✓'}
-                      </pre>
-                    )
-                  : (
-                      <CompilerDiagnosticOutput
-                        output={tab.result.compilerOutput ?? (tab.result.stderr || tab.result.stdout)}
-                        testId="playground-stderr"
-                      />
-                    )
-              )
-            : <p className="text-xs text-muted-foreground"><Trans>运行当前标签页后，结果会显示在这里。</Trans></p>}
+        <div className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-border overflow-hidden sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+          <section className="flex min-h-0 flex-col" aria-labelledby={`playground-program-output-${tab.id}`}>
+            <h3
+              id={`playground-program-output-${tab.id}`}
+              className="h-8 shrink-0 border-b border-border/70 bg-muted/10 px-3 py-2 text-[11px] font-semibold text-muted-foreground"
+            >
+              <Trans>程序输出</Trans>
+            </h3>
+            <div className="min-h-0 flex-1 overflow-auto p-3">
+              {tab.result
+                ? (
+                    <pre
+                      data-testid="playground-program-output"
+                      className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground"
+                    >
+                      {tab.result.stdout || (tab.result.ok ? i18n._(t`程序未产生输出。`) : i18n._(t`程序未运行。`))}
+                    </pre>
+                  )
+                : <p className="text-xs text-muted-foreground"><Trans>运行后，程序输出会显示在这里。</Trans></p>}
+            </div>
+          </section>
+
+          <section className="flex min-h-0 flex-col" aria-labelledby={`playground-compiler-output-${tab.id}`}>
+            <h3
+              id={`playground-compiler-output-${tab.id}`}
+              className="h-8 shrink-0 border-b border-border/70 bg-muted/10 px-3 py-2 text-[11px] font-semibold text-muted-foreground"
+            >
+              <Trans>编译器输出</Trans>
+            </h3>
+            <div className="min-h-0 flex-1 overflow-auto p-3">
+              {tab.result
+                ? (
+                    tab.result.ok
+                      ? (
+                          <pre
+                            data-testid="playground-compiler-output"
+                            className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground"
+                          >
+                            {stripTerminalSequences(tab.result.compilerOutput ?? tab.result.stderr).trim()
+                              || i18n._(t`编译器未返回输出。`)}
+                          </pre>
+                        )
+                      : (
+                          <CompilerDiagnosticOutput
+                            output={tab.result.compilerOutput ?? (tab.result.stderr || tab.result.stdout)}
+                            testId="playground-stderr"
+                          />
+                        )
+                  )
+                : <p className="text-xs text-muted-foreground"><Trans>运行后，编译器输出会显示在这里。</Trans></p>}
+            </div>
+          </section>
         </div>
       </div>
     </div>
