@@ -9,6 +9,7 @@ import { DynamicCodeTaskMonacoEditor } from '@/features/teach/components/blocks/
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { retainModelScope } from '@/lib/monaco/model-lifecycle'
 import type { PlaygroundEditorHostContextValue } from './playground-editor-host-context'
 import { PlaygroundEditorHostContext } from './playground-editor-host-context'
 
@@ -29,7 +30,8 @@ function createHostElement(): HTMLDivElement | null {
 /**
  * Owns the single long-lived Playground Monaco instance. Route pages contribute
  * a short-lived slot; this host moves the same DOM node between that slot and a
- * private parking container without remounting the editor or its canonical model.
+ * private parking container. Each tab has its own Monaco model while the editor
+ * widget itself stays mounted.
  */
 export function PlaygroundEditorHost({
   children,
@@ -93,6 +95,8 @@ export function PlaygroundEditorHost({
     }
   }, [hostElement, placeHost])
 
+  useEffect(() => retainModelScope('teach:playground'), [])
+
   useLayoutEffect(() => {
     const previousTabId = currentTabIdRef.current
     if (previousTabId === activeTab?.id)
@@ -100,8 +104,6 @@ export function PlaygroundEditorHost({
     const previousCode = editorHandleRef.current?.getCode()
     if (previousTabId && previousCode !== undefined)
       setCode(previousTabId, previousCode)
-    if (activeTab)
-      editorHandleRef.current?.setCode(activeTab.initialCode)
     currentTabIdRef.current = activeTab?.id ?? null
     scheduleLayout()
   }, [activeTab, scheduleLayout, setCode])
@@ -134,9 +136,8 @@ export function PlaygroundEditorHost({
           initialCode={activeTab?.initialCode ?? ''}
           handleRef={editorHandleRef}
           locale={i18n.locale}
+          uriHint={activeTab ? `teach-playground-${activeTab.id}` : 'teach-playground-empty'}
           modelScope="teach:playground"
-          canonicalModel
-          replaceCodeOnMount
           fillHeight
         />,
         hostElement,

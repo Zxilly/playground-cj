@@ -89,15 +89,16 @@ function applyRoute(route: WorkspaceRoute): void {
 }
 
 function routeHref(route: WorkspaceRoute): string {
-  const url = new URL(window.location.href)
-  url.searchParams.set('view', route.view)
-  url.searchParams.delete('id')
-  url.searchParams.delete('tab')
+  const searchParams = new URLSearchParams(window.location.search)
+  searchParams.set('view', route.view)
+  searchParams.delete('id')
+  searchParams.delete('tab')
   if (route.id)
-    url.searchParams.set('id', route.id)
+    searchParams.set('id', route.id)
   if (route.tab)
-    url.searchParams.set('tab', route.tab)
-  return `${url.pathname}${url.search}${url.hash}`
+    searchParams.set('tab', route.tab)
+  const search = searchParams.toString()
+  return `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`
 }
 
 function replaceRoute(route: WorkspaceRoute): void {

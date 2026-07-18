@@ -64,44 +64,37 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
           <div className="flex flex-col h-full bg-background text-foreground">
             <TourHeader lang={lang} section={section} />
             <div className="flex-1 min-h-0 pt-1">
-              {isDesktop
-                ? (
-                    <ResizablePanelGroup orientation="horizontal" className="h-full">
-                      <ResizablePanel defaultSize={38} minSize={25}>
-                        <div className="flex flex-col h-full">
-                          <div className="flex-1 min-h-0">
-                            <TourContent lang={lang} section={section} />
-                          </div>
-                          <TourNavigation
-                            lang={lang}
-                            currentIndex={currentIndex}
-                            total={allSections.length}
-                            onPrev={goPrev}
-                            onNext={goNext}
-                          />
-                        </div>
-                      </ResizablePanel>
-                      <ResizableHandle withHandle className="bg-tour-border/80" />
-                      <ResizablePanel defaultSize={62} minSize={30}>
-                        <TourEditor code={code} locale={lang} />
-                      </ResizablePanel>
-                    </ResizablePanelGroup>
-                  )
-                : (
-                    <div className="flex flex-col h-full overflow-auto">
+              <ResizablePanelGroup
+                orientation={isDesktop ? 'horizontal' : 'vertical'}
+                className="h-full"
+              >
+                <ResizablePanel
+                  id="tour-content-panel"
+                  defaultSize={isDesktop ? 38 : 50}
+                  minSize={isDesktop ? 25 : 25}
+                >
+                  <div className="flex h-full min-h-0 flex-col">
+                    <div className="min-h-0 flex-1 overflow-auto">
                       <TourContent lang={lang} section={section} />
-                      <TourNavigation
-                        lang={lang}
-                        currentIndex={currentIndex}
-                        total={allSections.length}
-                        onPrev={goPrev}
-                        onNext={goNext}
-                      />
-                      <div className="h-[50vh] shrink-0 border-t border-border">
-                        <TourEditor code={code} locale={lang} />
-                      </div>
                     </div>
-                  )}
+                    <TourNavigation
+                      lang={lang}
+                      currentIndex={currentIndex}
+                      total={allSections.length}
+                      onPrev={goPrev}
+                      onNext={goNext}
+                    />
+                  </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle className="bg-tour-border/80" />
+                <ResizablePanel
+                  id="tour-editor-panel"
+                  defaultSize={isDesktop ? 62 : 50}
+                  minSize={isDesktop ? 30 : 25}
+                >
+                  <TourEditor code={code} locale={lang} />
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </div>
           </div>
         </TourLayout>

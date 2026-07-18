@@ -5,7 +5,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { MessageCircle, Sparkles, X } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
@@ -57,6 +57,39 @@ function WorkspaceResourcePreloader({ repo }: { repo: WorkspaceRepository }) {
     'retrieval',
   )
   return null
+}
+
+function WorkspaceViewTransition({
+  children,
+  reduceMotion,
+  view,
+}: {
+  children: ReactNode
+  reduceMotion: boolean
+  view: string
+}) {
+  const isPresent = useIsPresent()
+  return (
+    <motion.div
+      data-testid="workspace-view-transition"
+      data-view={view}
+      aria-hidden={isPresent ? undefined : true}
+      inert={!isPresent}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: reduceMotion ? 0 : 0.14, ease: 'easeOut' }}
+      className={cn(
+        'absolute inset-0 h-full min-h-0 w-full bg-background',
+        !isPresent && 'pointer-events-none',
+        view === 'playground'
+          ? 'overflow-hidden px-0 pb-0 pt-16 lg:p-0'
+          : 'overflow-y-auto px-4 pb-7 pt-20 sm:px-6 lg:px-8 lg:py-8',
+      )}
+    >
+      {children}
+    </motion.div>
+  )
 }
 
 /** Responsive document workspace with a persistent desktop teacher panel. */
@@ -213,21 +246,11 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         className="relative min-w-0 flex-1 overflow-hidden bg-background"
       >
         <PlaygroundEditorHost>
-          <AnimatePresence initial={false} mode="sync">
-            <motion.div
+          <AnimatePresence initial={false} mode="wait">
+            <WorkspaceViewTransition
               key={viewTransitionKey}
-              data-testid="workspace-view-transition"
-              data-view={view}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: reduceMotion ? 0 : 0.14, ease: 'easeOut' }}
-              className={cn(
-                'absolute inset-0 h-full min-h-0 w-full bg-background',
-                view === 'playground'
-                  ? 'overflow-hidden px-0 pb-0 pt-16 lg:p-0'
-                  : 'overflow-y-auto px-4 pb-7 pt-20 sm:px-6 lg:px-8 lg:py-8',
-              )}
+              reduceMotion={reduceMotion === true}
+              view={view}
             >
               <div className={cn(
                 view === 'playground'
@@ -242,7 +265,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
                   currentReferenceId={currentReferenceId}
                 />
               </div>
-            </motion.div>
+            </WorkspaceViewTransition>
           </AnimatePresence>
         </PlaygroundEditorHost>
       </main>

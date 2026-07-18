@@ -16,29 +16,35 @@ import { PlaygroundView } from './PlaygroundView'
 function FakePlaygroundEditor({
   initialCode,
   handleRef,
+  uriHint = 'default',
 }: CodeTaskEditorProps) {
-  const codeRef = useRef(initialCode)
+  const modelsRef = useRef(new Map<string, string>())
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  if (!modelsRef.current.has(uriHint))
+    modelsRef.current.set(uriHint, initialCode)
   useEffect(() => {
     handleRef.current = {
-      getCode: () => codeRef.current,
+      getCode: () => modelsRef.current.get(uriHint) ?? '',
       setCode: (code: string) => {
-        codeRef.current = code
+        modelsRef.current.set(uriHint, code)
         if (inputRef.current)
           inputRef.current.value = code
       },
     }
+    if (inputRef.current)
+      inputRef.current.value = modelsRef.current.get(uriHint) ?? ''
     return () => {
       handleRef.current = null
     }
-  }, [handleRef])
+  }, [handleRef, uriHint])
   return (
     <textarea
       ref={inputRef}
       data-testid="fake-playground-editor"
-      defaultValue={initialCode}
+      data-uri-hint={uriHint}
+      defaultValue={modelsRef.current.get(uriHint)}
       onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
-        codeRef.current = event.target.value
+        modelsRef.current.set(uriHint, event.target.value)
       }}
     />
   )
@@ -124,23 +130,52 @@ describe('playgroundView student flow', () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
 
     const firstEditor = screen.getByTestId('fake-playground-editor')
+    const firstUri = firstEditor.getAttribute('data-uri-hint')
     fireEvent.change(firstEditor, { target: { value: 'main() { println("first") }' } })
     fireEvent.click(screen.getByTestId('playground-run'))
-    await waitFor(() => expect(runner.run).toHaveBeenLastCalledWith('main() { println("first") }'))
+    await waitFor(() => expect(runner.run).toHaveBeenLastCalledWith(
+      'main() { println("first") }',
+      expect.any(AbortSignal),
+    ))
     expect(await screen.findByText('output:main() { println("first") }')).toBeTruthy()
     expect(screen.getByText('compiler:main() { println("first") }')).toBeTruthy()
 
     fireEvent.click(screen.getByTestId('playground-new-tab'))
     const secondEditor = screen.getByTestId('fake-playground-editor')
+    expect(secondEditor).toBe(firstEditor)
+    expect(secondEditor.getAttribute('data-uri-hint')).not.toBe(firstUri)
     fireEvent.change(secondEditor, { target: { value: 'main() { println("second") }' } })
     fireEvent.click(screen.getByTestId('playground-run'))
-    await waitFor(() => expect(runner.run).toHaveBeenLastCalledWith('main() { println("second") }'))
+    await waitFor(() => expect(runner.run).toHaveBeenLastCalledWith(
+      'main() { println("second") }',
+      expect.any(AbortSignal),
+    ))
     expect(await screen.findByText('output:main() { println("second") }')).toBeTruthy()
 
     fireEvent.click(screen.getAllByRole('tab')[0])
     expect(screen.getByText('output:main() { println("first") }')).toBeTruthy()
     expect((screen.getByTestId('fake-playground-editor') as HTMLTextAreaElement).value)
       .toBe('main() { println("first") }')
+  })
+
+  it('keeps run progress isolated to the tab that started it', async () => {
+    let finish!: (result: RunResult) => void
+    runner.run.mockImplementationOnce(() => new Promise<RunResult>((resolve) => {
+      finish = resolve
+    }))
+    render(<PlaygroundView />, { wrapper: Wrapper })
+
+    fireEvent.click(screen.getByTestId('playground-run'))
+    expect(screen.getByTestId('playground-run').hasAttribute('disabled')).toBe(true)
+    fireEvent.click(screen.getByTestId('playground-new-tab'))
+    expect(screen.getByTestId('playground-run').hasAttribute('disabled')).toBe(false)
+
+    await act(async () => finish({
+      ok: true,
+      stdout: 'first done',
+      stderr: '',
+      exitCode: 0,
+    }))
   })
 
   it('lets the learner resize the output panel with the keyboard and reset it', () => {

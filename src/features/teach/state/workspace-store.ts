@@ -9,6 +9,7 @@ export interface PlaygroundTab {
   title: string
   initialCode: string
   result: RunResult | null
+  running: boolean
 }
 
 const DEFAULT_PLAYGROUND_CODE = `package playground
@@ -24,6 +25,7 @@ function initialPlaygroundTabs(): PlaygroundTab[] {
     title: 'Playground 1',
     initialCode: DEFAULT_PLAYGROUND_CODE,
     result: null,
+    running: false,
   }]
 }
 
@@ -144,6 +146,8 @@ export interface WorkspaceStore {
   closePlaygroundTab: (tabId: string) => void
   /** Attach a model- or user-triggered run result to a Playground tab. */
   setPlaygroundTabResult: (tabId: string, result: RunResult | null) => void
+  /** Track compile/run progress per tab so switching tabs never leaks busy UI. */
+  setPlaygroundTabRunning: (tabId: string, running: boolean) => void
   /** Persist the live editor buffer before switching away from a Playground tab. */
   setPlaygroundTabCode: (tabId: string, code: string) => void
   /**
@@ -205,6 +209,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
       title: input.title?.trim() || `Playground ${number}`,
       initialCode: input.code ?? '',
       result: null,
+      running: false,
     }
     set(state => ({
       view: 'playground',
@@ -234,6 +239,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
   }),
   setPlaygroundTabResult: (tabId, result) => set(state => ({
     playgroundTabs: state.playgroundTabs.map(tab => tab.id === tabId ? { ...tab, result } : tab),
+  })),
+  setPlaygroundTabRunning: (tabId, running) => set(state => ({
+    playgroundTabs: state.playgroundTabs.map(tab => tab.id === tabId ? { ...tab, running } : tab),
   })),
   setPlaygroundTabCode: (tabId, code) => set(state => ({
     playgroundTabs: state.playgroundTabs.map(tab => tab.id === tabId ? { ...tab, initialCode: code } : tab),

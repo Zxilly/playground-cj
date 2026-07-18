@@ -80,7 +80,6 @@ export function CodeTaskMonacoEditor({
       )}
       >
         <MonacoEditorReactComp
-          key={uriHint ?? 'canonical-main'}
           code={initialCode}
           locale={locale}
           onLoad={onLoad}

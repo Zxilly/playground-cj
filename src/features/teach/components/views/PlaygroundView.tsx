@@ -14,6 +14,7 @@ import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/Com
 import { AnsiOutput } from '@/components/AnsiOutput'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
 import { usePlaygroundEditorHost } from './playground-editor-host-context'
+import { useAbortScope } from '@/features/teach/context/abort-scope'
 
 const DEFAULT_OUTPUT_HEIGHT = 176
 const MIN_OUTPUT_HEIGHT = 112
@@ -176,8 +177,10 @@ function PlaygroundEditorPane({
 }: PlaygroundEditorPaneProps) {
   const { i18n } = useLingui()
   const { runner } = useWorkspace()
+  const abortSignal = useAbortScope()
   const { activateEditor, editorHandleRef, registerEditorSlot } = usePlaygroundEditorHost()
   const setResult = useWorkspaceStore(state => state.setPlaygroundTabResult)
+  const setRunning = useWorkspaceStore(state => state.setPlaygroundTabRunning)
   const paneRef = useRef<HTMLDivElement | null>(null)
   const resizeStateRef = useRef<{
     pointerId: number
@@ -185,7 +188,7 @@ function PlaygroundEditorPane({
     startHeight: number
     maxHeight: number
   } | null>(null)
-  const [running, setRunning] = useState(false)
+  const running = tab.running
 
   const getMaxOutputHeight = useCallback(() => {
     const paneHeight = paneRef.current?.getBoundingClientRect().height ?? 0
@@ -255,13 +258,16 @@ function PlaygroundEditorPane({
     if (running)
       return
     const code = editorHandleRef.current?.getCode() ?? tab.initialCode
-    setRunning(true)
+    setRunning(tab.id, true)
     try {
-      const result = await (runner ?? defaultRunner).run(code)
+      const result = await (runner ?? defaultRunner).run(code, abortSignal)
+      if (abortSignal.aborted)
+        return
       setResult(tab.id, result)
     }
     finally {
-      setRunning(false)
+      if (!abortSignal.aborted)
+        setRunning(tab.id, false)
     }
   }
 
