@@ -4,7 +4,6 @@ const mocks = vi.hoisted(() => ({
   register: vi.fn(),
   registerDocumentSemanticTokensProvider: vi.fn(),
   setMonarchTokensProvider: vi.fn(),
-  ensureCompletion: vi.fn(),
   enabled: false,
 }))
 
@@ -27,24 +26,18 @@ vi.mock('@/lib/hmr-store', () => ({
   }),
 }))
 
-vi.mock('./cangjie-completions', () => ({
-  ensureCangjieCompletionProvider: mocks.ensureCompletion,
-}))
-
 describe('cangjie syntax services', () => {
   beforeEach(() => {
     mocks.enabled = false
     mocks.register.mockClear()
     mocks.registerDocumentSemanticTokensProvider.mockClear()
     mocks.setMonarchTokensProvider.mockClear()
-    mocks.ensureCompletion.mockClear()
   })
 
   it('keeps the extension TextMate grammar instead of overriding it with Monarch', async () => {
     const { ensureCangjieMonarchTokensProvider } = await import('./cangjie-monarch')
     ensureCangjieMonarchTokensProvider()
 
-    expect(mocks.ensureCompletion).toHaveBeenCalledOnce()
     expect(mocks.registerDocumentSemanticTokensProvider).toHaveBeenCalledWith(
       'cangjie',
       expect.any(Object),

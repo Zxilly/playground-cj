@@ -1,7 +1,6 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { HMR_SLOT_KEYS, hmrFlag } from '@/lib/hmr-store'
 import { CANGJIE_LANGUAGE_ID } from './language'
-import { ensureCangjieCompletionProvider } from './cangjie-completions'
 
 const monarchProviderFlag = hmrFlag(HMR_SLOT_KEYS.MONACO_CANGJIE_MONARCH_PROVIDER)
 
@@ -169,7 +168,6 @@ function registerSemanticTokensProvider(languageId: string): void {
 }
 
 export function ensureCangjieMonarchTokensProvider(): void {
-  ensureCangjieCompletionProvider()
   if (monarchProviderFlag.get())
     return
   monarchProviderFlag.set(true)

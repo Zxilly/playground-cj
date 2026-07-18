@@ -20,11 +20,14 @@ function FakePlaygroundEditor({
   handleRef: RefObject<CodeTaskEditorHandle | null>
 }) {
   const codeRef = useRef(initialCode)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
     handleRef.current = {
       getCode: () => codeRef.current,
       setCode: (code: string) => {
         codeRef.current = code
+        if (inputRef.current)
+          inputRef.current.value = code
       },
     }
     return () => {
@@ -33,6 +36,7 @@ function FakePlaygroundEditor({
   }, [handleRef])
   return (
     <textarea
+      ref={inputRef}
       data-testid="fake-playground-editor"
       defaultValue={initialCode}
       onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -103,14 +107,16 @@ describe('playgroundView student flow', () => {
     expect(screen.getByText('compiler:main() { println("first") }')).toBeTruthy()
 
     fireEvent.click(screen.getByTestId('playground-new-tab'))
-    const editors = screen.getAllByTestId('fake-playground-editor')
-    fireEvent.change(editors[1], { target: { value: 'main() { println("second") }' } })
-    fireEvent.click(screen.getAllByTestId('playground-run')[1])
+    const secondEditor = screen.getByTestId('fake-playground-editor')
+    fireEvent.change(secondEditor, { target: { value: 'main() { println("second") }' } })
+    fireEvent.click(screen.getByTestId('playground-run'))
     await waitFor(() => expect(runner.run).toHaveBeenLastCalledWith('main() { println("second") }'))
     expect(await screen.findByText('output:main() { println("second") }')).toBeTruthy()
 
     fireEvent.click(screen.getAllByRole('tab')[0])
     expect(screen.getByText('output:main() { println("first") }')).toBeTruthy()
+    expect((screen.getByTestId('fake-playground-editor') as HTMLTextAreaElement).value)
+      .toBe('main() { println("first") }')
   })
 
   it('lets the learner resize the output panel with the keyboard and reset it', () => {
@@ -150,6 +156,7 @@ describe('playgroundView student flow', () => {
     expect(diagnostic.textContent).toContain('error: expected expression')
     expect(diagnostic.textContent).not.toContain('/opt/cangjie/bin/cjc')
     expect(diagnostic.textContent).not.toContain(ESC)
+    expect(diagnostic.innerHTML).toContain('color:rgb(187,0,0)')
 
     const raw = screen.getByTestId('playground-stderr-raw')
     expect(raw.getAttribute('open')).toBeNull()

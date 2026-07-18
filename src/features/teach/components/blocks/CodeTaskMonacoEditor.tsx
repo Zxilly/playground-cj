@@ -23,12 +23,23 @@ import type { CodeTaskEditorProps } from './CodeTaskBlock'
  * the browser/e2e projects, since Monaco does not render under jsdom — the block
  * is unit-tested with an injected `<textarea>` fake instead.
  */
-export function CodeTaskMonacoEditor({ initialCode, handleRef, locale, uriHint: stableUriHint, modelScope, fillHeight = false }: CodeTaskEditorProps) {
+export function CodeTaskMonacoEditor({
+  initialCode,
+  handleRef,
+  locale,
+  uriHint: stableUriHint,
+  modelScope,
+  fillHeight = false,
+  canonicalModel = false,
+  replaceCodeOnMount = false,
+}: CodeTaskEditorProps) {
   const monacoHandleRef = useRef<MonacoEditorHandle | null>(null)
   // LessonRenderer supplies a domain-stable lesson/block identity. The useId
   // fallback keeps standalone/test mounts isolated without retaining them.
   const reactId = useId()
-  const uriHint = stableUriHint ?? `teach-code-task-${reactId.replace(/[^\w-]/g, '')}`
+  const uriHint = canonicalModel
+    ? undefined
+    : stableUriHint ?? `teach-code-task-${reactId.replace(/[^\w-]/g, '')}`
 
   // Publish the imperative read/write handle the block (and active-editor
   // registry) use. Reads/writes go straight to the live editor model so a
@@ -48,7 +59,9 @@ export function CodeTaskMonacoEditor({ initialCode, handleRef, locale, uriHint: 
 
   const onLoad = useCallback((handle: MonacoEditorHandle) => {
     monacoHandleRef.current = handle
-  }, [])
+    if (replaceCodeOnMount)
+      handle.getEditor()?.getModel()?.setValue(initialCode)
+  }, [initialCode, replaceCodeOnMount])
 
   return (
     <EditorBridgeProvider lang={locale ?? 'zh'}>
@@ -64,7 +77,7 @@ export function CodeTaskMonacoEditor({ initialCode, handleRef, locale, uriHint: 
       )}
       >
         <MonacoEditorReactComp
-          key={uriHint}
+          key={uriHint ?? 'canonical-main'}
           code={initialCode}
           locale={locale}
           onLoad={onLoad}

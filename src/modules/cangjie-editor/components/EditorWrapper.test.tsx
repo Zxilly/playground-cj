@@ -1,6 +1,7 @@
 import { act, render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { retainModelScope } from '@/lib/monaco/model-lifecycle'
+import { createEditorAppConfig } from '@/lib/monaco'
 import { MonacoEditorReactComp } from './EditorWrapper'
 
 function deferred<T>() {
@@ -270,24 +271,10 @@ describe('monacoEditorReactComp', () => {
     expect(acquireLanguageService).not.toHaveBeenCalled()
   })
 
-  it('gives unhinted editor instances distinct model URIs', async () => {
-    isLanguageClientAvailable.mockReturnValue(false)
-    render(
-      <>
-        <MonacoEditorReactComp code="first" />
-        <MonacoEditorReactComp code="second" />
-      </>,
-    )
-    await act(async () => {
-      monacoInit.resolve()
-      await monacoInit.promise
-      await Promise.resolve()
-      await Promise.resolve()
-    })
+  it('keeps an unhinted editor on the canonical project model', () => {
+    render(<MonacoEditorReactComp code="main() {}" />)
 
-    const uris = monacoEditorCreateModel.mock.calls.map(call => call[2].toString())
-    expect(uris).toHaveLength(2)
-    expect(new Set(uris).size).toBe(2)
+    expect(createEditorAppConfig).toHaveBeenCalledWith('main() {}', undefined, undefined)
   })
 
   it('disposes an ordinary model when its editor unmounts', async () => {

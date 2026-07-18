@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from '@/lib/monaco/vscode-api'
 import type { CodeResources, MonacoLanguageClient } from '@/lib/monaco/vscode-api'
@@ -171,11 +171,9 @@ export function MonacoEditorReactComp({
   modelScope,
   retainModelOnUnmount = false,
 }: MonacoEditorProps) {
-  const instanceId = useId()
-  const effectiveUriHint = uriHint ?? `editor-${instanceId.replace(/[^\w-]/g, '')}`
   const editorAppConfig = useMemo(
-    () => createEditorAppConfig(code, locale, effectiveUriHint),
-    [code, effectiveUriHint, locale],
+    () => createEditorAppConfig(code, locale, uriHint),
+    [code, locale, uriHint],
   )
   const hasLanguageClient = enableLanguageClient && isLanguageClientAvailable()
 

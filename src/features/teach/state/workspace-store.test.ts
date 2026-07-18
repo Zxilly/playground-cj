@@ -54,6 +54,12 @@ describe('useWorkspaceStore', () => {
     expect(useWorkspaceStore.getState().currentPlaygroundTabId).toBe('playground-1')
   })
 
+  it('persists the live code buffer for a Playground tab', () => {
+    useWorkspaceStore.getState().setPlaygroundTabCode('playground-1', 'main() { println("saved") }')
+    expect(useWorkspaceStore.getState().playgroundTabs[0]?.initialCode)
+      .toBe('main() { println("saved") }')
+  })
+
   it('openReference switches to the reference view and records the id', () => {
     useWorkspaceStore.getState().openReference('r1')
     const state = useWorkspaceStore.getState()

@@ -1,4 +1,5 @@
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
+import { createLspDocumentMirror, PLAYGROUND_PROJECT_MANIFEST } from '@/lib/monaco/lsp-document-mirror'
 
 // Pthread workers spawned by the emscripten module inherit the JS glue's
 // query string via `import.meta.url`, so they hit the same cached URL as
@@ -19,7 +20,6 @@ const CACHE_STORAGE_KEY = 'lsp-cache-version'
 const WASM_CACHE_NAME_PREFIX = 'wasm-'
 const CJO_DB_NAME = 'cjo-cache'
 const CJO_STORE_NAME = 'modules'
-
 const wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${LSP_VERSION}`
 const WASM_FATAL_RE = /\babort\(|RuntimeError|Uncaught/
 
@@ -200,6 +200,12 @@ async function initializeLspServer(
       for (const dir of moduleDirs) {
         mkdirP(mod.FS, `${targetModulesPath}/${dir}`)
       }
+      mkdirP(mod.FS, '/playground/src')
+      mod.FS.writeFile(
+        '/playground/cjpm.toml',
+        new TextEncoder().encode(PLAYGROUND_PROJECT_MANIFEST),
+      )
+      mod.FS.writeFile('/playground/src/main.cj', new Uint8Array())
     }],
     // Emscripten contract: async path must call successCallback() and
     // return {} — never return a Promise or exports object.
@@ -335,6 +341,7 @@ interface ConnectionInstance {
   module: EmscriptenModule | null
   aborted: boolean
   crashHandled: boolean
+  documentMirror: ReturnType<typeof createLspDocumentMirror> | null
 }
 
 interface LspRuntimeDeps {
@@ -470,6 +477,7 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
     module: null,
     aborted: false,
     crashHandled: false,
+    documentMirror: null,
   }
 
   setState({
@@ -532,6 +540,8 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
     if (instance.aborted || !instance.module)
       return
     const message = typeof event.data === 'string' ? event.data : JSON.stringify(event.data)
+    instance.documentMirror ??= createLspDocumentMirror(instance.module.FS)
+    instance.documentMirror.handle(message)
     try {
       instance.module.processMessage(message)
     }
@@ -565,6 +575,7 @@ async function disposeConnection(instance: ConnectionInstance): Promise<void> {
   }
   catch {}
   instance.module = null
+  instance.documentMirror = null
 }
 
 async function runLifecycle<T>(operation: () => Promise<T>): Promise<T> {

@@ -54,7 +54,6 @@ export const HMR_SLOT_KEYS = {
   LSP_SERVICE_LEASES: 'lsp.serviceLeases',
   MONACO_CANGJIE_FORMATTING_PROVIDER: 'monaco.cangjieFormattingProvider',
   MONACO_CANGJIE_MONARCH_PROVIDER: 'monaco.cangjieMonarchProvider',
-  MONACO_CANGJIE_COMPLETION_PROVIDER: 'monaco.cangjieCompletionProvider',
   MONACO_MODEL_REGISTRY: 'monaco.modelRegistry',
   MONACO_MODEL_PAGE_CLEANUP: 'monaco.modelPageCleanup',
 } as const

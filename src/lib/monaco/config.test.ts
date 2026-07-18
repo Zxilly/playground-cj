@@ -28,6 +28,7 @@ describe('monaco Cangjie language configuration', () => {
 
     expect(config.editorOptions?.language).toBe(CANGJIE_LANGUAGE_ID)
     expect(config.codeResources?.modified?.enforceLanguageId).toBe(CANGJIE_LANGUAGE_ID)
+    expect(config.codeResources?.modified?.uri).toBe('file:///playground/src/main.cj')
   })
 
   it('registers the Cangjie TextMate grammar against the lowercase language id', () => {

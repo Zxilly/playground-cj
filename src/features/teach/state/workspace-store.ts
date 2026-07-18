@@ -144,6 +144,8 @@ export interface WorkspaceStore {
   closePlaygroundTab: (tabId: string) => void
   /** Attach a model- or user-triggered run result to a Playground tab. */
   setPlaygroundTabResult: (tabId: string, result: RunResult | null) => void
+  /** Persist the live editor buffer before switching away from a Playground tab. */
+  setPlaygroundTabCode: (tabId: string, code: string) => void
   /**
    * Queue `prompt` to be seeded into the teacher chat composer. Replaces any
    * prompt not yet consumed (the latest click wins).
@@ -232,6 +234,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()((set, get) => ({
   }),
   setPlaygroundTabResult: (tabId, result) => set(state => ({
     playgroundTabs: state.playgroundTabs.map(tab => tab.id === tabId ? { ...tab, result } : tab),
+  })),
+  setPlaygroundTabCode: (tabId, code) => set(state => ({
+    playgroundTabs: state.playgroundTabs.map(tab => tab.id === tabId ? { ...tab, initialCode: code } : tab),
   })),
   setPendingPrefill: prompt => set({ pendingPrefill: prompt }),
   consumePrefill: () => {

@@ -57,6 +57,10 @@ export interface CodeTaskEditorProps {
   modelScope?: string
   /** Fill the parent pane instead of using the resizable lesson-task height. */
   fillHeight?: boolean
+  /** Use the workspace's canonical src/main.cj model for the active IDE surface. */
+  canonicalModel?: boolean
+  /** Replace a retained canonical model with initialCode when this editor mounts. */
+  replaceCodeOnMount?: boolean
 }
 
 /** The renderer for the code input area (real Monaco in the app, a fake in tests). */
