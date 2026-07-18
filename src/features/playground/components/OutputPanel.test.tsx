@@ -44,4 +44,23 @@ describe('outputPanel', () => {
     expect(panels[1].querySelector('script')).toBeNull()
     expect(panels[1].textContent).toContain('<script>alert(1)</script>')
   })
+
+  it('promotes the compiler diagnostic and keeps the ANSI runner command collapsed', () => {
+    const { container } = render(
+      <Wrapper>
+        <OutputPanel
+          toolOutput={'\u001B[36m$ /cangjie/bin/cjc main.cj\u001B[0m\nCangjie Compiler 1.1\n\u001B[31merror: expected expression\u001B[0m'}
+          programOutput=""
+        />
+      </Wrapper>,
+    )
+
+    const visibleCompiler = container.querySelector('pre')
+    expect(visibleCompiler?.textContent).toContain('error: expected expression')
+    expect(visibleCompiler?.textContent).not.toContain('/cangjie/bin/cjc')
+    expect(visibleCompiler?.innerHTML).toContain('color:rgb(187,0,0)')
+    const raw = screen.getByText('查看原始编译信息').closest('details')
+    expect(raw?.getAttribute('open')).toBeNull()
+    expect(raw?.textContent).toContain('/cangjie/bin/cjc')
+  })
 })

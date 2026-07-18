@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Check, Eye, X } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
@@ -22,6 +22,7 @@ interface Verdict {
  * until reveal is what builds storage strength (vs. recognition).
  */
 export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: RecallPromptBlockProps) {
+  const emptyGuidanceId = useId()
   // Re-hydrate a previously graded recall: a completed outcome reveals the
   // reference answer, restores the recorded grade (`correct` maps back to
   // good/again — recall outcomes only persist correctness, not the raw grade),
@@ -43,6 +44,7 @@ export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: Re
   // learner can still proceed; from then on this block behaves like the
   // non-graded flow for the rest of the session.
   const [fellBack, setFellBack] = useState(false)
+  const hasAttempt = attempt.trim().length > 0
 
   const reveal = () => setRevealed(true)
 
@@ -52,7 +54,7 @@ export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: Re
   }
 
   const submitForGrading = async () => {
-    if (!gradeRecall || grading)
+    if (!gradeRecall || grading || !hasAttempt)
       return
     setGrading(true)
     setGradeError(null)
@@ -106,6 +108,7 @@ export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: Re
         readOnly={revealed || grading}
         rows={3}
         aria-label={t`回忆作答`}
+        aria-describedby={!revealed && gradeRecall && !hasAttempt ? emptyGuidanceId : undefined}
         placeholder={t`写下你记得的内容…`}
         className={cn(
           'mt-3 w-full resize-y rounded-md border border-border/60 bg-background px-3 py-2 text-sm leading-6 focus:outline-none focus:ring-2 focus:ring-primary/40',
@@ -116,17 +119,30 @@ export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: Re
       {/* AI-graded submit button: shown only before reveal and while a grader is
           wired and we have not fallen back to manual grading. */}
       {!revealed && gradeRecall && !fellBack && (
-        <button
-          type="button"
-          data-testid="recall-submit-grade"
-          onClick={submitForGrading}
-          disabled={grading}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {grading
-            ? <Trans>批改中…</Trans>
-            : <Trans>提交批改</Trans>}
-        </button>
+        <>
+          {!hasAttempt && (
+            <p
+              id={emptyGuidanceId}
+              data-testid="recall-empty-guidance"
+              aria-live="polite"
+              className="mt-2 text-xs text-muted-foreground"
+            >
+              <Trans>请先写下你的回答，再提交批改。</Trans>
+            </p>
+          )}
+          <button
+            type="button"
+            data-testid="recall-submit-grade"
+            aria-describedby={!hasAttempt ? emptyGuidanceId : undefined}
+            onClick={submitForGrading}
+            disabled={grading || !hasAttempt}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {grading
+              ? <Trans>批改中…</Trans>
+              : <Trans>提交批改</Trans>}
+          </button>
+        </>
       )}
 
       {/* Manual reveal button: only when there is no AI grader (or we fell back)

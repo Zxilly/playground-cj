@@ -2,10 +2,11 @@
 
 import { fontFamily } from '@/app/font'
 import LabelContainer from '@/features/playground/components/LabelContainer'
-import { AnsiUp } from 'ansi_up'
-import { useMemo } from 'react'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
+import { Trans } from '@lingui/react/macro'
+import { AnsiOutput } from '@/components/AnsiOutput'
+import { formatCompilerOutput } from '@/lib/compiler-output'
 
 interface OutputPanelProps {
   toolOutput: string
@@ -14,9 +15,7 @@ interface OutputPanelProps {
 
 export function OutputPanel({ toolOutput, programOutput }: OutputPanelProps) {
   const { i18n } = useLingui()
-
-  const toolOutputHtml = useMemo(() => new AnsiUp().ansi_to_html(toolOutput), [toolOutput])
-  const programOutputHtml = useMemo(() => new AnsiUp().ansi_to_html(programOutput), [programOutput])
+  const compiler = formatCompilerOutput(toolOutput)
 
   return (
     <div
@@ -26,21 +25,35 @@ export function OutputPanel({ toolOutput, programOutput }: OutputPanelProps) {
       <LabelContainer
         title={i18n._(msg`编译信息`)}
         content={(
-          <pre
-            className="whitespace-pre min-h-0 min-w-0"
-            style={{ fontFamily }}
-            dangerouslySetInnerHTML={{ __html: toolOutputHtml }}
-          />
+          <div className="min-h-0 min-w-0 space-y-2">
+            <AnsiOutput
+              text={compiler.diagnosticAnsi}
+              className="whitespace-pre-wrap break-all"
+              style={{ fontFamily }}
+            />
+            {compiler.hasHiddenPreamble && (
+              <details className="text-xs text-muted-foreground">
+                <summary className="cursor-pointer select-none py-1 font-medium">
+                  <Trans>查看原始编译信息</Trans>
+                </summary>
+                <AnsiOutput
+                  text={compiler.fullAnsi}
+                  className="mt-1 whitespace-pre-wrap break-all border-t border-border/60 pt-2"
+                  style={{ fontFamily }}
+                />
+              </details>
+            )}
+          </div>
         )}
         className="flex-1/2 mb-1 lg:mb-2"
       />
       <LabelContainer
         title={i18n._(msg`程序输出`)}
         content={(
-          <pre
+          <AnsiOutput
+            text={programOutput}
             className="whitespace-pre min-h-0 min-w-0"
             style={{ fontFamily }}
-            dangerouslySetInnerHTML={{ __html: programOutputHtml }}
           />
         )}
         className="flex-1/2 mt-1 lg:mt-2"

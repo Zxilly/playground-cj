@@ -164,6 +164,31 @@ describe('recallPromptBlock with AI grading', () => {
     expect(screen.queryByTestId('recall-reveal')).toBeNull()
   })
 
+  it('prevents empty or whitespace-only grading submissions and explains what is required', () => {
+    const gradeRecall = vi.fn()
+    render(<RecallPromptBlock block={block} gradeRecall={gradeRecall} />)
+
+    const input = screen.getByTestId('recall-input') as HTMLTextAreaElement
+    const submit = screen.getByTestId('recall-submit-grade') as HTMLButtonElement
+    const guidance = screen.getByTestId('recall-empty-guidance')
+    expect(submit.disabled).toBe(true)
+    expect(guidance.textContent).toContain('请先写下你的回答')
+    expect(input.getAttribute('aria-describedby')).toBe(guidance.id)
+    expect(submit.getAttribute('aria-describedby')).toBe(guidance.id)
+
+    fireEvent.click(submit)
+    expect(gradeRecall).not.toHaveBeenCalled()
+
+    fireEvent.change(input, { target: { value: '   ' } })
+    expect(submit.disabled).toBe(true)
+    fireEvent.click(submit)
+    expect(gradeRecall).not.toHaveBeenCalled()
+
+    fireEvent.change(input, { target: { value: 'let keyword' } })
+    expect(submit.disabled).toBe(false)
+    expect(screen.queryByTestId('recall-empty-guidance')).toBeNull()
+  })
+
   it('grades a correct answer: reveals reference, shows the verdict, reports onOutcome', async () => {
     const gradeRecall = vi.fn().mockResolvedValue({ correct: true, feedback: '答得不错。' })
     const onOutcome = vi.fn()
@@ -217,6 +242,7 @@ describe('recallPromptBlock with AI grading', () => {
     const gradeRecall = vi.fn().mockResolvedValue({ correct: true, feedback: 'ok' })
     render(<RecallPromptBlock block={block} gradeRecall={gradeRecall} />)
     expect((screen.getByTestId('recall-input') as HTMLTextAreaElement).readOnly).toBe(false)
+    fireEvent.change(screen.getByTestId('recall-input'), { target: { value: 'let keyword' } })
     fireEvent.click(screen.getByTestId('recall-submit-grade'))
     await waitFor(() =>
       expect((screen.getByTestId('recall-input') as HTMLTextAreaElement).readOnly).toBe(true),

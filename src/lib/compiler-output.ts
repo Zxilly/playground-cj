@@ -1,5 +1,6 @@
 /**
- * Student-facing compiler output. Clean strings support searching/assertions;
+ * Student-facing compiler output shared by the standalone Playground and AI
+ * classroom. Clean strings support searching/assertions;
  * ANSI strings preserve the terminal presentation for the rendered console.
  */
 export interface FormattedCompilerOutput {

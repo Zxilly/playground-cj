@@ -2,7 +2,7 @@
 
 import { Trans } from '@lingui/react/macro'
 import { AnsiOutput } from '@/components/AnsiOutput'
-import { formatCompilerOutput } from '@/lib/teach/feedback/compiler-output'
+import { formatCompilerOutput } from '@/lib/compiler-output'
 
 interface CompilerDiagnosticOutputProps {
   output: string
