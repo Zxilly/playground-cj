@@ -13,7 +13,8 @@ afterEach(() => {
 
 describe('useWorkspaceResource', () => {
   it('loads data and clears the loading flag', async () => {
-    const { result } = renderHook(() => useWorkspaceResource(async () => 'doc', []))
+    const owner = {}
+    const { result } = renderHook(() => useWorkspaceResource(owner, 'doc', async () => 'doc', []))
     expect(result.current.loading).toBe(true)
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.data).toBe('doc')
@@ -23,8 +24,9 @@ describe('useWorkspaceResource', () => {
     // #3: a rejected read must not wedge `loading` on forever (which would lock
     // the mission gate) or leak an unhandled rejection.
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const owner = {}
     const { result } = renderHook(() =>
-      useWorkspaceResource(async () => {
+      useWorkspaceResource(owner, 'doc', async () => {
         throw new Error('boom')
       }, []))
 
@@ -35,7 +37,8 @@ describe('useWorkspaceResource', () => {
 
   it('re-runs when its own scope revision bumps', async () => {
     const load = vi.fn(async () => 'x')
-    renderHook(() => useWorkspaceResource(load, [], 'lessons'))
+    const owner = {}
+    renderHook(() => useWorkspaceResource(owner, 'lessons:list', load, [], 'lessons'))
     await waitFor(() => expect(load).toHaveBeenCalledTimes(1))
 
     useWorkspaceStore.getState().bumpRevision('lessons')
@@ -44,7 +47,8 @@ describe('useWorkspaceResource', () => {
 
   it('does NOT re-run when an unrelated scope bumps', async () => {
     const load = vi.fn(async () => 'x')
-    renderHook(() => useWorkspaceResource(load, [], 'lessons'))
+    const owner = {}
+    renderHook(() => useWorkspaceResource(owner, 'lessons:list', load, [], 'lessons'))
     await waitFor(() => expect(load).toHaveBeenCalledTimes(1))
 
     // A glossary write must not re-run a lessons-scoped read.
@@ -55,10 +59,23 @@ describe('useWorkspaceResource', () => {
 
   it('a default (all) scope read re-runs on any write', async () => {
     const load = vi.fn(async () => 'x')
-    renderHook(() => useWorkspaceResource(load, []))
+    const owner = {}
+    renderHook(() => useWorkspaceResource(owner, 'doc', load, []))
     await waitFor(() => expect(load).toHaveBeenCalledTimes(1))
 
     useWorkspaceStore.getState().bumpRevision('glossary')
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(2))
+  })
+
+  it('reuses a successful read immediately when the same resource remounts', async () => {
+    const owner = {}
+    const load = vi.fn(async () => 'cached doc')
+    const first = renderHook(() => useWorkspaceResource(owner, 'doc', load, []))
+    await waitFor(() => expect(first.result.current.loading).toBe(false))
+    first.unmount()
+
+    const second = renderHook(() => useWorkspaceResource(owner, 'doc', load, []))
+    expect(second.result.current).toEqual({ data: 'cached doc', loading: false })
     await waitFor(() => expect(load).toHaveBeenCalledTimes(2))
   })
 })

@@ -100,6 +100,8 @@ describe('mission-first gating', () => {
     render(<TeachWorkspaceShell chat={null} />, makeRepo({ mission: null }))
     // Default view is 'lessons'; with no mission the gate replaces the list.
     expect(await screen.findByTestId('mission-gate')).toBeTruthy()
+    await waitFor(() => expect(useWorkspaceStore.getState().view).toBe('mission'))
+    expect(screen.getAllByTestId('mission-gate')).toHaveLength(1)
     expect(screen.queryByTestId('lessons-list-view')).toBeNull()
     expect(screen.queryByTestId('lessons-empty')).toBeNull()
   })
@@ -112,13 +114,29 @@ describe('mission-first gating', () => {
     expect(lessonsEntry.getAttribute('aria-disabled')).toBe('true')
   })
 
-  it('keeps the mission nav entry usable so the learner can review the gate', async () => {
+  it('returns to the mission gate through the mission nav entry after switching away', async () => {
     render(<TeachWorkspaceShell chat={null} />, makeRepo({ mission: null }))
     await screen.findByTestId('mission-gate')
     const missionEntry = screen.getByTestId('workspace-nav-mission')
     expect(missionEntry.getAttribute('disabled')).toBeNull()
+    await waitFor(() => expect(useWorkspaceStore.getState().view).toBe('mission'))
+
+    fireEvent.click(screen.getByTestId('workspace-nav-glossary'))
+    expect(await screen.findByTestId('glossary-empty')).toBeTruthy()
+    await waitFor(() => {
+      const panels = screen.getAllByTestId('workspace-view-transition')
+      expect(panels).toHaveLength(1)
+      expect(panels[0].getAttribute('data-view')).toBe('glossary')
+    })
+
     fireEvent.click(missionEntry)
-    expect(await screen.findByTestId('mission-empty')).toBeTruthy()
+    await waitFor(() => {
+      const panels = screen.getAllByTestId('workspace-view-transition')
+      expect(panels).toHaveLength(1)
+      expect(panels[0].getAttribute('data-view')).toBe('mission')
+    })
+    expect(screen.getByTestId('mission-gate')).toBeTruthy()
+    expect(missionEntry.getAttribute('aria-current')).toBe('page')
   })
 
   it('does not switch to the lessons view when its disabled nav entry is clicked', async () => {

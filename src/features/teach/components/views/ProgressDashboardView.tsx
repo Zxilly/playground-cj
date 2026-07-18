@@ -11,7 +11,6 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useLessonNavigation } from '@/features/teach/context/useLessonNavigation'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
-import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /** How many recent lessons the progress list surfaces, newest first. */
 const RECENT_LESSON_LIMIT = 5
@@ -80,14 +79,44 @@ export function ProgressDashboardView() {
   const { repo, now } = useWorkspace()
   const { selectLesson } = useLessonNavigation()
 
-  const { data: mission, loading: missionLoading } = useWorkspaceResource(() => repo.getMission(), [repo], 'mission')
-  const { data: lessons, loading: lessonsLoading } = useWorkspaceResource(() => repo.listLessons(), [repo], 'lessons')
-  const { data: glossary, loading: glossaryLoading } = useWorkspaceResource(() => repo.getGlossary(), [repo], 'glossary')
-  const { data: records, loading: recordsLoading } = useWorkspaceResource(() => repo.listLearningRecords(), [repo], 'learningRecords')
-  const { data: retrieval, loading: retrievalLoading } = useWorkspaceResource(() => repo.listRetrieval(), [repo], 'retrieval')
+  const { data: mission, loading: missionLoading } = useWorkspaceResource(
+    repo,
+    'mission',
+    () => repo.getMission(),
+    [repo],
+    'mission',
+  )
+  const { data: lessons, loading: lessonsLoading } = useWorkspaceResource(
+    repo,
+    'lessons:list',
+    () => repo.listLessons(),
+    [repo],
+    'lessons',
+  )
+  const { data: glossary, loading: glossaryLoading } = useWorkspaceResource(
+    repo,
+    'glossary',
+    () => repo.getGlossary(),
+    [repo],
+    'glossary',
+  )
+  const { data: records, loading: recordsLoading } = useWorkspaceResource(
+    repo,
+    'learningRecords',
+    () => repo.listLearningRecords(),
+    [repo],
+    'learningRecords',
+  )
+  const { data: retrieval, loading: retrievalLoading } = useWorkspaceResource(
+    repo,
+    'retrieval',
+    () => repo.listRetrieval(),
+    [repo],
+    'retrieval',
+  )
 
   if (missionLoading || lessonsLoading || glossaryLoading || recordsLoading || retrievalLoading)
-    return <WorkspaceViewSkeleton />
+    return null
 
   const lessonList = lessons ?? []
   const termCount = glossary?.terms.length ?? 0

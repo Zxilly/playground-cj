@@ -6,7 +6,6 @@ import type { ReactNode } from 'react'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
-import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 function Section({
   icon: Icon,
@@ -48,10 +47,10 @@ function Section({
  */
 export function MissionView() {
   const { repo } = useWorkspace()
-  const { data: mission, loading } = useWorkspaceResource(() => repo.getMission(), [repo], 'mission')
+  const { data: mission, loading } = useWorkspaceResource(repo, 'mission', () => repo.getMission(), [repo], 'mission')
 
   if (loading)
-    return <WorkspaceViewSkeleton />
+    return null
 
   if (!mission) {
     return (

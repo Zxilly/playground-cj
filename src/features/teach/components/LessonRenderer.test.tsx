@@ -97,6 +97,19 @@ describe('lessonRenderer', () => {
     ])
   })
 
+  it('omits a first heading that only repeats the lesson title without reindexing later blocks', () => {
+    const lesson = makeLesson([
+      { type: 'heading', level: 2, text: 'let vs var' },
+      { type: 'prose', markdown: 'let binds an immutable value' },
+    ])
+    const { container } = render(
+      <LessonRenderer lesson={lesson} record={vi.fn(async () => null)} retrievalStore={makeRetrievalStore()} now={() => 1} />,
+    )
+    expect(screen.queryByTestId('heading-block')).toBeNull()
+    expect(screen.getByTestId('prose-block')).toBeTruthy()
+    expect(container.querySelector('[data-block-index="1"]')?.getAttribute('data-block-type')).toBe('prose')
+  })
+
   it('dispatches an oj block to the OJ component', () => {
     const lesson = makeLesson([
       {

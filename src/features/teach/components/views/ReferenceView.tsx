@@ -13,7 +13,6 @@ import { CodeSampleBlock } from '@/features/teach/components/blocks/CodeSampleBl
 import { GlossaryRefBlock } from '@/features/teach/components/blocks/GlossaryRefBlock'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
-import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 export interface ReferenceViewProps {
   /** The reference id selected in the workspace store, or null to list them. */
@@ -27,10 +26,15 @@ export interface ReferenceViewProps {
  * `glossary_ref`) are meaningful; any other block type degrades to a safe
  * placeholder rather than wiring up interactive outcomes.
  */
-function ReferenceBlocks({ blocks }: { blocks: Block[] }) {
+function ReferenceBlocks({ blocks, documentTitle }: { blocks: Block[], documentTitle: string }) {
+  const contentBlocks = blocks[0]?.type === 'heading'
+    && blocks[0].text.trim().localeCompare(documentTitle.trim(), undefined, { sensitivity: 'base' }) === 0
+    ? blocks.slice(1)
+    : blocks
+
   return (
     <div className="flex flex-col gap-4">
-      {blocks.map((block, index) => {
+      {contentBlocks.map((block, index) => {
         const key = `b${index}`
         switch (block.type) {
           case 'prose':
@@ -72,11 +76,17 @@ function ReferenceBlocks({ blocks }: { blocks: Block[] }) {
 export function ReferenceView({ referenceId }: ReferenceViewProps) {
   const { repo } = useWorkspace()
   const { openReference } = useLessonNavigation()
-  const { data: references, loading } = useWorkspaceResource(() => repo.listReferences(), [repo], 'references')
-  const { data: glossary } = useWorkspaceResource(() => repo.getGlossary(), [repo], 'glossary')
+  const { data: references, loading } = useWorkspaceResource(
+    repo,
+    'references',
+    () => repo.listReferences(),
+    [repo],
+    'references',
+  )
+  const { data: glossary } = useWorkspaceResource(repo, 'glossary', () => repo.getGlossary(), [repo], 'glossary')
 
   if (loading)
-    return <WorkspaceViewSkeleton />
+    return null
 
   const refs = references ?? []
 
@@ -117,7 +127,7 @@ export function ReferenceView({ referenceId }: ReferenceViewProps) {
           <FileText aria-hidden="true" className="size-5 text-primary" />
           {selected.title}
         </h2>
-        <ReferenceBlocks blocks={selected.blocks} />
+        <ReferenceBlocks blocks={selected.blocks} documentTitle={selected.title} />
       </article>
     </GlossaryProvider>
   )

@@ -186,6 +186,13 @@ export function LessonRenderer({ lesson, record, retrievalStore, now, runCode, r
     <article data-testid="lesson-renderer" className="flex flex-col gap-4">
       {lesson.blocks.map((block, index) => {
         const id = blockId(index)
+        if (
+          index === 0
+          && block.type === 'heading'
+          && block.text.trim().localeCompare(lesson.title.trim(), undefined, { sensitivity: 'base' }) === 0
+        ) {
+          return null
+        }
         return (
           <div key={`${lesson.id}:${id}`} data-block-index={index} data-block-type={block.type}>
             {renderBlock({

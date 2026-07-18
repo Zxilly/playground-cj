@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Loader2, RotateCcw, TriangleAlert } from 'lucide-react'
+import { RotateCcw, TriangleAlert } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
@@ -134,12 +134,8 @@ function TeachAppLoading() {
   return (
     <div
       data-testid="teach-app-loading"
-      className="flex h-full items-center justify-center gap-2.5 bg-background p-8 text-sm text-muted-foreground"
-      aria-busy="true"
-    >
-      <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
-      <Trans>正在加载课堂…</Trans>
-    </div>
+      className="h-full bg-background"
+    />
   )
 }
 

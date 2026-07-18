@@ -21,7 +21,7 @@ export function ViewEmptyState({
   return (
     <div
       data-testid={testId}
-      className="flex flex-col items-center gap-3 rounded-lg border border-border bg-background px-6 py-9 text-center text-sm text-muted-foreground"
+      className="flex min-h-52 flex-col items-center justify-center gap-3 px-6 py-12 text-center text-sm text-muted-foreground"
     >
       <span className="grid size-10 place-items-center rounded-md border border-border text-primary">
         <Icon aria-hidden="true" className="size-5" />

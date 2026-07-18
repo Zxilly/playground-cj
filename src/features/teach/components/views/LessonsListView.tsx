@@ -7,7 +7,6 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useLessonNavigation } from '@/features/teach/context/useLessonNavigation'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
-import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /**
  * Per-status icon for a lesson's completion state, surfacing progress at a glance
@@ -30,10 +29,10 @@ function StatusIcon({ status }: { status: LessonState['status'] }) {
 export function LessonsListView() {
   const { repo } = useWorkspace()
   const { selectLesson } = useLessonNavigation()
-  const { data: lessons, loading } = useWorkspaceResource(() => repo.listLessons(), [repo], 'lessons')
+  const { data: lessons, loading } = useWorkspaceResource(repo, 'lessons:list', () => repo.listLessons(), [repo], 'lessons')
 
   if (loading)
-    return <WorkspaceViewSkeleton />
+    return null
 
   if (!lessons || lessons.length === 0) {
     return (

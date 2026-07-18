@@ -150,4 +150,19 @@ describe('teachConfigWizard', () => {
     renderWizard()
     expect(screen.getByTestId('teach-source-custom').getAttribute('aria-checked')).toBe('true')
   })
+
+  it('moves and selects the AI source with arrow keys', () => {
+    seedSharedReady()
+    renderWizard()
+    const shared = screen.getByTestId('teach-source-shared')
+    const custom = screen.getByTestId('teach-source-custom')
+
+    shared.focus()
+    fireEvent.keyDown(shared, { key: 'ArrowDown' })
+
+    expect(document.activeElement).toBe(custom)
+    expect(custom.getAttribute('aria-checked')).toBe('true')
+    expect(custom.getAttribute('tabindex')).toBe('0')
+    expect(shared.getAttribute('tabindex')).toBe('-1')
+  })
 })

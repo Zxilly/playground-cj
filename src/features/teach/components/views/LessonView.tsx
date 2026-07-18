@@ -14,7 +14,6 @@ import { GlossaryProvider } from '@/features/teach/context/GlossaryProvider'
 import { LessonRenderer } from '@/features/teach/components/LessonRenderer'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
-import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 export interface LessonViewProps {
   /** Id of the lesson to open, or null when no lesson is selected. */
@@ -38,10 +37,13 @@ export function LessonView({ lessonId }: LessonViewProps) {
   const { repo, retrievalStore, now, runner, activeEditor } = useWorkspace()
   const config = useLLMConfig()
   const { data: lesson, loading } = useWorkspaceResource(
+    repo,
+    `lesson:${lessonId ?? 'none'}`,
     () => (lessonId ? repo.getLesson(lessonId) : Promise.resolve(null)),
     [repo, lessonId],
+    'lessons',
   )
-  const { data: glossary } = useWorkspaceResource(() => repo.getGlossary(), [repo])
+  const { data: glossary } = useWorkspaceResource(repo, 'glossary', () => repo.getGlossary(), [repo], 'glossary')
 
   const record = useCallback(
     (blockId: string, outcome: BlockOutcome) =>
@@ -75,7 +77,7 @@ export function LessonView({ lessonId }: LessonViewProps) {
   )
 
   if (loading)
-    return <WorkspaceViewSkeleton />
+    return null
 
   if (!lesson) {
     return (

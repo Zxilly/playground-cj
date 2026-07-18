@@ -5,8 +5,10 @@ import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { MessageCircle, Sparkles, X } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
+import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
 import {
   CHAT_MIN_WIDTH,
   useResizableChatPanel,
@@ -35,15 +37,38 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
 
+/**
+ * Warm the lightweight document tabs while the learner is on the initial view.
+ * Reads share the same repository-scoped cache as the visible views, so the
+ * first tab click paints real content instead of a transient loading skeleton.
+ */
+function WorkspaceResourcePreloader({ repo }: { repo: WorkspaceRepository }) {
+  useWorkspaceResource(repo, 'lessons:list', () => repo.listLessons(), [repo], 'lessons')
+  useWorkspaceResource(repo, 'glossary', () => repo.getGlossary(), [repo], 'glossary')
+  useWorkspaceResource(repo, 'learningRecords', () => repo.listLearningRecords(), [repo], 'learningRecords')
+  useWorkspaceResource(repo, 'references', () => repo.listReferences(), [repo], 'references')
+  useWorkspaceResource(repo, 'notes', () => repo.getNotes(), [repo], 'notes')
+  useWorkspaceResource(
+    repo,
+    'retrieval',
+    () => typeof repo.listRetrieval === 'function' ? repo.listRetrieval() : Promise.resolve([]),
+    [repo],
+    'retrieval',
+  )
+  return null
+}
+
 /** Responsive document workspace with a persistent desktop teacher panel. */
 export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
   const { repo } = useWorkspace()
   const view = useWorkspaceStore(state => state.view)
+  const setView = useWorkspaceStore(state => state.setView)
   const currentLessonId = useWorkspaceStore(state => state.currentLessonId)
   const currentReferenceId = useWorkspaceStore(state => state.currentReferenceId)
   const pendingPrefill = useWorkspaceStore(state => state.pendingPrefill)
   const [chatOpen, setChatOpen] = useState(false)
   const isCompact = useIsCompactViewport()
+  const reduceMotion = useReducedMotion()
   const chatRegionId = useId()
   const chatTitleId = useId()
   const chatToggleRef = useRef<HTMLButtonElement>(null)
@@ -53,8 +78,12 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
 
   useLayoutEffect(() => {
     if (isCompact && !previousCompactRef.current) {
-      // eslint-disable-next-line react/set-state-in-effect -- preserve the visible desktop chat when crossing into the drawer breakpoint
-      setChatOpen(true)
+      // The central workspace is the primary learning surface. A desktop chat
+      // column becoming a mobile drawer must not cover it merely because the
+      // viewport crossed a breakpoint; only an explicit learner action or a
+      // teacher prefill should open the compact drawer.
+      // eslint-disable-next-line react/set-state-in-effect -- one-shot response to a viewport breakpoint transition
+      setChatOpen(false)
     }
     previousCompactRef.current = isCompact
   }, [isCompact])
@@ -112,11 +141,26 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
   }, [chatRef, closeChat, isCompact])
 
   const { data: mission, loading: missionLoading } = useWorkspaceResource(
+    repo,
+    'mission',
     () => repo.getMission(),
     [repo],
     'mission',
   )
   const missionReady = !missionLoading && mission != null
+  const viewTransitionKey = view === 'lesson'
+    ? `lesson:${currentLessonId ?? 'none'}`
+    : view === 'reference'
+      ? `reference:${currentReferenceId ?? 'list'}`
+      : view
+
+  useEffect(() => {
+    if (missionLoading || mission != null)
+      return
+    const currentView = useWorkspaceStore.getState().view
+    if (currentView === 'lessons' || currentView === 'lesson')
+      setView('mission')
+  }, [mission, missionLoading, setView])
 
   const [lessonsUnlocked, setLessonsUnlocked] = useState(false)
   const sawNoMissionRef = useRef(false)
@@ -146,6 +190,8 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       data-testid="teach-workspace-shell"
       className="relative flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground"
     >
+      <WorkspaceResourcePreloader repo={repo} />
+
       <aside
         inert={isCompact && chatOpen}
         className={cn(
@@ -163,16 +209,39 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       <main
         data-testid="workspace-viewport"
         inert={isCompact && chatOpen}
-        className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-background px-4 pb-7 pt-20 sm:px-6 lg:px-8 lg:py-8"
+        className="relative min-w-0 flex-1 overflow-hidden bg-background"
       >
-        <div className="mx-auto w-full max-w-4xl">
-          <WorkspaceViewport
-            view={view}
-            missionReady={missionReady}
-            currentLessonId={currentLessonId}
-            currentReferenceId={currentReferenceId}
-          />
-        </div>
+        <AnimatePresence initial={false} mode="wait">
+          <motion.div
+            key={viewTransitionKey}
+            data-testid="workspace-view-transition"
+            data-view={view}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.14, ease: 'easeOut' }}
+            className={cn(
+              'absolute inset-0 h-full min-h-0 w-full bg-background',
+              view === 'playground'
+                ? 'overflow-hidden px-0 pb-0 pt-16 lg:p-0'
+                : 'overflow-y-auto px-4 pb-7 pt-20 sm:px-6 lg:px-8 lg:py-8',
+            )}
+          >
+            <div className={cn(
+              view === 'playground'
+                ? 'h-full min-h-0 w-full'
+                : 'mx-auto w-full max-w-4xl',
+            )}
+            >
+              <WorkspaceViewport
+                view={view}
+                missionReady={missionReady}
+                currentLessonId={currentLessonId}
+                currentReferenceId={currentReferenceId}
+              />
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {isCompact && chatOpen && (

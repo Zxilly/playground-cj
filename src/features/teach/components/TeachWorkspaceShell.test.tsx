@@ -96,10 +96,16 @@ describe('teachWorkspaceShell', () => {
     expect(screen.getByTestId('chat-slot')).toBeTruthy()
   })
 
-  it('exposes all seven navigation entries', () => {
+  it('does not flash a skeleton during the initial paint for fast workspace reads', () => {
+    render(<TeachWorkspaceShell chat={null} />, makeRepo())
+    expect(screen.getByTestId('workspace-viewport').querySelector('[aria-busy="true"]')).toBeNull()
+  })
+
+  it('exposes all eight navigation entries, including Playground', () => {
     render(<TeachWorkspaceShell chat={null} />, makeRepo())
     const nav = screen.getByTestId('workspace-nav')
-    expect(nav.querySelectorAll('[data-nav-item]')).toHaveLength(7)
+    expect(nav.querySelectorAll('[data-nav-item]')).toHaveLength(8)
+    expect(screen.getByTestId('workspace-nav-playground')).toBeTruthy()
   })
 
   it('switches the central view when a nav entry is clicked', async () => {
@@ -112,6 +118,57 @@ describe('teachWorkspaceShell', () => {
     fireEvent.click(screen.getByTestId('workspace-nav-mission'))
     expect(await screen.findByTestId('mission-view')).toBeTruthy()
     expect(useWorkspaceStore.getState().view).toBe('mission')
+  })
+
+  it('does not flash a skeleton when switching between workspace tabs', async () => {
+    render(<TeachWorkspaceShell chat={null} />, makeRepo({
+      mission: { topic: 'Cangjie CLI', why: 'ship a tool', successLooksLike: ['parse args'], constraints: [], outOfScope: [], updatedAt: 1 },
+    }))
+    await screen.findByTestId('lessons-empty')
+
+    fireEvent.click(screen.getByTestId('workspace-nav-glossary'))
+    expect(screen.getByTestId('workspace-viewport').querySelector('[aria-busy="true"]')).toBeNull()
+    await screen.findByTestId('glossary-empty')
+    fireEvent.click(screen.getByTestId('workspace-nav-mission'))
+    await screen.findByTestId('mission-view')
+
+    fireEvent.click(screen.getByTestId('workspace-nav-glossary'))
+    expect(screen.getByTestId('workspace-viewport').querySelector('[aria-busy="true"]')).toBeNull()
+    expect(await screen.findByTestId('glossary-empty')).toBeTruthy()
+  })
+
+  it('opens Playground before a mission exists', async () => {
+    render(<TeachWorkspaceShell chat={null} />, makeRepo({ mission: null }))
+    await screen.findByTestId('mission-gate')
+    fireEvent.click(screen.getByTestId('workspace-nav-playground'))
+    expect(await screen.findByTestId('playground-view')).toBeTruthy()
+    expect(useWorkspaceStore.getState().view).toBe('playground')
+  })
+
+  it('uses IDE-style roving tabs and supports keyboard navigation', async () => {
+    render(<TeachWorkspaceShell chat={null} />, makeRepo({ mission: null }))
+    await screen.findByTestId('mission-gate')
+    fireEvent.click(screen.getByTestId('workspace-nav-playground'))
+    await screen.findByTestId('playground-view')
+    fireEvent.click(screen.getByTestId('playground-new-tab'))
+
+    const tabs = screen.getAllByRole('tab')
+    expect(tabs).toHaveLength(2)
+    expect(tabs[1].getAttribute('aria-selected')).toBe('true')
+    expect(tabs[1].getAttribute('tabindex')).toBe('0')
+    expect(tabs[0].getAttribute('tabindex')).toBe('-1')
+    expect(tabs[1].hasAttribute('data-ide-tab')).toBe(true)
+    const closeButtons = screen.getAllByTestId('playground-close-tab')
+    expect(closeButtons[0].getAttribute('tabindex')).toBe('-1')
+    expect(closeButtons[1].getAttribute('tabindex')).toBe('0')
+    expect(closeButtons[1].getAttribute('aria-label')).toContain('Playground 2')
+
+    tabs[1].focus()
+    fireEvent.keyDown(tabs[1], { key: 'Home' })
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(tabs[0])
+    expect(closeButtons[0].getAttribute('tabindex')).toBe('0')
+    expect(closeButtons[1].getAttribute('tabindex')).toBe('-1')
   })
 
   it('renders the open lesson in the central viewport for the lesson view', async () => {

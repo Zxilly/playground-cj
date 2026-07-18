@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
-import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /**
  * The learning-records view: ADR-style notes the teacher appends when the learner
@@ -17,10 +16,16 @@ import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
  */
 export function RecordsView() {
   const { repo } = useWorkspace()
-  const { data: records, loading } = useWorkspaceResource(() => repo.listLearningRecords(), [repo], 'learningRecords')
+  const { data: records, loading } = useWorkspaceResource(
+    repo,
+    'learningRecords',
+    () => repo.listLearningRecords(),
+    [repo],
+    'learningRecords',
+  )
 
   if (loading)
-    return <WorkspaceViewSkeleton />
+    return null
 
   if (!records || records.length === 0) {
     return (

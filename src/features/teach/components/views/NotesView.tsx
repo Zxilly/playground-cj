@@ -6,7 +6,6 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { TeachMarkdown } from '@/features/teach/components/blocks/TeachMarkdown'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
-import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /**
  * The notes view: the learner's free-form teaching-preference notes (how they
@@ -15,10 +14,10 @@ import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
  */
 export function NotesView() {
   const { repo } = useWorkspace()
-  const { data: notes, loading } = useWorkspaceResource(() => repo.getNotes(), [repo], 'notes')
+  const { data: notes, loading } = useWorkspaceResource(repo, 'notes', () => repo.getNotes(), [repo], 'notes')
 
   if (loading)
-    return <WorkspaceViewSkeleton />
+    return null
 
   const body = notes?.body.trim() ?? ''
 
@@ -31,7 +30,7 @@ export function NotesView() {
   }
 
   return (
-    <article data-testid="notes-view" className="rounded-md border border-border bg-background px-4 py-3">
+    <article data-testid="notes-view" className="min-w-0">
       <TeachMarkdown markdown={body} />
     </article>
   )
