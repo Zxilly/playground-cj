@@ -4,6 +4,7 @@ import type { LogOutputChannel } from 'vscode'
 import { MonacoLanguageClient } from './vscode-api'
 import isMobile from 'is-mobile'
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
+import { createCangjieProtocolMiddleware } from './cangjie-protocol'
 import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
 import { LatestLanguageClientController } from './language-client-controller'
 
@@ -68,6 +69,7 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
     name: `${CANGJIE_LANGUAGE_NAME} Language Client`,
     clientOptions: {
       documentSelector: [CANGJIE_LANGUAGE_ID],
+      middleware: createCangjieProtocolMiddleware(),
       outputChannel,
       initializationOptions: {
         cangjiePath: '/cangjie',
