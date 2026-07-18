@@ -60,6 +60,48 @@ describe('useWorkspaceStore', () => {
       .toBe('main() { println("saved") }')
   })
 
+  it('renames a Playground tab without changing its stable id', () => {
+    useWorkspaceStore.getState().renamePlaygroundTab('playground-1', '  字符串实验  ')
+    const tab = useWorkspaceStore.getState().playgroundTabs[0]
+    expect(tab?.id).toBe('playground-1')
+    expect(tab?.title).toBe('字符串实验')
+  })
+
+  it('writes Playground drafts, selection, and results to local storage', () => {
+    localStorage.removeItem('teach:playground-session:v1')
+    const tabId = useWorkspaceStore.getState().openPlaygroundTab({
+      title: '刷新后保留',
+      code: 'main() { println("persisted") }',
+    })
+    useWorkspaceStore.getState().setPlaygroundTabResult(tabId, {
+      ok: true,
+      stdout: 'persisted',
+      stderr: '',
+      exitCode: 0,
+    })
+
+    const saved = JSON.parse(localStorage.getItem('teach:playground-session:v1') ?? '{}')
+    expect(saved.currentPlaygroundTabId).toBe(tabId)
+    expect(saved.playgroundTabs).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: tabId,
+        initialCode: 'main() { println("persisted") }',
+        result: expect.objectContaining({ stdout: 'persisted' }),
+        running: false,
+      }),
+    ]))
+  })
+
+  it('keeps Playground drafts when document navigation resets', () => {
+    const tabId = useWorkspaceStore.getState().openPlaygroundTab({
+      title: '保留草稿',
+      code: 'main() {}',
+    })
+    useWorkspaceStore.getState().reset()
+    expect(useWorkspaceStore.getState().playgroundTabs.some(tab => tab.id === tabId)).toBe(true)
+    expect(useWorkspaceStore.getState().currentPlaygroundTabId).toBe(tabId)
+  })
+
   it('openReference switches to the reference view and records the id', () => {
     useWorkspaceStore.getState().openReference('r1')
     const state = useWorkspaceStore.getState()

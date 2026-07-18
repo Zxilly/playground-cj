@@ -64,6 +64,8 @@ export interface CodeTaskEditorProps {
   canonicalModel?: boolean
   /** Replace a retained canonical model with initialCode when this editor mounts. */
   replaceCodeOnMount?: boolean
+  /** Observe live model edits when a parent needs to persist an editor draft. */
+  onCodeChange?: (code: string) => void
 }
 
 /** The renderer for the code input area (real Monaco in the app, a fake in tests). */
@@ -333,7 +335,12 @@ export function CodeTaskBlock({
                       : errored ? <Trans>运行出错</Trans> : <Trans>未通过</Trans>}
                   </div>
 
-                  {!passed && evaluated.result.stderr && (
+                  {/* Compiler diagnostics belong only to genuine compile/run
+                      failures. A successful run may still carry verbose
+                      toolchain output in stderr/compilerOutput; showing that
+                      during an output mismatch makes a healthy compile look
+                      broken and hides the feedback the learner needs. */}
+                  {errored && evaluated.result.stderr && (
                     <CompilerDiagnosticOutput
                       output={evaluated.result.compilerOutput ?? evaluated.result.stderr}
                       testId="code-task-stderr"
@@ -344,24 +351,29 @@ export function CodeTaskBlock({
                       mismatch — for a compile/run error the actual output is
                       empty and the diff would just be noise next to the stderr. */}
                   {!passed && !errored && (
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <div>
-                        <div className="mb-1 text-xs font-semibold text-muted-foreground"><Trans>预期输出</Trans></div>
-                        <pre
-                          data-testid="code-task-expected"
-                          className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/40 px-3 py-2 font-mono text-xs"
-                        >
-                          {block.expectedOutput}
-                        </pre>
-                      </div>
-                      <div>
-                        <div className="mb-1 text-xs font-semibold text-muted-foreground"><Trans>实际输出</Trans></div>
-                        <pre
-                          data-testid="code-task-actual"
-                          className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/40 px-3 py-2 font-mono text-xs"
-                        >
-                          {evaluated.result.stdout || ' '}
-                        </pre>
+                    <div data-testid="code-task-output-mismatch" className="space-y-2">
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        <Trans>程序已成功运行，但输出与题目要求不一致。请对照预期输出和实际输出后再试。</Trans>
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div>
+                          <div className="mb-1 text-xs font-semibold text-muted-foreground"><Trans>预期输出</Trans></div>
+                          <pre
+                            data-testid="code-task-expected"
+                            className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/40 px-3 py-2 font-mono text-xs"
+                          >
+                            {block.expectedOutput}
+                          </pre>
+                        </div>
+                        <div>
+                          <div className="mb-1 text-xs font-semibold text-muted-foreground"><Trans>实际输出</Trans></div>
+                          <pre
+                            data-testid="code-task-actual"
+                            className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/40 px-3 py-2 font-mono text-xs"
+                          >
+                            {evaluated.result.stdout || t`（没有输出）`}
+                          </pre>
+                        </div>
                       </div>
                     </div>
                   )}

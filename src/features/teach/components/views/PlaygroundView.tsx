@@ -27,8 +27,9 @@ function clampOutputHeight(height: number, maxHeight: number): number {
 }
 
 /**
- * Ephemeral multi-buffer workspace for demonstrations, experiments, and other
- * code that should stay visible without becoming durable lesson content.
+ * Locally durable multi-buffer scratch workspace for demonstrations,
+ * experiments, and other code that should survive refresh without becoming
+ * lesson content or part of the portable workspace export.
  */
 export function PlaygroundView() {
   // The tab strip renders and reorders the whole collection; one collection
@@ -39,16 +40,37 @@ export function PlaygroundView() {
   const openTab = useWorkspaceStore(state => state.openPlaygroundTab)
   const selectTab = useWorkspaceStore(state => state.selectPlaygroundTab)
   const closeTab = useWorkspaceStore(state => state.closePlaygroundTab)
+  const renameTab = useWorkspaceStore(state => state.renamePlaygroundTab)
   const activeTab = tabs.find(tab => tab.id === activeId) ?? null
   const tabElementRef = useRef(new Map<string, HTMLDivElement>())
   const [outputHeight, setOutputHeight] = useState(DEFAULT_OUTPUT_HEIGHT)
+  const [editingTabId, setEditingTabId] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
 
   const focusTab = (id: string) => {
     selectTab(id)
     tabElementRef.current.get(id)?.focus()
   }
 
+  const startRenaming = (tab: PlaygroundTab) => {
+    setEditingTabId(tab.id)
+    setEditingTitle(tab.title)
+  }
+
+  const finishRenaming = (tabId: string) => {
+    renameTab(tabId, editingTitle)
+    setEditingTabId(null)
+    setEditingTitle('')
+    requestAnimationFrame(() => tabElementRef.current.get(tabId)?.focus())
+  }
+
   const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>, index: number) => {
+    const current = tabs[index]
+    if (event.key === 'F2' && current) {
+      event.preventDefault()
+      startRenaming(current)
+      return
+    }
     let nextIndex: number | null = null
     if (event.key === 'ArrowLeft')
       nextIndex = index === 0 ? tabs.length - 1 : index - 1
@@ -94,7 +116,10 @@ export function PlaygroundView() {
               aria-selected={tab.id === activeId}
               tabIndex={tab.id === activeId ? 0 : -1}
               onClick={() => selectTab(tab.id)}
+              onDoubleClick={() => startRenaming(tab)}
               onKeyDown={event => handleTabKeyDown(event, index)}
+              aria-keyshortcuts="F2"
+              title={t`双击或按 F2 重命名`}
               className="group relative flex h-10 min-w-36 max-w-56 shrink-0 cursor-default items-center gap-2 border-e border-border/80 px-2.5 text-[13px] outline-none transition-colors data-[active=false]:bg-muted/15 data-[active=false]:text-muted-foreground hover:bg-muted/60 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/45 data-[active=true]:bg-background data-[active=true]:text-foreground"
             >
               {tab.id === activeId && (
@@ -109,7 +134,34 @@ export function PlaygroundView() {
                 aria-hidden="true"
                 className="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[active=true]:text-primary"
               />
-              <span className="min-w-0 flex-1 truncate font-medium">{tab.title}</span>
+              {editingTabId === tab.id
+                ? (
+                    <input
+                      autoFocus
+                      data-testid="playground-tab-name"
+                      aria-label={t`标签页名称`}
+                      value={editingTitle}
+                      onChange={event => setEditingTitle(event.target.value)}
+                      onClick={event => event.stopPropagation()}
+                      onDoubleClick={event => event.stopPropagation()}
+                      onBlur={() => finishRenaming(tab.id)}
+                      onKeyDown={(event) => {
+                        event.stopPropagation()
+                        if (event.key === 'Enter') {
+                          event.preventDefault()
+                          finishRenaming(tab.id)
+                        }
+                        else if (event.key === 'Escape') {
+                          event.preventDefault()
+                          setEditingTabId(null)
+                          setEditingTitle('')
+                          requestAnimationFrame(() => tabElementRef.current.get(tab.id)?.focus())
+                        }
+                      }}
+                      className="h-6 min-w-0 flex-1 rounded-sm border border-primary/50 bg-background px-1.5 text-[13px] font-medium text-foreground outline-none ring-1 ring-primary/20"
+                    />
+                  )
+                : <span className="min-w-0 flex-1 truncate font-medium">{tab.title}</span>}
               <button
                 type="button"
                 data-testid="playground-close-tab"

@@ -32,8 +32,12 @@ export function CodeTaskMonacoEditor({
   fillHeight = false,
   canonicalModel = false,
   replaceCodeOnMount = false,
+  onCodeChange,
 }: CodeTaskEditorProps) {
   const monacoHandleRef = useRef<MonacoEditorHandle | null>(null)
+  const contentSubscriptionRef = useRef<{ dispose: () => void } | null>(null)
+  const onCodeChangeRef = useRef(onCodeChange)
+  onCodeChangeRef.current = onCodeChange
   // LessonRenderer supplies a domain-stable lesson/block identity. The useId
   // fallback keeps standalone/test mounts isolated without retaining them.
   const reactId = useId()
@@ -61,10 +65,22 @@ export function CodeTaskMonacoEditor({
   }, [handleRef, initialCode])
 
   const onLoad = useCallback((handle: MonacoEditorHandle) => {
+    contentSubscriptionRef.current?.dispose()
     monacoHandleRef.current = handle
+    const editor = handle.getEditor()
     if (replaceCodeOnMount)
-      handle.getEditor()?.getModel()?.setValue(initialCode)
+      editor?.getModel()?.setValue(initialCode)
+    contentSubscriptionRef.current = editor?.onDidChangeModelContent(() => {
+      const code = editor.getModel()?.getValue()
+      if (code !== undefined)
+        onCodeChangeRef.current?.(code)
+    }) ?? null
   }, [initialCode, replaceCodeOnMount])
+
+  useEffect(() => () => {
+    contentSubscriptionRef.current?.dispose()
+    contentSubscriptionRef.current = null
+  }, [])
 
   return (
     <EditorBridgeProvider lang={locale ?? 'zh'}>

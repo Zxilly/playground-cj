@@ -16,7 +16,9 @@ import { PlaygroundView } from './PlaygroundView'
 function FakePlaygroundEditor({
   initialCode,
   handleRef,
+  onCodeChange,
   uriHint = 'default',
+  canonicalModel = false,
 }: CodeTaskEditorProps) {
   const modelsRef = useRef(new Map<string, string>())
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -42,9 +44,11 @@ function FakePlaygroundEditor({
       ref={inputRef}
       data-testid="fake-playground-editor"
       data-uri-hint={uriHint}
+      data-canonical-model={canonicalModel}
       defaultValue={modelsRef.current.get(uriHint)}
       onChange={(event: ChangeEvent<HTMLTextAreaElement>) => {
         modelsRef.current.set(uriHint, event.target.value)
+        onCodeChange?.(event.target.value)
       }}
     />
   )
@@ -104,7 +108,7 @@ function PlaygroundRouteHarness() {
 
 beforeEach(() => {
   runner.run.mockClear()
-  useWorkspaceStore.getState().reset()
+  useWorkspaceStore.setState(useWorkspaceStore.getInitialState(), true)
   useWorkspaceStore.getState().setView('playground')
 })
 
@@ -131,6 +135,7 @@ describe('playgroundView student flow', () => {
 
     const firstEditor = screen.getByTestId('fake-playground-editor')
     const firstUri = firstEditor.getAttribute('data-uri-hint')
+    expect(firstEditor.getAttribute('data-canonical-model')).toBe('true')
     fireEvent.change(firstEditor, { target: { value: 'main() { println("first") }' } })
     fireEvent.click(screen.getByTestId('playground-run'))
     await waitFor(() => expect(runner.run).toHaveBeenLastCalledWith(
@@ -143,7 +148,7 @@ describe('playgroundView student flow', () => {
     fireEvent.click(screen.getByTestId('playground-new-tab'))
     const secondEditor = screen.getByTestId('fake-playground-editor')
     expect(secondEditor).toBe(firstEditor)
-    expect(secondEditor.getAttribute('data-uri-hint')).not.toBe(firstUri)
+    expect(secondEditor.getAttribute('data-uri-hint')).toBe(firstUri)
     fireEvent.change(secondEditor, { target: { value: 'main() { println("second") }' } })
     fireEvent.click(screen.getByTestId('playground-run'))
     await waitFor(() => expect(runner.run).toHaveBeenLastCalledWith(
@@ -156,6 +161,32 @@ describe('playgroundView student flow', () => {
     expect(screen.getByText('output:main() { println("first") }')).toBeTruthy()
     expect((screen.getByTestId('fake-playground-editor') as HTMLTextAreaElement).value)
       .toBe('main() { println("first") }')
+  })
+
+  it('renames a tab with the IDE-standard F2 shortcut without changing its id', () => {
+    render(<PlaygroundView />, { wrapper: Wrapper })
+    const tab = screen.getByRole('tab')
+    const tabId = useWorkspaceStore.getState().currentPlaygroundTabId
+
+    fireEvent.keyDown(tab, { key: 'F2' })
+    const input = screen.getByTestId('playground-tab-name')
+    fireEvent.change(input, { target: { value: '变量实验' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(screen.getByRole('tab').textContent).toContain('变量实验')
+    expect(useWorkspaceStore.getState().currentPlaygroundTabId).toBe(tabId)
+  })
+
+  it('persists each edit into the active Playground tab shortly after it is typed', async () => {
+    render(<PlaygroundView />, { wrapper: Wrapper })
+    fireEvent.change(screen.getByTestId('fake-playground-editor'), {
+      target: { value: 'main() { println("saved immediately") }' },
+    })
+
+    await waitFor(() => {
+      expect(useWorkspaceStore.getState().playgroundTabs[0]?.initialCode)
+        .toBe('main() { println("saved immediately") }')
+    })
   })
 
   it('keeps run progress isolated to the tab that started it', async () => {

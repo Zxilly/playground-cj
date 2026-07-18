@@ -166,6 +166,27 @@ describe('codeTaskBlock', () => {
     expect(onOutcome).toHaveBeenCalledWith(expect.objectContaining({ correct: false }))
   })
 
+  it('treats successful runs with noisy toolchain stderr as output mismatches, not compiler failures', async () => {
+    const runCode = vi.fn<(code: string) => Promise<RunResult>>().mockResolvedValue({
+      ok: true,
+      stdout: '',
+      stderr: noisyCompilerError,
+      exitCode: 0,
+      compilerOutput: noisyCompilerError,
+    })
+    render(<CodeTaskBlock block={block} runCode={runCode} editorComponent={FakeEditor} />)
+    fireEvent.click(screen.getByTestId('code-task-run'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('code-task-result').getAttribute('data-status')).toBe('failed')
+    })
+    expect(screen.getByTestId('code-task-output-mismatch').textContent).toContain('程序已成功运行')
+    expect(screen.getByTestId('code-task-expected').textContent).toContain('hello')
+    expect(screen.getByTestId('code-task-actual').textContent).toContain('没有输出')
+    expect(screen.queryByTestId('code-task-stderr')).toBeNull()
+    expect(screen.queryByText(/cjc main\.cj/)).toBeNull()
+  })
+
   it('surfaces compiler stderr as a run error (not a plain output mismatch) when compilation fails', async () => {
     const runCode = vi.fn<(code: string) => Promise<RunResult>>().mockResolvedValue(compileError('error: missing main'))
     render(<CodeTaskBlock block={block} runCode={runCode} editorComponent={FakeEditor} />)
@@ -175,6 +196,7 @@ describe('codeTaskBlock', () => {
       expect(screen.getByTestId('code-task-result').getAttribute('data-status')).toBe('errored')
     })
     expect(screen.getByTestId('code-task-stderr').textContent).toContain('missing main')
+    expect(screen.queryByTestId('code-task-output-mismatch')).toBeNull()
     // No empty expected/actual diff distracting from the compiler message.
     expect(screen.queryByTestId('code-task-expected')).toBeNull()
     expect(screen.queryByTestId('code-task-actual')).toBeNull()

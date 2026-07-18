@@ -29,8 +29,10 @@ function createHostElement(): HTMLDivElement | null {
 /**
  * Owns the single long-lived Playground Monaco instance. Route pages contribute
  * a short-lived slot; this host moves the same DOM node between that slot and a
- * private parking container. Each tab has its own Monaco model while the editor
- * widget itself stays mounted.
+ * private parking container. Playground tabs are logical buffers over the
+ * canonical project model, while the editor widget itself stays mounted. The
+ * Cangjie LSP treats that canonical document as the active workspace source;
+ * nested standalone model URIs can leave completion requests unresolved.
  */
 export function PlaygroundEditorHost({
   children,
@@ -50,6 +52,8 @@ export function PlaygroundEditorHost({
   const parkingRef = useRef<HTMLDivElement | null>(null)
   const slotRef = useRef<HTMLDivElement | null>(null)
   const layoutFrameRef = useRef<number | null>(null)
+  const persistTimerRef = useRef<number | null>(null)
+  const pendingCodeRef = useRef<{ tabId: string, code: string } | null>(null)
   const [hostElement] = useState(createHostElement)
   const activateEditor = useActiveEditorRegistration(
     activeEditor,
@@ -65,6 +69,36 @@ export function PlaygroundEditorHost({
       editorHandleRef.current?.layout?.()
     })
   }, [])
+
+  const flushPendingCode = useCallback(() => {
+    if (persistTimerRef.current !== null) {
+      window.clearTimeout(persistTimerRef.current)
+      persistTimerRef.current = null
+    }
+    const pending = pendingCodeRef.current
+    pendingCodeRef.current = null
+    if (pending)
+      setCode(pending.tabId, pending.code)
+  }, [setCode])
+
+  const persistActiveCode = useCallback((code: string) => {
+    const tabId = currentTabIdRef.current
+    if (!tabId)
+      return
+    pendingCodeRef.current = { tabId, code }
+    if (persistTimerRef.current !== null)
+      window.clearTimeout(persistTimerRef.current)
+    // Keep typing responsive while still making drafts durable almost
+    // immediately. pagehide/tab switches flush synchronously below.
+    persistTimerRef.current = window.setTimeout(flushPendingCode, 120)
+  }, [flushPendingCode])
+
+  const persistLiveEditorCode = useCallback(() => {
+    const tabId = currentTabIdRef.current
+    const code = editorHandleRef.current?.getCode()
+    if (tabId && code !== undefined)
+      setCode(tabId, code)
+  }, [setCode])
 
   const placeHost = useCallback(() => {
     const target = slotRef.current ?? parkingRef.current
@@ -98,19 +132,23 @@ export function PlaygroundEditorHost({
     const previousTabId = currentTabIdRef.current
     if (previousTabId === activeTab?.id)
       return
+    flushPendingCode()
     const previousCode = editorHandleRef.current?.getCode()
     if (previousTabId && previousCode !== undefined)
       setCode(previousTabId, previousCode)
     currentTabIdRef.current = activeTab?.id ?? null
+    editorHandleRef.current?.setCode(activeTab?.initialCode ?? '')
     scheduleLayout()
-  }, [activeTab, scheduleLayout, setCode])
+  }, [activeTab, flushPendingCode, scheduleLayout, setCode])
 
-  useEffect(() => () => {
-    const tabId = currentTabIdRef.current
-    const code = editorHandleRef.current?.getCode()
-    if (tabId && code !== undefined)
-      setCode(tabId, code)
-  }, [setCode])
+  useEffect(() => {
+    window.addEventListener('pagehide', flushPendingCode)
+    return () => {
+      window.removeEventListener('pagehide', flushPendingCode)
+      flushPendingCode()
+      persistLiveEditorCode()
+    }
+  }, [flushPendingCode, persistLiveEditorCode])
 
   const context = useMemo<PlaygroundEditorHostContextValue>(() => ({
     activateEditor,
@@ -133,8 +171,9 @@ export function PlaygroundEditorHost({
           initialCode={activeTab?.initialCode ?? ''}
           handleRef={editorHandleRef}
           locale={i18n.locale}
-          uriHint={activeTab ? `teach-playground-${activeTab.id}` : 'teach-playground-empty'}
+          canonicalModel
           fillHeight
+          onCodeChange={persistActiveCode}
         />,
         hostElement,
       )}
