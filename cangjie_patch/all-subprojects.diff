@@ -1209,6 +1209,7 @@ index 3148213a..cf5bbecf 100644
          if (tmpDirPath[i] != SLASH) {
  #endif
              continue;
+
 # ======================================================================
 # sub-project: cangjie_tools   base: 73e32dc9da5370133aaaf20b54696c404c70d904
 # ======================================================================
@@ -1664,7 +1665,7 @@ index 5d2baf7f..1ee5ddbe 100644
          action();
          // Make sure function stored by ThreadFunc is destroyed before Cleanup runs.
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
-index 83f877d2..47e74797 100644
+index 83f877d2..396272a5 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
 +++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
 @@ -4,6 +4,9 @@
@@ -1693,33 +1694,58 @@ index 83f877d2..47e74797 100644
  nlohmann::json GetServerInfo()
  {
      nlohmann::json serverInfo;
-@@ -486,9 +498,13 @@ void ArkLanguageServer::OnShutdown(nlohmann::json id)
+@@ -421,6 +433,8 @@ void ArkLanguageServer::OnInitialize(const InitializeParams &params, nlohmann::j
+         return;
+     }
+ 
++    standaloneDocuments = params.initializationOptions.is_object() &&
++        params.initializationOptions.value(STANDALONE_DOCUMENTS_OPTION, false);
+     bool success = PerformCompiler(params);
+     if (!success) {
+         transp.Reply(std::move(id), std::move(ValueOrError(ValueOrErrorCheck::ERR,
+@@ -486,9 +500,16 @@ void ArkLanguageServer::OnShutdown(nlohmann::json id)
  void ArkLanguageServer::OnDocumentDidOpen(const DidOpenTextDocumentParams &params)
  {
      std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
+-    if (!FileUtil::FileExist(file) || !CheckFileInCangjieProject(file)) {
++    if (standaloneDocuments) {
++        CompilerCangjieProject::GetInstance()->RegisterStandaloneDocument(file);
++    }
 +#ifdef BUILD_WASM
 +    // WASM mode: file content comes from didOpen, skip file existence check
 +#else
-     if (!FileUtil::FileExist(file) || !CheckFileInCangjieProject(file)) {
++    if (!standaloneDocuments && (!FileUtil::FileExist(file) || !CheckFileInCangjieProject(file))) {
          return;
      }
 +#endif
      DocCache::Doc doc = DocMgr.GetDoc(file);
      const std::string &contents = params.textDocument.text;
      bool reBuild = false;
-@@ -527,9 +543,11 @@ void ArkLanguageServer::OnDocumentDidClose(const DidCloseTextDocumentParams &par
+@@ -527,12 +548,22 @@ void ArkLanguageServer::OnDocumentDidClose(const DidCloseTextDocumentParams &par
      logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::onDocumentDidClose in");
  
      std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
+-    if (!CheckFileInCangjieProject(file)) {
++    const bool isStandalone =
++        standaloneDocuments && CompilerCangjieProject::GetInstance()->IsStandaloneDocument(file);
 +#ifndef BUILD_WASM
-     if (!CheckFileInCangjieProject(file)) {
++    if (!isStandalone && !CheckFileInCangjieProject(file)) {
          return;
      }
 +#endif
      PublishDiagnosticsParams notification;
      notification.uri.file = params.textDocument.uri.file;
      PublishDiagnostics(notification);
-@@ -548,15 +566,24 @@ void ArkLanguageServer::OnDocumentDidChange(const DidChangeTextDocumentParams &p
++    if (isStandalone) {
++        CompilerCangjieProject::GetInstance()->IncrementForFileDelete(file);
++        DocMgr.RemoveDoc(file);
++        CompilerCangjieProject::GetInstance()->UnregisterStandaloneDocument(file);
++        return;
++    }
+     if (Options::GetInstance().GetLSPFlag("enableParallel").has_value()) {
+         if (!Options::GetInstance().GetLSPFlag("enableParallel").value()) {
+             return;
+@@ -548,15 +579,24 @@ void ArkLanguageServer::OnDocumentDidChange(const DidChangeTextDocumentParams &p
      Logger& logger = Logger::Instance();
      logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::OnDocumentDidChange in");
      std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
@@ -1744,7 +1770,7 @@ index 83f877d2..47e74797 100644
      }
  }
  
-@@ -811,6 +838,12 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
+@@ -811,6 +851,12 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
      Logger& logger = Logger::Instance();
      logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::OnDidChangeWatchedFiles in.");
  
@@ -1757,7 +1783,7 @@ index 83f877d2..47e74797 100644
      std::vector<FileWatchedEvent> changes;
      WrapClientWatchedFiles(changes, params);
      for (auto &event : changes) {
-@@ -821,6 +854,7 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
+@@ -821,6 +867,7 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
          }
          Server->ChangeWatchedFiles(file, event.type, &DocMgr);
      }
@@ -1765,7 +1791,17 @@ index 83f877d2..47e74797 100644
  }
  // LCOV_EXCL_STOP
  bool ArkLanguageServer::CheckFileInCangjieProject(const std::string &filePath, bool ignoreMacro) const
-@@ -1205,6 +1239,19 @@ std::vector<DiagnosticToken> ArkLanguageServer::GetDiagsOfCurFile(std::string fi
+@@ -828,6 +875,9 @@ bool ArkLanguageServer::CheckFileInCangjieProject(const std::string &filePath, b
+     if (filePath.empty() || ignoreMacro && Cangjie::FileUtil::HasExtension(filePath, CANGJIE_MACRO_FILE_EXTENSION)) {
+         return false;
+     }
++    if (standaloneDocuments && CompilerCangjieProject::GetInstance()->IsStandaloneDocument(filePath)) {
++        return true;
++    }
+     return CompilerCangjieProject::GetInstance()->GetCangjieFileKind(filePath).first != CangjieFileKind::MISSING;
+ }
+ // LCOV_EXCL_START
+@@ -1205,6 +1255,19 @@ std::vector<DiagnosticToken> ArkLanguageServer::GetDiagsOfCurFile(std::string fi
  void ArkLanguageServer::RemoveDiagOfCurPkg(const std::string& dirName)
  {
      std::lock_guard<std::mutex> lock(fixItsMutex);
@@ -1785,7 +1821,7 @@ index 83f877d2..47e74797 100644
      std::vector<std::string> files = GetAllFilesUnderCurrentPath(dirName, CANGJIE_FILE_EXTENSION, false);
      for (auto &iter : files) {
          LowFileName(iter);
-@@ -1216,6 +1263,7 @@ void ArkLanguageServer::RemoveDiagOfCurPkg(const std::string& dirName)
+@@ -1216,6 +1279,7 @@ void ArkLanguageServer::RemoveDiagOfCurPkg(const std::string& dirName)
          std::string path = JoinPath(dirName, iter);
          (void) fixItsMap.erase(path);
      }
@@ -1793,7 +1829,7 @@ index 83f877d2..47e74797 100644
  }
  
  void ArkLanguageServer::RemoveDiagOfCurFile(const std::string& filePath)
-@@ -1240,6 +1288,12 @@ void ArkLanguageServer::RemoveDiagnostic(std::string file, DiagnosticToken diagT
+@@ -1240,6 +1304,12 @@ void ArkLanguageServer::RemoveDiagnostic(std::string file, DiagnosticToken diagT
      }
  }
  
@@ -1807,7 +1843,7 @@ index 83f877d2..47e74797 100644
  {
      std::stringstream log;
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.h b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.h
-index bbb3f181..053108d4 100644
+index bbb3f181..ea45b3ab 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.h
 +++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.h
 @@ -25,7 +25,9 @@
@@ -1841,6 +1877,17 @@ index bbb3f181..053108d4 100644
      std::string GetContentsByFile(const std::string &file) override;
  
      std::int64_t GetVersionByFile(const std::string &file) override;
+@@ -230,6 +239,10 @@ private:
+     TextDocumentSyncKind syncKind {TextDocumentSyncKind::SK_NONE};
+ 
+     lsp::IndexDatabase *arkIndexDB = nullptr;
++
++    // Standalone documents need not belong to the initialized workspace project.
++    // Their lifecycle and compiler context are owned by CompilerCangjieProject.
++    bool standaloneDocuments {false};
+ };
+ } // namespace ark
+ 
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp
 index f1dceb8a..a611c7cf 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp
@@ -1907,7 +1954,7 @@ index 60f310a8..6d4e440d 100644
  foreach(file ${LSP_SRC})
      message(STATUS "${file}")
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
-index 19b32f0d..9bd19b79 100644
+index 19b32f0d..29e72f48 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
 +++ b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
 @@ -18,7 +18,9 @@
@@ -1952,7 +1999,32 @@ index 19b32f0d..9bd19b79 100644
  #endif
          compilerInvocation->globalOptions.enableAddCommentToAst = true;
          // 2023/05/22 add macro expand with dynamic link library
-@@ -374,9 +384,11 @@ void CompilerCangjieProject::PostCompileProcess(const std::string &fullPkgName,
+@@ -193,6 +203,24 @@ void CompilerCangjieProject::ClearCacheForDelete(const std::string &fullPkgName,
+     this->packageInstanceCache.erase(dirPath);
+ }
+ 
++void CompilerCangjieProject::RegisterStandaloneDocument(const std::string &fileName)
++{
++    std::unique_lock<std::shared_mutex> lock(standaloneDocumentsMutex);
++    standaloneDocuments.insert(FileStore::NormalizePath(fileName));
++}
++
++void CompilerCangjieProject::UnregisterStandaloneDocument(const std::string &fileName)
++{
++    std::unique_lock<std::shared_mutex> lock(standaloneDocumentsMutex);
++    standaloneDocuments.erase(FileStore::NormalizePath(fileName));
++}
++
++bool CompilerCangjieProject::IsStandaloneDocument(const std::string &fileName) const
++{
++    std::shared_lock<std::shared_mutex> lock(standaloneDocumentsMutex);
++    return standaloneDocuments.count(FileStore::NormalizePath(fileName)) > 0;
++}
++
+ void CompilerCangjieProject::IncrementForFileDelete(const std::string &fileName)
+ {
+     // fix linux delete file crash
+@@ -374,9 +402,11 @@ void CompilerCangjieProject::PostCompileProcess(const std::string &fullPkgName,
      }
  
      // 4. build symbol index
@@ -1964,7 +2036,7 @@ index 19b32f0d..9bd19b79 100644
      BuildIndex(ci);
  }
  
-@@ -661,6 +673,15 @@ bool CompilerCangjieProject::ParseAndUpdateNotInSrcDep(const std::string &dirPat
+@@ -661,6 +691,15 @@ bool CompilerCangjieProject::ParseAndUpdateNotInSrcDep(const std::string &dirPat
          return false;
      }
      std::string expectedPkgName = packages[0]->fullPackageName;
@@ -1980,7 +2052,17 @@ index 19b32f0d..9bd19b79 100644
      for (const auto &file : packages[0]->files) {
          auto userWrittenPackage = file->package == nullptr ? DEFAULT_PACKAGE_NAME : file->curPackage->fullPackageName;
          if (userWrittenPackage != expectedPkgName) {
-@@ -1463,13 +1484,23 @@ void CompilerCangjieProject::InitPkgInfoAndParseNotInModule()
+@@ -1155,6 +1194,9 @@ void CompilerCangjieProject::InitParseCacheForSignatureHelp(const std::unique_pt
+ std::pair<CangjieFileKind, std::string> CompilerCangjieProject::GetCangjieFileKind(const std::string &filePath, bool isPkg) const
+ {
+     std::string normalizeFilePath = Normalize(filePath);
++    if (!isPkg && IsStandaloneDocument(normalizeFilePath)) {
++        return {CangjieFileKind::IN_PROJECT_NOT_IN_SOURCE, GetDirPath(normalizeFilePath)};
++    }
+     std::string dirPath = isPkg ? normalizeFilePath : GetDirPath(normalizeFilePath);
+     if (pathToFullPkgName.find(dirPath) != pathToFullPkgName.end()) {
+         return {CangjieFileKind::IN_OLD_PACKAGE, pkgInfoMap.at(pathToFullPkgName.at(dirPath))->modulePath};
+@@ -1463,13 +1505,23 @@ void CompilerCangjieProject::InitPkgInfoAndParseNotInModule()
                  return;
              }
              std::string expectedPkgName = packages[0]->fullPackageName;
@@ -2011,7 +2093,7 @@ index 19b32f0d..9bd19b79 100644
                  }
              }
              CIMapNotInSrc[item.first] = std::move(pkgCompiler);
-@@ -1540,9 +1571,11 @@ void CompilerCangjieProject::EraseOtherCache(const std::string &fullPkgName)
+@@ -1540,9 +1592,11 @@ void CompilerCangjieProject::EraseOtherCache(const std::string &fullPkgName)
  // LCOV_EXCL_STOP
  void CompilerCangjieProject::FullCompilation()
  {
@@ -2023,7 +2105,7 @@ index 19b32f0d..9bd19b79 100644
      // Construct a dummy instance to load the CJO.
      auto buildCjoTaskId = GenTaskId("buildCjo");
      auto buildCjoTask = [this, buildCjoTaskId]() {
-@@ -1667,6 +1700,7 @@ void CompilerCangjieProject::FullCompilation()
+@@ -1667,6 +1721,7 @@ void CompilerCangjieProject::FullCompilation()
  // LCOV_EXCL_START
  bool CompilerCangjieProject::LoadASTCache(const std::string &package)
  {
@@ -2031,7 +2113,7 @@ index 19b32f0d..9bd19b79 100644
      if (!cacheManager->IsStale(package, Digest(GetPathFromPkg(package)))) {
          auto I = cacheManager->Load(package);
          CjoData cjoData;
-@@ -1681,6 +1715,9 @@ bool CompilerCangjieProject::LoadASTCache(const std::string &package)
+@@ -1681,6 +1736,9 @@ bool CompilerCangjieProject::LoadASTCache(const std::string &package)
          cjoManager->SetData(package, cjoData);
          return true;
      }
@@ -2041,7 +2123,7 @@ index 19b32f0d..9bd19b79 100644
  
      return false;
  }
-@@ -1728,6 +1765,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+@@ -1728,6 +1786,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
      moduleManager->WorkspaceModeParser(moduleUri);
      moduleManager->SetRequireAllPackages();
  
@@ -2049,7 +2131,7 @@ index 19b32f0d..9bd19b79 100644
      // In DevEco, cache path will be pass to create cache manager
      std::string cachePath = workspace;
      if (MessageHeaderEndOfLine::GetIsDeveco() && initializationOptions.contains(CACHE_PATH)) {
-@@ -1737,6 +1775,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+@@ -1737,6 +1796,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
  #ifndef TEST_FLAG
      cacheManager->InitDir();
  #endif
@@ -2057,7 +2139,7 @@ index 19b32f0d..9bd19b79 100644
  
      // get condition compile from initializationOptions
      ark::GetConditionCompile(initializationOptions, passedWhenKeyValue);
-@@ -1777,9 +1816,11 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+@@ -1777,9 +1837,11 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
  #endif
          cjdCachePathOption = FileStore::NormalizePath(cjdCachePathOption);
      }
@@ -2069,7 +2151,7 @@ index 19b32f0d..9bd19b79 100644
      FullCompilation();
      ReleaseMemoryAsync();
      Logger::Instance().CleanKernelLog(std::this_thread::get_id());
-@@ -1801,8 +1842,12 @@ void CompilerCangjieProject::ReleaseMemoryAsync() {
+@@ -1801,8 +1863,12 @@ void CompilerCangjieProject::ReleaseMemoryAsync() {
      auto taskId = GenTaskId("delete_cjd_indexer");
      auto deleteTask = [this, taskId]() {
          thrdPool->TaskCompleted(taskId);
@@ -2082,7 +2164,7 @@ index 19b32f0d..9bd19b79 100644
          for (auto& pkgCI: CIMap) {
              pkgCI.second.reset();
          }
-@@ -2086,6 +2131,23 @@ void CompilerCangjieProject::CheckPackageNameByAbsName(const File &needCheckedFi
+@@ -2086,6 +2152,23 @@ void CompilerCangjieProject::CheckPackageNameByAbsName(const File &needCheckedFi
  
      // check whether the package name is reasonable.
      std::string expectedPkgName = moduleManager->GetExpectedPkgName(needCheckedFile);
@@ -2106,7 +2188,7 @@ index 19b32f0d..9bd19b79 100644
      if (needCheckedFile.package == nullptr) {
          if (!expectedPkgName.empty() && expectedPkgName != DEFAULT_PACKAGE_NAME) {
              if (!pkgInfoMap.count(fullPackageName)) {
-@@ -2302,6 +2364,7 @@ void CompilerCangjieProject::StoreAllPackagesCache()
+@@ -2302,6 +2385,7 @@ void CompilerCangjieProject::StoreAllPackagesCache()
  // LCOV_EXCL_START
  void CompilerCangjieProject::StorePackageCache(const std::string& pkgName)
  {
@@ -2114,7 +2196,7 @@ index 19b32f0d..9bd19b79 100644
      if (!useDB) {
          std::string sourceCodePath = GetPathFromPkg(pkgName);
          if (sourceCodePath.empty()) {
-@@ -2318,6 +2381,9 @@ void CompilerCangjieProject::StorePackageCache(const std::string& pkgName)
+@@ -2318,6 +2402,9 @@ void CompilerCangjieProject::StorePackageCache(const std::string& pkgName)
      }
      cacheManager->Store(
          pkgName, Digest(GetPathFromPkg(pkgName)), *cjoManager->GetData(pkgName));
@@ -2124,7 +2206,7 @@ index 19b32f0d..9bd19b79 100644
  }
  // LCOV_EXCL_STOP
  void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstance> &ci, bool isFullCompilation)
-@@ -2389,6 +2455,7 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+@@ -2389,6 +2476,7 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
      lsp::SymbolCollector sc = lsp::SymbolCollector(*ci->typeManager, *ci->importManager, false);
      sc.SetArkAstMap(std::move(astMap));
      sc.Build(*packages[0], pkgPath);
@@ -2132,7 +2214,7 @@ index 19b32f0d..9bd19b79 100644
      if (useDB) {
          auto shard = lsp::IndexFileOut();
          shard.symbols = sc.GetSymbolMap();
-@@ -2398,7 +2465,9 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+@@ -2398,7 +2486,9 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
          shard.crossSymbos = sc.GetCrossSymbolMap();
          backgroundIndexDb->UpdateFile(fileMap);
          backgroundIndexDb->Update(curPkgName, shard);
@@ -2143,7 +2225,7 @@ index 19b32f0d..9bd19b79 100644
          // Merge index to memory
          std::unique_lock<std::mutex> indexLock(indexMtx);
          (void) memIndex->pkgSymsMap.insert_or_assign(curPkgName, *sc.GetSymbolMap());
-@@ -2424,13 +2493,18 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+@@ -2424,13 +2514,18 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
  
  void CompilerCangjieProject::UpdateOnDisk(const std::string &path)
  {
@@ -2162,7 +2244,7 @@ index 19b32f0d..9bd19b79 100644
  }
  
  Position CompilerCangjieProject::getPackageNameErrPos(const File &file) const
-@@ -2512,6 +2586,7 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+@@ -2512,6 +2607,7 @@ void CompilerCangjieProject::BuildIndexFromCjo()
          pkgToModMap.insert_or_assign(cjoPkgName, GetModifilerByAccessLevel(cjoPkg->accessible));
          bool toUpdateDB = true;
          std::string digest;
@@ -2170,7 +2252,7 @@ index 19b32f0d..9bd19b79 100644
          if (useDB) {
              auto cjoID = GetFileIdForDB(cjoPath);
              digest = DigestForCjo(cjoPath);
-@@ -2528,7 +2603,9 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+@@ -2528,7 +2624,9 @@ void CompilerCangjieProject::BuildIndexFromCjo()
                  toUpdateDB = false;
            }
          }
@@ -2180,7 +2262,7 @@ index 19b32f0d..9bd19b79 100644
          if (!useDB || (useDB && toUpdateDB)) {
              Trace::Log("build for cjo:", cjoPkgName);
              sc.Build(*cjoPkg);
-@@ -2550,8 +2627,12 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+@@ -2550,8 +2648,12 @@ void CompilerCangjieProject::BuildIndexFromCjo()
              (void) memIndex->pkgRelationsMap.insert_or_assign(cjoPkgName, *sc.GetRelations());
              (void) memIndex->pkgExtendsMap.insert_or_assign(cjoPkgName, *sc.GetSymbolExtendMap());
              (void) memIndex->pkgCrossSymsMap.insert_or_assign(cjoPkgName, *sc.GetCrossSymbolMap());
@@ -2195,7 +2277,7 @@ index 19b32f0d..9bd19b79 100644
              (void) memIndex->pkgSymsMap.insert_or_assign(cjoPkgName, *sc.GetSymbolMap());
              (void) memIndex->pkgRefsMap.insert_or_assign(cjoPkgName, *sc.GetReferenceMap());
              (void) memIndex->pkgRelationsMap.insert_or_assign(cjoPkgName, *sc.GetRelations());
-@@ -2559,14 +2640,17 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+@@ -2559,14 +2661,17 @@ void CompilerCangjieProject::BuildIndexFromCjo()
              (void) memIndex->pkgCrossSymsMap.insert_or_assign(cjoPkgName, *sc.GetCrossSymbolMap());
          }
      }
@@ -2213,7 +2295,7 @@ index 19b32f0d..9bd19b79 100644
          std::string sourceCodePath = GetPathFromPkg(package);
          if (sourceCodePath.empty()) {
              sourceCodePath = package;
-@@ -2584,6 +2668,9 @@ void CompilerCangjieProject::BuildIndexFromCache(const std::string &package) {
+@@ -2584,6 +2689,9 @@ void CompilerCangjieProject::BuildIndexFromCache(const std::string &package) {
              (void) memIndex->pkgExtendsMap.insert_or_assign(package, indexCache->get()->extends);
              (void) memIndex->pkgCrossSymsMap.insert_or_assign(package, indexCache->get()->crossSymbos);
          }
@@ -2224,7 +2306,7 @@ index 19b32f0d..9bd19b79 100644
  // LCOV_EXCL_STOP
  std::unordered_set<std::string> CompilerCangjieProject::GetOneModuleDeps(const std::string &curModule)
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.h b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.h
-index 63ed0624..2ea0948c 100644
+index 63ed0624..23944c14 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.h
 +++ b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.h
 @@ -30,9 +30,13 @@
@@ -2241,7 +2323,20 @@ index 63ed0624..2ea0948c 100644
  #include "index/MemIndex.h"
  #include "logger/Logger.h"
  
-@@ -404,9 +408,12 @@ public:
+@@ -367,6 +371,12 @@ private:
+     void ProcessInvalidPackage(const std::string &fullPkgName, const std::string &sourcePath);
+ 
+ public:
++    void RegisterStandaloneDocument(const std::string &fileName);
++
++    void UnregisterStandaloneDocument(const std::string &fileName);
++
++    bool IsStandaloneDocument(const std::string &fileName) const;
++
+     void IncrementForFileDelete(const std::string &fileName);
+ 
+     // after workspace init, can use it. pair::second = ModulePath
+@@ -404,9 +414,12 @@ public:
  
      lsp::SymbolIndex *GetIndex() const
      {
@@ -2255,7 +2350,7 @@ index 63ed0624..2ea0948c 100644
              return memIndex.get();
          }
      }
-@@ -436,10 +443,12 @@ public:
+@@ -436,10 +449,12 @@ public:
          return model->UpdateUsageFrequency(item);
      }
  
@@ -2268,7 +2363,7 @@ index 63ed0624..2ea0948c 100644
  
      bool CheckNeedCompiler(const std::string &fileName);
  
-@@ -669,13 +678,17 @@ private:
+@@ -669,13 +684,17 @@ private:
  
      std::unique_ptr<ModuleManager> moduleManager;
      std::unique_ptr<ThrdPool> thrdPool;
@@ -2286,6 +2381,15 @@ index 63ed0624..2ea0948c 100644
      std::unordered_map<std::string, std::string> pathToFullPkgName;  // key: package path
      std::unordered_map<std::string, std::unordered_set<std::string>> realPkgToFullPkgName;
      std::mutex cimapMtx;
+@@ -686,6 +705,8 @@ private:
+     std::unique_ptr<LSPCompilerInstance> CIForSignatureHelp;
+     std::unordered_map<std::string, std::unique_ptr<PkgInfo>> pkgInfoMap;         // key: fullPackageName
+     std::unordered_map<std::string, std::unique_ptr<PkgInfo>> pkgInfoMapNotInSrc; // key: dirPath for Cangjie file
++    mutable std::shared_mutex standaloneDocumentsMutex;
++    std::unordered_set<std::string> standaloneDocuments;
+     // key: fullPackageName, value: PackageSpec's modifier
+     std::unordered_map<std::string, Modifier> pkgToModMap;
+     static bool useDB;
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/LSPCompilerInstance.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/LSPCompilerInstance.cpp
 index 5a0409a3..8992c6d1 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/LSPCompilerInstance.cpp
@@ -2320,6 +2424,18 @@ index 2a9f9045..8d8a2cdd 100644
      virtual void ReadyForDiagnostics(std::string, int64_t, std::vector <DiagnosticToken>) = 0;
      virtual std::string GetContentsByFile(const std::string &file) = 0;
      virtual int64_t GetVersionByFile(const std::string &file) = 0;
+diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/common/Constants.h b/cangjie_tools/cangjie-language-server/src/languageserver/common/Constants.h
+index 4a58586d..bcab2821 100644
+--- a/cangjie_tools/cangjie-language-server/src/languageserver/common/Constants.h
++++ b/cangjie_tools/cangjie-language-server/src/languageserver/common/Constants.h
+@@ -20,6 +20,7 @@ namespace CONSTANTS {
+     const std::string TARGET_LIB = "targetLib";
+     const std::string SOURCE_CODE_DIR = "src";
+     const std::string MULTI_MODULE_OPTION = "multiModuleOption";
++    const std::string STANDALONE_DOCUMENTS_OPTION = "standaloneDocuments";
+     const std::string CACHE_PATH = "cachePath";
+     const std::string CONDITION_COMPILE_OPTION = "conditionCompileOption";
+     const std::string MODULE_CONDITION_COMPILE_OPTION = "moduleConditionCompileOption";
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/common/FileStore.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/common/FileStore.cpp
 index 5f1cb351..d98f6627 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/common/FileStore.cpp

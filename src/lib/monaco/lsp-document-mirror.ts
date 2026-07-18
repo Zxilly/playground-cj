@@ -30,8 +30,6 @@ link-option = ""
 package-configuration = {}
 `
 
-export const PLAYGROUND_INACTIVE_DOCUMENT = 'package playground\n'
-
 interface MirroredDocument {
   text: string
   version: number
@@ -103,7 +101,7 @@ export function createLspDocumentMirror(fs: WritableWasmFs, root = '/playground'
   }
 
   return {
-    handle(message: string): string | undefined {
+    handle(message: string): void {
       let parsed: {
         method?: string
         params?: {
@@ -142,20 +140,7 @@ export function createLspDocumentMirror(fs: WritableWasmFs, root = '/playground'
         write(path, text)
       }
       else if (parsed.method === 'textDocument/didClose') {
-        const current = documents.get(uri)
-        if (!current)
-          return
-        const version = current.version + 1
-        write(path, PLAYGROUND_INACTIVE_DOCUMENT)
         documents.delete(uri)
-        return JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'textDocument/didChange',
-          params: {
-            textDocument: { uri, version },
-            contentChanges: [{ text: PLAYGROUND_INACTIVE_DOCUMENT }],
-          },
-        })
       }
     },
   }

@@ -75,6 +75,7 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
         cangjiePath: '/cangjie',
         cangjieHome: '/cangjie',
         modulesHomeOption: '/cangjie',
+        standaloneDocuments: true,
       },
       workspaceFolder: buildWorkspaceFolder(),
       errorHandler: {

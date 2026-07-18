@@ -19,7 +19,7 @@ export function exerciseModelSlot(slot: string): string {
 export function playgroundModelUri(slot: string): string {
   return slot === 'src'
     ? `${PLAYGROUND_ROOT}/src/main.cj`
-    : `${PLAYGROUND_ROOT}/src/${slot}.cj`
+    : `${PLAYGROUND_ROOT}/standalone/${slot}/main.cj`
 }
 
 export function lessonModelScope(lessonId: string): string {

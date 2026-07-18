@@ -10,7 +10,7 @@ describe('monaco model identity', () => {
   it('builds playground URIs for any slot', () => {
     expect(playgroundModelUri('src')).toBe('file:///playground/src/main.cj')
     expect(playgroundModelUri(exerciseModelSlot('exercise:1'))).toBe(
-      'file:///playground/src/exercise-exercise-1-1deohqe.cj',
+      'file:///playground/standalone/exercise-exercise-1-1deohqe/main.cj',
     )
   })
 
