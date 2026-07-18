@@ -6,6 +6,7 @@ import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import type { RecallPromptBlockProps, SelfGrade } from './block-props'
 import { isQuotaExhaustedError } from '@/lib/ai/quota-error'
+import { TeachInlineMarkdown } from './TeachMarkdown'
 import { cn } from '@/lib/utils'
 
 interface Verdict {
@@ -88,7 +89,9 @@ export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: Re
       data-grade={grade ?? undefined}
       className="rounded-md border border-border bg-background p-4"
     >
-      <p className="text-sm font-semibold leading-7 text-foreground">{block.prompt}</p>
+      <p data-testid="recall-prompt" className="text-sm font-semibold leading-7 text-foreground">
+        <TeachInlineMarkdown markdown={block.prompt} />
+      </p>
       <p className="mt-0.5 text-xs text-muted-foreground">
         <Trans>凭记忆作答，再揭示答案对照</Trans>
       </p>
@@ -155,7 +158,9 @@ export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: Re
             <div className="mb-1 text-xs font-semibold text-muted-foreground">
               <Trans>参考答案</Trans>
             </div>
-            <p className="whitespace-pre-wrap break-words">{block.answer}</p>
+            <p className="whitespace-pre-wrap break-words">
+              <TeachInlineMarkdown markdown={block.answer} />
+            </p>
           </div>
 
           {/* AI verdict: correctness badge + feedback. */}
@@ -186,7 +191,7 @@ export function RecallPromptBlock({ block, outcome, onOutcome, gradeRecall }: Re
                     )}
               </div>
               <p data-testid="recall-feedback" className="whitespace-pre-wrap break-words">
-                {verdict.feedback}
+                <TeachInlineMarkdown markdown={verdict.feedback} />
               </p>
             </div>
           )}

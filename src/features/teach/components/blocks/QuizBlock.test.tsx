@@ -86,6 +86,32 @@ describe('quizBlock', () => {
     expect(screen.queryByTestId('quiz-explanation')).toBeNull()
   })
 
+  it('renders inline markdown in questions, options, and submitted explanations', () => {
+    const markdownBlock: QuizBlockSchemaType = {
+      type: 'quiz',
+      questions: [{
+        question: 'Which **keyword** is immutable?',
+        options: ['Use `let`', 'Use `var`'],
+        answerIndices: [0],
+        multiple: false,
+        explanation: '`let` is **immutable**.',
+      }],
+    }
+    render(<QuizBlock block={markdownBlock} />)
+
+    const question = screen.getByTestId('quiz-question')
+    expect(question.querySelector('p strong')?.textContent).toBe('keyword')
+    expect(optionsFor(0)[0].querySelector('code')?.textContent).toBe('let')
+
+    fireEvent.click(optionsFor(0)[0])
+    fireEvent.click(submitButton())
+    const explanation = screen.getByTestId('quiz-explanation')
+    expect(explanation.querySelector('code')?.textContent).toBe('let')
+    expect(explanation.querySelector('strong')?.textContent).toBe('immutable')
+    expect(explanation.textContent).not.toContain('`')
+    expect(explanation.textContent).not.toContain('**')
+  })
+
   it('submit disabled until every question is answered', () => {
     render(<QuizBlock block={mixedBlock} />)
     expect(submitButton().disabled).toBe(true)

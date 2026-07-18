@@ -136,6 +136,24 @@ describe('codeSampleBlock', () => {
     expect(screen.getByText('this declares x')).toBeTruthy()
   })
 
+  it('renders safe inline markdown in the explanation instead of raw markers', () => {
+    const { container } = render(
+      <CodeSampleBlock
+        block={{
+          type: 'code_sample',
+          code: 'let x = 1',
+          language: 'cangjie',
+          explanation: 'Use **immutable** `let` <script>alert(1)</script>',
+        }}
+      />,
+    )
+    const explanation = screen.getByTestId('code-sample-explanation')
+    expect(within(explanation).getByText('immutable').tagName).toBe('STRONG')
+    expect(within(explanation).getByText('let').tagName).toBe('CODE')
+    expect(explanation.textContent).not.toContain('**')
+    expect(container.querySelector('script')).toBeNull()
+  })
+
   it('omits the explanation region when absent', () => {
     render(<CodeSampleBlock block={{ type: 'code_sample', code: 'x', language: 'cangjie' }} />)
     expect(screen.queryByTestId('code-sample-explanation')).toBeNull()

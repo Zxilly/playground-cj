@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { ComponentType, RefObject } from 'react'
-import dynamic from 'next/dynamic'
 import { CheckCircle2, Lightbulb, Loader2, Play, XCircle } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
@@ -13,6 +12,9 @@ import { evaluateOutput } from '@/lib/teach/feedback/evaluate'
 import type { ActiveEditorHandle, ActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
 import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
 import type { BlockComponentProps } from './block-props'
+import { CompilerDiagnosticOutput } from './CompilerDiagnosticOutput'
+import { DynamicCodeTaskMonacoEditor } from './DynamicCodeTaskMonacoEditor'
+import { TeachInlineMarkdown } from './TeachMarkdown'
 import { cn } from '@/lib/utils'
 
 /**
@@ -22,11 +24,6 @@ import { cn } from '@/lib/utils'
  * would break the jsdom (component) tests, which inject a `<textarea>` fake
  * instead and never trigger this import.
  */
-const CodeTaskMonacoEditor = dynamic(
-  () => import('./CodeTaskMonacoEditor').then(m => m.CodeTaskMonacoEditor),
-  { ssr: false },
-) as CodeTaskEditorComponent
-
 /** A run that has been evaluated against the task's expected output. */
 interface EvaluatedRun {
   result: RunResult
@@ -58,6 +55,8 @@ export interface CodeTaskEditorProps {
   uriHint?: string
   /** Parent scope retaining drafts across editor-only remounts. */
   modelScope?: string
+  /** Fill the parent pane instead of using the resizable lesson-task height. */
+  fillHeight?: boolean
 }
 
 /** The renderer for the code input area (real Monaco in the app, a fake in tests). */
@@ -133,7 +132,7 @@ export function CodeTaskBlock({
   outcome,
   runCode = runCangjieCode,
   onOutcome,
-  editorComponent: EditorComponent = CodeTaskMonacoEditor,
+  editorComponent: EditorComponent = DynamicCodeTaskMonacoEditor,
   activeEditor,
   locale,
   editorUriHint,
@@ -214,7 +213,9 @@ export function CodeTaskBlock({
 
   return (
     <section data-testid="code-task-block" className="rounded-md border border-border bg-background p-4">
-      <p className="text-sm font-semibold leading-7 text-foreground">{block.prompt}</p>
+      <p data-testid="code-task-prompt" className="text-sm font-semibold leading-7 text-foreground">
+        <TeachInlineMarkdown markdown={block.prompt} />
+      </p>
 
       <div className="mt-3 overflow-hidden rounded-md border border-border/60 bg-background">
         <div className="flex items-center justify-between border-b border-border/50 bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
@@ -275,7 +276,7 @@ export function CodeTaskBlock({
               className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-xs leading-6 text-muted-foreground"
             >
               <Lightbulb aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-              <span className="min-w-0">{hint}</span>
+              <TeachInlineMarkdown markdown={hint} className="min-w-0" />
             </li>
           ))}
         </ul>
@@ -326,12 +327,10 @@ export function CodeTaskBlock({
                   </div>
 
                   {!passed && evaluated.result.stderr && (
-                    <pre
-                      data-testid="code-task-stderr"
-                      className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 font-mono text-xs leading-relaxed text-destructive"
-                    >
-                      {evaluated.result.stderr}
-                    </pre>
+                    <CompilerDiagnosticOutput
+                      output={evaluated.result.compilerOutput ?? evaluated.result.stderr}
+                      testId="code-task-stderr"
+                    />
                   )}
 
                   {/* Only show the expected/actual diff for a genuine output

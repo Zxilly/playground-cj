@@ -63,6 +63,11 @@ interface TeachMarkdownProps {
   className?: string
 }
 
+interface TeachInlineMarkdownProps {
+  markdown: string
+  className?: string
+}
+
 const components: Components = {
   p: ({ className, ...props }) => (
     <p className={cn('aui-md-p my-2 leading-7 first:mt-0 last:mb-0', className)} {...props} />
@@ -142,6 +147,40 @@ function extractCangjieFence(children: ReactNode): string | null {
     return null
   const code = props.children
   return typeof code === 'string' ? code.replace(/\n$/, '') : null
+}
+
+/**
+ * Safe Markdown renderer for model-authored, single-line lesson fields such as
+ * prompts and code-sample explanations. These fields are strings in the block
+ * schema, but the model naturally uses inline emphasis and code spans in them.
+ *
+ * Keep the allowed surface deliberately small: block structure belongs in a
+ * prose/callout block, while raw HTML is skipped entirely. The paragraph
+ * wrapper is unwrapped so this component remains valid inside headings,
+ * captions, buttons, and existing `<p>` elements.
+ */
+const inlineComponents: Components = {
+  p: ({ children }) => <>{children}</>,
+  strong: components.strong,
+  em: components.em,
+  a: components.a,
+  code: components.code,
+}
+
+export function TeachInlineMarkdown({ markdown, className }: TeachInlineMarkdownProps) {
+  return (
+    <span data-testid="teach-inline-markdown" className={className}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        allowedElements={['p', 'strong', 'em', 'a', 'code', 'del', 'br']}
+        unwrapDisallowed
+        skipHtml
+        components={inlineComponents}
+      >
+        {markdown}
+      </ReactMarkdown>
+    </span>
+  )
 }
 
 export function TeachMarkdown({ markdown, className }: TeachMarkdownProps) {

@@ -82,6 +82,20 @@ describe('followupPromptBlock', () => {
     expect(screen.getByText('Why does let forbid shadowing?')).toBeTruthy()
   })
 
+  it('renders inline markdown while preserving the original chat prefill', () => {
+    const nav = makeNav()
+    const prompt = 'Why does **`let`** forbid shadowing?'
+    render(<FollowupPromptBlock block={{ type: 'followup_prompt', prompt }} />, nav)
+
+    const renderedPrompt = screen.getByTestId('followup-prompt')
+    expect(renderedPrompt.querySelector('strong code')?.textContent).toBe('let')
+    expect(renderedPrompt.textContent).not.toContain('**')
+    expect(renderedPrompt.textContent).not.toContain('`')
+
+    fireEvent.click(screen.getByTestId('followup-ask'))
+    expect(nav.prefillChat).toHaveBeenCalledWith(prompt)
+  })
+
   it('prefills the chat with the prompt when asking the teacher', () => {
     const nav = makeNav()
     render(<FollowupPromptBlock block={{ type: 'followup_prompt', prompt: 'Explain ownership' }} />, nav)

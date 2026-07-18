@@ -38,6 +38,23 @@ describe('recallPromptBlock', () => {
     expect(screen.getByTestId('recall-input')).toBeTruthy()
   })
 
+  it('renders inline markdown in the prompt and revealed reference answer', () => {
+    const markdownBlock: RecallPromptBlockSchemaType = {
+      type: 'recall_prompt',
+      prompt: 'What does **`let`** declare?',
+      answer: 'An **immutable** binding.',
+    }
+    render(<RecallPromptBlock block={markdownBlock} />)
+    const prompt = screen.getByTestId('recall-prompt')
+    expect(prompt.querySelector('strong code')?.textContent).toBe('let')
+
+    fireEvent.click(screen.getByTestId('recall-reveal'))
+    const answer = screen.getByTestId('recall-answer')
+    expect(answer.querySelector('strong')?.textContent).toBe('immutable')
+    expect(answer.textContent).not.toContain('**')
+    expect(answer.textContent).not.toContain('`')
+  })
+
   it('hides the answer before reveal', () => {
     render(<RecallPromptBlock block={block} />)
     expect(screen.queryByTestId('recall-answer')).toBeNull()
@@ -166,6 +183,22 @@ describe('recallPromptBlock with AI grading', () => {
     expect(onOutcome).toHaveBeenCalledWith({ correct: true, lastAnswer: 'let keyword' })
     // No manual self-grade buttons on a successful AI grade.
     expect(screen.queryByTestId('recall-grade-good')).toBeNull()
+  })
+
+  it('renders inline markdown in AI grading feedback', async () => {
+    const gradeRecall = vi.fn().mockResolvedValue({
+      correct: true,
+      feedback: 'Correct: **`let`** creates an immutable binding.',
+    })
+    render(<RecallPromptBlock block={block} gradeRecall={gradeRecall} />)
+    fireEvent.change(screen.getByTestId('recall-input'), { target: { value: 'let' } })
+    fireEvent.click(screen.getByTestId('recall-submit-grade'))
+
+    await waitFor(() => expect(screen.getByTestId('recall-feedback')).toBeTruthy())
+    const feedback = screen.getByTestId('recall-feedback')
+    expect(feedback.querySelector('strong code')?.textContent).toBe('let')
+    expect(feedback.textContent).not.toContain('**')
+    expect(feedback.textContent).not.toContain('`')
   })
 
   it('grades an incorrect answer: shows a待加强 verdict and reports correct:false', async () => {

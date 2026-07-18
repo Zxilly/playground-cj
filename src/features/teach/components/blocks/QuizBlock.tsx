@@ -6,6 +6,7 @@ import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import type { Block, QuizQuestion } from '@/lib/teach/lessons/blocks'
 import type { QuizBlockProps } from './block-props'
+import { TeachInlineMarkdown } from './TeachMarkdown'
 import { cn } from '@/lib/utils'
 
 type QuizBlockType = Extract<Block, { type: 'quiz' }>
@@ -135,7 +136,9 @@ export function QuizBlock({ block, outcome, onOutcome }: QuizBlockProps) {
             // position is the stable identity here.
             // eslint-disable-next-line react/no-array-index-key
             <li key={qIndex} data-testid="quiz-question" data-multiple={question.multiple ? '' : undefined}>
-              <p className="text-sm font-semibold leading-7 text-foreground">{question.question}</p>
+              <p className="text-sm font-semibold leading-7 text-foreground">
+                <TeachInlineMarkdown markdown={question.question} />
+              </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {question.multiple ? <Trans>多选题</Trans> : <Trans>单选题</Trans>}
               </p>
@@ -176,7 +179,7 @@ export function QuizBlock({ block, outcome, onOutcome }: QuizBlockProps) {
                         >
                           {isSelected ? '✓' : ''}
                         </span>
-                        <span className="min-w-0 flex-1">{option}</span>
+                        <TeachInlineMarkdown markdown={option} className="min-w-0 flex-1" />
                       </button>
                     </li>
                   )
@@ -204,7 +207,7 @@ export function QuizBlock({ block, outcome, onOutcome }: QuizBlockProps) {
                     {questionCorrect ? <Trans>回答正确</Trans> : <Trans>回答错误</Trans>}
                   </div>
                   <p data-testid="quiz-explanation" data-question={qIndex} className="text-sm leading-7 text-muted-foreground">
-                    {question.explanation}
+                    <TeachInlineMarkdown markdown={question.explanation} />
                   </p>
                 </div>
               )}

@@ -4,6 +4,7 @@ import { MessageCircleQuestion } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import type { FollowupPromptBlockProps } from './block-props'
 import { useLessonNavigation } from '@/features/teach/context/useLessonNavigation'
+import { TeachInlineMarkdown } from './TeachMarkdown'
 
 /**
  * Collateral block: a reminder (teach hard rule) nudging the learner to ask the
@@ -20,7 +21,9 @@ export function FollowupPromptBlock({ block }: FollowupPromptBlockProps) {
     >
       <div className="flex items-start gap-2">
         <MessageCircleQuestion aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
-        <p className="min-w-0 text-sm leading-6 text-foreground">{block.prompt}</p>
+        <p data-testid="followup-prompt" className="min-w-0 text-sm leading-6 text-foreground">
+          <TeachInlineMarkdown markdown={block.prompt} />
+        </p>
       </div>
       <button
         type="button"

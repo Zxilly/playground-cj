@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { CodeSampleBlockProps } from './block-props'
 import { CitationList } from './CitationList'
+import { TeachInlineMarkdown } from './TeachMarkdown'
 import { highlightCangjie } from '@/lib/shiki/cangjie-highlighter'
 
 function isDarkMode(): boolean {
@@ -58,7 +59,7 @@ export function CodeSampleBlock({ block }: CodeSampleBlockProps) {
           data-testid="code-sample-explanation"
           className="mt-2 text-sm leading-7 text-muted-foreground"
         >
-          {block.explanation}
+          <TeachInlineMarkdown markdown={block.explanation} />
         </figcaption>
       )}
       <CitationList citations={block.citations ?? []} />

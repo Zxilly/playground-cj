@@ -3,9 +3,9 @@
 import { BookA } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
+import { TeachInlineMarkdown } from '@/features/teach/components/blocks/TeachMarkdown'
 import { useWorkspaceResource } from './use-workspace-resource'
 import { ViewEmptyState } from './ViewEmptyState'
-import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
 
 /**
  * The glossary view: terms the learner has *genuinely mastered*, each with its
@@ -15,10 +15,10 @@ import { WorkspaceViewSkeleton } from './WorkspaceViewSkeleton'
  */
 export function GlossaryView() {
   const { repo } = useWorkspace()
-  const { data: glossary, loading } = useWorkspaceResource(() => repo.getGlossary(), [repo], 'glossary')
+  const { data: glossary, loading } = useWorkspaceResource(repo, 'glossary', () => repo.getGlossary(), [repo], 'glossary')
 
   if (loading)
-    return <WorkspaceViewSkeleton />
+    return null
 
   const terms = glossary?.terms ?? []
 
@@ -47,12 +47,19 @@ export function GlossaryView() {
               </span>
             )}
           </div>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">{term.definition}</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            <TeachInlineMarkdown markdown={term.definition} />
+          </p>
           {term.avoid.length > 0 && (
             <p className="mt-1.5 text-xs text-muted-foreground/80">
               <Trans>避免混用</Trans>
               {': '}
-              {term.avoid.join(', ')}
+              {Array.from(new Set(term.avoid)).map((phrase, index) => (
+                <span key={phrase}>
+                  {index > 0 && ', '}
+                  <TeachInlineMarkdown markdown={phrase} />
+                </span>
+              ))}
             </p>
           )}
         </li>

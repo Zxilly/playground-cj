@@ -130,14 +130,22 @@ describe('glossaryView', () => {
     const repo = makeRepo({
       glossary: {
         terms: [
-          { term: 'binding', definition: 'a name bound to a value', avoid: ['variable'], addedAt: 1 },
+          {
+            term: 'binding',
+            definition: 'a **name** bound to a `value`',
+            avoid: ['plain `variable`'],
+            addedAt: 1,
+          },
         ],
       },
     })
     render(<GlossaryView />, repo)
     expect(await screen.findByText('binding')).toBeTruthy()
-    expect(screen.getByText('a name bound to a value')).toBeTruthy()
+    expect(screen.getByText('name').tagName).toBe('STRONG')
+    expect(screen.getByText('value').tagName).toBe('CODE')
+    expect(screen.getByText('variable').tagName).toBe('CODE')
     expect(screen.getByText(/variable/)).toBeTruthy()
+    expect(screen.queryByText(/\*\*|`/)).toBeNull()
   })
 
   it('shows an empty state when no terms are mastered yet', async () => {
@@ -219,6 +227,21 @@ describe('referenceView', () => {
     render(<ReferenceView referenceId="r1" />, repo)
     expect(await screen.findByRole('heading', { name: 'Bindings' })).toBeTruthy()
     expect(screen.getByText(/let x = 1/)).toBeTruthy()
+  })
+
+  it('does not repeat a first block heading that duplicates the document title', async () => {
+    const repo = makeRepo({
+      references: [{
+        ...references[0],
+        blocks: [
+          { type: 'heading', level: 2, text: 'Syntax cheat-sheet' },
+          ...references[0].blocks,
+        ],
+      }],
+    })
+    render(<ReferenceView referenceId="r1" />, repo)
+    expect(await screen.findAllByRole('heading', { name: 'Syntax cheat-sheet' })).toHaveLength(1)
+    expect(screen.getByRole('heading', { name: 'Bindings' })).toBeTruthy()
   })
 
   it('lists references to pick from when none is selected', async () => {

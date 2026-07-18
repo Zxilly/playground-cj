@@ -13,7 +13,7 @@ import { runOjTests } from '@/lib/teach/feedback/run-oj'
 import type { ActiveEditorHandle } from '@/features/teach/state/active-editor-store'
 import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
 import type { OjBlockProps } from './block-props'
-import { TeachMarkdown } from './TeachMarkdown'
+import { TeachInlineMarkdown, TeachMarkdown } from './TeachMarkdown'
 import { cn } from '@/lib/utils'
 
 /**
@@ -276,7 +276,7 @@ export function OJBlock({
               className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-xs leading-6 text-muted-foreground"
             >
               <Lightbulb aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-              <span className="min-w-0">{hint}</span>
+              <TeachInlineMarkdown markdown={hint} className="min-w-0" />
             </li>
           ))}
         </ul>

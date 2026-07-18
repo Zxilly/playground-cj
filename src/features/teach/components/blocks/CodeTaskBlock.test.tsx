@@ -73,6 +73,14 @@ function compileError(stderr: string): RunResult {
   return { ok: false, stdout: '', stderr, exitCode: null, compilerOutput: stderr }
 }
 
+const ESC = String.fromCharCode(27)
+const noisyCompilerError = [
+  `${ESC}[36m$ /opt/cangjie/bin/cjc main.cj -o main${ESC}[0m`,
+  'Cangjie Compiler 1.0.0',
+  `${ESC}[31merror: expected expression${ESC}[0m`,
+  '  --> main.cj:2:12',
+].join('\n')
+
 function runnerDown(): RunResult {
   return { ok: false, stdout: '', stderr: 'network down', exitCode: null, failureKind: 'runner_unavailable' }
 }
@@ -109,6 +117,21 @@ describe('codeTaskBlock', () => {
   it('renders the prompt', () => {
     render(<CodeTaskBlock block={block} runCode={vi.fn()} editorComponent={FakeEditor} />)
     expect(screen.getByText('Print hello')).toBeTruthy()
+  })
+
+  it('renders inline markdown in the prompt instead of raw markers', () => {
+    render(
+      <CodeTaskBlock
+        block={{ ...block, prompt: 'Declare **immutable** `name`' }}
+        runCode={vi.fn()}
+        editorComponent={FakeEditor}
+      />,
+    )
+    const prompt = screen.getByTestId('code-task-prompt')
+    expect(prompt.querySelector('strong')?.textContent).toBe('immutable')
+    expect(prompt.querySelector('code')?.textContent).toBe('name')
+    expect(prompt.textContent).not.toContain('**')
+    expect(prompt.textContent).not.toContain('`')
   })
 
   it('runs the current editor code (read from the handle) through the injected runner', async () => {
@@ -155,6 +178,23 @@ describe('codeTaskBlock', () => {
     // No empty expected/actual diff distracting from the compiler message.
     expect(screen.queryByTestId('code-task-expected')).toBeNull()
     expect(screen.queryByTestId('code-task-actual')).toBeNull()
+  })
+
+  it('promotes the clean diagnostic and collapses noisy compiler preamble', async () => {
+    const runCode = vi.fn<(code: string) => Promise<RunResult>>().mockResolvedValue(compileError(noisyCompilerError))
+    render(<CodeTaskBlock block={block} runCode={runCode} editorComponent={FakeEditor} />)
+    fireEvent.click(screen.getByTestId('code-task-run'))
+
+    await waitFor(() => expect(screen.getByTestId('code-task-stderr')).toBeTruthy())
+    const diagnostic = screen.getByTestId('code-task-stderr')
+    expect(diagnostic.textContent).toContain('error: expected expression')
+    expect(diagnostic.textContent).not.toContain('/opt/cangjie/bin/cjc')
+    expect(diagnostic.textContent).not.toContain(ESC)
+
+    const raw = screen.getByTestId('code-task-stderr-raw')
+    expect(raw.getAttribute('open')).toBeNull()
+    expect(raw.textContent).toContain('/opt/cangjie/bin/cjc')
+    expect(raw.textContent).not.toContain(ESC)
   })
 
   it('reveals hints one at a time on demand', () => {
