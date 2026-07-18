@@ -29,6 +29,13 @@ describe('compiler output formatting', () => {
         '   |',
         ' 3 | let value =',
       ].join('\n'),
+      diagnosticAnsi: [
+        `${ESC}[31merror: expected expression after '='${ESC}[0m`,
+        '  --> main.cj:3:12',
+        '   |',
+        ' 3 | let value =',
+      ].join('\n'),
+      fullAnsi: runnerOutput.replace(/\r\n/g, '\n'),
       hasHiddenPreamble: true,
     })
   })

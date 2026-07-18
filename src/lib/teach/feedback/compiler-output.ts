@@ -1,10 +1,12 @@
 /**
- * Student-facing compiler output. `diagnostic` is the useful portion shown
- * first; `full` is the ANSI-free complete log that may be disclosed on demand.
+ * Student-facing compiler output. Clean strings support searching/assertions;
+ * ANSI strings preserve the terminal presentation for the rendered console.
  */
 export interface FormattedCompilerOutput {
   diagnostic: string
   full: string
+  diagnosticAnsi: string
+  fullAnsi: string
   hasHiddenPreamble: boolean
 }
 
@@ -72,18 +74,23 @@ function isDiagnosticStart(line: string): boolean {
  * the complete clean text so an unusual failure never disappears.
  */
 export function formatCompilerOutput(input: string): FormattedCompilerOutput {
-  const full = stripTerminalSequences(input)
-    .replace(/\r\n?/g, '\n')
-    .trim()
+  const fullAnsi = input.replace(/\r\n?/g, '\n').trim()
+  const full = stripTerminalSequences(fullAnsi).trim()
   const lines = full.split('\n')
   const diagnosticIndex = lines.findIndex(isDiagnosticStart)
   const diagnostic = diagnosticIndex > 0
     ? lines.slice(diagnosticIndex).join('\n').trim()
     : full
+  const ansiLines = fullAnsi.split('\n')
+  const diagnosticAnsi = diagnosticIndex > 0
+    ? ansiLines.slice(diagnosticIndex).join('\n').trim()
+    : fullAnsi
 
   return {
     diagnostic,
     full,
+    diagnosticAnsi,
+    fullAnsi,
     hasHiddenPreamble: diagnosticIndex > 0,
   }
 }
