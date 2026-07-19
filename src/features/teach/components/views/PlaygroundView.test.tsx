@@ -130,6 +130,19 @@ describe('playgroundView student flow', () => {
     expect((editor as HTMLTextAreaElement).value).toBe('main() { println("persistent") }')
   })
 
+  it('keeps the parked editor optically isolated from descendant visibility changes', async () => {
+    render(<PlaygroundRouteHarness />, { wrapper: Wrapper })
+    await screen.findByTestId('fake-playground-editor')
+
+    act(() => useWorkspaceStore.getState().setView('glossary'))
+    const parking = screen.getByTestId('playground-editor-parking')
+
+    expect(parking.classList.contains('opacity-0')).toBe(true)
+    expect(parking.classList.contains('invisible')).toBe(false)
+    expect(parking.getAttribute('aria-hidden')).toBe('true')
+    expect(parking.hasAttribute('inert')).toBe(true)
+  })
+
   it('keeps tab buffers independent and runs the code from the active editor', async () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
 

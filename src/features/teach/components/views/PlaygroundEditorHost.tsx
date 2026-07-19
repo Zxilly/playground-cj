@@ -164,7 +164,7 @@ export function PlaygroundEditorHost({
         data-testid="playground-editor-parking"
         aria-hidden="true"
         inert
-        className="pointer-events-none invisible absolute inset-0 overflow-hidden"
+        className="pointer-events-none absolute inset-0 overflow-hidden opacity-0"
       />
       {hostElement && createPortal(
         <EditorComponent
