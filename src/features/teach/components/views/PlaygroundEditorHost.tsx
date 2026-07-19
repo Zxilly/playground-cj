@@ -28,9 +28,10 @@ function createHostElement(): HTMLDivElement | null {
 
 /**
  * Owns the single long-lived Playground Monaco instance. Route pages contribute
- * a short-lived slot; this host moves the same DOM node between that slot and a
- * private parking container. Playground tabs are logical buffers over the
- * canonical project model, while the editor widget itself stays mounted. The
+ * a short-lived slot; this host attaches the same DOM node to the active slot
+ * and keeps it off-DOM while the route is inactive. Playground tabs are
+ * logical buffers over the canonical project model, while the editor widget
+ * itself stays mounted. The
  * Cangjie LSP treats that canonical document as the active workspace source;
  * nested standalone model URIs can leave completion requests unresolved.
  */
@@ -49,7 +50,6 @@ export function PlaygroundEditorHost({
   const activeTab = tabs.find(tab => tab.id === activeTabId) ?? null
   const editorHandleRef = useRef<CodeTaskEditorHandle | null>(null)
   const currentTabIdRef = useRef(activeTab?.id ?? null)
-  const parkingRef = useRef<HTMLDivElement | null>(null)
   const slotRef = useRef<HTMLDivElement | null>(null)
   const layoutFrameRef = useRef<number | null>(null)
   const persistTimerRef = useRef<number | null>(null)
@@ -101,21 +101,26 @@ export function PlaygroundEditorHost({
   }, [setCode])
 
   const placeHost = useCallback(() => {
-    const target = slotRef.current ?? parkingRef.current
-    if (!hostElement || !target)
+    if (!hostElement)
       return
-    if (hostElement.parentElement !== target)
+
+    const target = slotRef.current
+    if (!target) {
+      // Match VS Code's editor-pane lifecycle: retain the editor instance while
+      // keeping its container entirely off-DOM whenever the pane is inactive.
+      // This prevents Monaco descendants from participating in layout or paint.
+      hostElement.remove()
+      return
+    }
+
+    if (hostElement.parentElement !== target) {
       target.appendChild(hostElement)
-    scheduleLayout()
+      scheduleLayout()
+    }
   }, [hostElement, scheduleLayout])
 
   const registerEditorSlot = useCallback<RefCallback<HTMLDivElement>>((node) => {
     slotRef.current = node
-    placeHost()
-  }, [placeHost])
-
-  const registerParking = useCallback<RefCallback<HTMLDivElement>>((node) => {
-    parkingRef.current = node
     placeHost()
   }, [placeHost])
 
@@ -159,13 +164,6 @@ export function PlaygroundEditorHost({
   return (
     <PlaygroundEditorHostContext value={context}>
       {children}
-      <div
-        ref={registerParking}
-        data-testid="playground-editor-parking"
-        aria-hidden="true"
-        inert
-        className="pointer-events-none absolute inset-0 overflow-hidden opacity-0"
-      />
       {hostElement && createPortal(
         <EditorComponent
           initialCode={activeTab?.initialCode ?? ''}

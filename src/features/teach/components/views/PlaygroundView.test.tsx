@@ -122,25 +122,27 @@ describe('playgroundView student flow', () => {
 
     act(() => useWorkspaceStore.getState().setView('glossary'))
     expect(screen.queryByTestId('playground-view')).toBeNull()
-    expect(editor.isConnected).toBe(true)
+    expect(editor.isConnected).toBe(false)
     expect(context.activeEditor?.getCode()).toBeNull()
 
     act(() => useWorkspaceStore.getState().setView('playground'))
     expect(await screen.findByTestId('fake-playground-editor')).toBe(editor)
+    expect(editor.isConnected).toBe(true)
     expect((editor as HTMLTextAreaElement).value).toBe('main() { println("persistent") }')
   })
 
-  it('keeps the parked editor optically isolated from descendant visibility changes', async () => {
+  it('keeps the inactive EditorHost off-DOM instead of parking it in the layout tree', async () => {
     render(<PlaygroundRouteHarness />, { wrapper: Wrapper })
+    const host = await screen.findByTestId('playground-editor-host')
     await screen.findByTestId('fake-playground-editor')
 
     act(() => useWorkspaceStore.getState().setView('glossary'))
-    const parking = screen.getByTestId('playground-editor-parking')
+    expect(host.isConnected).toBe(false)
+    expect(document.querySelector('[data-testid="playground-editor-parking"]')).toBeNull()
 
-    expect(parking.classList.contains('opacity-0')).toBe(true)
-    expect(parking.classList.contains('invisible')).toBe(false)
-    expect(parking.getAttribute('aria-hidden')).toBe('true')
-    expect(parking.hasAttribute('inert')).toBe(true)
+    act(() => useWorkspaceStore.getState().setView('playground'))
+    expect(await screen.findByTestId('playground-editor-host')).toBe(host)
+    expect(host.isConnected).toBe(true)
   })
 
   it('keeps tab buffers independent and runs the code from the active editor', async () => {
