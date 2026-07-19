@@ -83,8 +83,8 @@ function WorkspaceViewTransition({
         'absolute inset-0 h-full min-h-0 w-full bg-background',
         !isPresent && 'pointer-events-none',
         view === 'playground'
-          ? 'overflow-hidden px-0 pb-0 pt-16 lg:p-0'
-          : 'overflow-y-auto px-4 pb-7 pt-20 sm:px-6 lg:px-8 lg:py-8',
+          ? 'overflow-hidden'
+          : 'overflow-y-auto px-4 py-7 sm:px-6 lg:px-8 lg:py-8',
       )}
     >
       {children}
@@ -222,16 +222,16 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
   return (
     <div
       data-testid="teach-workspace-shell"
-      className="relative flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground"
+      className="relative grid h-full min-h-0 w-full grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-background text-foreground md:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[13rem_minmax(0,1fr)_auto] lg:grid-rows-1"
     >
       <WorkspaceResourcePreloader repo={repo} />
 
       <aside
         inert={isCompact && chatOpen}
         className={cn(
-          'teach-scrollbar-hidden shrink-0 border-border bg-sidebar',
-          'absolute inset-x-0 top-0 z-10 overflow-x-auto border-b px-2 py-2',
-          'lg:static lg:flex lg:w-52 lg:flex-col lg:gap-2 lg:overflow-visible lg:border-e lg:border-b-0 lg:px-3 lg:py-4',
+          'teach-scrollbar-hidden relative col-start-1 row-start-1 min-w-0 shrink-0 overflow-x-auto border-b border-border bg-sidebar px-2 py-2',
+          'md:col-span-2',
+          'lg:col-span-1 lg:col-start-1 lg:row-start-1 lg:flex lg:w-52 lg:flex-col lg:gap-2 lg:overflow-visible lg:border-e lg:border-b-0 lg:px-3 lg:py-4',
         )}
       >
         <WorkspaceNav
@@ -243,7 +243,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       <main
         data-testid="workspace-viewport"
         inert={isCompact && chatOpen}
-        className="relative min-w-0 flex-1 overflow-hidden bg-background"
+        className="relative col-start-1 row-start-2 min-h-0 min-w-0 overflow-hidden bg-background lg:col-start-2 lg:row-start-1"
       >
         <PlaygroundEditorHost>
           <AnimatePresence initial={false} mode="wait">
@@ -292,7 +292,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         style={isCompact ? undefined : { width: chatWidth }}
         onKeyDown={onChatKeyDown}
         className={cn(
-          'md:relative md:flex md:shrink-0 md:flex-col md:border-s md:border-border md:bg-background',
+          'md:relative md:col-start-2 md:row-start-2 md:flex md:shrink-0 md:flex-col md:border-s md:border-border md:bg-background lg:col-start-3 lg:row-start-1',
           'fixed inset-x-0 bottom-0 z-40 flex h-[min(78dvh,46rem)] flex-col overflow-hidden rounded-t-lg border-t border-border bg-background shadow-lg transition-transform duration-300 ease-out md:inset-auto md:h-auto md:translate-y-0 md:rounded-none md:shadow-none',
           chatOpen ? 'translate-y-0' : 'translate-y-full md:translate-y-0',
         )}
