@@ -1,68 +1,24 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useMemo } from 'react'
 import { useMachine } from '@xstate/react'
 import { RotateCcw, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import { createWorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
-import { teachRuntimeMachine } from '@/features/teach/state/teach-runtime-machine'
+import { createTeachRuntimeMachine } from '@/features/teach/state/teach-runtime-machine'
 import { TeachAppContent } from './TeachApp'
 
-function disposeInBackground(
-  collaborators: WorkspaceCollaborators | null,
-  context: string,
-): void {
-  if (!collaborators)
-    return
-  void collaborators.dispose().catch((error: unknown) => {
-    console.error(`[ai-classroom] ${context}`, error)
-  })
-}
-
 function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
-  const [runtime, send] = useMachine(teachRuntimeMachine)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    let active = true
-    let storageFailed = false
-    let collaborators: WorkspaceCollaborators | null = null
-    useWorkspaceStore.getState().reset()
-    void createWorkspaceCollaborators(locale, {
-      signal: controller.signal,
-      onStorageError: (error) => {
-        if (active) {
-          storageFailed = true
-          disposeInBackground(collaborators, 'failed to dispose after a storage error')
-          send({
-            type: 'storage.failed',
-            message: error instanceof Error ? error.message : String(error),
-          })
-        }
-      },
-    }).then((created) => {
-      collaborators = created
-      if (!active || storageFailed) {
-        disposeInBackground(created, 'failed to dispose an obsolete runtime')
-        return
-      }
-      send({ type: 'open.succeeded', collaborators: created })
-    }).catch((error: unknown) => {
-      if (active && !controller.signal.aborted) {
-        send({
-          type: 'open.failed',
-          message: error instanceof Error ? error.message : String(error),
-        })
-      }
-    })
-    return () => {
-      active = false
-      controller.abort()
-      disposeInBackground(collaborators, 'failed to dispose the workspace runtime')
-    }
-  }, [runtime.context.generation, locale, send])
+  const machine = useMemo(() => createTeachRuntimeMachine({
+    locale,
+    open: createWorkspaceCollaborators,
+    resetWorkspace: () => useWorkspaceStore.getState().reset(),
+    reportDisposeError: (error, context) => {
+      console.error(`[ai-classroom] ${context}`, error)
+    },
+  }), [locale])
+  const [runtime, send] = useMachine(machine)
 
   if (runtime.matches('loading'))
     return <div data-testid="teach-app-loading" className="h-full bg-background" />

@@ -107,12 +107,13 @@ describe('teach app root', () => {
 
     render(<TeachAppRoot lang="en" />)
     act(() => reportStorageError(new Error('storage failed after open')))
-    expect((await screen.findByRole('alert')).textContent)
-      .toContain('storage failed after open')
+    expect(screen.getByTestId('teach-app-loading')).toBeTruthy()
 
     await act(async () => {
       resolveRuntime({ dispose } as unknown as WorkspaceCollaborators)
     })
+    expect((await screen.findByRole('alert')).textContent)
+      .toContain('storage failed after open')
     await waitFor(() => expect(dispose).toHaveBeenCalledOnce())
     expect(screen.queryByText('ready:en')).toBeNull()
   })
