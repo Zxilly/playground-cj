@@ -12,24 +12,15 @@ import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
 import { AnsiOutput } from '@/components/AnsiOutput'
-import { awaitWithSignal } from '@/lib/ai/abortable-operation'
-import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import { usePlaygroundEditorHost } from './playground-editor-host-context'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
+import { createPlaygroundRunActor } from '@/features/teach/state/playground-run-machine'
 
 const DEFAULT_OUTPUT_HEIGHT = 176
 const MIN_OUTPUT_HEIGHT = 112
 const MIN_EDITOR_HEIGHT = 160
 const FALLBACK_MAX_OUTPUT_HEIGHT = 480
 const OUTPUT_KEYBOARD_STEP = 24
-let nextPlaygroundRunOwnerEpoch = 1
-
-interface ActivePlaygroundRun {
-  controller: AbortController
-  tabId: string
-  contentVersion: string
-}
-
 function clampOutputHeight(height: number, maxHeight: number): number {
   return Math.min(Math.max(height, MIN_OUTPUT_HEIGHT), maxHeight)
 }
@@ -350,8 +341,10 @@ function PlaygroundEditorPane({
   const beginRun = useWorkspaceStore(state => state.beginPlaygroundTabRun)
   const finishRun = useWorkspaceStore(state => state.finishPlaygroundTabRun)
   const releaseRunOwner = useWorkspaceStore(state => state.releasePlaygroundRunOwner)
-  const [runOwnerEpoch] = useState(() => nextPlaygroundRunOwnerEpoch++)
-  const runControllersRef = useRef(new Map<string, ActivePlaygroundRun>())
+  const runActorsRef = useRef(new Map<
+    string,
+    ReturnType<typeof createPlaygroundRunActor>
+  >())
   const paneRef = useRef<HTMLDivElement | null>(null)
   const resizeStateRef = useRef<{
     pointerId: number
@@ -379,33 +372,42 @@ function PlaygroundEditorPane({
     return () => observer.disconnect()
   }, [onOutputHeightChange])
 
-  useEffect(() => {
-    const controllers = runControllersRef.current
-    return () => {
-      for (const run of controllers.values())
-        run.controller.abort(new DOMException('Playground pane unmounted.', 'AbortError'))
-      controllers.clear()
-      releaseRunOwner(runOwnerEpoch)
-    }
-  }, [releaseRunOwner, runOwnerEpoch])
+  const getRunActor = useCallback((tabId: string) => {
+    const existing = runActorsRef.current.get(tabId)
+    if (existing)
+      return existing
+    const created = createPlaygroundRunActor({
+      tabId,
+      workspaceSignal: abortSignal,
+      begin: beginRun,
+      finish: finishRun,
+      releaseOwner: releaseRunOwner,
+      run: (code, signal) => runner.run(code, signal),
+      getContentVersion: targetTabId =>
+        useWorkspaceStore.getState().playgroundTabs.find(
+          candidate => candidate.id === targetTabId,
+        )?.contentVersion ?? null,
+      subscribeToSource: listener =>
+        useWorkspaceStore.subscribe(listener),
+    })
+    runActorsRef.current.set(tabId, created)
+    return created
+  }, [
+    abortSignal,
+    beginRun,
+    finishRun,
+    releaseRunOwner,
+    runner,
+  ])
 
   useEffect(() => {
-    return useWorkspaceStore.subscribe((state) => {
-      for (const [operationId, run] of runControllersRef.current) {
-        const currentTab = state.playgroundTabs.find(
-          candidate => candidate.id === run.tabId,
-        )
-        if (currentTab?.contentVersion === run.contentVersion)
-          continue
-        runControllersRef.current.delete(operationId)
-        run.controller.abort(new DOMException(
-          'Playground source changed while the run was in flight.',
-          'AbortError',
-        ))
-        finishRun(run.tabId, operationId)
-      }
-    })
-  }, [finishRun])
+    const actors = runActorsRef.current
+    return () => {
+      for (const actor of actors.values())
+        actor.stop()
+      actors.clear()
+    }
+  }, [])
 
   const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -463,52 +465,12 @@ function PlaygroundEditorPane({
     )
     if (!currentTab)
       return
-    const operationId = beginRun(tab.id, runOwnerEpoch)
-    if (operationId === null)
-      return
     const code = editorHandleRef.current?.getCode() ?? tab.initialCode
-    const controller = new AbortController()
-    const abortFromWorkspace = () => controller.abort(abortSignal.reason)
-    runControllersRef.current.set(operationId, {
-      controller,
-      tabId: tab.id,
+    getRunActor(tab.id).send({
+      type: 'run.requested',
+      code,
       contentVersion: currentTab.contentVersion,
     })
-    if (abortSignal.aborted)
-      abortFromWorkspace()
-    else
-      abortSignal.addEventListener('abort', abortFromWorkspace, { once: true })
-
-    let result: RunResult | undefined
-    try {
-      result = await awaitWithSignal(
-        runner.run(code, controller.signal),
-        controller.signal,
-      )
-    }
-    catch (error) {
-      if (!controller.signal.aborted) {
-        const message = error instanceof Error ? error.message : String(error)
-        result = {
-          ok: false,
-          phase: null,
-          stdout: '',
-          stdoutTruncated: false,
-          stderr: '',
-          stderrTruncated: false,
-          compilerOutput: '',
-          compilerOutputTruncated: false,
-          exitCode: null,
-          failureKind: 'runner_unavailable',
-          failureMessage: message,
-        }
-      }
-    }
-    finally {
-      abortSignal.removeEventListener('abort', abortFromWorkspace)
-      runControllersRef.current.delete(operationId)
-      finishRun(tab.id, operationId, result)
-    }
   }
 
   return (
