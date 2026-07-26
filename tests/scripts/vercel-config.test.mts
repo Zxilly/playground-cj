@@ -36,6 +36,7 @@ describe('vercel deployment input', () => {
       '!package.json',
       '!pnpm-lock.yaml',
       '!patches',
+      '!cj-runner',
       '!public',
       'public/lsp/',
       '!scripts',
