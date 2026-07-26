@@ -1,9 +1,9 @@
 import { i18n as globalI18n, setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ChainOfThought, MessageError } from './ThreadMessages'
+import { ClassroomActivity, MessageError } from './ThreadMessages'
 
 const auiStateMocks = vi.hoisted(() => ({
   messageStatus: 'running',
@@ -11,26 +11,6 @@ const auiStateMocks = vi.hoisted(() => ({
 
 function MockMessageErrorSlot({ children }: { children?: ReactNode }) {
   return <div data-testid="message-error-slot">{children}</div>
-}
-
-function MockErrorRoot({
-  children,
-  className,
-  role,
-}: {
-  children?: ReactNode
-  className?: string
-  role?: string
-}) {
-  return <div role={role} className={className}>{children}</div>
-}
-
-function MockErrorMessage({ className }: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={className}>
-      The model request timed out after waiting for the classroom tools to finish. Check the network and retry the response.
-    </div>
-  )
 }
 
 function MockActionBarRoot({ children, className }: { children?: ReactNode, className?: string, hideWhenRunning?: boolean }) {
@@ -87,10 +67,6 @@ vi.mock('@assistant-ui/react', () => ({
     Reload: MockActionReload,
     Root: MockActionBarRoot,
   },
-  ErrorPrimitive: {
-    Message: MockErrorMessage,
-    Root: MockErrorRoot,
-  },
   MessagePrimitive: {
     Error: MockMessageErrorSlot,
   },
@@ -135,15 +111,12 @@ describe('threadMessages', () => {
     cleanup()
   })
 
-  it('shows readable chat errors with an inline retry action', () => {
+  it('shows a generic chat error without exposing internal failures', () => {
     render(<MessageError />, { wrapper: Wrapper })
 
     const alert = screen.getByRole('alert')
-    expect(alert.textContent).toContain('The model request timed out')
-    const message = screen.getByText(/The model request timed out/)
-    expect(message.className).toContain('whitespace-pre-wrap')
-    expect(message.className).toContain('break-words')
-    expect(message.className).not.toContain('line-clamp-2')
+    expect(alert.textContent).toContain('课堂老师暂时无法完成这次回复')
+    expect(alert.textContent).not.toContain('model request timed out')
 
     const retry = screen.getByRole('button', { name: '重新生成' })
     expect(screen.getByTestId('reload-action').contains(retry)).toBe(true)
@@ -151,21 +124,21 @@ describe('threadMessages', () => {
     expect(retry.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
   })
 
-  it('keeps live reasoning and tool validation chatter collapsed by default', () => {
+  it('shows only payload-free classroom activity statuses', () => {
     auiStateMocks.messageStatus = 'running'
     render(
-      <ChainOfThought>
-        <div>internal tool validation detail</div>
-      </ChainOfThought>,
+      <ClassroomActivity>
+        <div>课堂内容已准备</div>
+      </ClassroomActivity>,
       { wrapper: Wrapper },
     )
 
-    const disclosure = screen.getByRole('button', { name: '正在思考…' })
+    const disclosure = screen.getByRole('button', { name: '正在准备课堂内容…' })
     expect(disclosure.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByText('internal tool validation detail')).toBeNull()
+    expect(screen.queryByText('课堂内容已准备')).toBeNull()
 
     fireEvent.click(disclosure)
     expect(disclosure.getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getByText('internal tool validation detail')).toBeTruthy()
+    expect(screen.getByText('课堂内容已准备')).toBeTruthy()
   })
 })

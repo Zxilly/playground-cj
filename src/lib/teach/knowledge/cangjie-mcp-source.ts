@@ -1,6 +1,8 @@
 import type { KnowledgeHit, KnowledgeSource } from './source'
 import { callMcpTool } from '@/lib/mcp/client'
+import { awaitWithSignal } from '@/lib/ai/abortable-operation'
 import { isUserAbort } from '../abort'
+import { KnowledgeSourceError } from './source'
 
 /** Identifier embedded into every hit produced by this source. */
 export const CANGJIE_MCP_SOURCE_ID = 'cangjie-mcp'
@@ -127,7 +129,7 @@ function parseTextResults(text: string): KnowledgeHit[] {
   return hits
 }
 
-function mapResult(result: unknown, limit: number): KnowledgeHit[] {
+function mapResult(result: unknown, limit: number): KnowledgeHit[] | null {
   const structured = extractStructuredResults(result)
   if (structured) {
     const hits = structured
@@ -136,9 +138,12 @@ function mapResult(result: unknown, limit: number): KnowledgeHit[] {
     return hits.slice(0, limit)
   }
   const text = extractText(result)
-  if (text)
-    return parseTextResults(text).slice(0, limit)
-  return []
+  if (text) {
+    const hits = parseTextResults(text).slice(0, limit)
+    if (hits.length > 0 || /\bFound 0 results\b/i.test(text))
+      return hits
+  }
+  return null
 }
 
 /**
@@ -146,9 +151,9 @@ function mapResult(result: unknown, limit: number): KnowledgeHit[] {
  *
  * Wraps the `cangjie_search_docs` tool and maps each documentation result into
  * a {@link KnowledgeHit} tagged with `sourceId: 'cangjie-mcp'`. When the MCP
- * server is unavailable or returns an unexpected shape, {@link KnowledgeSource.search}
- * resolves to an empty array (logging a warning) rather than throwing, so
- * grounding failures degrade gracefully.
+ * A valid zero-result response resolves to an empty array. Transport failures
+ * and malformed payloads remain distinguishable typed errors so the Teacher
+ * cannot mistake a broken grounding source for an authoritative no-match.
  */
 export function createCangjieMcpKnowledgeSource(deps: CangjieMcpKnowledgeSourceDeps = {}): KnowledgeSource {
   const call = deps.call ?? callMcpTool
@@ -158,16 +163,29 @@ export function createCangjieMcpKnowledgeSource(deps: CangjieMcpKnowledgeSourceD
       const limit = opts?.limit ?? DEFAULT_LIMIT
       const signal = opts?.signal
       try {
-        const result = await call(CANGJIE_SEARCH_DOCS_TOOL, { query, top_k: limit }, signal)
-        return mapResult(result, limit)
+        const result = await awaitWithSignal(
+          call(CANGJIE_SEARCH_DOCS_TOOL, { query, top_k: limit }, signal),
+          signal,
+        )
+        const hits = mapResult(result, limit)
+        if (hits === null) {
+          throw new KnowledgeSourceError(
+            'invalid_response',
+            'Cangjie documentation source returned an invalid response',
+          )
+        }
+        return hits
       }
       catch (err) {
-        // A user abort must propagate (so the tool yields a "User aborted"
-        // result); a genuine source failure still degrades to empty hits.
         if (isUserAbort(err, signal))
           throw err
-        console.warn('[teach] cangjie MCP knowledge source unavailable', err)
-        return []
+        if (err instanceof KnowledgeSourceError)
+          throw err
+        throw new KnowledgeSourceError(
+          'unavailable',
+          'Cangjie documentation source is unavailable',
+          { cause: err },
+        )
       }
     },
   }

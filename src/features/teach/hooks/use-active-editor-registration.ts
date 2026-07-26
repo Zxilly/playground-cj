@@ -17,7 +17,6 @@ export function useActiveEditorRegistration(
   const unregisterRef = useRef<(() => void) | null>(null)
   const handle = useMemo<ActiveEditorHandle>(() => ({
     getCode: () => editorHandleRef.current?.getCode() ?? '',
-    setCode: code => editorHandleRef.current?.setCode(code),
   }), [editorHandleRef])
 
   const activateEditor = useCallback(() => {

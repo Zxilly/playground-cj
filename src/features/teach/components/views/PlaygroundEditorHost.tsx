@@ -4,8 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { ReactNode, RefCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useLingui } from '@lingui/react'
-import type { CodeTaskEditorComponent, CodeTaskEditorHandle } from '@/features/teach/components/blocks/CodeTaskBlock'
-import { DynamicCodeTaskMonacoEditor } from '@/features/teach/components/blocks/DynamicCodeTaskMonacoEditor'
+import type { CangjieEditorComponent, CangjieEditorHandle } from '@/features/teach/components/editor/CangjieEditor'
+import { DynamicCangjieEditor } from '@/features/teach/components/editor/DynamicCangjieEditor'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
@@ -14,7 +14,7 @@ import { PlaygroundEditorHostContext } from './playground-editor-host-context'
 
 export interface PlaygroundEditorHostProps {
   children: ReactNode
-  editorComponent?: CodeTaskEditorComponent
+  editorComponent?: CangjieEditorComponent
 }
 
 function createHostElement(): HTMLDivElement | null {
@@ -37,7 +37,7 @@ function createHostElement(): HTMLDivElement | null {
  */
 export function PlaygroundEditorHost({
   children,
-  editorComponent: EditorComponent = DynamicCodeTaskMonacoEditor,
+  editorComponent: EditorComponent = DynamicCangjieEditor,
 }: PlaygroundEditorHostProps) {
   const { i18n } = useLingui()
   const { activeEditor } = useWorkspace()
@@ -45,15 +45,26 @@ export function PlaygroundEditorHost({
   // the collection together when it persists the previous buffer on selection.
   const tabs = useWorkspaceStore(state => state.playgroundTabs)
   const activeTabId = useWorkspaceStore(state => state.currentPlaygroundTabId)
+  const persistenceStatus = useWorkspaceStore(
+    state => state.playgroundPersistenceStatus,
+  )
   const view = useWorkspaceStore(state => state.view)
   const setCode = useWorkspaceStore(state => state.setPlaygroundTabCode)
+  const acquirePersistence = useWorkspaceStore(
+    state => state.acquirePlaygroundPersistence,
+  )
   const activeTab = tabs.find(tab => tab.id === activeTabId) ?? null
-  const editorHandleRef = useRef<CodeTaskEditorHandle | null>(null)
+  const editorHandleRef = useRef<CangjieEditorHandle | null>(null)
   const currentTabIdRef = useRef(activeTab?.id ?? null)
+  const currentContentVersionRef = useRef(activeTab?.contentVersion ?? null)
   const slotRef = useRef<HTMLDivElement | null>(null)
   const layoutFrameRef = useRef<number | null>(null)
   const persistTimerRef = useRef<number | null>(null)
-  const pendingCodeRef = useRef<{ tabId: string, code: string } | null>(null)
+  const pendingCodeRef = useRef<{
+    tabId: string
+    code: string
+    expectedContentVersion: string
+  } | null>(null)
   const [hostElement] = useState(createHostElement)
   const activateEditor = useActiveEditorRegistration(
     activeEditor,
@@ -77,15 +88,28 @@ export function PlaygroundEditorHost({
     }
     const pending = pendingCodeRef.current
     pendingCodeRef.current = null
-    if (pending)
-      setCode(pending.tabId, pending.code)
+    if (pending) {
+      setCode(
+        pending.tabId,
+        pending.code,
+        pending.expectedContentVersion,
+      )
+    }
   }, [setCode])
 
   const persistActiveCode = useCallback((code: string) => {
     const tabId = currentTabIdRef.current
-    if (!tabId)
+    const expectedContentVersion = currentContentVersionRef.current
+    if (!tabId || !expectedContentVersion)
       return
-    pendingCodeRef.current = { tabId, code }
+    pendingCodeRef.current = {
+      tabId,
+      code,
+      expectedContentVersion:
+        pendingCodeRef.current?.tabId === tabId
+          ? pendingCodeRef.current.expectedContentVersion
+          : expectedContentVersion,
+    }
     if (persistTimerRef.current !== null)
       window.clearTimeout(persistTimerRef.current)
     // Keep typing responsive while still making drafts durable almost
@@ -96,8 +120,17 @@ export function PlaygroundEditorHost({
   const persistLiveEditorCode = useCallback(() => {
     const tabId = currentTabIdRef.current
     const code = editorHandleRef.current?.getCode()
-    if (tabId && code !== undefined)
-      setCode(tabId, code)
+    const persistedTab = useWorkspaceStore.getState().playgroundTabs.find(
+      tab => tab.id === tabId,
+    )
+    if (
+      tabId
+      && code !== undefined
+      && persistedTab
+      && code !== persistedTab.initialCode
+    ) {
+      setCode(tabId, code, persistedTab.contentVersion)
+    }
   }, [setCode])
 
   const placeHost = useCallback(() => {
@@ -135,14 +168,34 @@ export function PlaygroundEditorHost({
 
   useLayoutEffect(() => {
     const previousTabId = currentTabIdRef.current
-    if (previousTabId === activeTab?.id)
+    const previousContentVersion = currentContentVersionRef.current
+    if (
+      previousTabId === activeTab?.id
+      && previousContentVersion === (activeTab?.contentVersion ?? null)
+    ) {
       return
-    flushPendingCode()
-    const previousCode = editorHandleRef.current?.getCode()
-    if (previousTabId && previousCode !== undefined)
-      setCode(previousTabId, previousCode)
+    }
+    if (
+      previousTabId === activeTab?.id
+      && pendingCodeRef.current?.tabId === previousTabId
+    ) {
+      // Preserve the version observed when typing began. Flushing after a
+      // remote revision with that old token creates an explicit CAS conflict
+      // instead of replacing the unflushed editor text.
+      flushPendingCode()
+      return
+    }
+    if (previousTabId !== activeTab?.id) {
+      flushPendingCode()
+    }
     currentTabIdRef.current = activeTab?.id ?? null
-    editorHandleRef.current?.setCode(activeTab?.initialCode ?? '')
+    currentContentVersionRef.current = activeTab?.contentVersion ?? null
+    if (
+      editorHandleRef.current
+      && editorHandleRef.current.getCode() !== (activeTab?.initialCode ?? '')
+    ) {
+      editorHandleRef.current.setCode(activeTab?.initialCode ?? '')
+    }
     scheduleLayout()
   }, [activeTab, flushPendingCode, scheduleLayout, setCode])
 
@@ -155,16 +208,39 @@ export function PlaygroundEditorHost({
     }
   }, [flushPendingCode, persistLiveEditorCode])
 
+  useEffect(() => {
+    let disposed = false
+    let release: (() => Promise<void>) | null = null
+    void acquirePersistence().then((ownerRelease) => {
+      if (disposed)
+        void ownerRelease()
+      else
+        release = ownerRelease
+    })
+    return () => {
+      disposed = true
+      flushPendingCode()
+      persistLiveEditorCode()
+      if (release)
+        void release()
+    }
+  }, [
+    acquirePersistence,
+    flushPendingCode,
+    persistLiveEditorCode,
+  ])
+
   const context = useMemo<PlaygroundEditorHostContextValue>(() => ({
     activateEditor,
     editorHandleRef,
+    flushPendingCode,
     registerEditorSlot,
-  }), [activateEditor, registerEditorSlot])
+  }), [activateEditor, flushPendingCode, registerEditorSlot])
 
   return (
     <PlaygroundEditorHostContext value={context}>
       {children}
-      {hostElement && createPortal(
+      {hostElement && persistenceStatus === 'ready' && createPortal(
         <EditorComponent
           initialCode={activeTab?.initialCode ?? ''}
           handleRef={editorHandleRef}

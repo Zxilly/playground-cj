@@ -30,15 +30,15 @@ type ConfigSource = 'shared' | 'custom'
  * The configuration step between the intro landing and the workspace: a short
  * wizard that walks the learner through picking an AI source.
  *
- *  - **Step 1 — choose source:** shared AI service (the default, auto-provisioned
- *    key fetched by {@link useLLMConfigBootstrap}) or a custom API Key. Picking
- *    shared while a personal key is active switches back to the shared key so the
- *    bootstrap re-fetches it.
+ *  - **Step 1 — choose source:** shared AI service (the default, reached through
+ *    the server-side gateway prepared by {@link useLLMConfigBootstrap}) or a
+ *    custom API Key. Picking shared while a personal key is active switches back
+ *    to the gateway so bootstrap refreshes its quota metadata.
  *  - **Step 2 — credentials (custom only):** the {@link LLMConfigFields} form
  *    (API style / service address / API Key / model).
  *
- * "进入工作区" only fires once the chosen source is usable — the shared key is
- * loaded and not exhausted, or the custom config is complete.
+ * "进入工作区" only fires once the chosen source is usable — the shared gateway
+ * metadata is loaded and quota is available, or the custom config is complete.
  */
 export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
   const bootstrap = useLLMConfigBootstrap()
@@ -58,7 +58,10 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
   const sourceGroupLabelId = useId()
 
   const sharedQuotaExhausted = keySource === 'auto' && autoQuota?.exhausted === true
-  const sharedReady = keySource === 'auto' && isLLMConfigReady(config) && !sharedQuotaExhausted
+  const sharedReady = keySource === 'auto'
+    && bootstrap.status === 'ready'
+    && isLLMConfigReady(config)
+    && !sharedQuotaExhausted
   const customComplete = isLLMConfigReady(draft)
   const quotaResetMoment = autoQuota?.nextResetAt ? formatResetMoment(autoQuota.nextResetAt) : ''
   // Today's remaining share of the per-period budget, as a 0–100 percentage. The
@@ -73,8 +76,8 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
 
   const selectSource = (next: ConfigSource) => {
     setSource(next)
-    // Switching back to shared drops the personal key so the bootstrap re-fetches
-    // the shared one; selecting custom only edits the local draft.
+    // Switching back to shared drops the personal key so bootstrap refreshes
+    // gateway metadata; selecting custom only edits the local draft.
     if (next === 'shared' && keySource !== 'auto')
       setSharedConfig()
   }

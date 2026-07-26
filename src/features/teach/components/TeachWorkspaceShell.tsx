@@ -1,34 +1,22 @@
 'use client'
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react'
 import { MessageCircle, Sparkles, X } from 'lucide-react'
-import { t } from '@lingui/core/macro'
-import { Trans } from '@lingui/react/macro'
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { useWorkspace } from '@/features/teach/context/useWorkspace'
-import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
-import {
-  CHAT_MIN_WIDTH,
-  useResizableChatPanel,
-} from '@/features/teach/hooks/use-resizable-chat-panel'
+import { CHAT_MIN_WIDTH, useResizableChatPanel } from '@/features/teach/hooks/use-resizable-chat-panel'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useIsCompactViewport } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
-import type { NavView } from './WorkspaceNav'
 import { WorkspaceNav } from './WorkspaceNav'
 import { WorkspaceViewport } from './WorkspaceViewport'
 import { PlaygroundEditorHost } from './views/PlaygroundEditorHost'
-import { useWorkspaceResource } from './views/use-workspace-resource'
 
 export interface TeachWorkspaceShellProps {
   chat: ReactNode
 }
-
-const MISSION_GATED_VIEWS: ReadonlySet<NavView> = new Set<NavView>(['lessons'])
-const NO_GATED_VIEWS: ReadonlySet<NavView> = new Set<NavView>()
-const LESSONS_HIGHLIGHT: ReadonlySet<NavView> = new Set<NavView>(['lessons'])
 
 const FOCUSABLE_SELECTOR = [
   'button:not([disabled])',
@@ -37,27 +25,6 @@ const FOCUSABLE_SELECTOR = [
   'a[href]',
   '[tabindex]:not([tabindex="-1"])',
 ].join(',')
-
-/**
- * Warm the lightweight document tabs while the learner is on the initial view.
- * Reads share the same repository-scoped cache as the visible views, so the
- * first tab click paints real content instead of a transient loading skeleton.
- */
-function WorkspaceResourcePreloader({ repo }: { repo: WorkspaceRepository }) {
-  useWorkspaceResource(repo, 'lessons:list', () => repo.listLessons(), [repo], 'lessons')
-  useWorkspaceResource(repo, 'glossary', () => repo.getGlossary(), [repo], 'glossary')
-  useWorkspaceResource(repo, 'learningRecords', () => repo.listLearningRecords(), [repo], 'learningRecords')
-  useWorkspaceResource(repo, 'references', () => repo.listReferences(), [repo], 'references')
-  useWorkspaceResource(repo, 'notes', () => repo.getNotes(), [repo], 'notes')
-  useWorkspaceResource(
-    repo,
-    'retrieval',
-    () => typeof repo.listRetrieval === 'function' ? repo.listRetrieval() : Promise.resolve([]),
-    [repo],
-    'retrieval',
-  )
-  return null
-}
 
 function WorkspaceViewTransition({
   children,
@@ -68,20 +35,20 @@ function WorkspaceViewTransition({
   reduceMotion: boolean
   view: string
 }) {
-  const isPresent = useIsPresent()
+  const present = useIsPresent()
   return (
     <motion.div
       data-testid="workspace-view-transition"
       data-view={view}
-      aria-hidden={isPresent ? undefined : true}
-      inert={!isPresent}
+      aria-hidden={present ? undefined : true}
+      inert={!present}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: reduceMotion ? 0 : 0.14, ease: 'easeOut' }}
       className={cn(
         'absolute inset-0 h-full min-h-0 w-full bg-background',
-        !isPresent && 'pointer-events-none',
+        !present && 'pointer-events-none',
         view === 'playground'
           ? 'overflow-hidden'
           : 'overflow-y-auto px-4 py-7 sm:px-6 lg:px-8 lg:py-8',
@@ -92,45 +59,53 @@ function WorkspaceViewTransition({
   )
 }
 
-/** Responsive document workspace with a persistent desktop teacher panel. */
+function useResponsiveChatOpen(
+  compact: boolean,
+  pendingPrefill: string | null,
+) {
+  const [chatOpen, setChatOpen] = useState(
+    compact && pendingPrefill !== null,
+  )
+  const [observed, setObserved] = useState({ compact, pendingPrefill })
+  if (
+    observed.compact !== compact
+    || observed.pendingPrefill !== pendingPrefill
+  ) {
+    const enteredCompact = compact && !observed.compact
+    const receivedCompactPrefill = compact
+      && pendingPrefill !== null
+      && (
+        observed.pendingPrefill !== pendingPrefill
+        || !observed.compact
+      )
+    setObserved({ compact, pendingPrefill })
+    if (receivedCompactPrefill)
+      setChatOpen(true)
+    else if (enteredCompact)
+      setChatOpen(false)
+  }
+  return [chatOpen, setChatOpen] as const
+}
+
+/** Responsive shell around the canonical Live, Review, Progress, and Chat surfaces. */
 export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
-  const { repo } = useWorkspace()
+  const { lang } = useWorkspace()
   const view = useWorkspaceStore(state => state.view)
-  const setView = useWorkspaceStore(state => state.setView)
-  const currentLessonId = useWorkspaceStore(state => state.currentLessonId)
-  const currentReferenceId = useWorkspaceStore(state => state.currentReferenceId)
   const pendingPrefill = useWorkspaceStore(state => state.pendingPrefill)
-  const [chatOpen, setChatOpen] = useState(false)
-  const isCompact = useIsCompactViewport()
-  const reduceMotion = useReducedMotion()
+  const compact = useIsCompactViewport()
+  const [chatOpen, setChatOpen] = useResponsiveChatOpen(
+    compact,
+    pendingPrefill,
+  )
+  const reduceMotion = useReducedMotion() === true
   const chatRegionId = useId()
   const chatTitleId = useId()
   const chatToggleRef = useRef<HTMLButtonElement>(null)
   const { chatMaxWidth, chatRef, chatWidth, onHandleKeyDown, startResize } = useResizableChatPanel()
-  const chatInert = isCompact && !chatOpen
-  const previousCompactRef = useRef(isCompact)
-
-  useLayoutEffect(() => {
-    if (isCompact && !previousCompactRef.current) {
-      // The central workspace is the primary learning surface. A desktop chat
-      // column becoming a mobile drawer must not cover it merely because the
-      // viewport crossed a breakpoint; only an explicit learner action or a
-      // teacher prefill should open the compact drawer.
-      // eslint-disable-next-line react/set-state-in-effect -- one-shot response to a viewport breakpoint transition
-      setChatOpen(false)
-    }
-    previousCompactRef.current = isCompact
-  }, [isCompact])
+  const english = lang === 'en'
 
   useEffect(() => {
-    if (pendingPrefill !== null && isCompact) {
-      // eslint-disable-next-line react/set-state-in-effect -- external prefill events reveal the compact chat drawer
-      setChatOpen(true)
-    }
-  }, [pendingPrefill, isCompact])
-
-  useEffect(() => {
-    if (!chatOpen || !isCompact)
+    if (!chatOpen || !compact)
       return
     const frame = requestAnimationFrame(() => {
       const preferred = chatRef.current?.querySelector<HTMLElement>('textarea:not([disabled])')
@@ -138,15 +113,15 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       ;(preferred ?? fallback)?.focus()
     })
     return () => cancelAnimationFrame(frame)
-  }, [chatOpen, isCompact, chatRef])
+  }, [chatOpen, chatRef, compact])
 
   const closeChat = useCallback(() => {
     setChatOpen(false)
     requestAnimationFrame(() => chatToggleRef.current?.focus())
-  }, [])
+  }, [setChatOpen])
 
   const onChatKeyDown = useCallback((event: ReactKeyboardEvent<HTMLElement>) => {
-    if (!isCompact)
+    if (!compact)
       return
     if (event.key === 'Escape') {
       event.preventDefault()
@@ -155,125 +130,59 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
     }
     if (event.key !== 'Tab')
       return
-
     const focusable = Array.from(chatRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? [])
       .filter(element => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true')
-    if (focusable.length === 0) {
+    const first = focusable[0]
+    const last = focusable.at(-1)
+    if (!first || !last) {
       event.preventDefault()
       return
     }
-    const first = focusable[0]
-    const last = focusable.at(-1)
     if (event.shiftKey && document.activeElement === first) {
       event.preventDefault()
-      last?.focus()
+      last.focus()
     }
     else if (!event.shiftKey && document.activeElement === last) {
       event.preventDefault()
-      first?.focus()
+      first.focus()
     }
-  }, [chatRef, closeChat, isCompact])
-
-  const { data: mission, loading: missionLoading } = useWorkspaceResource(
-    repo,
-    'mission',
-    () => repo.getMission(),
-    [repo],
-    'mission',
-  )
-  const missionReady = !missionLoading && mission != null
-  const viewTransitionKey = view === 'lesson'
-    ? `lesson:${currentLessonId ?? 'none'}`
-    : view === 'reference'
-      ? `reference:${currentReferenceId ?? 'list'}`
-      : view
-
-  useEffect(() => {
-    if (missionLoading || mission != null)
-      return
-    const currentView = useWorkspaceStore.getState().view
-    if (currentView === 'lessons' || currentView === 'lesson')
-      setView('mission')
-  }, [mission, missionLoading, setView])
-
-  const [lessonsUnlocked, setLessonsUnlocked] = useState(false)
-  const sawNoMissionRef = useRef(false)
-  const prevMissionReadyRef = useRef(false)
-  useEffect(() => {
-    if (!missionLoading && mission == null)
-      sawNoMissionRef.current = true
-    if (missionReady && !prevMissionReadyRef.current && sawNoMissionRef.current) {
-      sawNoMissionRef.current = false
-      if (view !== 'lessons' && view !== 'lesson') {
-        // eslint-disable-next-line react/set-state-in-effect -- one-shot response to an external repository transition
-        setLessonsUnlocked(true)
-      }
-    }
-    prevMissionReadyRef.current = missionReady
-  }, [missionReady, missionLoading, mission, view])
-
-  useEffect(() => {
-    if (view === 'lessons' || view === 'lesson') {
-      // eslint-disable-next-line react/set-state-in-effect -- clear the one-shot navigation nudge after it is visited
-      setLessonsUnlocked(false)
-    }
-  }, [view])
+  }, [chatRef, closeChat, compact])
 
   return (
     <div
       data-testid="teach-workspace-shell"
       className="relative grid h-full min-h-0 w-full grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-background text-foreground md:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[13rem_minmax(0,1fr)_auto] lg:grid-rows-1"
     >
-      <WorkspaceResourcePreloader repo={repo} />
-
       <aside
-        inert={isCompact && chatOpen}
-        className={cn(
-          'teach-scrollbar-hidden relative col-start-1 row-start-1 min-w-0 shrink-0 overflow-x-auto border-b border-border bg-sidebar px-2 py-2',
-          'md:col-span-2',
-          'lg:col-span-1 lg:col-start-1 lg:row-start-1 lg:flex lg:w-52 lg:flex-col lg:gap-2 lg:overflow-visible lg:border-e lg:border-b-0 lg:px-3 lg:py-4',
-        )}
+        inert={compact && chatOpen}
+        className="teach-scrollbar-hidden relative col-start-1 row-start-1 min-w-0 overflow-x-auto border-b border-border bg-sidebar px-2 py-2 md:col-span-2 lg:col-span-1 lg:col-start-1 lg:row-start-1 lg:flex lg:w-52 lg:flex-col lg:border-e lg:border-b-0 lg:px-3 lg:py-4"
       >
-        <WorkspaceNav
-          disabledViews={missionReady ? NO_GATED_VIEWS : MISSION_GATED_VIEWS}
-          highlightedViews={lessonsUnlocked ? LESSONS_HIGHLIGHT : NO_GATED_VIEWS}
-        />
+        <WorkspaceNav />
       </aside>
 
       <main
         data-testid="workspace-viewport"
-        inert={isCompact && chatOpen}
+        inert={compact && chatOpen}
         className="relative col-start-1 row-start-2 min-h-0 min-w-0 overflow-hidden bg-background lg:col-start-2 lg:row-start-1"
       >
         <PlaygroundEditorHost>
           <AnimatePresence initial={false} mode="wait">
-            <WorkspaceViewTransition
-              key={viewTransitionKey}
-              reduceMotion={reduceMotion === true}
-              view={view}
-            >
-              <div className={cn(
-                view === 'playground'
-                  ? 'h-full min-h-0 w-full'
-                  : 'mx-auto w-full max-w-4xl',
-              )}
+            <WorkspaceViewTransition key={view} reduceMotion={reduceMotion} view={view}>
+              <div className={view === 'playground'
+                ? 'h-full min-h-0 w-full'
+                : 'mx-auto w-full max-w-4xl'}
               >
-                <WorkspaceViewport
-                  view={view}
-                  missionReady={missionReady}
-                  currentLessonId={currentLessonId}
-                  currentReferenceId={currentReferenceId}
-                />
+                <WorkspaceViewport view={view} />
               </div>
             </WorkspaceViewTransition>
           </AnimatePresence>
         </PlaygroundEditorHost>
       </main>
 
-      {isCompact && chatOpen && (
+      {compact && chatOpen && (
         <button
           type="button"
-          aria-label={t`收起老师对话`}
+          aria-label={english ? 'Close teacher chat' : '收起老师对话'}
           onClick={closeChat}
           className="fixed inset-0 z-40 cursor-default bg-foreground/30 md:hidden"
         />
@@ -284,12 +193,11 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         id={chatRegionId}
         data-testid="workspace-chat"
         data-open={chatOpen ? 'true' : 'false'}
-        data-layout={isCompact ? 'drawer' : 'side-column'}
-        role={isCompact ? 'dialog' : undefined}
-        aria-modal={isCompact ? true : undefined}
+        role={compact ? 'dialog' : undefined}
+        aria-modal={compact ? true : undefined}
         aria-labelledby={chatTitleId}
-        inert={chatInert}
-        style={isCompact ? undefined : { width: chatWidth }}
+        inert={compact && !chatOpen}
+        style={compact ? undefined : { width: chatWidth }}
         onKeyDown={onChatKeyDown}
         className={cn(
           'md:relative md:col-start-2 md:row-start-2 md:flex md:shrink-0 md:flex-col md:border-s md:border-border md:bg-background lg:col-start-3 lg:row-start-1',
@@ -300,7 +208,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label={t`调整对话栏宽度`}
+          aria-label={english ? 'Resize chat panel' : '调整对话栏宽度'}
           aria-valuenow={Math.round(chatWidth)}
           aria-valuemin={CHAT_MIN_WIDTH}
           aria-valuemax={Math.round(chatMaxWidth)}
@@ -311,27 +219,25 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         >
           <span className="absolute inset-y-0 start-1/2 w-px -translate-x-1/2 bg-border/80 transition-colors group-hover:bg-primary/60 group-focus-visible:w-0.5 group-focus-visible:bg-primary" />
         </div>
-
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="grid size-8 shrink-0 place-items-center text-primary">
-              <Sparkles aria-hidden="true" className="size-4" />
-            </span>
+            <Sparkles aria-hidden="true" className="size-4 shrink-0 text-primary" />
             <div className="min-w-0">
-              <h2 id={chatTitleId} className="truncate text-sm font-semibold text-foreground">
-                <Trans>老师</Trans>
+              <h2 id={chatTitleId} className="truncate text-sm font-semibold">
+                {english ? 'Lesson Orchestrator' : '课程编排老师'}
               </h2>
-              <p className="truncate text-[11px] text-muted-foreground"><Trans>与老师沟通</Trans></p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {english ? 'Chat is temporary unless explicitly retained' : '对话默认临时，只有结构化材料会被保留'}
+              </p>
             </div>
           </div>
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            data-testid="workspace-chat-close"
             onClick={closeChat}
-            aria-label={t`收起老师对话`}
-            className="rounded-md text-muted-foreground md:hidden"
+            aria-label={english ? 'Close teacher chat' : '收起老师对话'}
+            className="md:hidden"
           >
             <X aria-hidden="true" className="size-4" />
           </Button>
@@ -345,7 +251,9 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         size="icon-lg"
         data-testid="workspace-chat-toggle"
         onClick={() => (chatOpen ? closeChat() : setChatOpen(true))}
-        aria-label={chatOpen ? t`收起老师对话` : t`打开老师对话`}
+        aria-label={chatOpen
+          ? (english ? 'Close teacher chat' : '收起老师对话')
+          : (english ? 'Open teacher chat' : '打开老师对话')}
         aria-expanded={chatOpen}
         aria-controls={chatRegionId}
         className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] end-4 z-20 size-12 rounded-md shadow-md md:hidden"

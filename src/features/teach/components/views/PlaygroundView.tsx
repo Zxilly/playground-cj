@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
-import { FileCode2, Loader2, Play, Plus, X } from 'lucide-react'
+import { AlertTriangle, FileCode2, Loader2, Play, Plus, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { t } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
@@ -12,7 +12,9 @@ import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
 import { AnsiOutput } from '@/components/AnsiOutput'
+import { awaitWithSignal } from '@/lib/ai/abortable-operation'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
+import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import { usePlaygroundEditorHost } from './playground-editor-host-context'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
 
@@ -21,17 +23,25 @@ const MIN_OUTPUT_HEIGHT = 112
 const MIN_EDITOR_HEIGHT = 160
 const FALLBACK_MAX_OUTPUT_HEIGHT = 480
 const OUTPUT_KEYBOARD_STEP = 24
+let nextPlaygroundRunOwnerEpoch = 1
+
+interface ActivePlaygroundRun {
+  controller: AbortController
+  tabId: string
+  contentVersion: string
+}
 
 function clampOutputHeight(height: number, maxHeight: number): number {
   return Math.min(Math.max(height, MIN_OUTPUT_HEIGHT), maxHeight)
 }
 
 /**
- * Locally durable multi-buffer scratch workspace for demonstrations,
- * experiments, and other code that should survive refresh without becoming
- * lesson content or part of the portable workspace export.
+ * Bounded, locally persisted multi-buffer scratch workspace for demonstrations
+ * and experiments. Persistence failures stay visible and drafts never become
+ * classroom evidence.
  */
 export function PlaygroundView() {
+  const { flushPendingCode } = usePlaygroundEditorHost()
   // The tab strip renders and reorders the whole collection; one collection
   // subscription is the granular state this view needs.
   // eslint-disable-next-line granular-selectors/granular-selectors
@@ -41,11 +51,38 @@ export function PlaygroundView() {
   const selectTab = useWorkspaceStore(state => state.selectPlaygroundTab)
   const closeTab = useWorkspaceStore(state => state.closePlaygroundTab)
   const renameTab = useWorkspaceStore(state => state.renamePlaygroundTab)
+  const persistenceStatus = useWorkspaceStore(
+    state => state.playgroundPersistenceStatus,
+  )
+  const persistenceError = useWorkspaceStore(state => state.playgroundPersistenceError)
+  const conflict = useWorkspaceStore(state => state.playgroundConflict)
+  const retryPersistence = useWorkspaceStore(state => state.retryPlaygroundPersistence)
+  const resolveConflict = useWorkspaceStore(
+    state => state.resolvePlaygroundConflict,
+  )
   const activeTab = tabs.find(tab => tab.id === activeId) ?? null
   const tabElementRef = useRef(new Map<string, HTMLDivElement>())
   const [outputHeight, setOutputHeight] = useState(DEFAULT_OUTPUT_HEIGHT)
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
+  const conflictRecoveryKey = conflict
+    ? [
+        conflict.tabId,
+        conflict.kind,
+        conflict.localTab.titleVersion,
+        conflict.localTab.contentVersion,
+        conflict.remoteTab?.titleVersion ?? 'deleted',
+        conflict.remoteTab?.contentVersion ?? 'deleted',
+        tabs.length,
+      ].join(':')
+    : null
+  const [
+    blockedConflictRecoveryKey,
+    setBlockedConflictRecoveryKey,
+  ] = useState<string | null>(null)
+  const conflictRecoveryBlocked
+    = conflictRecoveryKey !== null
+      && blockedConflictRecoveryKey === conflictRecoveryKey
 
   const focusTab = (id: string) => {
     selectTab(id)
@@ -181,6 +218,7 @@ export function PlaygroundView() {
             type="button"
             data-testid="playground-new-tab"
             onClick={() => openTab()}
+            disabled={persistenceStatus !== 'ready'}
             className="m-1 inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/45"
             aria-label={t`新建 Playground 标签页`}
           >
@@ -188,6 +226,79 @@ export function PlaygroundView() {
           </button>
         </div>
       </div>
+      {persistenceStatus === 'opening' && (
+        <div
+          role="status"
+          className="flex shrink-0 items-center gap-2 border-b border-border bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
+        >
+          <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+          <Trans>正在打开 Playground 草稿存储…</Trans>
+        </div>
+      )}
+      {persistenceError && (
+        <div
+          role="alert"
+          data-testid="playground-persistence-error"
+          className="flex shrink-0 items-center gap-2 border-b border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200"
+        >
+          <AlertTriangle aria-hidden="true" className="size-3.5 shrink-0" />
+          <span className="min-w-0 flex-1">
+            {persistenceError === 'storage_unavailable'
+              ? <Trans>Playground 草稿尚未保存：浏览器存储不可用。</Trans>
+              : persistenceError === 'corrupt_workspace'
+                ? <Trans>无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。</Trans>
+                : persistenceError === 'conflict'
+                  ? conflict?.kind === 'capacity'
+                    ? <Trans>另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。</Trans>
+                    : <Trans>另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。</Trans>
+                  : <Trans>这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。</Trans>}
+          </span>
+          {persistenceError === 'conflict' && conflict && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  flushPendingCode()
+                  const recoveredId = resolveConflict('keep_copy')
+                  setBlockedConflictRecoveryKey(
+                    recoveredId === null ? conflictRecoveryKey : null,
+                  )
+                }}
+                className="shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+              >
+                <Trans>另存为新标签页</Trans>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  flushPendingCode()
+                  resolveConflict('use_remote')
+                }}
+                className="shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+              >
+                <Trans>使用已保存版本</Trans>
+              </button>
+              {conflictRecoveryBlocked && (
+                <span>
+                  <Trans>无法另存副本；请先关闭一个标签页或缩短草稿后重试。</Trans>
+                </span>
+              )}
+            </>
+          )}
+          {(persistenceError === 'storage_unavailable'
+            || persistenceError === 'corrupt_workspace') && (
+            <button
+              type="button"
+              onClick={retryPersistence}
+              className="shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+            >
+              {persistenceError === 'corrupt_workspace'
+                ? <Trans>重新读取</Trans>
+                : <Trans>重试保存</Trans>}
+            </button>
+          )}
+        </div>
+      )}
 
       {activeTab
         ? (
@@ -204,6 +315,7 @@ export function PlaygroundView() {
                 <button
                   type="button"
                   onClick={() => openTab()}
+                  disabled={persistenceStatus !== 'ready'}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
                 >
                   <Plus aria-hidden="true" className="size-4" />
@@ -230,9 +342,17 @@ function PlaygroundEditorPane({
   const { i18n } = useLingui()
   const { runner } = useWorkspace()
   const abortSignal = useAbortScope()
-  const { activateEditor, editorHandleRef, registerEditorSlot } = usePlaygroundEditorHost()
-  const setResult = useWorkspaceStore(state => state.setPlaygroundTabResult)
-  const setRunning = useWorkspaceStore(state => state.setPlaygroundTabRunning)
+  const {
+    activateEditor,
+    editorHandleRef,
+    flushPendingCode,
+    registerEditorSlot,
+  } = usePlaygroundEditorHost()
+  const beginRun = useWorkspaceStore(state => state.beginPlaygroundTabRun)
+  const finishRun = useWorkspaceStore(state => state.finishPlaygroundTabRun)
+  const releaseRunOwner = useWorkspaceStore(state => state.releasePlaygroundRunOwner)
+  const [runOwnerEpoch] = useState(() => nextPlaygroundRunOwnerEpoch++)
+  const runControllersRef = useRef(new Map<string, ActivePlaygroundRun>())
   const paneRef = useRef<HTMLDivElement | null>(null)
   const resizeStateRef = useRef<{
     pointerId: number
@@ -259,6 +379,34 @@ function PlaygroundEditorPane({
     observer.observe(paneRef.current)
     return () => observer.disconnect()
   }, [onOutputHeightChange])
+
+  useEffect(() => {
+    const controllers = runControllersRef.current
+    return () => {
+      for (const run of controllers.values())
+        run.controller.abort(new DOMException('Playground pane unmounted.', 'AbortError'))
+      controllers.clear()
+      releaseRunOwner(runOwnerEpoch)
+    }
+  }, [releaseRunOwner, runOwnerEpoch])
+
+  useEffect(() => {
+    return useWorkspaceStore.subscribe((state) => {
+      for (const [operationId, run] of runControllersRef.current) {
+        const currentTab = state.playgroundTabs.find(
+          candidate => candidate.id === run.tabId,
+        )
+        if (currentTab?.contentVersion === run.contentVersion)
+          continue
+        runControllersRef.current.delete(operationId)
+        run.controller.abort(new DOMException(
+          'Playground source changed while the run was in flight.',
+          'AbortError',
+        ))
+        finishRun(run.tabId, operationId)
+      }
+    })
+  }, [finishRun])
 
   const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -307,19 +455,60 @@ function PlaygroundEditorPane({
   }
 
   const run = async () => {
-    if (running)
+    // Commit the buffer version before attaching a run to it. Otherwise the
+    // normal debounce can publish the exact code already being run as a "new"
+    // source version and incorrectly cancel that run moments later.
+    flushPendingCode()
+    const currentTab = useWorkspaceStore.getState().playgroundTabs.find(
+      candidate => candidate.id === tab.id,
+    )
+    if (!currentTab)
+      return
+    const operationId = beginRun(tab.id, runOwnerEpoch)
+    if (operationId === null)
       return
     const code = editorHandleRef.current?.getCode() ?? tab.initialCode
-    setRunning(tab.id, true)
+    const controller = new AbortController()
+    const abortFromWorkspace = () => controller.abort(abortSignal.reason)
+    runControllersRef.current.set(operationId, {
+      controller,
+      tabId: tab.id,
+      contentVersion: currentTab.contentVersion,
+    })
+    if (abortSignal.aborted)
+      abortFromWorkspace()
+    else
+      abortSignal.addEventListener('abort', abortFromWorkspace, { once: true })
+
+    let result: RunResult | undefined
     try {
-      const result = await (runner ?? defaultRunner).run(code, abortSignal)
-      if (abortSignal.aborted)
-        return
-      setResult(tab.id, result)
+      result = await awaitWithSignal(
+        (runner ?? defaultRunner).run(code, controller.signal),
+        controller.signal,
+      )
+    }
+    catch (error) {
+      if (!controller.signal.aborted) {
+        const message = error instanceof Error ? error.message : String(error)
+        result = {
+          ok: false,
+          phase: null,
+          stdout: '',
+          stdoutTruncated: false,
+          stderr: '',
+          stderrTruncated: false,
+          compilerOutput: '',
+          compilerOutputTruncated: false,
+          exitCode: null,
+          failureKind: 'runner_unavailable',
+          failureMessage: message,
+        }
+      }
     }
     finally {
-      if (!abortSignal.aborted)
-        setRunning(tab.id, false)
+      abortSignal.removeEventListener('abort', abortFromWorkspace)
+      runControllersRef.current.delete(operationId)
+      finishRun(tab.id, operationId, result)
     }
   }
 
@@ -392,12 +581,33 @@ function PlaygroundEditorPane({
             <div className="min-h-0 flex-1 overflow-auto p-3">
               {tab.result
                 ? (
-                    <pre
-                      data-testid="playground-program-output"
-                      className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground"
-                    >
-                      {tab.result.stdout || (tab.result.ok ? i18n._(t`程序未产生输出。`) : i18n._(t`程序未运行。`))}
-                    </pre>
+                    <div className="space-y-2">
+                      <pre
+                        data-testid="playground-program-output"
+                        className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground"
+                      >
+                        {tab.result.stdout || (tab.result.phase === 'run'
+                          ? i18n._(t`标准输出为空。`)
+                          : i18n._(t`程序未运行。`))}
+                      </pre>
+                      {tab.result.stdoutTruncated && (
+                        <p role="status" className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+                          <Trans>程序标准输出已截断。</Trans>
+                        </p>
+                      )}
+                      {tab.result.stderr && (
+                        <AnsiOutput
+                          text={tab.result.stderr}
+                          data-testid="playground-runtime-stderr"
+                          className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-destructive"
+                        />
+                      )}
+                      {tab.result.stderrTruncated && (
+                        <p role="status" className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+                          <Trans>程序标准错误已截断。</Trans>
+                        </p>
+                      )}
+                    </div>
                   )
                 : <p className="text-xs text-muted-foreground"><Trans>运行后，程序输出会显示在这里。</Trans></p>}
             </div>
@@ -413,23 +623,30 @@ function PlaygroundEditorPane({
             <div className="min-h-0 flex-1 overflow-auto p-3">
               {tab.result
                 ? (
-                    tab.result.ok
+                    tab.result.phase !== 'compile'
                       ? (
                           <AnsiOutput
-                            text={(tab.result.compilerOutput ?? tab.result.stderr).trim()
-                              || i18n._(t`编译器未返回输出。`)}
+                            text={tab.result.phase === null
+                              ? tab.result.failureMessage
+                              : tab.result.compilerOutput.trim()
+                                || i18n._(t`编译器未返回输出。`)}
                             data-testid="playground-compiler-output"
                             className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground"
                           />
                         )
                       : (
                           <CompilerDiagnosticOutput
-                            output={tab.result.compilerOutput ?? (tab.result.stderr || tab.result.stdout)}
+                            output={tab.result.compilerOutput}
                             testId="playground-stderr"
                           />
                         )
                   )
                 : <p className="text-xs text-muted-foreground"><Trans>运行后，编译器输出会显示在这里。</Trans></p>}
+              {tab.result?.compilerOutputTruncated && (
+                <p role="status" className="mt-2 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+                  <Trans>编译器输出已截断。</Trans>
+                </p>
+              )}
             </div>
           </section>
         </div>

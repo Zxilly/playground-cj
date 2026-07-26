@@ -1,194 +1,198 @@
 import { Buffer } from 'node:buffer'
+import { generateKeyPairSync, sign } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { chromium } from 'playwright'
 import type { Browser, Page, Route } from 'playwright'
+import toolchainLock from '../../cj-runner/cangjie-toolchain.lock.json'
+import {
+  contentPackExternalReviewAttestationSigningPayload,
+  publishExternallyAttestedArtifact,
+} from '../../src/lib/teach/classroom/content-pack-artifact'
+import type {
+  ContentPackExternalReviewAttestationUnsigned,
+} from '../../src/lib/teach/classroom/content-pack-artifact'
+import { lockedCangjieCompilerIdentity } from '../../src/lib/teach/classroom/cangjie-toolchain'
+import enContentPacks from '../../src/lib/teach/classroom/generated/content-packs/en.json'
+import manifest from '../../src/lib/teach/classroom/generated/content-packs/manifest.json'
+import publicationHistory from '../../src/lib/teach/classroom/generated/content-packs/publication-history.json'
+import reviewDeclaration from '../../src/lib/teach/classroom/generated/content-packs/repository-review-declaration.json'
+import validationReceipt from '../../src/lib/teach/classroom/generated/content-packs/validation-receipt.json'
 import { startNextDevServer } from '../helpers/next-dev-server'
 
-/**
- * End-to-end teaching-workspace flow against the real `/zh/tour/ai` page.
- *
- * The LLM, the Cangjie MCP knowledge source, and the remote runner are the only
- * external dependencies, and all three are mocked at the network boundary with
- * Playwright route handlers — the rest of the stack (IndexedDB repository, the
- * teacher `ToolLoopAgent`, the block component library, the workspace views and
- * export/import) runs for real in the browser.
- *
- * The teacher agent talks to an OpenAI-compatible `/chat/completions` endpoint;
- * the mock returns a scripted Server-Sent-Events stream per turn. A turn that
- * carries `tool_calls` drives the real teacher toolkit (which reads/writes the
- * real IndexedDB workspace), and the AI SDK tool loop continues automatically
- * after each complete tool-call turn — so a single typed message can set the
- * mission and author the first lesson, and a second message can append a
- * learning record once the learner has finished the lesson.
- */
+const VIEWPORT = { width: 1280, height: 900 } as const
+const MOCK_LLM_BASE_URL = 'https://mock-llm.invalid/v1'
+const MOCK_COMPLETIONS_URL = `${MOCK_LLM_BASE_URL}/chat/completions`
+const MAIN_CONTENT_VERSION = enContentPacks.currentVersions['cj.program.main']
 
-const DESKTOP_VIEWPORT = { width: 1280, height: 900 } as const
+function createExternallyAttestedEnglishContentPacks() {
+  const historyHead = publicationHistory.entries.at(-1)
+  if (!historyHead)
+    throw new Error('Content Pack publication history is empty')
 
-/** Base URL the teacher's OpenAI-compatible model posts to (see model-provider defaults). */
-const LLM_BASE_URL = process.env.NEXT_PUBLIC_LLM_BASE_URL || 'https://llm.learningman.top/v1'
-const LLM_COMPLETIONS_URL = `${LLM_BASE_URL}/chat/completions`
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519')
+  const unsignedAttestation: ContentPackExternalReviewAttestationUnsigned = {
+    schemaVersion: 1,
+    kind: 'external-content-pack-review-attestation',
+    algorithm: 'Ed25519',
+    keyId: 'e2e-curriculum-review',
+    issuedAt: '2026-07-26T00:00:00Z',
+    subject: {
+      publicationEntrySha256: historyHead.entrySha256,
+      manifestSha256: historyHead.manifestSha256,
+      validationReceiptSha256: historyHead.validationReceiptSha256,
+      artifacts: historyHead.artifacts,
+      approvedPacks: [{
+        locale: 'en',
+        conceptId: 'cj.program.main',
+        contentVersion: MAIN_CONTENT_VERSION,
+      }],
+    },
+  }
+  const attestation = {
+    ...unsignedAttestation,
+    signature: sign(
+      null,
+      Buffer.from(
+        contentPackExternalReviewAttestationSigningPayload(
+          unsignedAttestation,
+        ),
+        'utf8',
+      ),
+      privateKey,
+    ).toString('base64'),
+  }
+  const response = publishExternallyAttestedArtifact(
+    enContentPacks,
+    manifest,
+    reviewDeclaration,
+    validationReceipt,
+    publicationHistory,
+    attestation,
+    {
+      'e2e-curriculum-review': publicKey.export({
+        type: 'spki',
+        format: 'pem',
+      }).toString(),
+    },
+    lockedCangjieCompilerIdentity(toolchainLock),
+  )
+  const mainPack = response.packs.find(
+    pack => pack.concept.id === 'cj.program.main'
+      && pack.version === MAIN_CONTENT_VERSION,
+  )
+  if (mainPack?.review.status !== 'approved') {
+    throw new Error(
+      'The E2E external review attestation did not approve cj.program.main',
+    )
+  }
+  return response
+}
 
-/** Same-origin `/api/run` proxy the Cangjie runner posts to (forwarded server-side). */
-const BACKEND_RUN_URL = '**/api/run'
+const EXTERNALLY_ATTESTED_EN_CONTENT_PACKS
+  = createExternallyAttestedEnglishContentPacks()
 
-/**
- * Upstream Cangjie MCP host (we never want the teacher to reach the real server).
- * The browser connects straight to the upstream now, so aborting requests to this
- * host keeps MCP traffic off the network entirely.
- */
-const MCP_URL = '**/cj-mcp.learningman.top/**'
+interface ChatMessage {
+  role?: string
+  tool_calls?: Array<{ function?: { name?: string } }>
+}
 
-const PRINT_TASK_CODE = 'main() {\n    println("仓颉")\n}'
+function calledTools(postData: string | null): Set<string> {
+  const body = JSON.parse(postData ?? '{}') as { messages?: ChatMessage[] }
+  return new Set((body.messages ?? []).flatMap(message =>
+    message.role === 'assistant'
+      ? (message.tool_calls ?? []).flatMap(call =>
+          call.function?.name ? [call.function.name] : [])
+      : []))
+}
 
-/** Build one SSE `data:` frame from an OpenAI streaming chat-completion chunk. */
 function sseFrame(payload: unknown): string {
   return `data: ${JSON.stringify(payload)}\n\n`
 }
 
-/**
- * Render a scripted assistant turn as an OpenAI-compatible streaming response
- * body. Each tool call is emitted as a single delta whose `function.arguments`
- * is already-complete JSON (the provider detects the parsable JSON and finishes
- * the tool call); an optional trailing text delta lets a turn also "speak".
- */
 function streamBody(turn: {
   text?: string
-  toolCalls?: { id: string, name: string, args: unknown }[]
+  toolCall?: { id: string, name: string, args: unknown }
 }): string {
-  const id = `chatcmpl-${Math.random().toString(36).slice(2)}`
-  const base = { id, object: 'chat.completion.chunk', created: 1, model: 'mock-model' }
-  const frames: string[] = []
-
-  frames.push(sseFrame({ ...base, choices: [{ index: 0, delta: { role: 'assistant' }, finish_reason: null }] }))
-
-  if (turn.text) {
-    frames.push(sseFrame({ ...base, choices: [{ index: 0, delta: { content: turn.text }, finish_reason: null }] }))
+  const base = {
+    id: `chatcmpl-${turn.toolCall?.id ?? 'done'}`,
+    object: 'chat.completion.chunk',
+    created: 1,
+    model: 'mock-model',
   }
-
-  const toolCalls = turn.toolCalls ?? []
-  toolCalls.forEach((call, index) => {
+  const frames = [
+    sseFrame({
+      ...base,
+      choices: [{ index: 0, delta: { role: 'assistant' }, finish_reason: null }],
+    }),
+  ]
+  if (turn.text) {
+    frames.push(sseFrame({
+      ...base,
+      choices: [{ index: 0, delta: { content: turn.text }, finish_reason: null }],
+    }))
+  }
+  if (turn.toolCall) {
     frames.push(sseFrame({
       ...base,
       choices: [{
         index: 0,
         delta: {
           tool_calls: [{
-            index,
-            id: call.id,
+            index: 0,
+            id: turn.toolCall.id,
             type: 'function',
-            function: { name: call.name, arguments: JSON.stringify(call.args) },
+            function: {
+              name: turn.toolCall.name,
+              arguments: JSON.stringify(turn.toolCall.args),
+            },
           }],
         },
         finish_reason: null,
       }],
     }))
-  })
-
+  }
   frames.push(sseFrame({
     ...base,
-    choices: [{ index: 0, delta: {}, finish_reason: toolCalls.length > 0 ? 'tool_calls' : 'stop' }],
+    choices: [{
+      index: 0,
+      delta: {},
+      finish_reason: turn.toolCall ? 'tool_calls' : 'stop',
+    }],
     usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
   }))
   frames.push('data: [DONE]\n\n')
   return frames.join('')
 }
 
-async function fulfillStream(route: Route, body: string): Promise<void> {
+async function fulfillTurn(route: Route, turn: Parameters<typeof streamBody>[0]) {
   await route.fulfill({
     status: 200,
     contentType: 'text/event-stream; charset=utf-8',
-    headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' },
-    body,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'no-store',
+    },
+    body: streamBody(turn),
   })
 }
 
-interface ChatRequestMessage {
-  role: string
-  content?: unknown
-  tool_calls?: { function?: { name?: string } }[]
+async function replaceExerciseCode(
+  page: Page,
+  exerciseIndex: number,
+  code: string,
+): Promise<void> {
+  const exercise = page.getByTestId('exercise-instance').nth(exerciseIndex)
+  const editor = exercise.locator('.monaco-editor')
+  await editor.waitFor({ state: 'visible', timeout: 60_000 })
+  await editor.click()
+  await page.keyboard.press('Control+A')
+  await page.keyboard.insertText(code)
 }
 
-/**
- * Inspect a `/chat/completions` request body. The request carries the full
- * conversation, so progress is read from the *messages* — never from a substring
- * of the whole body (which also contains the tool *definitions*, so e.g. the
- * literal `set_mission` always appears).
- *
- *  - `calledTools` — every tool name the assistant has already invoked.
- *  - `lastUserText` — the text of the most recent user turn (drives which step).
- */
-function inspectRequest(postData: string | null): { calledTools: Set<string>, lastUserText: string } {
-  const parsed = JSON.parse(postData ?? '{}') as { messages?: ChatRequestMessage[] }
-  const messages = parsed.messages ?? []
-  const calledTools = new Set<string>()
-  let lastUserText = ''
-  for (const message of messages) {
-    if (message.role === 'assistant' && Array.isArray(message.tool_calls)) {
-      for (const call of message.tool_calls) {
-        if (call.function?.name)
-          calledTools.add(call.function.name)
-      }
-    }
-    if (message.role === 'user')
-      lastUserText = extractText(message.content)
-  }
-  return { calledTools, lastUserText }
-}
-
-/** Flatten an OpenAI message `content` (string or content-part array) to plain text. */
-function extractText(content: unknown): string {
-  if (typeof content === 'string')
-    return content
-  if (Array.isArray(content)) {
-    return content
-      .map(part => (typeof part === 'object' && part !== null && 'text' in part ? String((part as { text: unknown }).text) : ''))
-      .join('')
-  }
-  return ''
-}
-
-/** The first lesson the mocked teacher authors: an immediate-feedback quiz + an interactive code task. */
-const FIRST_LESSON_DRAFT = {
-  title: '用 println 打印一行',
-  missionLink: '为你的命令行工具打印输出',
-  skillFocus: '调用 println 输出文本',
-  zpdRationale: '你已经知道 main 入口，下一步是产生可见输出',
-  blocks: [
-    { type: 'prose', markdown: '仓颉用 `println` 向标准输出打印一行文本。' },
-    {
-      type: 'quiz',
-      questions: [{
-        question: '哪个函数会打印一行并换行？',
-        options: ['println 打印', 'readLine 读取'],
-        answerIndices: [0],
-        multiple: false,
-        explanation: 'println 打印内容并自动换行。',
-      }],
-    },
-    {
-      type: 'code_task',
-      prompt: '在 main 中用 println 打印「仓颉」。',
-      starterCode: 'package first\n\nmain() {\n    // TODO\n}',
-      expectedOutput: '仓颉',
-      matchMode: 'exact' as const,
-      hints: ['用 println("仓颉")。'],
-    },
-    {
-      type: 'code_task',
-      prompt: '修复这个独立代码块中的类型错误。',
-      starterCode: 'package second\n\nmain(): Int64 {\n    let value: Int64 = "wrong"\n    return value\n}',
-      expectedOutput: '',
-      matchMode: 'exact' as const,
-      hints: ['字符串不能赋值给 Int64。'],
-    },
-  ],
-  citations: [],
-}
-
-describe('teach workspace e2e', () => {
-  let server: Awaited<ReturnType<typeof startNextDevServer>>
+describe('aI classroom workspace e2e', () => {
   let browser: Browser
   let page: Page
+  let server: Awaited<ReturnType<typeof startNextDevServer>>
 
   beforeAll(async () => {
     server = await startNextDevServer()
@@ -196,108 +200,141 @@ describe('teach workspace e2e', () => {
   }, 180_000)
 
   beforeEach(async () => {
-    page = await browser.newPage({ viewport: DESKTOP_VIEWPORT })
+    page = await browser.newPage({ viewport: VIEWPORT })
+    await page.route(
+      /\/api\/teach\/content-packs(?:\?.*)?$/,
+      async (route) => {
+        const lang = new URL(route.request().url()).searchParams.get('lang')
+        if (lang !== 'en') {
+          await route.continue()
+          return
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json; charset=utf-8',
+          headers: { 'Cache-Control': 'no-store' },
+          body: JSON.stringify(EXTERNALLY_ATTESTED_EN_CONTENT_PACKS),
+        })
+      },
+    )
+    await page.goto(`${server.url}/en`, { waitUntil: 'domcontentloaded' })
+    await page.evaluate(async (baseURL) => {
+      localStorage.clear()
+      localStorage.setItem('teach:onboarded', '1')
+      localStorage.setItem('tour-ai:config', JSON.stringify({
+        state: {
+          config: {
+            transport: 'direct',
+            provider: 'openai-compatible',
+            baseURL,
+            apiKey: 'e2e-user-key',
+            model: 'mock-model',
+          },
+          keySource: 'user',
+        },
+        version: 2,
+      }))
+      await new Promise<void>((resolve) => {
+        const request = indexedDB.deleteDatabase('playground-cj-ai-classroom-v8')
+        request.onsuccess = () => resolve()
+        request.onerror = () => resolve()
+        request.onblocked = () => resolve()
+      })
+      await new Promise<void>((resolve) => {
+        const request = indexedDB.deleteDatabase(
+          'playground-cj-ai-classroom-content-packs-v1',
+        )
+        request.onsuccess = () => resolve()
+        request.onerror = () => resolve()
+        request.onblocked = () => resolve()
+      })
+    }, MOCK_LLM_BASE_URL)
 
-    // The MCP knowledge source degrades to an empty result when unreachable; abort
-    // so it never tries the real server (the mocked teacher does not call it).
-    await page.route(MCP_URL, route => route.abort())
-
-    // Mock the remote runner: the print task succeeds, anything else "fails".
-    await page.route(BACKEND_RUN_URL, async (route) => {
+    await page.route('**/api/run', async (route) => {
       const code = route.request().postData() ?? ''
-      const printed = code.includes('println("仓颉")')
+      const output = code.includes('main is the entry point')
+        ? 'main is the entry point\n'
+        : code.includes('Hello from main')
+          ? 'Hello from main\n'
+          : 'unexpected\n'
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        headers: { 'Access-Control-Allow-Origin': '*' },
         body: JSON.stringify({
+          phase: 'run',
           compiler_output: '',
+          compiler_output_truncated: false,
           compiler_code: 0,
-          bin_output: printed ? '仓颉' : '',
+          bin_stdout: output,
+          bin_stdout_truncated: false,
+          bin_stderr: '',
+          bin_stderr_truncated: false,
           bin_code: 0,
         }),
       })
     })
 
-    // Mock the teacher LLM. Branch on which tools the assistant has already called
-    // (read from the conversation messages, not the raw body) so the script is
-    // stable regardless of how many tool-loop round-trips the SDK makes.
-    await page.route(LLM_COMPLETIONS_URL, async (route) => {
-      const { calledTools, lastUserText } = inspectRequest(route.request().postData())
-      const missionDone = calledTools.has('set_mission')
-      const lessonDone = calledTools.has('create_lesson')
-      const recordDone = calledTools.has('append_learning_record')
-      const askedForRecord = lastUserText.includes('我学完了')
-
-      // Second user message: the learner reports finishing the lesson → record it.
-      if (askedForRecord) {
-        if (!recordDone) {
-          await fulfillStream(route, streamBody({
-            toolCalls: [{
-              id: 'call_record',
-              name: 'append_learning_record',
-              args: {
-                title: '掌握 println 输出',
-                body: '学习者已经能用 println 打印一行文本，并通过了运行验证。',
-                evidence: '运行 println("仓颉") 输出匹配预期。',
-              },
-            }],
-          }))
-          return
-        }
-        await fulfillStream(route, streamBody({ text: '太好了，我已经把这次进步记录下来了。' }))
+    await page.route(MOCK_COMPLETIONS_URL, async (route) => {
+      const tools = calledTools(route.request().postData())
+      if (!tools.has('read_classroom_state')) {
+        await fulfillTurn(route, {
+          toolCall: { id: 'read-state', name: 'read_classroom_state', args: {} },
+        })
         return
       }
-
-      // First user message: interview is done → set the mission, then author lesson 1.
-      if (!missionDone) {
-        await fulfillStream(route, streamBody({
-          toolCalls: [{
-            id: 'call_mission',
-            name: 'set_mission',
+      if (!tools.has('read_content_pack')) {
+        await fulfillTurn(route, {
+          toolCall: {
+            id: 'read-pack',
+            name: 'read_content_pack',
             args: {
-              topic: '用仓颉写一个命令行工具',
-              why: '想在 HarmonyOS 上发布一个小工具',
-              successLooksLike: ['能解析命令行参数', '能打印输出'],
-              constraints: [],
-              outOfScope: [],
+              conceptId: 'cj.program.main',
+              contentVersion: MAIN_CONTENT_VERSION,
             },
-          }],
-        }))
+          },
+        })
         return
       }
-
-      if (!lessonDone) {
-        await fulfillStream(route, streamBody({
-          toolCalls: [{ id: 'call_lesson', name: 'create_lesson', args: FIRST_LESSON_DRAFT }],
-        }))
+      if (!tools.has('append_content_reference_group')) {
+        await fulfillTurn(route, {
+          toolCall: {
+            id: 'append-core',
+            name: 'append_content_reference_group',
+            args: {
+              conceptId: 'cj.program.main',
+              learningSkillId: 'skill:cj.program.main:core',
+              blockIds: [
+                'block:cj.program.main:01-welcome/01-intro/01:prose',
+                'block:cj.program.main:01-welcome/01-intro/01:code',
+              ],
+            },
+          },
+        })
         return
       }
-
-      await fulfillStream(route, streamBody({ text: '我已经为你准备好第一课，去课程列表打开它吧。' }))
-    })
-
-    // Seed a complete user LLM config so the chat is ready and points at the mocked endpoint.
-    await page.goto(`${server.url}/zh`, { waitUntil: 'domcontentloaded' })
-    await page.evaluate(async (baseURL) => {
-      localStorage.setItem('tour-ai:config', JSON.stringify({
-        state: {
-          config: { provider: 'openai-compatible', baseURL, apiKey: 'user-key', model: 'mock-model' },
-          keySource: 'user',
-        },
-        version: 0,
-      }))
-      await new Promise<void>((resolve) => {
-        const request = indexedDB.deleteDatabase('teach-workspace-zh')
-        request.onsuccess = () => resolve()
-        request.onerror = () => resolve()
-        request.onblocked = () => resolve()
+      if (!tools.has('create_exercise_instance')) {
+        await fulfillTurn(route, {
+          toolCall: {
+            id: 'create-practice',
+            name: 'create_exercise_instance',
+            args: {
+              conceptId: 'cj.program.main',
+              contentVersion: MAIN_CONTENT_VERSION,
+              templateId: 'template:cj.program.main:practice',
+              personalizationInputs: { difficultyTarget: 'easy' },
+            },
+          },
+        })
+        return
+      }
+      await fulfillTurn(route, {
+        text: 'The first validated tutoring step is ready in Live View.',
       })
-    }, LLM_BASE_URL)
+    })
   }, 180_000)
 
   afterEach(async () => {
-    if (page && !page.isClosed())
+    if (!page.isClosed())
       await page.close()
   })
 
@@ -306,233 +343,96 @@ describe('teach workspace e2e', () => {
     await server?.stop()
   })
 
-  it('interviews for a mission, authors and completes the first lesson, then records and round-trips the workspace', async () => {
-    await page.goto(`${server.url}/zh/tour/ai`, { waitUntil: 'domcontentloaded' })
-
-    // The landing gate appears once hydrated and the seeded user key makes it
-    // ready; enter the workspace before the shell mounts.
-    await enterWorkspaceFromLanding(page)
-
-    // Workspace shell mounts; mission is empty so lessons are gated.
-    await page.getByTestId('teach-workspace-shell').waitFor({ state: 'visible', timeout: 60_000 })
-    const lessonsNav = page.getByTestId('workspace-nav-lessons')
-    expect(await lessonsNav.isDisabled()).toBe(true)
-
-    const composer = page.getByRole('textbox', { name: '输入消息' })
-    await composer.waitFor({ state: 'visible' })
-
-    // The mission-first gate's "和老师聊聊" button seeds the chat composer through
-    // the workspace prefill signal so the learner can start the interview.
-    await page.getByTestId('mission-gate-start').click()
-    await expect.poll(() => composer.inputValue()).toBe('我想学习仓颉，请帮我一起确定学习目标。')
-
-    // Send the first message: the teacher sets the mission and authors lesson 1.
-    await composer.fill('我想学仓颉，帮我定个目标')
-    await composer.press('Enter')
-
-    // Mission view now shows the interviewed mission.
-    await page.getByTestId('workspace-nav-mission').click()
-    await page.getByTestId('mission-view').waitFor({ state: 'visible', timeout: 30_000 })
-    await expect.poll(() => page.getByText('用仓颉写一个命令行工具').isVisible()).toBe(true)
-
-    // Lessons are unlocked; open the first lesson.
-    await expect.poll(() => lessonsNav.isDisabled()).toBe(false)
-    await lessonsNav.click()
-    await page.getByTestId('lessons-list-view').waitFor({ state: 'visible', timeout: 30_000 })
-    await page.getByTestId('lesson-list-item').first().click()
-
-    // Lesson renders its blocks (prose + quiz + code_task).
-    await page.getByTestId('lesson-renderer').waitFor({ state: 'visible' })
-    await page.getByTestId('quiz-block').waitFor({ state: 'visible' })
-    await expect.poll(() => page.getByTestId('code-task-block').count()).toBe(2)
-
-    // Both independent snippets are live Monaco editors backed by the same LSP
-    // process. The second snippet intentionally has a type error; its diagnostics
-    // must not make the first valid snippet inherit duplicate package/main errors.
-    const codeTasks = page.getByTestId('code-task-block')
-    await expect.poll(
-      () => codeTasks.nth(1).locator('.squiggly-error').count(),
-      { timeout: 60_000 },
-    ).toBeGreaterThan(0)
-    expect(await codeTasks.nth(0).locator('.squiggly-error').count()).toBe(0)
-
-    // Answer the quiz correctly → immediate feedback.
-    await page.getByTestId('quiz-option').first().click()
-    await page.getByTestId('quiz-submit').click()
-    const quizResult = page.getByTestId('quiz-result')
-    await quizResult.waitFor({ state: 'visible' })
-    expect(await quizResult.getAttribute('data-correct')).toBe('true')
-
-    // Solve the code task. The code_task editor is a real Monaco editor (not a
-    // <textarea>), so we seed the passing code through the editor container's
-    // deterministic write hook (which calls the model's setValue) rather than
-    // page.fill(), then run it through the mocked runner.
-    await seedCodeTask(page, PRINT_TASK_CODE)
-    await page.getByTestId('code-task-run').first().click()
-    const codeResult = page.getByTestId('code-task-result').first()
-    await codeResult.waitFor({ state: 'visible', timeout: 30_000 })
-    expect(await codeResult.getAttribute('data-status')).toBe('passed')
-
-    // Tell the teacher we finished → it appends a learning record.
-    await composer.fill('我学完了这一课')
-    await composer.press('Enter')
-    await page.getByTestId('workspace-nav-records').click()
-    await page.getByTestId('records-view').waitFor({ state: 'visible', timeout: 30_000 })
-    await expect.poll(() => page.getByText('掌握 println 输出').isVisible()).toBe(true)
-
-    // Mark the lesson complete via its state so the list reflects completion, then
-    // confirm the lessons list shows the completed status.
-    await markFirstLessonCompleted(page)
-    await page.getByTestId('workspace-nav-lessons').click()
-    await page.getByTestId('lessons-list-view').waitFor({ state: 'visible' })
-    await expect
-      .poll(() => page.getByTestId('lesson-list-item').first().getAttribute('data-status'))
-      .toBe('completed')
-
-    // Export the workspace as JSON, then import it into a fresh database and
-    // confirm the mission survives the round-trip.
-    const snapshot = await exportSnapshot(page)
-    expect(snapshot).toContain('用仓颉写一个命令行工具')
-    expect(snapshot).toContain('掌握 println 输出')
-
-    await page.evaluate(async () => {
-      await new Promise<void>((resolve) => {
-        const request = indexedDB.deleteDatabase('teach-workspace-zh')
-        request.onsuccess = () => resolve()
-        request.onerror = () => resolve()
-        request.onblocked = () => resolve()
-      })
+  it('runs the complete evidence, review, assistance, and persistence path', async () => {
+    await page.goto(`${server.url}/en/tour/ai`, { waitUntil: 'domcontentloaded' })
+    await page.getByTestId('teach-workspace-shell').waitFor({
+      state: 'visible',
+      timeout: 60_000,
     })
+
+    await page.getByLabel('What do you want to be able to do?').fill(
+      'Build small Cangjie programs independently',
+    )
+    await page.getByRole('button', { name: 'Start Learning Track' }).click()
+    await page.getByText('Build small Cangjie programs independently').waitFor()
+
+    // Establish a genuinely independent baseline before exposing any Teacher
+    // Chat text. A failed first Review Check remains Independent Evidence but
+    // does not advance the Track frontier, so the main tutoring step can still
+    // follow and become aided after Chat.
+    await page.getByTestId('workspace-nav-review').click()
+    await page.getByTestId('review-view').waitFor({ state: 'visible' })
+    await page.getByRole('button', { name: 'Create Review Check' }).click()
+    await expect.poll(() => page.getByText('Review Check').count()).toBeGreaterThan(0)
+    const independentReviewCheck = page.getByTestId('exercise-instance').last()
+    await replaceExerciseCode(page, 0, [
+      'main() {',
+      '    println("not the review answer")',
+      '}',
+    ].join('\n'))
+    await independentReviewCheck
+      .getByRole('button', { name: 'Run and record attempt' })
+      .click()
+    await independentReviewCheck.getByText('Not passed yet').waitFor()
+    await independentReviewCheck.getByText('Independent Evidence').waitFor()
+
+    await page.getByTestId('workspace-nav-live').click()
+    const composer = page.getByTestId('workspace-chat').locator('textarea')
+    await composer.fill('Please start my first tutoring step.')
+    await composer.press('Enter')
+
+    await page.getByTestId('exercise-instance').waitFor({
+      state: 'visible',
+      timeout: 60_000,
+    })
+    await expect.poll(() =>
+      page.getByText('Complete the code with a top-level main that prints only').count(),
+    ).toBeGreaterThan(0)
+
+    const practice = page.getByTestId('exercise-instance').last()
+    await practice.getByRole('button', { name: 'Show hint' }).click()
+    await page.getByText('Define main at the top level without the func keyword.').waitFor()
+    await replaceExerciseCode(
+      page,
+      await page.getByTestId('exercise-instance').count() - 1,
+      [
+        'main() {',
+        '    println("Hello from main")',
+        '}',
+      ].join('\n'),
+    )
+    await practice.getByRole('button', { name: 'Run and record attempt' }).click()
+    await practice.getByText('Passed').waitFor()
+    await practice.getByText('Aided Evidence').waitFor()
+
+    await page.getByTestId('workspace-nav-progress').click()
+    await page.getByTestId('concept-progress-view').waitFor({ state: 'visible' })
+    await page.getByText('Practicing').first().waitFor()
+
+    await page.getByTestId('workspace-nav-review').click()
+    await page.getByTestId('review-view').waitFor({ state: 'visible' })
+    await expect.poll(() => page.getByText('seen').count()).toBeGreaterThan(0)
+    expect(await page.getByTestId('review-view').isVisible()).toBe(true)
+
     await page.reload({ waitUntil: 'domcontentloaded' })
-    await enterWorkspaceFromLanding(page)
-    await page.getByTestId('teach-workspace-shell').waitFor({ state: 'visible', timeout: 60_000 })
-
-    // After the reset, mission is empty again (lessons gated).
-    await expect.poll(() => page.getByTestId('workspace-nav-lessons').isDisabled()).toBe(true)
-
-    await importSnapshot(page, snapshot)
-
-    // The imported workspace restores the mission and the completed lesson.
-    await expect.poll(() => page.getByTestId('workspace-nav-lessons').isDisabled()).toBe(false)
-    await page.getByTestId('workspace-nav-mission').click()
-    await page.getByTestId('mission-view').waitFor({ state: 'visible', timeout: 30_000 })
-    await expect.poll(() => page.getByText('用仓颉写一个命令行工具').isVisible()).toBe(true)
+    await page.getByTestId('live-classroom-view').waitFor({
+      state: 'visible',
+      timeout: 60_000,
+    })
+    expect(await page.getByRole('heading', {
+      name: 'Build small Cangjie programs independently',
+      exact: true,
+    }).isVisible()).toBe(true)
+    await expect.poll(() => page.getByTestId('exercise-instance').count()).toBe(2)
+    expect(await page.getByText('Define main at the top level without the func keyword.').isVisible())
+      .toBe(true)
+    await expect.poll(() => page.getByText('Passed', { exact: true }).count())
+      .toBe(1)
+    expect(await page.getByText('Not passed yet').isVisible()).toBe(true)
+    expect(await page.getByText('Aided Evidence').isVisible()).toBe(true)
+    expect(await page.getByText(
+      'Independent Evidence',
+      { exact: true },
+    ).isVisible()).toBe(true)
   }, 180_000)
 })
-
-/**
- * Complete onboarding when it is shown. Returning visits have `teach:onboarded`
- * persisted and mount the workspace directly, so the helper accepts either the
- * landing page or an already-visible workspace as its hydrated terminal state.
- * The seeded personal config makes the custom-credentials step immediately valid.
- */
-async function enterWorkspaceFromLanding(page: Page): Promise<void> {
-  const landing = page.getByTestId('teach-landing')
-  const shell = page.getByTestId('teach-workspace-shell')
-  await expect.poll(async () => await landing.isVisible() || await shell.isVisible(), { timeout: 60_000 }).toBe(true)
-
-  if (await shell.isVisible())
-    return
-
-  await page.getByTestId('teach-landing-start').click()
-  await page.getByTestId('teach-wizard-step-source').waitFor({ state: 'visible' })
-  await page.getByTestId('teach-source-custom').click()
-  await page.getByTestId('teach-source-next').click()
-  await page.getByTestId('teach-wizard-step-credentials').waitFor({ state: 'visible' })
-
-  const enter = page.getByTestId('teach-config-enter')
-  await expect.poll(() => enter.isEnabled()).toBe(true)
-  await enter.click()
-}
-
-/**
- * Seed the active code_task's Monaco editor with `code`. The code_task editor is
- * a real Monaco editor (the cangjie-editor module), not a `<textarea>`: it has no
- * `.fill()`-able input, and keyboard input is reshaped by auto-indent / bracket
- * completion. The block exposes a deterministic write hook on its editor
- * container DOM node (`__codeTaskSetCode`, backed by the model's `setValue`); poll
- * until Monaco has mounted and the hook is attached, then write through it.
- */
-async function seedCodeTask(page: Page, code: string): Promise<void> {
-  const container = page.getByTestId('code-task-editor').first()
-  await container.waitFor({ state: 'visible', timeout: 30_000 })
-  // Monaco mounts asynchronously: the write hook is attached on mount but the
-  // underlying editor model only exists once Monaco's onLoad fires, so an early
-  // setCode is a no-op. Re-issue the write each poll until the model actually
-  // holds the seeded code (write + verify), which also waits out Monaco's boot.
-  await expect
-    .poll(
-      () => container.evaluate(
-        (
-          el: HTMLElement & { __codeTaskSetCode?: (c: string) => void, __codeTaskGetCode?: () => string },
-          value: string,
-        ) => {
-          el.__codeTaskSetCode?.(value)
-          return el.__codeTaskGetCode?.() ?? ''
-        },
-        code,
-      ),
-      { timeout: 30_000 },
-    )
-    .toContain('println("仓颉")')
-}
-
-/** Mark the first lesson completed by writing its state through the live IndexedDB repository. */
-async function markFirstLessonCompleted(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('teach-workspace-zh', 1)
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => resolve(request.result)
-    })
-    try {
-      const lesson = await new Promise<{ id: string, state: { status: string, blockProgress: Record<string, unknown> } } | undefined>((resolve, reject) => {
-        const tx = db.transaction('lessons', 'readonly')
-        const request = tx.objectStore('lessons').get('0001')
-        request.onsuccess = () => resolve(request.result)
-        request.onerror = () => reject(request.error)
-      })
-      if (!lesson)
-        throw new Error('lesson 0001 not found')
-      await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction('lessons', 'readwrite')
-        tx.objectStore('lessons').put({
-          ...lesson,
-          state: { ...lesson.state, status: 'completed', completedAt: 1 },
-        })
-        tx.oncomplete = () => resolve()
-        tx.onerror = () => reject(tx.error)
-        tx.onabort = () => reject(tx.error)
-      })
-    }
-    finally {
-      db.close()
-    }
-  })
-}
-
-/** Click the export button and capture the downloaded JSON text. */
-async function exportSnapshot(page: Page): Promise<string> {
-  const downloadPromise = page.waitForEvent('download')
-  await page.getByTestId('workspace-export').click()
-  const download = await downloadPromise
-  const stream = await download.createReadStream()
-  const chunks: Buffer[] = []
-  for await (const chunk of stream)
-    chunks.push(chunk as Buffer)
-  return Buffer.concat(chunks).toString('utf-8')
-}
-
-/** Import the given JSON snapshot through the import file input. */
-async function importSnapshot(page: Page, json: string): Promise<void> {
-  const input = page.getByTestId('workspace-import-input')
-  await input.setInputFiles({
-    name: 'teach-workspace-zh.json',
-    mimeType: 'application/json',
-    buffer: Buffer.from(json, 'utf-8'),
-  })
-  const confirm = page.getByTestId('workspace-import-confirm')
-  await confirm.waitFor({ state: 'visible' })
-  await confirm.click()
-  await confirm.waitFor({ state: 'hidden' })
-}

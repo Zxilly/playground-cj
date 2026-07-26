@@ -21,11 +21,3 @@ export function playgroundModelUri(slot: string): string {
     ? `${PLAYGROUND_ROOT}/src/main.cj`
     : `${PLAYGROUND_ROOT}/standalone/${slot}/main.cj`
 }
-
-export function lessonModelScope(lessonId: string): string {
-  return `teach:${encodeURIComponent(lessonId)}`
-}
-
-export function lessonEditorUriHint(lessonId: string, blockId: string): string {
-  return `${lessonModelScope(lessonId)}:${encodeURIComponent(blockId)}`
-}

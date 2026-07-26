@@ -9,7 +9,9 @@ import { TeachConfigWizard } from './TeachConfigWizard'
 // The wizard calls the LLM bootstrap hook on mount. It performs network I/O
 // (fetch /api/ai-key) and store writes exercised in its own unit test; here we
 // stub it so the wizard's source/credentials flow is the unit under test.
-const bootstrapMock = vi.hoisted(() => vi.fn(() => ({ status: 'ready' as const })))
+const bootstrapMock = vi.hoisted(() => vi.fn(
+  (): { status: 'loading' | 'ready' | 'error', error?: string } => ({ status: 'ready' }),
+))
 vi.mock('@/modules/llm-config/runtime/useLLMConfigBootstrap', () => ({
   useLLMConfigBootstrap: bootstrapMock,
 }))
@@ -42,9 +44,9 @@ function configureUserKey(apiKey: string) {
   })
 }
 
-/** Seed a ready shared key (keySource stays 'auto'). */
+/** Seed a ready shared gateway (keySource stays 'auto'). */
 function seedSharedReady() {
-  useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: 'shared-key' }, keySource: 'auto' })
+  useLLMConfigStore.setState({ config: DEFAULT_LLM_CONFIG, keySource: 'auto' })
 }
 
 beforeEach(() => {
@@ -61,12 +63,12 @@ afterEach(() => {
 })
 
 describe('teachConfigWizard', () => {
-  it('runs the LLM config bootstrap so an automatic key can be fetched', () => {
+  it('runs the LLM config bootstrap so gateway metadata can be fetched', () => {
     renderWizard()
     expect(bootstrapMock).toHaveBeenCalled()
   })
 
-  it('defaults to the shared source and enters directly once the shared key is ready', () => {
+  it('defaults to the shared source and enters directly once the shared gateway is ready', () => {
     seedSharedReady()
     const { onEnter } = renderWizard()
     expect(screen.getByTestId('teach-source-shared').getAttribute('aria-checked')).toBe('true')
@@ -90,8 +92,9 @@ describe('teachConfigWizard', () => {
     expect(screen.getByText('今日额度剩余')).toBeTruthy()
   })
 
-  it('blocks entry while the shared key is not ready', () => {
-    useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: '' }, keySource: 'auto' })
+  it('blocks entry while shared gateway metadata is still loading', () => {
+    bootstrapMock.mockReturnValue({ status: 'loading' })
+    useLLMConfigStore.setState({ config: DEFAULT_LLM_CONFIG, keySource: 'auto' })
     const { onEnter } = renderWizard()
     const next = screen.getByTestId('teach-source-next')
     expect(next.hasAttribute('disabled')).toBe(true)
@@ -101,9 +104,14 @@ describe('teachConfigWizard', () => {
 
   it('prompts to switch to a personal key when the shared quota is exhausted', () => {
     useLLMConfigStore.setState({
-      config: { ...DEFAULT_LLM_CONFIG, apiKey: 'shared-key' },
+      config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
-      autoQuota: { nextResetAt: Date.now() + 60_000, exhausted: true },
+      autoQuota: {
+        nextResetAt: Date.now() + 60_000,
+        perPeriod: 1_000_000,
+        available: 0,
+        exhausted: true,
+      },
     })
     renderWizard()
     expect(screen.getByTestId('teach-config-quota-exhausted')).toBeTruthy()
@@ -111,7 +119,7 @@ describe('teachConfigWizard', () => {
   })
 
   it('walks the custom path: pick custom, fill the key, then enter', () => {
-    useLLMConfigStore.setState({ config: { ...DEFAULT_LLM_CONFIG, apiKey: '' }, keySource: 'auto' })
+    useLLMConfigStore.setState({ config: DEFAULT_LLM_CONFIG, keySource: 'auto' })
     const { onEnter } = renderWizard()
 
     fireEvent.click(screen.getByTestId('teach-source-custom'))

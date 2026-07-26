@@ -7,36 +7,35 @@ import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 import { cn } from '@/lib/utils'
 import { highlightCangjie } from '@/lib/shiki/cangjie-highlighter'
-
-function isDarkMode(): boolean {
-  if (typeof document === 'undefined')
-    return false
-  return document.documentElement.classList.contains('dark')
-}
+import { useRootDarkMode } from '@/lib/theme/useRootDarkMode'
 
 /**
- * ```cangjie 围栏代码块：以纯文本为初始/回退状态，异步用 Shiki 高亮后替换为
- * 同一套高亮 HTML，与 CodeSampleBlock 共享高亮器。
+ * ```cangjie 围栏代码块：以纯文本为初始/回退状态，异步用 Shiki 高亮后替换。
  */
 function CangjieFence({ code }: { code: string }) {
-  const [html, setHtml] = useState<string | null>(null)
+  const [highlight, setHighlight] = useState<{
+    key: string
+    html: string
+  } | null>(null)
+  const dark = useRootDarkMode()
+  const highlightKey = `${dark ? 'dark' : 'light'}\0${code}`
 
   useEffect(() => {
     let cancelled = false
-    void highlightCangjie(code, { dark: isDarkMode() }).then((result) => {
+    void highlightCangjie(code, { dark }).then((result) => {
       if (!cancelled)
-        setHtml(result)
+        setHighlight({ key: highlightKey, html: result })
     })
     return () => {
       cancelled = true
     }
-  }, [code])
+  }, [code, dark, highlightKey])
 
-  if (html != null) {
+  if (highlight?.key === highlightKey) {
     return (
       <div
         className="teach-shiki my-2 overflow-x-auto rounded-md border border-border/50 bg-muted/30 p-3 text-xs leading-relaxed [&_pre]:!bg-transparent [&_pre]:font-mono"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: highlight.html }}
       />
     )
   }
@@ -49,23 +48,19 @@ function CangjieFence({ code }: { code: string }) {
 }
 
 /**
- * Standalone markdown renderer for lesson block bodies (prose / callout).
+ * Standalone markdown renderer for validated core content and retained notes.
  *
  * The vendored `@/modules/assistant-ui/registry/MarkdownText` renders chat
  * message content via `MarkdownTextPrimitive`, which reads its text from the
  * assistant-ui thread context and therefore cannot render an arbitrary string.
- * Lesson blocks need to render a plain markdown string, so this reuses the same
+ * These surfaces render plain markdown strings, so this reuses the same
  * underlying stack (`react-markdown` + `remark-gfm`) the registry is built on
  * and applies styling consistent with the rest of the workspace.
  */
 interface TeachMarkdownProps {
   markdown: string
   className?: string
-}
-
-interface TeachInlineMarkdownProps {
-  markdown: string
-  className?: string
+  source?: 'generated' | 'validated'
 }
 
 const components: Components = {
@@ -76,13 +71,32 @@ const components: Components = {
     <strong className={cn('font-semibold', className)} {...props} />
   ),
   em: ({ className, ...props }) => <em className={cn('italic', className)} {...props} />,
-  a: ({ className, ...props }) => (
-    <a
-      className={cn('text-primary underline underline-offset-2 hover:text-primary/80', className)}
-      target="_blank"
-      rel="noreferrer"
-      {...props}
-    />
+  a: ({ children, className, href, title }) => {
+    const safeHref = safeValidatedUrl(href ?? '')
+    if (!safeHref) {
+      return (
+        <span className={className} title={title}>
+          {children}
+        </span>
+      )
+    }
+    const external = /^https?:\/\//iu.test(safeHref)
+    return (
+      <a
+        className={cn('text-primary underline underline-offset-2 hover:text-primary/80', className)}
+        href={safeHref}
+        title={title}
+        target={external ? '_blank' : undefined}
+        rel={external ? 'noopener noreferrer' : undefined}
+      >
+        {children}
+      </a>
+    )
+  },
+  img: ({ alt }) => (
+    <span className="text-sm text-muted-foreground">
+      {alt ? `[${alt}]` : '[image omitted]'}
+    </span>
   ),
   ul: ({ className, ...props }) => (
     <ul className={cn('my-2 list-disc ps-5 marker:text-muted-foreground [&>li]:mt-1', className)} {...props} />
@@ -149,44 +163,55 @@ function extractCangjieFence(children: ReactNode): string | null {
   return typeof code === 'string' ? code.replace(/\n$/, '') : null
 }
 
-/**
- * Safe Markdown renderer for model-authored, single-line lesson fields such as
- * prompts and code-sample explanations. These fields are strings in the block
- * schema, but the model naturally uses inline emphasis and code spans in them.
- *
- * Keep the allowed surface deliberately small: block structure belongs in a
- * prose/callout block, while raw HTML is skipped entirely. The paragraph
- * wrapper is unwrapped so this component remains valid inside headings,
- * captions, buttons, and existing `<p>` elements.
- */
-const inlineComponents: Components = {
-  p: ({ children }) => <>{children}</>,
-  strong: components.strong,
-  em: components.em,
-  a: components.a,
-  code: components.code,
+const generatedComponents: Components = {
+  ...components,
+  // Generated links are rendered as inert text. Otherwise a prompt-injected
+  // model could encode editor contents in a URL and ask the learner to open it.
+  a: ({ children }) => <span>{children}</span>,
 }
 
-export function TeachInlineMarkdown({ markdown, className }: TeachInlineMarkdownProps) {
-  return (
-    <span data-testid="teach-inline-markdown" className={className}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        allowedElements={['p', 'strong', 'em', 'a', 'code', 'del', 'br']}
-        unwrapDisallowed
-        skipHtml
-        components={inlineComponents}
-      >
-        {markdown}
-      </ReactMarkdown>
-    </span>
-  )
+function safeValidatedUrl(url: string): string {
+  const href = url.trim()
+  if (!href || [...href].some((character) => {
+    const codePoint = character.codePointAt(0) ?? 0
+    return codePoint <= 0x1F || codePoint === 0x7F || character === '\\'
+  })) {
+    return ''
+  }
+  if (href.startsWith('#') || href.startsWith('./') || href.startsWith('../')) {
+    return href
+  }
+  if (href.startsWith('/') && !href.startsWith('//')) {
+    return href
+  }
+  try {
+    const parsed = new URL(href)
+    return (
+      (parsed.protocol === 'https:' || parsed.protocol === 'http:')
+      && !parsed.username
+      && !parsed.password
+    )
+      ? href
+      : ''
+  }
+  catch {
+    return ''
+  }
 }
 
-export function TeachMarkdown({ markdown, className }: TeachMarkdownProps) {
+export function TeachMarkdown({
+  markdown,
+  className,
+  source = 'generated',
+}: TeachMarkdownProps) {
   return (
     <div data-testid="teach-markdown" className={cn('text-[15px] leading-7', className)}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        skipHtml
+        components={source === 'validated' ? components : generatedComponents}
+        urlTransform={source === 'validated' ? safeValidatedUrl : () => ''}
+      >
         {markdown}
       </ReactMarkdown>
     </div>

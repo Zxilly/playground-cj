@@ -3,12 +3,10 @@ import {
   ActionBarPrimitive,
   AuiIf,
   ComposerPrimitive,
-  ErrorPrimitive,
   MessagePrimitive,
   useAuiState,
 } from '@assistant-ui/react'
 import {
-  BrainIcon,
   CheckIcon,
   ChevronDownIcon,
   CopyIcon,
@@ -44,9 +42,11 @@ export const ThreadMessage: FC = () => {
 export function MessageError() {
   return (
     <MessagePrimitive.Error>
-      <ErrorPrimitive.Root role="alert" className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-destructive text-sm dark:bg-destructive/5 dark:text-red-200">
+      <div role="alert" className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-destructive text-sm dark:bg-destructive/5 dark:text-red-200">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <ErrorPrimitive.Message className="aui-message-error-message min-w-0 flex-1 whitespace-pre-wrap break-words leading-5" />
+          <p className="aui-message-error-message min-w-0 flex-1 leading-5">
+            <Trans>课堂老师暂时无法完成这次回复，请重试。</Trans>
+          </p>
           <ActionBarPrimitive.Root hideWhenRunning className="aui-message-error-action shrink-0">
             <ActionBarPrimitive.Reload asChild>
               <Button
@@ -62,7 +62,7 @@ export function MessageError() {
             </ActionBarPrimitive.Reload>
           </ActionBarPrimitive.Root>
         </div>
-      </ErrorPrimitive.Root>
+      </div>
     </MessagePrimitive.Error>
   )
 }
@@ -83,33 +83,24 @@ function AssistantMessage() {
       >
         <MessagePrimitive.GroupedParts
           groupBy={(part) => {
-            if (part.type === 'reasoning')
-              return ['group-chainOfThought', 'group-reasoning']
             if (part.type === 'tool-call')
-              return ['group-chainOfThought', 'group-tool']
+              return ['group-classroomActivity', 'group-tool']
             return null
           }}
         >
           {({ part, children }) => {
             switch (part.type) {
-              // Reasoning + tool calls are rendered faithfully (collapsed under a
-              // "思考过程" disclosure) so the learner can see what the teacher is
-              // thinking and doing, and so a tool-heavy turn shows live activity
-              // instead of a frozen gap.
-              case 'group-chainOfThought':
-                return <ChainOfThought>{children}</ChainOfThought>
-              case 'group-reasoning':
-                return (
-                  <div className="space-y-1 text-sm leading-relaxed text-muted-foreground [&_.aui-md]:text-muted-foreground">
-                    {children}
-                  </div>
-                )
+              // Internal reasoning and tool payloads can contain evaluator
+              // answers, learner code, retrieved instructions, and opaque IDs.
+              // Only a payload-free activity status is learner-visible.
+              case 'group-classroomActivity':
+                return <ClassroomActivity>{children}</ClassroomActivity>
               case 'group-tool':
                 return <div className="flex flex-col gap-2">{children}</div>
               case 'text':
                 return <MarkdownText />
               case 'reasoning':
-                return <MarkdownText />
+                return null
               case 'tool-call':
                 return <ToolFallback {...part} />
               default:
@@ -132,13 +123,10 @@ function AssistantMessage() {
 }
 
 /**
- * Collapsible "思考过程" disclosure wrapping a turn's reasoning and tool calls.
- * Kept collapsed by default, including while a turn is running, so internal
- * reasoning and tool validation do not interrupt the learner-facing answer.
- * The live status remains visible on the accessible disclosure trigger, and
- * learners can expand it when they want the implementation detail.
+ * Collapsible, payload-free classroom activity status. Internal reasoning,
+ * tool arguments, tool results, and validation errors are never rendered.
  */
-export function ChainOfThought({ children }: PropsWithChildren) {
+export function ClassroomActivity({ children }: PropsWithChildren) {
   const running = useAuiState(s => s.message.status?.type === 'running')
 
   return (
@@ -149,9 +137,9 @@ export function ChainOfThought({ children }: PropsWithChildren) {
       <CollapsibleTrigger className="group/cot flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
         {running
           ? <LoaderIcon aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
-          : <BrainIcon aria-hidden="true" className="size-3.5 shrink-0" />}
+          : <CheckIcon aria-hidden="true" className="size-3.5 shrink-0" />}
         <span className="grow">
-          {running ? <Trans>正在思考…</Trans> : <Trans>思考过程</Trans>}
+          {running ? <Trans>正在准备课堂内容…</Trans> : <Trans>课堂活动</Trans>}
         </span>
         <ChevronDownIcon
           aria-hidden="true"

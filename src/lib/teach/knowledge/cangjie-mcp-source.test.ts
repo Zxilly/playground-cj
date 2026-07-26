@@ -1,6 +1,7 @@
 import type { McpCallFn } from './cangjie-mcp-source'
 import { describe, expect, it, vi } from 'vitest'
 import { CANGJIE_MCP_SOURCE_ID, CANGJIE_SEARCH_DOCS_TOOL, createCangjieMcpKnowledgeSource } from './cangjie-mcp-source'
+import { KnowledgeSourceError } from './source'
 
 describe('createCangjieMcpKnowledgeSource', () => {
   it('exposes the cangjie-mcp source id', () => {
@@ -127,23 +128,33 @@ describe('createCangjieMcpKnowledgeSource', () => {
     expect(hits[0]?.ref).toBe('a/one')
   })
 
-  it('returns an empty array (does not throw) when the MCP call fails', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  it('reports source unavailability instead of masquerading as an empty result', async () => {
     const call = vi.fn<McpCallFn>().mockRejectedValue(new Error('mcp offline'))
     const source = createCangjieMcpKnowledgeSource({ call })
 
-    const hits = await source.search('Option')
-
-    expect(hits).toEqual([])
-    expect(warn).toHaveBeenCalled()
-    warn.mockRestore()
+    await expect(source.search('Option')).rejects.toMatchObject({
+      name: 'KnowledgeSourceError',
+      failure: 'unavailable',
+    })
   })
 
-  it('returns an empty array when the result is malformed', async () => {
+  it('reports a malformed response instead of masquerading as an empty result', async () => {
     const call = vi.fn<McpCallFn>().mockResolvedValue({ something: 'unexpected' })
     const source = createCangjieMcpKnowledgeSource({ call })
 
-    expect(await source.search('Option')).toEqual([])
+    await expect(source.search('Option')).rejects.toMatchObject({
+      name: 'KnowledgeSourceError',
+      failure: 'invalid_response',
+    })
+  })
+
+  it('accepts an explicit authoritative zero-result response', async () => {
+    const call = vi.fn<McpCallFn>().mockResolvedValue({
+      structuredContent: { results: [] },
+    })
+    const source = createCangjieMcpKnowledgeSource({ call })
+
+    await expect(source.search('not present')).resolves.toEqual([])
   })
 
   it('forwards the abort signal to the MCP call', async () => {
@@ -163,5 +174,17 @@ describe('createCangjieMcpKnowledgeSource', () => {
     const source = createCangjieMcpKnowledgeSource({ call })
 
     await expect(source.search('Option', { signal: controller.signal })).rejects.toThrow()
+  })
+
+  it('stops awaiting a dependency that ignores the abort signal', async () => {
+    const controller = new AbortController()
+    const call = vi.fn<McpCallFn>(() => new Promise(() => {}))
+    const source = createCangjieMcpKnowledgeSource({ call })
+    const searching = source.search('Option', { signal: controller.signal })
+
+    controller.abort()
+
+    await expect(searching).rejects.not.toBeInstanceOf(KnowledgeSourceError)
+    await expect(searching).rejects.toMatchObject({ name: 'AbortError' })
   })
 })

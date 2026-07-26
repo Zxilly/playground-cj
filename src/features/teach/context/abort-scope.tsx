@@ -3,13 +3,6 @@
 import { createContext, use, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 
-/**
- * A process-wide never-aborting signal used as the fallback when no provider is
- * mounted (isolated tests). Created once at module load so {@link useAbortScope}
- * stays pure — it never allocates an `AbortController` during render.
- */
-const NEVER_ABORTS = new AbortController().signal
-
 const AbortScopeContext = createContext<AbortSignal | null>(null)
 
 /**
@@ -42,11 +35,14 @@ export function AbortScopeProvider({
 }
 
 /**
- * Read the workspace-scoped {@link AbortSignal}. Falls back to a never-aborting
- * signal when no provider is present so the chat runtime degrades gracefully in
- * isolated tests rather than throwing.
+ * Read the workspace-scoped {@link AbortSignal}. A missing provider is a
+ * lifecycle wiring error: silently substituting a never-aborting signal would
+ * leak runner or teacher work after its owning workspace unmounts.
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAbortScope(): AbortSignal {
-  return use(AbortScopeContext) ?? NEVER_ABORTS
+  const signal = use(AbortScopeContext)
+  if (!signal)
+    throw new Error('useAbortScope must be used inside an AbortScopeProvider')
+  return signal
 }

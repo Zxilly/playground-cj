@@ -8,6 +8,7 @@ import {
   useIsMarkdownCodeBlock,
 } from '@assistant-ui/react-markdown'
 import type { CodeHeaderProps } from '@assistant-ui/react-markdown'
+import type { UrlTransform } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { memo } from 'react'
 import type { FC } from 'react'
@@ -17,6 +18,11 @@ import { t } from '@lingui/core/macro'
 import { useCopyToClipboard } from '@/modules/assistant-ui/registry/hooks/useCopyToClipboard'
 import { TooltipIconButton } from '@/modules/assistant-ui/registry/TooltipIconButton'
 import { cn } from '@/lib/utils'
+
+// Every model-authored destination is inert. Same-origin paths are not a trust
+// boundary: a model can encode learner data in a query string or target an
+// internal GET endpoint just as easily as it can target an external origin.
+const inertChatUrlTransform: UrlTransform = () => ''
 
 const CodeHeader: FC<CodeHeaderProps> = ({ language, code }) => {
   const { isCopied, copyToClipboard } = useCopyToClipboard()
@@ -103,14 +109,17 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  a: ({ className, ...props }) => (
-    <a
-      className={cn(
-        'aui-md-a text-primary underline underline-offset-2 hover:text-primary/80',
-        className,
-      )}
-      {...props}
-    />
+  a: ({ children, className, title }) => {
+    return (
+      <span className={cn('aui-md-unsafe-link', className)} title={title}>
+        {children}
+      </span>
+    )
+  },
+  img: ({ alt }) => (
+    <span className="aui-md-image-alt text-muted-foreground">
+      {alt}
+    </span>
   ),
   blockquote: ({ className, ...props }) => (
     <blockquote
@@ -219,6 +228,8 @@ function MarkdownTextImpl() {
   return (
     <MarkdownTextPrimitive
       remarkPlugins={[remarkGfm]}
+      skipHtml
+      urlTransform={inertChatUrlTransform}
       className="aui-md"
       components={defaultComponents}
     />

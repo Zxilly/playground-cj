@@ -170,6 +170,7 @@ export function TourEditor({
 
   const toolOutput = useTourEditorStore(state => state.compilerOutput)
   const programOutput = useTourEditorStore(state => state.programOutput)
+  const truncation = useTourEditorStore(state => state.truncation)
   const activeTab = useTourEditorStore(state => state.activeTab)
   const setActiveTab = useTourEditorStore(state => state.setActiveTab)
   const resetOutputs = useTourEditorStore(state => state.resetOutputs)
@@ -377,6 +378,27 @@ export function TourEditor({
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
+              {(
+                activeTab === 'program'
+                  ? truncation.programStdout || truncation.programStderr
+                  : truncation.compilerOutput
+                    || truncation.formatterOutput
+                    || truncation.formattedSource
+              ) && (
+                <p role="status" className="mb-2 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
+                  {activeTab === 'program'
+                    ? (locale === 'en'
+                        ? 'Program output was truncated.'
+                        : '程序输出已截断。')
+                    : truncation.formattedSource
+                      ? (locale === 'en'
+                          ? 'The formatted source was truncated; the editor was not changed.'
+                          : '格式化结果已截断；编辑器内容未更改。')
+                      : (locale === 'en'
+                          ? 'Compiler or formatter output was truncated.'
+                          : '编译器或格式化器输出已截断。')}
+                </p>
+              )}
               <pre
                 className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground"
                 style={{ fontFamily }}
@@ -392,6 +414,7 @@ export function TourEditor({
         <CodeRunner
           setToolOutput={useTourEditorStore.getState().setCompilerOutput}
           setProgramOutput={useTourEditorStore.getState().setProgramOutput}
+          setTruncation={useTourEditorStore.getState().setTruncation}
           onFormatted={handleFormatted}
         />
       </div>

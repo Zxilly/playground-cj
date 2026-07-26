@@ -1,53 +1,406 @@
-import type { KnowledgeSource } from '@/lib/teach/knowledge/source'
-import type { RetrievalStore, TeacherRunner } from '@/lib/teach/teacher/toolkit'
-import type { WorkspaceRepository } from '@/lib/teach/workspace/repository'
-import { createIndexedDbWorkspaceRepository } from '@/lib/teach/workspace/indexeddb-repository'
+import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
+import { createAIClassroom } from '@/lib/teach/classroom/ai-classroom'
+import { createIndexedDBContentPackCache } from '@/lib/teach/classroom/content-pack-cache'
+import { createContentPackCatalog } from '@/lib/teach/classroom/content-catalog'
+import { fetchCourseContentPacks } from '@/lib/teach/classroom/content-pack-client'
+import { createIndexedDBClassroomStorage } from '@/lib/teach/classroom/storage'
 import { createCangjieMcpKnowledgeSource } from '@/lib/teach/knowledge/cangjie-mcp-source'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
-import type { ActiveEditorRegistry } from './active-editor-store'
 import { createActiveEditorRegistry } from './active-editor-store'
-import { createIdbRetrievalStore } from './retrieval-store'
 
-/**
- * The full set of runtime collaborators a live teaching workspace needs. Mirrors
- * the {@link WorkspaceContextValue} shape (sans the optional clock default) so the
- * app can hand the bundle straight to the {@link WorkspaceProvider}.
- */
-export interface WorkspaceCollaborators {
-  repo: WorkspaceRepository
-  retrievalStore: RetrievalStore
-  knowledge: KnowledgeSource
-  runner: TeacherRunner
-  activeEditor: ActiveEditorRegistry
-  now: () => number
+export interface WorkspaceCollaborators
+  extends Omit<WorkspaceContextValue, 'lang'> {
+  dispose: () => Promise<void>
+}
+
+export interface CreateWorkspaceCollaboratorsOptions {
+  signal?: AbortSignal
+  /** One deadline for lease waiting, curriculum/cache loading, and state open. */
+  timeoutMs?: number
+  onStorageError?: (error: unknown) => void
+}
+
+type ContentLocale = 'en' | 'zh'
+
+const CLASSROOM_STORAGE_SCOPE = 'classroom'
+export const DEFAULT_WORKSPACE_INITIALIZATION_TIMEOUT_MS = 20_000
+
+export class WorkspaceInitializationTimeoutError extends Error {
+  readonly timeoutMs: number
+
+  constructor(timeoutMs: number) {
+    super(`AI Classroom loading exceeded the ${timeoutMs}ms initialization deadline`)
+    this.name = 'TimeoutError'
+    this.timeoutMs = timeoutMs
+  }
+}
+
+interface WorkspaceResources {
+  caches: Array<ReturnType<typeof createIndexedDBContentPackCache>>
+  storage?: ReturnType<typeof createIndexedDBClassroomStorage>
+  classroom?: ReturnType<typeof createAIClassroom>
+}
+
+let workspaceLeaseTail: Promise<void> = Promise.resolve()
+
+function abortError(): DOMException {
+  return new DOMException('AI Classroom loading was aborted', 'AbortError')
+}
+
+function abortReason(signal: AbortSignal): Error {
+  return signal.reason instanceof Error ? signal.reason : abortError()
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted)
+    throw abortReason(signal)
+}
+
+function waitForOperation<T>(
+  operation: PromiseLike<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  if (signal.aborted) {
+    // The operation may already have started while its arguments were being
+    // evaluated. Observe its eventual rejection even though the boundary wins.
+    void operation.then(
+      () => undefined,
+      () => undefined,
+    )
+    throw abortReason(signal)
+  }
+  return new Promise<T>((resolve, reject) => {
+    let settled = false
+    let onAbort: () => void = () => {}
+    const finish = (complete: () => void) => {
+      if (settled)
+        return
+      settled = true
+      signal.removeEventListener('abort', onAbort)
+      complete()
+    }
+    onAbort = () => finish(() => reject(abortReason(signal)))
+    signal.addEventListener('abort', onAbort, { once: true })
+    void operation.then(
+      value => finish(() => resolve(value)),
+      error => finish(() => reject(error)),
+    )
+  })
+}
+
+interface InitializationOperationOwnership {
+  wait: <T>(operation: PromiseLike<T>, signal: AbortSignal) => Promise<T>
+  settle: () => Promise<void>
 }
 
 /**
- * Build the live collaborators for a teaching workspace, keyed by UI language so
- * the `zh` and `en` workspaces persist to separate IndexedDB databases (their
- * lessons / glossary are authored in that language).
- *
- *  - `repo`           — IndexedDB-backed {@link WorkspaceRepository}.
- *  - `retrievalStore` — IndexedDB-backed spaced-retrieval schedule (shares the
- *    same repo instance, so it persists across reloads and is captured by
- *    `exportAll`).
- *  - `knowledge`      — Cangjie MCP knowledge source.
- *  - `runner`         — remote Cangjie runner wrapper.
- *  - `activeEditor`   — registry the mounted `code_task` editor registers with,
- *    so the teacher's editor tools target the learner's current code_task.
- *  - `now`            — wall clock.
+ * A caller deadline may stop waiting for initialization, but it cannot prove
+ * that an abort-ignoring fetch, IndexedDB transaction, or aggregate open has
+ * stopped touching shared resources. Observe every raw operation and retain
+ * the workspace lease until all of them actually settle.
  */
-export function createWorkspaceCollaborators(lang: string): WorkspaceCollaborators {
-  const dbName = `teach-workspace-${lang === 'en' ? 'en' : 'zh'}`
-  // The retrieval store shares this repo instance so its writes ride the repo's
-  // serial write queue and `exportAll` observes the same persisted schedule.
-  const repo = createIndexedDbWorkspaceRepository(dbName)
+function createInitializationOperationOwnership():
+InitializationOperationOwnership {
+  const pending = new Set<Promise<void>>()
+
+  function track<T>(operation: PromiseLike<T>): Promise<T> {
+    const raw = Promise.resolve(operation)
+    const settlement = raw.then(
+      () => undefined,
+      () => undefined,
+    )
+    pending.add(settlement)
+    void settlement.then(() => {
+      pending.delete(settlement)
+    })
+    return raw
+  }
+
   return {
-    repo,
-    retrievalStore: createIdbRetrievalStore(repo),
-    knowledge: createCangjieMcpKnowledgeSource(),
-    runner: defaultRunner,
-    activeEditor: createActiveEditorRegistry(),
-    now: () => Date.now(),
+    wait: <T>(operation: PromiseLike<T>, signal: AbortSignal) =>
+      waitForOperation(track(operation), signal),
+    async settle() {
+      while (pending.size > 0)
+        await Promise.all([...pending])
+    },
+  }
+}
+
+interface InitializationBoundary {
+  signal: AbortSignal
+  close: () => void
+}
+
+function createInitializationBoundary(
+  callerSignal: AbortSignal | undefined,
+  timeoutMs: number,
+): InitializationBoundary {
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
+    throw new RangeError(
+      'AI Classroom initialization timeout must be a positive safe integer',
+    )
+  }
+
+  const controller = new AbortController()
+  const abortFromCaller = () => {
+    if (!controller.signal.aborted)
+      controller.abort(abortError())
+  }
+  if (callerSignal?.aborted)
+    abortFromCaller()
+  else
+    callerSignal?.addEventListener('abort', abortFromCaller, { once: true })
+
+  const timer = setTimeout(() => {
+    if (!controller.signal.aborted) {
+      controller.abort(new WorkspaceInitializationTimeoutError(timeoutMs))
+    }
+  }, timeoutMs)
+
+  let closed = false
+  return {
+    signal: controller.signal,
+    close: () => {
+      if (closed)
+        return
+      closed = true
+      clearTimeout(timer)
+      callerSignal?.removeEventListener('abort', abortFromCaller)
+    },
+  }
+}
+
+/**
+ * One runtime owns the shared classroom scope until all of its resources have
+ * closed. Waiting reservations remain FIFO, while an aborted reservation
+ * removes itself without releasing the current owner.
+ */
+async function acquireWorkspaceLease(
+  signal: AbortSignal,
+): Promise<() => void> {
+  const predecessor = workspaceLeaseTail
+  let releaseReservation!: () => void
+  const reservation = new Promise<void>((resolve) => {
+    releaseReservation = resolve
+  })
+  workspaceLeaseTail = predecessor.then(() => reservation)
+
+  try {
+    await waitForOperation(predecessor, signal)
+    throwIfAborted(signal)
+  }
+  catch (error) {
+    releaseReservation()
+    throw error
+  }
+
+  let released = false
+  return () => {
+    if (released)
+      return
+    released = true
+    releaseReservation()
+  }
+}
+
+/**
+ * Attempt every release even if an earlier disposer fails. A single failure is
+ * preserved verbatim; multiple failures are reported together.
+ */
+async function disposeWorkspaceResources(
+  resources: WorkspaceResources,
+  options: { closeStorageImmediately?: boolean } = {},
+): Promise<void> {
+  const attemptRelease = (release: () => void | Promise<void>): Promise<void> => {
+    try {
+      return Promise.resolve(release())
+    }
+    catch (error) {
+      return Promise.reject(error)
+    }
+  }
+  // Content caches are independent, so their closes may overlap the aggregate
+  // drain. Storage is dependent and must remain open until that drain settles.
+  const cacheReleases = resources.caches.map(cache =>
+    attemptRelease(() => cache.close()))
+  const cacheResults = Promise.allSettled(cacheReleases)
+  const orderedResults: Array<PromiseSettledResult<void>> = []
+  const classroom = resources.classroom
+  const classroomRelease = classroom
+    ? attemptRelease(() => classroom.dispose())
+    : undefined
+  const storage = resources.storage
+  const startStorageRelease = () => storage?.close
+    ? attemptRelease(() => storage.close!())
+    : undefined
+
+  if (options.closeStorageImmediately) {
+    const storageRelease = startStorageRelease()
+    const dependentResults = await Promise.allSettled([
+      ...(classroomRelease ? [classroomRelease] : []),
+      ...(storageRelease ? [storageRelease] : []),
+    ])
+    orderedResults.push(...dependentResults)
+  }
+  else {
+    if (classroomRelease) {
+      const [classroomResult] = await Promise.allSettled([classroomRelease])
+      orderedResults.push(classroomResult)
+    }
+    const storageRelease = startStorageRelease()
+    if (storageRelease) {
+      const [storageResult] = await Promise.allSettled([storageRelease])
+      orderedResults.push(storageResult)
+    }
+  }
+
+  const failures = [
+    ...orderedResults,
+    ...await cacheResults,
+  ]
+    .filter((result): result is PromiseRejectedResult =>
+      result.status === 'rejected')
+    .map(result => result.reason)
+  if (failures.length === 1)
+    throw failures[0]
+  if (failures.length > 1)
+    throw new AggregateError(failures, 'Failed to dispose AI Classroom resources')
+}
+
+/**
+ * Build and open the only production AI Classroom aggregate. The v8 IndexedDB
+ * scope is shared across UI locales and intentionally performs no legacy
+ * migration. Both locale catalogs are required so one Classroom Stream can
+ * reopen every exact Content Version after the learner switches languages.
+ */
+export async function createWorkspaceCollaborators(
+  lang: string,
+  options: CreateWorkspaceCollaboratorsOptions = {},
+): Promise<WorkspaceCollaborators> {
+  const selectedLocale: ContentLocale = lang === 'en' ? 'en' : 'zh'
+  const resources: WorkspaceResources = { caches: [] }
+  const boundary = createInitializationBoundary(
+    options.signal,
+    options.timeoutMs ?? DEFAULT_WORKSPACE_INITIALIZATION_TIMEOUT_MS,
+  )
+  let releaseLease: (() => void) | undefined
+  let initializationOwnership: InitializationOperationOwnership | undefined
+  try {
+    releaseLease = await acquireWorkspaceLease(boundary.signal)
+    initializationOwnership = createInitializationOperationOwnership()
+    throwIfAborted(boundary.signal)
+
+    const englishCache = createIndexedDBContentPackCache({ locale: 'en' })
+    resources.caches.push(englishCache)
+    const chineseCache = createIndexedDBContentPackCache({ locale: 'zh' })
+    resources.caches.push(chineseCache)
+    resources.storage = createIndexedDBClassroomStorage({
+      scope: CLASSROOM_STORAGE_SCOPE,
+    })
+
+    const [englishResponseResult, chineseResponseResult]
+      = await initializationOwnership.wait(Promise.allSettled([
+        fetchCourseContentPacks('en', { signal: boundary.signal }),
+        fetchCourseContentPacks('zh', { signal: boundary.signal }),
+      ]), boundary.signal)
+    throwIfAborted(boundary.signal)
+    if (englishResponseResult.status === 'rejected')
+      throw englishResponseResult.reason
+    if (chineseResponseResult.status === 'rejected')
+      throw chineseResponseResult.reason
+
+    const responses = {
+      en: englishResponseResult.value,
+      zh: chineseResponseResult.value,
+    }
+    const [englishPacksResult, chinesePacksResult]
+      = await initializationOwnership.wait(Promise.allSettled([
+        englishCache.merge(responses.en),
+        chineseCache.merge(responses.zh),
+      ]), boundary.signal)
+    throwIfAborted(boundary.signal)
+    if (englishPacksResult.status === 'rejected')
+      throw englishPacksResult.reason
+    if (chinesePacksResult.status === 'rejected')
+      throw chinesePacksResult.reason
+
+    const catalog = createContentPackCatalog(
+      [...englishPacksResult.value, ...chinesePacksResult.value],
+      responses[selectedLocale].currentVersions,
+    )
+    resources.classroom = createAIClassroom({
+      catalog,
+      storage: resources.storage,
+      onStorageError: options.onStorageError,
+    })
+    await initializationOwnership.wait(
+      resources.classroom.open(),
+      boundary.signal,
+    )
+    throwIfAborted(boundary.signal)
+    await initializationOwnership.settle()
+    const openedClassroom = resources.classroom
+    let disposal: Promise<void> | undefined
+    boundary.close()
+
+    return {
+      classroom: openedClassroom,
+      catalog,
+      knowledge: createCangjieMcpKnowledgeSource(),
+      runner: defaultRunner,
+      activeEditor: createActiveEditorRegistry(),
+      now: Date.now,
+      dispose: () => {
+        disposal ??= disposeWorkspaceResources(resources).finally(releaseLease)
+        return disposal
+      },
+    }
+  }
+  catch (error) {
+    const cleanup = disposeWorkspaceResources(resources, {
+      // Initialization never became usable. Start every available release now;
+      // a stuck aggregate open must not prevent storage close from being asked.
+      closeStorageImmediately: true,
+    })
+    const ownedLeaseRelease = releaseLease
+    releaseLease = undefined
+    const fullySettled = Promise.allSettled([
+      cleanup,
+      initializationOwnership?.settle() ?? Promise.resolve(),
+    ]).then(([cleanupResult]) => {
+      ownedLeaseRelease?.()
+      return cleanupResult
+    })
+
+    let cleanupError: unknown
+    if (boundary.signal.aborted) {
+      // The UI receives its deadline/abort promptly. The observed settlement
+      // continues in the background and is the only path that releases the
+      // shared-scope lease.
+      void fullySettled
+    }
+    else {
+      try {
+        const cleanupResult = await waitForOperation(
+          fullySettled,
+          boundary.signal,
+        )
+        if (cleanupResult.status === 'rejected')
+          cleanupError = cleanupResult.reason
+      }
+      catch {
+        // A deadline that fires during cleanup still leaves fullySettled
+        // observing ownership and releasing the lease only after convergence.
+        void fullySettled
+      }
+    }
+    boundary.close()
+    if (cleanupError && !boundary.signal.aborted) {
+      throw new AggregateError(
+        [error, cleanupError],
+        'AI Classroom initialization and cleanup both failed',
+      )
+    }
+    throw error
   }
 }

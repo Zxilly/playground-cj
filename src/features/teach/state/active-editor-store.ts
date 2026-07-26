@@ -1,46 +1,25 @@
 /**
- * The "active code_task editor" bridge.
- *
- * The teaching workspace renders zero-or-many `code_task` blocks (each owns its
- * own Monaco editor), but the teacher agent only ever drives *one* — the one the
- * learner is currently working in. Rather than couple the domain toolkit to
- * Monaco or to React, each `code_task` editor registers a tiny
- * {@link ActiveEditorHandle} (read/write the current code) when it mounts/focuses
- * and unregisters it when it unmounts. The teacher toolkit's `read_editor_code` /
- * `set_editor_code` tools resolve the *currently registered* handle through this
- * store, so they always target whichever code_task the learner last interacted
- * with — with no shared singleton Monaco editor.
- *
- * This is intentionally not a zustand store: the toolkit reads it imperatively
- * from a tool `execute`, and there is no reactive UI bound to "which editor is
- * active". A module-level registry keeps it dependency-free and testable.
+ * Read-only bridge to the editor the learner most recently focused. Editors
+ * register per-workspace handles so the Lesson Orchestrator can inspect the
+ * relevant buffer without receiving a capability to modify learner code.
  */
 
 /**
- * The minimal read/write contract a `code_task` editor exposes so the teacher
- * agent can read or seed the learner's current code. Backed by the Monaco model
- * (`model.getValue()` / `model.setValue()`) in the real app, and by a fake in
- * tests.
+ * Minimal capability exposed to the active-editor registry.
  */
 export interface ActiveEditorHandle {
   /** Read the editor's current contents. */
   getCode: () => string
-  /** Replace the editor's current contents with `code`. */
-  setCode: (code: string) => void
 }
 
 /**
  * The imperative bridge the teacher toolkit injects (and the feature layer wires
- * to the {@link activeEditorRegistry}). `getCode` returns `null` when no
- * code_task editor is currently active so the tool can return an explicit "no
- * active editor" hint rather than fabricating an empty string; `setCode` reports
- * whether a write actually landed on an active editor.
+ * to the active-editor registry). `getCode` returns `null` when no editor is
+ * active so the tool can report that state instead of fabricating empty code.
  */
 export interface ActiveEditorBridge {
   /** Read the active editor's code, or null when there is no active editor. */
   getCode: () => string | null
-  /** Write `code` to the active editor; returns false when none is active. */
-  setCode: (code: string) => boolean
 }
 
 /**
@@ -74,11 +53,5 @@ export function createActiveEditorRegistry(): ActiveEditorRegistry {
       }
     },
     getCode: () => (active ? active.getCode() : null),
-    setCode: (code) => {
-      if (!active)
-        return false
-      active.setCode(code)
-      return true
-    },
   }
 }

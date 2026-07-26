@@ -20,6 +20,22 @@ export interface KnowledgeHit {
   url?: string
 }
 
+export type KnowledgeSourceFailure = 'unavailable' | 'invalid_response'
+
+export class KnowledgeSourceError extends Error {
+  readonly failure: KnowledgeSourceFailure
+
+  constructor(
+    failure: KnowledgeSourceFailure,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options)
+    this.name = 'KnowledgeSourceError'
+    this.failure = failure
+  }
+}
+
 /**
  * A pluggable source of trusted knowledge the teacher agent can search to
  * ground factual claims before teaching them.
@@ -35,10 +51,9 @@ export interface KnowledgeSource {
   /**
    * Search the source for entries relevant to `query`.
    *
-   * Implementations must resolve to an empty array (never throw) when the
-   * backing source is unavailable, so grounding failures degrade gracefully —
-   * the one exception is a user abort (`opts.signal`), which must propagate so
-   * the caller can surface a "User aborted" tool result rather than empty hits.
+   * A legitimate no-match resolves to an empty array. Unavailable or malformed
+   * sources must reject with {@link KnowledgeSourceError}; they must never
+   * masquerade as an authoritative empty result. User aborts also propagate.
    */
   search: (query: string, opts?: { limit?: number, signal?: AbortSignal }) => Promise<KnowledgeHit[]>
 }

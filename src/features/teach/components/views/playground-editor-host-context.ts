@@ -2,11 +2,12 @@
 
 import { createContext, use } from 'react'
 import type { RefCallback, RefObject } from 'react'
-import type { CodeTaskEditorHandle } from '@/features/teach/components/blocks/CodeTaskBlock'
+import type { CangjieEditorHandle } from '@/features/teach/components/editor/CangjieEditor'
 
 export interface PlaygroundEditorHostContextValue {
   activateEditor: () => void
-  editorHandleRef: RefObject<CodeTaskEditorHandle | null>
+  editorHandleRef: RefObject<CangjieEditorHandle | null>
+  flushPendingCode: () => void
   registerEditorSlot: RefCallback<HTMLDivElement>
 }
 
