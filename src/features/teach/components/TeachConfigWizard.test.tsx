@@ -7,7 +7,7 @@ import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
 import { TeachConfigWizard } from './TeachConfigWizard'
 
 // The wizard calls the LLM bootstrap hook on mount. It performs network I/O
-// (fetch /api/ai-key) and store writes exercised in its own unit test; here we
+// (fetch /api/ai-gateway/metadata) and store writes exercised in its own unit test; here we
 // stub it so the wizard's source/credentials flow is the unit under test.
 const bootstrapMock = vi.hoisted(() => vi.fn(
   (): { status: 'loading' | 'ready' | 'error', error?: string } => ({ status: 'ready' }),

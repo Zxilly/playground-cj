@@ -45,7 +45,7 @@ const { SharedQuotaMetadataRateLimitError } = await import(
   '@/lib/ai/shared-quota-metadata',
 )
 
-describe('get /api/ai-key', () => {
+describe('get /api/ai-gateway/metadata', () => {
   beforeEach(() => {
     readQuota.mockReset()
     readMetadata.mockReset()
@@ -61,7 +61,7 @@ describe('get /api/ai-key', () => {
       exhausted: false,
       apiKey: 'malicious-extra-key-from-port',
     })
-    const request = new Request('https://playground.test/api/ai-key')
+    const request = new Request('https://playground.test/api/ai-gateway/metadata')
 
     const response = await GET(request)
     const text = await response.text()
@@ -98,7 +98,7 @@ describe('get /api/ai-key', () => {
   it('sanitizes quota broker failures', async () => {
     readMetadata.mockRejectedValue(new Error('redis failed with server-secret'))
 
-    const response = await GET(new Request('https://playground.test/api/ai-key'))
+    const response = await GET(new Request('https://playground.test/api/ai-gateway/metadata'))
     const text = await response.text()
 
     expect(response.status).toBe(503)
@@ -113,7 +113,7 @@ describe('get /api/ai-key', () => {
       new SharedQuotaMetadataRateLimitError('internal counter details'),
     )
 
-    const response = await GET(new Request('https://playground.test/api/ai-key'))
+    const response = await GET(new Request('https://playground.test/api/ai-gateway/metadata'))
 
     expect(response.status).toBe(429)
     expect(await response.json()).toEqual({

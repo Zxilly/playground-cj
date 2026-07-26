@@ -71,7 +71,7 @@ describe('useLLMConfigBootstrap', () => {
       })
     })
     expect(result.current.status).toBe('ready')
-    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-key', { method: 'GET' })
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/metadata', { method: 'GET' })
 
     await waitFor(() => {
       expect(useLLMConfigStore.getState().autoQuota).toEqual({
@@ -106,10 +106,10 @@ describe('useLLMConfigBootstrap', () => {
         model: 'deepseek-v4-flash',
       })
     })
-    expect(fetch).toHaveBeenCalledWith('/api/ai-key', { method: 'GET' })
+    expect(fetch).toHaveBeenCalledWith('/api/ai-gateway/metadata', { method: 'GET' })
   })
 
-  it('stores the per-period daily budget from the ai-key response', async () => {
+  it('stores the per-period daily budget from the shared gateway metadata response', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(jsonResponse(sharedMetadata()))
 
@@ -163,7 +163,7 @@ describe('useLLMConfigBootstrap', () => {
         apiKey: '',
       })
     })
-    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-key', { method: 'GET' })
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/metadata', { method: 'GET' })
     expect(useLLMConfigStore.getState().autoQuota).toEqual({
       nextResetAt: 2_000,
       exhausted: false,
@@ -193,7 +193,7 @@ describe('useLLMConfigBootstrap', () => {
 
     renderHook(() => useLLMConfigBootstrap(), { wrapper: Wrapper })
 
-    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-key', { method: 'GET' })
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/metadata', { method: 'GET' })
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500)
@@ -206,7 +206,7 @@ describe('useLLMConfigBootstrap', () => {
         exhausted: false,
       })
     })
-    expect(fetch).toHaveBeenNthCalledWith(2, '/api/ai-key', { method: 'GET' })
+    expect(fetch).toHaveBeenNthCalledWith(2, '/api/ai-gateway/metadata', { method: 'GET' })
   })
 
   it('reports fetch errors when shared gateway bootstrap fails', async () => {

@@ -41,7 +41,7 @@ describe('useSharedQuota', () => {
 
     expect(result.current.loading).toBe(true)
     await waitFor(() => expect(result.current).toEqual({ percent: 25, loading: false }))
-    expect(fetch).toHaveBeenCalledWith('/api/ai-key', { method: 'GET' })
+    expect(fetch).toHaveBeenCalledWith('/api/ai-gateway/metadata', { method: 'GET' })
   })
 
   it('reports 100 when the full period budget is available', async () => {

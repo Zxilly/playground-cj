@@ -28,7 +28,7 @@ describe('fetchSharedGatewayMetadata', () => {
         exhausted: false,
       },
     })
-    expect(fetch).toHaveBeenCalledWith('/api/ai-key', { method: 'GET' })
+    expect(fetch).toHaveBeenCalledWith('/api/ai-gateway/metadata', { method: 'GET' })
   })
 
   it('fails closed if a response contains a legacy shared key field', async () => {

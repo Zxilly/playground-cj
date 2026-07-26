@@ -170,7 +170,7 @@ describe('llmConfigDialog', () => {
     expect(screen.queryByLabelText('模型')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Anthropic' })).toBeNull()
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/ai-key', { method: 'GET' })
+      expect(fetchMock).toHaveBeenCalledWith('/api/ai-gateway/metadata', { method: 'GET' })
     })
     expect(screen.getByRole('status').textContent).toContain('剩余')
     expect(screen.getByRole('progressbar', { name: '共享额度已使用量' }).getAttribute('aria-valuenow')).toBe('1000')

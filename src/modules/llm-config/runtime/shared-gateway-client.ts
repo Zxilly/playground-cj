@@ -20,7 +20,7 @@ const metadataSchema = z.strictObject({
 export type SharedGatewayMetadata = z.infer<typeof metadataSchema>
 
 export async function fetchSharedGatewayMetadata(): Promise<SharedGatewayMetadata> {
-  const response = await fetch('/api/ai-key', { method: 'GET' })
+  const response = await fetch('/api/ai-gateway/metadata', { method: 'GET' })
   if (!response.ok)
     throw new Error(`Shared gateway metadata request failed: HTTP ${response.status}`)
 
