@@ -21,7 +21,7 @@
     "lint:fix": "eslint . --fix",
     "pretest": "pnpm prep && pnpm content-packs:verify-published",
     "test": "vitest --project unit --project component",
-    "test:run": "pnpm content-packs:verify-published && vitest run --project unit --project component",
+    "test:run": "pnpm prep && pnpm content-packs:verify-published && vitest run --project unit --project component",
     "pretest:browser": "pnpm prep",
     "test:browser": "vitest run --project browser",
     "pretest:e2e": "pnpm prep",

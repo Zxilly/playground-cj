@@ -11,7 +11,7 @@ describe('package scripts', () => {
     expect(packageJson.scripts.test)
       .toBe('vitest --project unit --project component')
     expect(packageJson.scripts['test:run'])
-      .toBe('pnpm content-packs:verify-published && vitest run --project unit --project component')
+      .toBe('pnpm prep && pnpm content-packs:verify-published && vitest run --project unit --project component')
     expect(packageJson.scripts['pretest:browser']).toBe('pnpm prep')
     expect(packageJson.scripts['test:browser'])
       .toBe('vitest run --project browser')
