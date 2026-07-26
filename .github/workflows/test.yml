@@ -83,9 +83,6 @@ jobs:
           go-version-file: cj-runner/go.mod
           cache: false
 
-      - name: Install runner sandbox dependency
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends bubblewrap
-
       - name: Test runner boundary with race detection
         working-directory: cj-runner
         run: go test -race ./...

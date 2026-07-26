@@ -31,6 +31,11 @@ describe('github Actions supply-chain boundary', () => {
 
   it('deploys the runner only to Modal from master', () => {
     const workflow = readWorkflow('deploy-runner.yml')
+    const testWorkflow = readWorkflow('test.yml')
+    const runnerDockerfile = readFileSync(
+      resolve(process.cwd(), 'cj-runner', 'Dockerfile'),
+      'utf8',
+    )
     expect(workflow).toMatch(/push:\r?\n\s+branches:\s+\[master\]/)
     expect(workflow).toContain('if: github.ref == \'refs/heads/master\'')
     expect(workflow).toMatch(/^permissions:\r?\n\s+contents:\s+read\s*$/m)
@@ -40,5 +45,28 @@ describe('github Actions supply-chain boundary', () => {
     expect(workflow).toContain('modal deploy modal/runner.py')
     expect(workflow).not.toContain('GHCR')
     expect(workflow).not.toContain('docker push')
+    for (const deploymentInput of [workflow, testWorkflow, runnerDockerfile]) {
+      expect(deploymentInput).not.toMatch(/\bbubblewrap\b|\bbwrap\b|\bprlimit\b/)
+    }
+  })
+
+  it('keeps the long-lived runner credential out of learner containers', () => {
+    const modalRunner = readFileSync(
+      resolve(process.cwd(), 'modal', 'runner.py'),
+      'utf8',
+    )
+    const workerSection = modalRunner.slice(
+      modalRunner.indexOf('@app.function(\n    image=runner_image'),
+      modalRunner.indexOf('@app.function(\n    image=gateway_image'),
+    )
+    const gatewaySection = modalRunner.slice(
+      modalRunner.indexOf('@app.function(\n    image=gateway_image'),
+    )
+
+    expect(workerSection).toContain('single_use_containers=True')
+    expect(workerSection).not.toContain('secrets=[runner_secret]')
+    expect(workerSection).toContain('secrets.token_urlsafe')
+    expect(gatewaySection).toContain('secrets=[runner_secret]')
+    expect(gatewaySection).toContain('hmac.compare_digest')
   })
 })

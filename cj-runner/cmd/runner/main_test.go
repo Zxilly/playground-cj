@@ -8,13 +8,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -123,7 +121,7 @@ func TestRunResponseIdentifiesCompileFailureWithoutBinaryExitCode(t *testing.T) 
 			CompilerCode:   1,
 		}, nil
 	}
-	handler := testHandler(operations, 1)
+	handler := testHandler(operations)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(
@@ -181,11 +179,11 @@ func TestRunResponseIdentifiesRunStageFailureWithExitCode(t *testing.T) {
 		return runMessage{
 			Phase:        runPhaseRun,
 			CompilerCode: 0,
-			BinStderr:    "sandbox start: unavailable",
+			BinStderr:    "process start: unavailable",
 			BinCode:      &binCode,
 		}, nil
 	}
-	handler := testHandler(operations, 1)
+	handler := testHandler(operations)
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(
@@ -355,489 +353,86 @@ func TestTrustedToolEnvironmentDoesNotInheritServiceSecrets(t *testing.T) {
 	}
 }
 
-func TestSandboxCommandUsesAnEmptyRootAndExplicitEnvironment(t *testing.T) {
-	t.Setenv("CJ_RUNNER_SHARED_TOKEN", "must-not-reach-bubblewrap")
-	executable := filepath.Join(t.TempDir(), "main")
+func TestModalProcessCommandRunsTheRequestedExecutableDirectly(t *testing.T) {
+	executable := filepath.Join(t.TempDir(), "probe")
 	if err := os.WriteFile(executable, []byte("#!/bin/sh\nexit 0\n"), 0o700); err != nil {
-		t.Fatalf("write sandbox executable: %v", err)
+		t.Fatalf("write process executable: %v", err)
 	}
-	settings := sandboxSettings{
-		bubblewrapPath: "/usr/bin/bwrap",
-		prlimitPath:    "/usr/bin/prlimit",
-		readOnlyPaths:  []string{"/usr", "/lib", "/cangjie"},
-	}
-
-	command, err := sandboxCommand(context.Background(), sandboxCommandSpec{
-		executable:              sandboxExecutablePath,
-		environment:             runtimeEnvironment(),
-		workingDirectory:        sandboxWorkingDirectory,
-		readOnlyExecutableMount: executable,
-		timeout:                 runTimeout,
-		limits:                  runtimeResourceLimits,
-	}, settings)
+	environment := []string{"PATH=/usr/bin:/bin", "LANG=C.UTF-8"}
+	command, err := processCommand(context.Background(), processSpec{
+		executable:       executable,
+		arguments:        []string{"first", "second"},
+		environment:      environment,
+		workingDirectory: filepath.Dir(executable),
+		timeout:          time.Second,
+	})
 	if err != nil {
-		t.Fatalf("build sandbox command: %v", err)
+		t.Fatalf("build Modal worker process command: %v", err)
 	}
-	args := command.Args[1:]
-
-	for _, required := range [][]string{
-		{"--unshare-all"},
-		{"--unshare-user"},
-		{"--clearenv"},
-		{"--disable-userns"},
-		{"--assert-userns-disabled"},
-		{"--ro-bind", "/usr", "/usr"},
-		{"--ro-bind", "/lib", "/lib"},
-		{"--ro-bind", "/cangjie", "/cangjie"},
-		{"--ro-bind", executable, sandboxExecutablePath},
-		{"--proc", "/proc"},
-		{"--dev", "/dev"},
-		{"--size", strconv.Itoa(sandboxTmpBytes), "--tmpfs", "/tmp"},
-		{"--size", strconv.Itoa(sandboxWorkBytes), "--tmpfs", sandboxWorkingDirectory},
-		{"--tmpfs", "/tmp"},
-		{"--tmpfs", sandboxWorkingDirectory},
-		{"--remount-ro", "/"},
-		{"--setenv", "LD_LIBRARY_PATH", cangjieLibs},
-		{"--as=" + strconv.Itoa(limAddrSpaceBytes)},
-		{"--cpu=" + strconv.Itoa(limCPUSeconds)},
-		{"--nproc=" + strconv.Itoa(limNProc)},
-		{"--fsize=" + strconv.Itoa(limFsizeBytes)},
-		{"--nofile=" + strconv.Itoa(limNoFile)},
-	} {
-		if !containsArgumentSequence(args, required) {
-			t.Fatalf("sandbox args omit %q: %q", required, args)
-		}
+	if command.Path != executable {
+		t.Fatalf("process path = %q, want %q", command.Path, executable)
 	}
-	for _, forbidden := range []string{"/", "/etc", "/playground"} {
-		if containsArgumentSequence(args, []string{"--ro-bind", forbidden, forbidden}) {
-			t.Fatalf("sandbox exposes forbidden host path %q: %q", forbidden, args)
-		}
+	if got, want := command.Args, []string{executable, "first", "second"}; !slices.Equal(got, want) {
+		t.Fatalf("process args = %q, want %q", got, want)
 	}
-	joinedEnvironment := strings.Join(command.Env, "\n")
-	if strings.Contains(joinedEnvironment, "CJ_RUNNER_SHARED_TOKEN=") {
-		t.Fatalf("bubblewrap launcher inherited the runner token: %q", command.Env)
+	if !slices.Equal(command.Env, environment) {
+		t.Fatalf("process environment = %q, want %q", command.Env, environment)
+	}
+	if command.Dir != filepath.Dir(executable) {
+		t.Fatalf("process directory = %q, want %q", command.Dir, filepath.Dir(executable))
 	}
 	if command.SysProcAttr == nil || !command.SysProcAttr.Setpgid {
-		t.Fatal("sandbox command does not own a killable process group")
+		t.Fatal("process does not own a killable process group")
 	}
 	if command.Cancel == nil || command.WaitDelay != processWaitDelay {
-		t.Fatalf("sandbox command cancellation is not bounded: cancel=%v waitDelay=%s", command.Cancel != nil, command.WaitDelay)
+		t.Fatalf("process cancellation is not bounded: cancel=%v waitDelay=%s", command.Cancel != nil, command.WaitDelay)
 	}
 }
 
-func TestSandboxCommandCanUseAnExplicitOuterContainerBoundary(t *testing.T) {
-	executable := filepath.Join(t.TempDir(), "main")
-	if err := os.WriteFile(executable, []byte("#!/bin/sh\nexit 0\n"), 0o700); err != nil {
-		t.Fatalf("write sandbox executable: %v", err)
-	}
-	settings := sandboxSettings{
-		bubblewrapPath:            "/usr/bin/bwrap",
-		prlimitPath:               "/usr/bin/prlimit",
-		readOnlyPaths:             []string{"/usr", "/lib", "/cangjie"},
-		useOuterContainerBoundary: true,
-	}
-
-	command, err := sandboxCommand(context.Background(), sandboxCommandSpec{
-		executable:              sandboxExecutablePath,
-		environment:             runtimeEnvironment(),
-		workingDirectory:        sandboxWorkingDirectory,
-		readOnlyExecutableMount: executable,
-		timeout:                 runTimeout,
-		limits:                  runtimeResourceLimits,
-	}, settings)
-	if err != nil {
-		t.Fatalf("build sandbox command: %v", err)
-	}
-	args := command.Args[1:]
-	for _, required := range []string{
-		"--reuid=65532",
-		"--regid=65532",
-		"--bounding-set=-all",
-		"--no-new-privs",
-		"/usr/bin/prlimit",
-	} {
-		if !containsArgumentSequence(args, []string{required}) {
-			t.Fatalf("sandbox lost non-network boundary %q: %q", required, args)
-		}
-	}
-	for _, forbidden := range []string{
-		"--unshare-all",
-		"--unshare-user",
-		"--disable-userns",
-		"--assert-userns-disabled",
-		"/usr/bin/bwrap",
-	} {
-		if containsArgumentSequence(args, []string{forbidden}) {
-			t.Fatalf("sandbox attempted unavailable nested boundary %q: %q", forbidden, args)
-		}
-	}
-	if command.Path != "/usr/bin/setpriv" {
-		t.Fatalf("outer-boundary command path = %q, want setpriv", command.Path)
-	}
-	if command.Dir != "/tmp" {
-		t.Fatalf("outer-boundary working directory = %q", command.Dir)
-	}
-}
-
-func TestSandboxCommandRejectsSymlinkExecutableArtifacts(t *testing.T) {
-	directory := t.TempDir()
-	target := filepath.Join(directory, "target")
-	link := filepath.Join(directory, "main")
-	if err := os.WriteFile(target, []byte("#!/bin/sh\nexit 0\n"), 0o700); err != nil {
-		t.Fatalf("write executable target: %v", err)
-	}
-	if err := os.Symlink(target, link); err != nil {
-		t.Fatalf("create executable symlink: %v", err)
-	}
-
-	_, err := sandboxCommand(context.Background(), sandboxCommandSpec{
-		executable:              sandboxExecutablePath,
-		environment:             runtimeEnvironment(),
-		workingDirectory:        sandboxWorkingDirectory,
-		readOnlyExecutableMount: link,
-		timeout:                 runTimeout,
-		limits:                  runtimeResourceLimits,
-	}, sandboxSettings{
-		bubblewrapPath: "/usr/bin/bwrap",
-		prlimitPath:    "/usr/bin/prlimit",
-	})
-	if err == nil || !strings.Contains(err.Error(), "regular executable file") {
-		t.Fatalf("sandbox symlink executable error = %v", err)
-	}
-}
-
-func TestSandboxHidesServiceSecretsAndConcurrentSiblingDirectories(t *testing.T) {
-	t.Setenv("CJ_RUNNER_SHARED_TOKEN", "runner-token-must-stay-server-only")
-	root := t.TempDir()
-	firstDir := filepath.Join(root, "run-first")
-	secondDir := filepath.Join(root, "run-second")
-	for _, directory := range []string{firstDir, secondDir} {
-		if err := os.Mkdir(directory, 0o700); err != nil {
-			t.Fatalf("create request directory: %v", err)
-		}
-	}
-	firstSecret := filepath.Join(firstDir, "request-secret")
-	secondSecret := filepath.Join(secondDir, "request-secret")
-	if err := os.WriteFile(firstSecret, []byte("first-request-secret"), 0o600); err != nil {
-		t.Fatalf("write first request secret: %v", err)
-	}
-	if err := os.WriteFile(secondSecret, []byte("second-request-secret"), 0o600); err != nil {
-		t.Fatalf("write second request secret: %v", err)
-	}
-
-	firstProbe := writeSandboxProbe(t, firstDir, secondSecret)
-	secondProbe := writeSandboxProbe(t, secondDir, firstSecret)
-	settings := sandboxTestSettings(t)
-
-	type result struct {
-		stdout string
-		stderr string
-		code   int
-	}
-	start := make(chan struct{})
-	results := make(chan result, 2)
-	for _, probe := range []string{firstProbe, secondProbe} {
-		go func(executable string) {
-			<-start
-			sandboxResult, err := runSandboxedWithSettings(
-				context.Background(),
-				executable,
-				"",
-				settings,
-			)
-			if err != nil {
-				results <- result{stderr: err.Error(), code: -1}
-				return
-			}
-			results <- result{
-				stdout: sandboxResult.stdout.content,
-				stderr: sandboxResult.stderr.content,
-				code:   sandboxResult.exitCode,
-			}
-		}(probe)
-	}
-	close(start)
-
-	for range 2 {
-		got := <-results
-		if got.code != 0 {
-			t.Fatalf("sandbox probe exited %d; stdout=%q stderr=%q", got.code, got.stdout, got.stderr)
-		}
-		if got.stderr != "" {
-			t.Fatalf("sandbox probe wrote stderr: %q", got.stderr)
-		}
-		if !strings.Contains(got.stdout, "runner_token=unset\n") {
-			t.Fatalf("sandbox inherited the service token: %q", got.stdout)
-		}
-		if !strings.Contains(got.stdout, "sibling_read=blocked\n") {
-			t.Fatalf("sandbox could inspect a sibling request directory: %q", got.stdout)
-		}
-		if !strings.Contains(got.stdout, "sibling_write=blocked\n") {
-			t.Fatalf("sandbox could modify a sibling request directory: %q", got.stdout)
-		}
-		if strings.Contains(got.stdout, "first-request-secret") ||
-			strings.Contains(got.stdout, "second-request-secret") ||
-			strings.Contains(got.stdout, "runner-token-must-stay-server-only") {
-			t.Fatalf("sandbox leaked protected data: %q", got.stdout)
-		}
-	}
-	for path, expected := range map[string]string{
-		firstSecret:  "first-request-secret",
-		secondSecret: "second-request-secret",
-	} {
-		content, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("read protected sibling file: %v", err)
-		}
-		if string(content) != expected {
-			t.Fatalf("protected sibling file %s was modified: %q", path, content)
-		}
-	}
-}
-
-func TestToolSandboxSeesOnlyItsWritableRequestDirectory(t *testing.T) {
-	t.Setenv("CJ_RUNNER_SHARED_TOKEN", "tool-must-not-see-runner-token")
-	root := t.TempDir()
-	requestDirectory := filepath.Join(root, "request")
-	siblingDirectory := filepath.Join(root, "sibling")
-	for _, directory := range []string{requestDirectory, siblingDirectory} {
-		if err := os.Mkdir(directory, 0o700); err != nil {
-			t.Fatalf("create tool request directory: %v", err)
-		}
-	}
-	siblingSecret := filepath.Join(siblingDirectory, "secret")
-	if err := os.WriteFile(siblingSecret, []byte("sibling-secret"), 0o600); err != nil {
-		t.Fatalf("write sibling secret: %v", err)
-	}
-	probe := filepath.Join(requestDirectory, "probe")
-	script := fmt.Sprintf(`#!/bin/sh
-printf 'token=%%s\n' "${CJ_RUNNER_SHARED_TOKEN-unset}"
-printf 'own-write' > /request/generated
-if [ "$(cat /request/generated)" = "own-write" ]; then
-  printf 'request=rw\n'
-fi
-if [ -r %s ]; then printf 'sibling_read=visible\n'; else printf 'sibling_read=blocked\n'; fi
-if printf 'tampered' 2>/dev/null > %s; then printf 'sibling_write=visible\n'; else printf 'sibling_write=blocked\n'; fi
-`, shellSingleQuote(siblingSecret), shellSingleQuote(siblingSecret))
-	if err := os.WriteFile(probe, []byte(script), 0o700); err != nil {
-		t.Fatalf("write tool sandbox probe: %v", err)
-	}
-
-	result, err := runSandboxOperation(context.Background(), sandboxCommandSpec{
-		executable:              "/bin/sh",
-		arguments:               []string{"/request/probe"},
-		environment:             trustedToolEnvironment("/request"),
-		workingDirectory:        "/request",
-		requestDirectory:        requestDirectory,
-		timeout:                 time.Second,
-		limits:                  toolResourceLimits,
-		timeoutIsInfrastructure: true,
-	}, sandboxTestSettings(t), "tool isolation probe")
-	if err != nil {
-		t.Fatalf("run tool sandbox probe: %v", err)
-	}
-	if result.exitCode != 0 || result.stderr.content != "" {
-		t.Fatalf("tool probe exited %d; stdout=%q stderr=%q", result.exitCode, result.stdout.content, result.stderr.content)
-	}
-	for _, expected := range []string{
-		"token=unset\n",
-		"request=rw\n",
-		"sibling_read=blocked\n",
-		"sibling_write=blocked\n",
-	} {
-		if !strings.Contains(result.stdout.content, expected) {
-			t.Fatalf("tool sandbox output omits %q: %q", expected, result.stdout.content)
-		}
-	}
-	content, err := os.ReadFile(filepath.Join(requestDirectory, "generated"))
-	if err != nil || string(content) != "own-write" {
-		t.Fatalf("tool request write was not retained: content=%q err=%v", content, err)
-	}
-	content, err = os.ReadFile(siblingSecret)
-	if err != nil || string(content) != "sibling-secret" {
-		t.Fatalf("tool sandbox modified sibling content: content=%q err=%v", content, err)
-	}
-}
-
-func TestCangjieCompilerSandboxIntegration(t *testing.T) {
-	if os.Getenv("CJ_RUNNER_TOOLCHAIN_INTEGRATION") != "1" {
-		t.Skip("set CJ_RUNNER_TOOLCHAIN_INTEGRATION=1 inside the runner filesystem")
-	}
-	if err := verifySandboxBoundary(context.Background(), productionSandboxSettings); err != nil {
-		t.Fatalf("verify production sandbox profiles: %v", err)
-	}
-	message, err := compileAndRun(
-		context.Background(),
-		"main(): Int64 {\n    println(\"sandboxed\")\n    return 0\n}\n",
-		"",
-	)
-	if err != nil {
-		t.Fatalf("compile and run in toolchain sandbox: %v", err)
-	}
-	if message.CompilerCode != 0 || message.BinCode == nil || *message.BinCode != 0 {
-		t.Fatalf("compile/run result = %#v", message)
-	}
-	if message.BinStdout != "sandboxed\n" {
-		t.Fatalf("runtime stdout = %q", message.BinStdout)
-	}
-}
-
-func TestSandboxSetupFailureCannotMasqueradeAsLearnerExit(t *testing.T) {
-	settings := sandboxTestSettings(t)
-	settings.readOnlyPaths = append(
-		settings.readOnlyPaths,
-		"/definitely-missing-runner-runtime",
-	)
-
-	_, err := runSandboxedWithSettings(
-		context.Background(),
-		"/usr/bin/true",
-		"",
-		settings,
-	)
-
-	var infrastructureFailure *runnerInfrastructureError
-	if !errors.As(err, &infrastructureFailure) {
-		t.Fatalf("sandbox setup error = %v, want typed infrastructure failure", err)
-	}
-	if !strings.Contains(err.Error(), "sandbox setup") {
-		t.Fatalf("sandbox setup diagnostic = %q", err)
-	}
-}
-
-func TestSandboxPreservesLearnerExitAndSeparateOutput(t *testing.T) {
+func TestModalProcessPreservesLearnerExitAndSeparateOutput(t *testing.T) {
 	requestDirectory := t.TempDir()
 	probe := filepath.Join(requestDirectory, "probe")
 	if err := os.WriteFile(
 		probe,
-		[]byte("#!/bin/sh\nprintf 'learner stdout\\n'\nprintf 'nofile=%s\\n' \"$(ulimit -n)\"\nprintf 'learner stderr\\n' >&2\nexit 7\n"),
+		[]byte("#!/bin/sh\nprintf 'learner stdout\\n'\nprintf 'learner stderr\\n' >&2\nexit 7\n"),
 		0o700,
 	); err != nil {
 		t.Fatalf("write learner probe: %v", err)
 	}
 
-	result, err := runSandboxedWithSettings(
-		context.Background(),
-		probe,
-		"",
-		sandboxTestSettings(t),
-	)
-
+	result, err := runProcess(context.Background(), processSpec{
+		executable:       probe,
+		environment:      runtimeEnvironment(requestDirectory),
+		workingDirectory: requestDirectory,
+		timeout:          time.Second,
+	}, "run learner binary")
 	if err != nil {
 		t.Fatalf("run learner probe: %v", err)
 	}
 	if result.exitCode != 7 {
-		t.Fatalf("learner exit code = %d, want 7; stdout=%q stderr=%q", result.exitCode, result.stdout.content, result.stderr.content)
+		t.Fatalf("learner exit code = %d, want 7", result.exitCode)
 	}
-	if result.stdout.content != "learner stdout\nnofile=256\n" {
+	if result.stdout.content != "learner stdout\n" {
 		t.Fatalf("learner stdout = %q", result.stdout.content)
 	}
 	if result.stderr.content != "learner stderr\n" {
 		t.Fatalf("learner stderr = %q", result.stderr.content)
 	}
-	if strings.Contains(result.stderr.content, sandboxReadyMarker) {
-		t.Fatalf("internal sandbox marker leaked into learner stderr: %q", result.stderr.content)
-	}
 }
 
-func TestSandboxKeepsHostNetworkAndPIDNamespacePrivate(t *testing.T) {
-	listener, err := net.Listen("tcp4", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("open host listener: %v", err)
+func TestCompilerArgumentsStayInsideTheSingleRequestDirectory(t *testing.T) {
+	requestDirectory := "/playground/run-test"
+	arguments := compilerArguments(requestDirectory)
+	if !containsExact(arguments, "--output-dir="+requestDirectory) {
+		t.Fatalf("compiler output directory is not request-local: %q", arguments)
 	}
-	defer listener.Close()
-	hostPort := listener.Addr().(*net.TCPAddr).Port
-
-	const hostProcessSentinel = "cj-runner-host-process-sentinel"
-	hostProcess := exec.Command("sleep", "30")
-	hostProcess.Env = append(os.Environ(), "CJ_SANDBOX_PID_SENTINEL="+hostProcessSentinel)
-	if err := hostProcess.Start(); err != nil {
-		t.Fatalf("start host sibling process: %v", err)
+	if !containsExact(arguments, requestDirectory) {
+		t.Fatalf("compiler package path is not request-local: %q", arguments)
 	}
-	defer func() {
-		_ = hostProcess.Process.Kill()
-		_ = hostProcess.Wait()
-	}()
-
-	requestDirectory := t.TempDir()
-	probe := filepath.Join(requestDirectory, "probe")
-	script := fmt.Sprintf(`#!/bin/sh
-if /bin/grep -a -q %s /proc/%d/environ 2>/dev/null; then
-  printf 'host_pid=visible\n'
-else
-  printf 'host_pid=hidden\n'
-fi
-network=hidden
-while IFS= read -r line; do
-  case "$line" in
-    *":%04X "*) network=visible ;;
-  esac
-done < /proc/net/tcp
-printf 'host_network=%%s\n' "$network"
-`, shellSingleQuote(hostProcessSentinel), hostProcess.Process.Pid, hostPort)
-	if err := os.WriteFile(probe, []byte(script), 0o700); err != nil {
-		t.Fatalf("write namespace probe: %v", err)
-	}
-
-	result, err := runSandboxedWithSettings(
-		context.Background(),
-		probe,
-		"",
-		sandboxTestSettings(t),
-	)
-	if err != nil {
-		t.Fatalf("run namespace probe: %v", err)
-	}
-	if result.exitCode != 0 || result.stderr.content != "" {
-		t.Fatalf("namespace probe exited %d; stdout=%q stderr=%q", result.exitCode, result.stdout.content, result.stderr.content)
-	}
-	if result.stdout.content != "host_pid=hidden\nhost_network=hidden\n" {
-		t.Fatalf("host namespace resources were visible: %q", result.stdout.content)
-	}
-}
-
-func TestSandboxBoundaryFailsClosedWhenBubblewrapCannotStart(t *testing.T) {
-	settings := sandboxSettings{
-		bubblewrapPath: "/definitely-not-installed/bwrap",
-		prlimitPath:    "/usr/bin/prlimit",
-		readOnlyPaths:  []string{"/usr"},
-	}
-
-	_, runErr := runSandboxedWithSettings(
-		context.Background(),
-		"/usr/bin/true",
-		"",
-		settings,
-	)
-
-	var infrastructureFailure *runnerInfrastructureError
-	if !errors.As(runErr, &infrastructureFailure) {
-		t.Fatalf("sandbox start error = %v, want typed infrastructure error", runErr)
-	}
-	if !strings.Contains(runErr.Error(), settings.bubblewrapPath) {
-		t.Fatalf("sandbox start diagnostic = %q", runErr)
-	}
-	if err := verifySandboxBoundary(context.Background(), settings); err == nil {
-		t.Fatal("sandbox readiness probe accepted a missing bubblewrap executable")
-	}
-}
-
-func sandboxTestSettings(t *testing.T) sandboxSettings {
-	t.Helper()
-	bubblewrapPath, err := exec.LookPath("bwrap")
-	if err != nil {
-		t.Fatalf("bubblewrap is required for the runner boundary: %v", err)
-	}
-	prlimitPath, err := exec.LookPath("prlimit")
-	if err != nil {
-		t.Fatalf("prlimit is required for the runner boundary: %v", err)
-	}
-	return sandboxSettings{
-		bubblewrapPath: bubblewrapPath,
-		prlimitPath:    prlimitPath,
-		readOnlyPaths: existingSandboxRuntimePaths(
-			[]string{"/usr", "/bin", "/lib", "/lib64"},
-		),
+	for _, argument := range arguments {
+		if strings.Contains(argument, "/request") {
+			t.Fatalf("compiler argument retained removed nested mount path: %q", argument)
+		}
 	}
 }
 
@@ -850,71 +445,7 @@ func containsExact(values []string, wanted string) bool {
 	return false
 }
 
-func containsArgumentSequence(values, wanted []string) bool {
-	if len(wanted) == 0 || len(wanted) > len(values) {
-		return false
-	}
-	for start := 0; start <= len(values)-len(wanted); start++ {
-		matches := true
-		for offset := range wanted {
-			if values[start+offset] != wanted[offset] {
-				matches = false
-				break
-			}
-		}
-		if matches {
-			return true
-		}
-	}
-	return false
-}
-
-func existingSandboxRuntimePaths(candidates []string) []string {
-	paths := make([]string, 0, len(candidates))
-	for _, candidate := range candidates {
-		if _, err := os.Stat(candidate); err == nil {
-			paths = append(paths, candidate)
-		}
-	}
-	return paths
-}
-
-func writeSandboxProbe(t *testing.T, requestDirectory, siblingSecret string) string {
-	t.Helper()
-	path := filepath.Join(requestDirectory, "probe")
-	script := fmt.Sprintf(`#!/bin/sh
-printf 'runner_token=%%s\n' "${CJ_RUNNER_SHARED_TOKEN-unset}"
-sleep 0.2
-if [ -r %s ]; then
-  printf 'sibling_read=readable\n'
-  /bin/cat %s
-else
-  printf 'sibling_read=blocked\n'
-fi
-if printf 'tampered' 2>/dev/null > %s; then
-  printf 'sibling_write=writable\n'
-else
-  printf 'sibling_write=blocked\n'
-fi
-`,
-		shellSingleQuote(siblingSecret),
-		shellSingleQuote(siblingSecret),
-		shellSingleQuote(siblingSecret),
-	)
-	if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
-		t.Fatalf("write sandbox probe: %v", err)
-	}
-	return path
-}
-
-func shellSingleQuote(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", `'"'"'`) + "'"
-}
-
-func testHandler(operations runnerOperations, concurrency int) http.Handler {
-	if concurrency != 1 {
-		panic("runner test helper only supports fixed single-flight admission")
-	}
+func testHandler(operations runnerOperations) http.Handler {
 	return newRunnerHandler(runnerConfig{
 		sharedToken:         testSharedToken,
 		toolchainLockSha256: testToolchainLockSHA256,
@@ -955,13 +486,13 @@ func TestLoadRunnerConfigFailsClosed(t *testing.T) {
 		}
 	})
 
-	t.Run("development may explicitly run without authentication", func(t *testing.T) {
-		config, err := loadRunnerConfig(map[string]string{"CJ_RUNNER_ENV": "development"})
-		if err != nil {
-			t.Fatalf("load development config: %v", err)
-		}
-		if !config.allowUnauthenticatedDev {
-			t.Fatal("expected explicit development mode to allow a local unauthenticated runner")
+	t.Run("development and test modes have no local isolation fallback", func(t *testing.T) {
+		for _, runtimeEnvironment := range []string{"development", "test"} {
+			if _, err := loadRunnerConfig(map[string]string{
+				"CJ_RUNNER_ENV": runtimeEnvironment,
+			}); err == nil {
+				t.Fatalf("%s runner started outside Modal", runtimeEnvironment)
+			}
 		}
 	})
 
@@ -983,17 +514,14 @@ func TestLoadRunnerConfigFailsClosed(t *testing.T) {
 		}
 	})
 
-	t.Run("outer network isolation is explicit and production-only", func(t *testing.T) {
-		config, err := loadRunnerConfig(map[string]string{
+	t.Run("Modal single-use isolation is required", func(t *testing.T) {
+		_, err := loadRunnerConfig(map[string]string{
 			"CJ_RUNNER_ENV":              "production",
 			"CJ_RUNNER_SHARED_TOKEN":     testSharedToken,
 			"CJ_RUNNER_ISOLATION_DRIVER": "modal-single-use-container",
 		})
 		if err != nil {
 			t.Fatalf("valid Modal network boundary was rejected: %v", err)
-		}
-		if !sandboxSettingsForConfig(config).useOuterContainerBoundary {
-			t.Fatal("Modal boundary did not retain the outer user and network namespaces")
 		}
 		if _, err := loadRunnerConfig(map[string]string{
 			"CJ_RUNNER_ENV":              "production",
@@ -1154,30 +682,8 @@ func TestCanonicalJSONSHA256SortsObjectKeysWithoutHTMLEscaping(t *testing.T) {
 	}
 }
 
-func TestDevelopmentModeWithoutTokenIsExplicitlyUnauthenticated(t *testing.T) {
-	config, err := loadRunnerConfig(map[string]string{"CJ_RUNNER_ENV": "development"})
-	if err != nil {
-		t.Fatalf("load development config: %v", err)
-	}
-	config.toolchainLockSha256 = testToolchainLockSHA256
-	handler := newRunnerHandler(config, testOperations())
-	request := httptest.NewRequest(http.MethodPost, "/run", strings.NewReader("main() {}"))
-	request.Header.Set("Content-Type", "text/plain")
-	request.Header.Set(toolchainLockHeader, testToolchainLockSHA256)
-	recorder := httptest.NewRecorder()
-
-	handler.ServeHTTP(recorder, request)
-
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("development request status = %d, want %d; body: %s", recorder.Code, http.StatusOK, recorder.Body.String())
-	}
-	if got := runnerListenAddress(config, "8000"); got != "127.0.0.1:8000" {
-		t.Fatalf("unauthenticated development listen address = %q, want loopback", got)
-	}
-}
-
 func TestRunnerBoundaryRejectsInvalidRequests(t *testing.T) {
-	handler := testHandler(testOperations(), 1)
+	handler := testHandler(testOperations())
 
 	tests := []struct {
 		name        string
@@ -1296,7 +802,7 @@ func TestRunnerBoundaryRejectsInvalidRequests(t *testing.T) {
 }
 
 func TestRunnerBoundaryLimitsBodyAndPreservesStructuredInput(t *testing.T) {
-	handler := testHandler(testOperations(), 1)
+	handler := testHandler(testOperations())
 
 	oversized := runnerRequest(
 		http.MethodPost,
@@ -1368,7 +874,7 @@ func TestRunnerReturnsNon2xxForInfrastructureFailures(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			testHandler(test.operations, 1).ServeHTTP(
+			testHandler(test.operations).ServeHTTP(
 				recorder,
 				runnerRequest(http.MethodPost, test.path, "text/plain", "main() {}"),
 			)
@@ -1417,7 +923,7 @@ func TestRunnerSerializesRequiredOutOfBandTruncationFlags(t *testing.T) {
 		},
 	} {
 		recorder := httptest.NewRecorder()
-		testHandler(operations, 1).ServeHTTP(
+		testHandler(operations).ServeHTTP(
 			recorder,
 			runnerRequest(http.MethodPost, test.path, "text/plain", "main() {}"),
 		)
@@ -1446,7 +952,7 @@ func TestRunnerPassesRequestContextToOperations(t *testing.T) {
 		received = ctx
 		return runMessage{}, nil
 	}
-	handler := testHandler(operations, 1)
+	handler := testHandler(operations)
 	request := runnerRequest(http.MethodPost, "/run", "text/plain", "main() {}")
 
 	recorder := httptest.NewRecorder()
@@ -1454,57 +960,6 @@ func TestRunnerPassesRequestContextToOperations(t *testing.T) {
 
 	if received != request.Context() {
 		t.Fatal("compile operation did not receive the request context")
-	}
-}
-
-func TestRunnerConcurrencyBulkhead(t *testing.T) {
-	entered := make(chan struct{})
-	release := make(chan struct{})
-	var calls atomic.Int32
-	operations := testOperations()
-	operations.compileAndRun = func(_ context.Context, _, _ string) (runMessage, error) {
-		if calls.Add(1) == 1 {
-			close(entered)
-		}
-		<-release
-		return runMessage{}, nil
-	}
-	handler := testHandler(operations, 1)
-
-	firstDone := make(chan *httptest.ResponseRecorder, 1)
-	go func() {
-		recorder := httptest.NewRecorder()
-		handler.ServeHTTP(
-			recorder,
-			runnerRequest(http.MethodPost, "/run", "text/plain", "main() {}"),
-		)
-		firstDone <- recorder
-	}()
-	<-entered
-
-	overloaded := httptest.NewRecorder()
-	handler.ServeHTTP(
-		overloaded,
-		runnerRequest(http.MethodPost, "/run", "text/plain", "main() {}"),
-	)
-	if overloaded.Code != http.StatusTooManyRequests {
-		t.Fatalf("overloaded status = %d, want %d", overloaded.Code, http.StatusTooManyRequests)
-	}
-	if overloaded.Header().Get("Retry-After") != "1" {
-		t.Fatalf("Retry-After = %q, want 1", overloaded.Header().Get("Retry-After"))
-	}
-
-	close(release)
-	select {
-	case recorder := <-firstDone:
-		if recorder.Code != http.StatusOK {
-			t.Fatalf("first request status = %d, want %d", recorder.Code, http.StatusOK)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("first request did not release its runner slot")
-	}
-	if calls.Load() != 1 {
-		t.Fatalf("compile calls = %d, want 1", calls.Load())
 	}
 }
 

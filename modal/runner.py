@@ -1,5 +1,7 @@
 import http.client
+import hmac
 import os
+import secrets
 import socket
 import subprocess
 import time
@@ -38,7 +40,6 @@ def _wait_for_runner(process: subprocess.Popen[bytes], timeout: float) -> None:
 
 @app.function(
     image=runner_image,
-    secrets=[runner_secret],
     block_network=True,
     restrict_modal_access=True,
     single_use_containers=True,
@@ -50,22 +51,23 @@ def _wait_for_runner(process: subprocess.Popen[bytes], timeout: float) -> None:
 def execute_runner(
     body: bytes,
     content_type: str,
-    authorization: str,
     toolchain_lock: str,
 ) -> tuple[int, dict[str, str], bytes]:
-    if not os.path.isfile("/usr/bin/setpriv"):
-        raise RuntimeError("runner image is missing /usr/bin/setpriv")
+    request_token = secrets.token_urlsafe(32)
     environment = os.environ.copy()
     environment.update(
         {
             "CJ_RUNNER_ENV": "production",
             "CJ_RUNNER_ISOLATION_DRIVER": "modal-single-use-container",
+            "CJ_RUNNER_SHARED_TOKEN": request_token,
             "TMPDIR": "/tmp",
         }
     )
     process = subprocess.Popen(
         ["/usr/local/bin/cj-runner"],
         env=environment,
+        user=65532,
+        group=65532,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
     )
@@ -79,7 +81,7 @@ def execute_runner(
                 body=body,
                 headers={
                     "Content-Type": content_type,
-                    "Authorization": authorization,
+                    "Authorization": f"Bearer {request_token}",
                     TOOLCHAIN_HEADER: toolchain_lock,
                 },
             )
@@ -109,6 +111,7 @@ def execute_runner(
 
 @app.function(
     image=gateway_image,
+    secrets=[runner_secret],
     cpu=0.5,
     memory=512,
     max_containers=20,
@@ -155,6 +158,21 @@ def runner():
                 },
             )
 
+        expected_token = os.environ.get("CJ_RUNNER_SHARED_TOKEN", "")
+        expected_authorization = f"Bearer {expected_token}".encode()
+        if not expected_token or not hmac.compare_digest(
+            authorization_values[0],
+            expected_authorization,
+        ):
+            return JSONResponse(
+                status_code=401,
+                headers={"WWW-Authenticate": "Bearer"},
+                content={
+                    "error": "unauthorized",
+                    "message": "Authentication is required.",
+                },
+            )
+
         body = await request.body()
         if len(body) > MAX_REQUEST_BYTES:
             return JSONResponse(
@@ -169,7 +187,6 @@ def runner():
             status, headers, response_body = await deployed_runner.remote.aio(
                 body,
                 content_type_values[0].decode("latin-1"),
-                authorization_values[0].decode("latin-1"),
                 toolchain_values[0].decode("latin-1"),
             )
             return Response(content=response_body, status_code=status, headers=headers)

@@ -3,9 +3,8 @@
 # cj-runner image for managed on-demand container platforms. The full ~2.4GB
 # toolchain imposes an unnecessary cold-start penalty, so this slims it to
 # ~1.4GB by stripping libLLVM and dropping Windows cross libraries and unused
-# developer tools while preserving the full compile path. cj-runner uses
-# bubblewrap for a fail-closed, per-execution namespace and
-# filesystem boundary (see cmd/runner/main.go).
+# developer tools while preserving the full compile path. Modal supplies the
+# single-use container and network boundary for every invocation.
 #
 ARG GOPROXY="https://proxy.golang.org,direct"
 
@@ -67,7 +66,7 @@ RUN rm -f /etc/apt/sources.list /etc/apt/sources.list.d/* && \
       'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/20260725T000000Z bookworm-security main' \
       > /etc/apt/sources.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends binutils bubblewrap gcc libc6-dev util-linux && \
+    apt-get install -y --no-install-recommends binutils gcc libc6-dev && \
     find /usr/lib/gcc -maxdepth 3 -type f \( -name 'cc1*' -o -name 'lto1' \) -delete && \
     rm -f /usr/bin/*lto-dump* /usr/lib/x86_64-linux-gnu/lib*san.so* /usr/lib/x86_64-linux-gnu/libc.a && \
     rm -rf /var/lib/apt/lists/*

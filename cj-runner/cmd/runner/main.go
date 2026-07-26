@@ -1,10 +1,7 @@
-// cj-runner is the Cangjie compile/run process embedded in the production Modal
-// boundary. It replaces the repository's former Docker-per-request server; ADR
-// 0014 and ADR 0015 record the consolidation. Production requires an explicitly
-// configured, single-use gVisor container per request because nested namespaces
-// are unavailable there. Development and tests retain the stricter bubblewrap
-// profile for boundary verification. The service probes its selected boundary
-// at startup and has no implicit fallback.
+// cj-runner is the Cangjie compile/run process embedded in a single-use Modal
+// container. Modal owns the request isolation and resource boundary; this
+// process only validates input, invokes the compiler and learner executable,
+// caps output, and enforces wall-clock deadlines.
 // The endpoint is POST /run ({code,stdin} JSON or raw), returning the canonical
 // RunMessage JSON shape. Formatting runs locally in the browser through WASM.
 //
@@ -26,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -61,7 +57,6 @@ type runMessage struct {
 const (
 	compileTimeout        = 12 * time.Second
 	runTimeout            = 8 * time.Second
-	sandboxProbeTimeout   = 20 * time.Second
 	toolchainProbeTimeout = 5 * time.Second
 	processWaitDelay      = time.Second
 
@@ -81,33 +76,9 @@ const (
 	writeTimeout      = 24 * time.Second
 	idleTimeout       = 30 * time.Second
 	maxHeaderBytes    = 16 * 1024
-
-	// rlimits applied to the user binary via prlimit. We do not assume delegated
-	// per-request cgroups are available. nproc is set generously: fork bombs are
-	// already reaped by the PID namespace + group kill + CPU limit, so this only
-	// needs to leave headroom for the Cangjie runtime's own threads while still
-	// capping runaway OS-process spawning.
-	limAddrSpaceBytes = 768 * 1024 * 1024 // RLIMIT_AS   768 MiB
-	limCPUSeconds     = 8                 // RLIMIT_CPU
-	limNProc          = 256               // RLIMIT_NPROC
-	limFsizeBytes     = 16 * 1024 * 1024  // RLIMIT_FSIZE
-	limNoFile         = 256               // RLIMIT_NOFILE
-
-	toolAddrSpaceBytes = 2 * 1024 * 1024 * 1024
-	toolCPUSeconds     = 12
-	toolNProc          = 256
-	toolFsizeBytes     = 64 * 1024 * 1024
-	toolNoFile         = 512
-
-	// bubblewrap tmpfs mounts share one explicit per-request budget. The
-	// writable request directory itself remains on the replica's ephemeral
-	// filesystem and is protected by fixed single-flight admission.
-	sandboxTmpBytes  = 32 * 1024 * 1024
-	sandboxWorkBytes = 96 * 1024 * 1024
 )
 
 const cangjieLibs = "/cangjie/runtime/lib/linux_x86_64_cjnative:/cangjie/tools/lib:/linux_x86_64_cjnative/dynamic/stdx"
-const sandboxReadyMarker = "\n[cj-runner sandbox boundary ready]\n"
 const toolchainLockHeader = "X-Playground-Cangjie-Toolchain-Lock-Sha256"
 const toolchainMismatchHeader = "X-Playground-Cangjie-Toolchain-Status"
 
@@ -115,30 +86,11 @@ const (
 	cangjieCompilerPath        = "/cangjie/bin/cjc"
 	cangjieToolchainLockPath   = "/usr/share/playground-cj/cangjie-toolchain.lock.json"
 	cangjieToolchainMarkerPath = "/cangjie/.playground-cj-toolchain-lock.sha256"
-	bubblewrapExecutablePath   = "/usr/bin/bwrap"
-	prlimitExecutablePath      = "/usr/bin/prlimit"
-	sandboxExecutablePath      = "/app/main"
-	sandboxWorkingDirectory    = "/work"
 )
 
-var productionSandboxSettings = sandboxSettings{
-	bubblewrapPath: bubblewrapExecutablePath,
-	prlimitPath:    prlimitExecutablePath,
-	readOnlyPaths: []string{
-		"/usr",
-		"/bin",
-		"/lib",
-		"/lib64",
-		"/cangjie",
-		"/linux_x86_64_cjnative",
-	},
-}
-
 type runnerConfig struct {
-	sharedToken             string
-	allowUnauthenticatedDev bool
-	toolchainLockSha256     string
-	isolationDriver         string
+	sharedToken         string
+	toolchainLockSha256 string
 }
 
 type cangjieToolchainLock struct {
@@ -171,14 +123,6 @@ type runnerOperations struct {
 type runnerServer struct {
 	config     runnerConfig
 	operations runnerOperations
-	slots      chan struct{}
-}
-
-type sandboxSettings struct {
-	bubblewrapPath            string
-	prlimitPath               string
-	readOnlyPaths             []string
-	useOuterContainerBoundary bool
 }
 
 type outputChannel struct {
@@ -186,44 +130,17 @@ type outputChannel struct {
 	truncated bool
 }
 
-type resourceLimits struct {
-	addressSpaceBytes int
-	cpuSeconds        int
-	processes         int
-	fileSizeBytes     int
-	openFiles         int
-}
-
-var runtimeResourceLimits = resourceLimits{
-	addressSpaceBytes: limAddrSpaceBytes,
-	cpuSeconds:        limCPUSeconds,
-	processes:         limNProc,
-	fileSizeBytes:     limFsizeBytes,
-	openFiles:         limNoFile,
-}
-
-var toolResourceLimits = resourceLimits{
-	addressSpaceBytes: toolAddrSpaceBytes,
-	cpuSeconds:        toolCPUSeconds,
-	processes:         toolNProc,
-	fileSizeBytes:     toolFsizeBytes,
-	openFiles:         toolNoFile,
-}
-
-type sandboxCommandSpec struct {
+type processSpec struct {
 	executable              string
 	arguments               []string
 	environment             []string
 	workingDirectory        string
-	requestDirectory        string
-	readOnlyExecutableMount string
 	timeout                 time.Duration
-	limits                  resourceLimits
 	timeoutIsInfrastructure bool
 	stdin                   string
 }
 
-type sandboxResult struct {
+type processResult struct {
 	stdout   outputChannel
 	stderr   outputChannel
 	exitCode int
@@ -323,24 +240,7 @@ func trustedToolEnvironment(requestDirectory string) []string {
 	}
 }
 
-func sandboxLauncherEnvironment() []string {
-	return []string{
-		"PATH=/usr/bin:/bin",
-		"LANG=C.UTF-8",
-		"LC_ALL=C.UTF-8",
-	}
-}
-
 func compileAndRun(ctx context.Context, code, stdin string) (runMessage, error) {
-	return compileAndRunWithSettings(ctx, code, stdin, productionSandboxSettings)
-}
-
-func compileAndRunWithSettings(
-	ctx context.Context,
-	code string,
-	stdin string,
-	settings sandboxSettings,
-) (runMessage, error) {
 	msg := runMessage{Phase: runPhaseCompile}
 
 	srcDir, err := os.MkdirTemp("/playground", "run-")
@@ -348,27 +248,20 @@ func compileAndRunWithSettings(
 		return msg, infrastructureError("create compile request directory", err)
 	}
 	defer os.RemoveAll(srcDir)
-	if err := prepareRequestDirectory(srcDir, settings); err != nil {
-		return msg, infrastructureError("prepare compile request directory", err)
-	}
 
 	sourcePath := filepath.Join(srcDir, "main.cj")
 	if err := os.WriteFile(sourcePath, []byte(code), 0o600); err != nil {
 		return msg, infrastructureError("write compile source", err)
 	}
-	if err := prepareRequestFile(sourcePath, settings); err != nil {
-		return msg, infrastructureError("prepare compile source", err)
-	}
 
-	compileResult, err := runToolSandboxWithSettings(
-		ctx,
-		srcDir,
-		cangjieCompilerPath,
-		compilerArguments(),
-		compileTimeout,
-		"compile",
-		settings,
-	)
+	compileResult, err := runProcess(ctx, processSpec{
+		executable:              cangjieCompilerPath,
+		arguments:               compilerArguments(srcDir),
+		environment:             trustedToolEnvironment(srcDir),
+		workingDirectory:        srcDir,
+		timeout:                 compileTimeout,
+		timeoutIsInfrastructure: true,
+	}, "compile")
 	if err != nil {
 		return msg, err
 	}
@@ -381,12 +274,13 @@ func compileAndRunWithSettings(
 	}
 
 	msg.Phase = runPhaseRun
-	runResult, err := runSandboxedWithSettings(
-		ctx,
-		filepath.Join(srcDir, "main"),
-		stdin,
-		settings,
-	)
+	runResult, err := runProcess(ctx, processSpec{
+		executable:       filepath.Join(srcDir, "main"),
+		environment:      runtimeEnvironment(srcDir),
+		workingDirectory: srcDir,
+		timeout:          runTimeout,
+		stdin:            stdin,
+	}, "run learner binary")
 	if err != nil {
 		return msg, err
 	}
@@ -398,111 +292,27 @@ func compileAndRunWithSettings(
 	return msg, nil
 }
 
-func compilerArguments() []string {
+func compilerArguments(requestDirectory string) []string {
 	return []string{
 		"--import-path=/linux_x86_64_cjnative/dynamic",
 		"--no-sub-pkg",
-		"--output-dir=/request",
+		"--output-dir=" + requestDirectory,
 		"-L", "/linux_x86_64_cjnative/dynamic/stdx",
-		"-ldl", "-V", "-j1", "-p", "/request", "--output-type=exe", "-o=main",
+		"-ldl", "-V", "-j1", "-p", requestDirectory, "--output-type=exe", "-o=main",
 	}
 }
 
-func runToolSandbox(
+func runProcess(
 	parent context.Context,
-	requestDirectory string,
-	executable string,
-	arguments []string,
-	timeout time.Duration,
+	spec processSpec,
 	operation string,
-) (sandboxResult, error) {
-	return runToolSandboxWithSettings(
-		parent,
-		requestDirectory,
-		executable,
-		arguments,
-		timeout,
-		operation,
-		productionSandboxSettings,
-	)
-}
-
-func runToolSandboxWithSettings(
-	parent context.Context,
-	requestDirectory string,
-	executable string,
-	arguments []string,
-	timeout time.Duration,
-	operation string,
-	settings sandboxSettings,
-) (sandboxResult, error) {
-	toolArguments := arguments
-	toolEnvironment := trustedToolEnvironment("/request")
-	workingDirectory := "/request"
-	if settings.useOuterContainerBoundary {
-		toolArguments = make([]string, len(arguments))
-		for index, argument := range arguments {
-			toolArguments[index] = strings.ReplaceAll(
-				argument,
-				"/request",
-				requestDirectory,
-			)
-		}
-		toolEnvironment = trustedToolEnvironment(requestDirectory)
-		workingDirectory = requestDirectory
-	}
-	return runSandboxOperation(parent, sandboxCommandSpec{
-		executable:              executable,
-		arguments:               toolArguments,
-		environment:             toolEnvironment,
-		workingDirectory:        workingDirectory,
-		requestDirectory:        requestDirectory,
-		timeout:                 timeout,
-		limits:                  toolResourceLimits,
-		timeoutIsInfrastructure: true,
-	}, settings, operation)
-}
-
-// runSandboxed executes a learner binary in a fresh, minimal bubblewrap
-// filesystem and namespace boundary.
-func runSandboxed(parent context.Context, bin, stdin string) (sandboxResult, error) {
-	return runSandboxedWithSettings(parent, bin, stdin, productionSandboxSettings)
-}
-
-func runSandboxedWithSettings(
-	parent context.Context,
-	bin string,
-	stdin string,
-	settings sandboxSettings,
-) (sandboxResult, error) {
-	spec := sandboxCommandSpec{
-		executable:              sandboxExecutablePath,
-		environment:             runtimeEnvironment(),
-		workingDirectory:        sandboxWorkingDirectory,
-		readOnlyExecutableMount: bin,
-		timeout:                 runTimeout,
-		limits:                  runtimeResourceLimits,
-		stdin:                   stdin,
-	}
-	if settings.useOuterContainerBoundary {
-		spec.executable = bin
-		spec.workingDirectory = filepath.Dir(bin)
-	}
-	return runSandboxOperation(parent, spec, settings, "run learner binary")
-}
-
-func runSandboxOperation(
-	parent context.Context,
-	spec sandboxCommandSpec,
-	settings sandboxSettings,
-	operation string,
-) (sandboxResult, error) {
+) (processResult, error) {
 	ctx, cancel := context.WithTimeout(parent, spec.timeout)
 	defer cancel()
 
-	cmd, commandErr := sandboxCommand(ctx, spec, settings)
-	if commandErr != nil {
-		return sandboxResult{}, infrastructureError(operation+" sandbox command", commandErr)
+	cmd, err := processCommand(ctx, spec)
+	if err != nil {
+		return processResult{}, infrastructureError(operation+" command", err)
 	}
 
 	stdout := &cappedBuffer{cap: maxSerializedOutputBytes}
@@ -513,244 +323,72 @@ func runSandboxOperation(
 	}
 
 	if err := cmd.Start(); err != nil {
-		return sandboxResult{}, infrastructureError(operation+" sandbox start", err)
+		return processResult{}, infrastructureError(operation+" start", err)
 	}
 	done := make(chan error, 1)
 	go func() { done <- cmd.Wait() }()
+
 	select {
 	case <-ctx.Done():
 		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 		<-done
 		if parent.Err() != nil {
-			return sandboxResult{}, infrastructureError(operation, parent.Err())
+			return processResult{}, infrastructureError(operation, parent.Err())
 		}
 		if spec.timeoutIsInfrastructure {
-			return sandboxResult{}, infrastructureError(operation, context.DeadlineExceeded)
+			return processResult{}, infrastructureError(operation, context.DeadlineExceeded)
 		}
 		_, _ = stderr.Write([]byte("\n[killed: exceeded " + spec.timeout.String() + " wall clock]"))
-		renderedStderr, _ := renderSandboxStderr(stderr.Result())
-		return sandboxResult{
+		return processResult{
 			stdout:   stdout.Result(),
-			stderr:   renderedStderr,
+			stderr:   stderr.Result(),
 			exitCode: -1,
 			timedOut: true,
 		}, nil
 	case waitErr := <-done:
-		renderedStderr, sandboxStarted := renderSandboxStderr(stderr.Result())
-		if !sandboxStarted {
-			diagnostic := strings.TrimSpace(renderedStderr.content)
-			if diagnostic == "" {
-				diagnostic = "namespace boundary was not established"
-			}
-			return sandboxResult{}, infrastructureError(
-				operation+" sandbox setup",
-				errors.New(diagnostic),
-			)
-		}
 		if cmd.ProcessState == nil {
-			return sandboxResult{}, infrastructureError(
+			return processResult{}, infrastructureError(
 				operation,
-				errors.New("sandbox process exited without status"),
+				errors.New("process exited without status"),
 			)
 		}
 		if errors.Is(waitErr, exec.ErrWaitDelay) {
-			return sandboxResult{}, infrastructureError(
+			return processResult{}, infrastructureError(
 				operation,
-				errors.New("sandbox output pipes did not close within wait deadline"),
+				errors.New("process output pipes did not close within wait deadline"),
 			)
 		}
-		return sandboxResult{
+		return processResult{
 			stdout:   stdout.Result(),
-			stderr:   renderedStderr,
+			stderr:   stderr.Result(),
 			exitCode: cmd.ProcessState.ExitCode(),
 		}, nil
 	}
 }
 
-func renderSandboxStderr(stderr outputChannel) (outputChannel, bool) {
-	markerIndex := strings.Index(stderr.content, sandboxReadyMarker)
-	if markerIndex == -1 {
-		return stderr, false
+func processCommand(ctx context.Context, spec processSpec) (*exec.Cmd, error) {
+	if !filepath.IsAbs(spec.executable) {
+		return nil, errors.New("process executable must be absolute")
 	}
-	stderr.content = stderr.content[:markerIndex] +
-		stderr.content[markerIndex+len(sandboxReadyMarker):]
-	return stderr, true
-}
-
-func sandboxCommand(
-	ctx context.Context,
-	spec sandboxCommandSpec,
-	settings sandboxSettings,
-) (*exec.Cmd, error) {
-	if !filepath.IsAbs(settings.prlimitPath) {
-		return nil, errors.New("prlimit path must be absolute")
+	if !filepath.IsAbs(spec.workingDirectory) {
+		return nil, errors.New("process working directory must be absolute")
 	}
-	if settings.useOuterContainerBoundary {
-		return outerBoundaryCommand(ctx, spec, settings)
-	}
-	if !filepath.IsAbs(settings.bubblewrapPath) {
-		return nil, errors.New("bubblewrap path must be absolute")
-	}
-
-	args := []string{
-		"--die-with-parent",
-		"--unshare-all",
-		// bubblewrap 0.8 requires this explicit form before --disable-userns,
-		// even though --unshare-all already includes a user namespace.
-		"--unshare-user",
-		"--disable-userns",
-		"--assert-userns-disabled",
-	}
-	args = append(args,
-		"--clearenv",
-		"--cap-drop", "ALL",
-		"--hostname", "cj-sandbox",
-	)
-	seenReadOnlyPath := make(map[string]struct{}, len(settings.readOnlyPaths))
-	for _, path := range settings.readOnlyPaths {
-		cleaned := filepath.Clean(path)
-		if !filepath.IsAbs(cleaned) {
-			return nil, fmt.Errorf("sandbox read-only path %q must be absolute", path)
-		}
-		if cleaned == "/" || cleaned == "/etc" || cleaned == "/playground" {
-			return nil, fmt.Errorf("sandbox must not expose host path %q", cleaned)
-		}
-		if _, duplicate := seenReadOnlyPath[cleaned]; duplicate {
-			continue
-		}
-		seenReadOnlyPath[cleaned] = struct{}{}
-		args = append(args, "--ro-bind", cleaned, cleaned)
-	}
-	args = append(args,
-		"--proc", "/proc",
-		"--dev", "/dev",
-		"--size", strconv.Itoa(sandboxTmpBytes),
-		"--tmpfs", "/tmp",
-		"--size", strconv.Itoa(sandboxWorkBytes),
-		"--tmpfs", sandboxWorkingDirectory,
-	)
-	if spec.requestDirectory != "" {
-		cleanedRequestDirectory := filepath.Clean(spec.requestDirectory)
-		if !filepath.IsAbs(cleanedRequestDirectory) {
-			return nil, errors.New("sandbox request directory must be absolute")
-		}
-		switch cleanedRequestDirectory {
-		case "/", "/etc", "/usr", "/cangjie", "/linux_x86_64_cjnative", "/playground":
-			return nil, fmt.Errorf(
-				"sandbox request directory %q is too broad",
-				cleanedRequestDirectory,
-			)
-		}
-		args = append(args, "--bind", cleanedRequestDirectory, "/request")
-	}
-	if spec.readOnlyExecutableMount != "" {
-		if !filepath.IsAbs(spec.readOnlyExecutableMount) {
-			return nil, errors.New("sandbox executable mount must be absolute")
-		}
-		executableInfo, err := os.Lstat(spec.readOnlyExecutableMount)
-		if err != nil {
-			return nil, fmt.Errorf("inspect sandbox executable mount: %w", err)
-		}
-		if !executableInfo.Mode().IsRegular() || executableInfo.Mode()&0o111 == 0 {
-			return nil, errors.New("sandbox executable mount must be a regular executable file")
-		}
-		args = append(
-			args,
-			"--dir", "/app",
-			"--ro-bind", spec.readOnlyExecutableMount, sandboxExecutablePath,
-		)
-	}
-	for _, entry := range spec.environment {
-		name, value, ok := strings.Cut(entry, "=")
-		if !ok || name == "" {
-			return nil, fmt.Errorf("invalid sandbox environment entry %q", entry)
-		}
-		args = append(args, "--setenv", name, value)
-	}
-	args = append(args,
-		"--chdir", spec.workingDirectory,
-		"--remount-ro", "/",
-		"--",
-		settings.prlimitPath,
-		"--as="+strconv.Itoa(spec.limits.addressSpaceBytes),
-		"--cpu="+strconv.Itoa(spec.limits.cpuSeconds),
-		"--nproc="+strconv.Itoa(spec.limits.processes),
-		"--fsize="+strconv.Itoa(spec.limits.fileSizeBytes),
-		"--nofile="+strconv.Itoa(spec.limits.openFiles),
-		"--",
-		"/bin/sh",
-		"-c",
-		`target="$2"; if [ ! -x "$target" ]; then printf 'sandbox executable unavailable\n' >&2; exit 126; fi; printf '%s' "$1" >&2; shift 2; exec "$target" "$@"`,
-		"cj-runner-sandbox-bootstrap",
-		sandboxReadyMarker,
-		spec.executable,
-	)
-	args = append(args, spec.arguments...)
-
-	cmd := exec.CommandContext(ctx, settings.bubblewrapPath, args...)
-	cmd.Env = sandboxLauncherEnvironment()
-	configureCommandLifecycle(cmd)
-	return cmd, nil
-}
-
-func outerBoundaryCommand(
-	ctx context.Context,
-	spec sandboxCommandSpec,
-	settings sandboxSettings,
-) (*exec.Cmd, error) {
-	targetExecutable := spec.executable
-	workingDirectory := spec.workingDirectory
-	if spec.readOnlyExecutableMount != "" {
-		targetExecutable = spec.readOnlyExecutableMount
-		workingDirectory = filepath.Dir(targetExecutable)
-	}
-	if !filepath.IsAbs(targetExecutable) {
-		return nil, errors.New("outer-boundary executable must be absolute")
-	}
-	if !filepath.IsAbs(workingDirectory) {
-		return nil, errors.New("outer-boundary working directory must be absolute")
-	}
-	executableInfo, err := os.Lstat(targetExecutable)
+	executableInfo, err := os.Lstat(spec.executable)
 	if err != nil {
-		return nil, fmt.Errorf("inspect outer-boundary executable: %w", err)
+		return nil, fmt.Errorf("inspect process executable: %w", err)
 	}
 	if !executableInfo.Mode().IsRegular() || executableInfo.Mode()&0o111 == 0 {
-		return nil, errors.New("outer-boundary executable must be a regular executable file")
+		return nil, errors.New("process executable must be a regular executable file")
 	}
 	for _, entry := range spec.environment {
 		name, _, ok := strings.Cut(entry, "=")
 		if !ok || name == "" {
-			return nil, fmt.Errorf("invalid sandbox environment entry %q", entry)
+			return nil, fmt.Errorf("invalid process environment entry %q", entry)
 		}
 	}
-
-	args := []string{
-		"--reuid=65532",
-		"--regid=65532",
-		"--clear-groups",
-		"--bounding-set=-all",
-		"--no-new-privs",
-		settings.prlimitPath,
-		"--as=" + strconv.Itoa(spec.limits.addressSpaceBytes),
-		"--cpu=" + strconv.Itoa(spec.limits.cpuSeconds),
-		"--nproc=" + strconv.Itoa(spec.limits.processes),
-		"--fsize=" + strconv.Itoa(spec.limits.fileSizeBytes),
-		"--nofile=" + strconv.Itoa(spec.limits.openFiles),
-		"--",
-		"/bin/sh",
-		"-c",
-		`target="$2"; if [ ! -x "$target" ]; then printf 'sandbox executable unavailable\n' >&2; exit 126; fi; printf '%s' "$1" >&2; shift 2; exec "$target" "$@"`,
-		"cj-runner-sandbox-bootstrap",
-		sandboxReadyMarker,
-		targetExecutable,
-	}
-	args = append(args, spec.arguments...)
-	cmd := exec.CommandContext(ctx, "/usr/bin/setpriv", args...)
+	cmd := exec.CommandContext(ctx, spec.executable, spec.arguments...)
 	cmd.Env = spec.environment
-	// Modal owns the outer filesystem boundary. Its runtime-managed parent
-	// directories are not necessarily traversable after setpriv drops UID,
-	// even when the request directory itself has been chowned.
-	cmd.Dir = "/tmp"
+	cmd.Dir = spec.workingDirectory
 	configureCommandLifecycle(cmd)
 	return cmd, nil
 }
@@ -770,96 +408,13 @@ func configureCommandLifecycle(cmd *exec.Cmd) {
 	}
 }
 
-func verifySandboxBoundary(ctx context.Context, settings sandboxSettings) error {
-	probeContext, cancel := context.WithTimeout(ctx, sandboxProbeTimeout)
-	defer cancel()
-	runtimeResult, err := runSandboxedWithSettings(
-		probeContext,
-		"/usr/bin/true",
-		"",
-		settings,
-	)
-	if err != nil {
-		return fmt.Errorf("runtime profile: %w", err)
-	}
-	if runtimeResult.exitCode != 0 {
-		return fmt.Errorf("runtime profile exited with status %d", runtimeResult.exitCode)
-	}
-	if settings.useOuterContainerBoundary {
-		// A Modal Function handles exactly one request and is discarded. The
-		// toolchain identity was already verified above, and the real request
-		// exercises its compiler path; repeating a full compile here
-		// would double every request's latency without testing a shared worker.
-		return nil
-	}
-
-	requestDirectory, err := os.MkdirTemp("", "cj-runner-tool-probe-")
-	if err != nil {
-		return fmt.Errorf("create tool profile request directory: %w", err)
-	}
-	defer os.RemoveAll(requestDirectory)
-	if err := prepareRequestDirectory(requestDirectory, settings); err != nil {
-		return fmt.Errorf("prepare tool profile request directory: %w", err)
-	}
-	for _, executable := range []string{cangjieCompilerPath} {
-		info, statErr := os.Stat(executable)
-		if statErr != nil {
-			return fmt.Errorf("tool profile executable %s: %w", executable, statErr)
-		}
-		if info.IsDir() || info.Mode()&0o111 == 0 {
-			return fmt.Errorf("tool profile executable %s is not executable", executable)
-		}
-	}
-	sourcePath := filepath.Join(requestDirectory, "main.cj")
-	if err := os.WriteFile(
-		sourcePath,
-		[]byte("main(): Int64 {\n    return 0\n}\n"),
-		0o600,
-	); err != nil {
-		return fmt.Errorf("write tool profile source: %w", err)
-	}
-	if err := prepareRequestFile(sourcePath, settings); err != nil {
-		return fmt.Errorf("prepare tool profile source: %w", err)
-	}
-
-	compileResult, err := runToolSandboxWithSettings(
-		probeContext,
-		requestDirectory,
-		cangjieCompilerPath,
-		compilerArguments(),
-		compileTimeout,
-		"probe compiler profile",
-		settings,
-	)
-	if err != nil {
-		return fmt.Errorf("compiler profile: %w", err)
-	}
-	if compileResult.exitCode != 0 {
-		return fmt.Errorf("compiler profile exited with status %d", compileResult.exitCode)
-	}
-
-	learnerResult, err := runSandboxedWithSettings(
-		probeContext,
-		filepath.Join(requestDirectory, "main"),
-		"",
-		settings,
-	)
-	if err != nil {
-		return fmt.Errorf("compiled learner profile: %w", err)
-	}
-	if learnerResult.exitCode != 0 {
-		return fmt.Errorf("compiled learner profile exited with status %d", learnerResult.exitCode)
-	}
-	return nil
-}
-
-func runtimeEnvironment() []string {
+func runtimeEnvironment(requestDirectory string) []string {
 	return []string{
 		"CANGJIE_HOME=/cangjie",
 		"PATH=/usr/bin:/bin",
 		"LD_LIBRARY_PATH=" + cangjieLibs,
-		"HOME=/tmp",
-		"TMPDIR=/tmp",
+		"HOME=" + requestDirectory,
+		"TMPDIR=" + requestDirectory,
 		"LANG=C.UTF-8",
 		"LC_ALL=C.UTF-8",
 	}
@@ -1112,8 +667,8 @@ func loadRunnerConfig(environment map[string]string) (runnerConfig, error) {
 		// defaults matter more than a zero-config local invocation.
 		runtimeEnvironment = "production"
 	}
-	if runtimeEnvironment != "production" && runtimeEnvironment != "development" && runtimeEnvironment != "test" {
-		return runnerConfig{}, errors.New("CJ_RUNNER_ENV must be production, development, or test")
+	if runtimeEnvironment != "production" {
+		return runnerConfig{}, errors.New("CJ_RUNNER_ENV must be production")
 	}
 
 	token := environment["CJ_RUNNER_SHARED_TOKEN"]
@@ -1130,31 +685,19 @@ func loadRunnerConfig(environment map[string]string) (runnerConfig, error) {
 	if strings.IndexFunc(token, func(r rune) bool { return r < 0x21 || r > 0x7e }) != -1 {
 		return runnerConfig{}, errors.New("CJ_RUNNER_SHARED_TOKEN must contain only printable ASCII bytes without spaces")
 	}
-	if token == "" && runtimeEnvironment == "production" {
-		return runnerConfig{}, errors.New("CJ_RUNNER_SHARED_TOKEN must be set in production")
+	if token == "" {
+		return runnerConfig{}, errors.New("CJ_RUNNER_SHARED_TOKEN must be set")
 	}
 
 	isolationDriver := strings.TrimSpace(environment["CJ_RUNNER_ISOLATION_DRIVER"])
-	if isolationDriver != "" && isolationDriver != "modal-single-use-container" {
-		return runnerConfig{}, errors.New(
-			"CJ_RUNNER_ISOLATION_DRIVER must be empty or modal-single-use-container",
-		)
-	}
-	if runtimeEnvironment == "production" && isolationDriver != "modal-single-use-container" {
+	if isolationDriver != "modal-single-use-container" {
 		return runnerConfig{}, errors.New(
 			"production requires CJ_RUNNER_ISOLATION_DRIVER=modal-single-use-container",
 		)
 	}
-	if runtimeEnvironment != "production" && isolationDriver != "" {
-		return runnerConfig{}, errors.New(
-			"CJ_RUNNER_ISOLATION_DRIVER must be empty outside production",
-		)
-	}
 
 	return runnerConfig{
-		sharedToken:             token,
-		allowUnauthenticatedDev: token == "" && runtimeEnvironment != "production",
-		isolationDriver:         isolationDriver,
+		sharedToken: token,
 	}, nil
 }
 
@@ -1166,32 +709,10 @@ func environment() map[string]string {
 	}
 }
 
-func prepareRequestDirectory(path string, settings sandboxSettings) error {
-	if !settings.useOuterContainerBoundary {
-		return nil
-	}
-	return os.Chown(path, 65532, 65532)
-}
-
-func prepareRequestFile(path string, settings sandboxSettings) error {
-	if !settings.useOuterContainerBoundary {
-		return nil
-	}
-	return os.Chown(path, 65532, 65532)
-}
-
-func sandboxSettingsForConfig(config runnerConfig) sandboxSettings {
-	settings := productionSandboxSettings
-	settings.useOuterContainerBoundary =
-		config.isolationDriver == "modal-single-use-container"
-	return settings
-}
-
 func newRunnerHandler(config runnerConfig, operations runnerOperations) http.Handler {
 	server := &runnerServer{
 		config:     config,
 		operations: operations,
-		slots:      make(chan struct{}, 1),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/run", server.handleRun)
@@ -1200,10 +721,6 @@ func newRunnerHandler(config runnerConfig, operations runnerOperations) http.Han
 }
 
 func (s *runnerServer) authenticate(w http.ResponseWriter, r *http.Request) bool {
-	if s.config.allowUnauthenticatedDev {
-		return true
-	}
-
 	values := r.Header.Values("Authorization")
 	if len(values) != 1 {
 		w.Header().Set("WWW-Authenticate", "Bearer")
@@ -1250,26 +767,6 @@ func (s *runnerServer) verifyToolchainExpectation(
 		return false
 	}
 	return true
-}
-
-func (s *runnerServer) acquire(w http.ResponseWriter) bool {
-	select {
-	case s.slots <- struct{}{}:
-		return true
-	default:
-		w.Header().Set("Retry-After", "1")
-		writeError(
-			w,
-			http.StatusTooManyRequests,
-			"runner_busy",
-			"Runner is handling too many requests. Retry shortly.",
-		)
-		return false
-	}
-}
-
-func (s *runnerServer) release() {
-	<-s.slots
 }
 
 func requirePost(w http.ResponseWriter, r *http.Request) bool {
@@ -1396,11 +893,6 @@ func (s *runnerServer) handleRun(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	if !s.acquire(w) {
-		return
-	}
-	defer s.release()
-
 	body, err := readBoundedBody(w, r)
 	if err != nil {
 		writeBodyReadError(w, r, err)
@@ -1488,11 +980,8 @@ func newHTTPServer(address string, handler http.Handler) *http.Server {
 	}
 }
 
-func runnerListenAddress(config runnerConfig, port string) string {
-	if config.allowUnauthenticatedDev {
-		return "127.0.0.1:" + port
-	}
-	return "0.0.0.0:" + port
+func runnerListenAddress(port string) string {
+	return "127.0.0.1:" + port
 }
 
 func main() {
@@ -1514,16 +1003,10 @@ func main() {
 		panic("locked Cangjie toolchain unavailable: " + err.Error())
 	}
 	config.toolchainLockSha256 = toolchainLockSHA256
-	sandboxSettings := sandboxSettingsForConfig(config)
-	if err := verifySandboxBoundary(context.Background(), sandboxSettings); err != nil {
-		panic("learner sandbox unavailable: " + err.Error())
-	}
 	handler := newRunnerHandler(config, runnerOperations{
-		compileAndRun: func(ctx context.Context, code, stdin string) (runMessage, error) {
-			return compileAndRunWithSettings(ctx, code, stdin, sandboxSettings)
-		},
+		compileAndRun: compileAndRun,
 	})
-	server := newHTTPServer(runnerListenAddress(config, port), handler)
+	server := newHTTPServer(runnerListenAddress(port), handler)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic(err)
 	}
