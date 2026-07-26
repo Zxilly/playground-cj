@@ -6,7 +6,11 @@ import type {
   UIMessageChunk,
 } from 'ai'
 import { DirectChatTransport } from 'ai'
-import { awaitWithSignal } from '@/lib/ai/abortable-operation'
+import {
+  createTeacherTurnAdmission,
+  createTeacherTurnOwnership,
+} from './teacher-turn-lifecycle'
+import type { TeacherTurnOwnership } from './teacher-turn-lifecycle'
 
 const MAX_BUFFERED_TEACHER_TEXT_CHARS = 200_000
 const MAX_TEACHER_RAW_CHUNKS = 4_096
@@ -15,57 +19,6 @@ const PROVIDER_CANCEL_GRACE_MS = 1_000
 const TEACHER_TURN_DEADLINE_MS = 120_000
 export interface TeacherOutputBoundary {
   commit: (turnSignal: AbortSignal) => Promise<void>
-}
-
-interface TeacherTurnOwnership {
-  readonly wait: <T>(
-    operation: PromiseLike<T>,
-    signal: AbortSignal,
-  ) => Promise<T>
-  readonly observe: (operation: PromiseLike<unknown>) => Promise<void>
-  readonly finish: () => void
-}
-
-function createTeacherTurnOwnership(
-  release: () => void,
-): TeacherTurnOwnership {
-  let pendingOperations = 0
-  let finished = false
-  let released = false
-  const releaseIfSettled = () => {
-    if (!finished || pendingOperations !== 0 || released)
-      return
-    released = true
-    release()
-  }
-  const track = <T>(operation: PromiseLike<T>): Promise<T> => {
-    pendingOperations += 1
-    const tracked = Promise.resolve(operation)
-    tracked.then(
-      () => {
-        pendingOperations -= 1
-        releaseIfSettled()
-      },
-      () => {
-        pendingOperations -= 1
-        releaseIfSettled()
-      },
-    )
-    return tracked
-  }
-
-  return {
-    wait: <T>(operation: PromiseLike<T>, signal: AbortSignal) =>
-      awaitWithSignal(track(operation), signal),
-    observe: operation => track(operation).then(
-      () => undefined,
-      () => undefined,
-    ),
-    finish() {
-      finished = true
-      releaseIfSettled()
-    },
-  }
 }
 
 function mergeSignal(
@@ -200,14 +153,7 @@ function guardTeacherTurn(
   abortTurn?: (reason: unknown) => void,
 ): ReadableStream<UIMessageChunk> {
   const reader = stream.getReader()
-  let settled = false
   let consumerCancellationPending = false
-  const settle = () => {
-    if (settled)
-      return
-    settled = true
-    ownership.finish()
-  }
 
   return new ReadableStream<UIMessageChunk>({
     async start(controller) {
@@ -285,7 +231,7 @@ function guardTeacherTurn(
       }
       finally {
         if (!consumerCancellationPending)
-          settle()
+          ownership.finish()
       }
     },
     async cancel(reason) {
@@ -295,7 +241,7 @@ function guardTeacherTurn(
         await cancelProviderReader(reader, reason, ownership)
       }
       finally {
-        settle()
+        ownership.finish()
       }
     },
   })
@@ -315,7 +261,7 @@ export function createScopedChatTransport<
   prepareTurn?: (turnSignal: AbortSignal) => void | (() => void),
 ): ChatTransport<InferAgentUIMessage<Agent<CALL_OPTIONS, TOOLS, never>>> {
   const inner = new DirectChatTransport({ agent })
-  let preparedTurnActive = false
+  const admission = createTeacherTurnAdmission()
 
   return {
     async sendMessages(opts) {
@@ -324,7 +270,7 @@ export function createScopedChatTransport<
           'A prepared teacher turn requires an output boundary to release its lease',
         )
       }
-      if (prepareTurn && preparedTurnActive)
+      if (prepareTurn && !admission.tryAcquire())
         throw new Error('A teacher turn is already running')
       const turnController = new AbortController()
       const turnSignal = mergeSignal(
@@ -341,12 +287,11 @@ export function createScopedChatTransport<
         released = true
         turnController.abort('Teacher turn settled')
         cleanupPreparedTurn?.()
-        preparedTurnActive = false
+        admission.release()
       }
       const ownership = createTeacherTurnOwnership(releaseTurn)
       try {
         if (prepareTurn) {
-          preparedTurnActive = true
           cleanupPreparedTurn = prepareTurn(turnSignal) || undefined
         }
         const stream = await ownership.wait(
