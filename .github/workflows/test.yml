@@ -69,7 +69,7 @@ jobs:
         run: pnpm run lint
 
       - name: Execute Unit tests
-        run: pnpm run test
+        run: pnpm run test:run
 
   runner:
     runs-on: ubuntu-latest
