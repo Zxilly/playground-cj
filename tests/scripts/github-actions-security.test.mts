@@ -45,6 +45,7 @@ describe('github Actions supply-chain boundary', () => {
     expect(workflow).toContain('modal deploy modal/runner.py')
     expect(workflow).not.toContain('GHCR')
     expect(workflow).not.toContain('docker push')
+    expect(testWorkflow).not.toContain('fghttp')
     for (const deploymentInput of [workflow, testWorkflow, runnerDockerfile]) {
       expect(deploymentInput).not.toMatch(/\bbubblewrap\b|\bbwrap\b|\bprlimit\b/)
     }

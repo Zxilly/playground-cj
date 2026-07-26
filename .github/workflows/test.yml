@@ -83,7 +83,7 @@ jobs:
           go-version-file: cj-runner/go.mod
           cache: false
 
-      - name: Test runner boundary with race detection
+      - name: Test runner with race detection
         working-directory: cj-runner
         run: go test -race ./...
 
@@ -93,4 +93,4 @@ jobs:
 
       - name: Build runner
         working-directory: cj-runner
-        run: go build -trimpath -o "$RUNNER_TEMP/fghttp" ./fghttp
+        run: go build -trimpath -o "$RUNNER_TEMP/cj-runner" ./cmd/runner
