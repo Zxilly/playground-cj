@@ -13,7 +13,6 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
 import { AnsiOutput } from '@/components/AnsiOutput'
 import { awaitWithSignal } from '@/lib/ai/abortable-operation'
-import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
 import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import { usePlaygroundEditorHost } from './playground-editor-host-context'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
@@ -483,7 +482,7 @@ function PlaygroundEditorPane({
     let result: RunResult | undefined
     try {
       result = await awaitWithSignal(
-        (runner ?? defaultRunner).run(code, controller.signal),
+        runner.run(code, controller.signal),
         controller.signal,
       )
     }

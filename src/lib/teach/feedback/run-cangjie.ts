@@ -1,7 +1,8 @@
 import type {
   RunnerRunResponse,
 } from '@/lib/runner-contract'
-import { parseRunnerRunResponse } from '@/lib/runner-contract'
+import type { RunnerClient } from '@/lib/runner-client'
+import { browserRunnerClient } from '@/lib/runner-client'
 import { isUserAbort } from '../abort'
 
 /** Why a run could not be evaluated. Currently only the runner being offline. */
@@ -55,56 +56,9 @@ export interface CangjieRunner {
   run: (code: string, signal?: AbortSignal) => Promise<RunResult>
 }
 
-/**
- * Minimal remote-run client contract. The default implementation POSTs the
- * source to the backend `/run` endpoint; tests inject a fake. Kept local to the
- * feedback module so it does not depend on the legacy tour-ai stack.
- */
-export type RemoteRunRequest = (
-  code: string,
-  opts?: { stdin?: string, signal?: AbortSignal },
-) => Promise<RunnerRunResponse>
-
-const defaultRequest: RemoteRunRequest = async (code, opts) => {
-  // When stdin is provided the backend needs a structured body so it can route
-  // the input to the program; plain compile-and-run uses the `/run` endpoint's
-  // canonical text/plain request shape.
-  const hasStdin = opts?.stdin != null
-  const resp = await fetch(`/api/run`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': hasStdin
-        ? 'application/json; charset=utf-8'
-        : 'text/plain; charset=utf-8',
-    },
-    body: hasStdin ? JSON.stringify({ code, stdin: opts!.stdin }) : code,
-    signal: opts?.signal,
-  })
-
-  if (!resp.ok) {
-    const text = await resp.text()
-    let msg = text
-    try {
-      const parsed = JSON.parse(text) as { error?: string }
-      if (parsed.error)
-        msg = parsed.error
-    }
-    catch {
-      // non-JSON body, use as-is
-    }
-    throw new Error(`Remote action failed: ${msg}`)
-  }
-
-  const payload: unknown = await resp.json()
-  const parsed = parseRunnerRunResponse(payload)
-  if (!parsed)
-    throw new Error('Remote action failed: runner returned an invalid response')
-  return parsed
-}
-
 export interface RunCangjieCodeDeps {
-  /** Injected remote-run client; defaults to a backend `/run` POST. */
-  request?: RemoteRunRequest
+  /** Injected remote-run client; defaults to the canonical browser client. */
+  client?: Pick<RunnerClient, 'run'>
   /**
    * Standard input piped to the running program. When set, the default request
    * switches to a JSON body so the backend can route the input. Omitted for
@@ -128,12 +82,15 @@ export interface RunCangjieCodeDeps {
  * callers can render a graceful degraded state.
  */
 export async function runCangjieCode(code: string, deps: RunCangjieCodeDeps = {}): Promise<RunResult> {
-  const request = deps.request ?? defaultRequest
+  const client = deps.client ?? browserRunnerClient
   const now = deps.now ?? Date.now
   const startedAt = now()
 
   try {
-    const data = await request(code, { stdin: deps.stdin, signal: deps.signal })
+    const data: RunnerRunResponse = await client.run(code, {
+      stdin: deps.stdin,
+      signal: deps.signal,
+    })
     const durationMs = now() - startedAt
     if (data.phase === 'compile') {
       return {

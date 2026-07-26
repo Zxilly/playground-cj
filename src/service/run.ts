@@ -1,59 +1,11 @@
 import type {
-  RunnerFormatResponse,
-  RunnerRunResponse,
   RunnerTruncationState,
 } from '@/lib/runner-contract'
 import {
   NO_RUNNER_TRUNCATION,
-  parseRunnerFormatResponse,
-  parseRunnerRunResponse,
 } from '@/lib/runner-contract'
+import { browserRunnerClient } from '@/lib/runner-client'
 import { t } from '@lingui/core/macro'
-
-type RunMessage = RunnerRunResponse
-
-export function requestRemoteAction(
-  code: string,
-  action: 'run',
-): Promise<RunMessage>
-export function requestRemoteAction(
-  code: string,
-  action: 'format',
-): Promise<RunnerFormatResponse>
-export async function requestRemoteAction(
-  code: string,
-  action: 'run' | 'format',
-): Promise<RunMessage | RunnerFormatResponse> {
-  const resp = await fetch(`/api/${action}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-    },
-    body: code,
-  })
-
-  if (!resp.ok) {
-    const text = await resp.text()
-    let msg = text
-    try {
-      const parsed = JSON.parse(text) as { error?: string }
-      if (parsed.error)
-        msg = parsed.error
-    }
-    catch {
-      // non-JSON body, use as-is
-    }
-    throw new Error(`Remote action failed: ${msg}`)
-  }
-
-  const payload: unknown = await resp.json()
-  const parsed = action === 'run'
-    ? parseRunnerRunResponse(payload)
-    : parseRunnerFormatResponse(payload)
-  if (!parsed)
-    throw new Error('Remote action failed: runner returned an invalid response')
-  return parsed
-}
 
 export interface Actions {
   setToolOutput: (content: string) => void
@@ -78,7 +30,7 @@ export async function remoteRun(code: string, actions: Actions): Promise<void> {
   actions.setToolOutput(t`编译中`)
   actions.setProgramOutput(t`运行中`)
 
-  const data = await requestRemoteAction(code, 'run')
+  const data = await browserRunnerClient.run(code)
 
   actions.setTruncation({
     compilerOutput: data.compiler_output_truncated,

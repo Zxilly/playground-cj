@@ -2,8 +2,8 @@ import { useEffect } from 'react'
 import { eventEmitter, EVENTS } from '@/lib/events'
 import {
   remoteRun,
-  requestRemoteAction,
 } from '@/service/run'
+import { browserRunnerClient } from '@/lib/runner-client'
 import {
   NO_RUNNER_TRUNCATION,
 } from '@/lib/runner-contract'
@@ -58,7 +58,7 @@ export default function CodeRunner({
       toast.promise(async () => {
         await remoteLock.acquire('run', async () => {
           setTruncation(NO_RUNNER_TRUNCATION)
-          const resp = await requestRemoteAction(code, 'format')
+          const resp = await browserRunnerClient.format(code)
 
           setToolOutput(resp.formatter_output)
           setTruncation({

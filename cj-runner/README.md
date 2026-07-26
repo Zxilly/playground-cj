@@ -66,9 +66,6 @@ image instead of restoring the old agent protocol. See
   is absent or malformed.
 - `CJ_RUNNER_ENV`: `production` (the image default), `development`, or `test`.
   Only explicit development/test mode may start without a token.
-- `CJ_RUNNER_MAX_CONCURRENT_REQUESTS`: deprecated compatibility input. It may
-  be omitted or set to `1`; every other value is rejected. Admission is
-  permanently single-flight per replica.
 - `CJ_RUNNER_ISOLATION_DRIVER`: omit for the standard bubblewrap boundary.
   The exact value `modal-single-use-container` is reserved for the production
   Modal Function in `modal/runner.py`; other values and non-production use are

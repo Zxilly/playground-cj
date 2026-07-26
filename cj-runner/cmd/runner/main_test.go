@@ -1016,26 +1016,12 @@ func TestLoadRunnerConfigFailsClosed(t *testing.T) {
 		}
 	})
 
-	t.Run("tokens and concurrency are validated", func(t *testing.T) {
+	t.Run("tokens are validated", func(t *testing.T) {
 		if _, err := loadRunnerConfig(map[string]string{
 			"CJ_RUNNER_ENV":          "production",
 			"CJ_RUNNER_SHARED_TOKEN": "short",
 		}); err == nil {
 			t.Fatal("expected a weak token to fail")
-		}
-		if _, err := loadRunnerConfig(map[string]string{
-			"CJ_RUNNER_ENV":                     "production",
-			"CJ_RUNNER_SHARED_TOKEN":            testSharedToken,
-			"CJ_RUNNER_MAX_CONCURRENT_REQUESTS": "2",
-		}); err == nil {
-			t.Fatal("expected configurable multi-tenant concurrency to fail")
-		}
-		if _, err := loadRunnerConfig(map[string]string{
-			"CJ_RUNNER_ENV":                     "production",
-			"CJ_RUNNER_SHARED_TOKEN":            testSharedToken,
-			"CJ_RUNNER_MAX_CONCURRENT_REQUESTS": "1",
-		}); err != nil {
-			t.Fatalf("fixed single-flight value was rejected: %v", err)
 		}
 	})
 

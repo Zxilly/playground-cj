@@ -60,7 +60,6 @@ def execute_runner(
     environment.update(
         {
             "CJ_RUNNER_ENV": "production",
-            "CJ_RUNNER_MAX_CONCURRENT_REQUESTS": "1",
             "CJ_RUNNER_ISOLATION_DRIVER": "modal-single-use-container",
             "TMPDIR": "/tmp",
         }

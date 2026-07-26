@@ -1251,15 +1251,6 @@ func loadRunnerConfig(environment map[string]string) (runnerConfig, error) {
 		return runnerConfig{}, errors.New("CJ_RUNNER_SHARED_TOKEN must be set in production")
 	}
 
-	if configured := strings.TrimSpace(environment["CJ_RUNNER_MAX_CONCURRENT_REQUESTS"]); configured != "" {
-		parsed, err := strconv.Atoi(configured)
-		if err != nil || parsed != 1 {
-			return runnerConfig{}, errors.New(
-				"CJ_RUNNER_MAX_CONCURRENT_REQUESTS is fixed at 1",
-			)
-		}
-	}
-
 	isolationDriver := strings.TrimSpace(environment["CJ_RUNNER_ISOLATION_DRIVER"])
 	if isolationDriver != "" &&
 		isolationDriver != "modal-single-use-container" {
@@ -1282,10 +1273,9 @@ func loadRunnerConfig(environment map[string]string) (runnerConfig, error) {
 
 func environment() map[string]string {
 	return map[string]string{
-		"CJ_RUNNER_ENV":                     os.Getenv("CJ_RUNNER_ENV"),
-		"CJ_RUNNER_SHARED_TOKEN":            os.Getenv("CJ_RUNNER_SHARED_TOKEN"),
-		"CJ_RUNNER_MAX_CONCURRENT_REQUESTS": os.Getenv("CJ_RUNNER_MAX_CONCURRENT_REQUESTS"),
-		"CJ_RUNNER_ISOLATION_DRIVER":        os.Getenv("CJ_RUNNER_ISOLATION_DRIVER"),
+		"CJ_RUNNER_ENV":              os.Getenv("CJ_RUNNER_ENV"),
+		"CJ_RUNNER_SHARED_TOKEN":     os.Getenv("CJ_RUNNER_SHARED_TOKEN"),
+		"CJ_RUNNER_ISOLATION_DRIVER": os.Getenv("CJ_RUNNER_ISOLATION_DRIVER"),
 	}
 }
 
