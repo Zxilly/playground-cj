@@ -46,10 +46,10 @@ type RunnerUrlResolution
     | { url: URL }
 type RunnerTokenResolution
   = | { error: 'invalid' | 'missing' }
-    | { token: string | null }
+    | { token: string }
 type RunnerModalProxyAuthResolution
   = | { error: 'invalid' | 'missing' }
-    | { key: string | null, secret: string | null }
+    | { key: string, secret: string }
 
 class BodyTooLargeError extends Error {}
 class InvalidContentLengthError extends Error {}
@@ -201,10 +201,6 @@ function acceptsMediaType(mediaType: string | null): boolean {
   return mediaType === 'text/plain' || mediaType === 'application/json'
 }
 
-function isLoopbackHostname(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]'
-}
-
 function isSameOriginBrowserRequest(request: Request): boolean {
   const fetchSite = request.headers.get('sec-fetch-site')?.toLowerCase() ?? null
   if (fetchSite && fetchSite !== 'same-origin')
@@ -229,7 +225,7 @@ function isSameOriginBrowserRequest(request: Request): boolean {
 }
 
 function resolveRunnerUrl(action: RunnerAction): RunnerUrlResolution {
-  const configuredUrl = process.env.CJ_RUNNER_URL?.trim()
+  const configuredUrl = process.env.CJ_RUNNER_MODAL_URL?.trim()
   if (!configuredUrl)
     return { error: 'missing' }
 
@@ -241,11 +237,9 @@ function resolveRunnerUrl(action: RunnerAction): RunnerUrlResolution {
     return { error: 'invalid' }
   }
 
-  const loopbackHttp = process.env.NODE_ENV !== 'production'
-    && url.protocol === 'http:'
-    && isLoopbackHostname(url.hostname)
   if (
-    (url.protocol !== 'https:' && !loopbackHttp)
+    url.protocol !== 'https:'
+    || !url.hostname.endsWith('.modal.run')
     || url.username
     || url.password
     || url.search
@@ -258,13 +252,10 @@ function resolveRunnerUrl(action: RunnerAction): RunnerUrlResolution {
   return { url }
 }
 
-function resolveRunnerSharedToken(runnerUrl: URL): RunnerTokenResolution {
+function resolveRunnerSharedToken(): RunnerTokenResolution {
   const token = process.env.CJ_RUNNER_SHARED_TOKEN
-  if (token == null || token === '') {
-    return process.env.NODE_ENV !== 'production' && isLoopbackHostname(runnerUrl.hostname)
-      ? { token: null }
-      : { error: 'missing' }
-  }
+  if (token == null || token === '')
+    return { error: 'missing' }
   if (
     token !== token.trim()
     || token.length < MIN_RUNNER_SHARED_TOKEN_BYTES
@@ -276,18 +267,12 @@ function resolveRunnerSharedToken(runnerUrl: URL): RunnerTokenResolution {
   return { token }
 }
 
-function resolveRunnerModalProxyAuth(
-  runnerUrl: URL,
-): RunnerModalProxyAuthResolution {
+function resolveRunnerModalProxyAuth(): RunnerModalProxyAuthResolution {
   const key = process.env.CJ_RUNNER_MODAL_PROXY_KEY
   const secret = process.env.CJ_RUNNER_MODAL_PROXY_SECRET
-  const isModalEndpoint = runnerUrl.hostname.endsWith('.modal.run')
 
-  if (!key && !secret) {
-    return isModalEndpoint
-      ? { error: 'missing' }
-      : { key: null, secret: null }
-  }
+  if (!key && !secret)
+    return { error: 'missing' }
   if (
     !key
     || !secret
@@ -604,28 +589,28 @@ export async function proxyToRunner(request: Request, action: RunnerAction): Pro
       return jsonError(
         503,
         'runner_invalid_configuration',
-        'CJ_RUNNER_URL must be an HTTPS base URL without credentials, query parameters, or a fragment; non-production loopback HTTP is the only exception.',
+        'CJ_RUNNER_MODAL_URL must be an HTTPS Modal base URL without credentials, query parameters, or a fragment.',
       )
     }
     return jsonError(
       503,
       'runner_not_configured',
-      'Runner service is not configured. Set CJ_RUNNER_URL to an HTTP(S) base URL.',
+      'Runner service is not configured. Set CJ_RUNNER_MODAL_URL to the deployed Modal HTTPS base URL.',
     )
   }
 
-  const runnerToken = resolveRunnerSharedToken(runnerUrl.url)
+  const runnerToken = resolveRunnerSharedToken()
   if ('error' in runnerToken) {
     return jsonError(
       503,
       'runner_invalid_auth_configuration',
       runnerToken.error === 'missing'
-        ? 'CJ_RUNNER_SHARED_TOKEN must be set except for an explicit non-production loopback runner.'
+        ? 'CJ_RUNNER_SHARED_TOKEN must be set for the Modal runner.'
         : `CJ_RUNNER_SHARED_TOKEN must contain ${MIN_RUNNER_SHARED_TOKEN_BYTES}-${MAX_RUNNER_SHARED_TOKEN_BYTES} printable ASCII bytes without spaces.`,
     )
   }
 
-  const modalProxyAuth = resolveRunnerModalProxyAuth(runnerUrl.url)
+  const modalProxyAuth = resolveRunnerModalProxyAuth()
   if ('error' in modalProxyAuth) {
     return jsonError(
       503,
@@ -813,15 +798,9 @@ export async function proxyToRunner(request: Request, action: RunnerAction): Pro
       headers: {
         'Content-Type': contentType!,
         [RUNNER_TOOLCHAIN_LOCK_HEADER]: RUNNER_TOOLCHAIN_LOCK_SHA256,
-        ...(runnerToken.token
-          ? { Authorization: `Bearer ${runnerToken.token}` }
-          : {}),
-        ...(modalProxyAuth.key && modalProxyAuth.secret
-          ? {
-              'Modal-Key': modalProxyAuth.key,
-              'Modal-Secret': modalProxyAuth.secret,
-            }
-          : {}),
+        'Authorization': `Bearer ${runnerToken.token}`,
+        'Modal-Key': modalProxyAuth.key,
+        'Modal-Secret': modalProxyAuth.secret,
       },
       body,
       redirect: 'error',

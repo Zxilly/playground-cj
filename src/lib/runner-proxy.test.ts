@@ -52,8 +52,13 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
 
 describe('proxyToRunner', () => {
   beforeEach(() => {
-    vi.stubEnv('CJ_RUNNER_URL', 'https://runner.example/internal/api/')
+    vi.stubEnv(
+      'CJ_RUNNER_MODAL_URL',
+      'https://workspace--runner.modal.run/internal/api/',
+    )
     vi.stubEnv('CJ_RUNNER_SHARED_TOKEN', '0123456789abcdef0123456789abcdef')
+    vi.stubEnv('CJ_RUNNER_MODAL_PROXY_KEY', 'wk-testModalProxyKey')
+    vi.stubEnv('CJ_RUNNER_MODAL_PROXY_SECRET', 'ws-testModalProxySecret')
     consumeRunnerPermit.mockReset()
     consumeRunnerPermit.mockResolvedValue(true)
     resolveRunnerIdentity.mockReset()
@@ -67,9 +72,9 @@ describe('proxyToRunner', () => {
     vi.unstubAllEnvs()
   })
 
-  it('fails closed when the server-side runner URL is missing', async () => {
-    vi.stubEnv('CJ_RUNNER_URL', '')
-    vi.stubEnv('NEXT_PUBLIC_BACKEND_URL', 'https://legacy-public.example')
+  it('does not accept the legacy generic runner configuration', async () => {
+    vi.stubEnv('CJ_RUNNER_MODAL_URL', '')
+    vi.stubEnv('CJ_RUNNER_URL', 'https://runner.example')
     const fetch = vi.spyOn(globalThis, 'fetch')
 
     const response = await proxyToRunner(runnerRequest(), 'run')
@@ -77,19 +82,13 @@ describe('proxyToRunner', () => {
     expect(response.status).toBe(503)
     await expect(response.json()).resolves.toMatchObject({
       code: 'runner_not_configured',
-      error: expect.stringContaining('CJ_RUNNER_URL'),
+      error: expect.stringContaining('CJ_RUNNER_MODAL_URL'),
     })
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it.each([
-    'not a URL',
-    'ftp://runner.example',
-    'http://runner.example',
-    'https://user:secret@runner.example',
-    'https://runner.example?token=secret',
-  ])('rejects an unsafe runner URL configuration: %s', async (url) => {
-    vi.stubEnv('CJ_RUNNER_URL', url)
+  it('rejects HTTPS runners outside Modal', async () => {
+    vi.stubEnv('CJ_RUNNER_MODAL_URL', 'https://runner.example')
     const fetch = vi.spyOn(globalThis, 'fetch')
 
     const response = await proxyToRunner(runnerRequest(), 'run')
@@ -101,29 +100,38 @@ describe('proxyToRunner', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('allows loopback HTTP only outside production', async () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    vi.stubEnv('CJ_RUNNER_URL', 'http://127.0.0.1:8000')
-    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      phase: 'run',
-      compiler_output: '',
-      compiler_output_truncated: false,
-      compiler_code: 0,
-      bin_stdout: '',
-      bin_stdout_truncated: false,
-      bin_stderr: '',
-      bin_stderr_truncated: false,
-      bin_code: 0,
-    }))
+  it('fails closed when the server-side runner URL is missing', async () => {
+    vi.stubEnv('CJ_RUNNER_MODAL_URL', '')
+    vi.stubEnv('NEXT_PUBLIC_BACKEND_URL', 'https://legacy-public.example')
+    const fetch = vi.spyOn(globalThis, 'fetch')
 
     const response = await proxyToRunner(runnerRequest(), 'run')
 
-    expect(response.status).toBe(200)
-    expect(String(fetch.mock.calls[0][0])).toBe('http://127.0.0.1:8000/run')
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'runner_not_configured',
+      error: expect.stringContaining('CJ_RUNNER_MODAL_URL'),
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
 
-    vi.stubEnv('NODE_ENV', 'production')
-    const rejected = await proxyToRunner(runnerRequest(), 'run')
-    expect(rejected.status).toBe(503)
+  it.each([
+    'not a URL',
+    'ftp://runner.example',
+    'http://runner.example',
+    'https://user:secret@runner.example',
+    'https://runner.example?token=secret',
+  ])('rejects an unsafe runner URL configuration: %s', async (url) => {
+    vi.stubEnv('CJ_RUNNER_MODAL_URL', url)
+    const fetch = vi.spyOn(globalThis, 'fetch')
+
+    const response = await proxyToRunner(runnerRequest(), 'run')
+
+    expect(response.status).toBe(503)
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'runner_invalid_configuration',
+    })
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('forwards a bounded text request to the configured action and propagates cancellation', async () => {
@@ -147,7 +155,9 @@ describe('proxyToRunner', () => {
     await expect(response.json()).resolves.toMatchObject({ bin_stdout: 'ok' })
     expect(fetch).toHaveBeenCalledOnce()
     const [input, init] = fetch.mock.calls[0]
-    expect(String(input)).toBe('https://runner.example/internal/api/run')
+    expect(String(input)).toBe(
+      'https://workspace--runner.modal.run/internal/api/run',
+    )
     expect(init).toMatchObject({
       method: 'POST',
       body: 'main() {}',
@@ -158,6 +168,10 @@ describe('proxyToRunner', () => {
     expect(new Headers(init?.headers).get('content-type')).toBe('text/plain; charset=utf-8')
     expect(new Headers(init?.headers).get('authorization'))
       .toBe('Bearer 0123456789abcdef0123456789abcdef')
+    expect(new Headers(init?.headers).get('modal-key'))
+      .toBe('wk-testModalProxyKey')
+    expect(new Headers(init?.headers).get('modal-secret'))
+      .toBe('ws-testModalProxySecret')
     expect(new Headers(init?.headers).get(RUNNER_TOOLCHAIN_LOCK_HEADER))
       .toBe(RUNNER_TOOLCHAIN_LOCK_SHA256)
     expect(response.headers.get('cache-control')).toBe('no-store')
@@ -165,7 +179,8 @@ describe('proxyToRunner', () => {
   })
 
   it('requires and forwards Modal proxy authentication for Modal endpoints', async () => {
-    vi.stubEnv('CJ_RUNNER_URL', 'https://workspace--runner.modal.run')
+    vi.stubEnv('CJ_RUNNER_MODAL_PROXY_KEY', '')
+    vi.stubEnv('CJ_RUNNER_MODAL_PROXY_SECRET', '')
     const fetch = vi.spyOn(globalThis, 'fetch')
 
     const missing = await proxyToRunner(runnerRequest(), 'run')
@@ -197,8 +212,9 @@ describe('proxyToRunner', () => {
     expect(headers.get('modal-secret')).toBe('ws-testModalProxySecret')
   })
 
-  it('rejects incomplete Modal proxy authentication on any runner endpoint', async () => {
+  it('rejects incomplete Modal proxy authentication', async () => {
     vi.stubEnv('CJ_RUNNER_MODAL_PROXY_KEY', 'wk-testModalProxyKey')
+    vi.stubEnv('CJ_RUNNER_MODAL_PROXY_SECRET', '')
     const fetch = vi.spyOn(globalThis, 'fetch')
 
     const response = await proxyToRunner(runnerRequest(), 'run')
@@ -231,8 +247,7 @@ describe('proxyToRunner', () => {
     })
   })
 
-  it('fails closed on a missing or invalid production service token', async () => {
-    vi.stubEnv('NODE_ENV', 'production')
+  it('fails closed on a missing or invalid service token', async () => {
     const fetch = vi.spyOn(globalThis, 'fetch')
 
     vi.stubEnv('CJ_RUNNER_SHARED_TOKEN', '')
@@ -251,29 +266,7 @@ describe('proxyToRunner', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('allows an explicit development setup to pair with an unauthenticated local runner', async () => {
-    vi.stubEnv('NODE_ENV', 'development')
-    vi.stubEnv('CJ_RUNNER_URL', 'http://127.0.0.1:8000')
-    vi.stubEnv('CJ_RUNNER_SHARED_TOKEN', '')
-    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      phase: 'run',
-      compiler_output: '',
-      compiler_output_truncated: false,
-      compiler_code: 0,
-      bin_stdout: 'ok',
-      bin_stdout_truncated: false,
-      bin_stderr: '',
-      bin_stderr_truncated: false,
-      bin_code: 0,
-    }))
-
-    const response = await proxyToRunner(runnerRequest(), 'run')
-
-    expect(response.status).toBe(200)
-    expect(new Headers(fetch.mock.calls[0][1]?.headers).has('authorization')).toBe(false)
-  })
-
-  it('does not allow the development token escape hatch for a remote runner', async () => {
+  it('does not allow a development token escape hatch', async () => {
     vi.stubEnv('NODE_ENV', 'development')
     vi.stubEnv('CJ_RUNNER_SHARED_TOKEN', '')
     const fetch = vi.spyOn(globalThis, 'fetch')

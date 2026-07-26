@@ -333,12 +333,12 @@ func TestCappedBufferSupportsConcurrentWritersAndSnapshots(t *testing.T) {
 
 func TestTrustedToolEnvironmentDoesNotInheritServiceSecrets(t *testing.T) {
 	t.Setenv("CJ_RUNNER_SHARED_TOKEN", "must-not-cross-the-process-boundary")
-	t.Setenv("AZURE_CLIENT_SECRET", "must-not-cross-the-process-boundary")
+	t.Setenv("MODAL_TOKEN_SECRET", "must-not-cross-the-process-boundary")
 
 	environment := trustedToolEnvironment("/request")
 	joined := strings.Join(environment, "\n")
 
-	for _, secretName := range []string{"CJ_RUNNER_SHARED_TOKEN", "AZURE_CLIENT_SECRET"} {
+	for _, secretName := range []string{"CJ_RUNNER_SHARED_TOKEN", "MODAL_TOKEN_SECRET"} {
 		if strings.Contains(joined, secretName+"=") {
 			t.Fatalf("trusted tool environment inherited %s: %q", secretName, environment)
 		}
@@ -971,6 +971,15 @@ func TestLoadRunnerConfigFailsClosed(t *testing.T) {
 			"CJ_RUNNER_SHARED_TOKEN": "short",
 		}); err == nil {
 			t.Fatal("expected a weak token to fail")
+		}
+	})
+
+	t.Run("production requires the Modal isolation driver", func(t *testing.T) {
+		if _, err := loadRunnerConfig(map[string]string{
+			"CJ_RUNNER_ENV":          "production",
+			"CJ_RUNNER_SHARED_TOKEN": testSharedToken,
+		}); err == nil {
+			t.Fatal("production runner started outside the Modal single-use container")
 		}
 	})
 

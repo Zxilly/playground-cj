@@ -1,10 +1,10 @@
-// cj-runner is the single supported Cangjie compile/run contract for
-// managed and self-hosted deployments. It replaces the repository's former
-// Docker-per-request server; ADR 0014 records that trade-off. Standard
-// deployments run every cjc and learner process behind bubblewrap.
-// Modal deployments instead use an explicitly configured, single-use gVisor
-// container per request because nested namespaces are unavailable there. The
-// service probes its selected boundary at startup and has no implicit fallback.
+// cj-runner is the Cangjie compile/run process embedded in the production Modal
+// boundary. It replaces the repository's former Docker-per-request server; ADR
+// 0014 and ADR 0015 record the consolidation. Production requires an explicitly
+// configured, single-use gVisor container per request because nested namespaces
+// are unavailable there. Development and tests retain the stricter bubblewrap
+// profile for boundary verification. The service probes its selected boundary
+// at startup and has no implicit fallback.
 // The endpoint is POST /run ({code,stdin} JSON or raw), returning the canonical
 // RunMessage JSON shape. Formatting runs locally in the browser through WASM.
 //
@@ -1135,15 +1135,19 @@ func loadRunnerConfig(environment map[string]string) (runnerConfig, error) {
 	}
 
 	isolationDriver := strings.TrimSpace(environment["CJ_RUNNER_ISOLATION_DRIVER"])
-	if isolationDriver != "" &&
-		isolationDriver != "modal-single-use-container" {
+	if isolationDriver != "" && isolationDriver != "modal-single-use-container" {
 		return runnerConfig{}, errors.New(
 			"CJ_RUNNER_ISOLATION_DRIVER must be empty or modal-single-use-container",
 		)
 	}
-	if isolationDriver != "" && runtimeEnvironment != "production" {
+	if runtimeEnvironment == "production" && isolationDriver != "modal-single-use-container" {
 		return runnerConfig{}, errors.New(
-			"CJ_RUNNER_ISOLATION_DRIVER is only valid in production",
+			"production requires CJ_RUNNER_ISOLATION_DRIVER=modal-single-use-container",
+		)
+	}
+	if runtimeEnvironment != "production" && isolationDriver != "" {
+		return runnerConfig{}, errors.New(
+			"CJ_RUNNER_ISOLATION_DRIVER must be empty outside production",
 		)
 	}
 

@@ -46,3 +46,7 @@ request, it must add an outer supervisor around the same authenticated runner
 contract and locked image. Restoring the old agent protocol, weakening the
 startup probe, or adding a direct-execution fallback is not an accepted
 compatibility strategy.
+
+Production subsequently standardized on the single-use Modal boundary. The
+provider-specific constraints and removal of the generic runner target are
+recorded in [ADR 0015](./0015-runner-production-is-modal-only.md).

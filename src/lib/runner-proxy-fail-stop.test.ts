@@ -41,8 +41,10 @@ describe('runner proxy fail-stop boundary', () => {
   it('reaps a production instance instead of reusing a never-settled fetch slot', async () => {
     vi.useFakeTimers()
     vi.stubEnv('NODE_ENV', 'production')
-    vi.stubEnv('CJ_RUNNER_URL', 'https://runner.example')
+    vi.stubEnv('CJ_RUNNER_MODAL_URL', 'https://workspace--runner.modal.run')
     vi.stubEnv('CJ_RUNNER_SHARED_TOKEN', '0123456789abcdef0123456789abcdef')
+    vi.stubEnv('CJ_RUNNER_MODAL_PROXY_KEY', 'wk-testModalProxyKey')
+    vi.stubEnv('CJ_RUNNER_MODAL_PROXY_SECRET', 'ws-testModalProxySecret')
     const exit = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const fetch = vi.spyOn(globalThis, 'fetch')
