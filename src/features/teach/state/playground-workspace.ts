@@ -9,6 +9,7 @@ import {
   PLAYGROUND_WORKSPACE_LIMITS,
   PlaygroundWorkspaceRevisionConflictError,
 } from './playground-workspace-storage'
+import { createPlaygroundWorkspaceLifecycle } from './playground-workspace-lifecycle'
 
 const DEFAULT_PLAYGROUND_CODE = `package playground
 
@@ -269,6 +270,7 @@ export function createPlaygroundWorkspace(
   options: CreatePlaygroundWorkspaceOptions,
 ): PlaygroundWorkspace {
   const createId = options.createId ?? (() => crypto.randomUUID())
+  const lifecycle = createPlaygroundWorkspaceLifecycle()
   let state = emptySnapshot()
   let durable: PersistedPlaygroundWorkspace | null = null
   let selectedTabId: string | null = null
@@ -281,10 +283,18 @@ export function createPlaygroundWorkspace(
   let activeMutation: Mutation | null = null
   let blockedMutation: Mutation | null = null
   const deferredMutations: Mutation[] = []
-  let closing = false
-  let closed = false
   const mutations: Mutation[] = []
   const listeners = new Set<() => void>()
+
+  function transition(
+    event: Parameters<typeof lifecycle.send>[0],
+  ): void {
+    lifecycle.send(event)
+    state = {
+      ...state,
+      status: lifecycle.snapshot().context.publicStatus,
+    }
+  }
 
   function emit(): void {
     for (const listener of listeners)
@@ -320,8 +330,14 @@ export function createPlaygroundWorkspace(
   }
 
   function requireReady(): PersistedPlaygroundWorkspace {
-    if (state.status !== 'ready' || !durable || closing || closed)
+    if (
+      state.status !== 'ready'
+      || !durable
+      || lifecycle.matches('closing')
+      || lifecycle.matches('disposed')
+    ) {
       throw new Error('Playground workspace is not ready')
+    }
     return projectedWorkspace()!
   }
 
@@ -533,7 +549,6 @@ export function createPlaygroundWorkspace(
     )
     state = {
       ...state,
-      status: 'ready',
       revision: durable?.revision ?? state.revision,
       dirty: true,
       error: 'conflict',
@@ -565,7 +580,7 @@ export function createPlaygroundWorkspace(
   async function runWorker(): Promise<void> {
     try {
       for (;;) {
-        if (closed || state.status !== 'ready')
+        if (lifecycle.matches('disposed') || state.status !== 'ready')
           return
         if (state.conflict || state.error === 'storage_unavailable')
           return
@@ -601,9 +616,10 @@ export function createPlaygroundWorkspace(
             await synchronizeFromStorage()
           }
           catch (error) {
+            if (error instanceof z.ZodError)
+              transition({ type: 'workspace.corrupted' })
             state = {
               ...state,
-              status: error instanceof z.ZodError ? 'error' : state.status,
               error: error instanceof z.ZodError
                 ? 'corrupt_workspace'
                 : 'storage_unavailable',
@@ -639,11 +655,10 @@ export function createPlaygroundWorkspace(
               await synchronizeFromStorage(false)
             }
             catch (loadError) {
+              if (loadError instanceof z.ZodError)
+                transition({ type: 'workspace.corrupted' })
               state = {
                 ...state,
-                status: loadError instanceof z.ZodError
-                  ? 'error'
-                  : state.status,
                 error: loadError instanceof z.ZodError
                   ? 'corrupt_workspace'
                   : 'storage_unavailable',
@@ -693,12 +708,12 @@ export function createPlaygroundWorkspace(
   }
 
   function kick(): void {
-    if (worker || closed || state.status !== 'ready')
+    if (worker || lifecycle.matches('disposed') || state.status !== 'ready')
       return
     worker = runWorker().finally(() => {
       worker = null
       if (
-        !closed
+        !lifecycle.matches('disposed')
         && state.status === 'ready'
         && !state.conflict
         && state.error !== 'storage_unavailable'
@@ -714,8 +729,9 @@ export function createPlaygroundWorkspace(
     })
   }
 
-  async function initialize(): Promise<void> {
-    state = { ...state, status: 'opening', error: null, conflict: null }
+  async function initialize(event: 'open' | 'retry'): Promise<void> {
+    transition({ type: event })
+    state = { ...state, error: null, conflict: null }
     emit()
     try {
       let loaded = await options.storage.load()
@@ -751,7 +767,8 @@ export function createPlaygroundWorkspace(
       durable = loaded
       requestedRevision = loaded.revision
       selectedTabId = loaded.tabs[0]?.id ?? null
-      state = { ...state, status: 'ready', error: null, conflict: null }
+      transition({ type: 'open.succeeded' })
+      state = { ...state, error: null, conflict: null }
       unsubscribeStorage = options.storage.subscribe((revision) => {
         if (revision <= (durable?.revision ?? 0))
           return
@@ -762,9 +779,9 @@ export function createPlaygroundWorkspace(
       kick()
     }
     catch (error) {
+      transition({ type: 'open.failed' })
       state = {
         ...state,
-        status: 'error',
         error: error instanceof z.ZodError
           ? 'corrupt_workspace'
           : 'storage_unavailable',
@@ -793,9 +810,9 @@ export function createPlaygroundWorkspace(
       return () => listeners.delete(listener)
     },
     open: () => {
-      if (closing || closed)
+      if (lifecycle.matches('closing') || lifecycle.matches('disposed'))
         return Promise.reject(new Error('Playground workspace is closed'))
-      opening ??= initialize()
+      opening ??= initialize('open')
       return opening
     },
     refresh: async () => {
@@ -894,10 +911,11 @@ export function createPlaygroundWorkspace(
       })
     },
     retry: () => {
-      if (closing || closed)
+      if (lifecycle.matches('closing') || lifecycle.matches('disposed'))
         return
       if (state.status === 'error') {
-        void initialize().catch(() => undefined)
+        opening = initialize('retry')
+        void opening.catch(() => undefined)
         return
       }
       if (state.error === 'storage_unavailable') {
@@ -982,9 +1000,9 @@ export function createPlaygroundWorkspace(
     close: () => {
       if (closeOperation)
         return closeOperation
-      if (closed)
+      if (lifecycle.matches('disposed'))
         return Promise.resolve(true)
-      closing = true
+      transition({ type: 'close.started' })
       closeOperation = (async () => {
         try {
           // Stop accepting mutations while the current worker attempts to
@@ -1006,22 +1024,22 @@ export function createPlaygroundWorkspace(
           }
           unsubscribeStorage?.()
           unsubscribeStorage = null
-          closed = true
           await options.storage.close()
+          transition({ type: 'close.succeeded' })
           state = {
             ...state,
-            status: 'closed',
             dirty: false,
             error: null,
             conflict: null,
           }
           emit()
           listeners.clear()
+          lifecycle.stop()
           return true
         }
         finally {
-          if (!closed) {
-            closing = false
+          if (!lifecycle.matches('disposed')) {
+            transition({ type: 'close.rejected' })
             closeOperation = null
           }
         }

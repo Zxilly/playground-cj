@@ -1,4 +1,11 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import TeachAppRoot from './TeachAppRoot'
@@ -43,6 +50,20 @@ describe('teach app root', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('invalid content pack')
   })
 
+  it('recreates the runtime after retrying a failed open', async () => {
+    const dispose = vi.fn(async () => undefined)
+    mocks.create
+      .mockRejectedValueOnce(new Error('temporary failure'))
+      .mockResolvedValueOnce({ dispose } as unknown as WorkspaceCollaborators)
+
+    render(<TeachAppRoot lang="en" />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Retry' }))
+
+    expect(screen.getByTestId('teach-app-loading')).toBeTruthy()
+    expect(await screen.findByText('ready:en')).toBeTruthy()
+    expect(mocks.create).toHaveBeenCalledTimes(2)
+  })
+
   it('never exposes a disposed old-locale runtime while the new locale loads', async () => {
     const disposeEnglish = vi.fn(async () => undefined)
     const disposeChinese = vi.fn(async () => undefined)
@@ -68,5 +89,31 @@ describe('teach app root', () => {
       dispose: disposeChinese,
     } as unknown as WorkspaceCollaborators)
     expect(await screen.findByText('ready:zh')).toBeTruthy()
+  })
+
+  it('keeps a storage failure closed when initialization resolves afterward', async () => {
+    const dispose = vi.fn(async () => undefined)
+    let reportStorageError!: (error: unknown) => void
+    let resolveRuntime!: (value: WorkspaceCollaborators) => void
+    mocks.create.mockImplementationOnce((
+      _locale: string,
+      options: { onStorageError: (error: unknown) => void },
+    ) => {
+      reportStorageError = options.onStorageError
+      return new Promise((resolve) => {
+        resolveRuntime = resolve
+      })
+    })
+
+    render(<TeachAppRoot lang="en" />)
+    act(() => reportStorageError(new Error('storage failed after open')))
+    expect((await screen.findByRole('alert')).textContent)
+      .toContain('storage failed after open')
+
+    await act(async () => {
+      resolveRuntime({ dispose } as unknown as WorkspaceCollaborators)
+    })
+    await waitFor(() => expect(dispose).toHaveBeenCalledOnce())
+    expect(screen.queryByText('ready:en')).toBeNull()
   })
 })
