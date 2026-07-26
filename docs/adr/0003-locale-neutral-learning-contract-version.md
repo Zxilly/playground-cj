@@ -1,0 +1,15 @@
+# Evidence Uses a Locale-Neutral Learning Contract Version
+
+AI Classroom stores two immutable revisions for an assessed exercise. Content Version identifies the exact locale-specific Course Content Pack and Exercise Template the learner saw. Learning Contract Version identifies the locale-neutral Learning Skills and deterministic evaluator semantics that decide whether evidence still applies.
+
+Concept Progress, blocking rules, evidence-backed Track Adjustments, and any future mastery protocol compare Learning Contract Version. They do not compare Content Version. Therefore switching between semantically aligned English and Chinese curriculum does not make evidence stale, while changing a skill identity, template purpose, accepted output, source requirement, recall answer, quiz option meaning, or correct answer does.
+
+Assessment-form freshness is a separate, deliberately conservative invariant. A Learning Contract Version bump alone never turns a repeated deterministic form into a first independent assessment. The aggregate also compares the assessment contract across prior Exercise Instances and records an otherwise unaided repeat as Practice Evidence. This prevents a version, locale, Track, or instance-ID change from laundering old work into fresh Independent Evidence.
+
+The offline generator derives one Learning Contract Version from the canonical English evaluator contract and assigns it to both locale artifacts only after their Concept, prerequisite, skill, template, task-type, and evaluator structures align. Localized titles, summaries, Core Content, prompts, starter comments, hints, question text, and explanations remain part of Content Version but not the learning contract. Recall answers and quiz options are included in the canonical evaluator contract because changing them can change what is accepted or what a correct choice means.
+
+Every Exercise Instance copies both revisions from its exact pack. Every Learning Evidence record copies both from its Exercise Instance and observable Attempt. Aggregate integrity rejects a mismatch between pack, template, instance, attempt, and evidence instead of repairing or inferring provenance.
+
+This was a breaking persisted-state invariant, so Classroom Snapshot and IndexedDB storage advanced from v3 to v4 with no implicit migration. The later Teacher Exposure Epoch invariant advances them again to v5; ADR 0004 owns that separate decision. The honest scaffolding policy later advances persisted state to v6; ADR 0006 owns that decision. Course Content Pack artifact schema v2 is the genesis artifact shape: no contract-less artifact entered repository publication history, so there is no history-only parser or v1-to-v2 transition.
+
+The rejected alternative was treating Content Version as evidence applicability. It made a translation or prose edit look like a changed learning target. Also rejected was hashing only code-output fields while ignoring recall and quiz evaluator meaning, because that would let real assessment changes reuse old evidence.

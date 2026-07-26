@@ -9,11 +9,11 @@ A reusable, versioned set of instructional material for a concept or learning tr
 _Avoid_: Generated tutorial, one-off lesson, AI-written course.
 
 **Content Pack Validation**:
-The quality gate a Course Content Pack must pass before AI Classroom can use it at runtime. Validation checks stable block identity, concept and skill links, Source References, content shape, runnable examples, and review status.
+The quality gate a Course Content Pack must pass before AI Classroom can use it at runtime. Validation checks stable block identity, concept and skill links, Source References, content shape, runnable examples, and review status. Every code sample is explicitly a standalone `program` or a non-runnable `snippet`; each program must have a receipt entry bound to its block, source hash, successful `cjc` compile/run result, and normalized-output hash. Repository-local hashes and self-asserted review metadata prove consistency, not approval. Runtime approval additionally requires a valid Ed25519 human/external review attestation whose public key is supplied by an independently trusted deployment boundary.
 _Avoid_: Automatic publish, runtime extraction.
 
 **Validated Content**:
-Course Content Pack material that has passed Content Pack Validation and can be used for mainline AI Classroom tutoring. Unvalidated content may support Chat or link back to Static Tour, but it should not drive mainline tutoring progress.
+Course Content Pack material that has passed Content Pack Validation, contains at least one receipt-validated runnable program, and is covered by an independently trusted external review attestation. It can be used for mainline AI Classroom tutoring. Unvalidated content may support Chat or link back to Static Tour, but it should not drive mainline tutoring progress. The checked-in repository currently carries only a self-asserted declaration with `externalTrustAnchor: false`, so without deployment-supplied external attestation and trust keys every pack remains pending/read-only and the runtime exposes zero Validated Concepts.
 _Avoid_: Draft content, unchecked generated lesson.
 
 **Out-of-Pack Help**:
@@ -24,8 +24,12 @@ _Avoid_: Mainline tutoring, generated Core Content.
 The specific version of Course Content Pack material a learner encountered. Live View stays faithful to the Content Version used at the time, while Review View may show newer content with a visible note about the learner's original version.
 _Avoid_: Always-latest content, mutable learning record.
 
+**Learning Contract Version**:
+The locale-neutral, content-addressed revision of a Concept's Learning Skills, Exercise Template identities, and deterministic evaluator semantics. Exercise Instances and Learning Evidence retain both this revision and their exact locale-specific Content Version: translated prose may create a new Content Version without making equivalent evidence stale, while a changed learning target or accepted result creates a new Learning Contract Version.
+_Avoid_: Locale version, display-content hash, manually assigned progress revision.
+
 **Stale Evidence**:
-Evidence that remains part of the learner's history but may no longer fully prove current understanding because the related Course Content Pack, Exercise Template, or learning target changed. Stale Evidence can prompt review or retesting instead of being silently deleted.
+Evidence that remains part of the learner's history but may no longer support the current local demonstration state because its Learning Contract Version differs from the current learning target or deterministic evaluator semantics. A locale or prose-only Content Version change does not make otherwise equivalent evidence stale. Stale Evidence can prompt review or retesting instead of being silently deleted.
 _Avoid_: Invalid evidence, deleted progress.
 
 **Chapter**:
@@ -40,13 +44,21 @@ _Avoid_: AI Classroom, generated lesson.
 The chronological record of one learner's AI classroom experience. It is a process record, not the only shape used for later review.
 _Avoid_: Tutorial, chapter page, static course page.
 
+**Classroom Persistence Budget**:
+The explicit finite storage and collection limits applied to one browser-local AI Classroom aggregate. Runner diagnostics are retained as bounded head/tail summaries with byte counts and hashes, and only resolved, unreferenced retention audit history may be compacted. When active Evidence, provenance, or suppression state prevents safe compaction, the next write fails visibly instead of silently deleting learning history.
+_Avoid_: Best-effort truncation, age-based Evidence deletion, unlimited local history.
+
 **Chat**:
 The learner's temporary conversational help channel inside AI Classroom. Chat answers ordinary clarification questions without changing the Classroom Stream unless the exchange reveals material that should be retained for future review; raw Chat history does not participate in long-term personalization unless a Retention Decision turns part of it into structured state. In Review View, Chat is scoped to the active reviewed Concept rather than the full Live View timeline.
 _Avoid_: Classroom Stream, Core Content.
 
 **Code Suggestion**:
-A Chat-proposed code change that the learner can choose to apply. A Code Suggestion is assistance, not Learning Evidence, unless the learner applies it and produces an observable attempt such as a run or submission.
+A Chat-proposed code change that the learner can choose to apply. A Code Suggestion is assistance covered by the already-recorded Teacher Exposure Epoch; it is not a separate evidence record. If the learner applies it and later makes an observable attempt, that attempt produces Aided Evidence.
 _Avoid_: User solution, mastery proof.
+
+**Teacher Exposure Epoch**:
+The single durable, non-resettable boundary recorded before any learner-facing teacher-generated text is exposed. Because temporary Chat is not retained well enough to prove that a later assessment is fresh, every Attempt recorded after this boundary is Aided Evidence across all task types, Exercise Instances, and Learning Tracks. The current product has no validated fresh-assessment boundary, so starting a new Track or creating a new Exercise Instance does not restore eligibility for Independent or Mastery Evidence. The epoch does not alter learner work or create evidence by itself.
+_Avoid_: Model-declared assistance, per-exercise reset, hidden fresh start, independent evidence after teacher exposure.
 
 **Core Content**:
 The standard explanation, example, or exercise material that introduces a concept for the first time. Core Content belongs to a Course Content Pack and can appear in many Classroom Streams.
@@ -89,8 +101,8 @@ A concrete ability a learner can demonstrate while learning a concept. A Concept
 _Avoid_: Concept, chapter objective.
 
 **Track Adjustment**:
-A local adaptation inside a Learning Track, such as accelerating, inserting Focused Catch-Up, delaying a blocked Learning Skill, reviewing a related Concept, or honoring a learner-requested topic. A Track Adjustment is not a new Learning Track.
-_Avoid_: Free curriculum rewrite, random topic jump.
+A local adaptation inside a Learning Track, such as accelerating, inserting Focused Catch-Up, delaying a blocked Learning Skill, reviewing a related Concept, or honoring a learner-requested topic. A Track Adjustment is not a new Learning Track. Its persisted decision is system-derived from its validated type and provenance; the model does not attach a free-form reason that could falsely narrate the evidence.
+_Avoid_: Free curriculum rewrite, random topic jump, model-authored evidence rationale.
 
 **Topic Entry**:
 A learner entry into AI Classroom from a specific Concept or Chapter. A Topic Entry is treated as a Track Adjustment by default, not as a new Learning Track, unless the learner explicitly starts a new path from that topic.
@@ -105,24 +117,36 @@ The internal unit used to decide what the AI should do next. A Tutoring Step tar
 _Avoid_: Chapter step, visible lesson section.
 
 **Learning Evidence**:
-A record that the learner attempted or demonstrated a Learning Skill. Learning Evidence must be grounded in observable activity such as an Exercise Instance, run result, retained Remediation, or other explicit learner action.
-_Avoid_: Model opinion, raw chat transcript.
+A browser-local self-practice record that the learner attempted or locally demonstrated a Learning Skill. Learning Evidence must be grounded in activity observed by this application, such as an Exercise Instance and submission/run result, and preserves exact Content Version and Learning Contract Version provenance. It is not server-attested: evaluator keys and state exist on the client, so it must never be presented as a credential or as proof against a learner who controls DevTools, IndexedDB, or network responses.
+_Avoid_: Model opinion, raw chat transcript, credential, tamper-resistant attestation.
 
 **Aided Evidence**:
-Learning Evidence produced after meaningful assistance such as a Code Suggestion, hint, or guided correction. Aided Evidence can show progress, but it is weaker than an independent attempt and should not by itself prove mastery.
+Learning Evidence produced after a recorded hint for the same assessment contract, or after the classroom's Teacher Exposure Epoch. Because every Code Suggestion is teacher-generated text, the epoch covers it before reveal. Aided Evidence can show progress, but it is weaker than an independent attempt and does not by itself prove mastery.
 _Avoid_: Independent success, mastered.
 
-**Self-Report Evidence**:
-A weak form of Learning Evidence created when the learner says they understand or already know something. Self-Report Evidence may influence pacing or trigger a check, but it does not directly prove a Learning Skill.
-_Avoid_: Mastery proof, direct progress update.
+**Practice Evidence**:
+Local Learning Evidence from a retry or a new Exercise Instance that repeats an assessment contract the learner already attempted. Practice Evidence records useful work but cannot establish demonstrated progress or justify a Placement-based Track acceleration; changing only an instance ID, Track, locale, or scaffolding does not make the form fresh.
+_Avoid_: Fresh assessment, Independent Evidence, retry-based demonstration.
+
+**Independent Evidence**:
+Local Learning Evidence from the first Attempt on a genuinely distinct assessment contract with no applicable recorded hint or Teacher Exposure Epoch. “Independent” describes the application’s recorded assistance history, not an external identity or tamper-resistant claim.
+_Avoid_: Credential, repeated static form, externally verified independence.
 
 **Concept Progress**:
-The learner's derived state for a Concept, aggregated from Review Exposure State and Learning Evidence across its Learning Skills. Concept Progress may be unseen, seen, practicing, demonstrated, mastered, blocked, or stale; the model may write observations, but it does not directly assign final Concept Progress.
-_Avoid_: Model-assigned mastery, self-report only, introduced.
+The learner's derived state for a Concept, aggregated from Review Exposure State and Learning Evidence across its Learning Skills. Concept Progress may currently be unseen, seen, practicing, demonstrated, blocked, or stale; the model may write observations, but it does not directly assign final Concept Progress. The product does not expose a mastered state until it has a trusted assessment-time and freshness attestation.
+_Avoid_: Model-assigned mastery, learner claim only, introduced.
+
+**Track Pacing Completion**:
+The evidence-derived decision that a Learning Track may advance beyond a Concept after every key Learning Skill has current successful observable Evidence. Aided or Practice Evidence may complete supported pacing while Concept Progress remains practicing; only Independent Evidence can produce demonstrated progress. Unconsumed Placement Evidence does not complete pacing. Accelerate and Delay adjustments establish an explicit pacing anchor so skipped or deferred earlier Concepts do not silently pull the frontier backward.
+_Avoid_: Demonstrated progress, mastery, model-declared completion, temporary target override.
+
+**Track Adjustment Candidate**:
+A bounded, aggregate-derived command basis for changing a Learning Track. It carries the exact evidence or encounter identifiers that remain valid even when recent activity projections are truncated: independent Placement Evidence for Accelerate, failed Placement Evidence for Focused Catch-Up, an encounter for Review, or the latest three consecutive failures plus the next eligible Concept for Delay. The teacher may copy a current candidate but cannot reconstruct or invent its provenance or supply its own explanation.
+_Avoid_: Model-selected evidence, unbounded failure list, recent-history guess.
 
 **Mastery Evidence**:
-Independent Learning Evidence that proves transfer or retention, such as an unaided new Exercise Instance or a delayed check across the Concept's key Learning Skills. A single same-context success does not create Mastery Evidence.
-_Avoid_: Aided Evidence, first exercise success.
+A future evidence class that would require independently attested transfer or retention across a genuinely distinct assessment form. AI Classroom does not currently emit Mastery Evidence: client wall-clock time, a new Exercise Instance ID, a repeated static Review Check, or a model assertion cannot prove assessment freshness. Until a trusted assessment-time and freshness protocol exists, a first unaided Attempt on a genuinely distinct assessment contract may produce Independent Evidence and demonstrated progress; an unaided retry or repeated contract produces Practice Evidence, while applicable assistance produces Aided Evidence.
+_Avoid_: Client-clock delay, repeated Review Check, Aided Evidence, first exercise success.
 
 **Blocked State**:
 A Concept Progress state triggered by repeated observable failure on required Learning Skills. The model may summarize the blocker, but it does not assign Blocked State by opinion alone.
@@ -134,22 +158,19 @@ _Avoid_: Generated ad hoc exercise, user attempt.
 
 **Exercise Instance**:
 A concrete practice task created for one learner from an Exercise Template. It appears in the Classroom Stream as part of the learner's actual learning process, anchors attempts and evidence, and must remain explainable by tracing back to its template, version, and personalization inputs.
+Its effective scaffolding is one of three versioned, deterministic variants. Standard keeps authored starter code but withholds hints, Easy exposes both the authored starter and at least one authored hint, and Hard withholds both. Aggregate-derived unresolved failure or applicable Remediation references require Easy and cannot be combined with Hard. An Easy request is invalid when the template has no authored hint; difficulty labels must never describe a no-op transformation.
 _Avoid_: Exercise Template, generic practice item.
 
 **Personalization Inputs**:
-The bounded learner-specific facts used to create an Exercise Instance or decide the next tutoring step. Personalization Inputs may include concept progress, recent error patterns, retained Remediation summaries, declared language background, template difficulty targets, and recent relevant code summaries; they do not include full chat transcripts or inferred learning styles.
-_Avoid_: Full learner history, learning style profile.
-
-**Declared Background**:
-Learner-provided background information such as known programming languages or stated experience. Declared Background may personalize pacing, examples, and initial difficulty, but it must be explicit and removable rather than inferred silently from Chat, and it does not replace Placement Checks or Learning Evidence.
-_Avoid_: Inferred profile, hidden trait.
+The bounded learner-specific facts persisted on an Exercise Instance. The current policy accepts an authored difficulty target, up to eight aggregate-derived unresolved failure Evidence IDs for the exact Concept, Learning Skill, and Learning Contract, and applicable retained Remediation IDs. A successful observable Attempt resolves every earlier failure in that scope, so the teacher can only copy the bounded failure suffix projected by the aggregate; it cannot revive an old failure from raw or truncated history.
+_Avoid_: Full learner history, resolved failure, model-selected evidence, learning style profile.
 
 **Placement Check**:
 A short check used when a learner claims prior knowledge or wants to skip ahead. It can validate pacing decisions, but it is still an Exercise Instance or explicit question with evidence attached.
 _Avoid_: Trust-only skip, full lesson.
 
 **Review Check**:
-A Review View exercise used to retest stale, weak, or blocked Learning Skills. A Review Check is an Exercise Instance and can create Learning Evidence, including Mastery Evidence when it is independent and transfer-oriented; completing it updates evidence and progress but does not automatically leave Review View.
+A Review View exercise used to retest stale, weak, or blocked Learning Skills. A Review Check is created only through the dedicated Review surface command; Live Chat and ordinary exercise creation cannot select a Review Template. It is an Exercise Instance and can create Aided, Practice, or Independent Evidence according to its applicable assistance and assessment history; completing it updates evidence and progress but does not automatically leave Review View. It does not currently create Mastery Evidence because the product has no trusted assessment-time and freshness attestation.
 _Avoid_: Passive review, raw exercise.
 
 **Focused Catch-Up**:
@@ -165,20 +186,16 @@ Core Content that remains available in Review View but is not shown in Live View
 _Avoid_: Deleted content, hidden prerequisite.
 
 **Skip Marker**:
-A lightweight Live View entry that records why important Core Content was skipped. Skip Markers are used only when the skip affects the learner's path explanation, not for every omitted block.
-_Avoid_: Full skipped content, omission log.
+A lightweight Live View entry that records important Core Content already passed by Track pacing. It is accepted only for a Concept before the current derived pacing frontier, using an exact full-state candidate: either current successful non-Placement Evidence covering every required Learning Skill while the Concept is not blocked, or the currently applicable Accelerate/Delay Track Adjustment. An Accelerate decision can explain Concepts through its target once pacing has moved beyond them; Delay can explain only its delayed Concept. This grounded basis is the narrow authorization for recording an already-skipped Concept outside ordinary mainline access and cannot bootstrap a future Concept into the path. The displayed explanation is derived by the system from provenance, never supplied by the model. Because it contains no teacher-authored text, a Skip Marker does not create the Teacher Exposure Epoch.
+_Avoid_: Full skipped content, omission log, model-authored reason, future-Concept encounter shortcut.
 
 **Clarification**:
-A short learner-specific explanation created when the learner says a concept is unclear or asks for a personalized re-explanation. A Clarification belongs to the relevant concept and should supplement Core Content rather than restate the whole concept.
+A short learner-specific explanation created when the learner says a concept is unclear or asks for a personalized re-explanation. A Clarification belongs to the relevant concept and exact Content Version and should supplement Core Content rather than restate the whole concept.
 _Avoid_: Re-teaching, duplicate lesson.
 
 **Read-Only Clarification**:
-A Clarification attached to a Read-Only Concept. It can appear in Review View and help Chat answer future questions, but it does not contribute to Concept Progress or mainline tutoring decisions.
+A Clarification created while its exact Concept and Content Version were Read-Only. That creation-time provenance is immutable: later approval, revocation, or return to pending for the same exact Content Version neither rewrites nor invalidates the retained history. It can appear in Review View and provide untrusted continuity context to that scoped Chat, but it never contributes to Concept Progress, exercise personalization, or mainline tutoring decisions.
 _Avoid_: Learning Evidence, progress update.
-
-**Pending Personalization**:
-A retained learner-specific item that may become useful for mainline tutoring after its concept gains a validated evidence loop, but must be confirmed before it influences progress or exercise generation.
-_Avoid_: Automatic progress input, silent upgrade.
 
 **Remediation Content**:
 The generated explanatory content inside a Remediation. A learner may remove or hide Remediation Content without deleting the underlying failed attempt or Learning Evidence.
@@ -189,7 +206,7 @@ A decision that a Chat exchange contains learner-specific material worth keeping
 _Avoid_: Save every chat, transcript replay.
 
 **Retained Item Control**:
-The learner's ability to remove or undo automatically retained Review Artifacts. Retention can be model-initiated, but retained Clarifications and Remediations remain learner-visible and removable; removing a retained item removes its review content and personalization index, not unrelated Learning Evidence.
+The learner's ability to remove or undo automatically retained Review Artifacts. Retention can be model-initiated, but retained Clarifications and Remediations remain learner-visible and removable; removing a retained item removes its review content and personalization index, not unrelated Learning Evidence. Clarification suppression is version-exact: it blocks re-retention only for the same Concept, Content Version, and normalized misconception theme. Allowing a removed Remediation again creates a new pending shell and Retention Marker from the tombstone's exact failed-Attempt/Evidence provenance so the background coordinator can diagnose it again; it never restores deleted explanatory text.
 _Avoid_: Hidden memory, irreversible retention.
 
 **Remediation**:
@@ -213,7 +230,7 @@ A retained learner-specific study item shown in the Review View. It stores the f
 _Avoid_: Learner profile entry, chat transcript.
 
 **Review Artifact Group**:
-A concept-level grouping of retained Review Artifacts for later study. Clarifications are merged by concept and misconception theme, while Remediations preserve links to failed attempts but are displayed as an aggregated pattern by default.
+A concept-level grouping of retained Review Artifacts for later study. Clarifications are merged by concept, exact Content Version, and misconception theme, while Remediations preserve links to failed attempts but are displayed as an aggregated pattern by default.
 _Avoid_: Duplicate saved explanations, raw attempt list.
 
 **Retention Marker**:
@@ -241,11 +258,15 @@ Domain expert: "No. That stays in Chat unless it reveals a reusable Clarificatio
 
 Dev: "If Chat suggests a correct code change, does that prove the learner mastered the skill?"
 
-Domain expert: "No. A Code Suggestion is assistance. It becomes evidence only if the learner applies it and produces an observable attempt."
+Domain expert: "No. A Code Suggestion is assistance covered by the Teacher Exposure Epoch. Only a later observable Attempt produces Learning Evidence, and that Evidence is aided."
 
 Dev: "If the learner applies a Code Suggestion and then submits successfully, is that independent mastery?"
 
-Domain expert: "No. That is Aided Evidence. It can show progress, but mastery requires an independent attempt or later transfer."
+Domain expert: "No. That is Aided Evidence. It can show progress. A future mastery claim would require independently attested transfer, and the current product does not emit one."
+
+Dev: "Can waiting a day according to the browser clock and repeating the same Review Check prove mastery?"
+
+Domain expert: "No. Client time and a new instance ID do not prove a fresh transfer assessment. Repeating that assessment produces Practice Evidence, not a new demonstration; the current product has no Mastery Evidence until trusted assessment-time and freshness attestation exist."
 
 Dev: "Who decides whether a Chat exchange is worth retaining?"
 
@@ -281,7 +302,7 @@ Domain expert: "By concept. Chapters can filter or navigate review material, but
 
 Dev: "If the learner asks about the same confusion five times, do we keep five Clarifications?"
 
-Domain expert: "No. Clarifications are merged by concept and misconception theme. Remediations keep evidence links for each real failed attempt, but Review View shows the repeated pattern first."
+Domain expert: "No. Clarifications are merged by concept, exact Content Version, and misconception theme. A new Content Version may need a distinct explanation and must not rewrite the old Retention Marker's artifact. Remediations keep evidence links for each real failed attempt, but Review View shows the repeated pattern first."
 
 Dev: "When standard material appears in a learner's Classroom Stream, do we copy the full text?"
 
@@ -339,9 +360,9 @@ Dev: "Can the learner save a personalized explanation for a Read-Only Concept?"
 
 Domain expert: "Yes, as a Read-Only Clarification. It helps review and Chat continuity, but it does not count as progress evidence."
 
-Dev: "If that Read-Only Concept later becomes a Validated Concept, can the old clarification immediately personalize exercises?"
+Dev: "What if review availability changes after a Clarification was retained?"
 
-Domain expert: "No. It becomes Pending Personalization until the learner or model confirms it is still relevant."
+Domain expert: "Availability is mutable external policy, not retained history. A Clarification keeps whether it was created under Read-Only availability. Approving, revoking, or returning the same exact Content Version to pending must not rewrite or reject it; a different Content Version still requires a distinct version-exact Clarification."
 
 Dev: "If the learner asks about a topic outside the validated content pack, can Chat still help?"
 
@@ -409,7 +430,7 @@ Domain expert: "No. Concept Progress is derived from Learning Evidence across Le
 
 Dev: "If the learner says they already understand a concept, is that enough to mark it demonstrated?"
 
-Domain expert: "No. That is Self-Report Evidence. It can change pacing or trigger a check, but it does not directly prove the related Learning Skills."
+Domain expert: "No. The statement is not Learning Evidence. Offer a Placement Check; only its observable Attempt can affect pacing or progress."
 
 Dev: "What should happen when the learner says they already know a prerequisite?"
 
@@ -441,7 +462,11 @@ Domain expert: "Yes. It should be explainable from its Exercise Template, templa
 
 Dev: "What can be used to personalize a generated practice task?"
 
-Domain expert: "Only bounded Personalization Inputs: concept progress, recent error patterns, retained remediation summaries, declared language background, difficulty target, and recent relevant code summaries. Do not use raw chat history or guessed learning styles."
+Domain expert: "Only bounded, aggregate-validated Personalization Inputs: an authored difficulty target, the current unresolved-failure Evidence IDs projected for the exact Learning Skill, and applicable retained-Remediation IDs. A success resolves earlier failures in the same Learning Contract. Do not reconstruct candidates from a recent window or use raw chat history, silently inferred background, recent-code prose, or guessed learning styles."
+
+Dev: "Can a difficulty target be recorded when it produces the same task as the default?"
+
+Domain expert: "No. Standard, Easy, and Hard are honest authored-scaffolding variants. Easy requires an authored hint, Standard withholds hints, and Hard also withholds starter code. If the requested variant cannot materially be produced, creation fails instead of storing a cosmetic label."
 
 Dev: "If the Course Content Pack changes later, should the learner's history silently change too?"
 
