@@ -12,4 +12,11 @@ describe('vitest project boundaries', () => {
     expect(unit?.test?.include).toContain('tests/**/*.test.{ts,mts}')
     expect(unit?.test?.exclude).toContain('tests/**/*.e2e.test.ts')
   })
+
+  it('pre-optimizes browser dependencies that cannot reload Monaco during tests', () => {
+    const projects = config.test?.projects ?? []
+    const browser = projects.find(project => project.test?.name === 'browser')
+
+    expect(browser?.optimizeDeps?.include).toContain('@lingui/react')
+  })
 })

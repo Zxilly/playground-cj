@@ -7,6 +7,13 @@ const PATH_SEP_RE = /[\\/]/
 const CJO_TARGET = 'linux_x86_64_cjnative'
 const IS_DEV = process.env.NODE_ENV === 'development'
 const LSP_PUBLIC_DIR = join(import.meta.dirname, 'public', 'lsp')
+const PASSIVE_RESOURCE_POLICY = [
+  'base-uri \'self\'',
+  'object-src \'none\'',
+  'frame-src \'none\'',
+  'img-src \'self\' blob: data:',
+  'media-src \'self\' blob: data:',
+].join('; ')
 
 // Content hash, not mtime — CI re-downloads the LSP archive on every build,
 // so an mtime-based key would bust caches across deploys even when the wasm
@@ -103,6 +110,7 @@ const nextConfig: NextConfig = {
         headers: [
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Cross-Origin-Embedder-Policy', value: 'credentialless' },
+          { key: 'Content-Security-Policy', value: PASSIVE_RESOURCE_POLICY },
         ],
       },
       // Dev: no-store so a fresh wasm build isn't masked by an immutable cache entry.
