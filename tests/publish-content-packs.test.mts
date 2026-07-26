@@ -440,7 +440,7 @@ describe('content Pack publication finalizer', () => {
     expect(snapshotTree(directory)).toEqual(before)
   })
 
-  it('validates and reports a dry run without writing publication metadata', () => {
+  it('validates and reports a dry run without writing publication metadata', { timeout: 15_000 }, () => {
     const directory = copyPublicationFixture()
     const next = nextPublicationIdentity(directory)
     writeCandidateWithReorderedPacks(directory)

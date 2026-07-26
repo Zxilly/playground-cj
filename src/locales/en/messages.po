@@ -54,19 +54,19 @@ msgstr "API style"
 msgid "Close"
 msgstr "Close"
 
-#: src/service/run.ts:66
+#: src/service/run.ts:18
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:527
+#: src/features/teach/components/views/PlaygroundView.tsx:488
 msgid "Playground 代码编辑区"
 msgstr "Playground code editor"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:135
+#: src/features/teach/components/views/PlaygroundView.tsx:125
 msgid "Playground 标签页"
 msgstr "Playground tabs"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:247
+#: src/features/teach/components/views/PlaygroundView.tsx:237
 msgid "Playground 草稿尚未保存：浏览器存储不可用。"
 msgstr "The Playground draft has not been saved because browser storage is unavailable."
 
@@ -167,10 +167,6 @@ msgstr "Cangjie code assistance is temporarily unavailable and will restart auto
 msgid "仓颉代码提示暂不可用。请手动重启。"
 msgstr "Cangjie code assistance is temporarily unavailable. Please restart it manually."
 
-#: src/features/playground/components/Playground.tsx:146
-msgid "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
-msgstr "Cangjie Version 1.1.0-beta.25 | STDX Version 1.1.0-beta.25.1 | "
-
 #: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:56
 msgid "代码提示已停止"
 msgstr "Code assistance stopped"
@@ -187,7 +183,7 @@ msgstr "Code assistance stopped manually"
 msgid "代码提示暂不可用"
 msgstr "Code assistance unavailable"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:279
+#: src/features/teach/components/views/PlaygroundView.tsx:269
 msgid "使用已保存版本"
 msgstr "Use saved version"
 
@@ -274,7 +270,7 @@ msgstr "Close"
 msgid "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
 msgstr "You can keep viewing the current page after closing this notice. Shared quota will recover after the refresh."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:211
+#: src/features/teach/components/views/PlaygroundView.tsx:201
 msgid "关闭标签页"
 msgstr "Close tab"
 
@@ -341,7 +337,7 @@ msgstr "When selected, the tour shows comparison notes for that language."
 msgid "即将刷新…"
 msgstr "Refreshing soon…"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:159
+#: src/features/teach/components/views/PlaygroundView.tsx:149
 msgid "双击或按 F2 重命名"
 msgstr "Double-click or press F2 to rename"
 
@@ -355,15 +351,15 @@ msgstr "Send message"
 msgid "取消"
 msgstr "Cancel"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:253
+#: src/features/teach/components/views/PlaygroundView.tsx:243
 msgid "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
 msgstr "Another window changed the same draft. Your version did not overwrite it; choose how to recover."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:252
+#: src/features/teach/components/views/PlaygroundView.tsx:242
 msgid "另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。"
 msgstr "Merging another window's changes with your local draft exceeds the storage limit; the saved version remains usable, and your draft can still be recovered."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:269
+#: src/features/teach/components/views/PlaygroundView.tsx:259
 msgid "另存为新标签页"
 msgstr "Save as new tab"
 
@@ -505,19 +501,19 @@ msgstr "Search examples..."
 msgid "教程"
 msgstr "Tour"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:223
+#: src/features/teach/components/views/PlaygroundView.tsx:213
 msgid "新建 Playground 标签页"
 msgstr "Create a Playground tab"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:322
+#: src/features/teach/components/views/PlaygroundView.tsx:312
 msgid "新建标签页"
 msgstr "New tab"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:283
+#: src/features/teach/components/views/PlaygroundView.tsx:273
 msgid "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
 msgstr "Unable to save a copy. Close a tab or shorten the draft, then try again."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:249
+#: src/features/teach/components/views/PlaygroundView.tsx:239
 msgid "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
 msgstr "The v2 Playground draft could not be read. Stored data was left unchanged and will not be migrated or overwritten."
 
@@ -533,7 +529,7 @@ msgstr "Show"
 msgid "显示移动端侧边栏。"
 msgstr "Displays the mobile sidebar."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:314
+#: src/features/teach/components/views/PlaygroundView.tsx:304
 msgid "暂无 Playground 标签页。"
 msgstr "There are no Playground tabs."
 
@@ -568,11 +564,11 @@ msgstr "Shared quota will be used when no API Key is provided; it is limited and
 msgid "查看原始编译信息"
 msgstr "View raw compiler output"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:590
+#: src/features/teach/components/views/PlaygroundView.tsx:551
 msgid "标准输出为空。"
 msgstr "Standard output is empty."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:179
+#: src/features/teach/components/views/PlaygroundView.tsx:169
 msgid "标签页名称"
 msgstr "Tab name"
 
@@ -581,23 +577,13 @@ msgstr "Tab name"
 msgid "格式化"
 msgstr "Format"
 
-#: src/features/playground/components/OutputPanel.tsx:60
-msgid "格式化器输出已截断。"
-msgstr "Formatter output was truncated."
-
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:79
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:85
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:68
 msgid "格式化失败"
 msgstr "Format failed"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:84
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:67
 msgid "格式化成功"
 msgstr "Format successful"
-
-#: src/features/playground/components/OutputPanel.tsx:63
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:74
-msgid "格式化结果已截断；编辑器内容未更改。"
-msgstr "The formatted result was truncated; editor content was not changed."
 
 #: src/modules/llm-config/components/LLMConfigFields.tsx:93
 msgid "模型"
@@ -631,15 +617,15 @@ msgstr "Starting Cangjie code assistance{originSuffix}."
 msgid "正在启动代码提示"
 msgstr "Starting code assistance"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:235
+#: src/features/teach/components/views/PlaygroundView.tsx:225
 msgid "正在打开 Playground 草稿存储…"
 msgstr "Opening Playground draft storage…"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:83
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:66
 msgid "正在格式化..."
 msgstr "Formatting..."
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:47
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:46
 msgid "正在运行..."
 msgstr "Running..."
 
@@ -676,22 +662,22 @@ msgstr "Short link"
 msgid "移除文件"
 msgstr "Remove file"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:591
+#: src/features/teach/components/views/PlaygroundView.tsx:552
 msgid "程序未运行。"
 msgstr "The program did not run."
 
-#: src/features/playground/components/OutputPanel.tsx:79
-#: src/features/teach/components/views/PlaygroundView.tsx:595
+#: src/features/playground/components/OutputPanel.tsx:73
+#: src/features/teach/components/views/PlaygroundView.tsx:556
 msgid "程序标准输出已截断。"
 msgstr "Program standard output was truncated."
 
-#: src/features/playground/components/OutputPanel.tsx:82
-#: src/features/teach/components/views/PlaygroundView.tsx:607
+#: src/features/playground/components/OutputPanel.tsx:76
+#: src/features/teach/components/views/PlaygroundView.tsx:568
 msgid "程序标准错误已截断。"
 msgstr "Program standard error was truncated."
 
-#: src/features/playground/components/OutputPanel.tsx:70
-#: src/features/teach/components/views/PlaygroundView.tsx:579
+#: src/features/playground/components/OutputPanel.tsx:64
+#: src/features/teach/components/views/PlaygroundView.tsx:540
 msgid "程序输出"
 msgstr "Program Output"
 
@@ -707,7 +693,7 @@ msgstr "Step 2 · Configure the API service"
 msgid "约 {hours} 小时 {minutes} 分钟后刷新"
 msgstr "Refresh in ~{hours}h {minutes}m"
 
-#: src/service/run.ts:78
+#: src/service/run.ts:30
 msgid "编译中"
 msgstr "Compiling"
 
@@ -715,20 +701,20 @@ msgstr "Compiling"
 msgid "编译信息"
 msgstr "Compile info"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:632
+#: src/features/teach/components/views/PlaygroundView.tsx:593
 msgid "编译器未返回输出。"
 msgstr "The compiler returned no output."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:621
+#: src/features/teach/components/views/PlaygroundView.tsx:582
 msgid "编译器输出"
 msgstr "Compiler output"
 
 #: src/features/playground/components/OutputPanel.tsx:57
-#: src/features/teach/components/views/PlaygroundView.tsx:647
+#: src/features/teach/components/views/PlaygroundView.tsx:608
 msgid "编译器输出已截断。"
 msgstr "Compiler output was truncated."
 
-#: src/service/run.ts:93
+#: src/service/run.ts:43
 msgid "编译失败"
 msgstr "Compilation failed"
 
@@ -780,7 +766,7 @@ msgstr "The classroom teacher could not complete this response. Please try again
 msgid "课堂进行中"
 msgstr "Classroom in progress"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:540
+#: src/features/teach/components/views/PlaygroundView.tsx:501
 msgid "调整输出面板高度"
 msgstr "Resize output panel"
 
@@ -790,33 +776,37 @@ msgstr "Input message"
 
 #: src/features/playground/components/PlaygroundHeader.tsx:74
 #: src/features/playground/components/PlaygroundHeader.tsx:117
-#: src/features/teach/components/views/PlaygroundView.tsx:569
+#: src/features/teach/components/views/PlaygroundView.tsx:530
 msgid "运行"
 msgstr "Run"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:569
-#: src/service/run.ts:79
+#: src/features/teach/components/views/PlaygroundView.tsx:530
+#: src/service/run.ts:31
 msgid "运行中"
 msgstr "Running"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:612
+#: src/features/teach/components/views/PlaygroundView.tsx:573
 msgid "运行后，程序输出会显示在这里。"
 msgstr "Program output will appear here after you run the code."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:644
+#: src/features/teach/components/views/PlaygroundView.tsx:605
 msgid "运行后，编译器输出会显示在这里。"
 msgstr "Compiler output will appear here after you run the code."
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:49
-#: src/service/run.ts:103
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:48
+#: src/service/run.ts:53
 msgid "运行失败"
 msgstr "Run failed"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:48
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:47
 msgid "运行成功"
 msgstr "Run successful"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:571
+#: src/features/playground/components/Playground.tsx:146
+msgid "运行环境：仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 | "
+msgstr "Runtime: Cangjie 1.1.3 / STDX 1.1.3.1 | Browser tools: LSP + cjfmt 1.2.0-alpha.20260724 | "
+
+#: src/features/teach/components/views/PlaygroundView.tsx:532
 msgid "运行结果"
 msgstr "Run result"
 
@@ -824,7 +814,7 @@ msgstr "Run result"
 msgid "返回介绍页"
 msgstr "Back to intro"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:254
+#: src/features/teach/components/views/PlaygroundView.tsx:244
 msgid "这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。"
 msgstr "This Playground change was rejected because its tab count, title, or code exceeds the local storage limits."
 
@@ -851,7 +841,7 @@ msgstr "Restart"
 msgid "重新生成"
 msgstr "Regenerate"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:296
+#: src/features/teach/components/views/PlaygroundView.tsx:286
 msgid "重新读取"
 msgstr "Reload"
 
@@ -863,7 +853,7 @@ msgstr "Reset local cache and restart code assistance"
 msgid "重置默认"
 msgstr "Reset defaults"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:297
+#: src/features/teach/components/views/PlaygroundView.tsx:287
 msgid "重试保存"
 msgstr "Retry save"
 

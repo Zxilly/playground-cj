@@ -54,19 +54,19 @@ msgstr "API 风格"
 msgid "Close"
 msgstr "关闭"
 
-#: src/service/run.ts:66
+#: src/service/run.ts:18
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:527
+#: src/features/teach/components/views/PlaygroundView.tsx:488
 msgid "Playground 代码编辑区"
 msgstr "Playground 代码编辑区"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:135
+#: src/features/teach/components/views/PlaygroundView.tsx:125
 msgid "Playground 标签页"
 msgstr "Playground 标签页"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:247
+#: src/features/teach/components/views/PlaygroundView.tsx:237
 msgid "Playground 草稿尚未保存：浏览器存储不可用。"
 msgstr "Playground 草稿尚未保存：浏览器存储不可用。"
 
@@ -167,10 +167,6 @@ msgstr "仓颉代码提示暂不可用，系统会自动重启。点击管理。
 msgid "仓颉代码提示暂不可用。请手动重启。"
 msgstr "仓颉代码提示暂不可用。请手动重启。"
 
-#: src/features/playground/components/Playground.tsx:146
-msgid "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
-msgstr "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
-
 #: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:56
 msgid "代码提示已停止"
 msgstr "代码提示已停止"
@@ -187,7 +183,7 @@ msgstr "代码提示已手动停止"
 msgid "代码提示暂不可用"
 msgstr "代码提示暂不可用"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:279
+#: src/features/teach/components/views/PlaygroundView.tsx:269
 msgid "使用已保存版本"
 msgstr "使用已保存版本"
 
@@ -274,7 +270,7 @@ msgstr "关闭"
 msgid "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
 msgstr "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:211
+#: src/features/teach/components/views/PlaygroundView.tsx:201
 msgid "关闭标签页"
 msgstr "关闭标签页"
 
@@ -341,7 +337,7 @@ msgstr "勾选后，教程会显示对应语言的对比说明。"
 msgid "即将刷新…"
 msgstr "即将刷新…"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:159
+#: src/features/teach/components/views/PlaygroundView.tsx:149
 msgid "双击或按 F2 重命名"
 msgstr "双击或按 F2 重命名"
 
@@ -355,15 +351,15 @@ msgstr "发送消息"
 msgid "取消"
 msgstr "取消"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:253
+#: src/features/teach/components/views/PlaygroundView.tsx:243
 msgid "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
 msgstr "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:252
+#: src/features/teach/components/views/PlaygroundView.tsx:242
 msgid "另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。"
 msgstr "另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:269
+#: src/features/teach/components/views/PlaygroundView.tsx:259
 msgid "另存为新标签页"
 msgstr "另存为新标签页"
 
@@ -505,19 +501,19 @@ msgstr "搜索示例..."
 msgid "教程"
 msgstr "教程"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:223
+#: src/features/teach/components/views/PlaygroundView.tsx:213
 msgid "新建 Playground 标签页"
 msgstr "新建 Playground 标签页"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:322
+#: src/features/teach/components/views/PlaygroundView.tsx:312
 msgid "新建标签页"
 msgstr "新建标签页"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:283
+#: src/features/teach/components/views/PlaygroundView.tsx:273
 msgid "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
 msgstr "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:249
+#: src/features/teach/components/views/PlaygroundView.tsx:239
 msgid "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
 msgstr "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
 
@@ -533,7 +529,7 @@ msgstr "显示"
 msgid "显示移动端侧边栏。"
 msgstr "显示移动端侧边栏。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:314
+#: src/features/teach/components/views/PlaygroundView.tsx:304
 msgid "暂无 Playground 标签页。"
 msgstr "暂无 Playground 标签页。"
 
@@ -568,11 +564,11 @@ msgstr "未填写 API Key 时将使用共享额度；共享额度有限，可能
 msgid "查看原始编译信息"
 msgstr "查看原始编译信息"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:590
+#: src/features/teach/components/views/PlaygroundView.tsx:551
 msgid "标准输出为空。"
 msgstr "标准输出为空。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:179
+#: src/features/teach/components/views/PlaygroundView.tsx:169
 msgid "标签页名称"
 msgstr "标签页名称"
 
@@ -581,23 +577,13 @@ msgstr "标签页名称"
 msgid "格式化"
 msgstr "格式化"
 
-#: src/features/playground/components/OutputPanel.tsx:60
-msgid "格式化器输出已截断。"
-msgstr "格式化器输出已截断。"
-
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:79
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:85
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:68
 msgid "格式化失败"
 msgstr "格式化失败"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:84
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:67
 msgid "格式化成功"
 msgstr "格式化成功"
-
-#: src/features/playground/components/OutputPanel.tsx:63
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:74
-msgid "格式化结果已截断；编辑器内容未更改。"
-msgstr "格式化结果已截断；编辑器内容未更改。"
 
 #: src/modules/llm-config/components/LLMConfigFields.tsx:93
 msgid "模型"
@@ -631,15 +617,15 @@ msgstr "正在启动仓颉代码提示{originSuffix}。"
 msgid "正在启动代码提示"
 msgstr "正在启动代码提示"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:235
+#: src/features/teach/components/views/PlaygroundView.tsx:225
 msgid "正在打开 Playground 草稿存储…"
 msgstr "正在打开 Playground 草稿存储…"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:83
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:66
 msgid "正在格式化..."
 msgstr "正在格式化..."
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:47
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:46
 msgid "正在运行..."
 msgstr "正在运行..."
 
@@ -676,22 +662,22 @@ msgstr "短链接"
 msgid "移除文件"
 msgstr "移除文件"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:591
+#: src/features/teach/components/views/PlaygroundView.tsx:552
 msgid "程序未运行。"
 msgstr "程序未运行。"
 
-#: src/features/playground/components/OutputPanel.tsx:79
-#: src/features/teach/components/views/PlaygroundView.tsx:595
+#: src/features/playground/components/OutputPanel.tsx:73
+#: src/features/teach/components/views/PlaygroundView.tsx:556
 msgid "程序标准输出已截断。"
 msgstr "程序标准输出已截断。"
 
-#: src/features/playground/components/OutputPanel.tsx:82
-#: src/features/teach/components/views/PlaygroundView.tsx:607
+#: src/features/playground/components/OutputPanel.tsx:76
+#: src/features/teach/components/views/PlaygroundView.tsx:568
 msgid "程序标准错误已截断。"
 msgstr "程序标准错误已截断。"
 
-#: src/features/playground/components/OutputPanel.tsx:70
-#: src/features/teach/components/views/PlaygroundView.tsx:579
+#: src/features/playground/components/OutputPanel.tsx:64
+#: src/features/teach/components/views/PlaygroundView.tsx:540
 msgid "程序输出"
 msgstr "程序输出"
 
@@ -707,7 +693,7 @@ msgstr "第 2 步 · 配置 API 服务"
 msgid "约 {hours} 小时 {minutes} 分钟后刷新"
 msgstr "约 {hours} 小时 {minutes} 分钟后刷新"
 
-#: src/service/run.ts:78
+#: src/service/run.ts:30
 msgid "编译中"
 msgstr "编译中"
 
@@ -715,20 +701,20 @@ msgstr "编译中"
 msgid "编译信息"
 msgstr "编译信息"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:632
+#: src/features/teach/components/views/PlaygroundView.tsx:593
 msgid "编译器未返回输出。"
 msgstr "编译器未返回输出。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:621
+#: src/features/teach/components/views/PlaygroundView.tsx:582
 msgid "编译器输出"
 msgstr "编译器输出"
 
 #: src/features/playground/components/OutputPanel.tsx:57
-#: src/features/teach/components/views/PlaygroundView.tsx:647
+#: src/features/teach/components/views/PlaygroundView.tsx:608
 msgid "编译器输出已截断。"
 msgstr "编译器输出已截断。"
 
-#: src/service/run.ts:93
+#: src/service/run.ts:43
 msgid "编译失败"
 msgstr "编译失败"
 
@@ -780,7 +766,7 @@ msgstr "课堂老师暂时无法完成这次回复，请重试。"
 msgid "课堂进行中"
 msgstr "课堂进行中"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:540
+#: src/features/teach/components/views/PlaygroundView.tsx:501
 msgid "调整输出面板高度"
 msgstr "调整输出面板高度"
 
@@ -790,33 +776,37 @@ msgstr "输入消息"
 
 #: src/features/playground/components/PlaygroundHeader.tsx:74
 #: src/features/playground/components/PlaygroundHeader.tsx:117
-#: src/features/teach/components/views/PlaygroundView.tsx:569
+#: src/features/teach/components/views/PlaygroundView.tsx:530
 msgid "运行"
 msgstr "运行"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:569
-#: src/service/run.ts:79
+#: src/features/teach/components/views/PlaygroundView.tsx:530
+#: src/service/run.ts:31
 msgid "运行中"
 msgstr "运行中"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:612
+#: src/features/teach/components/views/PlaygroundView.tsx:573
 msgid "运行后，程序输出会显示在这里。"
 msgstr "运行后，程序输出会显示在这里。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:644
+#: src/features/teach/components/views/PlaygroundView.tsx:605
 msgid "运行后，编译器输出会显示在这里。"
 msgstr "运行后，编译器输出会显示在这里。"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:49
-#: src/service/run.ts:103
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:48
+#: src/service/run.ts:53
 msgid "运行失败"
 msgstr "运行失败"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:48
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:47
 msgid "运行成功"
 msgstr "运行成功"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:571
+#: src/features/playground/components/Playground.tsx:146
+msgid "运行环境：仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 | "
+msgstr "运行环境：仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 | "
+
+#: src/features/teach/components/views/PlaygroundView.tsx:532
 msgid "运行结果"
 msgstr "运行结果"
 
@@ -824,7 +814,7 @@ msgstr "运行结果"
 msgid "返回介绍页"
 msgstr "返回介绍页"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:254
+#: src/features/teach/components/views/PlaygroundView.tsx:244
 msgid "这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。"
 msgstr "这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。"
 
@@ -851,7 +841,7 @@ msgstr "重启"
 msgid "重新生成"
 msgstr "重新生成"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:296
+#: src/features/teach/components/views/PlaygroundView.tsx:286
 msgid "重新读取"
 msgstr "重新读取"
 
@@ -863,7 +853,7 @@ msgstr "重置本地缓存后重启代码提示"
 msgid "重置默认"
 msgstr "重置默认"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:297
+#: src/features/teach/components/views/PlaygroundView.tsx:287
 msgid "重试保存"
 msgstr "重试保存"
 

@@ -60,6 +60,6 @@ describe('cangjie toolchain lock', () => {
         ...lock.stdx,
         releasePage: 'https://mirror.invalid/cangjie-stdx',
       },
-    })).toThrow(/locked SDK release/)
+    })).toThrow(/locked stdx release/)
   })
 })

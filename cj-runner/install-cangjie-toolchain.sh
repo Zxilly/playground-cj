@@ -123,10 +123,10 @@ if ! jq -e '
   and (.stdx.sha256 | type == "string" and test("^[a-f0-9]{64}$"))
   and .stdx.releasePage
     == ("https://gitcode.com/Cangjie/cangjie_stdx/releases/tag/v"
-      + .release)
+      + .stdx.version)
   and .stdx.url
     == ("https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v"
-      + .release + "/cangjie-stdx-linux-x64-" + .stdx.version + ".zip")
+      + .stdx.version + "/cangjie-stdx-linux-x64-" + .stdx.version + ".zip")
 ' "$lock_file" >/dev/null; then
   printf 'Cangjie toolchain lock has an invalid schema or upstream URL\n' >&2
   exit 1

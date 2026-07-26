@@ -2,9 +2,9 @@
 
 # cj-runner image for managed on-demand container platforms. The full ~2.4GB
 # toolchain imposes an unnecessary cold-start penalty, so this slims it to
-# ~1.4GB by stripping libLLVM, dropping the Windows cross libs, and keeping only
-# cjfmt out of tools/ (needed for /format) — while preserving the full compile
-# path. cj-runner uses bubblewrap for a fail-closed, per-execution namespace and
+# ~1.4GB by stripping libLLVM and dropping Windows cross libraries and unused
+# developer tools while preserving the full compile path. cj-runner uses
+# bubblewrap for a fail-closed, per-execution namespace and
 # filesystem boundary (see cmd/runner/main.go).
 #
 ARG GOPROXY="https://proxy.golang.org,direct"
@@ -37,7 +37,7 @@ RUN set -eu; \
       --sdk-parent /opt/cangjie-sdk \
       --archive /tmp/cangjie-sdk.tar.gz \
       --stdx-root /; \
-    test -x /opt/cangjie-sdk/cangjie/tools/bin/cjfmt; \
+    test -x /opt/cangjie-sdk/cangjie/bin/cjc; \
     ln -s /opt/cangjie-sdk/cangjie /cangjie; \
     rm /tmp/cangjie-sdk.tar.gz /opt/cangjie-sdk/cangjie-stdx.zip
 ENV CANGJIE_HOME="/cangjie" PATH="/cangjie/bin:/cangjie/tools/bin:$PATH" \
@@ -46,16 +46,16 @@ RUN mkdir -p /playground
 WORKDIR /playground
 RUN cjpm init
 COPY cjpm.toml /playground/cjpm.toml
-# Slim: drop Windows cross libs, strip libLLVM (~650M), and keep only cjfmt out
-# of tools/ (drop cjdb/cjcov/cjpm/lsp/etc.) while preserving tools/lib that cjfmt
-# links against. Then stage the needed subset (incl. tools) to /cjroot.
+# Slim: drop Windows cross libs, strip libLLVM (~650M), and drop developer
+# executables while retaining tools/lib for the compiler's shared-library path.
+# Then stage only the compile/runtime subset to /cjroot.
 RUN set -eu; CJ="$(readlink -f /cangjie)"; \
     rm -rf "$CJ/lib/windows_x86_64_cjnative" "$CJ/lib/libstdFFI.dll" "$CJ/lib/libstdFFI.dll.a" \
            "$CJ/runtime/lib/windows_x86_64_cjnative" "$CJ/modules/windows_x86_64_cjnative"; \
     find "$CJ/third_party" -name 'libLLVM*' -type f -exec strip --strip-unneeded {} +; \
-    find "$CJ/tools/bin" -mindepth 1 ! -name cjfmt -delete; \
-    for d in "$CJ/tools"/*; do case "$(basename "$d")" in bin|lib) ;; *) rm -rf "$d";; esac; done; \
-    mkdir -p /cjroot; cp -a "$CJ/bin" "$CJ/lib" "$CJ/third_party" "$CJ/runtime" "$CJ/modules" "$CJ/include" "$CJ/tools" /cjroot/; \
+    rm -rf "$CJ/tools/bin"; \
+    for d in "$CJ/tools"/*; do case "$(basename "$d")" in lib) ;; *) rm -rf "$d";; esac; done; \
+    mkdir -p /cjroot; cp -a "$CJ/bin" "$CJ/lib" "$CJ/third_party" "$CJ/runtime" "$CJ/modules" "$CJ/tools" /cjroot/; \
     cp "$CJ/.playground-cj-toolchain-lock.sha256" /cjroot/; \
     chmod -R a+rX /cjroot /linux_x86_64_cjnative
 
@@ -78,7 +78,7 @@ COPY --from=prep /opt/playground-cj-toolchain/cangjie-toolchain.lock.json /usr/s
 COPY --from=builder /cj-runner /usr/local/bin/cj-runner
 RUN chown -R 65532:65532 /playground && chmod 0700 /playground
 ENV CANGJIE_HOME="/cangjie"
-ENV PATH="/cangjie/bin:/cangjie/tools/bin:/usr/local/bin:/usr/bin:/bin"
+ENV PATH="/cangjie/bin:/usr/local/bin:/usr/bin:/bin"
 ENV LD_LIBRARY_PATH="/cangjie/runtime/lib/linux_x86_64_cjnative:/cangjie/tools/lib:/linux_x86_64_cjnative/dynamic/stdx"
 ENV PORT=8000
 ENV CJ_RUNNER_ENV=production

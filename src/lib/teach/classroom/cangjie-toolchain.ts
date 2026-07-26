@@ -55,17 +55,17 @@ export const cangjieToolchainLockSchema = z.object({
     })
   }
   const expectedStdxReleasePage
-    = `https://gitcode.com/Cangjie/cangjie_stdx/releases/tag/v${lock.release}`
+    = `https://gitcode.com/Cangjie/cangjie_stdx/releases/tag/v${lock.stdx.version}`
   if (lock.stdx.releasePage !== expectedStdxReleasePage) {
     context.addIssue({
       code: 'custom',
       path: ['stdx', 'releasePage'],
-      message: 'stdx release page must address the locked SDK release',
+      message: 'stdx release page must address the locked stdx release',
     })
   }
   const expectedStdxUrl
     = `https://gitcode.com/Cangjie/cangjie_stdx/releases/download/`
-      + `v${lock.release}/cangjie-stdx-linux-x64-${lock.stdx.version}.zip`
+      + `v${lock.stdx.version}/cangjie-stdx-linux-x64-${lock.stdx.version}.zip`
   if (lock.stdx.url !== expectedStdxUrl) {
     context.addIssue({
       code: 'custom',

@@ -144,7 +144,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
       </div>
       <div className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">
         <Trans>
-          仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 |&nbsp;
+          运行环境：仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 |&nbsp;
         </Trans>
         <a
           href="https://github.com/Zxilly/playground-cj"

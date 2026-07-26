@@ -17,7 +17,7 @@ interface ContentChange {
 }
 
 export const PLAYGROUND_PROJECT_MANIFEST = `[package]
-cjc-version = "1.1.0-beta.25"
+cjc-version = "1.1.3"
 name = "playground"
 description = "Browser Playground"
 version = "1.0.0"
