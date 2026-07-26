@@ -1,6 +1,14 @@
 import { useEffect } from 'react'
 import { eventEmitter, EVENTS } from '@/lib/events'
-import { remoteRun, requestRemoteAction } from '@/service/run'
+import {
+  remoteRun,
+  requestRemoteAction,
+} from '@/service/run'
+import {
+  NO_RUNNER_TRUNCATION,
+} from '@/lib/runner-contract'
+import type { RunnerTruncationState } from '@/lib/runner-contract'
+import { applyCompleteFormattedSource } from '@/lib/runner-format'
 import { toast } from 'sonner'
 import { isBusy, remoteLock } from '@/lib/lock'
 import { msg } from '@lingui/core/macro'
@@ -9,10 +17,16 @@ import { useLingui } from '@lingui/react'
 interface CodeRunnerProps {
   setToolOutput: (output: string) => void
   setProgramOutput: (output: string) => void
+  setTruncation: (state: RunnerTruncationState) => void
   onFormatted?: (code: string) => void
 }
 
-export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatted }: CodeRunnerProps) {
+export default function CodeRunner({
+  setToolOutput,
+  setProgramOutput,
+  setTruncation,
+  onFormatted,
+}: CodeRunnerProps) {
   const { i18n } = useLingui()
 
   useEffect(() => {
@@ -26,6 +40,7 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
           await remoteRun(code, {
             setToolOutput,
             setProgramOutput,
+            setTruncation,
           })
         })
       }, {
@@ -42,12 +57,22 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
 
       toast.promise(async () => {
         await remoteLock.acquire('run', async () => {
+          setTruncation(NO_RUNNER_TRUNCATION)
           const resp = await requestRemoteAction(code, 'format')
 
           setToolOutput(resp.formatter_output)
+          setTruncation({
+            compilerOutput: false,
+            programStdout: false,
+            programStderr: false,
+            formattedSource: resp.formatted_truncated,
+            formatterOutput: resp.formatter_output_truncated,
+          })
 
           if (resp.formatter_code === 0) {
-            onFormatted?.(resp.formatted)
+            if (!applyCompleteFormattedSource(resp, onFormatted)) {
+              throw new Error(i18n._(msg`格式化结果已截断；编辑器内容未更改。`))
+            }
             eventEmitter.emit(EVENTS.FORMAT_CODE_COMPLETE, resp.formatted)
           }
           else {
@@ -68,7 +93,7 @@ export default function CodeRunner({ setToolOutput, setProgramOutput, onFormatte
       eventEmitter.off(EVENTS.RUN_CODE, handleRun)
       eventEmitter.off(EVENTS.FORMAT_CODE, handleFormat)
     }
-  }, [setToolOutput, setProgramOutput, onFormatted, i18n])
+  }, [setToolOutput, setProgramOutput, setTruncation, onFormatted, i18n])
 
   return null
 }

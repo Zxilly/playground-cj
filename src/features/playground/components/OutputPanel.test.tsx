@@ -4,6 +4,7 @@ import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { OutputPanel } from '@/features/playground/components/OutputPanel'
+import { NO_RUNNER_TRUNCATION } from '@/lib/runner-contract'
 
 function Wrapper({ children }: { children: ReactNode }) {
   const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
@@ -21,7 +22,11 @@ describe('outputPanel', () => {
   it('renders tool and program output in separate labelled containers', () => {
     const { container } = render(
       <Wrapper>
-        <OutputPanel toolOutput="compile ok" programOutput="hello world" />
+        <OutputPanel
+          toolOutput="compile ok"
+          programOutput="hello world"
+          truncation={NO_RUNNER_TRUNCATION}
+        />
       </Wrapper>,
     )
     const panels = container.querySelectorAll('pre')
@@ -35,7 +40,11 @@ describe('outputPanel', () => {
   it('renders ANSI output as HTML while escaping program text', () => {
     const { container } = render(
       <Wrapper>
-        <OutputPanel toolOutput={'\u001B[32mok\u001B[0m'} programOutput="<script>alert(1)</script>" />
+        <OutputPanel
+          toolOutput={'\u001B[32mok\u001B[0m'}
+          programOutput="<script>alert(1)</script>"
+          truncation={NO_RUNNER_TRUNCATION}
+        />
       </Wrapper>,
     )
     const panels = container.querySelectorAll('pre')
@@ -51,6 +60,7 @@ describe('outputPanel', () => {
         <OutputPanel
           toolOutput={'\u001B[36m$ /cangjie/bin/cjc main.cj\u001B[0m\nCangjie Compiler 1.1\n\u001B[31merror: expected expression\u001B[0m'}
           programOutput=""
+          truncation={NO_RUNNER_TRUNCATION}
         />
       </Wrapper>,
     )
@@ -62,5 +72,29 @@ describe('outputPanel', () => {
     const raw = screen.getByText('查看原始编译信息').closest('details')
     expect(raw?.getAttribute('open')).toBeNull()
     expect(raw?.textContent).toContain('/cangjie/bin/cjc')
+  })
+
+  it('renders truncation metadata as notices separate from channel text', () => {
+    render(
+      <Wrapper>
+        <OutputPanel
+          toolOutput="compiler prefix"
+          programOutput="program prefix"
+          truncation={{
+            compilerOutput: true,
+            programStdout: true,
+            programStderr: true,
+            formattedSource: true,
+            formatterOutput: true,
+          }}
+        />
+      </Wrapper>,
+    )
+
+    expect(screen.getByText('编译器输出已截断。')).toBeTruthy()
+    expect(screen.getByText('格式化器输出已截断。')).toBeTruthy()
+    expect(screen.getByText('格式化结果已截断；编辑器内容未更改。')).toBeTruthy()
+    expect(screen.getByText('程序标准输出已截断。')).toBeTruthy()
+    expect(screen.getByText('程序标准错误已截断。')).toBeTruthy()
   })
 })

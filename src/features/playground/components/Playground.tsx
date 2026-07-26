@@ -30,6 +30,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
   const dark = useDarkMode()
   const toolOutput = usePlaygroundStore(state => state.toolOutput)
   const programOutput = usePlaygroundStore(state => state.programOutput)
+  const truncation = usePlaygroundStore(state => state.truncation)
   const isOutputCollapsed = usePlaygroundStore(state => state.isOutputCollapsed)
   const toggleOutputState = usePlaygroundStore(state => state.toggleOutput)
   const setEditor = usePlaygroundStore(state => state.setEditor)
@@ -133,6 +134,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
                   <OutputPanel
                     toolOutput={toolOutput}
                     programOutput={programOutput}
+                    truncation={truncation}
                   />
                 )}
               </div>
@@ -157,6 +159,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
       <CodeRunner
         setToolOutput={usePlaygroundStore.getState().setToolOutput}
         setProgramOutput={usePlaygroundStore.getState().setProgramOutput}
+        setTruncation={usePlaygroundStore.getState().setTruncation}
         onFormatted={handleFormatted}
       />
     </div>

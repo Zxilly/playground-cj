@@ -5,9 +5,14 @@ import { runCangjieCode } from './run-cangjie'
 describe('runCangjieCode', () => {
   it('maps a successful compile+run into a RunResult', async () => {
     const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      phase: 'run',
       compiler_output: '',
+      compiler_output_truncated: false,
       compiler_code: 0,
-      bin_output: 'hello\n',
+      bin_stdout: 'hello\n',
+      bin_stdout_truncated: false,
+      bin_stderr: '',
+      bin_stderr_truncated: false,
       bin_code: 0,
     })
 
@@ -16,8 +21,13 @@ describe('runCangjieCode', () => {
     expect(request).toHaveBeenCalledWith('main() {}', { stdin: undefined, signal: undefined })
     expect(result).toMatchObject({
       ok: true,
+      phase: 'run',
       stdout: 'hello\n',
+      stdoutTruncated: false,
       stderr: '',
+      stderrTruncated: false,
+      compilerOutput: '',
+      compilerOutputTruncated: false,
       exitCode: 0,
     })
     expect(result.failureKind).toBeUndefined()
@@ -25,32 +35,49 @@ describe('runCangjieCode', () => {
 
   it('reports ok:false with the compiler output when compilation fails', async () => {
     const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      phase: 'compile',
       compiler_output: 'syntax error',
+      compiler_output_truncated: false,
       compiler_code: 1,
-      bin_output: '',
-      bin_code: 0,
+      bin_stdout: '',
+      bin_stdout_truncated: false,
+      bin_stderr: '',
+      bin_stderr_truncated: false,
+      bin_code: null,
     })
 
     const result = await runCangjieCode('bad', { request })
 
     expect(result.ok).toBe(false)
-    expect(result.stderr).toBe('syntax error')
+    expect(result.phase).toBe('compile')
+    expect(result.exitCode).toBeNull()
+    expect(result.stderr).toBe('')
+    expect(result.stderrTruncated).toBe(false)
     expect(result.compilerOutput).toBe('syntax error')
+    expect(result.compilerOutputTruncated).toBe(false)
     expect(result.failureKind).toBeUndefined()
   })
 
   it('reports ok:false when the binary exits non-zero', async () => {
     const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      phase: 'run',
       compiler_output: '',
+      compiler_output_truncated: false,
       compiler_code: 0,
-      bin_output: 'panic\n',
+      bin_stdout: 'partial stdout\n',
+      bin_stdout_truncated: false,
+      bin_stderr: 'panic\n',
+      bin_stderr_truncated: false,
       bin_code: 2,
     })
 
     const result = await runCangjieCode('panic', { request })
 
     expect(result.ok).toBe(false)
-    expect(result.stdout).toBe('panic\n')
+    expect(result.phase).toBe('run')
+    expect(result.stdout).toBe('partial stdout\n')
+    expect(result.stderr).toBe('panic\n')
+    expect(result.compilerOutput).toBe('')
     expect(result.exitCode).toBe(2)
   })
 
@@ -60,16 +87,51 @@ describe('runCangjieCode', () => {
     const result = await runCangjieCode('main() {}', { request })
 
     expect(result.ok).toBe(false)
+    expect(result.phase).toBeNull()
     expect(result.exitCode).toBeNull()
-    expect(result.stderr).toBe('network down')
+    expect(result.stderr).toBe('')
+    expect(result.stdoutTruncated).toBe(false)
+    expect(result.stderrTruncated).toBe(false)
+    expect(result.compilerOutput).toBe('')
+    expect(result.compilerOutputTruncated).toBe(false)
     expect(result.failureKind).toBe('runner_unavailable')
+    expect(result.failureMessage).toBe('network down')
+  })
+
+  it('preserves each upstream truncation fact out of band', async () => {
+    const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      phase: 'run',
+      compiler_output: 'compiler prefix',
+      compiler_output_truncated: true,
+      compiler_code: 0,
+      bin_stdout: 'expected suffix omitted',
+      bin_stdout_truncated: true,
+      bin_stderr: 'stderr prefix',
+      bin_stderr_truncated: true,
+      bin_code: 0,
+    })
+
+    await expect(runCangjieCode('main() {}', { request })).resolves.toMatchObject({
+      ok: true,
+      stdout: 'expected suffix omitted',
+      stdoutTruncated: true,
+      stderr: 'stderr prefix',
+      stderrTruncated: true,
+      compilerOutput: 'compiler prefix',
+      compilerOutputTruncated: true,
+    })
   })
 
   it('forwards the abort signal to the request', async () => {
     const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      phase: 'run',
       compiler_output: '',
+      compiler_output_truncated: false,
       compiler_code: 0,
-      bin_output: 'ok',
+      bin_stdout: 'ok',
+      bin_stdout_truncated: false,
+      bin_stderr: '',
+      bin_stderr_truncated: false,
       bin_code: 0,
     })
     const controller = new AbortController()
@@ -81,9 +143,14 @@ describe('runCangjieCode', () => {
 
   it('forwards stdin to the request', async () => {
     const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      phase: 'run',
       compiler_output: '',
+      compiler_output_truncated: false,
       compiler_code: 0,
-      bin_output: 'ok',
+      bin_stdout: 'ok',
+      bin_stdout_truncated: false,
+      bin_stderr: '',
+      bin_stderr_truncated: false,
       bin_code: 0,
     })
 
@@ -105,7 +172,7 @@ describe('runCangjieCode', () => {
   it('uses a text/plain body when no stdin is provided (default request)', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ compiler_output: '', compiler_code: 0, bin_output: 'ok', bin_code: 0 }),
+      json: async () => ({ phase: 'run', compiler_output: '', compiler_output_truncated: false, compiler_code: 0, bin_stdout: 'ok', bin_stdout_truncated: false, bin_stderr: '', bin_stderr_truncated: false, bin_code: 0 }),
     } as Response)
     vi.stubGlobal('fetch', fetchMock)
 
@@ -121,7 +188,7 @@ describe('runCangjieCode', () => {
   it('uses a JSON body with code+stdin when stdin is provided (default request)', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ compiler_output: '', compiler_code: 0, bin_output: 'ok', bin_code: 0 }),
+      json: async () => ({ phase: 'run', compiler_output: '', compiler_output_truncated: false, compiler_code: 0, bin_stdout: 'ok', bin_stdout_truncated: false, bin_stderr: '', bin_stderr_truncated: false, bin_code: 0 }),
     } as Response)
     vi.stubGlobal('fetch', fetchMock)
 
@@ -136,9 +203,14 @@ describe('runCangjieCode', () => {
 
   it('records the elapsed duration', async () => {
     const request = vi.fn<RemoteRunRequest>().mockResolvedValue({
+      phase: 'run',
       compiler_output: '',
+      compiler_output_truncated: false,
       compiler_code: 0,
-      bin_output: 'ok',
+      bin_stdout: 'ok',
+      bin_stdout_truncated: false,
+      bin_stderr: '',
+      bin_stderr_truncated: false,
       bin_code: 0,
     })
 

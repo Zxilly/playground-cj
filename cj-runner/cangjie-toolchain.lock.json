@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "release": "1.1.0-beta.25",
+  "compiler": {
+    "name": "cjc",
+    "version": "1.1.0-beta.25",
+    "backend": "cjnative",
+    "target": "x86_64-unknown-linux-gnu",
+    "executableSha256": "c73e449f0380a41ee32ba5f7852dc8f409be4bd7e7f50f34a2223cda5b73473a"
+  },
+  "sdk": {
+    "platform": "linux-x64",
+    "url": "https://cangjie-lang.cn/v1/files/auth/downLoad?nsId=142267&fileName=cangjie-sdk-linux-x64-1.1.0-beta.25.tar.gz&objectKey=69cb718e6e8ed61e6e07fd42",
+    "sha256": "425390c4543ea2cd9e6c3a192f20ff34212b4328b4d2b5ca556f6953cb6acd13"
+  },
+  "stdx": {
+    "version": "1.1.0-beta.25.1",
+    "url": "https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v1.1.0-beta.25/cangjie-stdx-linux-x64-1.1.0-beta.25.1.zip",
+    "releasePage": "https://gitcode.com/Cangjie/cangjie_stdx/releases/tag/v1.1.0-beta.25",
+    "sha256": "676e5a2fe2d45c168cfcb69c5b5f1a895728ac2e5e6a3951d6ab43f8b1308fe6"
+  }
+}
