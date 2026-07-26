@@ -9,9 +9,13 @@ requires Modal Proxy authentication, the internal runner bearer token, and the
 checked-in toolchain-lock digest.
 
 The production `cj-runner` process refuses to start unless
-`CJ_RUNNER_ISOLATION_DRIVER=modal-single-use-container`. Its empty-driver
-bubblewrap profile remains available only for development, tests, and direct
-boundary verification; it is not a production deployment option.
+`CJ_RUNNER_ENV=production` and
+`CJ_RUNNER_ISOLATION_DRIVER=modal-single-use-container`. There is no local
+isolation driver or direct deployment mode.
+
+The long-lived runner credential is attached only to the Modal gateway. After
+validating it, the gateway generates a per-invocation token for the Go service.
+The learner container never receives the long-lived credential.
 
 The runner workflow publishes the Dockerfile-derived image directly into
 Modal and deploys the Modal gateway. It does not publish GHCR images or target
@@ -39,10 +43,11 @@ server-only values as deployed Vercel environments:
 `CJ_RUNNER_MODAL_URL`, `CJ_RUNNER_MODAL_PROXY_KEY`,
 `CJ_RUNNER_MODAL_PROXY_SECRET`, and `CJ_RUNNER_SHARED_TOKEN`.
 
-Developers may still execute and test `cj-runner` directly, but the frontend
-gateway will not route learner source to it. A future provider change requires
-a new architecture decision and explicit protocol/security review rather than
-an environment-variable swap.
+Developers may still run Go unit tests directly, but the runner process itself
+requires the Modal marker and the frontend gateway never routes learner source
+to a local service. A future provider change requires a new architecture
+decision and explicit protocol/security review rather than an
+environment-variable swap.
 
 GitHub Actions requires repository secrets `MODAL_TOKEN_ID` and
 `MODAL_TOKEN_SECRET` for continuous deployment. The Modal application secret

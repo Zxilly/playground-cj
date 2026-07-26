@@ -5,22 +5,21 @@ single-use Modal Function for each `/run` request. Every runner
 Function:
 
 - uses the canonical `cj-runner` image and protocol;
-- keeps the authenticated service as root so its secret is not readable by
-  learner processes, while every compiler/learner process is dropped
-  to the unprivileged runner UID before execution;
+- receives a new random bearer token that is valid only inside that invocation;
+- runs the service, compiler, and learner as the image's unprivileged UID;
 - has `block_network=True` and no Modal API access;
 - is destroyed after exactly one request.
 
-The Go service still owns authentication, request validation, toolchain-lock
-verification, compilation, execution, and resource limits. Modal's
+The Go service still owns its per-invocation authentication, request validation,
+toolchain-lock verification, compilation, output bounds, cancellation, and
+wall-clock deadlines. Modal's
 single-use gVisor Function owns the container and blocked-network boundary;
-nested Linux namespaces are unavailable there. The runner starts every
-compiler and learner process through `setpriv` and `prlimit`.
+nested Linux namespaces and resource wrappers are neither required nor used.
 
 The Modal environment must contain:
 
-- a Secret named `playground-cj-runner-auth` with
-  `CJ_RUNNER_SHARED_TOKEN`;
+- a Secret named `playground-cj-runner-auth` with the long-lived
+  `CJ_RUNNER_SHARED_TOKEN`, attached only to the gateway;
 - a Proxy Token used by Vercel through `CJ_RUNNER_MODAL_PROXY_KEY` and
   `CJ_RUNNER_MODAL_PROXY_SECRET`.
 

@@ -10,14 +10,13 @@ Do not expose this process as a public API.
 `cj-runner` does not run in the browser, the Next.js process, or a Vercel
 Function. Production invokes it only through `modal/runner.py`: one fresh
 single-use gVisor container per request, with network access blocked and Modal
-API access removed. Modal Proxy authentication is required before the request
-reaches the runner; the runner's own shared-token and toolchain-lock checks
-remain mandatory behind that boundary.
+API access removed. The long-lived bearer credential is attached only to the
+Modal gateway. After validating it, the gateway creates a new random token for
+the single worker invocation; that token expires with the container.
 
-For local development, run the image with Docker on Linux/WSL, or build
-`./cmd/runner` inside Linux and bind it to loopback with
-`CJ_RUNNER_ENV=development`. It is intentionally Linux-only because its
-security boundary depends on bubblewrap and Linux namespaces.
+There is no local or generic deployment mode. Local frontend development calls
+the same Modal endpoint as production. Go unit tests can run under Linux/WSL,
+but starting the runner requires the explicit Modal isolation marker.
 
 ## Why the old `server/` backend was removed
 
@@ -36,108 +35,67 @@ evolving protocol and image:
 - no repository workflow that built and verified the same image later deployed.
 
 Keeping both implementations would require every protocol, cancellation,
-toolchain, supply-chain, and sandbox fix to be implemented and tested twice.
+toolchain, supply-chain, and isolation fix to be implemented and tested twice.
 The repository therefore supports one gateway contract and one Modal runner
 image. See [`ADR 0014`](../docs/adr/0014-runner-backends-are-consolidated.md)
 and [`ADR 0015`](../docs/adr/0015-runner-production-is-modal-only.md).
 
 ## Required deployment configuration
 
-- `CJ_RUNNER_SHARED_TOKEN`: a 32–512 byte printable-ASCII bearer token shared
-  only with the Next.js service. The production process refuses to start if it
-  is absent or malformed.
-- `CJ_RUNNER_ENV`: `production` (the image default), `development`, or `test`.
-  Only explicit development/test mode may start without a token.
-- `CJ_RUNNER_ISOLATION_DRIVER`: production requires the exact value
-  `modal-single-use-container`; `modal/runner.py` sets it. Development and test
-  require it to be empty and use the bubblewrap verification profile.
+- `CJ_RUNNER_SHARED_TOKEN`: a 32–512 byte printable-ASCII bearer token. Modal
+  supplies a newly generated value to each single-use worker; the long-lived
+  deployment credential is never attached to that worker.
+- `CJ_RUNNER_ENV`: must be `production` (the image default).
+- `CJ_RUNNER_ISOLATION_DRIVER`: must be
+  `modal-single-use-container`; `modal/runner.py` sets it.
 - `PORT`: optional listener port; default `8000`.
 
-Set the same `CJ_RUNNER_SHARED_TOKEN` secret on the Next.js deployment. Rotate
-both deployments together. The token must remain server-only and must never use
-a `NEXT_PUBLIC_` name. Configure `CJ_RUNNER_MODAL_URL`,
+Set the same long-lived `CJ_RUNNER_SHARED_TOKEN` on the Modal gateway and
+Next.js deployment. Rotate both deployments together. The token must remain
+server-only and must never use a `NEXT_PUBLIC_` name. Configure `CJ_RUNNER_MODAL_URL`,
 `CJ_RUNNER_MODAL_PROXY_KEY`, and `CJ_RUNNER_MODAL_PROXY_SECRET` on the Next.js
 deployment. The gateway refuses every non-Modal target and never omits either
 authentication layer.
-The gateway also sends the canonical checked-in toolchain-lock digest on every
+The Next.js gateway also sends the canonical checked-in toolchain-lock digest on every
 request. A stale runner image rejects the request before reading its body.
-
-For local development without authentication, run the service with
-`CJ_RUNNER_ENV=development` and leave `CJ_RUNNER_SHARED_TOKEN` unset. This is an
-explicit local-only escape hatch: the process binds to `127.0.0.1` instead of
-all interfaces. The production image remains fail-closed.
 
 ## Compiler and learner execution boundary
 
-Before opening its listener, `cj-runner` strictly parses the bundled toolchain
-lock, checks its installer marker, re-hashes `/cangjie/bin/cjc`, checks the
-compiler's reported backend and target, and exercises the selected execution
-profile by compiling and running a minimal source file. A stale
-toolchain or failed profile terminates the service.
+Before opening its loopback listener, `cj-runner` strictly parses the bundled
+toolchain lock, checks its installer marker, re-hashes `/cangjie/bin/cjc`, and
+checks the compiler's reported backend and target. A stale or modified
+toolchain terminates the worker.
 
-For the single-use Modal profile, startup performs the same toolchain identity
-checks plus a lightweight dropped-UID process probe. It does not compile a
-second sample program before the real request because the container is never
-reused; the request itself exercises the selected compiler path.
-
-The default profile runs the HTTP service as UID/GID `65532` and places every
-`cjc` and learner process behind bubblewrap with:
-
-- fresh user, mount, network, PID, UTS, and IPC namespaces;
-- an empty root containing only read-only `/usr`, `/bin`, `/lib`, `/lib64`,
-  `/cangjie`, and `/linux_x86_64_cjnative` mounts;
-- private `/proc` and `/dev` instances plus size-bounded tmpfs mounts: 32 MiB
-  for `/tmp` and 96 MiB for `/work`;
-- no inherited environment. Only fixed runtime values for `PATH`,
-  `CANGJIE_HOME`, `LD_LIBRARY_PATH`, locale, `HOME`, and `TMPDIR` are added;
-- no network namespace egress, no retained capabilities, nested user namespace
-  creation disabled, per-process rlimits, a wall-clock deadline, and bounded
-  stdout/stderr.
-
-The compiler sees exactly one writable bind at `/request`: the current
-request's mode-`0700` directory. Sibling request directories and the rest of
-host `/playground` are not mounted. A learner binary instead receives only its
-own executable, read-only at `/app/main`, and can write only to its private
-tmpfs mounts. `cjc` remains trusted for semantic correctness, but untrusted
-source does not grant it the service process's filesystem, network, PID view,
-or environment.
-
-The Modal profile is explicit rather than a fallback. Modal starts the
-authenticated service as root, but each compiler and learner process is
-launched through `setpriv` as UID/GID `65532`, with all capabilities
-removed, `no_new_privs`, fixed environment, wall-clock deadlines, `prlimit`
-resource bounds, and capped output. The root service keeps the bearer secret
-inaccessible to learner processes. The surrounding Function is configured with
+The Modal Function is the security and resource boundary. It is configured with
 `single_use_containers=True`, `block_network=True`,
-`restrict_modal_access=True`, and one invocation per container, so it supplies
-the filesystem, process, user, and network boundary. Modal does not permit
-nested namespaces.
+`restrict_modal_access=True`, one CPU, 4096 MiB memory, and a 30-second
+deadline. A worker handles exactly one request and is then destroyed, so
+compiler and learner processes cannot share a container with another request.
+The final image and every child process run as UID/GID `65532`.
 
-Admission is fixed at one operation per replica. Per-process rlimits and the
-default profile's tmpfs sizes are defense in depth, not a replacement for
-deployment isolation: the deployment must impose replica-level memory, PID,
-CPU, and ephemeral-storage cgroup/quotas. A pathological request can still
-exhaust or crash its own replica; single-flight ensures it cannot share that
-replica concurrently with another tenant.
+Within that boundary, the Go service:
 
-The development/test boundary depends on Linux user namespaces and bubblewrap.
-It exists to verify the inner runner and is not a supported production
-deployment. Do not weaken the probe or add an implicit unsandboxed fallback;
-production must use the explicit Modal driver inside the single-use Function
-defined in this repository.
+- creates one private request directory and gives `cjc` only an explicit,
+  fixed environment without service credentials;
+- executes the compiled program in the same request directory with another
+  fixed environment;
+- never invokes a shell or nested namespace/resource wrapper;
+- caps each output channel at 1,000,000 UTF-8 bytes;
+- propagates cancellation, kills the whole child process group, and applies
+  compiler and learner wall-clock deadlines.
 
-For the default profile, do not place deployment secret volumes below paths
-exposed read-only to bubblewrap (`/usr`, `/bin`, `/lib`, `/lib64`, `/cangjie`,
-or `/linux_x86_64_cjnative`). Environment-backed secrets are preferred.
+Modal owns CPU, memory, network, filesystem, process, and container-lifetime
+limits. The Go service intentionally does not duplicate those controls with a
+second isolation implementation. A pathological program can exhaust its own
+single-use worker, but it cannot be co-located with a different request.
 
 ## HTTP boundary
 
 - `POST /run` accepts `text/plain; charset=utf-8` or a strict
   `application/json` object containing `code` and optional `stdin`.
 - The endpoint requires the shared bearer token and exact toolchain-lock
-  digest, cap request bodies at 256 KiB, cap concurrent work, propagate
-  disconnect cancellation into compiler processes, and enforce
-  operation and HTTP server timeouts.
+  digest, caps request bodies at 256 KiB, propagates disconnect cancellation
+  into compiler processes, and enforces operation and HTTP server timeouts.
 - A digest mismatch returns `503 runner_toolchain_mismatch` with
   `X-Playground-Cangjie-Toolchain-Status: mismatch`; the gateway uses that
   explicit signal to distinguish a stale deployment from an ordinary upstream
@@ -160,7 +118,7 @@ or `/linux_x86_64_cjnative`). Environment-backed secrets are preferred.
 Each output channel is capped at 1,000,000 UTF-8 bytes. Content remains pure;
 the corresponding boolean is the only truncation signal.
 
-Filesystem setup, source write/read, tool start, namespace setup, and
+Filesystem setup, source write/read, tool start, and
 compiler deadline failures are infrastructure failures. They return
 HTTP `503` with code `runner_infrastructure_failure`, never a normal compile or
 run result. Learner compile diagnostics and learner process exit codes remain
