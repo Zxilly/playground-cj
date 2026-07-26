@@ -48,7 +48,6 @@ def _wait_for_runner(process: subprocess.Popen[bytes], timeout: float) -> None:
     timeout=30,
 )
 def execute_runner(
-    action: str,
     body: bytes,
     content_type: str,
     authorization: str,
@@ -76,7 +75,7 @@ def execute_runner(
         try:
             connection.request(
                 "POST",
-                f"/{action}",
+                "/run",
                 body=body,
                 headers={
                     "Content-Type": content_type,
@@ -129,7 +128,7 @@ def runner():
     async def health():
         return PlainTextResponse("ok")
 
-    async def execute(action: str, request: Request):
+    async def execute(request: Request):
         raw_headers = request.scope["headers"]
         authorization_values = [
             value for name, value in raw_headers if name == b"authorization"
@@ -168,7 +167,6 @@ def runner():
 
         try:
             status, headers, response_body = await deployed_runner.remote.aio(
-                action,
                 body,
                 content_type_values[0].decode("latin-1"),
                 authorization_values[0].decode("latin-1"),
@@ -188,10 +186,6 @@ def runner():
 
     @api.post("/run")
     async def run(request: Request):
-        return await execute("run", request)
-
-    @api.post("/format")
-    async def format_code(request: Request):
-        return await execute("format", request)
+        return await execute(request)
 
     return api

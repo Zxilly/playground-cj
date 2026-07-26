@@ -111,13 +111,6 @@ func testOperations() runnerOperations {
 				BinCode:        &binCode,
 			}, nil
 		},
-		formatCode: func(_ context.Context, code string) (formatMessage, error) {
-			return formatMessage{
-				Formatted:       code,
-				FormatterOutput: "",
-				FormatterCode:   0,
-			}, nil
-		},
 	}
 }
 
@@ -335,39 +328,6 @@ func TestCappedBufferSupportsConcurrentWritersAndSnapshots(t *testing.T) {
 	}
 	if !got.truncated {
 		t.Fatal("concurrent overflow did not set its protocol flag")
-	}
-}
-
-func TestReadCappedFileReturnsPureContentAndTruncationFlag(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "formatted.cj")
-	if err := os.WriteFile(path, []byte(strings.Repeat("x", 33)), 0o600); err != nil {
-		t.Fatalf("write formatted fixture: %v", err)
-	}
-	result, err := readCappedFile(path, 32)
-	if err != nil {
-		t.Fatalf("read capped file: %v", err)
-	}
-	if result.content != strings.Repeat("x", 32) || !result.truncated {
-		t.Fatalf("capped file result = %#v", result)
-	}
-	if strings.Contains(result.content, "truncated") {
-		t.Fatalf("formatted content contains in-band truncation metadata: %q", result.content)
-	}
-}
-
-func TestReadCappedFileRejectsSymlinkArtifacts(t *testing.T) {
-	directory := t.TempDir()
-	target := filepath.Join(directory, "outside")
-	path := filepath.Join(directory, "formatted.cj")
-	if err := os.WriteFile(target, []byte("must-not-be-returned"), 0o600); err != nil {
-		t.Fatalf("write symlink target: %v", err)
-	}
-	if err := os.Symlink(target, path); err != nil {
-		t.Fatalf("create formatted artifact symlink: %v", err)
-	}
-
-	if _, err := readCappedFile(path, 32); err == nil {
-		t.Fatal("readCappedFile followed an untrusted formatter symlink")
 	}
 }
 
@@ -699,7 +659,7 @@ if printf 'tampered' 2>/dev/null > %s; then printf 'sibling_write=visible\n'; el
 	}
 }
 
-func TestCangjieCompilerAndFormatterSandboxIntegration(t *testing.T) {
+func TestCangjieCompilerSandboxIntegration(t *testing.T) {
 	if os.Getenv("CJ_RUNNER_TOOLCHAIN_INTEGRATION") != "1" {
 		t.Skip("set CJ_RUNNER_TOOLCHAIN_INTEGRATION=1 inside the runner filesystem")
 	}
@@ -719,17 +679,6 @@ func TestCangjieCompilerAndFormatterSandboxIntegration(t *testing.T) {
 	}
 	if message.BinStdout != "sandboxed\n" {
 		t.Fatalf("runtime stdout = %q", message.BinStdout)
-	}
-
-	formatted, err := formatCode(
-		context.Background(),
-		"main():Int64{println(\"formatted\");return 0}",
-	)
-	if err != nil {
-		t.Fatalf("format in toolchain sandbox: %v", err)
-	}
-	if formatted.FormatterCode != 0 || !strings.Contains(formatted.Formatted, "main(): Int64") {
-		t.Fatalf("format result = %#v", formatted)
 	}
 }
 
@@ -1281,12 +1230,6 @@ func TestRunnerBoundaryRejectsInvalidRequests(t *testing.T) {
 			wantCode:   "unsupported_media_type",
 		},
 		{
-			name:       "format does not accept JSON",
-			request:    runnerRequest(http.MethodPost, "/format", "application/json", `{"code":"main() {}"}`),
-			wantStatus: http.StatusUnsupportedMediaType,
-			wantCode:   "unsupported_media_type",
-		},
-		{
 			name:       "non UTF-8 charsets are rejected",
 			request:    runnerRequest(http.MethodPost, "/run", "text/plain; charset=iso-8859-1", "main() {}"),
 			wantStatus: http.StatusUnsupportedMediaType,
@@ -1410,20 +1353,6 @@ func TestRunnerReturnsNon2xxForInfrastructureFailures(t *testing.T) {
 						errors.New("storage unavailable"),
 					)
 				},
-				formatCode: testOperations().formatCode,
-			},
-		},
-		{
-			name: "format infrastructure failure",
-			path: "/format",
-			operations: runnerOperations{
-				compileAndRun: testOperations().compileAndRun,
-				formatCode: func(context.Context, string) (formatMessage, error) {
-					return formatMessage{}, infrastructureError(
-						"format sandbox start",
-						errors.New("namespace denied"),
-					)
-				},
 			},
 		},
 	}
@@ -1441,8 +1370,7 @@ func TestRunnerReturnsNon2xxForInfrastructureFailures(t *testing.T) {
 			if payload["code"] != "runner_infrastructure_failure" {
 				t.Fatalf("infrastructure error code = %q", payload["code"])
 			}
-			if strings.Contains(recorder.Body.String(), "storage unavailable") ||
-				strings.Contains(recorder.Body.String(), "namespace denied") {
+			if strings.Contains(recorder.Body.String(), "storage unavailable") {
 				t.Fatalf("internal infrastructure detail leaked: %s", recorder.Body.String())
 			}
 		})
@@ -1465,15 +1393,6 @@ func TestRunnerSerializesRequiredOutOfBandTruncationFlags(t *testing.T) {
 			BinCode:                 &binCode,
 		}, nil
 	}
-	operations.formatCode = func(context.Context, string) (formatMessage, error) {
-		return formatMessage{
-			Formatted:                "formatted",
-			FormattedTruncated:       true,
-			FormatterOutput:          "diagnostic",
-			FormatterOutputTruncated: true,
-			FormatterCode:            0,
-		}, nil
-	}
 
 	for _, test := range []struct {
 		path   string
@@ -1486,10 +1405,6 @@ func TestRunnerSerializesRequiredOutOfBandTruncationFlags(t *testing.T) {
 				"bin_stdout_truncated",
 				"bin_stderr_truncated",
 			},
-		},
-		{
-			path:   "/format",
-			fields: []string{"formatted_truncated", "formatter_output_truncated"},
 		},
 	} {
 		recorder := httptest.NewRecorder()

@@ -6,7 +6,7 @@ import { join, relative } from 'node:path'
 const PATH_SEP_RE = /[\\/]/
 const CJO_TARGET = 'linux_x86_64_cjnative'
 const IS_DEV = process.env.NODE_ENV === 'development'
-const LSP_PUBLIC_DIR = join(import.meta.dirname, 'public', 'lsp')
+const WASM_ASSETS_PUBLIC_DIR = join(import.meta.dirname, 'public', 'lsp')
 const PASSIVE_RESOURCE_POLICY = [
   'base-uri \'self\'',
   'object-src \'none\'',
@@ -15,13 +15,15 @@ const PASSIVE_RESOURCE_POLICY = [
   'media-src \'self\' blob: data:',
 ].join('; ')
 
-// Content hash, not mtime — CI re-downloads the LSP archive on every build,
+// Content hash, not mtime — CI re-downloads the WASM archive on every build,
 // so an mtime-based key would bust caches across deploys even when the wasm
 // is byte-identical. Hashing 50 MB once at config load is ~100 ms.
-function detectLspVersion(): string {
+function detectWasmAssetsVersion(): string {
   try {
-    const bytes = readFileSync(join(LSP_PUBLIC_DIR, 'LSPServer-wasm.wasm'))
-    return createHash('sha256').update(bytes).digest('hex').slice(0, 16)
+    const hash = createHash('sha256')
+    for (const name of ['LSPServer-wasm.wasm', 'cjfmt-wasm.wasm'])
+      hash.update(readFileSync(join(WASM_ASSETS_PUBLIC_DIR, name)))
+    return hash.digest('hex').slice(0, 16)
   }
   catch {
     return 'fallback'
@@ -29,7 +31,7 @@ function detectLspVersion(): string {
 }
 
 function collectCjoModules(): string[] {
-  const root = join(LSP_PUBLIC_DIR, 'modules', CJO_TARGET)
+  const root = join(WASM_ASSETS_PUBLIC_DIR, 'modules', CJO_TARGET)
   const results: string[] = []
   const walk = (dir: string) => {
     let entries: import('node:fs').Dirent[]
@@ -55,20 +57,20 @@ function collectCjoModules(): string[] {
 }
 
 // Next.js 16 loads next.config.ts via require(), which forbids top-level await,
-// so we cannot kick off the async download here. Require LSP assets to exist
-// at config-load time; run `node scripts/download-lsp-cli.mjs` (or `pnpm prep`)
+// so we cannot kick off the async download here. Require WASM assets to exist
+// at config-load time; run `node scripts/download-wasm-assets-cli.mjs` (or `pnpm prep`)
 // to populate them on a fresh checkout.
 function lspDirEmpty(): boolean {
-  if (!existsSync(LSP_PUBLIC_DIR))
+  if (!existsSync(WASM_ASSETS_PUBLIC_DIR))
     return true
-  return readdirSync(LSP_PUBLIC_DIR).filter(f => !f.startsWith('.')).length === 0
+  return readdirSync(WASM_ASSETS_PUBLIC_DIR).filter(f => !f.startsWith('.')).length === 0
 }
 if (lspDirEmpty()) {
   throw new Error(
-    `LSP assets missing in ${LSP_PUBLIC_DIR}. Run "node scripts/download-lsp-cli.mjs" first.`,
+    `WASM assets missing in ${WASM_ASSETS_PUBLIC_DIR}. Run "node scripts/download-wasm-assets-cli.mjs" first.`,
   )
 }
-const LSP_VERSION = detectLspVersion()
+const WASM_ASSETS_VERSION = detectWasmAssetsVersion()
 const CJO_MODULES = collectCjoModules()
 
 const nextConfig: NextConfig = {
@@ -96,12 +98,12 @@ const nextConfig: NextConfig = {
     },
   },
   // Inlined into the bundle as process.env.*. Computed at config load from the
-  // LSP assets; restart the dev server after rebuilding the wasm or adding
+  // browser WASM assets; restart the dev server after rebuilding the wasm or adding
   // .cjo files.
   env: {
     CJO_TARGET,
     CJO_MODULES: JSON.stringify(CJO_MODULES),
-    LSP_VERSION,
+    WASM_ASSETS_VERSION,
   },
   async headers() {
     return [

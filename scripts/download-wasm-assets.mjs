@@ -1,15 +1,20 @@
 import { Buffer } from 'node:buffer'
-import { createWriteStream, mkdirSync, readdirSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { createWriteStream, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve as resolvePath } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import * as yauzl from 'yauzl'
 
-const LSP_DIR = join(import.meta.dirname, '..', 'public', 'lsp')
-const LSP_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-lsp-1.2.0-alpha.20260724/lsp.zip'
+const WASM_ASSETS_DIR = join(import.meta.dirname, '..', 'public', 'lsp')
+const WASM_ASSETS_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-assets-1.2.0-alpha.20260724/wasm_assets.zip'
+const WASM_ASSETS_ZIP_SHA256 = '1dbf2c7fb5d36873009076449778c5c6373b4c0680b4a9a94ac9910560fc5585'
+const WASM_ASSETS_VERSION_FILE = '.wasm-assets.sha256'
 const CJO_TARGET = 'linux_x86_64_cjnative'
 const REQUIRED_LSP_FILES = [
   'LSPServer-wasm.js',
   'LSPServer-wasm.wasm',
+  'cjfmt-wasm.mjs',
+  'cjfmt-wasm.wasm',
 ]
 const WINDOWS_ABSOLUTE_RE = /^(?:[A-Za-z]:[\\/]|\\\\)/
 
@@ -45,16 +50,40 @@ function hasCjoModule(dir) {
   }
 }
 
-export function isLspAssetsComplete(lspDir = LSP_DIR) {
-  if (!isDirectory(lspDir))
+export function isWasmAssetsComplete(assetsDir = WASM_ASSETS_DIR) {
+  if (!isDirectory(assetsDir))
     return false
 
-  const hasRequiredFiles = REQUIRED_LSP_FILES.every(file => isFile(join(lspDir, file)))
+  const hasRequiredFiles = REQUIRED_LSP_FILES.every(file => isFile(join(assetsDir, file)))
   if (!hasRequiredFiles)
     return false
+  try {
+    const markerPath = join(assetsDir, WASM_ASSETS_VERSION_FILE)
+    if (
+      !statSync(markerPath).isFile()
+      || readFileSync(markerPath, 'utf8').trim() !== WASM_ASSETS_ZIP_SHA256
+    ) {
+      return false
+    }
+  }
+  catch {
+    return false
+  }
 
-  const modulesDir = join(lspDir, 'modules', CJO_TARGET)
+  const modulesDir = join(assetsDir, 'modules', CJO_TARGET)
   return isDirectory(modulesDir) && hasCjoModule(modulesDir)
+}
+
+export function assertWasmAssetsArchive(
+  buffer,
+  expectedSha256 = WASM_ASSETS_ZIP_SHA256,
+) {
+  const actualSha256 = createHash('sha256').update(buffer).digest('hex')
+  if (actualSha256 !== expectedSha256) {
+    throw new Error(
+      `WASM asset archive SHA-256 mismatch: expected ${expectedSha256}, got ${actualSha256}`,
+    )
+  }
 }
 
 export function resolveZipEntryPath(destDir, entryName) {
@@ -125,30 +154,38 @@ async function extractZipFromBuffer(buffer, destDir) {
   })
 }
 
-export async function ensureLspFiles() {
-  if (isLspAssetsComplete()) {
+export async function ensureWasmAssets() {
+  if (isWasmAssetsComplete()) {
     return
   }
 
-  console.log('LSP directory is empty, downloading LSP files...')
+  console.log('WASM asset directory is incomplete, downloading browser toolchain files...')
 
-  mkdirSync(LSP_DIR, { recursive: true })
+  mkdirSync(WASM_ASSETS_DIR, { recursive: true })
 
-  console.log(`Downloading from ${LSP_ZIP_URL}...`)
-  const response = await fetch(LSP_ZIP_URL, { redirect: 'follow' })
+  console.log(`Downloading from ${WASM_ASSETS_ZIP_URL}...`)
+  const response = await fetch(WASM_ASSETS_ZIP_URL, { redirect: 'follow' })
   if (!response.ok) {
     throw new Error(`Failed to download: ${response.status} ${response.statusText}`)
   }
   const arrayBuffer = await response.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
-  console.log('Download complete.')
+  assertWasmAssetsArchive(buffer)
+  console.log('Download complete and SHA-256 verified.')
 
-  console.log('Extracting LSP files...')
-  await extractZipFromBuffer(buffer, LSP_DIR)
-  console.log('LSP files extracted successfully.')
+  console.log('Extracting browser toolchain files...')
+  await extractZipFromBuffer(buffer, WASM_ASSETS_DIR)
+  writeFileSync(
+    join(WASM_ASSETS_DIR, WASM_ASSETS_VERSION_FILE),
+    `${WASM_ASSETS_ZIP_SHA256}\n`,
+    'utf8',
+  )
+  if (!isWasmAssetsComplete())
+    throw new Error('Extracted WASM asset archive is incomplete')
+  console.log('Browser toolchain files extracted successfully.')
 }
 
-// Allow direct invocation (`node scripts/download-lsp.mjs`).
+// Allow direct invocation (`node scripts/download-wasm-assets.mjs`).
 if (process.argv[1] === import.meta.filename) {
-  await ensureLspFiles()
+  await ensureWasmAssets()
 }

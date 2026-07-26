@@ -10,30 +10,6 @@ describe('browserRunnerClient', () => {
     vi.restoreAllMocks()
   })
 
-  it('posts format source as plain text and validates the response', async () => {
-    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
-      formatted: 'format()',
-      formatted_truncated: false,
-      formatter_output: '',
-      formatter_output_truncated: false,
-      formatter_code: 0,
-    }))
-
-    await expect(browserRunnerClient.format('main()')).resolves.toEqual({
-      formatted: 'format()',
-      formatted_truncated: false,
-      formatter_output: '',
-      formatter_output_truncated: false,
-      formatter_code: 0,
-    })
-    expect(fetch).toHaveBeenCalledWith('/api/format', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-      body: 'main()',
-      signal: undefined,
-    })
-  })
-
   it('uses a structured run body only when stdin is supplied', async () => {
     const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
       phase: 'run',

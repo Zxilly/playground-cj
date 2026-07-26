@@ -19,7 +19,6 @@ describe('vercel function lifecycle configuration', () => {
     expect(configuration.functions).toMatchObject({
       'src/app/api/ai-gateway/**/route.ts': { supportsCancellation: true },
       'src/app/api/ai-gateway/metadata/route.ts': { supportsCancellation: true },
-      'src/app/api/format/route.ts': { supportsCancellation: true },
       'src/app/api/run/route.ts': { supportsCancellation: true },
     })
   })

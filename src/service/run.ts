@@ -36,8 +36,6 @@ export async function remoteRun(code: string, actions: Actions): Promise<void> {
     compilerOutput: data.compiler_output_truncated,
     programStdout: data.bin_stdout_truncated,
     programStderr: data.bin_stderr_truncated,
-    formattedSource: false,
-    formatterOutput: false,
   })
   actions.setToolOutput(buildOutput(data.compiler_output, data.compiler_code))
   if (data.phase === 'compile') {

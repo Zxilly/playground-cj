@@ -5,14 +5,10 @@
  */
 import { createHash } from 'node:crypto'
 import cangjieToolchainLock from '../../cj-runner/cangjie-toolchain.lock.json'
-import type {
-  RunnerFormatResponse,
-  RunnerRunResponse,
-} from './runner-contract'
+import type { RunnerRunResponse } from './runner-contract'
 import { awaitWithSignal } from './ai/abortable-operation'
 import {
   MAX_RUNNER_OUTPUT_BYTES,
-  parseRunnerFormatResponse,
   parseRunnerRunResponse,
 } from './runner-contract'
 import { getRunnerAdmissionGate } from './runner-admission'
@@ -43,8 +39,8 @@ export const RUNNER_TOOLCHAIN_LOCK_SHA256 = createHash('sha256')
   .update(canonicalJson(cangjieToolchainLock), 'utf8')
   .digest('hex')
 
-type RunnerAction = 'run' | 'format'
-type ParsedRunnerResponse = RunnerRunResponse | RunnerFormatResponse
+type RunnerAction = 'run'
+type ParsedRunnerResponse = RunnerRunResponse
 type RunnerUrlResolution
   = | { error: 'invalid' | 'missing' }
     | { url: URL }
@@ -201,10 +197,8 @@ function parseMediaType(value: string | null): string | null {
   return normalizedMediaType
 }
 
-function acceptsMediaType(action: RunnerAction, mediaType: string | null): boolean {
-  if (mediaType === 'text/plain')
-    return true
-  return action === 'run' && mediaType === 'application/json'
+function acceptsMediaType(mediaType: string | null): boolean {
+  return mediaType === 'text/plain' || mediaType === 'application/json'
 }
 
 function isLoopbackHostname(hostname: string): boolean {
@@ -488,14 +482,12 @@ function isValidJsonRunBody(body: string): boolean {
     && (payload.stdin === undefined || typeof payload.stdin === 'string')
 }
 
-function parseRunnerResponse(body: string, action: RunnerAction): ParsedRunnerResponse | null {
+function parseRunnerResponse(body: string): ParsedRunnerResponse | null {
   const payload = parseJsonObject(body)
   if (!payload)
     return null
 
-  return action === 'run'
-    ? parseRunnerRunResponse(payload)
-    : parseRunnerFormatResponse(payload)
+  return parseRunnerRunResponse(payload)
 }
 
 function acquireRunnerSlot(): (() => void) | null {
@@ -590,13 +582,11 @@ export async function proxyToRunner(request: Request, action: RunnerAction): Pro
 
   const contentType = request.headers.get('content-type')
   const mediaType = parseMediaType(contentType)
-  if (!acceptsMediaType(action, mediaType)) {
+  if (!acceptsMediaType(mediaType)) {
     return jsonError(
       415,
       'unsupported_media_type',
-      action === 'run'
-        ? 'Content-Type must be text/plain or application/json with UTF-8 content.'
-        : 'Content-Type must be text/plain with UTF-8 content.',
+      'Content-Type must be text/plain or application/json with UTF-8 content.',
     )
   }
 
@@ -901,7 +891,7 @@ export async function proxyToRunner(request: Request, action: RunnerAction): Pro
       upstreamSignal,
       slotOwnership,
     )
-    const payload = parseRunnerResponse(upstreamBody, action)
+    const payload = parseRunnerResponse(upstreamBody)
     if (!payload) {
       console.error(`[runner-proxy] ${action} upstream returned an invalid JSON payload`)
       return jsonError(

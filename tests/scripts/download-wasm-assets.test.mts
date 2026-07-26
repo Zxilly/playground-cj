@@ -3,7 +3,15 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { isLspAssetsComplete, resolveZipEntryPath } from '../../scripts/download-lsp.mjs'
+import { createHash } from 'node:crypto'
+import { Buffer } from 'node:buffer'
+import {
+  assertWasmAssetsArchive,
+  isWasmAssetsComplete,
+  resolveZipEntryPath,
+} from '../../scripts/download-wasm-assets.mjs'
+
+const WASM_ASSETS_ZIP_SHA256 = '1dbf2c7fb5d36873009076449778c5c6373b4c0680b4a9a94ac9910560fc5585'
 
 let tempDirs: string[] = []
 
@@ -43,12 +51,12 @@ describe('zip entry path resolution', () => {
   })
 })
 
-describe('lsp asset completeness check', () => {
-  it('treats a non-empty but partial LSP directory as incomplete', async () => {
+describe('wasm asset completeness check', () => {
+  it('treats a non-empty but partial WASM asset directory as incomplete', async () => {
     const lspDir = await createTempDir()
     writeFileSync(join(lspDir, 'README.txt'), 'partial download marker')
 
-    expect(isLspAssetsComplete(lspDir)).toBe(false)
+    expect(isWasmAssetsComplete(lspDir)).toBe(false)
   })
 
   it('requires wasm glue, wasm binary, and target modules payload', async () => {
@@ -59,7 +67,12 @@ describe('lsp asset completeness check', () => {
     mkdirSync(moduleDir, { recursive: true })
     writeFileSync(join(moduleDir, 'std.core.cjo'), 'module')
 
-    expect(isLspAssetsComplete(lspDir)).toBe(true)
+    expect(isWasmAssetsComplete(lspDir)).toBe(false)
+    writeFileSync(join(lspDir, 'cjfmt-wasm.mjs'), 'glue')
+    writeFileSync(join(lspDir, 'cjfmt-wasm.wasm'), '\0asm')
+    writeFileSync(join(lspDir, '.wasm-assets.sha256'), WASM_ASSETS_ZIP_SHA256)
+
+    expect(isWasmAssetsComplete(lspDir)).toBe(true)
   })
 
   it('finds CJO modules nested below the target modules directory', async () => {
@@ -70,7 +83,11 @@ describe('lsp asset completeness check', () => {
     mkdirSync(nestedModuleDir, { recursive: true })
     writeFileSync(join(nestedModuleDir, 'package.cjo'), 'module')
 
-    expect(isLspAssetsComplete(lspDir)).toBe(true)
+    writeFileSync(join(lspDir, 'cjfmt-wasm.mjs'), 'glue')
+    writeFileSync(join(lspDir, 'cjfmt-wasm.wasm'), '\0asm')
+    writeFileSync(join(lspDir, '.wasm-assets.sha256'), WASM_ASSETS_ZIP_SHA256)
+
+    expect(isWasmAssetsComplete(lspDir)).toBe(true)
   })
 
   it('rejects directories with required files but no CJO module payload', async () => {
@@ -81,6 +98,17 @@ describe('lsp asset completeness check', () => {
     mkdirSync(moduleDir, { recursive: true })
     writeFileSync(join(moduleDir, 'README.txt'), 'not a module')
 
-    expect(isLspAssetsComplete(lspDir)).toBe(false)
+    expect(isWasmAssetsComplete(lspDir)).toBe(false)
+  })
+})
+
+describe('wasm asset archive integrity', () => {
+  it('accepts only the pinned archive digest', () => {
+    const archive = Buffer.from('test archive')
+    const digest = createHash('sha256').update(archive).digest('hex')
+
+    expect(() => assertWasmAssetsArchive(archive, digest)).not.toThrow()
+    expect(() => assertWasmAssetsArchive(archive, '0'.repeat(64)))
+      .toThrow(/SHA-256 mismatch/)
   })
 })

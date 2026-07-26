@@ -2,7 +2,7 @@
 
 ## Decision
 
-The repository supports one compile, run, and format contract implemented by
+The repository supports one compile and run contract implemented by
 `cj-runner/cmd/runner` and reached through the authenticated same-origin Next.js
 gateway. The former `server/` Docker-per-request backend is removed instead of
 being retained as a compatibility path.
@@ -19,10 +19,15 @@ repository's deployment workflow.
 authentication, exact toolchain-lock handshake, request and output bounds,
 disconnect cancellation, infrastructure-failure semantics, startup toolchain
 and sandbox probes, reproducible image inputs, and the tested build/deploy
-workflow. Compiler, formatter, and learner processes run in fresh bubblewrap
+workflow. Compiler and learner processes run in fresh bubblewrap
 user, mount, network, PID, UTS, and IPC namespaces with a minimal filesystem,
 fixed environment, bounded writable tmpfs mounts, rlimits, and no unsandboxed
 fallback.
+
+Source formatting is outside the runner contract. The browser downloads the
+versioned `cjfmt` WASM asset from the same immutable archive as the language
+server and formats locally, so formatting neither starts a remote container nor
+consumes compiler admission capacity.
 
 ## Consequences
 

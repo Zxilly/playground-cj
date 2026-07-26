@@ -1,7 +1,7 @@
 # Runner admission uses trusted infrastructure and distributed limits
 
-The same-origin `/api/run` and `/api/format` routes expose expensive compiler
-capacity. `Origin` and Fetch Metadata can reject browser CSRF, but a direct HTTP
+The same-origin `/api/run` route exposes expensive compiler capacity. `Origin`
+and Fetch Metadata can reject browser CSRF, but a direct HTTP
 client can forge both values. They are therefore not an identity boundary.
 Likewise, a counter inside one Next.js process cannot limit a multi-replica
 deployment.

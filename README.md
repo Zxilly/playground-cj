@@ -51,8 +51,8 @@ pnpm dev
 专用 service user 配置不高于平台预算的 `max_user_tokens`，且不得混用人工
 token；容量满时网关 fail-closed，而不会偷建替代凭据。
 
-`/api/run` 与 `/api/format` 在读取源码前，先按可信基础设施提供的客户端
-IP 做 Redis 原子化的 per-identity 与 global 准入，再进入每个 Next.js
+`/api/run` 在读取源码前，先按可信基础设施提供的客户端 IP 做 Redis
+原子化的 per-identity 与 global 准入，再进入每个 Next.js
 进程的并发 bulkhead。Vercel 使用平台覆盖的 `x-vercel-forwarded-for`；
 自托管反向代理必须删除公网同名请求头，并写入
 `AI_GATEWAY_TRUSTED_IP_HEADER` 指定的头。`Origin` 和 Fetch Metadata 只用于
@@ -65,6 +65,11 @@ Redis、runner `fetch` 和请求/响应流都接收请求级取消信号；取�
 依赖违反取消契约并在 1 秒宽限期后仍未结束，生产进程会 fail-stop，避免靠
 超时释放槽位累积无限 zombie I/O。Vercel 会替换该实例；自托管 Next.js
 必须运行在会对非零退出自动重启的进程监督器或容器 restart policy 下。
+
+格式化不占用 runner 配额：`cjfmt` 与语言服务一起作为
+`wasm_assets.zip` 发布并在浏览器内运行。执行环境使用稳定版仓颉 1.1.3
+和 STDX 1.1.3.1；浏览器 LSP/cjfmt 资产来自
+`wasm-assets-1.2.0-alpha.20260724`。
 
 客户端（`NEXT_PUBLIC_` 前缀，会被打入浏览器 bundle）：
 

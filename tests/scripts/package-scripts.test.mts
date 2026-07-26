@@ -10,6 +10,6 @@ describe('package scripts', () => {
       .toBe('pnpm prep && pnpm content-packs:verify-published')
     expect(packageJson.scripts['pretest:browser']).toBe('pnpm prep')
     expect(packageJson.scripts.precoverage).toBe('pnpm prep')
-    expect(packageJson.scripts.prep).toBe('node scripts/download-lsp-cli.mjs')
+    expect(packageJson.scripts.prep).toBe('node scripts/download-wasm-assets-cli.mjs')
   })
 })

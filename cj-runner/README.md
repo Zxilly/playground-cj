@@ -1,7 +1,7 @@
 # Cangjie runner
 
-`cmd/runner` builds the `cj-runner` compile/run/format service behind the Next.js
-`/api/run` and `/api/format` gateway, for both managed and self-hosted
+`cmd/runner` builds the `cj-runner` compile/run service behind the Next.js
+`/api/run` gateway, for both managed and self-hosted
 deployments. Build and deploy this directory's image; there is intentionally no
 second runner implementation with a weaker or divergent boundary. Do not expose
 it as an unauthenticated public API.
@@ -87,21 +87,21 @@ For local development without authentication, run the service with
 explicit local-only escape hatch: the process binds to `127.0.0.1` instead of
 all interfaces. The production image remains fail-closed.
 
-## Compile, format, and learner execution boundary
+## Compiler and learner execution boundary
 
 Before opening its listener, `cj-runner` strictly parses the bundled toolchain
 lock, checks its installer marker, re-hashes `/cangjie/bin/cjc`, checks the
 compiler's reported backend and target, and exercises the selected execution
-profile by formatting, compiling, and running a minimal source file. A stale
+profile by compiling and running a minimal source file. A stale
 toolchain or failed profile terminates the service.
 
 For the single-use Modal profile, startup performs the same toolchain identity
 checks plus a lightweight dropped-UID process probe. It does not compile a
 second sample program before the real request because the container is never
-reused; the request itself exercises the selected compiler or formatter path.
+reused; the request itself exercises the selected compiler path.
 
 The default profile runs the HTTP service as UID/GID `65532` and places every
-`cjc`, `cjfmt`, and learner process behind bubblewrap with:
+`cjc` and learner process behind bubblewrap with:
 
 - fresh user, mount, network, PID, UTS, and IPC namespaces;
 - an empty root containing only read-only `/usr`, `/bin`, `/lib`, `/lib64`,
@@ -114,17 +114,17 @@ The default profile runs the HTTP service as UID/GID `65532` and places every
   creation disabled, per-process rlimits, a wall-clock deadline, and bounded
   stdout/stderr.
 
-The compiler and formatter see exactly one writable bind at `/request`: the
-current request's mode-`0700` directory. Sibling request directories and the
-rest of host `/playground` are not mounted. A learner binary instead receives
-only its own executable, read-only at `/app/main`, and can write only to its
-private tmpfs mounts. `cjc` and `cjfmt` remain trusted for semantic correctness,
-but untrusted source does not grant them the service process's filesystem,
-network, PID view, or environment.
+The compiler sees exactly one writable bind at `/request`: the current
+request's mode-`0700` directory. Sibling request directories and the rest of
+host `/playground` are not mounted. A learner binary instead receives only its
+own executable, read-only at `/app/main`, and can write only to its private
+tmpfs mounts. `cjc` remains trusted for semantic correctness, but untrusted
+source does not grant it the service process's filesystem, network, PID view,
+or environment.
 
 The Modal profile is explicit rather than a fallback. Modal starts the
-authenticated service as root, but each compiler, formatter, and learner
-process is launched through `setpriv` as UID/GID `65532`, with all capabilities
+authenticated service as root, but each compiler and learner process is
+launched through `setpriv` as UID/GID `65532`, with all capabilities
 removed, `no_new_privs`, fixed environment, wall-clock deadlines, `prlimit`
 resource bounds, and capped output. The root service keeps the bearer secret
 inaccessible to learner processes. The surrounding Function is configured with
@@ -158,10 +158,9 @@ or `/linux_x86_64_cjnative`). Environment-backed secrets are preferred.
 
 - `POST /run` accepts `text/plain; charset=utf-8` or a strict
   `application/json` object containing `code` and optional `stdin`.
-- `POST /format` accepts only `text/plain; charset=utf-8`.
-- Both endpoints require the shared bearer token and exact toolchain-lock
+- The endpoint requires the shared bearer token and exact toolchain-lock
   digest, cap request bodies at 256 KiB, cap concurrent work, propagate
-  disconnect cancellation into compiler/formatter processes, and enforce
+  disconnect cancellation into compiler processes, and enforce
   operation and HTTP server timeouts.
 - A digest mismatch returns `503 runner_toolchain_mismatch` with
   `X-Playground-Cangjie-Toolchain-Status: mismatch`; the gateway uses that
@@ -182,14 +181,11 @@ or `/linux_x86_64_cjnative`). Environment-backed secrets are preferred.
   when no binary ran; otherwise it is `run`, `compiler_code` is zero, and
   `bin_code` is an integer.
 
-`POST /format` likewise requires `formatted_truncated` and
-`formatter_output_truncated`.
-
 Each output channel is capped at 1,000,000 UTF-8 bytes. Content remains pure;
 the corresponding boolean is the only truncation signal.
 
 Filesystem setup, source write/read, tool start, namespace setup, and
-compiler/formatter deadline failures are infrastructure failures. They return
+compiler deadline failures are infrastructure failures. They return
 HTTP `503` with code `runner_infrastructure_failure`, never a normal compile or
 run result. Learner compile diagnostics and learner process exit codes remain
 HTTP `200`. This distinction prevents an unavailable runner from being
@@ -198,6 +194,10 @@ mistaken for learning evidence.
 The 256 KiB request cap intentionally matches `MAX_RUNNER_REQUEST_BYTES` in
 `src/lib/runner-proxy.ts`; changing either boundary requires changing and
 testing both.
+
+Formatting is intentionally not an HTTP runner operation. The frontend loads
+`cjfmt` from the versioned browser WASM archive and formats locally, without
+starting a Modal container or consuming runner admission capacity.
 
 ## Reproducible toolchain inputs
 

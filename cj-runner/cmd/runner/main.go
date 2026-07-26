@@ -1,12 +1,12 @@
-// cj-runner is the single supported Cangjie compile/run/format contract for
+// cj-runner is the single supported Cangjie compile/run contract for
 // managed and self-hosted deployments. It replaces the repository's former
 // Docker-per-request server; ADR 0014 records that trade-off. Standard
-// deployments run every cjc, cjfmt, and learner process behind bubblewrap.
+// deployments run every cjc and learner process behind bubblewrap.
 // Modal deployments instead use an explicitly configured, single-use gVisor
 // container per request because nested namespaces are unavailable there. The
 // service probes its selected boundary at startup and has no implicit fallback.
-// Endpoints are POST /run ({code,stdin} JSON or raw) and POST /format (raw
-// code), returning the canonical RunMessage / FormatMessage JSON shapes.
+// The endpoint is POST /run ({code,stdin} JSON or raw), returning the canonical
+// RunMessage JSON shape. Formatting runs locally in the browser through WASM.
 //
 //go:build linux
 
@@ -58,18 +58,9 @@ type runMessage struct {
 	BinCode                 *int     `json:"bin_code"`
 }
 
-type formatMessage struct {
-	Formatted                string `json:"formatted"`
-	FormattedTruncated       bool   `json:"formatted_truncated"`
-	FormatterOutput          string `json:"formatter_output"`
-	FormatterOutputTruncated bool   `json:"formatter_output_truncated"`
-	FormatterCode            int    `json:"formatter_code"`
-}
-
 const (
 	compileTimeout        = 12 * time.Second
 	runTimeout            = 8 * time.Second
-	formatTimeout         = 8 * time.Second
 	sandboxProbeTimeout   = 20 * time.Second
 	toolchainProbeTimeout = 5 * time.Second
 	processWaitDelay      = time.Second
@@ -122,7 +113,6 @@ const toolchainMismatchHeader = "X-Playground-Cangjie-Toolchain-Status"
 
 const (
 	cangjieCompilerPath        = "/cangjie/bin/cjc"
-	cangjieFormatterPath       = "/cangjie/tools/bin/cjfmt"
 	cangjieToolchainLockPath   = "/usr/share/playground-cj/cangjie-toolchain.lock.json"
 	cangjieToolchainMarkerPath = "/cangjie/.playground-cj-toolchain-lock.sha256"
 	bubblewrapExecutablePath   = "/usr/bin/bwrap"
@@ -176,7 +166,6 @@ type cangjieToolchainLock struct {
 
 type runnerOperations struct {
 	compileAndRun func(context.Context, string, string) (runMessage, error)
-	formatCode    func(context.Context, string) (formatMessage, error)
 }
 
 type runnerServer struct {
@@ -799,7 +788,7 @@ func verifySandboxBoundary(ctx context.Context, settings sandboxSettings) error 
 	if settings.useOuterContainerBoundary {
 		// A Modal Function handles exactly one request and is discarded. The
 		// toolchain identity was already verified above, and the real request
-		// exercises its compiler/formatter path; repeating a full compile here
+		// exercises its compiler path; repeating a full compile here
 		// would double every request's latency without testing a shared worker.
 		return nil
 	}
@@ -812,7 +801,7 @@ func verifySandboxBoundary(ctx context.Context, settings sandboxSettings) error 
 	if err := prepareRequestDirectory(requestDirectory, settings); err != nil {
 		return fmt.Errorf("prepare tool profile request directory: %w", err)
 	}
-	for _, executable := range []string{cangjieCompilerPath, cangjieFormatterPath} {
+	for _, executable := range []string{cangjieCompilerPath} {
 		info, statErr := os.Stat(executable)
 		if statErr != nil {
 			return fmt.Errorf("tool profile executable %s: %w", executable, statErr)
@@ -831,22 +820,6 @@ func verifySandboxBoundary(ctx context.Context, settings sandboxSettings) error 
 	}
 	if err := prepareRequestFile(sourcePath, settings); err != nil {
 		return fmt.Errorf("prepare tool profile source: %w", err)
-	}
-
-	formatResult, err := runToolSandboxWithSettings(
-		probeContext,
-		requestDirectory,
-		cangjieFormatterPath,
-		[]string{"-f", "/request/main.cj", "-o", "/request/main.cj"},
-		formatTimeout,
-		"probe formatter profile",
-		settings,
-	)
-	if err != nil {
-		return fmt.Errorf("formatter profile: %w", err)
-	}
-	if formatResult.exitCode != 0 {
-		return fmt.Errorf("formatter profile exited with status %d", formatResult.exitCode)
 	}
 
 	compileResult, err := runToolSandboxWithSettings(
@@ -890,96 +863,6 @@ func runtimeEnvironment() []string {
 		"LANG=C.UTF-8",
 		"LC_ALL=C.UTF-8",
 	}
-}
-
-func formatCode(ctx context.Context, code string) (formatMessage, error) {
-	return formatCodeWithSettings(ctx, code, productionSandboxSettings)
-}
-
-func formatCodeWithSettings(
-	ctx context.Context,
-	code string,
-	settings sandboxSettings,
-) (formatMessage, error) {
-	var msg formatMessage
-	requestDirectory, err := os.MkdirTemp("/playground", "format-")
-	if err != nil {
-		return msg, infrastructureError("create format request directory", err)
-	}
-	defer os.RemoveAll(requestDirectory)
-	if err := prepareRequestDirectory(requestDirectory, settings); err != nil {
-		return msg, infrastructureError("prepare format request directory", err)
-	}
-	name := filepath.Join(requestDirectory, "main.cj")
-	if err := os.WriteFile(name, []byte(code), 0o600); err != nil {
-		return msg, infrastructureError("write format source", err)
-	}
-	if err := prepareRequestFile(name, settings); err != nil {
-		return msg, infrastructureError("prepare format source", err)
-	}
-
-	result, err := runToolSandboxWithSettings(
-		ctx,
-		requestDirectory,
-		cangjieFormatterPath,
-		[]string{"-f", "/request/main.cj", "-o", "/request/main.cj"},
-		formatTimeout,
-		"format",
-		settings,
-	)
-	if err != nil {
-		return msg, err
-	}
-	formatterOutput := combineOutputChannels(result.stdout, result.stderr)
-	msg.FormatterOutput = formatterOutput.content
-	msg.FormatterOutputTruncated = formatterOutput.truncated
-	msg.FormatterCode = result.exitCode
-
-	formatted, err := readCappedFile(name, maxSerializedOutputBytes)
-	if err != nil {
-		return msg, infrastructureError("read formatted source", err)
-	}
-	msg.Formatted = formatted.content
-	msg.FormattedTruncated = formatted.truncated
-	return msg, nil
-}
-
-func readCappedFile(path string, limit int) (outputChannel, error) {
-	descriptor, err := syscall.Open(
-		path,
-		syscall.O_RDONLY|syscall.O_CLOEXEC|syscall.O_NOFOLLOW,
-		0,
-	)
-	if err != nil {
-		return outputChannel{}, err
-	}
-	file := os.NewFile(uintptr(descriptor), path)
-	if file == nil {
-		_ = syscall.Close(descriptor)
-		return outputChannel{}, errors.New("open output file")
-	}
-	defer file.Close()
-	info, err := file.Stat()
-	if err != nil {
-		return outputChannel{}, err
-	}
-	if !info.Mode().IsRegular() {
-		return outputChannel{}, errors.New("output path must be a regular file")
-	}
-	data, err := io.ReadAll(io.LimitReader(file, int64(limit)+1))
-	if err != nil {
-		return outputChannel{}, err
-	}
-	truncated := len(data) > limit
-	if truncated {
-		data = data[:limit]
-	}
-	content := strings.ToValidUTF8(string(data), "\uFFFD")
-	if len(content) > limit {
-		content = validUTF8Within(content, limit)
-		truncated = true
-	}
-	return outputChannel{content: content, truncated: truncated}, nil
 }
 
 func combineOutputChannels(channels ...outputChannel) outputChannel {
@@ -1094,10 +977,10 @@ func validateCangjieToolchainLock(lock cangjieToolchainLock) error {
 	if !isReleaseIdentifier(lock.Stdx.Version) ||
 		!isLowerHexSHA256(lock.Stdx.SHA256) ||
 		lock.Stdx.ReleasePage !=
-			"https://gitcode.com/Cangjie/cangjie_stdx/releases/tag/v"+lock.Release ||
+			"https://gitcode.com/Cangjie/cangjie_stdx/releases/tag/v"+lock.Stdx.Version ||
 		lock.Stdx.URL !=
 			"https://gitcode.com/Cangjie/cangjie_stdx/releases/download/v"+
-				lock.Release+"/cangjie-stdx-linux-x64-"+lock.Stdx.Version+".zip" {
+				lock.Stdx.Version+"/cangjie-stdx-linux-x64-"+lock.Stdx.Version+".zip" {
 		return errors.New("toolchain lock stdx identity is invalid")
 	}
 	return nil
@@ -1308,7 +1191,6 @@ func newRunnerHandler(config runnerConfig, operations runnerOperations) http.Han
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/run", server.handleRun)
-	mux.HandleFunc("/format", server.handleFormat)
 	mux.HandleFunc("/", handleHealth)
 	return mux
 }
@@ -1538,39 +1420,6 @@ func (s *runnerServer) handleRun(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, message)
 }
 
-func (s *runnerServer) handleFormat(w http.ResponseWriter, r *http.Request) {
-	if !requirePost(w, r) ||
-		!s.authenticate(w, r) ||
-		!s.verifyToolchainExpectation(w, r) {
-		return
-	}
-	if _, ok := parseRequestMediaType(r, false); !ok {
-		writeError(
-			w,
-			http.StatusUnsupportedMediaType,
-			"unsupported_media_type",
-			"Content-Type must be text/plain with UTF-8 content.",
-		)
-		return
-	}
-	if !s.acquire(w) {
-		return
-	}
-	defer s.release()
-
-	body, err := readBoundedBody(w, r)
-	if err != nil {
-		writeBodyReadError(w, r, err)
-		return
-	}
-	message, err := s.operations.formatCode(r.Context(), string(body))
-	if err != nil {
-		writeOperationError(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, message)
-}
-
 func writeOperationError(w http.ResponseWriter, r *http.Request, err error) {
 	var infrastructureFailure *runnerInfrastructureError
 	if !errors.As(err, &infrastructureFailure) {
@@ -1668,9 +1517,6 @@ func main() {
 	handler := newRunnerHandler(config, runnerOperations{
 		compileAndRun: func(ctx context.Context, code, stdin string) (runMessage, error) {
 			return compileAndRunWithSettings(ctx, code, stdin, sandboxSettings)
-		},
-		formatCode: func(ctx context.Context, code string) (formatMessage, error) {
-			return formatCodeWithSettings(ctx, code, sandboxSettings)
 		},
 	})
 	server := newHTTPServer(runnerListenAddress(config, port), handler)

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  parseRunnerFormatResponse,
-  parseRunnerRunResponse,
-} from './runner-contract'
+import { parseRunnerRunResponse } from './runner-contract'
 
 const validRun = {
   phase: 'run',
@@ -44,25 +41,6 @@ describe('runner response contract', () => {
     expect(parseRunnerRunResponse({
       ...validRun,
       bin_code: Number.MAX_SAFE_INTEGER + 1,
-    })).toBeNull()
-  })
-
-  it('requires exact format fields, including both truncation facts', () => {
-    const valid = {
-      formatted: 'main() {}',
-      formatted_truncated: false,
-      formatter_output: '',
-      formatter_output_truncated: false,
-      formatter_code: 0,
-    }
-    expect(parseRunnerFormatResponse(valid)).toEqual(valid)
-    expect(parseRunnerFormatResponse({
-      ...valid,
-      formatted_truncated: undefined,
-    })).toBeNull()
-    expect(parseRunnerFormatResponse({
-      ...valid,
-      unexpected: true,
     })).toBeNull()
   })
 })

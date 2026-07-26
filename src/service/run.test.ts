@@ -45,8 +45,6 @@ describe('remoteRun', () => {
       compilerOutput: false,
       programStdout: false,
       programStderr: false,
-      formattedSource: false,
-      formatterOutput: false,
     })
   })
 

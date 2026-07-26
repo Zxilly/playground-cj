@@ -6,7 +6,7 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "prep": "node scripts/download-lsp-cli.mjs",
+    "prep": "node scripts/download-wasm-assets-cli.mjs",
     "predev": "pnpm prep",
     "dev": "next dev",
     "content-packs:generate": "tsx scripts/generate-content-packs.mts",

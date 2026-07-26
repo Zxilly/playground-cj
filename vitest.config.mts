@@ -99,8 +99,8 @@ export default defineConfig({
         // with an injected textarea editor instead.
         'src/features/teach/components/editor/CangjieMonacoEditor.tsx',
         'src/modules/i18n/**',
-        'scripts/download-lsp-cli.mjs',
-        'scripts/download-lsp.mjs',
+        'scripts/download-wasm-assets-cli.mjs',
+        'scripts/download-wasm-assets.mjs',
       ],
       thresholds: {
         branches: 70,

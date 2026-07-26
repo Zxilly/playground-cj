@@ -516,10 +516,6 @@ describe('proxyToRunner', () => {
       method: 'POST',
       body: new Uint8Array([1]),
     }), 'run')
-    const formatJsonResponse = await proxyToRunner(runnerRequest(
-      JSON.stringify({ code: 'main() {}' }),
-      { headers: { 'Content-Type': 'application/json' } },
-    ), 'format')
     const unsupportedParameterResponse = await proxyToRunner(runnerRequest(
       'main() {}',
       { headers: { 'Content-Type': 'text/plain; profile=unsafe' } },
@@ -528,7 +524,6 @@ describe('proxyToRunner', () => {
     expect(methodResponse.status).toBe(405)
     expect(methodResponse.headers.get('allow')).toBe('POST')
     expect(missingTypeResponse.status).toBe(415)
-    expect(formatJsonResponse.status).toBe(415)
     expect(unsupportedParameterResponse.status).toBe(415)
     expect(fetch).not.toHaveBeenCalled()
   })
@@ -631,7 +626,7 @@ describe('proxyToRunner', () => {
     const response = await proxyToRunner(runnerRequest(
       new Uint8Array([0xC3, 0x28]),
       { headers: { 'Content-Type': 'text/plain; charset=utf-8' } },
-    ), 'format')
+    ), 'run')
 
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toMatchObject({ code: 'invalid_utf8' })
@@ -753,13 +748,6 @@ describe('proxyToRunner', () => {
         bin_code: 0,
       }))
       .mockResolvedValueOnce(jsonResponse({
-        formatted: 'main() {}',
-        formatted_truncated: false,
-        formatter_output: '',
-        formatter_output_truncated: false,
-        formatter_code: 0,
-      }))
-      .mockResolvedValueOnce(jsonResponse({
         phase: 'run',
         compiler_output: '',
         compiler_output_truncated: false,
@@ -772,7 +760,6 @@ describe('proxyToRunner', () => {
       }))
 
     const runResponse = await proxyToRunner(runnerRequest(), 'run')
-    const formatResponse = await proxyToRunner(runnerRequest(), 'format')
     const invalidResponse = await proxyToRunner(runnerRequest(), 'run')
 
     await expect(runResponse.json()).resolves.toEqual({
@@ -785,13 +772,6 @@ describe('proxyToRunner', () => {
       bin_stderr: 'warning',
       bin_stderr_truncated: false,
       bin_code: 0,
-    })
-    await expect(formatResponse.json()).resolves.toEqual({
-      formatted: 'main() {}',
-      formatted_truncated: false,
-      formatter_output: '',
-      formatter_output_truncated: false,
-      formatter_code: 0,
     })
     expect(invalidResponse.status).toBe(502)
     await expect(invalidResponse.json()).resolves.toMatchObject({ code: 'invalid_runner_response' })

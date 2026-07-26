@@ -7,23 +7,23 @@ import {
 // Pthread workers spawned by the emscripten module inherit the JS glue's
 // query string via `import.meta.url`, so they hit the same cached URL as
 // the main thread without extra revalidation round-trips.
-const LSP_VERSION = process.env.LSP_VERSION ?? 'fallback'
+const WASM_ASSETS_VERSION = process.env.WASM_ASSETS_VERSION ?? 'fallback'
 const CJO_TARGET = process.env.CJO_TARGET ?? ''
 const CJO_MODULES = JSON.parse(process.env.CJO_MODULES ?? '[]') as readonly string[]
-const LSP_VERSION_QS = `?v=${LSP_VERSION}`
-const LSP_WASM_PATH = `/lsp/LSPServer-wasm.js${LSP_VERSION_QS}`
-const LSP_WASM_BINARY_PATH = `/lsp/LSPServer-wasm.wasm${LSP_VERSION_QS}`
+const WASM_ASSETS_VERSION_QS = `?v=${WASM_ASSETS_VERSION}`
+const LSP_WASM_PATH = `/lsp/LSPServer-wasm.js${WASM_ASSETS_VERSION_QS}`
+const LSP_WASM_BINARY_PATH = `/lsp/LSPServer-wasm.wasm${WASM_ASSETS_VERSION_QS}`
 const LSP_MODULES_PATH = '/lsp/modules'
 
 // Disable all WASM + CJO caching in dev so a freshly built wasm/cjo is
 // picked up without manually clearing site data.
 const CACHE_ENABLED = process.env.NODE_ENV !== 'development'
 
-const CACHE_STORAGE_KEY = 'lsp-cache-version'
+const CACHE_STORAGE_KEY = 'wasm-assets-cache-version'
 const WASM_CACHE_NAME_PREFIX = 'wasm-'
 const CJO_DB_NAME = 'cjo-cache'
 const CJO_STORE_NAME = 'modules'
-const wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${LSP_VERSION}`
+const wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${WASM_ASSETS_VERSION}`
 const WASM_FATAL_RE = /\babort\(|RuntimeError|Uncaught/
 
 async function checkAndUpdateCacheVersion(): Promise<void> {
@@ -34,10 +34,10 @@ async function checkAndUpdateCacheVersion(): Promise<void> {
   }
 
   const storedVersion = localStorage.getItem(CACHE_STORAGE_KEY)
-  if (storedVersion !== LSP_VERSION) {
-    console.log(`[Cache] Build version changed: ${storedVersion} -> ${LSP_VERSION}`)
+  if (storedVersion !== WASM_ASSETS_VERSION) {
+    console.log(`[Cache] Build version changed: ${storedVersion} -> ${WASM_ASSETS_VERSION}`)
     await clearAllLspCache()
-    localStorage.setItem(CACHE_STORAGE_KEY, LSP_VERSION)
+    localStorage.setItem(CACHE_STORAGE_KEY, WASM_ASSETS_VERSION)
   }
 }
 
@@ -278,7 +278,7 @@ async function initializeLspServer(
         cached++
       }
       else {
-        const url = `${LSP_MODULES_PATH}/${CJO_TARGET}/${modulePath}${LSP_VERSION_QS}`
+        const url = `${LSP_MODULES_PATH}/${CJO_TARGET}/${modulePath}${WASM_ASSETS_VERSION_QS}`
         const response = await fetch(url)
         if (response.ok) {
           const data = new Uint8Array(await response.arrayBuffer())

@@ -84,16 +84,12 @@ describe('outputPanel', () => {
             compilerOutput: true,
             programStdout: true,
             programStderr: true,
-            formattedSource: true,
-            formatterOutput: true,
           }}
         />
       </Wrapper>,
     )
 
     expect(screen.getByText('编译器输出已截断。')).toBeTruthy()
-    expect(screen.getByText('格式化器输出已截断。')).toBeTruthy()
-    expect(screen.getByText('格式化结果已截断；编辑器内容未更改。')).toBeTruthy()
     expect(screen.getByText('程序标准输出已截断。')).toBeTruthy()
     expect(screen.getByText('程序标准错误已截断。')).toBeTruthy()
   })

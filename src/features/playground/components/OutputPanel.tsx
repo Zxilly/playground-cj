@@ -56,12 +56,6 @@ export function OutputPanel({ toolOutput, programOutput, truncation }: OutputPan
             {truncation.compilerOutput && (
               <TruncationNotice><Trans>编译器输出已截断。</Trans></TruncationNotice>
             )}
-            {truncation.formatterOutput && (
-              <TruncationNotice><Trans>格式化器输出已截断。</Trans></TruncationNotice>
-            )}
-            {truncation.formattedSource && (
-              <TruncationNotice><Trans>格式化结果已截断；编辑器内容未更改。</Trans></TruncationNotice>
-            )}
           </div>
         )}
         className="flex-1/2 mb-1 lg:mb-2"

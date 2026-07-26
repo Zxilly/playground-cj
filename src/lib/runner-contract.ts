@@ -30,28 +30,16 @@ export type RunnerRunResponse
     bin_code: number
   }
 
-export interface RunnerFormatResponse {
-  formatted: string
-  formatted_truncated: boolean
-  formatter_output: string
-  formatter_output_truncated: boolean
-  formatter_code: number
-}
-
 export interface RunnerTruncationState {
   readonly compilerOutput: boolean
   readonly programStdout: boolean
   readonly programStderr: boolean
-  readonly formattedSource: boolean
-  readonly formatterOutput: boolean
 }
 
 export const NO_RUNNER_TRUNCATION: RunnerTruncationState = {
   compilerOutput: false,
   programStdout: false,
   programStderr: false,
-  formattedSource: false,
-  formatterOutput: false,
 }
 
 const RUN_RESPONSE_FIELDS = new Set([
@@ -64,14 +52,6 @@ const RUN_RESPONSE_FIELDS = new Set([
   'bin_stderr',
   'bin_stderr_truncated',
   'bin_code',
-])
-
-const FORMAT_RESPONSE_FIELDS = new Set([
-  'formatted',
-  'formatted_truncated',
-  'formatter_output',
-  'formatter_output_truncated',
-  'formatter_code',
 ])
 
 export function runnerOutputByteLength(value: string): number {
@@ -159,32 +139,5 @@ export function parseRunnerRunResponse(value: unknown): RunnerRunResponse | null
     bin_stderr: value.bin_stderr,
     bin_stderr_truncated: value.bin_stderr_truncated,
     bin_code: value.bin_code,
-  }
-}
-
-/**
- * Parse the canonical successful `/format` response with exact field and
- * per-channel UTF-8 bounds.
- */
-export function parseRunnerFormatResponse(value: unknown): RunnerFormatResponse | null {
-  if (!isObject(value) || !hasExactFields(value, FORMAT_RESPONSE_FIELDS))
-    return null
-  if (
-    typeof value.formatted !== 'string'
-    || !isWithinRunnerOutputLimit(value.formatted)
-    || typeof value.formatted_truncated !== 'boolean'
-    || typeof value.formatter_output !== 'string'
-    || !isWithinRunnerOutputLimit(value.formatter_output)
-    || typeof value.formatter_output_truncated !== 'boolean'
-    || !isSafeInteger(value.formatter_code)
-  ) {
-    return null
-  }
-  return {
-    formatted: value.formatted,
-    formatted_truncated: value.formatted_truncated,
-    formatter_output: value.formatter_output,
-    formatter_output_truncated: value.formatter_output_truncated,
-    formatter_code: value.formatter_code,
   }
 }
