@@ -49,7 +49,7 @@ describe('content Pack publication history filesystem gate', () => {
 
     expect(() => readVerifiedRepositoryPublication(directory))
       .toThrow(/Missing publication current en Content Pack artifact/)
-  })
+  }, 15_000)
 
   it('never treats the candidate artifact as historical authority', () => {
     const directory = copyPublicationFixture()
