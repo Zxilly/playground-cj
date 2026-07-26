@@ -44,7 +44,7 @@ import {
   loadCangjieToolchainLock,
   lockedCangjieCompilerIdentity,
 } from '../src/lib/teach/classroom/cangjie-toolchain'
-import { canonicalJson } from '../src/lib/teach/classroom/content-pack-version'
+import { canonicalJson } from '../src/lib/teach/classroom/canonical-json'
 import {
   generatedContentPackDirectory,
   readVerifiedPublicationHistory,

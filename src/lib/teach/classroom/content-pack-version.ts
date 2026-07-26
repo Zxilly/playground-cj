@@ -2,8 +2,6 @@ import { createHash } from 'node:crypto'
 import type { CourseContentPack, ExerciseTask } from './content-packs'
 import { canonicalJson } from './canonical-json'
 
-export { canonicalJson } from './canonical-json'
-
 export function sha256Canonical(value: unknown): string {
   return createHash('sha256')
     .update(canonicalJson(value), 'utf8')

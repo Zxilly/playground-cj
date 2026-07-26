@@ -1,8 +1,8 @@
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { createAIClassroom } from '@/lib/teach/classroom/ai-classroom'
-import { createIndexedDBContentPackCache } from '@/lib/teach/classroom/content-pack-cache'
-import { createContentPackCatalog } from '@/lib/teach/classroom/content-catalog'
-import { fetchCourseContentPacks } from '@/lib/teach/classroom/content-pack-client'
+import {
+  createCourseContentPackRepository,
+} from '@/lib/teach/classroom/content-pack-repository'
 import { createIndexedDBClassroomStorage } from '@/lib/teach/classroom/storage'
 import { createCangjieMcpKnowledgeSource } from '@/lib/teach/knowledge/cangjie-mcp-source'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
@@ -36,7 +36,7 @@ export class WorkspaceInitializationTimeoutError extends Error {
 }
 
 interface WorkspaceResources {
-  caches: Array<ReturnType<typeof createIndexedDBContentPackCache>>
+  contentPacks?: ReturnType<typeof createCourseContentPackRepository>
   storage?: ReturnType<typeof createIndexedDBClassroomStorage>
   classroom?: ReturnType<typeof createAIClassroom>
 }
@@ -219,11 +219,14 @@ async function disposeWorkspaceResources(
       return Promise.reject(error)
     }
   }
-  // Content caches are independent, so their closes may overlap the aggregate
-  // drain. Storage is dependent and must remain open until that drain settles.
-  const cacheReleases = resources.caches.map(cache =>
-    attemptRelease(() => cache.close()))
-  const cacheResults = Promise.allSettled(cacheReleases)
+  // Curriculum ownership is independent, so it may close while the aggregate
+  // drains. Storage is dependent and remains open until that drain settles.
+  const contentPackRelease = resources.contentPacks
+    ? attemptRelease(() => resources.contentPacks!.close())
+    : undefined
+  const contentPackResult = contentPackRelease
+    ? Promise.allSettled([contentPackRelease])
+    : Promise.resolve([])
   const orderedResults: Array<PromiseSettledResult<void>> = []
   const classroom = resources.classroom
   const classroomRelease = classroom
@@ -256,7 +259,7 @@ async function disposeWorkspaceResources(
 
   const failures = [
     ...orderedResults,
-    ...await cacheResults,
+    ...await contentPackResult,
   ]
     .filter((result): result is PromiseRejectedResult =>
       result.status === 'rejected')
@@ -278,7 +281,7 @@ export async function createWorkspaceCollaborators(
   options: CreateWorkspaceCollaboratorsOptions = {},
 ): Promise<WorkspaceCollaborators> {
   const selectedLocale: ContentLocale = lang === 'en' ? 'en' : 'zh'
-  const resources: WorkspaceResources = { caches: [] }
+  const resources: WorkspaceResources = {}
   const boundary = createInitializationBoundary(
     options.signal,
     options.timeoutMs ?? DEFAULT_WORKSPACE_INITIALIZATION_TIMEOUT_MS,
@@ -290,43 +293,16 @@ export async function createWorkspaceCollaborators(
     initializationOwnership = createInitializationOperationOwnership()
     throwIfAborted(boundary.signal)
 
-    const englishCache = createIndexedDBContentPackCache({ locale: 'en' })
-    resources.caches.push(englishCache)
-    const chineseCache = createIndexedDBContentPackCache({ locale: 'zh' })
-    resources.caches.push(chineseCache)
+    resources.contentPacks = createCourseContentPackRepository()
     resources.storage = createIndexedDBClassroomStorage({
       scope: CLASSROOM_STORAGE_SCOPE,
     })
 
-    const [englishResponseResult, chineseResponseResult]
-      = await initializationOwnership.wait(Promise.allSettled([
-        fetchCourseContentPacks('en', { signal: boundary.signal }),
-        fetchCourseContentPacks('zh', { signal: boundary.signal }),
-      ]), boundary.signal)
-    throwIfAborted(boundary.signal)
-    if (englishResponseResult.status === 'rejected')
-      throw englishResponseResult.reason
-    if (chineseResponseResult.status === 'rejected')
-      throw chineseResponseResult.reason
-
-    const responses = {
-      en: englishResponseResult.value,
-      zh: chineseResponseResult.value,
-    }
-    const [englishPacksResult, chinesePacksResult]
-      = await initializationOwnership.wait(Promise.allSettled([
-        englishCache.merge(responses.en),
-        chineseCache.merge(responses.zh),
-      ]), boundary.signal)
-    throwIfAborted(boundary.signal)
-    if (englishPacksResult.status === 'rejected')
-      throw englishPacksResult.reason
-    if (chinesePacksResult.status === 'rejected')
-      throw chinesePacksResult.reason
-
-    const catalog = createContentPackCatalog(
-      [...englishPacksResult.value, ...chinesePacksResult.value],
-      responses[selectedLocale].currentVersions,
+    const catalog = await initializationOwnership.wait(
+      resources.contentPacks.open(selectedLocale, {
+        signal: boundary.signal,
+      }),
+      boundary.signal,
     )
     resources.classroom = createAIClassroom({
       catalog,

@@ -18,9 +18,9 @@ import {
 import {
   assignBilingualLearningContractVersions,
   assignImmutableContentVersion,
-  canonicalJson,
   sha256Canonical,
 } from './content-pack-version'
+import { canonicalJson } from './canonical-json'
 
 const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/)
 const currentVersionsSchema = z.record(
