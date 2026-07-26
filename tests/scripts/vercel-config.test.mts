@@ -32,11 +32,15 @@ describe('vercel deployment input', () => {
       .filter(line => line && !line.startsWith('#'))
 
     expect(ignoredPaths).toEqual(expect.arrayContaining([
-      '.next/',
-      'node_modules/',
+      '/*',
+      '!package.json',
+      '!pnpm-lock.yaml',
+      '!patches',
+      '!public',
       'public/lsp/',
-      '.env',
-      '.env.*',
+      '!scripts',
+      '!src',
+      '!tour',
     ]))
   })
 })
