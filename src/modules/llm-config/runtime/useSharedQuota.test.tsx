@@ -2,11 +2,6 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useSharedQuota } from '@/modules/llm-config/runtime/useSharedQuota'
 
-const fetchTokenUsageMock = vi.hoisted(() => vi.fn())
-vi.mock('@/modules/llm-config/runtime/new-api-client', () => ({
-  fetchTokenUsage: fetchTokenUsageMock,
-}))
-
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
   return {
     ok: !init?.status || (init.status >= 200 && init.status < 300),
@@ -18,7 +13,6 @@ function jsonResponse(body: unknown, init?: ResponseInit): Response {
 describe('useSharedQuota', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
-    fetchTokenUsageMock.mockReset()
   })
 
   afterEach(() => {
@@ -32,26 +26,35 @@ describe('useSharedQuota', () => {
   })
 
   it('reports loading immediately, then the computed percentage', async () => {
-    vi.mocked(fetch).mockResolvedValue(jsonResponse({ apiKey: 'shared-key', quota: { perPeriod: 1_000_000 } }))
-    fetchTokenUsageMock.mockResolvedValue({
-      ok: true,
-      usage: { totalGranted: 2_000_000, totalUsed: 1_750_000, totalAvailable: 250_000 },
-    })
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({
+      transport: 'shared-gateway',
+      model: 'server-model',
+      quota: {
+        nextResetAt: 2_000,
+        perPeriod: 1_000_000,
+        available: 250_000,
+        exhausted: false,
+      },
+    }))
 
     const { result } = renderHook(() => useSharedQuota(true))
 
     expect(result.current.loading).toBe(true)
     await waitFor(() => expect(result.current).toEqual({ percent: 25, loading: false }))
     expect(fetch).toHaveBeenCalledWith('/api/ai-key', { method: 'GET' })
-    expect(fetchTokenUsageMock).toHaveBeenCalledWith('shared-key')
   })
 
-  it('clamps to 100 when available exceeds the period budget', async () => {
-    vi.mocked(fetch).mockResolvedValue(jsonResponse({ apiKey: 'shared-key', quota: { perPeriod: 1_000_000 } }))
-    fetchTokenUsageMock.mockResolvedValue({
-      ok: true,
-      usage: { totalGranted: 1_200_000, totalUsed: 0, totalAvailable: 1_200_000 },
-    })
+  it('reports 100 when the full period budget is available', async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({
+      transport: 'shared-gateway',
+      model: 'server-model',
+      quota: {
+        nextResetAt: 2_000,
+        perPeriod: 1_000_000,
+        available: 1_000_000,
+        exhausted: false,
+      },
+    }))
 
     const { result } = renderHook(() => useSharedQuota(true))
 
@@ -59,8 +62,7 @@ describe('useSharedQuota', () => {
   })
 
   it('resolves to no percentage (and stops loading) when the usage probe fails', async () => {
-    vi.mocked(fetch).mockResolvedValue(jsonResponse({ apiKey: 'shared-key', quota: { perPeriod: 1_000_000 } }))
-    fetchTokenUsageMock.mockResolvedValue({ ok: false, error: 'HTTP 500' })
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({}, { status: 500 }))
 
     const { result } = renderHook(() => useSharedQuota(true))
 
@@ -68,11 +70,14 @@ describe('useSharedQuota', () => {
   })
 
   it('resolves to no percentage when the key response omits perPeriod', async () => {
-    vi.mocked(fetch).mockResolvedValue(jsonResponse({ apiKey: 'shared-key', quota: {} }))
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({
+      transport: 'shared-gateway',
+      model: 'server-model',
+      quota: {},
+    }))
 
     const { result } = renderHook(() => useSharedQuota(true))
 
     await waitFor(() => expect(result.current).toEqual({ percent: null, loading: false }))
-    expect(fetchTokenUsageMock).not.toHaveBeenCalled()
   })
 })

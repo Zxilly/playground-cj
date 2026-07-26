@@ -6,7 +6,9 @@ import {
   normaliseLLMConfig,
   OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
   resolveProviderDefaults,
-  switchProviderPreservingKey,
+  resolveSharedGatewayConfig,
+  SHARED_GATEWAY_BASE_URL,
+  switchProvider,
 } from './model-provider'
 
 const openAIModelMock = vi.hoisted(() => vi.fn(model => ({ provider: 'openai-compatible', model })))
@@ -88,17 +90,28 @@ describe('model provider config', () => {
     expect(isLLMConfigReady({ apiKey: '' })).toBe(false)
   })
 
-  it('switches provider defaults while preserving the current api key', () => {
-    const switched = switchProviderPreservingKey({
+  it('clears the credential when switching provider families', () => {
+    const switched = switchProvider({
       provider: 'openai-compatible',
       baseURL: 'https://openai-compatible.test/v1',
       apiKey: 'user-key',
       model: 'gpt-model',
     }, 'anthropic')
 
-    expect(switched).toEqual({
-      ...resolveProviderDefaults('anthropic'),
-      apiKey: 'user-key',
+    expect(switched).toEqual(resolveProviderDefaults('anthropic'))
+  })
+
+  it('does not erase edits when the selected provider is clicked again', () => {
+    const current = {
+      provider: 'anthropic' as const,
+      baseURL: 'https://anthropic-proxy.test/v1',
+      apiKey: 'anthropic-key',
+      model: 'claude-custom',
+    }
+
+    expect(switchProvider(current, 'anthropic')).toEqual({
+      ...current,
+      transport: 'direct',
     })
   })
 
@@ -117,6 +130,27 @@ describe('model provider config', () => {
     })
     expect(openAIModelMock).toHaveBeenCalledWith('gpt-test')
     expect(model).toEqual({ provider: 'openai-compatible', model: 'gpt-test' })
+  })
+
+  it('uses the same-origin gateway without a browser credential for shared service', () => {
+    const config = resolveSharedGatewayConfig('shared-model')
+
+    expect(config).toEqual({
+      transport: 'shared-gateway',
+      provider: 'openai-compatible',
+      baseURL: SHARED_GATEWAY_BASE_URL,
+      apiKey: '',
+      model: 'shared-model',
+    })
+    expect(isLLMConfigReady(config)).toBe(true)
+
+    createConfiguredModel(config, 'classroom-chat')
+
+    expect(createOpenAICompatibleMock).toHaveBeenCalledWith({
+      name: 'classroom-chat',
+      baseURL: new URL(SHARED_GATEWAY_BASE_URL, window.location.origin).toString(),
+    })
+    expect(openAIModelMock).toHaveBeenCalledWith('shared-model')
   })
 
   it('creates an Anthropic model without passing the OpenAI-compatible provider name', () => {

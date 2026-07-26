@@ -101,9 +101,14 @@ function describedByText(element: HTMLElement): string {
 describe('quotaExhaustedDialog', () => {
   beforeEach(() => {
     useLLMConfigStore.setState({
-      config: { ...DEFAULT_LLM_CONFIG, apiKey: 'auto-key' },
+      config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
-      autoQuota: { exhausted: true, nextResetAt: Date.now() + 90 * 60_000 },
+      autoQuota: {
+        exhausted: true,
+        nextResetAt: Date.now() + 90 * 60_000,
+        perPeriod: 1_000_000,
+        available: 0,
+      },
       settingsDialogOpen: false,
     })
   })

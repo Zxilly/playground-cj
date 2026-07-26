@@ -19,15 +19,14 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
 import type { LLMConfig } from '@/lib/ai/model-provider'
-import { isUserConfigIncomplete } from '@/lib/ai/model-provider'
+import { isUserConfigIncomplete, resolveProviderDefaults } from '@/lib/ai/model-provider'
 import { LLMConfigFields } from '@/modules/llm-config/components/LLMConfigFields'
 import { formatResetMoment } from '@/modules/llm-config/runtime/format-reset-moment'
-import { fetchTokenUsage } from '@/modules/llm-config/runtime/new-api-client'
+import { fetchSharedGatewayMetadata } from '@/modules/llm-config/runtime/shared-gateway-client'
 
 type ConfigMode = 'shared' | 'custom'
 
 interface UsageState {
-  apiKey?: string
   totalGranted: number
   totalUsed: number
   totalAvailable: number
@@ -37,11 +36,25 @@ interface UsageState {
 
 const QUOTA_PER_USD = 500_000
 
-async function fetchUsage(apiKey: string): Promise<UsageState> {
-  const result = await fetchTokenUsage(apiKey)
-  if (!result.ok)
-    return { totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: false, error: result.error }
-  return { ...result.usage, loading: false }
+async function fetchUsage(): Promise<UsageState> {
+  try {
+    const { quota } = await fetchSharedGatewayMetadata()
+    return {
+      totalGranted: quota.perPeriod,
+      totalUsed: Math.max(0, quota.perPeriod - quota.available),
+      totalAvailable: quota.available,
+      loading: false,
+    }
+  }
+  catch (error) {
+    return {
+      totalGranted: 0,
+      totalUsed: 0,
+      totalAvailable: 0,
+      loading: false,
+      error: error instanceof Error ? error.message : 'unknown error',
+    }
+  }
 }
 
 function quotaToUSD(q: number): string {
@@ -109,21 +122,22 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
   const usingAuto = keySource === 'auto'
   const usingShared = mode === 'shared'
   const userConfigIncomplete = mode === 'custom' && isUserConfigIncomplete(draft)
-  const usageApiKey = usingShared && usingAuto ? config.apiKey : ''
-  const showUsage = open && usageApiKey.length > 0
+  const showUsage = open && usingShared && usingAuto
 
   useEffect(() => {
     if (!showUsage)
       return
     let cancelled = false
-    void fetchUsage(usageApiKey).then((u) => {
+    // eslint-disable-next-line react/set-state-in-effect -- every dialog open starts a distinct metadata request
+    setUsage({ totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: true })
+    void fetchUsage().then((u) => {
       if (!cancelled)
-        setUsage({ ...u, apiKey: usageApiKey })
+        setUsage(u)
     })
     return () => {
       cancelled = true
     }
-  }, [showUsage, usageApiKey])
+  }, [showUsage])
 
   const handleSave = () => {
     if (usingShared) {
@@ -147,15 +161,11 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
     setDraft(createEditableDraft(DEFAULT_LLM_CONFIG, 'auto'))
   }
 
-  const visibleUsage: UsageState = usage.apiKey === usageApiKey
-    ? usage
-    : { totalGranted: 0, totalUsed: 0, totalAvailable: 0, loading: true }
+  const visibleUsage = usage
   const usageReady = !visibleUsage.loading && !visibleUsage.error
   const available = visibleUsage.totalAvailable
-  // Prefer the per-period (daily) budget so the meter shows *today's* usage, not
-  // the token's cumulative lifetime total (total_granted/total_used keep climbing
-  // across daily resets, which made a fresh user look ~half spent). Fall back to
-  // the cumulative figures only when the budget is unknown (older cached key).
+  // Prefer the bootstrap snapshot when present. The direct metadata request uses
+  // the same per-period total, so the fallback has identical semantics.
   const dailyBudget = autoQuota?.perPeriod
   const hasDailyBudget = typeof dailyBudget === 'number' && dailyBudget > 0
   const meterTotal = hasDailyBudget ? dailyBudget : visibleUsage.totalGranted
@@ -200,7 +210,15 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
         </DialogHeader>
 
         {/* Explicit source toggle: shared quota vs. a personal key. */}
-        <Tabs value={mode} onValueChange={value => setMode(value as ConfigMode)}>
+        <Tabs
+          value={mode}
+          onValueChange={(value) => {
+            const nextMode = value as ConfigMode
+            if (nextMode === 'custom' && draft.transport === 'shared-gateway')
+              setDraft(resolveProviderDefaults('openai-compatible'))
+            setMode(nextMode)
+          }}
+        >
           <TabsList aria-label={t`AI 服务来源`} className="grid w-full grid-cols-2">
             <TabsTrigger value="shared">
               <Wallet aria-hidden="true" className="size-3.5" />

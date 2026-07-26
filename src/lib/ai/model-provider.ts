@@ -5,14 +5,17 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import type { LanguageModel } from 'ai'
 
 export type LLMProvider = 'openai-compatible' | 'anthropic'
+export type LLMTransport = 'direct' | 'shared-gateway'
 
 export interface LLMConfig {
+  transport?: LLMTransport
   provider: LLMProvider
   baseURL: string
   apiKey: string
   model: string
 }
 
+export const SHARED_GATEWAY_BASE_URL = '/api/ai-gateway/v1'
 export const OPENAI_COMPATIBLE_DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_LLM_BASE_URL || 'https://llm.learningman.top/v1'
 export const OPENAI_COMPATIBLE_DEFAULT_MODEL = process.env.NEXT_PUBLIC_LLM_DEFAULT_MODEL || 'gpt-4o-mini'
 export const ANTHROPIC_DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_ANTHROPIC_BASE_URL || 'https://api.anthropic.com/v1'
@@ -31,12 +34,14 @@ export function providerLabel(provider: LLMProvider): string {
 export function resolveProviderDefaults(provider: LLMProvider): LLMConfig {
   return provider === 'anthropic'
     ? {
+        transport: 'direct',
         provider,
         baseURL: ANTHROPIC_DEFAULT_BASE_URL,
         apiKey: '',
         model: ANTHROPIC_DEFAULT_MODEL,
       }
     : {
+        transport: 'direct',
         provider,
         baseURL: OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
         apiKey: '',
@@ -44,17 +49,30 @@ export function resolveProviderDefaults(provider: LLMProvider): LLMConfig {
       }
 }
 
-export function switchProviderPreservingKey(current: LLMConfig, provider: LLMProvider): LLMConfig {
+export function resolveSharedGatewayConfig(model = OPENAI_COMPATIBLE_DEFAULT_MODEL): LLMConfig {
   return {
-    ...resolveProviderDefaults(provider),
-    apiKey: current.apiKey,
+    transport: 'shared-gateway',
+    provider: 'openai-compatible',
+    baseURL: SHARED_GATEWAY_BASE_URL,
+    apiKey: '',
+    model: model.trim(),
   }
 }
 
+export function switchProvider(current: LLMConfig, provider: LLMProvider): LLMConfig {
+  if (current.provider === provider && current.transport !== 'shared-gateway')
+    return { ...current, transport: 'direct' }
+  return resolveProviderDefaults(provider)
+}
+
 export function normaliseLLMConfig(input: Partial<LLMConfig>): LLMConfig {
+  if (input.transport === 'shared-gateway')
+    return resolveSharedGatewayConfig(input.model)
+
   const provider = isLLMProvider(input.provider) ? input.provider : 'openai-compatible'
   const defaults = resolveProviderDefaults(provider)
   return {
+    transport: 'direct',
     provider,
     baseURL: input.baseURL === undefined ? defaults.baseURL : input.baseURL.trim(),
     apiKey: input.apiKey ?? '',
@@ -64,6 +82,8 @@ export function normaliseLLMConfig(input: Partial<LLMConfig>): LLMConfig {
 
 export function isLLMConfigReady(config: Partial<LLMConfig>): boolean {
   const next = normaliseLLMConfig(config)
+  if (next.transport === 'shared-gateway')
+    return Boolean(next.model)
   return Boolean(next.baseURL && next.apiKey && next.model)
 }
 
@@ -79,6 +99,14 @@ export function isUserConfigIncomplete(config: LLMConfig): boolean {
 
 export function createConfiguredModel(config: Partial<LLMConfig>, name = 'tour-llm'): LanguageModel {
   const next = normaliseLLMConfig(config)
+  if (next.transport === 'shared-gateway') {
+    const origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin
+    const compatible = createOpenAICompatible({
+      name,
+      baseURL: new URL(SHARED_GATEWAY_BASE_URL, origin).toString(),
+    })
+    return compatible(next.model)
+  }
   if (next.provider === 'anthropic') {
     const anthropic = createAnthropic({
       apiKey: next.apiKey,

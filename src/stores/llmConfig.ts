@@ -3,32 +3,23 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import {
-
   normaliseLLMConfig,
-  resolveProviderDefaults,
+  resolveSharedGatewayConfig,
 } from '@/lib/ai/model-provider'
 import type { LLMConfig } from '@/lib/ai/model-provider'
 
 export type LLMKeySource = 'auto' | 'user'
 export type { LLMConfig } from '@/lib/ai/model-provider'
 
-export const DEFAULT_LLM_CONFIG: LLMConfig = resolveProviderDefaults('openai-compatible')
+export const DEFAULT_LLM_CONFIG: LLMConfig = resolveSharedGatewayConfig()
 
 export interface AutoQuotaState {
   readonly nextResetAt: number
   readonly exhausted: boolean
-  /**
-   * The shared per-IP allowance granted each reset period (quota units). Lets the
-   * settings dialog show today's usage against today's budget instead of the
-   * token's cumulative lifetime total. Optional: absent for older cached keys.
-   */
-  readonly perPeriod?: number
-  /**
-   * Remaining quota units in the current period (from the usage probe). Combined
-   * with `perPeriod` it yields "today's remaining" as a percentage. Optional:
-   * absent when the usage probe was unavailable.
-   */
-  readonly available?: number
+  /** Allowance granted to this trusted quota bucket for the current period. */
+  readonly perPeriod: number
+  /** Remaining quota reported by the server-side gateway. */
+  readonly available: number
 }
 
 interface LLMConfigState {
@@ -38,10 +29,24 @@ interface LLMConfigState {
   readonly settingsDialogOpen: boolean
   readonly setConfig: (next: LLMConfig) => void
   readonly setSharedConfig: () => void
-  readonly applyAutoKey: (next: Partial<LLMConfig> & { apiKey: string }) => void
+  readonly applyAutoConfig: (next: { model: string }) => void
   readonly setAutoQuota: (next: AutoQuotaState | null) => void
   readonly setSettingsDialogOpen: (open: boolean) => void
   readonly reset: () => void
+}
+
+interface PersistedLLMConfig {
+  readonly keySource?: LLMKeySource
+  readonly config?: Partial<LLMConfig>
+}
+
+export function sanitizePersistedLLMConfig(saved: PersistedLLMConfig): LLMConfig {
+  if (saved.keySource !== 'user')
+    return resolveSharedGatewayConfig(saved.config?.model)
+  return normaliseLLMConfig({
+    ...saved.config,
+    transport: 'direct',
+  })
 }
 
 export const useLLMConfigStore = create<LLMConfigState>()(
@@ -51,18 +56,22 @@ export const useLLMConfigStore = create<LLMConfigState>()(
       keySource: 'auto',
       autoQuota: null,
       settingsDialogOpen: false,
-      setConfig: next => set({ config: normaliseLLMConfig(next), keySource: 'user', autoQuota: null }),
+      setConfig: next => set({
+        config: normaliseLLMConfig({ ...next, transport: 'direct' }),
+        keySource: 'user',
+        autoQuota: null,
+      }),
       setSharedConfig: () => set({
-        config: normaliseLLMConfig(DEFAULT_LLM_CONFIG),
+        config: resolveSharedGatewayConfig(),
         keySource: 'auto',
         autoQuota: null,
       }),
-      applyAutoKey: next =>
+      applyAutoConfig: next =>
         set((state) => {
           if (state.keySource !== 'auto')
             return state
           return {
-            config: normaliseLLMConfig({ ...state.config, ...next }),
+            config: resolveSharedGatewayConfig(next.model),
           }
         }),
       setAutoQuota: next => set({ autoQuota: next }),
@@ -71,14 +80,32 @@ export const useLLMConfigStore = create<LLMConfigState>()(
     }),
     {
       name: 'tour-ai:config',
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: state => ({ config: state.config, keySource: state.keySource }),
+      migrate: (persisted) => {
+        const saved = persisted as PersistedLLMConfig
+        const keySource = saved.keySource === 'user' ? 'user' : 'auto'
+        return {
+          ...saved,
+          keySource,
+          config: sanitizePersistedLLMConfig({
+            keySource,
+            config: saved.config,
+          }),
+        }
+      },
       merge: (persisted, current) => {
         const saved = persisted as Partial<LLMConfigState>
+        const keySource = saved.keySource === 'user' ? 'user' : 'auto'
         return {
           ...current,
           ...saved,
-          config: normaliseLLMConfig(saved.config ?? current.config),
+          keySource,
+          config: sanitizePersistedLLMConfig({
+            keySource,
+            config: saved.config,
+          }),
         }
       },
     },

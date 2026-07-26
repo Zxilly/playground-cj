@@ -140,9 +140,9 @@ describe('llmConfigDialog', () => {
     vi.unstubAllGlobals()
   })
 
-  it('opens shared quota settings without exposing the auto key', async () => {
+  it('opens shared quota settings without exposing gateway internals', async () => {
     useLLMConfigStore.setState({
-      config: { ...DEFAULT_LLM_CONFIG, apiKey: 'auto-key' },
+      config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
     })
     const fetchMock = vi.fn().mockResolvedValue(responseWithUsage({
@@ -170,27 +170,29 @@ describe('llmConfigDialog', () => {
     expect(screen.queryByLabelText('模型')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Anthropic' })).toBeNull()
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/api/usage/token/'),
-        expect.objectContaining({ headers: { Authorization: 'Bearer auto-key' } }),
-      )
+      expect(fetchMock).toHaveBeenCalledWith('/api/ai-key', { method: 'GET' })
     })
     expect(screen.getByRole('status').textContent).toContain('剩余')
     expect(screen.getByRole('progressbar', { name: '共享额度已使用量' }).getAttribute('aria-valuenow')).toBe('1000')
   })
 
   it('meters todays usage against the daily budget, not the cumulative lifetime total', async () => {
-    // A fresh day: the per-IP token was refilled to the daily budget (1,000,000 =
-    // $2), but its lifetime counters keep climbing. The meter must show today's
-    // usage (0) against today's budget ($2), not the cumulative $4.18.
+    // A fresh day: the trusted-identity token was refilled to the daily budget
+    // (1,000,000 = $2), but its lifetime counters keep climbing. The meter must
+    // show today's usage (0) against today's budget ($2), not cumulative $4.18.
     useLLMConfigStore.setState({
-      config: { ...DEFAULT_LLM_CONFIG, apiKey: 'auto-key' },
+      config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
-      autoQuota: { nextResetAt: 1_700_000_000_000, exhausted: false, perPeriod: 1_000_000 },
+      autoQuota: {
+        nextResetAt: 1_700_000_000_000,
+        exhausted: false,
+        perPeriod: 1_000_000,
+        available: 1_000_000,
+      },
     })
     const fetchMock = vi.fn().mockResolvedValue(responseWithUsage({
-      total_granted: 2_093_700,
-      total_used: 1_093_700,
+      total_granted: 1_000_000,
+      total_used: 0,
       total_available: 1_000_000,
     }))
     vi.stubGlobal('fetch', fetchMock)
@@ -215,7 +217,7 @@ describe('llmConfigDialog', () => {
 
   it('uses compiled English copy for shared quota settings boundaries', async () => {
     useLLMConfigStore.setState({
-      config: { ...DEFAULT_LLM_CONFIG, apiKey: 'auto-key' },
+      config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
     })
     const fetchMock = vi.fn().mockResolvedValue(responseWithUsage({
@@ -346,7 +348,12 @@ describe('llmConfigDialog', () => {
         model: 'claude-test',
       },
       keySource: 'user',
-      autoQuota: { exhausted: true, nextResetAt: 1_700_000_000_000 },
+      autoQuota: {
+        exhausted: true,
+        nextResetAt: 1_700_000_000_000,
+        perPeriod: 1_000_000,
+        available: 0,
+      },
       settingsDialogOpen: false,
     })
 
@@ -466,16 +473,19 @@ describe('llmConfigDialog', () => {
     expect(useLLMConfigStore.getState().config.apiKey).toBe('user-key')
   })
 
-  it('keeps shared quota semantics when saving an auto-key dialog without a user key', async () => {
+  it('keeps shared quota semantics when saving a shared-gateway dialog', async () => {
     useLLMConfigStore.setState({
       config: {
-        provider: 'anthropic',
-        baseURL: 'https://api.anthropic.test/v1',
-        apiKey: 'auto-key',
+        ...DEFAULT_LLM_CONFIG,
         model: 'auto-model',
       },
       keySource: 'auto',
-      autoQuota: { exhausted: false, nextResetAt: 1_700_000_000_000 },
+      autoQuota: {
+        exhausted: false,
+        nextResetAt: 1_700_000_000_000,
+        perPeriod: 1_000_000,
+        available: 1_000_000,
+      },
       settingsDialogOpen: false,
     })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(responseWithUsage({
@@ -491,7 +501,7 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
-    // Opens on the shared tab (auto key source); saving keeps shared semantics.
+    // Opens on the shared tab (gateway source); saving keeps shared semantics.
     expect(screen.getByRole('tab', { name: '共享额度' }).getAttribute('aria-selected')).toBe('true')
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
 
@@ -503,9 +513,9 @@ describe('llmConfigDialog', () => {
     expect(useLLMConfigStore.getState().settingsDialogOpen).toBe(false)
   })
 
-  it('shows a fresh loading state when fetching usage for a new auto key', async () => {
+  it('shows a fresh loading state when fetching a new shared quota snapshot', async () => {
     useLLMConfigStore.setState({
-      config: { ...DEFAULT_LLM_CONFIG, apiKey: 'auto-key-1' },
+      config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
     })
     const secondUsage = deferred<Response>()
@@ -526,7 +536,7 @@ describe('llmConfigDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: '取消' }))
     act(() => {
       useLLMConfigStore.setState({
-        config: { ...DEFAULT_LLM_CONFIG, apiKey: 'auto-key-2' },
+        config: { ...DEFAULT_LLM_CONFIG, model: 'server-model-2' },
         keySource: 'auto',
       })
     })
@@ -541,10 +551,16 @@ describe('llmConfigDialog', () => {
 })
 
 function responseWithUsage(data: { total_granted: number, total_used: number, total_available: number }) {
-  return {
-    ok: true,
-    json: async () => ({ data }),
-  } as Response
+  return Response.json({
+    transport: 'shared-gateway',
+    model: 'server-model',
+    quota: {
+      nextResetAt: 1_700_000_000_000,
+      perPeriod: data.total_granted,
+      available: data.total_available,
+      exhausted: data.total_available <= 0,
+    },
+  })
 }
 
 function deferred<T>() {

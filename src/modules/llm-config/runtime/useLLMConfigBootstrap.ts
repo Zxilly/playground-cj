@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
-import { fetchTokenUsage, isUsageExhausted } from '@/modules/llm-config/runtime/new-api-client'
-import type { TokenUsage } from '@/modules/llm-config/runtime/new-api-client'
+import { fetchSharedGatewayMetadata } from '@/modules/llm-config/runtime/shared-gateway-client'
 
 export interface LLMConfigBootstrapState {
   status: 'loading' | 'ready' | 'error'
@@ -14,77 +13,50 @@ interface UseLLMConfigBootstrapOptions {
   reportErrors?: boolean
 }
 
-interface AiKeyResponse {
-  baseURL: string
-  apiKey: string
-  model: string
-  quota?: { nextResetAt?: number, perPeriod?: number }
-}
-
-async function probeAutoQuotaUsage(apiKey: string): Promise<TokenUsage | null> {
-  const result = await fetchTokenUsage(apiKey)
-  if (!result.ok || result.usage.totalGranted <= 0)
-    return null
-  return result.usage
-}
-
 export function useLLMConfigBootstrap({
   reportErrors = true,
 }: UseLLMConfigBootstrapOptions = {}): LLMConfigBootstrapState {
-  const apiKey = useLLMConfig().apiKey
+  const config = useLLMConfig()
   const keySource = useLLMConfigStore(s => s.keySource)
   const autoQuota = useLLMConfigStore(s => s.autoQuota)
-  const applyAutoKey = useLLMConfigStore(s => s.applyAutoKey)
+  const applyAutoConfig = useLLMConfigStore(s => s.applyAutoConfig)
   const setAutoQuota = useLLMConfigStore(s => s.setAutoQuota)
-  const setSharedConfig = useLLMConfigStore(s => s.setSharedConfig)
   const [error, setError] = useState<string | undefined>()
+  const [loaded, setLoaded] = useState(false)
+  const [refreshGeneration, setRefreshGeneration] = useState(0)
+  const hasRequestedAutoConfigRef = useRef(false)
 
   useEffect(() => {
     if (keySource !== 'auto' || !autoQuota?.exhausted)
       return
 
-    const delay = autoQuota.nextResetAt - Date.now()
-    if (delay <= 0) {
-      setSharedConfig()
+    const delay = Math.max(0, autoQuota.nextResetAt - Date.now())
+    // The initial bootstrap below already refreshes an expired persisted config.
+    // Only schedule another request when quota becomes overdue after that first
+    // request has run.
+    if (delay === 0 && !hasRequestedAutoConfigRef.current)
       return
-    }
 
-    const id = window.setTimeout(setSharedConfig, delay)
+    const id = window.setTimeout(
+      () => setRefreshGeneration(generation => generation + 1),
+      delay,
+    )
     return () => window.clearTimeout(id)
-  }, [autoQuota?.exhausted, autoQuota?.nextResetAt, keySource, setSharedConfig])
+  }, [autoQuota?.exhausted, autoQuota?.nextResetAt, keySource])
 
   useEffect(() => {
-    if (apiKey || keySource !== 'auto')
+    if (keySource !== 'auto')
       return
     let cancelled = false
-    fetch('/api/ai-key', { method: 'GET' })
-      .then(async (resp) => {
-        if (!resp.ok)
-          throw new Error(`HTTP ${resp.status}`)
-        return resp.json() as Promise<AiKeyResponse>
-      })
-      .then(async (data) => {
+    hasRequestedAutoConfigRef.current = true
+    fetchSharedGatewayMetadata()
+      .then((data) => {
         if (cancelled)
           return
-        const nextResetAt = data.quota?.nextResetAt
-        const perPeriod = data.quota?.perPeriod
-        const usage = typeof nextResetAt === 'number'
-          ? await probeAutoQuotaUsage(data.apiKey)
-          : null
-        if (cancelled)
-          return
-        // Update quota state before applyAutoKey, since applying the key
-        // changes config.apiKey which is a dependency of this effect — the
-        // resulting re-run flips `cancelled` and would drop any later writes.
-        if (typeof nextResetAt === 'number') {
-          setAutoQuota({
-            nextResetAt,
-            exhausted: usage ? isUsageExhausted(usage) : false,
-            perPeriod,
-            available: usage?.totalAvailable,
-          })
-        }
-        applyAutoKey(data)
+        setAutoQuota(data.quota)
+        applyAutoConfig({ model: data.model })
+        setError(undefined)
+        setLoaded(true)
       })
       .catch((e: Error) => {
         if (!cancelled && reportErrors)
@@ -93,13 +65,13 @@ export function useLLMConfigBootstrap({
     return () => {
       cancelled = true
     }
-  }, [apiKey, keySource, applyAutoKey, setAutoQuota, reportErrors])
+  }, [keySource, refreshGeneration, applyAutoConfig, setAutoQuota, reportErrors])
 
-  if (apiKey)
-    return { status: 'ready' }
   if (keySource !== 'auto')
     return { status: 'ready' }
   if (error)
     return { status: 'error', error }
+  if (loaded && autoQuota !== null && config.transport === 'shared-gateway')
+    return { status: 'ready' }
   return { status: 'loading' }
 }

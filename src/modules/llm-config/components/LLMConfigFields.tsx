@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import type { LLMConfig, LLMProvider } from '@/lib/ai/model-provider'
-import { providerLabel, switchProviderPreservingKey } from '@/lib/ai/model-provider'
+import { providerLabel, switchProvider } from '@/lib/ai/model-provider'
 
 const PROVIDERS = ['openai-compatible', 'anthropic'] satisfies LLMProvider[]
 
@@ -69,7 +69,7 @@ export function LLMConfigFields({ value, onChange, apiKeyDescribedBy, apiKeyPlac
               variant={value.provider === provider ? 'default' : 'outline'}
               size="sm"
               aria-pressed={value.provider === provider}
-              onClick={() => onChange(switchProviderPreservingKey(value, provider))}
+              onClick={() => onChange(switchProvider(value, provider))}
               className="cursor-pointer"
             >
               {providerLabel(provider)}
