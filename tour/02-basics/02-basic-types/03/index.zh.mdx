@@ -11,7 +11,7 @@
 <CompareGroup>
 
 <CompareWith lang="c">
-C 没有原生布尔类型，通常用整数 0（假）和非零（真）表示；仓颉的 `Bool` 是一个独立类型，更严格。
+C99 引入了 `_Bool`，其 `<stdbool.h>` 头文件还定义了 `bool`、`true` 和 `false` 宏；`_Bool` 是整数类型并可与其他整数类型转换，而仓颉的 `Bool` 不与整数互换。
 </CompareWith>
 
 <CompareWith lang="java">

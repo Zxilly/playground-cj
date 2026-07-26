@@ -2,8 +2,8 @@ main() {
     println("Functions lesson complete!")
     
     // Write a comprehensive example using what we learned
-    printUserInfo(name: "Xiaoming", age!: 20)
-    printUserInfo(name: "Xiaohong", age!: 22, city!: "Beijing")
+    printUserInfo(name: "Xiaoming", age: 20)
+    printUserInfo(name: "Xiaohong", age: 22, city: "Beijing")
 }
 
 // Comprehensive usage: regular parameters, named parameters, default values, tuple returns

@@ -1,3 +1,5 @@
+import std.collection.*
+
 // 泛型枚举：表示可能成功或失败的结果
 enum Result<T, E> {
     | Ok(T)        // 成功，携带类型为 T 的值
@@ -23,9 +25,9 @@ func processResult(result: Result<Int64, String>) {
 }
 
 // 使用泛型枚举表示可能存在或不存在的值
-func findValue(key: String, data: Map<String, Int64>): Result<Int64, String> {
+func findValue(key: String, data: HashMap<String, Int64>): Result<Int64, String> {
     if (data.contains(key)) {
-        return Ok(data[key])
+        return Ok(data.get(key).getOrThrow())
     }
     return Err("找不到键: ${key}")
 }
@@ -41,7 +43,7 @@ main() {
     println("---")
 
     // 测试查找值
-    let scores = Map<String, Int64>([
+    let scores = HashMap<String, Int64>([
         ("张三", 85),
         ("李四", 92),
         ("王五", 78)

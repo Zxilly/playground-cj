@@ -1,3 +1,5 @@
+import std.collection.*
+
 // Generic enum: represents a result that may succeed or fail
 enum Result<T, E> {
     | Ok(T)        // Success, carries a value of type T
@@ -23,9 +25,9 @@ func processResult(result: Result<Int64, String>) {
 }
 
 // Use generic enum to represent a value that may or may not exist
-func findValue(key: String, data: Map<String, Int64>): Result<Int64, String> {
+func findValue(key: String, data: HashMap<String, Int64>): Result<Int64, String> {
     if (data.contains(key)) {
-        return Ok(data[key])
+        return Ok(data.get(key).getOrThrow())
     }
     return Err("Key not found: ${key}")
 }
@@ -41,7 +43,7 @@ main() {
     println("---")
 
     // Test finding value
-    let scores = Map<String, Int64>([
+    let scores = HashMap<String, Int64>([
         ("Alice", 85),
         ("Bob", 92),
         ("Charlie", 78)

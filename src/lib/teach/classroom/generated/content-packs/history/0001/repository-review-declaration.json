@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 3,
+  "generator": {
+    "command": "pnpm content-packs:generate"
+  },
+  "declaration": {
+    "kind": "repository-review-declaration",
+    "reviewerLabel": "codex-agent:ai-mode-rebuild",
+    "declaredAt": "2026-07-25",
+    "scope": "artifact-diff-and-validation-chain",
+    "trustModel": "repository-code-review",
+    "provenance": "self-asserted-repository-metadata",
+    "externalTrustAnchor": false
+  },
+  "previousHistoryEntrySha256": null,
+  "manifestSha256": "bff0c8381d12ce793cd64902102bc0e2dcf42af1a78135f88970ce60bcb67b1d",
+  "validationReceiptSha256": "fcb51570c64b2ecd14b9d366770866c2ef4c1f05e88e489a776297e7e73c8601",
+  "artifacts": {
+    "en": "1f580b303bb6e76d04afba414819ffd0cbced150900cfd4d983383ee4639c93c",
+    "zh": "225ad9ea400147bf3d73c8b0784d070d9e20707c62d51effe062fbd32c7a82de"
+  }
+}

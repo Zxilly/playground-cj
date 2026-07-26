@@ -13,13 +13,11 @@ const func distance(a: Point, b: Point): Float64 {
 
 // const 函数：计算平方和
 const func sumSquares(n: Int64): Int64 {
-    var total = 0
-    var i = 1
-    while (i <= n) {
-        total += i * i
-        i += 1
+    if (n <= 0) {
+        0
+    } else {
+        n * n + sumSquares(n - 1)
     }
-    total
 }
 
 // const 函数：阶乘

@@ -21,10 +21,12 @@ main() {
     // 交换元组的元素顺序
     let pair1: (String, Int64) = ("年龄", 18)
     let swapped = swap<String, Int64>(pair1)
-    println("交换后: ${swapped}")
+    let (swappedAge, swappedLabel) = swapped
+    println("交换后: (${swappedAge}, ${swappedLabel})")
 
     // 使用类型推断
     let pair2 = ("分数", 95)
     let swapped2 = swap(pair2)
-    println("交换后: ${swapped2}")
+    let (swappedScore, swappedScoreLabel) = swapped2
+    println("交换后: (${swappedScore}, ${swappedScoreLabel})")
 }

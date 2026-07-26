@@ -11,7 +11,7 @@ Comparison operators (such as `==`, `!=`, `<`, `>`) also produce `Bool` type res
 <CompareGroup>
 
 <CompareWith lang="c">
-C has no native boolean type; it uses integers where 0 is false and non-zero is true. Cangjie's `Bool` is a separate type, stricter.
+C99 introduced `_Bool`, and its `<stdbool.h>` header defines the `bool`, `true`, and `false` macros. `_Bool` is an integer type and converts to and from other integer types, whereas Cangjie's `Bool` does not interchange with integers.
 </CompareWith>
 
 <CompareWith lang="java">

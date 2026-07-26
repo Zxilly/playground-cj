@@ -21,10 +21,12 @@ main() {
     // Swap the order of tuple elements
     let pair1: (String, Int64) = ("Age", 18)
     let swapped = swap<String, Int64>(pair1)
-    println("After swap: ${swapped}")
+    let (swappedAge, swappedLabel) = swapped
+    println("After swap: (${swappedAge}, ${swappedLabel})")
 
     // Use type inference
     let pair2 = ("Score", 95)
     let swapped2 = swap(pair2)
-    println("After swap: ${swapped2}")
+    let (swappedScore, swappedScoreLabel) = swapped2
+    println("After swap: (${swappedScore}, ${swappedScoreLabel})")
 }

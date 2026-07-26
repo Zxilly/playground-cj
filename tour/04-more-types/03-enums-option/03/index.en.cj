@@ -50,3 +50,4 @@ main() {
         Expr.Add(Expr.Num(3), Expr.Num(4))
     )
     println("${show(expr3)} = ${eval(expr3)}")
+}

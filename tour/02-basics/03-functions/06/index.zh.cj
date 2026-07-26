@@ -2,8 +2,8 @@ main() {
     println("函数课程完成！")
     
     // 用学到的知识写一个综合示例
-    printUserInfo(name: "小明", age!: 20)
-    printUserInfo(name: "小红", age!: 22, city!: "北京")
+    printUserInfo(name: "小明", age: 20)
+    printUserInfo(name: "小红", age: 22, city: "北京")
 }
 
 // 综合运用：普通参数、命名参数、默认值、元组返回

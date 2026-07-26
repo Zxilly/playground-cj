@@ -9,7 +9,7 @@ The code on the right demonstrates three immutable bindings. `text` declares its
 <CompareGroup>
 
 <CompareWith lang="c">
-C has no native immutable variable support; `const` is compile-time. Cangjie's `let` guarantees immutability at compile and runtime.
+C can use `const` to express non-modifiable constraints on objects or through pointers, but `const` does not mean compile-time constant. Cangjie instead uses `let` for bindings that cannot be reassigned.
 </CompareWith>
 
 <CompareWith lang="java">

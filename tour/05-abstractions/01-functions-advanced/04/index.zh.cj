@@ -1,5 +1,13 @@
 // 嵌套函数：在函数内部定义的函数
 
+class CounterState {
+    var count: Int64
+
+    init(count: Int64) {
+        this.count = count
+    }
+}
+
 func processNumbers(numbers: Array<Int64>): (Int64, Int64, Int64) {
     // 嵌套函数：计算总和
     func sum(arr: Array<Int64>): Int64 {
@@ -39,12 +47,12 @@ func processNumbers(numbers: Array<Int64>): (Int64, Int64, Int64) {
 }
 
 func makeCounter(): () -> Int64 {
-    var count = 0
+    let state = CounterState(0)
     
-    // 嵌套函数可以捕获外层变量
+    // 嵌套函数捕获不可变引用，其指向对象的成员仍可修改
     func increment(): Int64 {
-        count = count + 1
-        count
+        state.count = state.count + 1
+        state.count
     }
     
     increment

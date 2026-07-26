@@ -17,7 +17,7 @@ Java's generic struct type parameters are erased at runtime, preventing executio
 </CompareWith>
 
 <CompareWith lang="go">
-Go doesn't have struct generic syntax sugar; typically `interface{}` or code generation is used to implement similar functionality.
+Since Go 1.18, named types can declare type parameters, for example `type Box[T any] struct { value T }`, with the type parameter list after the type name.
 </CompareWith>
 
 <CompareWith lang="rust">

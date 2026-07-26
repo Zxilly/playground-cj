@@ -10,7 +10,7 @@ abstract class Shape {
     }
 
     // 可以包含成员变量
-    public func color(): String {
+    public open func color(): String {
         "白色"  // 默认颜色
     }
 }

@@ -1,5 +1,13 @@
 // Nested functions: functions defined inside functions
 
+class CounterState {
+    var count: Int64
+
+    init(count: Int64) {
+        this.count = count
+    }
+}
+
 func processNumbers(numbers: Array<Int64>): (Int64, Int64, Int64) {
     // Nested function: calculate sum
     func sum(arr: Array<Int64>): Int64 {
@@ -39,12 +47,12 @@ func processNumbers(numbers: Array<Int64>): (Int64, Int64, Int64) {
 }
 
 func makeCounter(): () -> Int64 {
-    var count = 0
+    let state = CounterState(0)
     
-    // Nested function can capture outer variable
+    // The nested function captures an immutable reference whose object is mutable
     func increment(): Int64 {
-        count = count + 1
-        count
+        state.count = state.count + 1
+        state.count
     }
     
     increment
