@@ -33,15 +33,23 @@ pnpm dev
 | `NEW_API_ACCESS_TOKEN`                    | ✓    | 管理匿名身份额度 token 的专用 service user access token                       |
 | `NEW_API_USER_ID`                         | ✓    | service user 的数字 ID（用于 `New-Api-User` header）                          |
 | `NEW_API_TOKEN_GROUP`                     |      | token 所属分组，默认 `default`                                                |
-| `CJ_RUNNER_URL`                           | ✓    | 服务端仓颉编译/运行后端 HTTPS 地址；仅非生产环境允许 loopback HTTP            |
-| `CJ_RUNNER_SHARED_TOKEN`                  | 生产 | Next 网关与私有 runner 共享的 32–512 字节服务令牌；两个服务必须配置相同值      |
+| `CJ_RUNNER_MODAL_URL`                     | ✓    | Modal runner 的 `*.modal.run` HTTPS 地址；其他运行后端会被拒绝                 |
+| `CJ_RUNNER_MODAL_PROXY_KEY`               | ✓    | Vercel 调用受保护 Modal Web Endpoint 的 Proxy Token ID                         |
+| `CJ_RUNNER_MODAL_PROXY_SECRET`            | ✓    | Vercel 调用受保护 Modal Web Endpoint 的 Proxy Token Secret                     |
+| `CJ_RUNNER_SHARED_TOKEN`                  | ✓    | Next 网关与 Modal 内部 runner 共享的 32–512 字节服务令牌                       |
 | `CJ_RUNNER_IDENTITY_REQUESTS_PER_MINUTE`  | 生产 | 单个可信代理身份每分钟编译/运行请求上限；生产环境必须显式设置，开发默认 `10`   |
 | `CJ_RUNNER_GLOBAL_REQUESTS_PER_MINUTE`    | 生产 | 全部署每分钟编译/运行请求上限；不得小于身份上限，开发默认 `120`                |
 | `CJ_RUNNER_ADMISSION_TIMEOUT_MS`          |      | Redis 分布式准入超时，范围 `100`–`5000` 毫秒，默认 `2000`                      |
 | `UPSTASH_REDIS_REST_URL`                  | ✓    | 共享额度、并发锁和网关限流使用的 HTTPS Redis REST URL；仅非生产 loopback 可用 HTTP |
 | `UPSTASH_REDIS_REST_TOKEN`                | ✓    | Upstash Redis REST token                                                      |
 
-托管与自托管环境统一部署 [`cj-runner`](./cj-runner/README.md) 镜像；仓库不再维护第二套、边界不同的运行后端。原 `server/` 的 Docker-per-request 后端已移除，迁移原因、放弃的隔离特性和部署前提记录在 [ADR 0014](./docs/adr/0014-runner-backends-are-consolidated.md)。
+所有编译/运行请求都经同源 Next.js 网关进入 Modal；每次请求使用一个新的
+single-use gVisor 容器，且容器无网络访问和 Modal API 权限。网关只接受
+`*.modal.run` 目标，并强制同时使用 Modal Proxy Token、runner bearer token
+和工具链锁摘要；本地 loopback、Azure Container Apps、GHCR 镜像和通用
+runner URL 均不再是受支持的运行路径。原后端收敛见
+[ADR 0014](./docs/adr/0014-runner-backends-are-consolidated.md)，Modal-only
+决策见 [ADR 0015](./docs/adr/0015-runner-production-is-modal-only.md)。
 
 共享模型按可信匿名身份隔离 new-api 额度，浏览器只读取额度元数据，永远不会
 收到真实上游凭据。每个 managed token 都有有限失效时间；跨额度周期仍活跃
@@ -63,8 +71,7 @@ token；容量满时网关 fail-closed，而不会偷建替代凭据。
 Redis、runner `fetch` 和请求/响应流都接收请求级取消信号；取消开始后，在
 底层 I/O 真正结束前不会复用其 bulkhead 槽位，也不会准入替代请求。若底层
 依赖违反取消契约并在 1 秒宽限期后仍未结束，生产进程会 fail-stop，避免靠
-超时释放槽位累积无限 zombie I/O。Vercel 会替换该实例；自托管 Next.js
-必须运行在会对非零退出自动重启的进程监督器或容器 restart policy 下。
+超时释放槽位累积无限 zombie I/O；Vercel 会替换该实例。
 
 格式化不占用 runner 配额：`cjfmt` 与语言服务一起作为
 `wasm_assets.zip` 发布并在浏览器内运行。执行环境使用稳定版仓颉 1.1.3

@@ -803,8 +803,8 @@ msgid "运行成功"
 msgstr "Run successful"
 
 #: src/features/playground/components/Playground.tsx:146
-msgid "运行环境：仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 | "
-msgstr "Runtime: Cangjie 1.1.3 / STDX 1.1.3.1 | Browser tools: LSP + cjfmt 1.2.0-alpha.20260724 | "
+msgid "运行环境：Modal 沙箱 · 仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 | "
+msgstr "Runtime: Modal sandbox · Cangjie 1.1.3 / STDX 1.1.3.1 | Browser tools: LSP + cjfmt 1.2.0-alpha.20260724 | "
 
 #: src/features/teach/components/views/PlaygroundView.tsx:532
 msgid "运行结果"

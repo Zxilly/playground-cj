@@ -1,31 +1,18 @@
 # Cangjie runner
 
-`cmd/runner` builds the `cj-runner` compile/run service behind the Next.js
-`/api/run` gateway, for both managed and self-hosted
-deployments. Build and deploy this directory's image; there is intentionally no
-second runner implementation with a weaker or divergent boundary. Do not expose
-it as an unauthenticated public API.
+`cmd/runner` builds the compile/run process embedded in the Modal production
+boundary behind the Next.js `/api/run` gateway. There is intentionally no
+second production runner implementation or configurable provider fallback.
+Do not expose this process as a public API.
 
 ## Where it runs
 
-`cj-runner` is a separate Linux service. It does not run in the browser, the
-Next.js process, or a Vercel Function. A standard long-lived deployment runs
-the image built from this directory on a container platform with:
-
-- an unprivileged Linux user that may create the bubblewrap namespaces verified
-  by the startup probe;
-- replica-level CPU, memory, PID, and ephemeral-storage limits plus automatic
-  restart of unhealthy replicas;
-- HTTPS reachability from the Next.js deployment, preferably over private
-  ingress. If public ingress is unavoidable, the shared-token boundary remains
-  mandatory and no browser calls the runner directly.
-
-Set the Next.js service's `CJ_RUNNER_URL` to that container endpoint. Production
-currently invokes the image through the single-use Modal Function defined in
-`modal/runner.py`: one fresh gVisor container per request, with network access
-blocked and Modal API access removed. Modal Proxy authentication is required
-before the request reaches the runner; the runner's own shared-token and
-toolchain-lock checks remain mandatory behind that boundary.
+`cj-runner` does not run in the browser, the Next.js process, or a Vercel
+Function. Production invokes it only through `modal/runner.py`: one fresh
+single-use gVisor container per request, with network access blocked and Modal
+API access removed. Modal Proxy authentication is required before the request
+reaches the runner; the runner's own shared-token and toolchain-lock checks
+remain mandatory behind that boundary.
 
 For local development, run the image with Docker on Linux/WSL, or build
 `./cmd/runner` inside Linux and bind it to loopback with
@@ -50,14 +37,9 @@ evolving protocol and image:
 
 Keeping both implementations would require every protocol, cancellation,
 toolchain, supply-chain, and sandbox fix to be implemented and tested twice.
-The repository therefore supports one gateway contract and one runner image.
-This is a deliberate replacement of the Docker-per-request architecture, not a
-claim that a bubblewrap process boundary is identical to a fresh container.
-Self-hosted deployments must meet the namespace and replica-level resource
-requirements below. If a future deployment requires VM or per-request-container
-isolation, it should wrap this same authenticated runner contract and locked
-image instead of restoring the old agent protocol. See
-[`ADR 0014`](../docs/adr/0014-runner-backends-are-consolidated.md).
+The repository therefore supports one gateway contract and one Modal runner
+image. See [`ADR 0014`](../docs/adr/0014-runner-backends-are-consolidated.md)
+and [`ADR 0015`](../docs/adr/0015-runner-production-is-modal-only.md).
 
 ## Required deployment configuration
 
@@ -66,19 +48,17 @@ image instead of restoring the old agent protocol. See
   is absent or malformed.
 - `CJ_RUNNER_ENV`: `production` (the image default), `development`, or `test`.
   Only explicit development/test mode may start without a token.
-- `CJ_RUNNER_ISOLATION_DRIVER`: omit for the standard bubblewrap boundary.
-  The exact value `modal-single-use-container` is reserved for the production
-  Modal Function in `modal/runner.py`; other values and non-production use are
-  rejected.
+- `CJ_RUNNER_ISOLATION_DRIVER`: production requires the exact value
+  `modal-single-use-container`; `modal/runner.py` sets it. Development and test
+  require it to be empty and use the bubblewrap verification profile.
 - `PORT`: optional listener port; default `8000`.
 
 Set the same `CJ_RUNNER_SHARED_TOKEN` secret on the Next.js deployment. Rotate
 both deployments together. The token must remain server-only and must never use
-a `NEXT_PUBLIC_` name. Configure `CJ_RUNNER_URL` with the runner's HTTPS
-endpoint; the gateway accepts plaintext HTTP only for loopback development.
-For a Modal endpoint, also configure `CJ_RUNNER_MODAL_PROXY_KEY` and
-`CJ_RUNNER_MODAL_PROXY_SECRET` on the Next.js deployment. The gateway refuses
-to call a `*.modal.run` URL without both credentials.
+a `NEXT_PUBLIC_` name. Configure `CJ_RUNNER_MODAL_URL`,
+`CJ_RUNNER_MODAL_PROXY_KEY`, and `CJ_RUNNER_MODAL_PROXY_SECRET` on the Next.js
+deployment. The gateway refuses every non-Modal target and never omits either
+authentication layer.
 The gateway also sends the canonical checked-in toolchain-lock digest on every
 request. A stale runner image rejects the request before reading its body.
 
@@ -140,15 +120,11 @@ CPU, and ephemeral-storage cgroup/quotas. A pathological request can still
 exhaust or crash its own replica; single-flight ensures it cannot share that
 replica concurrently with another tenant.
 
-The default boundary depends on Linux user namespaces and bubblewrap, not on a claim
-that every container host supports them. A self-hosted or managed platform must
-allow an unprivileged UID to create the namespaces and mounts used by
-bubblewrap (for example, `kernel.unprivileged_userns_clone` must not disable
-them and the container seccomp/AppArmor policy must permit them). If an Azure
-Container Apps plan or any other target denies those operations, the image is
-not compatible with that target and intentionally remains unhealthy. Do not
-weaken the probe or add an implicit unsandboxed fallback. Use the explicit
-Modal driver only inside the single-use Function defined in this repository.
+The development/test boundary depends on Linux user namespaces and bubblewrap.
+It exists to verify the inner runner and is not a supported production
+deployment. Do not weaken the probe or add an implicit unsandboxed fallback;
+production must use the explicit Modal driver inside the single-use Function
+defined in this repository.
 
 For the default profile, do not place deployment secret volumes below paths
 exposed read-only to bubblewrap (`/usr`, `/bin`, `/lib`, `/lib64`, `/cangjie`,

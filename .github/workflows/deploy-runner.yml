@@ -1,4 +1,4 @@
-name: cj-runner image
+name: Modal runner
 
 on:
   workflow_dispatch:
@@ -6,23 +6,23 @@ on:
     branches: [master]
     paths:
       - cj-runner/**
+      - modal/**
       - .github/workflows/deploy-runner.yml
 
 concurrency:
-  group: cj-runner-production
+  group: modal-runner-production
   cancel-in-progress: false
 
 permissions:
   contents: read
-  packages: write
-
-env:
-  RUNNER_IMAGE: ghcr.io/zxilly/cj-runner
 
 jobs:
-  build:
+  deploy:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
@@ -34,77 +34,22 @@ jobs:
       - name: Install runner sandbox dependency
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends bubblewrap
 
-      - name: Test runner boundary with race detection
-        working-directory: cj-runner
-        run: go test -race ./...
-
-      - name: Vet and build runner
+      - name: Verify runner boundary
         working-directory: cj-runner
         run: |
+          go test -race ./...
           go vet ./...
-          go build -trimpath -o "$RUNNER_TEMP/cj-runner" ./cmd/runner
+          go build -trimpath ./cmd/runner
 
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-
-      - name: Build exact candidate image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         with:
-          context: ./cj-runner
-          load: true
-          push: false
-          # ACA consumes a plain single-architecture OCI image.
-          provenance: false
-          tags: |
-            ${{ env.RUNNER_IMAGE }}:candidate-${{ github.sha }}
-            ${{ env.RUNNER_IMAGE }}:${{ github.sha }}
-            ${{ env.RUNNER_IMAGE }}:latest
+          python-version: '3.13'
 
-      - name: Smoke exact candidate image
-        env:
-          CJ_RUNNER_SHARED_TOKEN: ci-smoke-only-token-32-bytes-minimum
-        run: |
-          set -euo pipefail
-          container="cj-runner-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          cleanup() {
-            docker rm -f "$container" >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-          docker run --detach \
-            --name "$container" \
-            --security-opt seccomp=unconfined \
-            --env CJ_RUNNER_SHARED_TOKEN \
-            --publish 127.0.0.1:18080:8000 \
-            "$RUNNER_IMAGE:candidate-$GITHUB_SHA"
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent --show-error http://127.0.0.1:18080/ >/dev/null; then
-              exit 0
-            fi
-            if ! docker inspect --format '{{.State.Running}}' "$container" | grep -qx true; then
-              break
-            fi
-            sleep 1
-          done
-          docker logs "$container"
-          exit 1
+      - name: Install pinned Modal CLI
+        run: python -m pip install modal==1.5.3
 
-      - name: Log in to GHCR
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish runner image to Modal
+        run: modal run modal/build_runner_image.py
 
-      - name: Push the smoked image bytes
-        run: |
-          set -euo pipefail
-          docker push "$RUNNER_IMAGE:$GITHUB_SHA"
-          digest="$(
-            docker buildx imagetools inspect "$RUNNER_IMAGE:$GITHUB_SHA" \
-              --format '{{json .Manifest}}' | jq -er '.digest'
-          )"
-          docker push "$RUNNER_IMAGE:latest"
-          {
-            echo "### cj-runner production image"
-            echo
-            echo "\`$RUNNER_IMAGE:$GITHUB_SHA@$digest\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Deploy Modal gateway
+        run: modal deploy modal/runner.py

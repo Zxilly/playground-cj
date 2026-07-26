@@ -29,18 +29,16 @@ describe('github Actions supply-chain boundary', () => {
     )
   })
 
-  it('deploys runner images only from master after smoking the exact local image', () => {
+  it('deploys the runner only to Modal from master', () => {
     const workflow = readWorkflow('deploy-runner.yml')
     expect(workflow).toMatch(/push:\r?\n\s+branches:\s+\[master\]/)
     expect(workflow).toContain('if: github.ref == \'refs/heads/master\'')
-    expect(workflow).toContain('load: true')
-    expect(workflow).toContain('push: false')
-
-    const smoke = workflow.indexOf('name: Smoke exact candidate image')
-    const login = workflow.indexOf('name: Log in to GHCR')
-    const push = workflow.indexOf('docker push')
-    expect(smoke).toBeGreaterThan(0)
-    expect(login).toBeGreaterThan(smoke)
-    expect(push).toBeGreaterThan(login)
+    expect(workflow).toMatch(/^permissions:\r?\n\s+contents:\s+read\s*$/m)
+    expect(workflow).toContain('MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}')
+    expect(workflow).toContain('MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}')
+    expect(workflow).toContain('modal run modal/build_runner_image.py')
+    expect(workflow).toContain('modal deploy modal/runner.py')
+    expect(workflow).not.toContain('GHCR')
+    expect(workflow).not.toContain('docker push')
   })
 })

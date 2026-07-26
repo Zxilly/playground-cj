@@ -32,5 +32,13 @@ modal run modal/build_runner_image.py
 modal deploy modal/runner.py
 ```
 
-Set Vercel's `CJ_RUNNER_URL` to the deployed base URL without `/run`. Set the
-same `CJ_RUNNER_SHARED_TOKEN` on Modal and Vercel.
+Set Vercel's `CJ_RUNNER_MODAL_URL` to the deployed base URL without `/run`.
+Set the same `CJ_RUNNER_SHARED_TOKEN` on Modal and Vercel. The Next.js gateway
+accepts only `*.modal.run` targets and always requires the Proxy Token.
+
+Production deployment is owned by
+`.github/workflows/deploy-runner.yml`. Configure the repository secrets
+`MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET`; pushes to `master` that change
+`cj-runner/`, `modal/`, or the workflow publish the image directly to Modal and
+then deploy the gateway. GHCR and Azure Container Apps are not part of the
+deployment path.

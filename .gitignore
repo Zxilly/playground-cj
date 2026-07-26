@@ -45,7 +45,7 @@ cangjie-mcp.log
 /.scratch/
 /wasm-dist/
 /ref_doc/
-/__pycache__/
+**/__pycache__/
 /tour_gen/
 /.tmp/
 /docs/*
