@@ -15,6 +15,13 @@ export class RemediationJobBusyError extends Error {
   }
 }
 
+export class RemediationJobCancelledError extends Error {
+  constructor() {
+    super('The Remediation diagnostic generation was cancelled')
+    this.name = 'RemediationJobCancelledError'
+  }
+}
+
 interface AutomaticRemediationJobOptions {
   classroom: AIClassroom
   job: RemediationDiagnosticJob
@@ -114,6 +121,8 @@ export async function runAutomaticRemediationJob(
     }
     catch (error) {
       if (abortSignal.aborted)
+        return { handled: true, retryAt: null }
+      if (error instanceof RemediationJobCancelledError)
         return { handled: true, retryAt: null }
       if (error instanceof RemediationJobBusyError)
         return { handled: false, retryAt: null }
