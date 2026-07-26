@@ -39,6 +39,19 @@
       "validationReceiptSha256": "01d16b9ba2c50be88f2212d9dc945af256ed47d1d2349209dbf5d509aeeb98e6",
       "reviewDeclarationSha256": "64957c8831dc3dfa0c223ea56b7c37bfa6fe7c2d6d04a223d1de6fad4ddf477b",
       "entrySha256": "5967940a39f7e43372a4547e9050928ca58aae7a7976a56d18781fe40afaed46"
+    },
+    {
+      "sequence": 4,
+      "previousEntrySha256": "5967940a39f7e43372a4547e9050928ca58aae7a7976a56d18781fe40afaed46",
+      "snapshotDirectory": "0004",
+      "artifacts": {
+        "en": "d0652f9c43964b2cfe6a8722389384aaa9eacebd6eabdf2c708745d2a32261e3",
+        "zh": "3171e770d9a698d684297c16b803b98073682c0889335bea05dc4fac0846bc0b"
+      },
+      "manifestSha256": "f30b415f9ccf669d253e1dac1510c71e9bb6edbcd12563134a35c277fad6f769",
+      "validationReceiptSha256": "8ee8f82a1b47f18c413ce632c78d6bb87e16724e6b86d9e6a7925f7bc1deea98",
+      "reviewDeclarationSha256": "7ab27eac2b5a5a5e6f738699eeb68e382e8f077186a90b792a3702885f9de800",
+      "entrySha256": "67023edffa06a92e16c726b475be8802722f700921484eeea46cbf4975f9d596"
     }
   ]
 }

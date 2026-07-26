@@ -1,3 +1,11 @@
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { loadStaticTourContentSections } from './static-tour-content-source'
 
@@ -12,6 +20,45 @@ function sourceByRef(
 }
 
 describe('static tour editorial source facts', () => {
+  it('loads identical content from LF and CRLF source trees', () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'static-tour-eol-'))
+    const createTour = (name: string, newline: '\n' | '\r\n') => {
+      const root = join(fixtureRoot, name)
+      const chapter = join(root, '01-example')
+      const subChapter = join(chapter, '01-basics')
+      const section = join(subChapter, '01')
+      mkdirSync(section, { recursive: true })
+      writeFileSync(
+        join(chapter, 'name.json'),
+        JSON.stringify({ en: 'Example', zh: '示例' }),
+      )
+      writeFileSync(
+        join(subChapter, 'name.json'),
+        JSON.stringify({ en: 'Basics', zh: '基础' }),
+      )
+      for (const locale of ['en', 'zh']) {
+        writeFileSync(
+          join(section, `index.${locale}.mdx`),
+          [`# Title`, '', 'First line.', 'Second line.'].join(newline),
+        )
+        writeFileSync(
+          join(section, `index.${locale}.cj`),
+          ['main() {', '    println("hello")', '}'].join(newline),
+        )
+      }
+      return root
+    }
+
+    try {
+      const lf = loadStaticTourContentSections(createTour('lf', '\n'))
+      const crlf = loadStaticTourContentSections(createTour('crlf', '\r\n'))
+      expect(crlf).toEqual(lf)
+    }
+    finally {
+      rmSync(fixtureRoot, { force: true, recursive: true })
+    }
+  })
+
   it('keeps language comparisons technically accurate in both locales', () => {
     const sections = loadStaticTourContentSections()
     for (const ref of [

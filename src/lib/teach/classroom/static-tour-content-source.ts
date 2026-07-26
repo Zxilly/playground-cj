@@ -10,6 +10,10 @@ const TOP_LEVEL_DIRECTORY = /^\d+-[a-z0-9-]+$/
 const SECTION_DIRECTORY = /^\d+$/
 const ORDER_PREFIX = /^\d+-/
 
+function normalizeNewlines(source: string): string {
+  return source.replace(/\r\n?/g, '\n')
+}
+
 function compareIds(left: string, right: string): number {
   return left.localeCompare(right, undefined, { numeric: true })
 }
@@ -17,7 +21,7 @@ function compareIds(left: string, right: string): number {
 function readRequired(path: string): string {
   if (!existsSync(path))
     throw new Error(`Missing required Static Tour source: ${path}`)
-  return readFileSync(path, 'utf8')
+  return normalizeNewlines(readFileSync(path, 'utf8'))
 }
 
 function readName(directory: string): Record<string, string> {
@@ -49,8 +53,10 @@ function localizedCode(
   const localized = join(directory, `index.${locale}.cj`)
   const fallback = join(directory, 'index.cj')
   if (existsSync(localized))
-    return readFileSync(localized, 'utf8')
-  return existsSync(fallback) ? readFileSync(fallback, 'utf8') : ''
+    return normalizeNewlines(readFileSync(localized, 'utf8'))
+  return existsSync(fallback)
+    ? normalizeNewlines(readFileSync(fallback, 'utf8'))
+    : ''
 }
 
 /**
