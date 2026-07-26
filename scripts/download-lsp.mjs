@@ -5,7 +5,7 @@ import { pipeline } from 'node:stream/promises'
 import * as yauzl from 'yauzl'
 
 const LSP_DIR = join(import.meta.dirname, '..', 'public', 'lsp')
-const LSP_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-lsp-1.1.0-beta/lsp.zip'
+const LSP_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-lsp-1.2.0-alpha.20260724/lsp.zip'
 const CJO_TARGET = 'linux_x86_64_cjnative'
 const REQUIRED_LSP_FILES = [
   'LSPServer-wasm.js',

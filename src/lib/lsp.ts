@@ -245,13 +245,7 @@ async function initializeLspServer(
       onError(new Error(`Failed to parse LSP message: ${(e as Error).message}`))
     }
   }
-  // The wasm glue is built with Closure 1, which mangles the
-  // `Module.onLSPMessage` property it checks inside EM_JS to a short name
-  // (currently `uc`). User code isn't processed by the same closure pass,
-  // so setting only `onLSPMessage` doesn't connect. Assign both; if the
-  // mangled name changes on a future wasm build, update the fallback.
   wasmMod.onLSPMessage = lspMessageHandler
-  ;(wasmMod as unknown as Record<string, unknown>).uc = lspMessageHandler
 
   onLog('Initializing LSP server...')
   wasmMod.initLSP()
