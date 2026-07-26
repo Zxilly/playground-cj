@@ -13,7 +13,7 @@ C has no concept of classes; you must manually manage memory and define operatio
 </CompareWith>
 
 <CompareWith lang="java">
-Java's generic class static members can reference type parameters (though types are erased), but at runtime you cannot know the concrete type; Cangjie fully resolves this at compile time.
+Java static contexts likewise cannot reference a generic class's class-level type parameter `T`. A static generic method must declare its own type parameter, for example `static <U> U identity(U value)`.
 </CompareWith>
 
 <CompareWith lang="go">

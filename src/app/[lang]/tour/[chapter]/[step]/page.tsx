@@ -1,5 +1,5 @@
 import { flattenSections, getSlimTourData, loadTourData } from '@/tour/loader'
-import TourWrapper from '@/components/tour/TourWrapper'
+import TourWrapper from '@/features/tour/components/TourWrapper'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import type { Metadata } from 'next'

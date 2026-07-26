@@ -70,11 +70,11 @@ main() {
     let r2 = Failure("连接失败")
 
     println(r1.message())
-    println("状态: ${if (r1.isSuccess()) "OK" else "Error"}")
+    println("状态: ${if (r1.isSuccess()) { "OK" } else { "Error" }}")
 
     println()
     println(r2.message())
-    println("状态: ${if (r2.isSuccess()) "OK" else "Error"}")
+    println("状态: ${if (r2.isSuccess()) { "OK" } else { "Error" }}")
 
     // 编译器知道只有两个子类，便于优化
     // 如果用 match 表达式，可以穷尽所有情况

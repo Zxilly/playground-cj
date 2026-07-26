@@ -1,11 +1,11 @@
 import { msg } from '@lingui/core/macro'
 import { i18n } from '@/lib/i18n'
 import {
-  clearCacheAndRestartLsp,
-  restartLsp,
-  startLsp,
-  stopLsp,
-} from '@/lib/lsp'
+  clearCacheAndRestartLanguageService,
+  restartLanguageService,
+  startLanguageService,
+  stopLanguageService,
+} from '@/lib/monaco/language-service-lifecycle'
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 
 export const LSP_COMMAND_IDS = {
@@ -28,7 +28,7 @@ const regState = hmrSlot<CommandRegistrationState>(HMR_SLOT_KEYS.LSP_COMMAND_REG
   pending: null,
 }))
 
-/** Registers Cangjie LSP lifecycle commands in the Command Palette. */
+/** Registers Cangjie code assistance lifecycle commands in the Command Palette. */
 export async function registerLspCommands(): Promise<void> {
   if (regState.registered)
     return
@@ -47,23 +47,23 @@ export async function registerLspCommands(): Promise<void> {
     const actions: ActionDef[] = [
       {
         id: LSP_COMMAND_IDS.start,
-        title: i18n._(msg`仓颉：启动 LSP`),
-        handler: () => startLsp('manual'),
+        title: i18n._(msg`仓颉：启动代码提示`),
+        handler: () => startLanguageService('manual'),
       },
       {
         id: LSP_COMMAND_IDS.stop,
-        title: i18n._(msg`仓颉：停止 LSP`),
-        handler: () => stopLsp('manual'),
+        title: i18n._(msg`仓颉：停止代码提示`),
+        handler: () => stopLanguageService('manual'),
       },
       {
         id: LSP_COMMAND_IDS.restart,
-        title: i18n._(msg`仓颉：重启 LSP`),
-        handler: () => restartLsp('manual'),
+        title: i18n._(msg`仓颉：重启代码提示`),
+        handler: () => restartLanguageService('manual'),
       },
       {
         id: LSP_COMMAND_IDS.clearCacheRestart,
-        title: i18n._(msg`仓颉：清除缓存并重启 LSP`),
-        handler: () => clearCacheAndRestartLsp('manual'),
+        title: i18n._(msg`仓颉：清除缓存并重启代码提示`),
+        handler: () => clearCacheAndRestartLanguageService('manual'),
       },
     ]
 

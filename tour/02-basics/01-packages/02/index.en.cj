@@ -1,5 +1,4 @@
-import std.math.sqrt
-import std.math.PI
+import std.math.*
 
 main() {
     // Use imported sqrt function to calculate square root
@@ -7,13 +6,14 @@ main() {
     let root = sqrt(Float64(a))
     println("The square root of ${a} is ${root}")
     
-    // Use imported PI constant
+    // Use the Float64 PI value provided by the math package
+    let pi = Float64.getPI()
     let radius = 5.0
-    let area = PI * radius * radius
+    let area = pi * radius * radius
     println("The area of a circle with radius ${radius} is ${area}")
     
     // Calculate circle circumference
-    let circumference = 2 * PI * radius
+    let circumference = 2.0 * pi * radius
     println("The circumference is ${circumference}")
     
     // Another square root calculation

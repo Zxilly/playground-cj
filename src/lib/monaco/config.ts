@@ -2,10 +2,11 @@ import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { getStatusBarServiceOverrides } from '@/lib/statusbar'
 import { examples } from '@/const'
 import { fontFamily } from '@/app/font'
-import type { MonacoVscodeApiConfig } from 'monaco-languageclient/vscodeApiWrapper'
-import type { EditorAppConfig } from 'monaco-languageclient/editorApp'
+import type { EditorAppConfig, MonacoVscodeApiConfig } from './vscode-api'
 import { configureMonacoWorkers } from './workers'
 import { initializeMonacoViewsService } from './views'
+import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
+import { exerciseModelSlot, playgroundModelUri } from './model-identity'
 
 import langConf from '@/lib/language-configuration.json'
 import textMate from '@/grammars/Cangjie.tmLanguage.json'
@@ -34,7 +35,7 @@ export function createMonacoVscodeApiConfig(
     userConfiguration: {
       json: JSON.stringify({
         'editor.wordBasedSuggestions': 'off',
-        'editor.experimental.asyncTokenization': true,
+        'editor.experimental.asyncTokenization': false,
         'window.autoDetectColorScheme': true,
         'workbench.preferredDarkColorTheme': 'Default Dark Modern',
         'workbench.preferredLightColorTheme': 'Default Light Modern',
@@ -46,7 +47,7 @@ export function createMonacoVscodeApiConfig(
         'editor.fontFamily': fontFamily,
         'editor.fontLigatures': false,
         'editor.mouseWheelZoom': true,
-        'editor.semanticHighlighting.enabled': false,
+        'editor.semanticHighlighting.enabled': true,
         'editor.cursorSmoothCaretAnimation': 'on',
       }),
     },
@@ -63,27 +64,30 @@ export function createMonacoVscodeApiConfig(
     extensions: [
       {
         config: {
-          name: 'Cangjie Extension',
-          publisher: 'Zxilly',
+          name: 'cangjie',
+          displayName: 'Cangjie Extension',
+          publisher: 'zxilly',
           version: '1.0.0',
           engines: {
             vscode: '*',
           },
+          browser: './extension.js',
           contributes: {
             languages: [{
-              id: 'Cangjie',
+              id: CANGJIE_LANGUAGE_ID,
               extensions: ['.cj'],
-              aliases: ['cangjie'],
+              aliases: [CANGJIE_LANGUAGE_NAME, CANGJIE_LANGUAGE_ID],
               configuration: './language-configuration.json',
             }],
             grammars: [{
-              language: 'Cangjie',
+              language: CANGJIE_LANGUAGE_ID,
               scopeName: 'source.cj',
               path: './cangjie-grammar.json',
             }],
           },
         },
         filesOrContents: new Map<string, string>([
+          ['./extension.js', '// Cangjie syntax extension'],
           ['./language-configuration.json', JSON.stringify(langConf)],
           ['./cangjie-grammar.json', JSON.stringify(textMate)],
         ]),
@@ -92,22 +96,27 @@ export function createMonacoVscodeApiConfig(
   }
 }
 
-export function createEditorAppConfig(shareCode?: string, locale?: string): EditorAppConfig {
+// uriHint disambiguates editors that need to live side-by-side (one per exercise,
+// for example) so each gets its own persistent Monaco model. Same hint → same
+// model (preserved across React mounts); different hints → different models.
+export function createEditorAppConfig(shareCode?: string, locale?: string, uriHint?: string): EditorAppConfig {
   const helloWorldExample = examples.find(([key]) => key === 'hello-world')?.[1]
   const localizedContent = locale === 'en' ? helloWorldExample?.en.content : helloWorldExample?.zh.content
   const defaultCode = shareCode ?? localizedContent ?? ''
+  const slot = uriHint ? exerciseModelSlot(uriHint) : 'src'
 
   return {
     overrideAutomaticLayout: true,
     editorOptions: {
-      language: 'Cangjie',
+      language: CANGJIE_LANGUAGE_ID,
       glyphMargin: false,
       folding: true,
     },
     codeResources: {
       modified: {
         text: defaultCode,
-        uri: 'file:///playground/src/main.cj',
+        enforceLanguageId: CANGJIE_LANGUAGE_ID,
+        uri: playgroundModelUri(slot),
       },
     },
   }

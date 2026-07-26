@@ -9,7 +9,7 @@ The code on the right demonstrates boolean value declarations and logical operat
 <CompareGroup>
 
 <CompareWith lang="c">
-C has no native boolean type; uses integers (0 for false, non-zero for true). Cangjie's `Bool` is a distinct type, stricter.
+C99 introduced `_Bool`, and its `<stdbool.h>` header defines the `bool`, `true`, and `false` macros. `_Bool` is an integer type and converts to and from other integer types, whereas Cangjie's `Bool` does not interchange with integers.
 </CompareWith>
 
 <CompareWith lang="java">

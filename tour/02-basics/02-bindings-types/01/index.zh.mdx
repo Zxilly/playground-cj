@@ -9,7 +9,7 @@
 <CompareGroup>
 
 <CompareWith lang="c">
-C 没有不可变变量的原生支持，`const` 是编译时约束；仓颉的 `let` 在编译和运行时都保证不可变。
+C 可以用 `const` 为对象或指针表达不可修改约束，但 `const` 不等同于编译时常量。仓颉则用 `let` 声明不可重新赋值的绑定。
 </CompareWith>
 
 <CompareWith lang="java">

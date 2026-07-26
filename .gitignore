@@ -1,52 +1,55 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# Dependencies
+/node_modules/
+/.pnp/
 .pnp.js
 .yarn/install-state.gz
 
-# testing
-/coverage
-
-# next.js
+# Build output
 /.next/
 /out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
-
-# vercel
-.vercel
-
-# typescript
+/build/
+/coverage/
 *.tsbuildinfo
 next-env.d.ts
 
-.idea/
-.vscode/
-
+# Local environment
 .env
+.env*.local
 .claude
+/.vercel/
 
+# Editor and OS files
+.DS_Store
+/.idea/
+/.vscode/
+*.pem
+
+# Test artifacts (vitest browser failure screenshots / attachments)
+**/__screenshots__/
+/.vitest-attachments/
+
+# design-sync (claude.ai/design) — staged scripts, build output, all local state
+/.ds-sync/
+/ds-bundle/
+/.design-sync/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 cangjie-mcp.log
 
-wasm-dist/
-ref_doc/
-__pycache__/
-tour_gen/
-
-.tmp/
-docs/
+# Generated local artifacts
+/smoke-*.png
+/*.png
+/.scratch/
+/wasm-dist/
+/ref_doc/
+**/__pycache__/
+/tour_gen/
+/.tmp/
+/docs/*
+!/docs/agents/
+!/docs/agents/**
+!/docs/adr/
+!/docs/adr/**

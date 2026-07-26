@@ -17,6 +17,7 @@ main() {
     print(tab)
     print("World")
     print(newline)
+    println("反斜杠: ${backslash}")
 
     // 通用字符（Unicode 码点）
     let he: Rune = r'\u{4f60}'   // "你"

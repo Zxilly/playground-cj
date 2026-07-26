@@ -13,7 +13,7 @@ C 中没有类的概念，必须手动管理内存和定义操作函数，如 `S
 </CompareWith>
 
 <CompareWith lang="java">
-Java 的泛型类中，静态成员可以引用类型参数（虽然类型被擦除），但运行时无法知道具体类型；Cangjie 编译时完全解决了这个问题。
+Java 的静态上下文同样不能引用泛型类的类级类型参数 `T`；静态泛型方法必须声明自己的类型参数，例如 `static <U> U identity(U value)`。
 </CompareWith>
 
 <CompareWith lang="go">

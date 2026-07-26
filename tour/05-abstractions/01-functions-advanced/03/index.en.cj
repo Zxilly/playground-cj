@@ -1,18 +1,26 @@
 // Closures: functions that capture outer variables
 
+class CounterState {
+    var count: Int64
+
+    init(count: Int64) {
+        this.count = count
+    }
+}
+
 func makeAdder(base: Int64): (Int64) -> Int64 {
     // Lambda captures parameter base
     { value: Int64 => value + base }
 }
 
 func makeCounter(start: Int64): () -> Int64 {
-    var count = start
+    let state = CounterState(start)
     
-    // Nested function captures var variable
-    // Note: functions capturing var can only be called, not used as first-class citizens
+    // Escaping closures cannot capture a local var directly. Capture an
+    // immutable class reference instead and update its mutable member.
     func increment(): Int64 {
-        count = count + 1
-        count
+        state.count = state.count + 1
+        state.count
     }
     
     return increment
@@ -34,6 +42,11 @@ main() {
     
     // Closures each hold independent captured values
     println("add10(8) = ${add10(8)}")  // 18
+
+    // A captured reference can hold mutable state across calls
+    let counter = makeCounter(0)
+    println("counter() = ${counter()}")  // 1
+    println("counter() = ${counter()}")  // 2
     
     // String closure
     let greetHello = makeGreeter("Hello")

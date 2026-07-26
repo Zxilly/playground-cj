@@ -37,8 +37,6 @@ import functionalEn from '@/examples/functional.en.cj'
 import cubeEn from '@/examples/cube.en.cj'
 import cffiEn from '@/examples/cffi.en.cj'
 
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://cj-api.learningman.top'
-
 export const examples: [string, { zh: { name: string, content: string }, en: { name: string, content: string } }][] = [
   ['hello-world', { zh: { name: 'Hello World', content: helloWorld }, en: { name: 'Hello World', content: helloWorldEn } }],
   ['array', { zh: { name: '数组', content: array }, en: { name: 'Array', content: arrayEn } }],

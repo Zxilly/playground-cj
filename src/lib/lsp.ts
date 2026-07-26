@@ -1,24 +1,29 @@
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
+import {
+  createLspDocumentMirror,
+  PLAYGROUND_PROJECT_MANIFEST,
+} from '@/lib/monaco/lsp-document-mirror'
 
 // Pthread workers spawned by the emscripten module inherit the JS glue's
 // query string via `import.meta.url`, so they hit the same cached URL as
 // the main thread without extra revalidation round-trips.
-const LSP_VERSION = __LSP_VERSION__
-const LSP_VERSION_QS = `?v=${LSP_VERSION}`
-const LSP_WASM_PATH = `/lsp/LSPServer-wasm.js${LSP_VERSION_QS}`
-const LSP_WASM_BINARY_PATH = `/lsp/LSPServer-wasm.wasm${LSP_VERSION_QS}`
+const WASM_ASSETS_VERSION = process.env.WASM_ASSETS_VERSION ?? 'fallback'
+const CJO_TARGET = process.env.CJO_TARGET ?? ''
+const CJO_MODULES = JSON.parse(process.env.CJO_MODULES ?? '[]') as readonly string[]
+const WASM_ASSETS_VERSION_QS = `?v=${WASM_ASSETS_VERSION}`
+const LSP_WASM_PATH = `/lsp/LSPServer-wasm.js${WASM_ASSETS_VERSION_QS}`
+const LSP_WASM_BINARY_PATH = `/lsp/LSPServer-wasm.wasm${WASM_ASSETS_VERSION_QS}`
 const LSP_MODULES_PATH = '/lsp/modules'
 
 // Disable all WASM + CJO caching in dev so a freshly built wasm/cjo is
 // picked up without manually clearing site data.
 const CACHE_ENABLED = process.env.NODE_ENV !== 'development'
 
-const CACHE_STORAGE_KEY = 'lsp-cache-version'
+const CACHE_STORAGE_KEY = 'wasm-assets-cache-version'
 const WASM_CACHE_NAME_PREFIX = 'wasm-'
 const CJO_DB_NAME = 'cjo-cache'
 const CJO_STORE_NAME = 'modules'
-
-const wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${LSP_VERSION}`
+const wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${WASM_ASSETS_VERSION}`
 const WASM_FATAL_RE = /\babort\(|RuntimeError|Uncaught/
 
 async function checkAndUpdateCacheVersion(): Promise<void> {
@@ -29,10 +34,10 @@ async function checkAndUpdateCacheVersion(): Promise<void> {
   }
 
   const storedVersion = localStorage.getItem(CACHE_STORAGE_KEY)
-  if (storedVersion !== LSP_VERSION) {
-    console.log(`[Cache] Build version changed: ${storedVersion} -> ${LSP_VERSION}`)
+  if (storedVersion !== WASM_ASSETS_VERSION) {
+    console.log(`[Cache] Build version changed: ${storedVersion} -> ${WASM_ASSETS_VERSION}`)
     await clearAllLspCache()
-    localStorage.setItem(CACHE_STORAGE_KEY, LSP_VERSION)
+    localStorage.setItem(CACHE_STORAGE_KEY, WASM_ASSETS_VERSION)
   }
 }
 
@@ -166,20 +171,24 @@ async function initializeLspServer(
   // Directories the stdlib loader will write into. Cangjie's static init
   // (inside the wasm factory) also expects `/cangjie/modules/<target>/` to
   // exist — create everything in preRun so it's ready before main() runs.
-  const targetModulesPath = `/cangjie/modules/${__CJO_TARGET__}`
+  const targetModulesPath = `/cangjie/modules/${CJO_TARGET}`
   const moduleDirs = new Set<string>()
-  for (const modulePath of __CJO_MODULES__) {
+  for (const modulePath of CJO_MODULES) {
     const idx = modulePath.lastIndexOf('/')
     if (idx > 0) {
       moduleDirs.add(modulePath.slice(0, idx))
     }
   }
 
-  const WasmModule = await import(/* webpackIgnore: true */ LSP_WASM_PATH)
+  const WasmModule = await import(/* webpackIgnore: true */ /* @vite-ignore */ LSP_WASM_PATH)
   if (shouldAbort())
     throw new Error('aborted')
 
-  const wasmMod: EmscriptenModule = await WasmModule.default({
+  let rejectInstantiation!: (error: Error) => void
+  const instantiationFailure = new Promise<never>((_resolve, reject) => {
+    rejectInstantiation = reject
+  })
+  const wasmModulePromise = WasmModule.default({
     print: (text: string) => onLog(`[stdout] ${text}`),
     printErr: (text: string) => {
       onLog(`[stderr] ${text}`)
@@ -194,6 +203,12 @@ async function initializeLspServer(
       for (const dir of moduleDirs) {
         mkdirP(mod.FS, `${targetModulesPath}/${dir}`)
       }
+      mkdirP(mod.FS, '/playground/src')
+      mod.FS.writeFile(
+        '/playground/cjpm.toml',
+        new TextEncoder().encode(PLAYGROUND_PROJECT_MANIFEST),
+      )
+      mod.FS.writeFile('/playground/src/main.cj', new Uint8Array())
     }],
     // Emscripten contract: async path must call successCallback() and
     // return {} — never return a Promise or exports object.
@@ -205,10 +220,18 @@ async function initializeLspServer(
         .then(r => r.arrayBuffer())
         .then(bytes => WebAssembly.instantiate(bytes, imports))
         .then(result => successCallback(result.instance, result.module))
-        .catch(e => onError(new Error(`Failed to instantiate WASM: ${(e as Error).message}`)))
+        .catch((e) => {
+          const error = new Error(`Failed to instantiate WASM: ${(e as Error).message}`)
+          onError(error)
+          // Emscripten's async instantiateWasm contract has no error callback.
+          // Reject a parallel promise so initialization and queued teardown do
+          // not wait forever for a success callback that will never arrive.
+          rejectInstantiation(error)
+        })
       return {}
     },
   })
+  const wasmMod: EmscriptenModule = await Promise.race([wasmModulePromise, instantiationFailure])
   if (shouldAbort())
     throw new Error('aborted')
 
@@ -222,13 +245,7 @@ async function initializeLspServer(
       onError(new Error(`Failed to parse LSP message: ${(e as Error).message}`))
     }
   }
-  // The wasm glue is built with Closure 1, which mangles the
-  // `Module.onLSPMessage` property it checks inside EM_JS to a short name
-  // (currently `uc`). User code isn't processed by the same closure pass,
-  // so setting only `onLSPMessage` doesn't connect. Assign both; if the
-  // mangled name changes on a future wasm build, update the fallback.
   wasmMod.onLSPMessage = lspMessageHandler
-  ;(wasmMod as unknown as Record<string, unknown>).uc = lspMessageHandler
 
   onLog('Initializing LSP server...')
   wasmMod.initLSP()
@@ -249,7 +266,7 @@ async function initializeLspServer(
     }
   }
 
-  await Promise.all(__CJO_MODULES__.map(async (modulePath) => {
+  await Promise.all(CJO_MODULES.map(async (modulePath) => {
     const destPath = `${targetModulesPath}/${modulePath}`
 
     try {
@@ -261,7 +278,7 @@ async function initializeLspServer(
         cached++
       }
       else {
-        const url = `${LSP_MODULES_PATH}/${__CJO_TARGET__}/${modulePath}${LSP_VERSION_QS}`
+        const url = `${LSP_MODULES_PATH}/${CJO_TARGET}/${modulePath}${WASM_ASSETS_VERSION_QS}`
         const response = await fetch(url)
         if (response.ok) {
           const data = new Uint8Array(await response.arrayBuffer())
@@ -282,7 +299,7 @@ async function initializeLspServer(
   }))
 
   db?.close()
-  onLog(`Loaded ${loaded}/${__CJO_MODULES__.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
+  onLog(`Loaded ${loaded}/${CJO_MODULES.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
   if (shouldAbort())
     throw new Error('aborted')
 
@@ -321,6 +338,7 @@ interface ConnectionInstance {
   module: EmscriptenModule | null
   aborted: boolean
   crashHandled: boolean
+  documentMirror: ReturnType<typeof createLspDocumentMirror> | null
 }
 
 interface LspRuntimeDeps {
@@ -358,7 +376,7 @@ const STATE = hmrSlot<LspGlobalState>(HMR_SLOT_KEYS.LSP_STATE, () => ({
     origin: 'auto',
     manuallyStopped: false,
     stdlibModulesLoaded: 0,
-    stdlibModulesTotal: __CJO_MODULES__.length,
+    stdlibModulesTotal: CJO_MODULES.length,
     generation: 0,
     autoRestartAttempts: 0,
   },
@@ -456,6 +474,7 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
     module: null,
     aborted: false,
     crashHandled: false,
+    documentMirror: null,
   }
 
   setState({
@@ -518,6 +537,8 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
     if (instance.aborted || !instance.module)
       return
     const message = typeof event.data === 'string' ? event.data : JSON.stringify(event.data)
+    instance.documentMirror ??= createLspDocumentMirror(instance.module.FS)
+    instance.documentMirror.handle(message)
     try {
       instance.module.processMessage(message)
     }
@@ -551,6 +572,7 @@ async function disposeConnection(instance: ConnectionInstance): Promise<void> {
   }
   catch {}
   instance.module = null
+  instance.documentMirror = null
 }
 
 async function runLifecycle<T>(operation: () => Promise<T>): Promise<T> {
@@ -687,14 +709,17 @@ export function getCurrentEditorPort(): MessagePort | null {
  * preserves the original boot-on-first-use contract used by the Monaco
  * language client factory.
  */
-export function getLanguageClientPort(): MessagePort {
+export async function getLanguageClientPort(): Promise<MessagePort> {
   if (!STATE.connectionInstance) {
     if (STATE.runtimeStatus.manuallyStopped) {
       throw new Error('LSP is manually stopped; cannot obtain port')
     }
-    void startLsp('auto')
+    await startLsp('auto')
   }
-  return STATE.connectionInstance!.editorPort
+  const port = STATE.connectionInstance?.editorPort
+  if (!port)
+    throw new Error('LSP failed to create an editor port')
+  return port
 }
 
 export function getLspStatus(): LspRuntimeStatus {

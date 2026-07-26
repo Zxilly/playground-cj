@@ -1,18 +1,26 @@
 // 闭包：捕获外层变量的函数
 
+class CounterState {
+    var count: Int64
+
+    init(count: Int64) {
+        this.count = count
+    }
+}
+
 func makeAdder(base: Int64): (Int64) -> Int64 {
     // Lambda 捕获了参数 base
     { value: Int64 => value + base }
 }
 
 func makeCounter(start: Int64): () -> Int64 {
-    var count = start
+    let state = CounterState(start)
     
-    // 嵌套函数捕获了 var 变量
-    // 注意：捕获 var 的函数只能调用，不能作为一等公民使用
+    // 逃逸闭包不能直接捕获局部 var；改为捕获不可变的类引用，
+    // 再更新该引用指向对象的可变成员。
     func increment(): Int64 {
-        count = count + 1
-        count
+        state.count = state.count + 1
+        state.count
     }
     
     return increment
@@ -34,6 +42,11 @@ main() {
     
     // 闭包各持有独立的捕获值
     println("add10(8) = ${add10(8)}")  // 18
+
+    // 捕获的引用可以在多次调用之间保存可变状态
+    let counter = makeCounter(0)
+    println("counter() = ${counter()}")  // 1
+    println("counter() = ${counter()}")  // 2
     
     // 字符串闭包
     let greetHello = makeGreeter("你好")

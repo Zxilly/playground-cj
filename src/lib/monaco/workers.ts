@@ -1,4 +1,4 @@
-import { getEnhancedMonacoEnvironment } from 'monaco-languageclient/vscodeApiWrapper'
+import { getEnhancedMonacoEnvironment } from './vscode-api'
 
 export function configureMonacoWorkers() {
   const env = getEnhancedMonacoEnvironment()

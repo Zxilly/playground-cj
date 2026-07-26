@@ -1,7 +1,7 @@
 main() {
     // Single character
     let letter: Rune = r'A'
-    let chinese: Rune = r'Cang'
+    let chinese: Rune = r'仓'
     let emoji: Rune = r'🎉'
 
     println("Letter: ${letter}")
@@ -17,6 +17,7 @@ main() {
     print(tab)
     print("World")
     print(newline)
+    println("Backslash: ${backslash}")
 
     // Universal characters (Unicode code points)
     let he: Rune = r'\u{4f60}'   // "你"

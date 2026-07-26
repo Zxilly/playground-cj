@@ -3,6 +3,7 @@ import {
   getLocaleHref,
   getPlaygroundHref,
   getSiteDomain,
+  getTourAIHref,
   getTourHref,
   getTourPath,
 } from '@/lib/siteHref'
@@ -41,6 +42,18 @@ describe('site href helpers', () => {
       rest: ['01-welcome', '01-intro'],
       servingDomain: 'playground',
     })).toBe('/zh/tour/01-welcome/01-intro')
+  })
+
+  it('builds AI tutor links with optional topic deep links', () => {
+    expect(getTourAIHref('zh', {
+      currentOrigin: 'http://localhost:3000',
+      topic: 'cj.program.main',
+    })).toBe('/zh/tour/ai?topic=cj.program.main')
+
+    expect(getTourAIHref('zh', {
+      currentOrigin: 'https://tour.cj.zxilly.dev',
+      topic: 'cj.var.immutable',
+    })).toBe('https://tour.cj.zxilly.dev/zh/ai?topic=cj.var.immutable')
   })
 
   it('replaces the locale while preserving path, search, and hash', () => {

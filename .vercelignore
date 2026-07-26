@@ -1,0 +1,23 @@
+# Upload only inputs required by the Vercel build. This file takes precedence
+# over .gitignore, so an allowlist prevents local research and build artifacts
+# from entering deployments.
+/*
+
+!.vercelignore
+!package.json
+!pnpm-lock.yaml
+!patches
+!cj-runner
+!lingui.config.ts
+!next.config.ts
+!postcss.config.mjs
+!tsconfig.json
+!vercel.json
+
+!public
+# `pnpm prebuild` downloads this pinned prerelease asset on Vercel.
+public/lsp/
+
+!scripts
+!src
+!tour

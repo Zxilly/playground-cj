@@ -1,6 +1,5 @@
-import { flattenSections, loadTourData } from '@/tour/loader'
-import TourAIWrapper from '@/components/tour/ai/TourAIWrapper'
 import type { Metadata } from 'next'
+import TeachApp from '@/features/teach/components/TeachApp'
 
 interface PageProps {
   params: Promise<{
@@ -11,7 +10,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { lang } = await params
   return {
-    title: lang === 'en' ? 'AI Tutor - Cangjie Tour' : 'AI 助教 - 仓颉之旅',
+    title: lang === 'en' ? 'AI Classroom - Cangjie Tour' : 'AI 课堂 - 仓颉之旅',
   }
 }
 
@@ -21,12 +20,9 @@ export async function generateStaticParams() {
 
 export default async function TourAIPage({ params }: PageProps) {
   const { lang } = await params
-  const tourData = await loadTourData()
-  const flat = flattenSections(tourData)
-
   return (
-    <main>
-      <TourAIWrapper lang={lang} allSections={flat} />
+    <main className="teach-workspace-root h-dvh overflow-hidden bg-background text-foreground">
+      <TeachApp lang={lang} />
     </main>
   )
 }

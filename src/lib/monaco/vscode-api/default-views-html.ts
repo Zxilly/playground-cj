@@ -1,0 +1,23 @@
+// VSCode workbench DOM skeleton, injected into the container in ViewsService
+// mode. Element ids match what the views-service-override attaches parts to.
+export const defaultViewsHtml = `<div id="workbench-container">
+    <div id="titleBar"></div>
+    <div id="banner"></div>
+    <div id="workbench-top">
+        <div id="sidebarDiv">
+            <div id="activityBar"></div>
+            <div id="sidebar"></div>
+            <div id="auxiliaryBar-left"></div>
+        </div>
+        <div id="editorsDiv">
+            <div id="editors"></div>
+        </div>
+        <div id="sidebarRightDiv">
+            <div id="sidebar-right"></div>
+            <div id="activityBar-right"></div>
+            <div id="auxiliaryBar"></div>
+        </div>
+    </div>
+    <div id="panel"></div>
+    <div id="statusBar"></div>
+</div>`

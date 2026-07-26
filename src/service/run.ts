@@ -1,53 +1,16 @@
-import { BACKEND_URL } from '@/const'
+import type {
+  RunnerTruncationState,
+} from '@/lib/runner-contract'
+import {
+  NO_RUNNER_TRUNCATION,
+} from '@/lib/runner-contract'
+import { browserRunnerClient } from '@/lib/runner-client'
 import { t } from '@lingui/core/macro'
-
-interface FormatMessage {
-  formatted: string
-  formatter_output: string
-  formatter_code: number
-}
-
-interface RunMessage {
-  compiler_output: string
-  compiler_code: number
-  bin_output: string
-  bin_code: number
-}
-
-export async function requestRemoteAction<
-  T extends 'run' | 'format',
->(
-  code: string,
-  action: T,
-): Promise<T extends 'run' ? RunMessage : FormatMessage> {
-  const resp = await fetch(`${BACKEND_URL}/${action}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-    },
-    body: code,
-  })
-
-  if (!resp.ok) {
-    const text = await resp.text()
-    let msg = text
-    try {
-      const parsed = JSON.parse(text) as { error?: string }
-      if (parsed.error)
-        msg = parsed.error
-    }
-    catch {
-      // non-JSON body, use as-is
-    }
-    throw new Error(`Remote action failed: ${msg}`)
-  }
-
-  return resp.json()
-}
 
 export interface Actions {
   setToolOutput: (content: string) => void
   setProgramOutput: (content: string) => void
+  setTruncation: (state: RunnerTruncationState) => void
 }
 
 function buildOutput(content: string, code: number): string {
@@ -55,19 +18,36 @@ function buildOutput(content: string, code: number): string {
   return `${content}${trailing}----------\n${t`exit code ${code}`}`
 }
 
+function buildProgramOutput(stdout: string, stderr: string, code: number): string {
+  const content = stderr
+    ? `${stdout}${stdout && !stdout.endsWith('\n') ? '\n' : ''}[stderr]\n${stderr}`
+    : stdout
+  return buildOutput(content, code)
+}
+
 export async function remoteRun(code: string, actions: Actions): Promise<void> {
+  actions.setTruncation(NO_RUNNER_TRUNCATION)
   actions.setToolOutput(t`编译中`)
   actions.setProgramOutput(t`运行中`)
 
-  const data = await requestRemoteAction(code, 'run')
+  const data = await browserRunnerClient.run(code)
 
+  actions.setTruncation({
+    compilerOutput: data.compiler_output_truncated,
+    programStdout: data.bin_stdout_truncated,
+    programStderr: data.bin_stderr_truncated,
+  })
   actions.setToolOutput(buildOutput(data.compiler_output, data.compiler_code))
-  if (data.compiler_code !== 0) {
+  if (data.phase === 'compile') {
     actions.setProgramOutput('')
     throw new Error(t`编译失败`)
   }
 
-  actions.setProgramOutput(buildOutput(data.bin_output, data.bin_code))
+  actions.setProgramOutput(buildProgramOutput(
+    data.bin_stdout,
+    data.bin_stderr,
+    data.bin_code,
+  ))
 
   if (data.bin_code !== 0) {
     throw new Error(t`运行失败`)

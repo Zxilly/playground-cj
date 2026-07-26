@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { findChapterRefSections, getAllConcepts, getConcept, getReadyConcepts } from './loader'
+import { findChapterRefSections, getAllConcepts, parseConceptGraph } from './loader'
 
 describe('concept-graph loader', () => {
-  it('loads non-empty graph', () => {
+  it('loads complete concept metadata with unique ids', () => {
     const all = getAllConcepts()
-    expect(all.length).toBeGreaterThan(20)
-  })
+    const ids = new Set<string>()
 
-  it('looks up by id', () => {
-    const main = getConcept('cj.program.main')
-    expect(main).toBeDefined()
-    expect(main!.title.zh).toBeTruthy()
-    expect(main!.title.en).toBeTruthy()
+    for (const concept of all) {
+      expect(concept.conceptId).toMatch(/^cj\./)
+      expect(ids.has(concept.conceptId), `duplicate concept ${concept.conceptId}`).toBe(false)
+      expect(concept.title.zh).toBeTruthy()
+      expect(concept.title.en).toBeTruthy()
+      expect(concept.summary.zh).toBeTruthy()
+      expect(concept.summary.en).toBeTruthy()
+      expect(concept.difficulty).toBeGreaterThan(0)
+      ids.add(concept.conceptId)
+    }
   })
 
   it('all prerequisites resolve to known concepts', () => {
@@ -41,18 +45,46 @@ describe('concept-graph loader', () => {
     expect(() => all.forEach(n => visit(n.conceptId, []))).not.toThrow()
   })
 
-  it('getReadyConcepts returns root concepts when nothing demonstrated', () => {
-    const ready = getReadyConcepts(new Set())
-    expect(ready.length).toBeGreaterThan(0)
-    for (const r of ready)
-      expect(r.prerequisites.length).toBe(0)
+  it('rejects malformed, duplicate, dangling, and cyclic concept graphs at the loading boundary', () => {
+    const node = (conceptId: string, prerequisites: string[] = []) => ({
+      chapterRefs: ['02-basics/01-bindings'],
+      conceptId,
+      difficulty: 1,
+      prerequisites,
+      summary: { en: 'Summary', zh: '摘要' },
+      title: { en: 'Title', zh: '标题' },
+    })
+
+    expect(() => parseConceptGraph({
+      nodes: [node('cj.first'), node('cj.first')],
+      version: 1,
+    })).toThrow(/duplicate/i)
+    expect(() => parseConceptGraph({
+      nodes: [node('cj.first', ['cj.missing'])],
+      version: 1,
+    })).toThrow(/unknown prerequisite/i)
+    expect(() => parseConceptGraph({
+      nodes: [
+        node('cj.first', ['cj.second']),
+        node('cj.second', ['cj.first']),
+      ],
+      version: 1,
+    })).toThrow(/cycle/i)
+    expect(() => parseConceptGraph({
+      nodes: [{ ...node('cj.first'), difficulty: 9 }],
+      version: 1,
+    })).toThrow()
   })
 
-  it('getReadyConcepts unlocks concepts after demonstrating prereq', () => {
-    const main = 'cj.program.main'
-    const before = getReadyConcepts(new Set())
-    const after = getReadyConcepts(new Set([main]))
-    expect(after.length).toBeGreaterThan(before.length)
+  it('returns an immutable graph projection instead of shared mutable state', () => {
+    const all = getAllConcepts()
+
+    expect(Object.isFrozen(all)).toBe(true)
+    expect(Object.isFrozen(all[0])).toBe(true)
+    expect(Object.isFrozen(all[0].prerequisites)).toBe(true)
+    expect(() => {
+      ;(all as unknown as Array<unknown>).push({})
+    }).toThrow()
   })
 
   it('findChapterRefSections matches sub-chapter prefix', () => {

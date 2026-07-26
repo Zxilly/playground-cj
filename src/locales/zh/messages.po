@@ -13,258 +13,310 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/components/LspStatusIndicator.tsx:77
-msgid ""
-"\n"
-"错误：{lastError}"
-msgstr ""
-"\n"
-"错误：{lastError}"
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:299
+msgid "（北京时间）"
+msgstr "（北京时间）"
 
-#: src/components/LspStatusIndicator.tsx:36
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:24
 msgid "（手动）"
 msgstr "（手动）"
 
-#: src/components/Playground.tsx:120
+#: src/features/playground/components/Playground.tsx:123
 msgid "{outputTip}输出内容"
 msgstr "{outputTip}输出内容"
 
-#: src/service/run.ts:42
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:222
+msgid "AI 服务来源"
+msgstr "AI 服务来源"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:185
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:186
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:205
+msgid "AI 服务设置"
+msgstr "AI 服务设置"
+
+#: src/features/teach/components/TeachLanding.tsx:33
+#: src/features/teach/components/TeachTopBar.tsx:37
+#: src/features/tour/components/TourHeader.tsx:63
+#: src/features/tour/components/TourHeader.tsx:84
+msgid "AI 课堂"
+msgstr "AI 课堂"
+
+#: src/modules/llm-config/components/LLMConfigFields.tsx:49
+msgid "API Key"
+msgstr "API Key"
+
+#: src/modules/llm-config/components/LLMConfigFields.tsx:63
+msgid "API 风格"
+msgstr "API 风格"
+
+#: src/components/ui/dialog.tsx:115
+msgid "Close"
+msgstr "关闭"
+
+#: src/service/run.ts:18
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
-#: src/components/ShareButton.tsx:98
-msgid "Hash 方式"
-msgstr "Hash 方式"
+#: src/features/teach/components/views/PlaygroundView.tsx:488
+msgid "Playground 代码编辑区"
+msgstr "Playground 代码编辑区"
 
-#: src/components/LspStatusIndicator.tsx:60
-msgid "LSP 停止中"
-msgstr "LSP 停止中"
+#: src/features/teach/components/views/PlaygroundView.tsx:125
+msgid "Playground 标签页"
+msgstr "Playground 标签页"
 
-#: src/components/LspStatusIndicator.tsx:48
-msgid "LSP 启动中"
-msgstr "LSP 启动中"
+#: src/features/teach/components/views/PlaygroundView.tsx:237
+msgid "Playground 草稿尚未保存：浏览器存储不可用。"
+msgstr "Playground 草稿尚未保存：浏览器存储不可用。"
 
-#: src/components/LspStatusIndicator.tsx:80
-msgid "LSP 崩溃"
-msgstr "LSP 崩溃"
+#: src/modules/assistant-ui/chat/BranchPicker.tsx:22
+msgid "上一条回复"
+msgstr "上一条回复"
 
-#: src/components/LspStatusIndicator.tsx:70
-msgid "LSP 已停止"
-msgstr "LSP 已停止"
+#: src/features/teach/components/TeachConfigWizard.tsx:208
+msgid "上一步"
+msgstr "上一步"
 
-#: src/components/LspStatusIndicator.tsx:42
-msgid "LSP 已就绪"
-msgstr "LSP 已就绪"
+#: src/modules/assistant-ui/chat/BranchPicker.tsx:33
+msgid "下一条回复"
+msgstr "下一条回复"
 
-#: src/components/LspStatusIndicator.tsx:69
-msgid "LSP 已手动停止"
-msgstr "LSP 已手动停止"
+#: src/features/teach/components/TeachConfigWizard.tsx:185
+msgid "下一步"
+msgstr "下一步"
 
-#: src/components/LspStatusIndicator.tsx:54
-msgid "LSP 重启中"
-msgstr "LSP 重启中"
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:297
+msgid "下次刷新："
+msgstr "下次刷新："
 
-#: src/components/ShareButton.tsx:90
-msgid "URL 方式"
-msgstr "URL 方式"
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:316
+msgid "仅重置当前表单；保存后生效，取消则保留原配置。"
+msgstr "仅重置当前表单；点击保存后才会生效，取消会保留已有设置。"
 
-#: src/components/playground/PlaygroundHeader.tsx:55
-#: src/components/playground/PlaygroundHeader.tsx:93
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:74
+msgid "今日 AI 额度已用完"
+msgstr "今日 AI 额度已用完"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:298
+msgid "今日共享额度已用完，{resetMoment} 刷新；可改用自定义 API Key。"
+msgstr "今日共享额度已用完，{resetMoment} 刷新；可改用自定义 API Key。"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:305
+msgid "今日共享额度已用完；可改用自定义 API Key。"
+msgstr "今日共享额度已用完；可改用自定义 API Key。"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:265
+msgid "今日剩余"
+msgstr "今日剩余"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:349
+#: src/features/teach/components/TeachConfigWizard.tsx:351
+#: src/features/teach/components/TeachConfigWizard.tsx:366
+#: src/features/teach/components/TeachConfigWizard.tsx:373
+msgid "今日额度剩余"
+msgstr "今日额度剩余"
+
+#: src/features/playground/components/PlaygroundHeader.tsx:59
+#: src/features/playground/components/PlaygroundHeader.tsx:97
 msgid "仓颉 Playground"
 msgstr "仓颉 Playground"
 
-#: src/lib/lsp-commands.ts:44
-msgid "仓颉：停止 LSP"
-msgstr "仓颉：停止 LSP"
+#: src/lib/lsp-commands.ts:55
+msgid "仓颉：停止代码提示"
+msgstr "仓颉：停止代码提示"
 
-#: src/lib/lsp-commands.ts:39
-msgid "仓颉：启动 LSP"
-msgstr "仓颉：启动 LSP"
+#: src/lib/lsp-commands.ts:50
+msgid "仓颉：启动代码提示"
+msgstr "仓颉：启动代码提示"
 
-#: src/lib/lsp-commands.ts:54
-msgid "仓颉：清除缓存并重启 LSP"
-msgstr "仓颉：清除缓存并重启 LSP"
+#: src/lib/lsp-commands.ts:65
+msgid "仓颉：清除缓存并重启代码提示"
+msgstr "仓颉：清除缓存并重启代码提示"
 
-#: src/lib/lsp-commands.ts:49
-msgid "仓颉：重启 LSP"
-msgstr "仓颉：重启 LSP"
+#: src/lib/lsp-commands.ts:60
+msgid "仓颉：重启代码提示"
+msgstr "仓颉：重启代码提示"
 
-#: src/components/tour/TourSidebar.tsx:44
+#: src/features/teach/components/TeachTopBar.tsx:40
+#: src/features/tour/components/TourSidebar.tsx:44
 msgid "仓颉之旅"
 msgstr "仓颉之旅"
 
-#: src/components/Playground.tsx:142
-msgid "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
-msgstr "仓颉版本 1.1.0-beta.25 | STDX 版本 1.1.0-beta.25.1 | "
+#: src/features/tour/components/TourHeader.tsx:46
+msgid "仓颉之旅首页"
+msgstr "仓颉之旅首页"
 
-#: src/components/LspStatusIndicator.tsx:61
-msgid ""
-"仓颉语言服务器\n"
-"\n"
-"状态：停止中{originSuffix}"
-msgstr ""
-"仓颉语言服务器\n"
-"\n"
-"状态：停止中{originSuffix}"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:59
+msgid "仓颉代码提示已停止。点击管理。"
+msgstr "仓颉代码提示已停止。点击管理。"
 
-#: src/components/LspStatusIndicator.tsx:49
-msgid ""
-"仓颉语言服务器\n"
-"\n"
-"状态：启动中{originSuffix}\n"
-"{moduleInfo}"
-msgstr ""
-"仓颉语言服务器\n"
-"\n"
-"状态：启动中{originSuffix}\n"
-"{moduleInfo}"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:31
+msgid "仓颉代码提示已就绪{originSuffix}。点击管理。"
+msgstr "仓颉代码提示已就绪{originSuffix}。点击管理。"
 
-#: src/components/LspStatusIndicator.tsx:43
-msgid ""
-"仓颉语言服务器\n"
-"\n"
-"状态：就绪{originSuffix}\n"
-"{moduleInfo}\n"
-"\n"
-"点击查看操作"
-msgstr ""
-"仓颉语言服务器\n"
-"\n"
-"状态：就绪{originSuffix}\n"
-"{moduleInfo}\n"
-"\n"
-"点击查看操作"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:58
+msgid "仓颉代码提示已手动停止。点击管理。"
+msgstr "仓颉代码提示已手动停止。点击管理。"
 
-#: src/components/LspStatusIndicator.tsx:83
-msgid ""
-"仓颉语言服务器\n"
-"\n"
-"状态：崩溃 — 将自动重启{errLine}\n"
-"\n"
-"点击查看操作"
-msgstr ""
-"仓颉语言服务器\n"
-"\n"
-"状态：崩溃 — 将自动重启{errLine}\n"
-"\n"
-"点击查看操作"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:68
+msgid "仓颉代码提示暂不可用，系统会自动重启。点击管理。"
+msgstr "仓颉代码提示暂不可用，系统会自动重启。点击管理。"
 
-#: src/components/LspStatusIndicator.tsx:82
-msgid ""
-"仓颉语言服务器\n"
-"\n"
-"状态：崩溃（自动重启已耗尽）{errLine}\n"
-"\n"
-"点击手动重启"
-msgstr ""
-"仓颉语言服务器\n"
-"\n"
-"状态：崩溃（自动重启已耗尽）{errLine}\n"
-"\n"
-"点击手动重启"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:67
+msgid "仓颉代码提示暂不可用。请手动重启。"
+msgstr "仓颉代码提示暂不可用。请手动重启。"
 
-#: src/components/LspStatusIndicator.tsx:73
-msgid ""
-"仓颉语言服务器\n"
-"\n"
-"状态：已停止\n"
-"\n"
-"点击查看操作"
-msgstr ""
-"仓颉语言服务器\n"
-"\n"
-"状态：已停止\n"
-"\n"
-"点击查看操作"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:56
+msgid "代码提示已停止"
+msgstr "代码提示已停止"
 
-#: src/components/LspStatusIndicator.tsx:72
-msgid ""
-"仓颉语言服务器\n"
-"\n"
-"状态：已停止（手动）\n"
-"\n"
-"点击查看操作"
-msgstr ""
-"仓颉语言服务器\n"
-"\n"
-"状态：已停止（手动）\n"
-"\n"
-"点击查看操作"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:30
+msgid "代码提示已就绪"
+msgstr "代码提示已就绪"
 
-#: src/components/LspStatusIndicator.tsx:55
-msgid ""
-"仓颉语言服务器\n"
-"\n"
-"状态：重启中{originSuffix}\n"
-"{moduleInfo}"
-msgstr ""
-"仓颉语言服务器\n"
-"\n"
-"状态：重启中{originSuffix}\n"
-"{moduleInfo}"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:55
+msgid "代码提示已手动停止"
+msgstr "代码提示已手动停止"
+
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:65
+msgid "代码提示暂不可用"
+msgstr "代码提示暂不可用"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:269
+msgid "使用已保存版本"
+msgstr "使用已保存版本"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:172
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:117
+msgid "使用自定义 API Key"
+msgstr "使用自定义 API Key"
+
+#: src/modules/llm-config/components/LLMConfigFields.tsx:108
+msgid "使用自定义 API Key 时，需同时配置服务地址与模型。"
+msgstr "使用自定义 API Key 时，需同时配置服务地址与模型。"
+
+#: src/features/teach/components/TeachLanding.tsx:36
+msgid "依据你的目标定制仓颉课程"
+msgstr "依据你的目标定制仓颉课程"
+
+#: src/features/teach/components/TeachLanding.tsx:68
+msgid "依据记忆曲线安排复习，帮助你长期留存所学内容。"
+msgstr "依据记忆曲线安排复习，帮助你长期留存所学内容。"
 
 #: src/components/ui/sidebar.tsx:203
 msgid "侧边栏"
 msgstr "侧边栏"
 
-#: src/lib/monaco/actions.ts:124
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:336
+msgid "保存"
+msgstr "保存"
+
+#: src/lib/monaco/actions.ts:142
 msgid "保存代码"
 msgstr "保存代码"
 
-#: src/components/LspStatusIndicator.tsx:177
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:237
+msgid "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
+msgstr "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
+
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:117
 msgid "停止"
 msgstr "停止"
 
-#: src/components/ui/dialog.tsx:79
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:45
+msgid "停止生成"
+msgstr "停止生成"
+
+#: src/features/teach/components/TeachLanding.tsx:39
+msgid "先与课堂明确你的学习目的与预期成果，课堂将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。"
+msgstr "先与课堂明确你的学习目的与预期成果，课堂将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。"
+
+#: src/features/teach/components/TeachLanding.tsx:62
+msgid "先明确你希望用仓颉实现的目标，课堂据此安排课程，而非套用固定大纲。"
+msgstr "先明确你希望用仓颉实现的目标，课堂据此安排课程，而非套用固定大纲。"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:136
+msgid "先选择驱动课堂的 AI 服务"
+msgstr "先选择驱动课堂的 AI 服务"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:154
+msgid "共享 AI 服务"
+msgstr "共享 AI 服务"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:327
+msgid "共享服务暂不可用，可改用自定义 API Key。"
+msgstr "共享服务暂不可用，可改用自定义 API Key。"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:225
+msgid "共享额度"
+msgstr "共享额度"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:276
+msgid "共享额度已使用量"
+msgstr "共享额度已使用量"
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:77
+msgid "共享额度每日 0 点（北京时间）自动刷新。"
+msgstr "共享额度每日 0 点（北京时间）自动刷新。"
+
+#: src/components/ui/dialog.tsx:77
 #: src/components/ui/sheet.tsx:84
 #: src/components/ui/ui-i18n.test.tsx:53
 msgid "关闭"
 msgstr "关闭"
 
-#: src/components/ShareButton.tsx:77
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:103
+msgid "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
+msgstr "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:201
+msgid "关闭标签页"
+msgstr "关闭标签页"
+
+#: src/features/playground/components/ShareButton.tsx:59
 msgid "分享"
 msgstr "分享"
 
-#: src/lib/monaco/actions.ts:103
+#: src/lib/monaco/actions.ts:121
 msgid "分享 (Hash 方式)"
 msgstr "分享 (Hash 方式)"
 
-#: src/lib/monaco/actions.ts:90
+#: src/lib/monaco/actions.ts:108
 msgid "分享 (URL 方式)"
 msgstr "分享 (URL 方式)"
 
-#: src/components/ShareButton.tsx:63
-#: src/lib/monaco/actions.ts:113
+#: src/features/playground/components/ShareButton.tsx:45
+#: src/lib/monaco/actions.ts:131
 msgid "分享中..."
 msgstr "分享中..."
 
-#: src/components/ShareDialog.tsx:32
+#: src/features/playground/components/ShareDialog.tsx:37
 msgid "分享代码"
 msgstr "分享代码"
 
-#: src/lib/monaco/actions.ts:18
-#: src/lib/monaco/actions.ts:34
+#: src/lib/monaco/actions.ts:62
+#: src/lib/monaco/actions.ts:78
 msgid "分享代码加载中..."
 msgstr "分享代码加载中..."
 
-#: src/lib/monaco/actions.ts:29
-#: src/lib/monaco/actions.ts:36
+#: src/lib/monaco/actions.ts:73
+#: src/lib/monaco/actions.ts:80
 msgid "分享代码加载失败"
 msgstr "分享代码加载失败"
 
-#: src/lib/monaco/actions.ts:24
-#: src/lib/monaco/actions.ts:35
+#: src/lib/monaco/actions.ts:68
+#: src/lib/monaco/actions.ts:79
 msgid "分享代码加载成功"
 msgstr "分享代码加载成功"
 
-#: src/components/ShareButton.tsx:65
-#: src/lib/monaco/actions.ts:115
+#: src/features/playground/components/ShareButton.tsx:47
+#: src/lib/monaco/actions.ts:133
 msgid "分享失败"
 msgstr "分享失败"
 
-#: src/components/ShareButton.tsx:64
-#: src/lib/monaco/actions.ts:114
+#: src/features/playground/components/ShareButton.tsx:46
+#: src/lib/monaco/actions.ts:132
 msgid "分享成功"
 msgstr "分享成功"
 
@@ -273,48 +325,203 @@ msgstr "分享成功"
 msgid "切换侧边栏"
 msgstr "切换侧边栏"
 
-#: src/components/LspStatusIndicator.tsx:171
+#: src/features/teach/components/TeachLanding.tsx:64
+msgid "动手练习"
+msgstr "动手练习"
+
+#: src/features/tour/components/mdx/LanguagePicker.tsx:36
+msgid "勾选后，教程会显示对应语言的对比说明。"
+msgstr "勾选后，教程会显示对应语言的对比说明。"
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:95
+msgid "即将刷新…"
+msgstr "即将刷新…"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:149
+msgid "双击或按 F2 重命名"
+msgstr "双击或按 F2 重命名"
+
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:26
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:32
+msgid "发送消息"
+msgstr "发送消息"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:261
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:326
+msgid "取消"
+msgstr "取消"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:243
+msgid "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
+msgstr "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:242
+msgid "另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。"
+msgstr "另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:259
+msgid "另存为新标签页"
+msgstr "另存为新标签页"
+
+#: src/modules/assistant-ui/chat/ThreadWelcome.tsx:22
+msgid "可以询问当前概念、练习要求、代码问题，或让讲解更慢一些。"
+msgstr "可以询问当前概念、练习要求、代码问题，或让讲解更慢一些。"
+
+#: src/modules/assistant-ui/chat/ThreadWelcome.tsx:19
+msgid "可以这样问"
+msgstr "可以这样问"
+
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:13
+msgid "向 AI 课堂提问…"
+msgstr "向 AI 课堂提问…"
+
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:111
 msgid "启动"
 msgstr "启动"
 
-#: src/components/Playground.tsx:151
+#: src/modules/assistant-ui/chat/ThreadScrollToBottom.tsx:11
+msgid "回到最新内容"
+msgstr "回到最新内容"
+
+#: src/modules/assistant-ui/registry/Attachment.tsx:68
+msgid "图片附件预览"
+msgstr "图片附件预览"
+
+#: src/features/playground/components/Playground.tsx:155
 msgid "在 GitHub 查看源代码"
 msgstr "在 GitHub 查看源代码"
 
-#: src/components/tour/mdx/LanguagePicker.tsx:29
+#: src/features/teach/components/TeachLanding.tsx:65
+msgid "在内置编辑器中编写仓颉代码并直接运行查看结果，课堂据此给出反馈。"
+msgstr "在内置编辑器中编写仓颉代码并直接运行查看结果，课堂据此给出反馈。"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:196
+msgid "填写你的 API Key"
+msgstr "填写你的 API Key"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:137
+msgid "填写你的 API 服务"
+msgstr "填写你的 API 服务"
+
+#: src/features/teach/components/TeachLanding.tsx:67
+msgid "复习巩固"
+msgstr "复习巩固"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:164
+msgid "复制"
+msgstr "复制"
+
+#: src/modules/assistant-ui/registry/MarkdownText.tsx:40
+msgid "复制代码"
+msgstr "复制代码"
+
+#: src/features/playground/components/ShareDialog.tsx:50
+msgid "复制分享链接"
+msgstr "复制分享链接"
+
+#: src/features/playground/components/ShareDialog.tsx:29
+msgid "复制分享链接失败"
+msgstr "复制分享链接失败"
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:100
+msgid "如需立刻继续使用，可在 AI 服务设置中填写自定义 API Key。"
+msgstr "如需立刻继续使用，可在 AI 服务设置中填写自定义 API Key。"
+
+#: src/features/playground/components/ShareButton.tsx:72
+msgid "完整链接"
+msgstr "完整链接"
+
+#: src/features/tour/components/mdx/CompareWith.tsx:21
+#: src/features/tour/components/mdx/LanguagePicker.tsx:27
 msgid "对比"
 msgstr "对比"
 
-#: src/components/tour/mdx/LanguagePicker.tsx:38
-msgid "对比内容将出现在文中。"
-msgstr "对比内容将出现在文中。"
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:195
+msgid "导出为 Markdown"
+msgstr "导出为 Markdown"
 
-#: src/components/shared/OutputPanel.tsx:27
-msgid "工具输出"
-msgstr "工具输出"
-
-#: src/lib/monaco/actions.ts:130
+#: src/lib/monaco/actions.ts:148
 msgid "已保存代码"
 msgstr "已保存代码"
 
-#: src/components/ShareDialog.tsx:25
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:235
+msgid "已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。"
+msgstr "已切回共享额度草稿；点击保存才会替换当前 API Key，取消会保留原设置。"
+
+#: src/features/playground/components/ShareDialog.tsx:26
 msgid "已复制分享链接"
 msgstr "已复制分享链接"
 
-#: src/components/tour/mdx/LanguagePicker.tsx:35
-msgid "我了解这些语言"
-msgstr "我了解这些语言"
+#: src/features/teach/components/TeachConfigWizard.tsx:319
+msgid "已就绪，可直接进入"
+msgstr "已就绪，可直接进入"
 
-#: src/components/ExamplesDropdown.tsx:44
+#: src/features/teach/components/TeachLanding.tsx:52
+msgid "开始"
+msgstr "开始"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:236
+msgid "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
+msgstr "当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。"
+
+#: src/features/tour/components/mdx/LanguagePicker.tsx:33
+msgid "我熟悉的语言"
+msgstr "我熟悉的语言"
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:113
+msgid "我知道了"
+msgstr "我知道了"
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:106
+msgid "打开 AI 服务设置填写自定义 API Key；不会清空已有课堂内容或练习记录。"
+msgstr "打开 AI 服务设置填写自定义 API Key；不会清空已有课堂内容或练习记录。"
+
+#: src/features/tour/components/TourHeader.tsx:81
+msgid "打开 AI 课堂，从当前教程主题开始学习和练习。"
+msgstr "打开 AI 课堂，从当前教程主题开始学习和练习。"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:173
+msgid "接入你自己的 OpenAI 兼容或 Anthropic 服务。"
+msgstr "接入你自己的 OpenAI 兼容或 Anthropic 服务。"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:155
+msgid "推荐 · 开箱即用，无需任何配置。"
+msgstr "推荐 · 开箱即用，无需任何配置。"
+
+#: src/features/tour/components/mdx/Note.tsx:12
+msgid "提示"
+msgstr "提示"
+
+#: src/features/playground/components/ExamplesDropdown.tsx:45
 msgid "搜索示例..."
 msgstr "搜索示例..."
 
-#: src/components/playground/PlaygroundHeader.tsx:62
-#: src/components/playground/PlaygroundHeader.tsx:100
+#: src/features/playground/components/PlaygroundHeader.tsx:66
+#: src/features/playground/components/PlaygroundHeader.tsx:104
 msgid "教程"
 msgstr "教程"
 
-#: src/components/Playground.tsx:85
+#: src/features/teach/components/views/PlaygroundView.tsx:213
+msgid "新建 Playground 标签页"
+msgstr "新建 Playground 标签页"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:312
+msgid "新建标签页"
+msgstr "新建标签页"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:273
+msgid "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
+msgstr "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:239
+msgid "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
+msgstr "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:259
+msgid "无法读取剩余额度，请稍后重试。"
+msgstr "无法读取剩余额度，请稍后重试。"
+
+#: src/features/playground/components/Playground.tsx:89
 msgid "显示"
 msgstr "显示"
 
@@ -322,96 +529,340 @@ msgstr "显示"
 msgid "显示移动端侧边栏。"
 msgstr "显示移动端侧边栏。"
 
+#: src/features/teach/components/views/PlaygroundView.tsx:304
+msgid "暂无 Playground 标签页。"
+msgstr "暂无 Playground 标签页。"
+
 #: src/components/ui/breadcrumb.tsx:110
 #: src/components/ui/ui-i18n.test.tsx:54
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:181
 msgid "更多"
 msgstr "更多"
 
-#: src/components/ExamplesDropdown.tsx:46
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:265
+msgid "更新"
+msgstr "更新"
+
+#: src/modules/llm-config/components/LLMConfigFields.tsx:81
+msgid "服务地址"
+msgstr "服务地址"
+
+#: src/features/playground/components/ExamplesDropdown.tsx:47
 msgid "未找到示例。"
 msgstr "未找到示例。"
 
-#: src/components/LanguageSelector.tsx:58
+#: src/features/playground/components/LanguageSelector.tsx:58
 msgid "未找到语言。"
 msgstr "未找到语言。"
 
-#: src/components/LspStatusIndicator.tsx:34
-msgid "标准库模块：{loadedModules}/{totalModules}"
-msgstr "标准库模块：{loadedModules}/{totalModules}"
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:208
+msgid "未配置 API Key 时使用共享额度；共享额度有限，可能耗尽。"
+msgstr "未填写 API Key 时将使用共享额度；共享额度有限，可能会用完。"
 
-#: src/components/playground/PlaygroundHeader.tsx:73
-#: src/components/playground/PlaygroundHeader.tsx:116
+#: src/features/playground/components/OutputPanel.tsx:47
+#: src/features/teach/components/blocks/CompilerDiagnosticOutput.tsx:33
+msgid "查看原始编译信息"
+msgstr "查看原始编译信息"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:551
+msgid "标准输出为空。"
+msgstr "标准输出为空。"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:169
+msgid "标签页名称"
+msgstr "标签页名称"
+
+#: src/features/playground/components/PlaygroundHeader.tsx:77
+#: src/features/playground/components/PlaygroundHeader.tsx:120
 msgid "格式化"
 msgstr "格式化"
 
-#: src/components/CodeRunner.tsx:54
-#: src/components/CodeRunner.tsx:60
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:68
 msgid "格式化失败"
 msgstr "格式化失败"
 
-#: src/components/CodeRunner.tsx:59
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:67
 msgid "格式化成功"
 msgstr "格式化成功"
 
-#: src/components/CodeRunner.tsx:58
+#: src/modules/llm-config/components/LLMConfigFields.tsx:93
+msgid "模型"
+msgstr "模型"
+
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:49
+msgid "正在停止仓颉代码提示{originSuffix}。"
+msgstr "正在停止仓颉代码提示{originSuffix}。"
+
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:48
+msgid "正在停止代码提示"
+msgstr "正在停止代码提示"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:334
+msgid "正在准备共享服务…"
+msgstr "正在准备共享服务…"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:142
+msgid "正在准备课堂内容…"
+msgstr "正在准备课堂内容…"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:255
+msgid "正在加载剩余额度…"
+msgstr "正在加载剩余额度…"
+
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:37
+msgid "正在启动仓颉代码提示{originSuffix}。"
+msgstr "正在启动仓颉代码提示{originSuffix}。"
+
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:36
+msgid "正在启动代码提示"
+msgstr "正在启动代码提示"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:225
+msgid "正在打开 Playground 草稿存储…"
+msgstr "正在打开 Playground 草稿存储…"
+
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:66
 msgid "正在格式化..."
 msgstr "正在格式化..."
 
-#: src/components/CodeRunner.tsx:32
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:46
 msgid "正在运行..."
 msgstr "正在运行..."
 
-#: src/components/LspStatusIndicator.tsx:191
-msgid "清除 WASM 与标准库缓存后重启"
-msgstr "清除 WASM 与标准库缓存后重启"
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:43
+msgid "正在重启仓颉代码提示{originSuffix}。"
+msgstr "正在重启仓颉代码提示{originSuffix}。"
 
-#: src/components/LspStatusIndicator.tsx:190
+#: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:42
+msgid "正在重启代码提示"
+msgstr "正在重启代码提示"
+
+#: src/modules/assistant-ui/registry/Attachment.tsx:181
+#: src/modules/assistant-ui/registry/Attachment.tsx:186
+msgid "添加附件"
+msgstr "添加附件"
+
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:130
 msgid "清除缓存并重启"
 msgstr "清除缓存并重启"
 
-#: src/components/shared/OutputPanel.tsx:38
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:310
+msgid "留空使用共享额度"
+msgstr "留空使用共享额度"
+
+#: src/features/teach/components/TeachLanding.tsx:61
+msgid "目标优先"
+msgstr "目标优先"
+
+#: src/features/playground/components/ShareButton.tsx:80
+msgid "短链接"
+msgstr "短链接"
+
+#: src/modules/assistant-ui/registry/Attachment.tsx:99
+msgid "移除文件"
+msgstr "移除文件"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:552
+msgid "程序未运行。"
+msgstr "程序未运行。"
+
+#: src/features/playground/components/OutputPanel.tsx:73
+#: src/features/teach/components/views/PlaygroundView.tsx:556
+msgid "程序标准输出已截断。"
+msgstr "程序标准输出已截断。"
+
+#: src/features/playground/components/OutputPanel.tsx:76
+#: src/features/teach/components/views/PlaygroundView.tsx:568
+msgid "程序标准错误已截断。"
+msgstr "程序标准错误已截断。"
+
+#: src/features/playground/components/OutputPanel.tsx:64
+#: src/features/teach/components/views/PlaygroundView.tsx:540
 msgid "程序输出"
 msgstr "程序输出"
 
-#: src/service/run.ts:46
+#: src/features/teach/components/TeachConfigWizard.tsx:131
+msgid "第 1 步 · 选择 AI 来源"
+msgstr "第 1 步 · 选择 AI 来源"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:132
+msgid "第 2 步 · 配置 API 服务"
+msgstr "第 2 步 · 配置 API 服务"
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:94
+msgid "约 {hours} 小时 {minutes} 分钟后刷新"
+msgstr "约 {hours} 小时 {minutes} 分钟后刷新"
+
+#: src/service/run.ts:30
 msgid "编译中"
 msgstr "编译中"
 
-#: src/service/run.ts:54
+#: src/features/playground/components/OutputPanel.tsx:36
+msgid "编译信息"
+msgstr "编译信息"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:593
+msgid "编译器未返回输出。"
+msgstr "编译器未返回输出。"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:582
+msgid "编译器输出"
+msgstr "编译器输出"
+
+#: src/features/playground/components/OutputPanel.tsx:57
+#: src/features/teach/components/views/PlaygroundView.tsx:608
+msgid "编译器输出已截断。"
+msgstr "编译器输出已截断。"
+
+#: src/service/run.ts:43
 msgid "编译失败"
 msgstr "编译失败"
 
-#: src/lib/monaco/actions.ts:74
+#: src/lib/monaco/actions.ts:92
 msgid "编译运行"
 msgstr "编译运行"
 
-#: src/components/ShareButton.tsx:46
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:238
+msgid "编辑"
+msgstr "编辑"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:256
+msgid "编辑消息"
+msgstr "编辑消息"
+
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:38
+msgid "老师正在准备课堂内容…"
+msgstr "老师正在准备课堂内容…"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:229
+msgid "自定义 API Key"
+msgstr "自定义 API Key"
+
+#: src/features/playground/components/ShareButton.tsx:31
 msgid "请先输入代码"
 msgstr "请先输入代码"
 
-#: src/components/playground/PlaygroundHeader.tsx:70
-#: src/components/playground/PlaygroundHeader.tsx:113
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:43
+msgid "课堂内容已准备"
+msgstr "课堂内容已准备"
+
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:42
+msgid "课堂操作失败"
+msgstr "课堂操作失败"
+
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:40
+msgid "课堂操作已取消"
+msgstr "课堂操作已取消"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:142
+msgid "课堂活动"
+msgstr "课堂活动"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:48
+msgid "课堂老师暂时无法完成这次回复，请重试。"
+msgstr "课堂老师暂时无法完成这次回复，请重试。"
+
+#: src/features/tour/components/TourHeader.tsx:72
+msgid "课堂进行中"
+msgstr "课堂进行中"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:501
+msgid "调整输出面板高度"
+msgstr "调整输出面板高度"
+
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:67
+msgid "输入消息"
+msgstr "输入消息"
+
+#: src/features/playground/components/PlaygroundHeader.tsx:74
+#: src/features/playground/components/PlaygroundHeader.tsx:117
+#: src/features/teach/components/views/PlaygroundView.tsx:530
 msgid "运行"
 msgstr "运行"
 
-#: src/service/run.ts:47
+#: src/features/teach/components/views/PlaygroundView.tsx:530
+#: src/service/run.ts:31
 msgid "运行中"
 msgstr "运行中"
 
-#: src/components/CodeRunner.tsx:34
-#: src/service/run.ts:60
+#: src/features/teach/components/views/PlaygroundView.tsx:573
+msgid "运行后，程序输出会显示在这里。"
+msgstr "运行后，程序输出会显示在这里。"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:605
+msgid "运行后，编译器输出会显示在这里。"
+msgstr "运行后，编译器输出会显示在这里。"
+
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:48
+#: src/service/run.ts:53
 msgid "运行失败"
 msgstr "运行失败"
 
-#: src/components/CodeRunner.tsx:33
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:47
 msgid "运行成功"
 msgstr "运行成功"
 
-#: src/components/LspStatusIndicator.tsx:183
+#: src/features/playground/components/Playground.tsx:146
+msgid "运行环境：Modal 沙箱 · 仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 | "
+msgstr "运行环境：Modal 沙箱 · 仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 | "
+
+#: src/features/teach/components/views/PlaygroundView.tsx:532
+msgid "运行结果"
+msgstr "运行结果"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:118
+msgid "返回介绍页"
+msgstr "返回介绍页"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:244
+msgid "这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。"
+msgstr "这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:185
+#: src/features/teach/components/TeachConfigWizard.tsx:218
+msgid "进入工作区"
+msgstr "进入工作区"
+
+#: src/features/tour/components/mdx/LanguagePicker.tsx:20
+msgid "选择对比语言"
+msgstr "选择对比语言"
+
+#: src/features/playground/components/ExamplesDropdown.tsx:36
+msgid "选择示例"
+msgstr "选择示例"
+
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:123
 msgid "重启"
 msgstr "重启"
 
-#: src/components/Playground.tsx:85
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:57
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:60
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:174
+msgid "重新生成"
+msgstr "重新生成"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:286
+msgid "重新读取"
+msgstr "重新读取"
+
+#: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:131
+msgid "重置本地缓存后重启代码提示"
+msgstr "重置本地缓存后重启代码提示"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:322
+msgid "重置默认"
+msgstr "重置默认"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:287
+msgid "重试保存"
+msgstr "重试保存"
+
+#: src/modules/assistant-ui/registry/Attachment.tsx:40
+#: src/modules/assistant-ui/registry/Attachment.tsx:85
+msgid "附件预览"
+msgstr "附件预览"
+
+#: src/features/playground/components/Playground.tsx:89
 msgid "隐藏"
 msgstr "隐藏"
 

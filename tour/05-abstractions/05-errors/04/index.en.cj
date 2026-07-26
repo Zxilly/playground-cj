@@ -3,8 +3,8 @@ open class ValidationError <: Exception {
     public let field: String
 
     public init(field: String, message: String) {
-        this.field = field
         super(message)
+        this.field = field
     }
 
     public open override func getClassName(): String {
@@ -17,8 +17,8 @@ open class NetworkError <: Exception {
     public let statusCode: Int64
 
     public init(statusCode: Int64, message: String) {
-        this.statusCode = statusCode
         super(message)
+        this.statusCode = statusCode
     }
 
     public open override func getClassName(): String {

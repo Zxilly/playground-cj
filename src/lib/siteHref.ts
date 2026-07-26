@@ -13,6 +13,11 @@ interface TourPathOptions {
   servingDomain?: SiteDomain
 }
 
+interface TourAIHrefOptions extends SiteHrefOptions {
+  servingDomain?: SiteDomain
+  topic?: string
+}
+
 interface LocationLike {
   pathname: string
   search?: string
@@ -37,6 +42,21 @@ function normalizeHost(hostOrOrigin?: string): string {
 
 function buildLocalizedPath(lang: string, rest: string[] = []): string {
   return ['', lang, ...rest].join('/')
+}
+
+function appendQueryParams(href: string, params: Record<string, string | undefined>): string {
+  const entries = Object.entries(params).filter((entry): entry is [string, string] => Boolean(entry[1]))
+  if (entries.length === 0)
+    return href
+
+  const absolute = /^[a-z][a-z\d+\-.]*:\/\//i.test(href)
+  const url = new URL(href, 'http://local.invalid')
+  for (const [key, value] of entries)
+    url.searchParams.set(key, value)
+
+  if (absolute)
+    return url.toString()
+  return `${url.pathname}${url.search}${url.hash}`
 }
 
 function getSiblingOrigin(currentOrigin: string, targetDomain: SiteDomain): string | null {
@@ -90,6 +110,13 @@ export function getTourHref(lang: string, { currentOrigin, rest = [] }: SiteHref
 
   const servingDomain = currentOrigin ? getSiteDomain(currentOrigin) : 'playground'
   return getTourPath(lang, { rest, servingDomain })
+}
+
+export function getTourAIHref(lang: string, { currentOrigin, servingDomain, topic }: TourAIHrefOptions = {}): string {
+  const href = currentOrigin
+    ? getTourHref(lang, { currentOrigin, rest: ['ai'] })
+    : getTourPath(lang, { rest: ['ai'], servingDomain })
+  return appendQueryParams(href, { topic })
 }
 
 export function getLocaleHref(locale: string, { pathname, search = '', hash = '' }: LocationLike): string {

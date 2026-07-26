@@ -1,0 +1,16 @@
+import { describe, expect, it } from 'vitest'
+import { exerciseModelSlot, playgroundModelUri } from './model-identity'
+
+describe('monaco model identity', () => {
+  it('maps the slot hint to a stable filesystem-safe exercise slot', () => {
+    expect(exerciseModelSlot('exercise:1')).toBe('exercise-exercise-1-1deohqe')
+    expect(exerciseModelSlot('exercise/1')).not.toBe(exerciseModelSlot('exercise:1'))
+  })
+
+  it('builds playground URIs for any slot', () => {
+    expect(playgroundModelUri('src')).toBe('file:///playground/src/main.cj')
+    expect(playgroundModelUri(exerciseModelSlot('exercise:1'))).toBe(
+      'file:///playground/standalone/exercise-exercise-1-1deohqe/main.cj',
+    )
+  })
+})

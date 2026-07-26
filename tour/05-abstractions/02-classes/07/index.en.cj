@@ -70,11 +70,11 @@ main() {
     let r2 = Failure("Connection failed")
 
     println(r1.message())
-    println("Status: ${if (r1.isSuccess()) "OK" else "Error"}")
+    println("Status: ${if (r1.isSuccess()) { "OK" } else { "Error" }}")
 
     println()
     println(r2.message())
-    println("Status: ${if (r2.isSuccess()) "OK" else "Error"}")
+    println("Status: ${if (r2.isSuccess()) { "OK" } else { "Error" }}")
 
     // Compiler knows there are only two subclasses, enabling optimization
     // If using match expression, can exhaustively check all cases

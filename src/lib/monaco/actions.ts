@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { t } from '@lingui/core/macro'
 import { setEditorValue } from './config'
 import { HMR_SLOT_KEYS, hmrFlag } from '@/lib/hmr-store'
+import { CANGJIE_LANGUAGE_ID } from './language'
 
 interface OnMountFunctionDependencies {
   setToolOutput: (output: string) => void
@@ -27,7 +28,7 @@ function ensureCangjieFormattingProvider(): void {
     return
   formattingProviderFlag.set(true)
 
-  monaco.languages.registerDocumentFormattingEditProvider('Cangjie', {
+  monaco.languages.registerDocumentFormattingEditProvider(CANGJIE_LANGUAGE_ID, {
     async provideDocumentFormattingEdits(model) {
       if (isBusy()) {
         return

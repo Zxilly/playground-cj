@@ -1,4 +1,4 @@
-import Wrapper from '@/components/Wrapper'
+import Wrapper from '@/features/playground/components/PlaygroundWrapper'
 import { getShareCode } from '@/service/share'
 
 interface PageProps {

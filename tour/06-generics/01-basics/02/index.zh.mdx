@@ -17,7 +17,7 @@ Java 的泛型结构体类型参数在运行时被擦除，无法基于类型参
 </CompareWith>
 
 <CompareWith lang="go">
-Go 没有结构体泛型语法糖，通常使用 `interface{}` 或生成代码来实现类似功能。
+Go 1.18 起支持为自定义类型声明类型参数，例如 `type Box[T any] struct { value T }`，类型参数列表写在类型名之后。
 </CompareWith>
 
 <CompareWith lang="rust">

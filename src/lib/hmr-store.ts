@@ -50,7 +50,12 @@ export const HMR_SLOT_KEYS = {
   LSP_STATE: 'lsp.state',
   LSP_OUTPUT_CHANNEL: 'lsp.outputChannel',
   LSP_COMMAND_REGISTRATION: 'lsp.commandRegistration',
+  LSP_LANGUAGE_CLIENT: 'lsp.languageClient',
+  LSP_SERVICE_LEASES: 'lsp.serviceLeases',
   MONACO_CANGJIE_FORMATTING_PROVIDER: 'monaco.cangjieFormattingProvider',
+  MONACO_CANGJIE_MONARCH_PROVIDER: 'monaco.cangjieMonarchProvider',
+  MONACO_MODEL_REGISTRY: 'monaco.modelRegistry',
+  MONACO_MODEL_PAGE_CLEANUP: 'monaco.modelPageCleanup',
 } as const
 
 declare global {

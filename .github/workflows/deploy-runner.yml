@@ -1,0 +1,55 @@
+name: Modal runner
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - cj-runner/**
+      - modal/**
+      - .github/workflows/deploy-runner.yml
+
+concurrency:
+  group: modal-runner-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: cj-runner/go.mod
+          cache: false
+
+      - name: Install runner sandbox dependency
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends bubblewrap
+
+      - name: Verify runner boundary
+        working-directory: cj-runner
+        run: |
+          go test -race ./...
+          go vet ./...
+          go build -trimpath ./cmd/runner
+
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: '3.13'
+
+      - name: Install pinned Modal CLI
+        run: python -m pip install modal==1.5.3
+
+      - name: Publish runner image to Modal
+        run: modal run modal/build_runner_image.py
+
+      - name: Deploy Modal gateway
+        run: modal deploy modal/runner.py

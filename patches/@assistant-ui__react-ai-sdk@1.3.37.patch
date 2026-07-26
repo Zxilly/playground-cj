@@ -1,0 +1,19 @@
+diff --git a/dist/ui/utils/convertMessage.js b/dist/ui/utils/convertMessage.js
+index 6ae30f90a0f278c8a0ee2401cd5f1c92ad3a8fd9..34c80df00b2c840cb7e6c1fff71ac44b556e7e32 100644
+--- a/dist/ui/utils/convertMessage.js
++++ b/dist/ui/utils/convertMessage.js
+@@ -116,7 +116,13 @@ function convertParts(message, metadata) {
+ 				args = parsePartialJsonObject(argsText) ?? args;
+ 			} else {
+ 				metadata.toolArgsKeyOrderCache?.delete(argsKeyOrderCacheKey);
+-				if (part.state === "output-available" || part.state === "output-error" || part.state === "output-denied") metadata.toolLastInputCache?.delete(argsKeyOrderCacheKey);
++				// PATCH (playground-cj): do NOT delete toolLastInputCache on completion.
++				// The AI SDK re-renders a completed tool call with `input` absent on
++				// later frames (e.g. while the answer that follows streams), so dropping
++				// the cached input here makes `args` fall back to `{}` — which floods the
++				// ToolInvocationTracker with A.4 "argsText changed after completion"
++				// warnings and briefly renders empty tool args. Keeping the cache lets
++				// those frames fall back to the real input.
+ 			}
+ 			const toolStatus = metadata.toolStatuses?.[toolCallId];
+ 			const mcpApp = extractMcpAppMetadata(part, metadata.mcpAppMetadataCache);

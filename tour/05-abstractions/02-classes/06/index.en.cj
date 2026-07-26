@@ -10,7 +10,7 @@ abstract class Shape {
     }
 
     // Can contain member variables
-    public func color(): String {
+    public open func color(): String {
         "White"  // Default color
     }
 }
