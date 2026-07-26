@@ -23,3 +23,20 @@ describe('vercel function lifecycle configuration', () => {
     })
   })
 })
+
+describe('vercel deployment input', () => {
+  it('downloads generated WASM assets during the remote build', () => {
+    const ignoredPaths = readFileSync(resolve('.vercelignore'), 'utf8')
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'))
+
+    expect(ignoredPaths).toEqual(expect.arrayContaining([
+      '.next/',
+      'node_modules/',
+      'public/lsp/',
+      '.env',
+      '.env.*',
+    ]))
+  })
+})
