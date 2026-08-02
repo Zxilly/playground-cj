@@ -118,7 +118,7 @@
     "lucide-react": "^1.7.0",
     "lz-string": "^1.5.0",
     "playwright": "^1.59.1",
-    "postcss": "^8.5.8",
+    "postcss": "^8.5.18",
     "postcss-load-config": "^6.0.1",
     "raw-loader": "^4.0.2",
     "react-use": "^17.6.0",
