@@ -1,9 +1,0 @@
-# Learning Evidence Is Local, Not Attested
-
-AI Classroom Learning Evidence is a browser-local self-practice record. Deterministic evaluation makes a result reproducible inside the application, but it does not make that result authoritative. Course Content Packs and their evaluator keys are delivered to the browser, code-run observations return through client code, and the aggregate is persisted in IndexedDB. A learner who controls DevTools can read answers, forge a runner payload, or replace the entire local state.
-
-The current product therefore uses evidence only for local tutoring and pacing. The UI and domain language must not present it as a credential, a tamper-resistant assessment, or proof to a third party. “Independent” means that the application recorded no applicable assistance before the first Attempt on a distinct assessment contract. It does not assert learner identity or hostile-client integrity. “Demonstrated” means locally demonstrated under that same trust model. Mastery is not emitted.
-
-Within that boundary, the aggregate still rejects model and implementation shortcuts. A retry or another instance of an already attempted static assessment produces Practice Evidence, not Independent Evidence. Hints carry to future instances of the same assessment contract across reloads and Tracks. All teacher-generated text, including Code Suggestions, activates the workspace Teacher Exposure Epoch. Integrity validation recomputes these classifications instead of trusting stored labels.
-
-Producing attested evidence would be a different architecture, not a client-side patch. It would require authenticated learner identity, server-held evaluator material, server-side execution/evaluation, signed result provenance, and server-owned append-only state. Until all of those boundaries exist, adding an opaque client token or hiding answer fields in the UI would only simulate authority and is rejected.

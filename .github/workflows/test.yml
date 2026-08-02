@@ -69,7 +69,7 @@ jobs:
         run: pnpm run lint
 
       - name: Execute Unit tests
-        run: pnpm run test
+        run: pnpm run test:run
 
   runner:
     runs-on: ubuntu-latest
@@ -83,10 +83,7 @@ jobs:
           go-version-file: cj-runner/go.mod
           cache: false
 
-      - name: Install runner sandbox dependency
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends bubblewrap
-
-      - name: Test runner boundary with race detection
+      - name: Test runner with race detection
         working-directory: cj-runner
         run: go test -race ./...
 
@@ -96,4 +93,4 @@ jobs:
 
       - name: Build runner
         working-directory: cj-runner
-        run: go build -trimpath -o "$RUNNER_TEMP/fghttp" ./fghttp
+        run: go build -trimpath -o "$RUNNER_TEMP/cj-runner" ./cmd/runner
