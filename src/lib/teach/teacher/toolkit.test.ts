@@ -113,7 +113,7 @@ function validatedPack() {
     ],
     review: {
       status: 'approved' as const,
-      reviewedBy: 'external-review-attestation:test-key:0000000000000000000000000000000000000000000000000000000000000000',
+      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
     },
   }
 }
@@ -1410,7 +1410,7 @@ describe('lesson Orchestrator toolkit', () => {
     const complete = structuredClone(validatedPack())
     complete.concept.summary = 's'.repeat(10_000)
     complete.review.reviewedBy
-      = `external-review-attestation:private-test-key:${secret}`
+      = `repository-review-declaration:${secret}`
     complete.exerciseTemplates[0].task.expectedOutput = secret
     const { toolkit } = setup(
       () => ({ mode: 'live', learningTrackId: 'track:active' }),

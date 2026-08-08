@@ -47,7 +47,7 @@ const immutablePack: CourseContentPack = {
   }],
   review: {
     status: 'approved',
-    reviewedBy: 'external-review-attestation:test-key:0000000000000000000000000000000000000000000000000000000000000000',
+    reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
   },
 }
 

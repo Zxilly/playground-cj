@@ -85,7 +85,7 @@ function pack(): CourseContentPack {
     ],
     review: {
       status: 'approved' as const,
-      reviewedBy: 'external-review-attestation:test-key:0000000000000000000000000000000000000000000000000000000000000000',
+      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
     },
   }
 }

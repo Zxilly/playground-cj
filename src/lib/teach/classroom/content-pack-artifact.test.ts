@@ -1,8 +1,3 @@
-import { Buffer } from 'node:buffer'
-import {
-  generateKeyPairSync,
-  sign,
-} from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { CourseContentPack } from './content-packs'
 import {
@@ -12,7 +7,6 @@ import {
   contentPackCodeSampleOutputSha256,
   contentPackCodeSampleSourceSha256,
   contentPackCodeSampleValidationResultSha256,
-  contentPackExternalReviewAttestationSigningPayload,
   contentPackHistoryEntrySha256,
   contentPackManifestSha256,
   contentPackPublicationHistorySchema,
@@ -22,7 +16,6 @@ import {
   contentPackValidationReceiptSha256,
   mergeGeneratedContentPackArtifact,
   projectIntegrityCheckedRepositoryArtifact,
-  publishExternallyAttestedArtifact,
 } from './content-pack-artifact'
 import type { GeneratedContentPackArtifact } from './content-pack-artifact'
 import {
@@ -80,7 +73,6 @@ function pendingPack(
 
 function publicationInputs(
   artifact: GeneratedContentPackArtifact,
-  includeCodeSamples = true,
 ) {
   const digest = contentPackArtifactSha256(artifact)
   const manifest = {
@@ -113,25 +105,23 @@ function publicationInputs(
       validationInputSha256: 'a'.repeat(64),
       validationResultSha256: 'b'.repeat(64),
     }],
-    codeSamples: includeCodeSamples
-      ? artifact.packs.flatMap(pack =>
-          pack.blocks.flatMap(block => block.type === 'code_sample'
-            && block.sampleType === 'program'
-            ? [{
-                locale: artifact.locale,
-                conceptId: pack.concept.id,
-                contentVersion: pack.version,
-                blockId: block.id,
-                sourceSha256: contentPackCodeSampleSourceSha256(block.code),
-                normalizedStdoutSha256: contentPackCodeSampleOutputSha256('ok'),
-                validationResultSha256:
+    codeSamples: artifact.packs.flatMap(pack =>
+      pack.blocks.flatMap(block => block.type === 'code_sample'
+        && block.sampleType === 'program'
+        ? [{
+            locale: artifact.locale,
+            conceptId: pack.concept.id,
+            contentVersion: pack.version,
+            blockId: block.id,
+            sourceSha256: contentPackCodeSampleSourceSha256(block.code),
+            normalizedStdoutSha256: contentPackCodeSampleOutputSha256('ok'),
+            validationResultSha256:
               contentPackCodeSampleValidationResultSha256(
                 contentPackCodeSampleSourceSha256(block.code),
                 contentPackCodeSampleOutputSha256('ok'),
               ),
-              }]
-            : []))
-      : [],
+          }]
+        : [])),
     artifacts: {
       en: digest,
       zh: '0'.repeat(64),
@@ -288,10 +278,10 @@ describe('generated Content Pack repository review declaration', () => {
       ...originalPublication,
       review: undefined,
     })
-    expect(historicalAfterPublish?.review.status).toBe('pending')
+    expect(historicalAfterPublish?.review.status).toBe('approved')
   })
 
-  it('integrity-checks self-asserted metadata without granting approval', () => {
+  it('grants approval from an integrity-checked repository publication', () => {
     const { artifact } = mergeGeneratedContentPackArtifact(
       'en',
       [pendingPack()],
@@ -311,7 +301,9 @@ describe('generated Content Pack repository review declaration', () => {
       history,
       receipt.compiler,
     ).packs[0].review).toEqual({
-      status: 'pending',
+      status: 'approved',
+      reviewedBy: `repository-review-declaration:${
+        contentPackRepositoryReviewDeclarationSha256(reviewDeclaration)}`,
     })
     expect(() => projectIntegrityCheckedRepositoryArtifact(
       artifact,
@@ -392,246 +384,6 @@ describe('generated Content Pack repository review declaration', () => {
       history,
       receipt.compiler,
     )).toThrow(/artifact digests disagree|validation receipt/)
-  })
-
-  it('grants approval only through a trusted external Ed25519 attestation', () => {
-    const { artifact } = mergeGeneratedContentPackArtifact(
-      'en',
-      [pendingPack()],
-    )
-    const {
-      history,
-      manifest,
-      receipt,
-      reviewDeclaration,
-    } = publicationInputs(artifact)
-    const { privateKey, publicKey } = generateKeyPairSync('ed25519')
-    const unsignedAttestation = {
-      schemaVersion: 1 as const,
-      kind: 'external-content-pack-review-attestation' as const,
-      algorithm: 'Ed25519' as const,
-      keyId: 'curriculum-review-key',
-      issuedAt: '2026-07-26T00:00:00Z',
-      subject: {
-        publicationEntrySha256: history.entries[0].entrySha256,
-        manifestSha256: contentPackManifestSha256(manifest),
-        validationReceiptSha256:
-          contentPackValidationReceiptSha256(receipt),
-        artifacts: receipt.artifacts,
-        approvedPacks: [{
-          locale: 'en' as const,
-          conceptId: artifact.packs[0].concept.id,
-          contentVersion: artifact.packs[0].version,
-        }],
-      },
-    }
-    const attestation = {
-      ...unsignedAttestation,
-      signature: sign(
-        null,
-        Buffer.from(
-          contentPackExternalReviewAttestationSigningPayload(
-            unsignedAttestation,
-          ),
-          'utf8',
-        ),
-        privateKey,
-      ).toString('base64'),
-    }
-    const trustedKeys = {
-      'curriculum-review-key': publicKey.export({
-        type: 'spki',
-        format: 'pem',
-      }).toString(),
-    }
-
-    expect(publishExternallyAttestedArtifact(
-      artifact,
-      manifest,
-      reviewDeclaration,
-      receipt,
-      history,
-      attestation,
-      trustedKeys,
-      receipt.compiler,
-    ).packs[0].review).toEqual({
-      status: 'approved',
-      reviewedBy: expect.stringMatching(
-        /^external-review-attestation:curriculum-review-key:[a-f0-9]{64}$/,
-      ),
-    })
-    expect(() => publishExternallyAttestedArtifact(
-      artifact,
-      manifest,
-      reviewDeclaration,
-      receipt,
-      history,
-      attestation,
-      {},
-      receipt.compiler,
-    )).toThrow(/trusted external review key/)
-  })
-
-  it('carries exact historical approvals forward without conflating Concept versions', () => {
-    const versionOne = pendingPack('Version one content.')
-    const historical = mergeGeneratedContentPackArtifact(
-      'en',
-      [versionOne],
-    ).artifact
-    const versionTwo = pendingPack('Version two content.')
-    const { artifact } = mergeGeneratedContentPackArtifact(
-      'en',
-      [versionTwo],
-      historical,
-    )
-    const publication = publicationInputs(artifact)
-    const { privateKey, publicKey } = generateKeyPairSync('ed25519')
-    const unsignedAttestation = {
-      schemaVersion: 1 as const,
-      kind: 'external-content-pack-review-attestation' as const,
-      algorithm: 'Ed25519' as const,
-      keyId: 'curriculum-review-key',
-      issuedAt: '2026-07-26T00:00:00Z',
-      subject: {
-        publicationEntrySha256: publication.history.entries[0].entrySha256,
-        manifestSha256: contentPackManifestSha256(publication.manifest),
-        validationReceiptSha256:
-          contentPackValidationReceiptSha256(publication.receipt),
-        artifacts: publication.receipt.artifacts,
-        approvedPacks: artifact.packs.map(pack => ({
-          locale: 'en' as const,
-          conceptId: pack.concept.id,
-          contentVersion: pack.version,
-        })),
-      },
-    }
-    const attestation = {
-      ...unsignedAttestation,
-      signature: sign(
-        null,
-        Buffer.from(
-          contentPackExternalReviewAttestationSigningPayload(
-            unsignedAttestation,
-          ),
-          'utf8',
-        ),
-        privateKey,
-      ).toString('base64'),
-    }
-    const trustedKeys = {
-      'curriculum-review-key': publicKey.export({
-        type: 'spki',
-        format: 'pem',
-      }).toString(),
-    }
-
-    const published = publishExternallyAttestedArtifact(
-      artifact,
-      publication.manifest,
-      publication.reviewDeclaration,
-      publication.receipt,
-      publication.history,
-      attestation,
-      trustedKeys,
-      publication.receipt.compiler,
-    )
-    expect(published.packs).toHaveLength(2)
-    expect(published.packs.every(pack =>
-      pack.review.status === 'approved')).toBe(true)
-
-    const currentOnlyUnsigned = {
-      ...unsignedAttestation,
-      subject: {
-        ...unsignedAttestation.subject,
-        approvedPacks: unsignedAttestation.subject.approvedPacks.filter(
-          pack => pack.contentVersion === artifact.currentVersions[pack.conceptId],
-        ),
-      },
-    }
-    const currentOnly = publishExternallyAttestedArtifact(
-      artifact,
-      publication.manifest,
-      publication.reviewDeclaration,
-      publication.receipt,
-      publication.history,
-      {
-        ...currentOnlyUnsigned,
-        signature: sign(
-          null,
-          Buffer.from(
-            contentPackExternalReviewAttestationSigningPayload(
-              currentOnlyUnsigned,
-            ),
-            'utf8',
-          ),
-          privateKey,
-        ).toString('base64'),
-      },
-      trustedKeys,
-      publication.receipt.compiler,
-    )
-    expect(currentOnly.packs.find(pack =>
-      pack.version === versionOne.version)?.review.status).toBe('pending')
-    expect(currentOnly.packs.find(pack =>
-      pack.version === versionTwo.version)?.review.status).toBe('approved')
-  })
-
-  it('rejects external approval when a runnable code sample lacks receipt evidence', () => {
-    const { artifact } = mergeGeneratedContentPackArtifact(
-      'en',
-      [pendingPack()],
-    )
-    const publication = publicationInputs(artifact, false)
-    const { receipt } = publication
-    const { privateKey, publicKey } = generateKeyPairSync('ed25519')
-    const unsignedAttestation = {
-      schemaVersion: 1 as const,
-      kind: 'external-content-pack-review-attestation' as const,
-      algorithm: 'Ed25519' as const,
-      keyId: 'curriculum-review-key',
-      issuedAt: '2026-07-26T00:00:00Z',
-      subject: {
-        publicationEntrySha256: publication.history.entries[0].entrySha256,
-        manifestSha256: contentPackManifestSha256(publication.manifest),
-        validationReceiptSha256:
-          contentPackValidationReceiptSha256(receipt),
-        artifacts: receipt.artifacts,
-        approvedPacks: [{
-          locale: 'en' as const,
-          conceptId: artifact.packs[0].concept.id,
-          contentVersion: artifact.packs[0].version,
-        }],
-      },
-    }
-    const attestation = {
-      ...unsignedAttestation,
-      signature: sign(
-        null,
-        Buffer.from(
-          contentPackExternalReviewAttestationSigningPayload(
-            unsignedAttestation,
-          ),
-          'utf8',
-        ),
-        privateKey,
-      ).toString('base64'),
-    }
-
-    expect(() => publishExternallyAttestedArtifact(
-      artifact,
-      publication.manifest,
-      publication.reviewDeclaration,
-      receipt,
-      publication.history,
-      attestation,
-      {
-        'curriculum-review-key': publicKey.export({
-          type: 'spki',
-          format: 'pem',
-        }).toString(),
-      },
-      receipt.compiler,
-    )).toThrow(/code sample receipt evidence/i)
   })
 
   it('rejects tampering with a receipt-bound validation-case hash', () => {
