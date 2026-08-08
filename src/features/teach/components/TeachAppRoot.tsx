@@ -8,6 +8,7 @@ import { createWorkspaceCollaborators } from '@/features/teach/state/workspace-c
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { createTeachRuntimeMachine } from '@/features/teach/state/teach-runtime-machine'
 import { TeachAppContent } from './TeachApp'
+import { TeachLoadingState } from './TeachLoadingState'
 
 function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
   const machine = useMemo(() => createTeachRuntimeMachine({
@@ -21,7 +22,7 @@ function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
   const [runtime, send] = useMachine(machine)
 
   if (runtime.matches('loading'))
-    return <div data-testid="teach-app-loading" className="h-full bg-background" />
+    return <TeachLoadingState />
 
   if (runtime.matches('error')) {
     return (
@@ -37,8 +38,8 @@ function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {locale === 'en'
-              ? 'The validated curriculum or local classroom state could not be loaded. Nothing was partially migrated or silently discarded.'
-              : '已验证课程或本地课堂状态无法读取；系统没有做部分迁移，也没有静默丢弃数据。'}
+              ? 'The local classroom workspace could not be opened. Your stored data was left unchanged.'
+              : '无法打开本地课堂工作区；已有数据保持原样。'}
           </p>
           <p className="mt-2 break-words font-mono text-xs text-muted-foreground">{runtime.context.message}</p>
         </div>

@@ -11,14 +11,16 @@ interface NavEntry {
   view: WorkspaceView
   icon: LucideIcon
   zh: string
+  zhShort: string
   en: string
+  enShort: string
 }
 
 const NAV_ENTRIES: NavEntry[] = [
-  { view: 'live', icon: Radio, zh: '实时课堂', en: 'Live View' },
-  { view: 'review', icon: BookOpenCheck, zh: '概念复习', en: 'Review View' },
-  { view: 'progress', icon: ListTree, zh: '学习进度', en: 'Progress' },
-  { view: 'playground', icon: Code2, zh: '练习场', en: 'Playground' },
+  { view: 'live', icon: Radio, zh: '实时课堂', zhShort: '课堂', en: 'Live class', enShort: 'Live' },
+  { view: 'review', icon: BookOpenCheck, zh: '概念复习', zhShort: '复习', en: 'Concept review', enShort: 'Review' },
+  { view: 'progress', icon: ListTree, zh: '学习进度', zhShort: '进度', en: 'Progress', enShort: 'Progress' },
+  { view: 'playground', icon: Code2, zh: '练习场', zhShort: '练习', en: 'Playground', enShort: 'Code' },
 ]
 
 /** Navigation mirrors the four canonical AI Classroom surfaces. */
@@ -31,9 +33,9 @@ export function WorkspaceNav() {
     <nav
       data-testid="workspace-nav"
       aria-label={lang === 'en' ? 'Classroom navigation' : '课堂导航'}
-      className="flex min-w-max flex-row gap-1.5 lg:min-w-0 lg:flex-col"
+      className="grid w-full min-w-0 grid-cols-4 gap-1 lg:flex lg:flex-col lg:gap-1.5"
     >
-      {NAV_ENTRIES.map(({ view: entryView, icon: Icon, zh, en }) => {
+      {NAV_ENTRIES.map(({ view: entryView, icon: Icon, zh, zhShort, en, enShort }) => {
         const active = view === entryView
         return (
           <button
@@ -43,14 +45,15 @@ export function WorkspaceNav() {
             aria-current={active ? 'page' : undefined}
             onClick={() => setView(entryView)}
             className={cn(
-              'flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/35 lg:w-full lg:gap-3 lg:text-sm',
+              'flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-[11px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/35 sm:gap-2 sm:px-2 sm:text-xs lg:w-full lg:justify-start lg:gap-3 lg:px-3 lg:text-start lg:text-sm',
               active
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:bg-background hover:text-foreground',
             )}
           >
             <Icon aria-hidden="true" className="size-4 shrink-0" />
-            <span>{lang === 'en' ? en : zh}</span>
+            <span className="truncate lg:hidden">{lang === 'en' ? enShort : zhShort}</span>
+            <span className="hidden truncate lg:inline">{lang === 'en' ? en : zh}</span>
           </button>
         )
       })}

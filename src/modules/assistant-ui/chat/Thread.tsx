@@ -3,6 +3,7 @@ import type { FC } from 'react'
 import { ThreadComposer } from '@/modules/assistant-ui/chat/ThreadComposer'
 import { ThreadMessage } from '@/modules/assistant-ui/chat/ThreadMessages'
 import { ThreadScrollToBottom } from '@/modules/assistant-ui/chat/ThreadScrollToBottom'
+import { ThreadStatusAnnouncer } from '@/modules/assistant-ui/chat/ThreadStatusAnnouncer'
 import { ThreadWelcome } from '@/modules/assistant-ui/chat/ThreadWelcome'
 
 interface ThreadProps {
@@ -19,6 +20,7 @@ export const Thread: FC<ThreadProps> = ({ allowAttachments = true }) => {
         ['--composer-padding' as string]: '8px',
       }}
     >
+      <ThreadStatusAnnouncer />
       <ThreadPrimitive.Viewport
         turnAnchor="top"
         data-slot="aui_thread-viewport"

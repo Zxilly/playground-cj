@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, CircleAlert, Loader2, ShieldCheck, Wallet } from 'lucide-react'
 import { t } from '@lingui/core/macro'
@@ -56,6 +56,16 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
     keySource === 'user' ? { ...config } : resolveProviderDefaults('openai-compatible'))
   const validationId = useId()
   const sourceGroupLabelId = useId()
+  const sharedStatusId = useId()
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null)
+  const previousStepRef = useRef(step)
+
+  useEffect(() => {
+    if (previousStepRef.current === step)
+      return
+    previousStepRef.current = step
+    stepHeadingRef.current?.focus()
+  }, [step])
 
   const sharedQuotaExhausted = keySource === 'auto' && autoQuota?.exhausted === true
   const sharedReady = keySource === 'auto'
@@ -131,7 +141,12 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
               ? <Trans>第 1 步 · 选择 AI 来源</Trans>
               : <Trans>第 2 步 · 配置 API 服务</Trans>}
           </p>
-          <h1 id={sourceGroupLabelId} className="mt-2 text-balance text-2xl font-bold tracking-[-0.02em] text-foreground sm:text-[1.75rem]">
+          <h1
+            ref={stepHeadingRef}
+            id={sourceGroupLabelId}
+            tabIndex={-1}
+            className="mt-2 text-balance text-2xl font-bold tracking-[-0.02em] text-foreground outline-none sm:text-[1.75rem]"
+          >
             {step === 'source'
               ? <Trans>先选择驱动课堂的 AI 服务</Trans>
               : <Trans>填写你的 API 服务</Trans>}
@@ -153,16 +168,18 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                     icon={Wallet}
                     title={<Trans>共享 AI 服务</Trans>}
                     description={<Trans>推荐 · 开箱即用，无需任何配置。</Trans>}
-                  >
-                    <SharedStatus
-                      exhausted={sharedQuotaExhausted}
-                      ready={sharedReady}
-                      status={bootstrap.status}
-                      resetMoment={quotaResetMoment}
-                      quotaPercent={quotaPercent}
-                      quotaLoading={quotaLoading}
-                    />
-                  </SourceOption>
+                    statusId={sharedStatusId}
+                    status={(
+                      <SharedStatus
+                        exhausted={sharedQuotaExhausted}
+                        ready={sharedReady}
+                        status={bootstrap.status}
+                        resetMoment={quotaResetMoment}
+                        quotaPercent={quotaPercent}
+                        quotaLoading={quotaLoading}
+                      />
+                    )}
+                  />
 
                   <SourceOption
                     testId="teach-source-custom"
@@ -234,44 +251,54 @@ interface SourceOptionProps {
   icon: typeof Wallet
   title: React.ReactNode
   description: React.ReactNode
-  children?: React.ReactNode
+  status?: React.ReactNode
+  statusId?: string
 }
 
 /** A selectable AI-source card (radio-like) for step 1. */
-function SourceOption({ testId, selected, onSelect, icon: Icon, title, description, children }: SourceOptionProps) {
+function SourceOption({ testId, selected, onSelect, icon: Icon, title, description, status, statusId }: SourceOptionProps) {
   return (
-    <button
-      type="button"
-      data-testid={testId}
-      role="radio"
-      aria-checked={selected}
-      tabIndex={selected ? 0 : -1}
-      onClick={onSelect}
+    <div
       className={cn(
-        'group relative flex w-full flex-col gap-1 rounded-md border px-4 py-4 pe-12 text-start outline-none transition-[border-color,background-color] focus-visible:ring-2 focus-visible:ring-ring/35',
+        'group rounded-md border transition-[border-color,background-color]',
         selected
           ? 'border-primary bg-primary/5'
           : 'border-border bg-background hover:border-primary/50 hover:bg-muted',
       )}
     >
-      <span className="flex items-center gap-2.5 text-sm font-semibold text-foreground">
-        <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-background text-primary">
-          <Icon aria-hidden="true" className="size-4" />
-        </span>
-        {title}
-      </span>
-      <span className="ps-10 text-xs leading-6 text-muted-foreground">{description}</span>
-      {children}
-      <span
-        aria-hidden="true"
-        className={cn(
-          'absolute end-4 top-4 grid size-5 place-items-center rounded-full border transition-colors',
-          selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-transparent',
-        )}
+      <button
+        type="button"
+        data-testid={testId}
+        role="radio"
+        aria-checked={selected}
+        aria-describedby={status ? statusId : undefined}
+        tabIndex={selected ? 0 : -1}
+        onClick={onSelect}
+        className="relative flex w-full flex-col gap-1 rounded-md px-4 py-4 pe-12 text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/35"
       >
-        <Check className="size-3" />
-      </span>
-    </button>
+        <span className="flex items-center gap-2.5 text-sm font-semibold text-foreground">
+          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-background text-primary">
+            <Icon aria-hidden="true" className="size-4" />
+          </span>
+          {title}
+        </span>
+        <span className="ps-10 text-xs leading-6 text-muted-foreground">{description}</span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            'absolute end-4 top-4 grid size-5 place-items-center rounded-full border transition-colors',
+            selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-transparent',
+          )}
+        >
+          <Check className="size-3" />
+        </span>
+      </button>
+      {status && (
+        <div id={statusId} className="-mt-3 pe-4 pb-4">
+          {status}
+        </div>
+      )}
+    </div>
   )
 }
 

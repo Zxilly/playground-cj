@@ -63,7 +63,6 @@ export const ThreadComposer: FC<ThreadComposerProps> = ({ allowAttachments = tru
         placeholder={tPlaceholder()}
         className="aui-composer-input max-h-36 min-h-10 w-full resize-none bg-transparent px-1.5 py-1.5 text-sm leading-6 outline-none placeholder:text-muted-foreground/75"
         rows={1}
-        autoFocus
         aria-label={t`输入消息`}
       />
       <ComposerAction allowAttachments={allowAttachments} />
