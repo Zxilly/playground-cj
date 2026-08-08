@@ -120,4 +120,20 @@ describe('playground v2 storage boundary', () => {
       vi.unstubAllGlobals()
     }
   })
+
+  it('closes cleanly after the initial database open is rejected', async () => {
+    const open = vi.spyOn(indexedDB, 'open')
+      .mockImplementationOnce(() => {
+        throw new DOMException('IndexedDB unavailable', 'UnknownError')
+      })
+    const storage = createIndexedDBPlaygroundWorkspaceStorage({
+      databaseName:
+        `${PLAYGROUND_WORKSPACE_V2_DATABASE_NAME}-test-${crypto.randomUUID()}`,
+      scope: 'workspace',
+    })
+
+    await expect(storage.load()).rejects.toThrow('IndexedDB unavailable')
+    await expect(storage.close()).resolves.toBeUndefined()
+    open.mockRestore()
+  })
 })

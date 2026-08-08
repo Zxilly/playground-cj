@@ -907,6 +907,13 @@ export function createSharedModelGateway(
       ) {
         return errorResponse(504, 'upstream_timeout', 'The shared AI service timed out.')
       }
+      if (error instanceof Error && error.message.includes('broker is busy')) {
+        return errorResponse(
+          503,
+          'shared_service_busy',
+          'The shared AI service is busy.',
+        )
+      }
       return errorResponse(503, 'shared_service_unavailable', 'The shared AI service is unavailable.')
     }
     finally {

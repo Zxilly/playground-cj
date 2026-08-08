@@ -1,11 +1,13 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
 import { useLLMConfigStore } from '@/stores/llmConfig'
+import { retainModelScope } from '@/lib/monaco/model-lifecycle'
+import { CLASSROOM_EDITOR_MODEL_SCOPE } from '@/features/teach/state/classroom-editor-model-scope'
 import { TeachTopBar } from './TeachTopBar'
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
@@ -15,6 +17,11 @@ export function TeachWorkspace({ lang }: { lang: string }) {
   const settingsButtonRef = useRef<HTMLButtonElement>(null)
   const [workspaceController] = useState(() => new AbortController())
   const english = lang === 'en'
+
+  useEffect(
+    () => retainModelScope(CLASSROOM_EDITOR_MODEL_SCOPE),
+    [],
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-col">

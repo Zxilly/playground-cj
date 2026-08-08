@@ -9,13 +9,13 @@ import { DynamicCangjieEditor } from '@/features/teach/components/editor/Dynamic
 import type { CangjieEditorHandle } from '@/features/teach/components/editor/CangjieEditor'
 import { TeachMarkdown } from '@/features/teach/components/blocks/TeachMarkdown'
 import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
+import { CLASSROOM_EDITOR_MODEL_SCOPE } from '@/features/teach/state/classroom-editor-model-scope'
 import { useClassroomSnapshot } from '@/features/teach/hooks/use-classroom-snapshot'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import type {
   ExerciseInstance,
   LearningEvidence,
 } from '@/lib/teach/classroom/state'
-import { formatRevisionLabel } from '@/lib/teach/classroom/revision-label'
 import { renderPersistedDiagnostic } from '@/lib/teach/classroom/persistence-policy'
 
 type AttemptEvidenceType = LearningEvidence['type']
@@ -113,12 +113,6 @@ export function ExerciseInstanceCard({ instance }: { instance: ExerciseInstance 
   }
 }
 
-function shortIdentity(value: string): string {
-  return value.length <= 18
-    ? value
-    : `${value.slice(0, 9)}…${value.slice(-6)}`
-}
-
 function ExerciseMetadata({
   english,
   instance,
@@ -128,16 +122,11 @@ function ExerciseMetadata({
   instance: ExerciseInstance
   learningTrackGoal: string | undefined
 }) {
-  const trackTitle = instance.learningTrackId === null
-    ? (english ? 'No Learning Track' : '无 Learning Track')
-    : learningTrackGoal
-      ? `Learning Track ${instance.learningTrackId}: ${learningTrackGoal}`
-      : `Learning Track ${instance.learningTrackId}`
   const visibleTrack = instance.learningTrackId === null
-    ? (english ? 'Track: none' : 'Track：无')
+    ? (english ? 'Independent practice' : '独立练习')
     : learningTrackGoal
-      ? `${english ? 'Track' : '路径'}: ${learningTrackGoal} · ${shortIdentity(instance.learningTrackId)}`
-      : `${english ? 'Track' : '路径'}: ${shortIdentity(instance.learningTrackId)}`
+      ? `${english ? 'Path' : '路径'}: ${learningTrackGoal}`
+      : (english ? 'Current learning path' : '当前学习路径')
 
   return (
     <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
@@ -146,24 +135,9 @@ function ExerciseMetadata({
         {' · '}
         {difficultyLabel(instance, english)}
       </p>
-      <div className="flex min-w-0 max-w-full flex-wrap justify-end gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-        <span
-          className="max-w-56 truncate font-mono"
-          title={`Content Version ${instance.contentVersion}`}
-        >
-          Content v
-          {formatRevisionLabel(instance.contentVersion)}
-        </span>
-        <span className="max-w-72 truncate" title={trackTitle}>
+      <div className="flex min-w-0 max-w-full flex-wrap justify-end text-[11px] text-muted-foreground">
+        <span className="max-w-72 truncate">
           {visibleTrack}
-        </span>
-        <span
-          className="max-w-56 truncate font-mono"
-          title={`Exercise Template ${instance.templateId}@${instance.templateVersion}`}
-        >
-          {instance.templateId}
-          @
-          {formatRevisionLabel(instance.templateVersion)}
         </span>
       </div>
     </div>
@@ -200,7 +174,7 @@ function CodeOutputExercise({
   const [running, setRunning] = useState(false)
   const [revealingHint, setRevealingHint] = useState(false)
   const [transientError, setTransientError] = useState<string | null>(null)
-  const activateEditor = useActiveEditorRegistration(activeEditor, handleRef)
+  const activateEditor = useActiveEditorRegistration(activeEditor, handleRef, false)
   const stdout = lastAttempt?.result.stdout
     ? renderPersistedDiagnostic(lastAttempt.result.stdout)
     : ''
@@ -271,7 +245,7 @@ function CodeOutputExercise({
           initialCode={initialCode}
           handleRef={handleRef}
           uriHint={`exercise/${instance.id}.cj`}
-          modelScope={`classroom/${instance.id}`}
+          modelScope={CLASSROOM_EDITOR_MODEL_SCOPE}
         />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -316,7 +290,7 @@ function CodeOutputExercise({
         </ol>
       )}
       {transientError && (
-        <p role="alert" className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+        <p role="alert" className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-error-foreground">
           {transientError}
         </p>
       )}
@@ -324,7 +298,7 @@ function CodeOutputExercise({
         <div className="mt-4 space-y-2 rounded-md border border-border/70 bg-muted/20 p-3">
           <p className={lastAttempt.result.passed
             ? 'flex items-center gap-2 text-sm font-semibold text-emerald-600'
-            : 'flex items-center gap-2 text-sm font-semibold text-destructive'}
+            : 'flex items-center gap-2 text-sm font-semibold text-error-foreground'}
           >
             {lastAttempt.result.passed
               ? <CheckCircle2 aria-hidden="true" className="size-4" />
@@ -344,7 +318,7 @@ function CodeOutputExercise({
             </p>
           )}
           {stderr && (
-            <AnsiOutput text={stderr} className="font-mono text-xs" />
+            <AnsiOutput text={stderr} className="font-mono text-xs text-error-foreground" />
           )}
           {lastAttempt.result.stderr?.sourceTruncated && (
             <p role="status" className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
@@ -364,7 +338,42 @@ function CodeOutputExercise({
           <AttemptEvidenceLabel english={english} type={lastEvidenceType} />
         </div>
       )}
+      <AttemptStatus
+        busy={running}
+        english={english}
+        passed={lastAttempt?.result.passed}
+      />
     </section>
+  )
+}
+
+function AttemptStatus({
+  busy,
+  english,
+  passed,
+}: {
+  busy: boolean
+  english: boolean
+  passed: boolean | undefined
+}) {
+  const label = busy
+    ? (english ? 'Submitting attempt…' : '正在提交尝试…')
+    : passed === true
+      ? (english ? 'Passed' : '通过')
+      : passed === false
+        ? (english ? 'Not passed yet' : '尚未通过')
+        : ''
+
+  return (
+    <p
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-testid="exercise-attempt-status"
+      className="sr-only"
+    >
+      {label}
+    </p>
   )
 }
 
@@ -383,7 +392,7 @@ function AttemptVerdict({
     <div className="mt-3 space-y-1">
       <p className={passed
         ? 'flex items-center gap-2 text-sm font-semibold text-emerald-600'
-        : 'flex items-center gap-2 text-sm font-semibold text-destructive'}
+        : 'flex items-center gap-2 text-sm font-semibold text-error-foreground'}
       >
         {passed
           ? <CheckCircle2 aria-hidden="true" className="size-4" />
@@ -486,10 +495,15 @@ function RecallExercise({
         {submitting && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
         {english ? 'Submit answer' : '提交回答'}
       </Button>
-      {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="mt-3 text-sm text-error-foreground">{error}</p>}
       <AttemptVerdict
         english={english}
         evidenceType={lastEvidenceType}
+        passed={lastAttempt?.result.passed}
+      />
+      <AttemptStatus
+        busy={submitting}
+        english={english}
         passed={lastAttempt?.result.passed}
       />
     </section>
@@ -568,28 +582,30 @@ function QuizExercise({
       <ol className="mt-3 space-y-5">
         {instance.task.questions.map((question, questionIndex) => (
           <li key={`${instance.id}:${JSON.stringify(question)}`}>
-            <p className="text-sm font-medium">
-              {questionIndex + 1}
-              .
-              {' '}
-              {question.question}
-            </p>
-            <div className="mt-2 space-y-2">
-              {question.options.map((option, optionIndex) => {
-                const checked = answers[questionIndex]?.includes(optionIndex) ?? false
-                return (
-                  <label key={option} className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-2 text-sm">
-                    <input
-                      type={question.multiple ? 'checkbox' : 'radio'}
-                      name={`${instance.id}:${questionIndex}`}
-                      checked={checked}
-                      onChange={() => toggle(questionIndex, optionIndex, question.multiple)}
-                    />
-                    <span>{option}</span>
-                  </label>
-                )
-              })}
-            </div>
+            <fieldset className="min-w-0">
+              <legend className="text-sm font-medium">
+                {questionIndex + 1}
+                .
+                {' '}
+                {question.question}
+              </legend>
+              <div className="mt-2 space-y-2">
+                {question.options.map((option, optionIndex) => {
+                  const checked = answers[questionIndex]?.includes(optionIndex) ?? false
+                  return (
+                    <label key={option} className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-2 text-sm">
+                      <input
+                        type={question.multiple ? 'checkbox' : 'radio'}
+                        name={`${instance.id}:${questionIndex}`}
+                        checked={checked}
+                        onChange={() => toggle(questionIndex, optionIndex, question.multiple)}
+                      />
+                      <span>{option}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </fieldset>
           </li>
         ))}
       </ol>
@@ -603,10 +619,15 @@ function QuizExercise({
         {submitting && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
         {english ? 'Submit answers' : '提交答案'}
       </Button>
-      {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+      {error && <p role="alert" className="mt-3 text-sm text-error-foreground">{error}</p>}
       <AttemptVerdict
         english={english}
         evidenceType={lastEvidenceType}
+        passed={lastAttempt?.result.passed}
+      />
+      <AttemptStatus
+        busy={submitting}
+        english={english}
         passed={lastAttempt?.result.passed}
       />
     </section>

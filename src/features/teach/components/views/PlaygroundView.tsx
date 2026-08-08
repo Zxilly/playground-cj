@@ -51,7 +51,7 @@ export function PlaygroundView() {
     state => state.resolvePlaygroundConflict,
   )
   const activeTab = tabs.find(tab => tab.id === activeId) ?? null
-  const tabElementRef = useRef(new Map<string, HTMLDivElement>())
+  const tabElementRef = useRef(new Map<string, HTMLButtonElement>())
   const [outputHeight, setOutputHeight] = useState(DEFAULT_OUTPUT_HEIGHT)
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
@@ -91,7 +91,7 @@ export function PlaygroundView() {
     requestAnimationFrame(() => tabElementRef.current.get(tabId)?.focus())
   }
 
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>, index: number) => {
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const current = tabs[index]
     if (event.key === 'F2' && current) {
       event.preventDefault()
@@ -116,6 +116,23 @@ export function PlaygroundView() {
       focusTab(tab.id)
   }
 
+  const openAndFocusTab = () => {
+    const id = openTab()
+    if (id)
+      requestAnimationFrame(() => tabElementRef.current.get(id)?.focus())
+  }
+
+  const closeAndFocusTab = (tabId: string) => {
+    const index = tabs.findIndex(tab => tab.id === tabId)
+    const focusId = tabId === activeId
+      ? tabs[index + 1]?.id ?? tabs[index - 1]?.id ?? null
+      : activeId
+    if (!closeTab(tabId))
+      return
+    if (focusId)
+      requestAnimationFrame(() => tabElementRef.current.get(focusId)?.focus())
+  }
+
   return (
     <section data-testid="playground-view" className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background">
       <h2 className="sr-only">Playground</h2>
@@ -128,76 +145,84 @@ export function PlaygroundView() {
           {tabs.map((tab, index) => (
             <div
               key={tab.id}
-              ref={(node) => {
-                if (node)
-                  tabElementRef.current.set(tab.id, node)
-                else
-                  tabElementRef.current.delete(tab.id)
-              }}
               data-testid="playground-tab"
               data-ide-tab
               data-active={tab.id === activeId ? 'true' : 'false'}
-              id={`playground-tab-${tab.id}`}
-              role="tab"
-              aria-controls={`playground-panel-${tab.id}`}
-              aria-selected={tab.id === activeId}
-              tabIndex={tab.id === activeId ? 0 : -1}
-              onClick={() => selectTab(tab.id)}
-              onDoubleClick={() => startRenaming(tab)}
-              onKeyDown={event => handleTabKeyDown(event, index)}
-              aria-keyshortcuts="F2"
-              title={t`双击或按 F2 重命名`}
-              className="group relative flex h-10 min-w-36 max-w-56 shrink-0 cursor-default items-center gap-2 border-e border-border/80 px-2.5 text-[13px] outline-none transition-colors data-[active=false]:bg-muted/15 data-[active=false]:text-muted-foreground hover:bg-muted/60 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/45 data-[active=true]:bg-background data-[active=true]:text-foreground"
+              role="presentation"
+              className="group relative flex h-10 min-w-36 max-w-56 shrink-0 items-center border-e border-border/80 text-[13px] transition-colors data-[active=false]:bg-muted/15 data-[active=false]:text-muted-foreground hover:bg-muted/60 data-[active=true]:bg-background data-[active=true]:text-foreground"
             >
-              {tab.id === activeId && (
-                <motion.span
-                  layoutId="playground-active-tab-indicator"
+              <button
+                ref={(node) => {
+                  if (node)
+                    tabElementRef.current.set(tab.id, node)
+                  else
+                    tabElementRef.current.delete(tab.id)
+                }}
+                type="button"
+                id={`playground-tab-${tab.id}`}
+                role="tab"
+                aria-controls={`playground-panel-${tab.id}`}
+                aria-selected={tab.id === activeId}
+                tabIndex={tab.id === activeId ? 0 : -1}
+                onClick={() => selectTab(tab.id)}
+                onDoubleClick={() => startRenaming(tab)}
+                onKeyDown={event => handleTabKeyDown(event, index)}
+                aria-keyshortcuts="F2"
+                title={t`双击或按 F2 重命名`}
+                className="relative flex h-full min-w-0 flex-1 cursor-default items-center gap-2 px-2.5 outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/45"
+              >
+                {tab.id === activeId && (
+                  <motion.span
+                    layoutId="playground-active-tab-indicator"
+                    aria-hidden="true"
+                    className="absolute inset-x-0 top-0 h-0.5 bg-primary"
+                    transition={{ duration: 0.16, ease: 'easeOut' }}
+                  />
+                )}
+                <FileCode2
                   aria-hidden="true"
-                  className="absolute inset-x-0 top-0 h-0.5 bg-primary"
-                  transition={{ duration: 0.16, ease: 'easeOut' }}
+                  className="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[active=true]:text-primary"
+                />
+                <span className={editingTabId === tab.id
+                  ? 'sr-only'
+                  : 'min-w-0 flex-1 truncate text-start font-medium'}
+                >
+                  {tab.title}
+                </span>
+              </button>
+              {editingTabId === tab.id && (
+                <input
+                  autoFocus
+                  data-testid="playground-tab-name"
+                  aria-label={t`标签页名称`}
+                  value={editingTitle}
+                  onChange={event => setEditingTitle(event.target.value)}
+                  onBlur={() => finishRenaming(tab.id)}
+                  onKeyDown={(event) => {
+                    event.stopPropagation()
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      finishRenaming(tab.id)
+                    }
+                    else if (event.key === 'Escape') {
+                      event.preventDefault()
+                      setEditingTabId(null)
+                      setEditingTitle('')
+                      requestAnimationFrame(() => tabElementRef.current.get(tab.id)?.focus())
+                    }
+                  }}
+                  className="absolute inset-y-2 end-9 start-8 z-20 min-w-0 rounded-sm border border-primary/50 bg-background px-1.5 text-[13px] font-medium text-foreground outline-none ring-1 ring-primary/20"
                 />
               )}
-              <FileCode2
-                aria-hidden="true"
-                className="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[active=true]:text-primary"
-              />
-              {editingTabId === tab.id
-                ? (
-                    <input
-                      autoFocus
-                      data-testid="playground-tab-name"
-                      aria-label={t`标签页名称`}
-                      value={editingTitle}
-                      onChange={event => setEditingTitle(event.target.value)}
-                      onClick={event => event.stopPropagation()}
-                      onDoubleClick={event => event.stopPropagation()}
-                      onBlur={() => finishRenaming(tab.id)}
-                      onKeyDown={(event) => {
-                        event.stopPropagation()
-                        if (event.key === 'Enter') {
-                          event.preventDefault()
-                          finishRenaming(tab.id)
-                        }
-                        else if (event.key === 'Escape') {
-                          event.preventDefault()
-                          setEditingTabId(null)
-                          setEditingTitle('')
-                          requestAnimationFrame(() => tabElementRef.current.get(tab.id)?.focus())
-                        }
-                      }}
-                      className="h-6 min-w-0 flex-1 rounded-sm border border-primary/50 bg-background px-1.5 text-[13px] font-medium text-foreground outline-none ring-1 ring-primary/20"
-                    />
-                  )
-                : <span className="min-w-0 flex-1 truncate font-medium">{tab.title}</span>}
               <button
                 type="button"
                 data-testid="playground-close-tab"
-                tabIndex={tab.id === activeId ? 0 : -1}
+                onKeyDown={event => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation()
-                  closeTab(tab.id)
+                  closeAndFocusTab(tab.id)
                 }}
-                className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-muted-foreground/15 hover:text-foreground focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary group-hover:opacity-100 group-data-[active=true]:opacity-70"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-muted-foreground/15 hover:text-foreground focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary group-hover:opacity-100 group-data-[active=true]:opacity-70"
                 aria-label={`${t`关闭标签页`}: ${tab.title}`}
               >
                 <X aria-hidden="true" className="size-3" />
@@ -207,7 +232,7 @@ export function PlaygroundView() {
           <button
             type="button"
             data-testid="playground-new-tab"
-            onClick={() => openTab()}
+            onClick={openAndFocusTab}
             disabled={persistenceStatus !== 'ready'}
             className="m-1 inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/45"
             aria-label={t`新建 Playground 标签页`}
@@ -229,10 +254,10 @@ export function PlaygroundView() {
         <div
           role="alert"
           data-testid="playground-persistence-error"
-          className="flex shrink-0 items-center gap-2 border-b border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200"
+          className="flex shrink-0 flex-wrap items-start gap-2 border-b border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200"
         >
           <AlertTriangle aria-hidden="true" className="size-3.5 shrink-0" />
-          <span className="min-w-0 flex-1">
+          <span className="min-w-64 flex-1 py-1">
             {persistenceError === 'storage_unavailable'
               ? <Trans>Playground 草稿尚未保存：浏览器存储不可用。</Trans>
               : persistenceError === 'corrupt_workspace'
@@ -244,7 +269,7 @@ export function PlaygroundView() {
                   : <Trans>这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。</Trans>}
           </span>
           {persistenceError === 'conflict' && conflict && (
-            <>
+            <div className="flex max-w-full flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -269,11 +294,11 @@ export function PlaygroundView() {
                 <Trans>使用已保存版本</Trans>
               </button>
               {conflictRecoveryBlocked && (
-                <span>
+                <span className="basis-full text-end">
                   <Trans>无法另存副本；请先关闭一个标签页或缩短草稿后重试。</Trans>
                 </span>
               )}
-            </>
+            </div>
           )}
           {(persistenceError === 'storage_unavailable'
             || persistenceError === 'corrupt_workspace') && (
@@ -304,7 +329,7 @@ export function PlaygroundView() {
                 <p className="text-sm text-muted-foreground"><Trans>暂无 Playground 标签页。</Trans></p>
                 <button
                   type="button"
-                  onClick={() => openTab()}
+                  onClick={openAndFocusTab}
                   disabled={persistenceStatus !== 'ready'}
                   className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
                 >
@@ -482,6 +507,21 @@ function PlaygroundEditorPane({
       data-testid="playground-editor-pane"
       className="flex min-h-0 flex-1 flex-col"
     >
+      <p
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="playground-run-status"
+        className="sr-only"
+      >
+        {running
+          ? <Trans>正在运行 Playground 代码…</Trans>
+          : tab.result
+            ? tab.result.ok
+              ? <Trans>Playground 运行完成</Trans>
+              : <Trans>Playground 运行失败</Trans>
+            : null}
+      </p>
       <div
         ref={registerEditorSlot}
         data-testid="playground-editor"
@@ -560,7 +600,7 @@ function PlaygroundEditorPane({
                         <AnsiOutput
                           text={tab.result.stderr}
                           data-testid="playground-runtime-stderr"
-                          className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-destructive"
+                          className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-error-foreground"
                         />
                       )}
                       {tab.result.stderrTruncated && (

@@ -18,8 +18,12 @@ import { nextResetAtMs } from '@/lib/quota-reset'
 export const SHARED_QUOTA_PER_PERIOD = 1_000_000
 
 const LOCK_TTL_SECONDS = 30
-const POLL_ATTEMPTS = 100
 const POLL_INTERVAL_MS = 50
+// A waiter must not declare the broker busy before the lock can expire. The
+// caller's request deadline remains the earlier cancellation mechanism.
+const POLL_ATTEMPTS = Math.ceil(
+  LOCK_TTL_SECONDS * 1_000 / POLL_INTERVAL_MS,
+) + 1
 const CACHE_PREFIX = 'shared-ai:credential:'
 const LOCK_PREFIX = 'shared-ai:credential-lock:'
 const PROVISION_LOCK_KEY = 'shared-ai:credential-provision-lock:v1'

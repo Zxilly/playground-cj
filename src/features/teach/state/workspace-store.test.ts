@@ -50,13 +50,9 @@ describe('aI Classroom workspace store', () => {
     expect(store.getState()).toMatchObject({
       view: 'review',
       reviewConceptId: 'cj.var.immutable',
-      reviewContentVersion: null,
     })
-    store.getState().setReviewContentVersion('cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    store.getState().openReviewConcept('cj.var.immutable')
-    expect(store.getState().reviewContentVersion).toBe('cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
     store.getState().openReviewConcept('cj.program.main')
-    expect(store.getState().reviewContentVersion).toBeNull()
+    expect(store.getState().reviewConceptId).toBe('cj.program.main')
   })
 
   it('uses stable UUID tab identities and selects a neighbour on close', async () => {
@@ -181,6 +177,33 @@ describe('aI Classroom workspace store', () => {
     })
   })
 
+  it('replaces a runtime whose initial storage open failed', async () => {
+    await release?.()
+    release = null
+    const readyStorage = createIndexedDBPlaygroundWorkspaceStorage({
+      databaseName: `${databaseName}-recovered`,
+      scope: 'workspace',
+    })
+    const failedStorage: PlaygroundWorkspaceStorage = {
+      load: () => Promise.reject(new DOMException('Storage denied', 'UnknownError')),
+      save: () => Promise.reject(new DOMException('Storage denied', 'UnknownError')),
+      subscribe: () => () => {},
+      close: () => Promise.resolve(),
+    }
+    const createStorage = vi.fn()
+      .mockReturnValueOnce(failedStorage)
+      .mockReturnValue(readyStorage)
+    store = createWorkspaceStore({ createPlaygroundStorage: createStorage })
+    release = await store.getState().acquirePlaygroundPersistence()
+
+    expect(store.getState().playgroundPersistenceStatus).toBe('error')
+    store.getState().retryPlaygroundPersistence()
+    await vi.waitFor(() => {
+      expect(createStorage).toHaveBeenCalledTimes(2)
+      expect(store.getState().playgroundPersistenceStatus).toBe('ready')
+    })
+  })
+
   it('consumes a temporary Chat prefill exactly once', () => {
     store.getState().setPendingPrefill('Start the next step')
     expect(store.getState().consumePrefill()).toBe('Start the next step')
@@ -196,7 +219,6 @@ describe('aI Classroom workspace store', () => {
     expect(store.getState()).toMatchObject({
       view: 'live',
       reviewConceptId: null,
-      reviewContentVersion: null,
       pendingPrefill: null,
       currentPlaygroundTabId: id,
     })

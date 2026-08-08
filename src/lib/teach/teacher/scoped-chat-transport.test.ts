@@ -403,7 +403,24 @@ describe('scoped teacher chat transport', () => {
     expect(chunks.some(chunk => chunk.type.startsWith('tool-'))).toBe(false)
     expect(chunks).toContainEqual({
       type: 'error',
-      errorText: 'Teacher response failed.',
+      errorText: 'teacher_response_failed',
+    })
+  })
+
+  it('retains only allowlisted shared-service error codes', async () => {
+    const transport = createScopedChatTransport(
+      agentStreaming([{
+        type: 'error',
+        errorText: '{"error":{"code":"shared_service_busy"},"secret":"private"}',
+      }]),
+      new AbortController().signal,
+      boundary(vi.fn(async () => undefined)),
+    )
+    const reader = (await transport.sendMessages(sendOptions)).getReader()
+
+    await expect(reader.read()).resolves.toEqual({
+      done: false,
+      value: { type: 'error', errorText: 'shared_service_busy' },
     })
   })
 

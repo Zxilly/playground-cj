@@ -19,21 +19,41 @@ const metadataSchema = z.strictObject({
 
 export type SharedGatewayMetadata = z.infer<typeof metadataSchema>
 
-export async function fetchSharedGatewayMetadata(): Promise<SharedGatewayMetadata> {
-  const response = await fetch('/api/ai-gateway/metadata', { method: 'GET' })
-  if (!response.ok)
-    throw new Error(`Shared gateway metadata request failed: HTTP ${response.status}`)
+const gatewayErrorSchema = z.object({
+  error: z.object({
+    code: z.string(),
+  }),
+})
 
+async function readMetadataResponse(response: Response): Promise<SharedGatewayMetadata> {
   let body: unknown
   try {
     body = await response.json() as unknown
   }
   catch {
-    throw new Error('Invalid shared gateway metadata')
+    throw new Error('shared_service_unavailable')
+  }
+
+  if (!response.ok) {
+    const parsedError = gatewayErrorSchema.safeParse(body)
+    throw new Error(parsedError.success
+      ? parsedError.data.error.code
+      : 'shared_service_unavailable')
   }
 
   const parsed = metadataSchema.safeParse(body)
   if (!parsed.success)
-    throw new Error('Invalid shared gateway metadata')
+    throw new Error('shared_service_unavailable')
   return parsed.data
+}
+
+export async function fetchSharedGatewayMetadata(): Promise<SharedGatewayMetadata> {
+  const response = await fetch('/api/ai-gateway/metadata', { method: 'GET' })
+  return readMetadataResponse(response)
+}
+
+/** Provision/recover the shared credential before enabling the classroom. */
+export async function prepareSharedGateway(): Promise<SharedGatewayMetadata> {
+  const response = await fetch('/api/ai-gateway/readiness', { method: 'POST' })
+  return readMetadataResponse(response)
 }
