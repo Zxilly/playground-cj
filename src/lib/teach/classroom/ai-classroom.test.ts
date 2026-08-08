@@ -122,12 +122,6 @@ function pack(review: 'approved' | 'pending'): CourseContentPack {
           },
         }]
       : [],
-    review: review === 'approved'
-      ? {
-          status: 'approved' as const,
-          reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-        }
-      : { status: 'pending' as const },
   }
 }
 
@@ -255,21 +249,17 @@ function trackPack(
       task('placement'),
       task('review'),
     ],
-    review: {
-      status: 'approved',
-      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-    },
   }
 }
 
 describe('ai classroom', () => {
-  it('reopens complete classroom history after external approval is revoked', async () => {
+  it('reopens complete classroom history after an evidence loop is removed', async () => {
     const { classroom, storage } = await createPendingRemediationFixture()
     const historical = classroom.snapshot()
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage,
@@ -285,13 +275,13 @@ describe('ai classroom', () => {
     })
   })
 
-  it('refuses to reactivate historical content after external approval is revoked', async () => {
+  it('refuses to reactivate historical content after its evidence loop is removed', async () => {
     const { classroom } = await createPendingRemediationFixture()
     const historical = classroom.snapshot()
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage: createMemoryClassroomStorage({
@@ -310,13 +300,13 @@ describe('ai classroom', () => {
     expect(reopened.snapshot().activeTrackId).toBeNull()
   })
 
-  it('refuses a new Attempt against historical content after external approval is revoked', async () => {
+  it('refuses a new Attempt after its evidence loop is removed', async () => {
     const { classroom } = await createPendingRemediationFixture()
     const historical = classroom.snapshot()
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage: createMemoryClassroomStorage(historical),
@@ -354,13 +344,13 @@ describe('ai classroom', () => {
     )
   })
 
-  it('refuses new mainline content after external approval is revoked', async () => {
+  it('refuses new mainline content after its evidence loop is removed', async () => {
     const { classroom } = await createPendingRemediationFixture()
     const historical = classroom.snapshot()
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage: createMemoryClassroomStorage(historical),
@@ -379,13 +369,13 @@ describe('ai classroom', () => {
     expect(reopened.snapshot().stream).toEqual(historical.stream)
   })
 
-  it('refuses new Remediation content after external approval is revoked', async () => {
+  it('refuses new Remediation content after its evidence loop is removed', async () => {
     const { classroom } = await createPendingRemediationFixture()
     const historical = classroom.snapshot()
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage: createMemoryClassroomStorage(historical),
@@ -402,13 +392,13 @@ describe('ai classroom', () => {
     expect(reopened.snapshot()).toEqual(historical)
   })
 
-  it('does not claim a historical Remediation after external approval is revoked', async () => {
+  it('does not claim a historical Remediation after its evidence loop is removed', async () => {
     const { classroom } = await createPendingRemediationFixture()
     const historical = classroom.snapshot()
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage: createMemoryClassroomStorage(historical),
@@ -428,7 +418,7 @@ describe('ai classroom', () => {
     expect(reopened.snapshot()).toEqual(historical)
   })
 
-  it('refuses new assistance against historical content after external approval is revoked', async () => {
+  it('refuses new assistance after its evidence loop is removed', async () => {
     const approvedPack = pack('approved')
     const ids = ['track:assistance-history', 'exercise:assistance-history']
     const classroom = createAIClassroom({
@@ -457,7 +447,7 @@ describe('ai classroom', () => {
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage: createMemoryClassroomStorage(historical),
@@ -475,13 +465,13 @@ describe('ai classroom', () => {
     expect(reopened.snapshot()).toEqual(historical)
   })
 
-  it('refuses a new Track Adjustment after external approval is revoked', async () => {
+  it('refuses a new Track Adjustment after its evidence loop is removed', async () => {
     const { classroom } = await createPendingRemediationFixture()
     const historical = classroom.snapshot()
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage: createMemoryClassroomStorage(historical),
@@ -500,7 +490,7 @@ describe('ai classroom', () => {
     expect(reopened.snapshot()).toEqual(historical)
   })
 
-  it('refuses to retry a historical Remediation after external approval is revoked', async () => {
+  it('refuses to retry a historical Remediation after its evidence loop is removed', async () => {
     const { classroom, setNow } = await createPendingRemediationFixture()
     setNow(2_000)
     await classroom.execute({
@@ -527,7 +517,7 @@ describe('ai classroom', () => {
     await classroom.dispose()
 
     const revokedPack = pack('approved')
-    revokedPack.review = { status: 'pending' }
+    revokedPack.blocks = revokedPack.blocks.filter(block => block.type !== 'code_sample')
     const reopened = createAIClassroom({
       catalog: createContentPackCatalog([revokedPack]),
       storage: createMemoryClassroomStorage(historical),

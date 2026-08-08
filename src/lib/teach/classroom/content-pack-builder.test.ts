@@ -156,7 +156,7 @@ describe('course content pack builder', () => {
     }
   }, 30_000)
 
-  it('builds explicit bilingual review candidates without self-approval', async () => {
+  it('builds the explicit bilingual starter course and reference-only material', async () => {
     const concepts = getAllConcepts()
 
     for (const lang of ['zh', 'en'] as const) {
@@ -167,10 +167,8 @@ describe('course content pack builder', () => {
       expect(packs.slice(0, 4).map(pack => pack.concept.id))
         .toEqual([...VALIDATED_CONTENT_CONCEPT_IDS])
       expect(validations.every(result => result.status !== 'invalid')).toBe(true)
-      expect(validations.every(result => result.status === 'read_only')).toBe(true)
-      expect(packs.every(pack =>
-        pack.review.status === 'pending'
-        && !('reviewedBy' in pack.review))).toBe(true)
+      expect(validations.filter(result => result.status === 'validated'))
+        .toHaveLength(VALIDATED_CONTENT_CONCEPT_IDS.length)
       expect(packs.flatMap(pack => pack.blocks)
         .filter(block => block.type === 'code_sample')
         .every(block =>
@@ -196,13 +194,7 @@ describe('course content pack builder', () => {
             expect(template.task.starterCode).toContain('TODO')
           }
         }
-        expect(validateContentPack({
-          ...pack,
-          review: {
-            status: 'approved',
-            reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-          },
-        }), `${lang} ${conceptId} evidence loop`).toMatchObject({
+        expect(validateContentPack(pack), `${lang} ${conceptId} evidence loop`).toMatchObject({
           status: 'validated',
         })
       }

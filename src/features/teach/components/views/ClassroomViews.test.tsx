@@ -83,11 +83,55 @@ function pack(): CourseContentPack {
         },
       },
     ],
-    review: {
-      status: 'approved' as const,
-      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-    },
   }
+}
+
+function quizPack(): CourseContentPack {
+  const next = structuredClone(pack())
+  next.exerciseTemplates = [
+    {
+      id: 'template:quiz',
+      version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      learningSkillId: 'skill:run-main',
+      purpose: 'practice',
+      task: {
+        type: 'quiz',
+        questions: [
+          {
+            question: 'Which keyword is the expected answer?',
+            options: ['let', 'var'],
+            answerIndices: [1],
+            multiple: false,
+            explanation: 'var is the expected answer for this fixture.',
+          },
+          {
+            question: 'Which names should be selected?',
+            options: ['alpha', 'beta', 'gamma'],
+            answerIndices: [0, 2],
+            multiple: true,
+            explanation: 'alpha and gamma are the expected answers for this fixture.',
+          },
+        ],
+      },
+    },
+    {
+      id: 'template:quiz:review',
+      version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      learningSkillId: 'skill:run-main',
+      purpose: 'review',
+      task: {
+        type: 'quiz',
+        questions: [{
+          question: 'Which review option is correct?',
+          options: ['first', 'second'],
+          answerIndices: [0],
+          multiple: false,
+          explanation: 'first is the expected review answer for this fixture.',
+        }],
+      },
+    },
+  ]
+  return next
 }
 
 function dependentPack() {
@@ -240,7 +284,7 @@ describe('aI Classroom views', () => {
     render(<ConceptProgressView />, { wrapper })
 
     expect(screen.getByText(
-      'This is browser-local self-practice progress, not a server-attested assessment or credential.',
+      'Your classroom activity and progress stay in this browser.',
     )).toBeTruthy()
     classroom.dispose()
   })
@@ -252,9 +296,62 @@ describe('aI Classroom views', () => {
     fireEvent.change(screen.getByLabelText('What do you want to be able to do?'), {
       target: { value: 'Build small Cangjie programs independently' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Start Learning Track' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start learning path' }))
     await waitFor(() => expect(classroom.snapshot().activeTrackId).not.toBeNull())
     expect(await screen.findByText('Build small Cangjie programs independently')).toBeTruthy()
+    classroom.dispose()
+  })
+
+  it('groups quiz choices by question and announces only attempt state changes', async () => {
+    const { classroom, wrapper } = await setup([quizPack()])
+    await classroom.execute({
+      type: 'start_learning_track',
+      trackId: globalThis.crypto.randomUUID(),
+      goal: 'Complete the quiz',
+      conceptIds: ['cj.program.main'],
+      explicitLearnerGoal: true,
+    })
+    await classroom.execute({
+      type: 'create_exercise_instance',
+      learningTrackId: activeTrackId(classroom),
+      tutoringStepId: 'quiz-a11y',
+      conceptId: 'cj.program.main',
+      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      templateId: 'template:quiz',
+      personalizationInputs: {},
+    })
+    const originalExecute = classroom.execute
+    let release!: () => void
+    const submissionGate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    classroom.execute = async (command, options) => {
+      if (command.type === 'record_exercise_attempt')
+        await submissionGate
+      return originalExecute(command, options)
+    }
+
+    render(<LiveClassroomView />, { wrapper })
+
+    expect(screen.getByRole('group', { name: '1. Which keyword is the expected answer?' }))
+      .toBeTruthy()
+    expect(screen.getByRole('group', { name: '2. Which names should be selected?' }))
+      .toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: 'var' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'alpha' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'gamma' }))
+
+    const status = screen.getByTestId('exercise-attempt-status')
+    expect(status.textContent).toBe('')
+    expect(status.getAttribute('aria-live')).toBe('polite')
+    expect(status.getAttribute('aria-atomic')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'Submit answers' }))
+    expect(screen.getByTestId('exercise-attempt-status')).toBe(status)
+    expect(status.textContent).toBe('Submitting attempt…')
+
+    await act(async () => release())
+    await waitFor(() => expect(status.textContent).toBe('Passed'))
+    expect(screen.getByTestId('exercise-attempt-status')).toBe(status)
     classroom.dispose()
   })
 
@@ -337,7 +434,10 @@ describe('aI Classroom views', () => {
     expect(screen.getAllByTestId('exercise-compiler-output')).toHaveLength(1)
     expect(screen.getByTestId('exercise-compiler-output').textContent)
       .toContain('error: expected expression')
-    expect(screen.getByText('runtime panic diagnostic')).toBeTruthy()
+    expect(screen.getByTestId('exercise-compiler-output').className)
+      .toContain('text-error-foreground')
+    expect(screen.getByText('runtime panic diagnostic').className)
+      .toContain('text-error-foreground')
     expect(screen.getByText('compiler warning before execution')).toBeTruthy()
     expect(screen.getAllByText('Compiler output was truncated.')).toHaveLength(2)
     expect(screen.getByText('Program stdout was truncated.')).toBeTruthy()
@@ -351,10 +451,10 @@ describe('aI Classroom views', () => {
     fireEvent.change(screen.getByLabelText('What do you want to be able to do?'), {
       target: { value: 'Understand the program entry point' },
     })
-    fireEvent.change(screen.getByLabelText('How far should this track go?'), {
+    fireEvent.change(screen.getByLabelText('How far should this path go?'), {
       target: { value: 'cj.program.main' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Start Learning Track' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start learning path' }))
     await waitFor(() => expect(classroom.snapshot().activeTrackId).not.toBeNull())
     expect(classroom.snapshot().tracks[0]?.conceptIds).toEqual(['cj.program.main'])
     classroom.dispose()
@@ -370,17 +470,17 @@ describe('aI Classroom views', () => {
     })
 
     expect(screen.getByRole('alert').textContent).toContain(
-      'one Learning Track can contain at most 64',
+      'one path can contain at most 64',
     )
     expect((screen.getByRole('button', {
-      name: 'Start Learning Track',
+      name: 'Start learning path',
     }) as HTMLButtonElement).disabled).toBe(true)
 
-    fireEvent.change(screen.getByLabelText('How far should this track go?'), {
+    fireEvent.change(screen.getByLabelText('How far should this path go?'), {
       target: { value: 'cj.capacity.0' },
     })
-    expect(screen.queryByText(/one Learning Track can contain at most 64/)).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Start Learning Track' }))
+    expect(screen.queryByText(/one path can contain at most 64/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Start learning path' }))
     await waitFor(() => expect(classroom.snapshot().activeTrackId).not.toBeNull())
     expect(classroom.snapshot().tracks[0]?.conceptIds).toEqual(['cj.capacity.0'])
     classroom.dispose()
@@ -410,13 +510,13 @@ describe('aI Classroom views', () => {
     fireEvent.change(screen.getByLabelText('What do you want to be able to do?'), {
       target: { value: 'Second goal' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Start Learning Track' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start learning path' }))
 
     await waitFor(() => expect(classroom.snapshot().tracks).toHaveLength(2))
     expect(await screen.findByText('Second goal')).toBeTruthy()
     expect(screen.queryByText('Only the first track should show this note.')).toBeNull()
 
-    fireEvent.change(screen.getByLabelText('Active Learning Track'), {
+    fireEvent.change(screen.getByLabelText('Current learning path'), {
       target: { value: classroom.snapshot().tracks[0]!.id },
     })
     expect(await screen.findByText('First goal')).toBeTruthy()
@@ -506,7 +606,7 @@ describe('aI Classroom views', () => {
 
   it('labels a Read-Only Clarification and keeps it limited to review continuity', async () => {
     const readOnly = pack()
-    readOnly.review = { status: 'pending' }
+    readOnly.exerciseTemplates = []
     const catalog = createContentPackCatalog([readOnly])
     const classroom = createAIClassroom({
       catalog,
@@ -780,29 +880,9 @@ describe('aI Classroom views', () => {
       element?.tagName === 'P'
       && element.textContent === 'The current explanation starts at main.',
     )).toBeTruthy()
-    fireEvent.change(screen.getByLabelText('Content Version'), {
-      target: { value: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
-    })
-    expect(useWorkspaceStore.getState().reviewContentVersion).toBe('cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-    expect(await screen.findByText((_, element) =>
-      element?.tagName === 'P'
-      && element.textContent === 'A program starts at main.',
-    )).toBeTruthy()
-    expect(screen.getByText('seen')).toBeTruthy()
+    expect(screen.queryByLabelText('Content Version')).toBeNull()
     expect(screen.getByText(
-      /Showing historical Content Version cv:sha256:a{64}/i,
-    )).toBeTruthy()
-
-    fireEvent.change(screen.getByLabelText('Content Version'), {
-      target: { value: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333' },
-    })
-    expect(useWorkspaceStore.getState().reviewContentVersion).toBe('cv:sha256:3333333333333333333333333333333333333333333333333333333333333333')
-    expect(await screen.findByText((_, element) =>
-      element?.tagName === 'P'
-      && element.textContent === 'The current explanation starts at main.',
-    )).toBeTruthy()
-    expect(screen.getByText(
-      /new Review Check will use displayed Content Version cv:sha256:3{64}/i,
+      /new review check will use the displayed course revision/i,
     )).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Create Review Check' }))
 
@@ -814,8 +894,6 @@ describe('aI Classroom views', () => {
       contentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
       templateVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
     })
-    expect(screen.getByText('Content vcv:3333333333…3333333333'))
-      .toBeTruthy()
     classroom.dispose()
   })
 
@@ -841,7 +919,7 @@ describe('aI Classroom views', () => {
 
     const readOnly = structuredClone(original)
     readOnly.version = 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333'
-    readOnly.review = { status: 'pending' }
+    readOnly.exerciseTemplates = []
     const catalog = createContentPackCatalog(
       [original, readOnly],
       { 'cj.program.main': 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333' },
@@ -931,7 +1009,7 @@ describe('aI Classroom views', () => {
     render(<ReviewView />, { wrapper })
 
     expect(screen.queryByRole('button', { name: 'Create Review Check' })).toBeNull()
-    expect(screen.getByText(/outside the active Learning Track/i)).toBeTruthy()
+    expect(screen.getByText(/outside the current learning path/i)).toBeTruthy()
     classroom.dispose()
   })
 
@@ -949,7 +1027,7 @@ describe('aI Classroom views', () => {
     render(<ReviewView />, { wrapper })
 
     expect(screen.queryByRole('button', { name: 'Create Review Check' })).toBeNull()
-    expect(screen.getByText(/not yet the frontier, encountered, or an adjustment target/i)).toBeTruthy()
+    expect(screen.getByText(/not yet available for review in the current learning path/i)).toBeTruthy()
     classroom.dispose()
   })
 
@@ -985,11 +1063,8 @@ describe('aI Classroom views', () => {
     render(<ReviewView />, { wrapper })
 
     expect(screen.getByText('Print hello')).toBeTruthy()
-    expect(screen.getByText(/earlier Learning Track.*new check.*active Learning Track/i)).toBeTruthy()
-    const provenance = screen.getByTitle(/Learning Track .*: First track/)
-    expect(provenance.textContent).toContain('Track: First track')
-    expect(screen.getByText('Content vcv:aaaaaaaaaa…aaaaaaaaaa'))
-      .toBeTruthy()
+    expect(screen.getByText(/earlier learning path.*new checks.*current path/i)).toBeTruthy()
+    expect(screen.getByText('Path: First track')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Create Review Check' })).toBeNull()
     classroom.dispose()
   })

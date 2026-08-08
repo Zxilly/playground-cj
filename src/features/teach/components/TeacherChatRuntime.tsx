@@ -97,9 +97,6 @@ export function TeacherChatRuntime({ lang }: { lang: string }) {
   const snapshot = useClassroomSnapshot(classroom)
   const view = useWorkspaceStore(state => state.view)
   const reviewConceptId = useWorkspaceStore(state => state.reviewConceptId)
-  const requestedReviewContentVersion = useWorkspaceStore(
-    state => state.reviewContentVersion,
-  )
   const resolvedReviewConceptId = resolveReviewConceptId(
     reviewConceptId,
     snapshot,
@@ -108,29 +105,21 @@ export function TeacherChatRuntime({ lang }: { lang: string }) {
   const currentReviewContentVersion = resolvedReviewConceptId
     ? catalog.get(resolvedReviewConceptId)?.version ?? null
     : null
-  const displayedReviewContentVersion = resolvedReviewConceptId
-    && requestedReviewContentVersion
-    && catalog.getVersion(
-      resolvedReviewConceptId,
-      requestedReviewContentVersion,
-    )
-    ? requestedReviewContentVersion
-    : currentReviewContentVersion
   const activeTrackId = snapshot.activeTrackId
   const scope = useMemo<TeacherChatScope>(
     () => view === 'review'
       && resolvedReviewConceptId
-      && displayedReviewContentVersion
+      && currentReviewContentVersion
       ? {
           mode: 'review',
           conceptId: resolvedReviewConceptId,
-          contentVersion: displayedReviewContentVersion,
+          contentVersion: currentReviewContentVersion,
           learningTrackId: activeTrackId,
         }
       : { mode: 'live', learningTrackId: activeTrackId },
     [
       activeTrackId,
-      displayedReviewContentVersion,
+      currentReviewContentVersion,
       resolvedReviewConceptId,
       view,
     ],

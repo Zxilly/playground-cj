@@ -6,7 +6,7 @@ export interface ContentPackSummary {
   title: string
   version: string
   availability: 'validated' | 'read_only'
-  availabilityReason: 'editorial_review' | 'prerequisite_graph_invalid' | null
+  availabilityReason: 'incomplete_evidence' | 'prerequisite_graph_invalid' | null
 }
 
 export interface ContentPackCatalog {
@@ -74,7 +74,7 @@ export function createContentPackCatalog(
       availability: validation.status,
       availabilityReason: validation.status === 'validated'
         ? null
-        : 'editorial_review',
+        : 'incomplete_evidence',
       pack,
     })
   }
@@ -118,8 +118,8 @@ export function createContentPackCatalog(
     )
   }
 
-  // Mainline availability is a graph property, not just a per-file review
-  // flag. Resolve the current validated graph from roots outward. Missing,
+  // Mainline availability is a graph property. Resolve the current validated
+  // graph from roots outward. Missing,
   // read-only, and cyclic prerequisite chains never reach the resolved set and
   // are downgraded before any Track can select them.
   const graphCandidates = new Set(

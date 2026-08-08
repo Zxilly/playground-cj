@@ -435,7 +435,7 @@ export function projectTeacherContext({
         ? null
         : version === currentVersion
           ? summary.availabilityReason
-          : 'editorial_review',
+          : 'incomplete_evidence',
     })
     return {
       ...projected,

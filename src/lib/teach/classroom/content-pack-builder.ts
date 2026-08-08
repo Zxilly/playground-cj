@@ -834,9 +834,6 @@ export function buildCourseContentPacks(
       blocks: coreContentBlocks(concept.conceptId, matchedSections, lang),
       learningSkills: evidenceLoop.learningSkills,
       exerciseTemplates: evidenceLoop.exerciseTemplates,
-      review: {
-        status: 'pending',
-      },
     }]
   })
 }

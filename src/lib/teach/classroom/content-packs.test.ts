@@ -81,10 +81,6 @@ function approvedPack() {
         sourceRequirements: [{ type: 'top_level_main' }],
       },
     }],
-    review: {
-      status: 'approved',
-      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-    },
   }
 }
 
@@ -141,21 +137,6 @@ describe('content pack validation', () => {
       .toBe(false)
   })
 
-  it('rejects malformed or model-asserted repository approval identities', () => {
-    const pack = approvedPack()
-
-    expect(validateContentPack({
-      ...pack,
-      review: {
-        status: 'approved',
-        reviewedBy: 'model-asserted:forged',
-      },
-    })).toMatchObject({
-      status: 'invalid',
-      issues: [expect.stringContaining('repository review declaration')],
-    })
-  })
-
   it('rejects code samples without an explicit executable classification', () => {
     const pack = approvedPack()
     pack.blocks = [{
@@ -173,7 +154,7 @@ describe('content pack validation', () => {
     expect(validateContentPack(pack).status).toBe('invalid')
   })
 
-  it('keeps repository-reviewed prose or snippets read-only without a runnable program', () => {
+  it('keeps prose-only or snippet-only material out of the learning path', () => {
     const pack = approvedPack()
     pack.blocks = pack.blocks.filter(block => block.type === 'prose')
     expect(validateContentPack(pack).status).toBe('read_only')
@@ -223,10 +204,6 @@ describe('content pack validation', () => {
           sourceRequirements: [{ type: 'top_level_main' }],
         },
       }],
-      review: {
-        status: 'approved',
-        reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-      },
     })
 
     expect(result).toEqual({

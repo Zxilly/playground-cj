@@ -291,33 +291,6 @@ describe('teacherChatRuntime', () => {
     })
   })
 
-  it('starts a fresh Review Chat when the displayed Content Version changes', async () => {
-    useWorkspaceStore.getState().openReviewConcept('cj.program.main')
-    render(
-      <WorkspaceContext value={context}>
-        <TeacherChatRuntime lang="en" />
-      </WorkspaceContext>,
-    )
-    expect(mocks.createToolkit).toHaveBeenCalledTimes(1)
-
-    act(() => {
-      useWorkspaceStore.getState().setReviewContentVersion('cv:sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')
-    })
-
-    await waitFor(() => {
-      expect(mocks.createToolkit).toHaveBeenCalledTimes(2)
-    })
-    const latestDeps = mocks.createToolkit.mock.calls.at(-1)?.[0] as {
-      getChatScope: () => unknown
-    }
-    expect(latestDeps.getChatScope()).toEqual({
-      mode: 'review',
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-      learningTrackId: null,
-    })
-  })
-
   it('records the workspace Teacher Exposure Epoch before exposing chat text', async () => {
     classroomSnapshot = {
       ...createEmptyClassroom(),

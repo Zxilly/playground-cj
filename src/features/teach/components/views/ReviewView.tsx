@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { BookOpenCheck, Loader2, RotateCcw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -115,14 +115,9 @@ export function ReviewView() {
   const { catalog, classroom, lang, now } = useWorkspace()
   const snapshot = useClassroomSnapshot(classroom)
   const selectedId = useWorkspaceStore(state => state.reviewConceptId)
-  const requestedContentVersion = useWorkspaceStore(
-    state => state.reviewContentVersion,
-  )
   const openReviewConcept = useWorkspaceStore(state => state.openReviewConcept)
-  const setReviewContentVersion = useWorkspaceStore(
-    state => state.setReviewContentVersion,
-  )
-  const summaries = catalog.list()
+  const summaries = catalog.list().filter(summary =>
+    summary.availability === 'validated')
   const conceptId = resolveReviewConceptId(selectedId, snapshot, catalog)
   const currentPack = conceptId ? catalog.get(conceptId) : undefined
   const english = lang === 'en'
@@ -150,64 +145,12 @@ export function ReviewView() {
     return () => clearTimeout(timer)
   }, [claimClock, now, snapshot.reviewArtifacts])
 
-  const availableVersions = useMemo(
-    () => conceptId ? catalog.listVersions(conceptId) : [],
-    [catalog, conceptId],
-  )
-  const selectedContentVersion
-    = conceptId
-      && requestedContentVersion
-      && catalog.getVersion(conceptId, requestedContentVersion)
-      ? requestedContentVersion
-      : currentPack?.version ?? ''
-  const pack = conceptId
-    ? catalog.getVersion(conceptId, selectedContentVersion) ?? currentPack
-    : undefined
-
-  const recordedVersions = useMemo(() => {
-    if (!currentPack)
-      return []
-    const versions = new Set<string>()
-    for (const entry of snapshot.stream) {
-      if (entry.conceptId === currentPack.concept.id && 'contentVersion' in entry)
-        versions.add(entry.contentVersion)
-    }
-    for (const evidence of snapshot.evidence) {
-      if (evidence.conceptId === currentPack.concept.id)
-        versions.add(evidence.contentVersion)
-    }
-    for (const artifact of snapshot.reviewArtifacts) {
-      if (
-        artifact.type === 'clarification'
-        && artifact.conceptId === currentPack.concept.id
-      ) {
-        versions.add(artifact.contentVersion)
-      }
-    }
-    for (const artifact of snapshot.removedReviewArtifacts) {
-      if (
-        artifact.type === 'clarification'
-        && artifact.conceptId === currentPack.concept.id
-      ) {
-        versions.add(artifact.contentVersion)
-      }
-    }
-    return [...versions].sort()
-  }, [
-    currentPack,
-    snapshot.evidence,
-    snapshot.removedReviewArtifacts,
-    snapshot.reviewArtifacts,
-    snapshot.stream,
-  ])
-  const unavailableRecordedVersions = recordedVersions.filter(
-    version => !availableVersions.includes(version),
-  )
+  const pack = currentPack
 
   if (!pack) {
     return (
       <p className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
-        {english ? 'No Course Content Packs are available.' : '当前没有可复习的 Course Content Pack。'}
+        {english ? 'No lessons are available for review.' : '当前没有可复习的课程。'}
       </p>
     )
   }
@@ -261,28 +204,28 @@ export function ReviewView() {
   let reviewCheckUnavailableReason: string | null = null
   if (!activeTrack) {
     reviewCheckUnavailableReason = english
-      ? 'Start a Learning Track before creating a new Review Check.'
-      : '请先开始 Learning Track，再创建新的复习检查。'
+      ? 'Start a learning path before creating a new review check.'
+      : '请先开始一条学习路径，再创建新的复习检查。'
   }
   else if (!activeTrack.conceptIds.includes(pack.concept.id)) {
     reviewCheckUnavailableReason = english
-      ? 'This Concept is outside the active Learning Track. Historical checks remain available below.'
-      : '这个 Concept 不在当前 Learning Track 中；下方仍会保留历史检查。'
+      ? 'This concept is outside the current learning path. Historical checks remain available below.'
+      : '这个知识点不在当前学习路径中；下方仍会保留历史检查。'
   }
   else if (displayedPackAvailability !== 'validated') {
     reviewCheckUnavailableReason = english
       ? `The displayed Content Version ${pack.version} is read-only, so it cannot create a Review Check.`
-      : `当前展示的 Content Version ${pack.version} 为只读，不能用它创建复习检查。`
+      : '当前课程内容不能用于创建复习检查。'
   }
   else if (!policyAllowsReview) {
     reviewCheckUnavailableReason = english
-      ? 'This Track Concept is not yet the frontier, encountered, or an adjustment target.'
-      : '这个 Track Concept 尚不是 frontier、已遇到概念或 adjustment target。'
+      ? 'This concept is not yet available for review in the current learning path.'
+      : '这个知识点尚未进入当前学习阶段。'
   }
   else if (!reviewTemplate) {
     reviewCheckUnavailableReason = english
       ? `The displayed Content Version ${pack.version} has no Review Check template.`
-      : `当前展示的 Content Version ${pack.version} 没有复习检查模板。`
+      : '这个知识点暂时没有复习练习。'
   }
   const canCreateReviewCheck = reviewCheckUnavailableReason === null
   const reviewChecks = snapshot.stream.filter((entry): entry is ExerciseInstance =>
@@ -375,7 +318,7 @@ export function ReviewView() {
       <header>
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
           <BookOpenCheck aria-hidden="true" className="size-4" />
-          Review View
+          {english ? 'Review' : '复习'}
         </div>
         <h1 className="mt-2 text-2xl font-semibold">
           {english ? 'Review by concept' : '按概念复习'}
@@ -402,53 +345,8 @@ export function ReviewView() {
             <h2 className="text-xl font-semibold">{pack.concept.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{pack.concept.summary}</p>
           </div>
-          <div className="flex items-center gap-2">
-            {availableVersions.length > 1 && (
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{english ? 'Content Version' : '内容版本'}</span>
-                <select
-                  aria-label={english ? 'Content Version' : '内容版本'}
-                  value={pack.version}
-                  onChange={(event) => {
-                    setReviewContentVersion(event.target.value)
-                    setError(null)
-                  }}
-                  className="h-8 rounded-md border border-input bg-transparent px-2 font-mono text-xs text-foreground"
-                >
-                  {availableVersions.map(version => (
-                    <option key={version} value={version}>
-                      {formatRevisionLabel(version)}
-                      {version === currentPack?.version
-                        ? (english ? ' (current)' : '（当前）')
-                        : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <span
-              className="max-w-64 truncate rounded-full bg-muted px-2.5 py-1 font-mono text-xs text-muted-foreground"
-              title={`Content Version ${pack.version}`}
-            >
-              v
-              {formatRevisionLabel(pack.version)}
-            </span>
-          </div>
+          <div className="flex items-center gap-2" />
         </div>
-        {pack.version !== currentPack?.version && (
-          <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
-            {english
-              ? `Showing historical Content Version ${pack.version}. Exposure labels and Core Content below are resolved against this exact version.`
-              : `正在展示历史 Content Version ${pack.version}；下方 Core Content 与接触状态均按该准确版本解析。`}
-          </p>
-        )}
-        {unavailableRecordedVersions.length > 0 && (
-          <p role="status" className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
-            {english
-              ? `Recorded activity also references unavailable Content Version ${unavailableRecordedVersions.join(', ')}. No substitute content is shown for it.`
-              : `已记录活动还引用当前不可用的 Content Version ${unavailableRecordedVersions.join(', ')}；系统不会用其他内容冒充这些版本。`}
-          </p>
-        )}
       </article>
 
       <div className="space-y-3">
@@ -470,7 +368,7 @@ export function ReviewView() {
             <p className="mt-1 text-sm text-muted-foreground">
               {english
                 ? 'Clarifications and Remediations support Core Content; they never replace it.'
-                : 'Clarification 与 Remediation 只补充 Core Content，不会替代它。'}
+                : '保留的澄清与补救说明只补充课程内容，不会替代它。'}
             </p>
           </div>
           {canCreateReviewCheck && reviewTemplate && (
@@ -490,8 +388,8 @@ export function ReviewView() {
         {canCreateReviewCheck && trackPinnedContentVersion !== pack.version && (
           <p className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
             {english
-              ? `A new Review Check will use displayed Content Version ${pack.version}. The active Learning Track was validated against ${trackPinnedContentVersion}.`
-              : `新的复习检查将使用当前展示的 Content Version ${pack.version}；当前 Learning Track 按 ${trackPinnedContentVersion} 验证。`}
+              ? `A new review check will use the displayed course revision ${formatRevisionLabel(pack.version)}. Your current path uses revision ${formatRevisionLabel(trackPinnedContentVersion ?? '')}.`
+              : '新的复习检查将使用当前展示的课程版本。'}
           </p>
         )}
         {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
@@ -748,8 +646,8 @@ export function ReviewView() {
           {historicalReviewCheckCount > 0 && (
             <p className="text-sm text-muted-foreground">
               {english
-                ? 'Some checks below come from an earlier Learning Track. Any new check is created only in the active Learning Track.'
-                : '下方部分检查来自较早的 Learning Track；任何新检查都只会创建在当前 Learning Track 中。'}
+                ? 'Some checks below come from an earlier learning path. New checks are created only in the current path.'
+                : '下方部分检查来自较早的学习路径；新检查只会创建在当前路径中。'}
             </p>
           )}
           {reviewChecks.map(instance => (

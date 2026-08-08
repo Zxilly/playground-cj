@@ -178,9 +178,8 @@ export function assignBilingualLearningContractVersions(
 }
 
 /**
- * Assign a collision-resistant content identity. Repository review declaration
- * metadata is deliberately external to teaching content and therefore
- * excluded, along with the recursive pack/template version fields.
+ * Assign a collision-resistant content identity while excluding the recursive
+ * pack/template version fields.
  */
 export function assignImmutableContentVersion(
   pack: CourseContentPack,
@@ -196,7 +195,6 @@ export function assignImmutableContentVersion(
     ...pack,
     version: undefined,
     learningContractVersion: pack.learningContractVersion,
-    review: undefined,
     exerciseTemplates: pack.exerciseTemplates.map(template => ({
       ...template,
       version: undefined,

@@ -9,7 +9,7 @@ import { MAX_LEARNING_TRACK_CONCEPTS } from '@/lib/teach/classroom/state'
 
 function orderedValidatedConcepts(
   catalog: ReturnType<typeof useWorkspace>['catalog'],
-): { conceptIds: string[], unresolvedCount: number } {
+): string[] {
   const remaining = catalog.list()
     .filter(item => item.availability === 'validated')
     .map(item => item.conceptId)
@@ -26,10 +26,7 @@ function orderedValidatedConcepts(
     ordered.push(conceptId)
     available.add(conceptId)
   }
-  return {
-    conceptIds: ordered,
-    unresolvedCount: remaining.length,
-  }
+  return ordered
 }
 
 function conceptsThroughTarget(
@@ -59,14 +56,11 @@ interface TrackSetupProps {
   onStarted?: () => void
 }
 
-/** Starting a Learning Track is deliberately a learner-only UI action. */
+/** Starting a learning path is deliberately a learner-only UI action. */
 export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
   const { classroom, catalog, lang } = useWorkspace()
-  const ordered = useMemo(() => orderedValidatedConcepts(catalog), [catalog])
-  const orderedConceptIds = ordered.conceptIds
-  const unavailableConceptCount = useMemo(
-    () => catalog.list().filter(summary =>
-      summary.availability === 'read_only').length,
+  const orderedConceptIds = useMemo(
+    () => orderedValidatedConcepts(catalog),
     [catalog],
   )
   const [goal, setGoal] = useState('')
@@ -133,7 +127,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
             type="button"
             size="icon-sm"
             variant="ghost"
-            aria-label={english ? 'Cancel new Learning Track' : '取消新学习路径'}
+            aria-label={english ? 'Cancel new learning path' : '取消新学习路径'}
             onClick={onCancel}
           >
             <X aria-hidden="true" className="size-4" />
@@ -142,8 +136,8 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
       </div>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
         {english
-          ? 'Your goal starts a stable Learning Track. The teacher may adapt individual steps, but cannot silently replace this path.'
-          : '你的目标会启动一条稳定的 Learning Track。老师可以调整局部步骤，但不能悄悄替换整条路径。'}
+          ? 'Your goal starts a stable learning path. The teacher may adapt individual steps, but cannot silently replace it.'
+          : '你的目标会启动一条稳定的学习路径。老师可以调整局部步骤，但不会悄悄替换整条路径。'}
       </p>
       <form
         className="mt-5 space-y-3"
@@ -166,7 +160,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           autoComplete="off"
         />
         <label htmlFor="learning-target" className="block text-sm font-medium">
-          {english ? 'How far should this track go?' : '这条路径希望学到哪里？'}
+          {english ? 'How far should this path go?' : '这条路径希望学到哪里？'}
         </label>
         <select
           id="learning-target"
@@ -177,9 +171,9 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           <option value="">
             {orderedConceptIds.length > MAX_LEARNING_TRACK_CONCEPTS
               ? (english
-                  ? 'Select a target (full course exceeds one Track)'
-                  : '请选择目标（完整课程超出单条 Track 容量）')
-              : (english ? 'Full validated course' : '完整已验证课程')}
+                  ? 'Select an earlier target'
+                  : '请选择更早的学习目标')
+              : (english ? 'Complete starter course' : '完整入门课程')}
           </option>
           {orderedConceptIds.map((conceptId) => {
             const pack = catalog.get(conceptId)
@@ -193,29 +187,22 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
         {conceptIds.length > 0 && (
           <p className="text-xs text-muted-foreground">
             {english
-              ? `${conceptIds.length} concept${conceptIds.length === 1 ? '' : 's'}, including required prerequisites.`
-              : `共 ${conceptIds.length} 个概念，已包含必要前置概念。`}
+              ? `${conceptIds.length} lesson${conceptIds.length === 1 ? '' : 's'}, including prerequisites.`
+              : `共 ${conceptIds.length} 课，已按前置关系排好顺序。`}
           </p>
         )}
         {conceptIds.length === 0 && (
           <p role="alert" className="text-sm text-destructive">
             {english
-              ? 'No validated curriculum is available. Mainline tutoring is disabled.'
-              : '当前没有通过验证的课程内容，主线教学已停用。'}
+              ? 'The built-in course is unavailable. Rebuild the application to restore it.'
+              : '内置课程暂不可用，请重新构建应用。'}
           </p>
         )}
         {exceedsTrackCapacity && (
           <p role="alert" className="text-sm text-destructive">
             {english
-              ? `This path requires ${conceptIds.length} concepts, but one Learning Track can contain at most ${MAX_LEARNING_TRACK_CONCEPTS}. Select an earlier target; the path will not be silently truncated.`
-              : `这条路径需要 ${conceptIds.length} 个概念，但单条 Learning Track 最多容纳 ${MAX_LEARNING_TRACK_CONCEPTS} 个。请选择更早的目标；系统不会静默截断路径。`}
-          </p>
-        )}
-        {(unavailableConceptCount > 0 || ordered.unresolvedCount > 0) && (
-          <p role="status" className="text-xs text-muted-foreground">
-            {english
-              ? `${unavailableConceptCount + ordered.unresolvedCount} concept(s) are excluded because editorial or prerequisite validation is incomplete.`
-              : `${unavailableConceptCount + ordered.unresolvedCount} 个概念因编辑审核或前置关系验证未完成而未纳入路径。`}
+              ? `This path requires ${conceptIds.length} lessons, but one path can contain at most ${MAX_LEARNING_TRACK_CONCEPTS}. Select an earlier target.`
+              : `这条路径需要 ${conceptIds.length} 课，但单条路径最多容纳 ${MAX_LEARNING_TRACK_CONCEPTS} 课。请选择更早的目标。`}
           </p>
         )}
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
@@ -231,7 +218,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           {submitting
             ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
             : <ArrowRight aria-hidden="true" className="size-4" />}
-          {english ? 'Start Learning Track' : '启动学习路径'}
+          {english ? 'Start learning path' : '开始学习'}
         </Button>
       </form>
     </section>

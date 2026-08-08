@@ -27,10 +27,6 @@ export const contentPackIdSchema = z.string()
   )
 const idSchema = contentPackIdSchema
 const displayTextSchema = z.string().trim().min(1).max(20_000)
-const repositoryReviewIdentitySchema = z.string().regex(
-  /^repository-review-declaration:[a-f0-9]{64}$/,
-  'approved content requires a verified repository review declaration',
-)
 export const contentVersionSchema = z.string().max(128).regex(
   /^cv:sha256:[a-f0-9]{64}$/,
   'Content Version must use cv:sha256:<64 lowercase hex>',
@@ -302,15 +298,6 @@ export const courseContentPackObjectSchema = z.object({
     .max(MAX_CONTENT_PACK_LEARNING_SKILLS),
   exerciseTemplates: z.array(exerciseTemplateSchema)
     .max(MAX_CONTENT_PACK_EXERCISE_TEMPLATES),
-  review: z.discriminatedUnion('status', [
-    z.object({
-      status: z.literal('pending'),
-    }).strict(),
-    z.object({
-      status: z.literal('approved'),
-      reviewedBy: repositoryReviewIdentitySchema,
-    }).strict(),
-  ]),
 }).strict()
 
 export const courseContentPackSchema = courseContentPackObjectSchema
@@ -522,7 +509,7 @@ export function validateContentPack(input: unknown): ContentPackValidation {
               )))
     })
 
-  if (pack.review.status !== 'approved' || !pack.review.reviewedBy || !hasEvidenceLoop)
+  if (!hasEvidenceLoop)
     return { status: 'read_only', pack }
 
   return { status: 'validated', pack }
