@@ -3,7 +3,7 @@ import type {
   RemediationDiagnosticClaimAuthority,
   ReviewArtifact,
 } from '@/lib/teach/classroom/state'
-import { runAutomaticRemediationJob } from '../components/automatic-remediation-job'
+import { runAutomaticRemediationJob } from './automatic-remediation-job'
 import { assign, createActor, fromPromise, setup } from 'xstate'
 
 const INFRASTRUCTURE_RETRY_BASE_MS = 500

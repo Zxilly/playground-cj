@@ -59,4 +59,37 @@ describe('teacher session runtime', () => {
     expect(scopeSignal?.aborted).toBe(true)
     expect(unsubscribe).toHaveBeenCalledOnce()
   })
+
+  it('disposes the session when the workspace signal aborts', () => {
+    const unsubscribe = vi.fn()
+    const classroom = {
+      snapshot: () => createEmptyClassroom(),
+      subscribe: vi.fn(() => unsubscribe),
+      execute: vi.fn(),
+    } as unknown as AIClassroom
+    const workspaceController = new AbortController()
+    const session = createTeacherSessionRuntime().open({
+      activeEditor: {} as never,
+      catalog: {} as never,
+      classroom,
+      config: {},
+      knowledge: {} as never,
+      lang: 'en',
+      listPlaygroundTabs: () => [],
+      now: () => 1_000,
+      scope: { mode: 'live', learningTrackId: null },
+      workspaceSignal: workspaceController.signal,
+    })
+    const scopeSignal = mocks.createTransport.mock.calls.at(-1)?.[1]
+
+    workspaceController.abort(
+      new DOMException('Workspace closed', 'AbortError'),
+    )
+
+    expect(scopeSignal?.aborted).toBe(true)
+    expect(unsubscribe).toHaveBeenCalledOnce()
+
+    session.dispose()
+    expect(unsubscribe).toHaveBeenCalledOnce()
+  })
 })
