@@ -1,8 +1,6 @@
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { createAIClassroom } from '@/lib/teach/classroom/ai-classroom'
-import {
-  createCourseContentPackRepository,
-} from '@/lib/teach/classroom/content-pack-repository'
+import { createBuiltInCourseContentPackCatalog } from '@/lib/teach/classroom/built-in-course'
 import { createIndexedDBClassroomStorage } from '@/lib/teach/classroom/storage'
 import { createCangjieMcpKnowledgeSource } from '@/lib/teach/knowledge/cangjie-mcp-source'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
@@ -15,7 +13,7 @@ export interface WorkspaceCollaborators
 
 export interface CreateWorkspaceCollaboratorsOptions {
   signal?: AbortSignal
-  /** One deadline for lease waiting, curriculum/cache loading, and state open. */
+  /** One deadline for lease waiting and persisted classroom state open. */
   timeoutMs?: number
   onStorageError?: (error: unknown) => void
 }
@@ -36,7 +34,6 @@ export class WorkspaceInitializationTimeoutError extends Error {
 }
 
 interface WorkspaceResources {
-  contentPacks?: ReturnType<typeof createCourseContentPackRepository>
   storage?: ReturnType<typeof createIndexedDBClassroomStorage>
   classroom?: ReturnType<typeof createAIClassroom>
 }
@@ -219,14 +216,6 @@ async function disposeWorkspaceResources(
       return Promise.reject(error)
     }
   }
-  // Curriculum ownership is independent, so it may close while the aggregate
-  // drains. Storage is dependent and remains open until that drain settles.
-  const contentPackRelease = resources.contentPacks
-    ? attemptRelease(() => resources.contentPacks!.close())
-    : undefined
-  const contentPackResult = contentPackRelease
-    ? Promise.allSettled([contentPackRelease])
-    : Promise.resolve([])
   const orderedResults: Array<PromiseSettledResult<void>> = []
   const classroom = resources.classroom
   const classroomRelease = classroom
@@ -257,10 +246,7 @@ async function disposeWorkspaceResources(
     }
   }
 
-  const failures = [
-    ...orderedResults,
-    ...await contentPackResult,
-  ]
+  const failures = orderedResults
     .filter((result): result is PromiseRejectedResult =>
       result.status === 'rejected')
     .map(result => result.reason)
@@ -272,9 +258,9 @@ async function disposeWorkspaceResources(
 
 /**
  * Build and open the only production AI Classroom aggregate. The v8 IndexedDB
- * scope is shared across UI locales and intentionally performs no legacy
- * migration. Both locale catalogs are required so one Classroom Stream can
- * reopen every exact Content Version after the learner switches languages.
+ * scope is shared across UI locales. The bilingual catalog is compiled into
+ * the application so one Classroom Stream can reopen every exact Content
+ * Version after the learner switches languages.
  */
 export async function createWorkspaceCollaborators(
   lang: string,
@@ -293,17 +279,11 @@ export async function createWorkspaceCollaborators(
     initializationOwnership = createInitializationOperationOwnership()
     throwIfAborted(boundary.signal)
 
-    resources.contentPacks = createCourseContentPackRepository()
+    const catalog = createBuiltInCourseContentPackCatalog(selectedLocale)
     resources.storage = createIndexedDBClassroomStorage({
       scope: CLASSROOM_STORAGE_SCOPE,
     })
 
-    const catalog = await initializationOwnership.wait(
-      resources.contentPacks.open(selectedLocale, {
-        signal: boundary.signal,
-      }),
-      boundary.signal,
-    )
     resources.classroom = createAIClassroom({
       catalog,
       storage: resources.storage,

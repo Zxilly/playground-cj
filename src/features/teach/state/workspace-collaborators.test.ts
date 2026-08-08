@@ -2,10 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createWorkspaceCollaborators } from './workspace-collaborators'
 
 const mocks = vi.hoisted(() => ({
-  repository: {
-    open: vi.fn(),
-    close: vi.fn(),
-  },
   storage: {
     load: vi.fn(),
     save: vi.fn(),
@@ -16,13 +12,13 @@ const mocks = vi.hoisted(() => ({
     dispose: vi.fn(),
   },
   catalog: { id: 'catalog' },
-  createRepository: vi.fn(),
+  createCatalog: vi.fn(),
   createClassroom: vi.fn(),
   createStorage: vi.fn(),
 }))
 
-vi.mock('@/lib/teach/classroom/content-pack-repository', () => ({
-  createCourseContentPackRepository: mocks.createRepository,
+vi.mock('@/lib/teach/classroom/built-in-course', () => ({
+  createBuiltInCourseContentPackCatalog: mocks.createCatalog,
 }))
 vi.mock('@/lib/teach/classroom/storage', () => ({
   createIndexedDBClassroomStorage: mocks.createStorage,
@@ -38,24 +34,19 @@ async function flushMicrotasks(turns = 12): Promise<void> {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.createRepository.mockReturnValue(mocks.repository)
+  mocks.createCatalog.mockReturnValue(mocks.catalog)
   mocks.createStorage.mockReturnValue(mocks.storage)
   mocks.createClassroom.mockReturnValue(mocks.classroom)
-  mocks.repository.open.mockResolvedValue(mocks.catalog)
-  mocks.repository.close.mockResolvedValue(undefined)
   mocks.storage.close.mockResolvedValue(undefined)
   mocks.classroom.open.mockResolvedValue({ revision: 0 })
   mocks.classroom.dispose.mockResolvedValue(undefined)
 })
 
 describe('workspace collaborator ownership', () => {
-  it('opens one bilingual repository and transfers its catalog to the classroom', async () => {
+  it('uses the built-in bilingual catalog for the selected locale', async () => {
     const collaborators = await createWorkspaceCollaborators('en')
 
-    expect(mocks.createRepository).toHaveBeenCalledOnce()
-    expect(mocks.repository.open).toHaveBeenCalledWith('en', {
-      signal: expect.any(AbortSignal),
-    })
+    expect(mocks.createCatalog).toHaveBeenCalledWith('en')
     expect(mocks.createStorage).toHaveBeenCalledWith({ scope: 'classroom' })
     expect(mocks.createClassroom).toHaveBeenCalledWith(expect.objectContaining({
       catalog: mocks.catalog,
@@ -65,91 +56,42 @@ describe('workspace collaborator ownership', () => {
 
     await collaborators.dispose()
     expect(mocks.classroom.dispose).toHaveBeenCalledOnce()
-    expect(mocks.repository.close).toHaveBeenCalledOnce()
     expect(mocks.storage.close).toHaveBeenCalledOnce()
   })
 
-  it('uses one storage scope while selecting the requested UI locale', async () => {
+  it('selects locale without creating separate persistence scopes', async () => {
     const english = await createWorkspaceCollaborators('en')
     await english.dispose()
     const chinese = await createWorkspaceCollaborators('zh')
 
-    expect(mocks.repository.open).toHaveBeenNthCalledWith(1, 'en', {
-      signal: expect.any(AbortSignal),
-    })
-    expect(mocks.repository.open).toHaveBeenNthCalledWith(2, 'zh', {
-      signal: expect.any(AbortSignal),
-    })
+    expect(mocks.createCatalog).toHaveBeenNthCalledWith(1, 'en')
+    expect(mocks.createCatalog).toHaveBeenNthCalledWith(2, 'zh')
     expect(mocks.createStorage).toHaveBeenNthCalledWith(1, { scope: 'classroom' })
     expect(mocks.createStorage).toHaveBeenNthCalledWith(2, { scope: 'classroom' })
 
     await chinese.dispose()
   })
 
-  it('closes repository and storage after curriculum initialization fails', async () => {
-    const unavailable = new Error('approved manifest unavailable')
-    mocks.repository.open.mockRejectedValueOnce(unavailable)
-
-    await expect(createWorkspaceCollaborators('en')).rejects.toBe(unavailable)
-    expect(mocks.createClassroom).not.toHaveBeenCalled()
-    expect(mocks.repository.close).toHaveBeenCalledOnce()
-    expect(mocks.storage.close).toHaveBeenCalledOnce()
-  })
-
-  it('retains the lease until an abort-ignoring repository open settles', async () => {
-    const controller = new AbortController()
-    let releaseContentLoading!: (value: typeof mocks.catalog) => void
-    mocks.repository.open.mockReturnValueOnce(new Promise((resolve) => {
-      releaseContentLoading = resolve
-    }))
-
-    const creating = createWorkspaceCollaborators('en', {
-      signal: controller.signal,
-      timeoutMs: 1_000,
-    })
-    await vi.waitFor(() => {
-      expect(mocks.repository.open).toHaveBeenCalledOnce()
-    })
-    controller.abort()
-
-    await expect(creating).rejects.toMatchObject({ name: 'AbortError' })
-    expect(mocks.repository.close).toHaveBeenCalledOnce()
-    expect(mocks.storage.close).toHaveBeenCalledOnce()
-
-    mocks.createRepository.mockReturnValue({
-      open: vi.fn().mockResolvedValue(mocks.catalog),
-      close: vi.fn().mockResolvedValue(undefined),
-    })
-    const creatingNext = createWorkspaceCollaborators('zh')
-    await flushMicrotasks()
-    expect(mocks.createStorage).toHaveBeenCalledOnce()
-
-    releaseContentLoading(mocks.catalog)
-    const next = await creatingNext
-    expect(mocks.createStorage).toHaveBeenCalledTimes(2)
-    await next.dispose()
-  })
-
-  it('releases the lease after repository construction fails', async () => {
-    const setupError = new Error('cannot create repository')
-    mocks.createRepository.mockImplementationOnce(() => {
+  it('releases the lease after built-in catalog construction fails', async () => {
+    const setupError = new Error('invalid built-in curriculum')
+    mocks.createCatalog.mockImplementationOnce(() => {
       throw setupError
     })
 
     await expect(createWorkspaceCollaborators('en')).rejects.toBe(setupError)
+    expect(mocks.createStorage).not.toHaveBeenCalled()
+
     const collaborators = await createWorkspaceCollaborators('zh')
     expect(mocks.createStorage).toHaveBeenCalledOnce()
     await collaborators.dispose()
   })
 
-  it('attempts every independent close when one release fails', async () => {
-    const collaborators = await createWorkspaceCollaborators('en')
-    const closeError = new Error('repository close failed')
-    mocks.repository.close.mockRejectedValueOnce(closeError)
+  it('closes classroom state storage when aggregate open fails', async () => {
+    const unavailable = new Error('classroom state unavailable')
+    mocks.classroom.open.mockRejectedValueOnce(unavailable)
 
-    await expect(collaborators.dispose()).rejects.toBe(closeError)
+    await expect(createWorkspaceCollaborators('en')).rejects.toBe(unavailable)
     expect(mocks.classroom.dispose).toHaveBeenCalledOnce()
-    expect(mocks.repository.close).toHaveBeenCalledOnce()
     expect(mocks.storage.close).toHaveBeenCalledOnce()
   })
 
@@ -166,7 +108,6 @@ describe('workspace collaborator ownership', () => {
       drainError,
       storageError,
     ])
-    expect(mocks.repository.close).toHaveBeenCalledOnce()
   })
 
   it('drains the classroom before closing storage and disposes idempotently', async () => {
@@ -182,7 +123,6 @@ describe('workspace collaborator ownership', () => {
     await Promise.resolve()
 
     expect(mocks.classroom.dispose).toHaveBeenCalledOnce()
-    expect(mocks.repository.close).toHaveBeenCalledOnce()
     expect(mocks.storage.close).not.toHaveBeenCalled()
 
     releaseClassroom()
@@ -241,44 +181,6 @@ describe('workspace collaborator ownership', () => {
     await next.dispose()
   })
 
-  it('bounds caller wait while retaining ownership until repository open settles', async () => {
-    vi.useFakeTimers()
-    try {
-      let releaseContentLoading!: (value: typeof mocks.catalog) => void
-      mocks.repository.open.mockReturnValueOnce(new Promise((resolve) => {
-        releaseContentLoading = resolve
-      }))
-      const failure = createWorkspaceCollaborators('en', { timeoutMs: 25 })
-        .catch(error => error)
-      await vi.advanceTimersByTimeAsync(25)
-
-      await expect(failure).resolves.toMatchObject({
-        name: 'TimeoutError',
-        timeoutMs: 25,
-      })
-
-      mocks.createRepository.mockReturnValue({
-        open: vi.fn().mockResolvedValue(mocks.catalog),
-        close: vi.fn().mockResolvedValue(undefined),
-      })
-      const creatingNext = createWorkspaceCollaborators('zh', {
-        timeoutMs: 100,
-      })
-      await vi.advanceTimersByTimeAsync(0)
-      await flushMicrotasks()
-      expect(mocks.createStorage).toHaveBeenCalledOnce()
-
-      releaseContentLoading(mocks.catalog)
-      await vi.advanceTimersByTimeAsync(0)
-      const next = await creatingNext
-      expect(mocks.createStorage).toHaveBeenCalledTimes(2)
-      await next.dispose()
-    }
-    finally {
-      vi.useRealTimers()
-    }
-  })
-
   it('retains ownership until late aggregate open and disposal both settle', async () => {
     vi.useFakeTimers()
     try {
@@ -296,13 +198,8 @@ describe('workspace collaborator ownership', () => {
 
       await expect(failure).resolves.toMatchObject({ name: 'TimeoutError' })
       expect(mocks.classroom.dispose).toHaveBeenCalledOnce()
-      expect(mocks.repository.close).toHaveBeenCalledOnce()
       expect(mocks.storage.close).toHaveBeenCalledOnce()
 
-      mocks.createRepository.mockReturnValue({
-        open: vi.fn().mockResolvedValue(mocks.catalog),
-        close: vi.fn().mockResolvedValue(undefined),
-      })
       mocks.createClassroom.mockReturnValue({
         open: vi.fn().mockResolvedValue({ revision: 0 }),
         dispose: vi.fn().mockResolvedValue(undefined),
