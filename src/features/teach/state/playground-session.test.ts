@@ -189,16 +189,30 @@ describe('playground session', () => {
     })
   })
 
-  it('resets transient runs without deleting drafts', async () => {
+  it('keeps cancelled run ownership until an abort-ignoring runner settles', async () => {
     const id = store.getState().openTab({ code: 'keep()' })!
     let signal!: AbortSignal
-    void store.getState().runTab(
+    let settleRawRun!: (result: {
+      ok: true
+      phase: 'run'
+      stdout: string
+      stdoutTruncated: false
+      stderr: string
+      stderrTruncated: false
+      compilerOutput: string
+      compilerOutputTruncated: false
+      exitCode: number
+    }) => void
+    const rawRun = new Promise<Parameters<typeof settleRawRun>[0]>((resolve) => {
+      settleRawRun = resolve
+    })
+    const firstRun = store.getState().runTab(
       id,
       'keep()',
       new AbortController().signal,
       (_, operationSignal) => {
         signal = operationSignal
-        return new Promise(() => {})
+        return rawRun
       },
     )
     expect(store.getState().tabs.find(tab => tab.id === id)?.running).toBe(true)
@@ -209,6 +223,47 @@ describe('playground session', () => {
     expect(store.getState().activeTabId).toBe(id)
     expect(store.getState().tabs.find(tab => tab.id === id))
       .toMatchObject({ running: false, initialCode: 'keep()' })
+
+    await expect(firstRun).resolves.toBe(true)
+    const replacement = vi.fn(async () => ({
+      ok: true as const,
+      phase: 'run' as const,
+      stdout: 'replacement',
+      stdoutTruncated: false as const,
+      stderr: '',
+      stderrTruncated: false as const,
+      compilerOutput: '',
+      compilerOutputTruncated: false as const,
+      exitCode: 0,
+    }))
+    await expect(store.getState().runTab(
+      id,
+      'replacement()',
+      new AbortController().signal,
+      replacement,
+    )).resolves.toBe(false)
+    expect(replacement).not.toHaveBeenCalled()
+
+    settleRawRun({
+      ok: true,
+      phase: 'run',
+      stdout: 'late',
+      stdoutTruncated: false,
+      stderr: '',
+      stderrTruncated: false,
+      compilerOutput: '',
+      compilerOutputTruncated: false,
+      exitCode: 0,
+    })
+    await vi.waitFor(async () => {
+      await expect(store.getState().runTab(
+        id,
+        'replacement()',
+        new AbortController().signal,
+        replacement,
+      )).resolves.toBe(true)
+    })
+    expect(replacement).toHaveBeenCalledOnce()
   })
 
   it('uses opaque owners so forced close and stale releases cannot close a new runtime', async () => {

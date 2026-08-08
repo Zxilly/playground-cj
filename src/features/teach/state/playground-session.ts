@@ -10,7 +10,8 @@ import type {
   PlaygroundWorkspaceSnapshot,
 } from './playground-workspace'
 import type { PlaygroundWorkspaceStorage } from './playground-workspace-storage'
-import { awaitWithSignal } from '@/lib/ai/abortable-operation'
+import type { SettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operation-ownership'
+import { createSettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operation-ownership'
 import { create } from 'zustand'
 import { createPlaygroundWorkspace } from './playground-workspace'
 import {
@@ -75,6 +76,7 @@ interface ActiveRun {
   controller: AbortController
   contentVersion: string
   operationId: number
+  ownership: SettleAwareOperationOwnership
 }
 
 let nextRunOperationId = 1
@@ -148,10 +150,16 @@ export function createPlaygroundSession(
       if (!tab || tab.running || activeRuns.has(tabId))
         return false
 
-      const operation: ActiveRun = {
+      let operation!: ActiveRun
+      const ownership = createSettleAwareOperationOwnership(() => {
+        if (activeRuns.get(tabId) === operation)
+          activeRuns.delete(tabId)
+      })
+      operation = {
         controller: new AbortController(),
         contentVersion: tab.contentVersion,
         operationId: nextRunOperationId++,
+        ownership,
       }
       activeRuns.set(tabId, operation)
       set(state => ({
@@ -166,7 +174,7 @@ export function createPlaygroundSession(
       ])
       let result: RunResult | undefined
       try {
-        result = await awaitWithSignal(run(code, signal), signal)
+        result = await operation.ownership.wait(run(code, signal), signal)
       }
       catch (error) {
         if (!signal.aborted)
@@ -175,7 +183,6 @@ export function createPlaygroundSession(
       finally {
         const current = activeRuns.get(tabId)
         if (current?.operationId === operation.operationId) {
-          activeRuns.delete(tabId)
           set(state => ({
             tabs: state.tabs.map(candidate =>
               candidate.id === tabId
@@ -188,6 +195,7 @@ export function createPlaygroundSession(
                 : candidate),
           }))
         }
+        void operation.ownership.finish()
       }
       return true
     },
@@ -241,7 +249,6 @@ export function createPlaygroundSession(
     const run = activeRuns.get(tabId)
     if (!run)
       return
-    activeRuns.delete(tabId)
     run.controller.abort(new DOMException('Playground source changed', 'AbortError'))
     session.setState(state => ({
       tabs: state.tabs.map(tab => tab.id === tabId

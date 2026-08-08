@@ -506,7 +506,7 @@ describe('playgroundView student flow', () => {
     expect(await screen.findByText('first done')).toBeTruthy()
   })
 
-  it('releases an unmounted run without letting its late promise clear a newer run', async () => {
+  it('blocks a replacement run until an unmounted raw run really settles', async () => {
     let finishOld!: (result: RunResult) => void
     let finishNew!: (result: RunResult) => void
     runner.run
@@ -525,7 +525,8 @@ describe('playgroundView student flow', () => {
 
     act(() => useWorkspaceStore.getState().setView('playground'))
     fireEvent.click(await screen.findByTestId('playground-run'))
-    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(true)
+    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(false)
+    expect(runner.run).toHaveBeenCalledOnce()
 
     await act(async () => finishOld({
       ok: true,
@@ -538,10 +539,12 @@ describe('playgroundView student flow', () => {
       compilerOutputTruncated: false,
       exitCode: 0,
     }))
-    expect(usePlaygroundSession.getState().tabs[0]).toMatchObject({
-      running: true,
-      result: null,
-    })
+    expect(usePlaygroundSession.getState().tabs[0])
+      .toMatchObject({ running: false, result: null })
+
+    fireEvent.click(screen.getByTestId('playground-run'))
+    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(true)
+    expect(runner.run).toHaveBeenCalledTimes(2)
 
     await act(async () => finishNew({
       ok: true,
