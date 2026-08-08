@@ -499,63 +499,6 @@ function contentPackProgramValidationInputs(
     codeSampleIdentity(left).localeCompare(codeSampleIdentity(right)))
 }
 
-/**
- * Bind freshly rebuilt program sources to successful results in a checked-in
- * receipt without invoking cjc. Missing, extra, reclassified, or changed
- * program blocks fail closed.
- */
-export function getReceiptBoundContentPackCodeSampleValidations(
-  packsByLocale: ContentPackPacksByLocale,
-  receiptSamples: readonly ContentPackCodeSampleValidation[],
-): ContentPackCodeSampleValidation[] {
-  const expected = contentPackProgramValidationInputs(packsByLocale)
-  const available = new Map<string, ContentPackCodeSampleValidation>()
-  for (const sample of receiptSamples) {
-    const identity = codeSampleIdentity(sample)
-    if (available.has(identity)) {
-      throw new Error(
-        `Duplicate receipt-bound code sample ${identity.replaceAll('\0', '/')}`,
-      )
-    }
-    available.set(identity, sample)
-  }
-
-  const bound: ContentPackCodeSampleValidation[] = []
-  for (const input of expected) {
-    const identity = codeSampleIdentity(input)
-    const receipt = available.get(identity)
-    if (!receipt) {
-      throw new Error(
-        `Missing receipt-bound code sample ${identity.replaceAll('\0', '/')}`,
-      )
-    }
-    if (receipt.sourceSha256 !== input.sourceSha256) {
-      throw new Error(
-        `Code sample source hash changed for ${identity.replaceAll('\0', '/')}`,
-      )
-    }
-    const expectedResult = contentPackCodeSampleValidationResultSha256(
-      input.sourceSha256,
-      receipt.normalizedStdoutSha256,
-    )
-    if (receipt.validationResultSha256 !== expectedResult) {
-      throw new Error(
-        `Code sample result hash changed for ${identity.replaceAll('\0', '/')}`,
-      )
-    }
-    available.delete(identity)
-    bound.push(receipt)
-  }
-  const extra = available.keys().next().value as string | undefined
-  if (extra) {
-    throw new Error(
-      `Validation receipt contains an unexpected code sample ${
-        extra.replaceAll('\0', '/')}`,
-    )
-  }
-  return bound
-}
-
 function passesDeterministicCodeEvaluator(
   testCase: ReturnType<typeof getContentPackReferenceValidationCases>[number],
   source: string,

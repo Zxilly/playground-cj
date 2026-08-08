@@ -1,7 +1,11 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
-import { BUILT_IN_COURSE_CONTENT_PACKS } from './built-in-course'
+import {
+  BUILT_IN_COURSE_CONTENT_PACKS,
+  BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS,
+  createBuiltInCourseContentPackCatalog,
+} from './built-in-course'
 import { validateContentPack } from './content-packs'
 import { assignImmutableContentVersion } from './content-pack-version'
 
@@ -13,12 +17,14 @@ describe('built-in immutable Course Content Packs', () => {
         response.currentVersions[pack.concept.id] === pack.version)
 
       expect(currentPacks.length).toBeGreaterThan(0)
-      expect(currentPacks.every(pack =>
-        pack.review.status === 'approved'
-        && /^repository-review-declaration:[a-f0-9]{64}$/
-          .test(pack.review.reviewedBy))).toBe(true)
-      expect(currentPacks.some(pack =>
-        validateContentPack(pack).status === 'validated')).toBe(true)
+      expect(currentPacks).toHaveLength(49)
+      expect(currentPacks.filter(pack =>
+        validateContentPack(pack).status === 'validated').map(pack =>
+        pack.concept.id)).toEqual([...BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS])
+      const catalog = createBuiltInCourseContentPackCatalog(locale)
+      expect(catalog.list().filter(summary =>
+        summary.availability === 'validated').map(summary =>
+        summary.conceptId)).toEqual([...BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS])
     }
   })
 

@@ -62,7 +62,7 @@ jobs:
           echo "LD_LIBRARY_PATH=$sdk_root/runtime/lib/linux_x86_64_cjnative:$sdk_root/tools/lib" \
             >> "$GITHUB_ENV"
 
-      - name: Verify repository review declaration and compile Content Packs with cjc
+      - name: Generate Git-tracked course modules and compile exercises with cjc
         run: pnpm content-packs:verify
 
       - name: Run Lint
@@ -70,6 +70,12 @@ jobs:
 
       - name: Execute Unit tests
         run: pnpm run test:run
+
+      - name: Execute Browser tests
+        run: pnpm run test:browser
+
+      - name: Execute AI classroom E2E tests
+        run: pnpm run test:e2e
 
   runner:
     runs-on: ubuntu-latest

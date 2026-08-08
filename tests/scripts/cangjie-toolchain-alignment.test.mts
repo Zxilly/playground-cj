@@ -5,47 +5,11 @@ import { describe, expect, it } from 'vitest'
 import {
   loadCangjieToolchainLock,
 } from '../../src/lib/teach/classroom/cangjie-toolchain'
-import {
-  currentContentPackValidationReceiptSchema,
-} from '../../src/lib/teach/classroom/content-pack-artifact'
 import { canonicalJson } from '../../src/lib/teach/classroom/canonical-json'
 
 const repositoryRoot = resolve(process.cwd())
-const contentPackDirectory = join(
-  repositoryRoot,
-  'src',
-  'lib',
-  'teach',
-  'classroom',
-  'generated',
-  'content-packs',
-)
-
 function readRepositoryFile(...segments: string[]): string {
   return readFileSync(join(repositoryRoot, ...segments), 'utf8')
-}
-
-function readJson(file: string): unknown {
-  return JSON.parse(readFileSync(file, 'utf8'))
-}
-
-function requireRecord(
-  value: unknown,
-  description: string,
-): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value))
-    throw new TypeError(`${description} must be an object`)
-  return value
-}
-
-function requireString(value: unknown, description: string): string {
-  if (typeof value !== 'string' || value.length === 0)
-    throw new TypeError(`${description} must be a non-empty string`)
-  return value
-}
-
-function readCurrentReceipt(file: string) {
-  return currentContentPackValidationReceiptSchema.parse(readJson(file))
 }
 
 describe('cangjie toolchain alignment', () => {
@@ -128,41 +92,5 @@ describe('cangjie toolchain alignment', () => {
 
     const compatibility = /^cjc-version\s*=\s*"([^"]+)"\s*$/m.exec(cjpm)
     expect(compatibility?.[1]).toBe(lock.release)
-  })
-
-  it('binds current and history-head receipts to the locked archive and compiler bytes', () => {
-    const { lock, provenance } = loadCangjieToolchainLock(repositoryRoot)
-    const current = readCurrentReceipt(
-      join(contentPackDirectory, 'validation-receipt.json'),
-    )
-    expect(current.compiler).toEqual({
-      name: lock.compiler.name,
-      version: lock.compiler.version,
-      backend: lock.compiler.backend,
-      target: lock.compiler.target,
-      toolchain: provenance,
-    })
-
-    const publicationHistory = requireRecord(
-      readJson(join(contentPackDirectory, 'publication-history.json')),
-      'Content Pack publication history',
-    )
-    if (!Array.isArray(publicationHistory.entries))
-      throw new TypeError('Content Pack publication history entries must be an array')
-    const head = requireRecord(
-      publicationHistory.entries.at(-1),
-      'Content Pack publication history head',
-    )
-    const snapshotDirectory = requireString(
-      head.snapshotDirectory,
-      'Content Pack publication history head snapshot directory',
-    )
-    const headReceipt = readCurrentReceipt(join(
-      contentPackDirectory,
-      'history',
-      snapshotDirectory,
-      'validation-receipt.json',
-    ))
-    expect(headReceipt.compiler).toEqual(current.compiler)
   })
 })

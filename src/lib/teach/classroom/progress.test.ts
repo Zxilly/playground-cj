@@ -45,10 +45,6 @@ const immutablePack: CourseContentPack = {
       hints: [],
     },
   }],
-  review: {
-    status: 'approved',
-    reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-  },
 }
 
 describe('concept progress', () => {

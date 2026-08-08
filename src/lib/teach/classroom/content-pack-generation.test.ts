@@ -12,17 +12,10 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { ContentPackReferenceValidationCase } from './content-pack-builder'
 import {
-  getReceiptBoundContentPackCodeSampleValidations,
   resolveExecutableFromPath,
   validateContentPackReferenceCase,
   verifyContentPackExecutables,
 } from './content-pack-generation'
-import {
-  contentPackCodeSampleOutputSha256,
-  contentPackCodeSampleSourceSha256,
-  contentPackCodeSampleValidationResultSha256,
-} from './content-pack-artifact'
-import type { CourseContentPack } from './content-packs'
 
 function successfulRun(stdout: string) {
   return {
@@ -84,78 +77,6 @@ describe('content Pack executable validation', () => {
     finally {
       rmSync(directory, { force: true, recursive: true })
     }
-  })
-
-  it('binds every program block while explicitly excluding classified snippets', () => {
-    const source = 'main() {\n    println("ok")\n}'
-    const pack = {
-      id: 'pack:test',
-      version: `cv:sha256:${'a'.repeat(64)}`,
-      learningContractVersion: `lc:sha256:${'b'.repeat(64)}`,
-      concept: {
-        id: 'concept:test',
-        title: 'Test',
-        summary: 'Test',
-        prerequisites: [],
-      },
-      blocks: [
-        {
-          id: 'block:program',
-          type: 'code_sample',
-          code: source,
-          language: 'cangjie',
-          sampleType: 'program',
-          sourceReferences: [{
-            sourceId: 'static-tour',
-            ref: '01-test/01-test/01',
-            title: 'Test',
-          }],
-        },
-        {
-          id: 'block:snippet',
-          type: 'code_sample',
-          code: 'let fragment = 1',
-          language: 'cangjie',
-          sampleType: 'snippet',
-          sourceReferences: [{
-            sourceId: 'static-tour',
-            ref: '01-test/01-test/02',
-            title: 'Test',
-          }],
-        },
-      ],
-      learningSkills: [],
-      exerciseTemplates: [],
-      review: { status: 'pending' },
-    } satisfies CourseContentPack
-    const sourceSha256 = contentPackCodeSampleSourceSha256(source)
-    const normalizedStdoutSha256 = contentPackCodeSampleOutputSha256('ok')
-    const receiptEntry = {
-      locale: 'en' as const,
-      conceptId: pack.concept.id,
-      contentVersion: pack.version,
-      blockId: 'block:program',
-      sourceSha256,
-      normalizedStdoutSha256,
-      validationResultSha256:
-        contentPackCodeSampleValidationResultSha256(
-          sourceSha256,
-          normalizedStdoutSha256,
-        ),
-    }
-
-    expect(getReceiptBoundContentPackCodeSampleValidations(
-      { en: [pack], zh: [] },
-      [receiptEntry],
-    )).toEqual([receiptEntry])
-    expect(() => getReceiptBoundContentPackCodeSampleValidations(
-      { en: [pack], zh: [] },
-      [{ ...receiptEntry, sourceSha256: 'f'.repeat(64) }],
-    )).toThrow(/source hash/i)
-    expect(() => getReceiptBoundContentPackCodeSampleValidations(
-      { en: [pack], zh: [] },
-      [],
-    )).toThrow(/missing.*code sample/i)
   })
 
   it('rejects a starter that already passes the deterministic evaluator', () => {

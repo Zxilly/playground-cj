@@ -78,11 +78,6 @@ function approvedPack(): CourseContentPack {
         hints: [],
       },
     }],
-    review: {
-      status: 'approved',
-      reviewedBy:
-        `repository-review-declaration:${'0'.repeat(64)}`,
-    },
   }
 }
 

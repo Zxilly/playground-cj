@@ -111,10 +111,6 @@ function validatedPack() {
         },
       },
     ],
-    review: {
-      status: 'approved' as const,
-      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-    },
   }
 }
 
@@ -131,7 +127,7 @@ function catalogWithManySummaries(
       title: `Concept ${index} ${'t'.repeat(800)}`,
       version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       availability: 'read_only' as const,
-      availabilityReason: 'editorial_review' as const,
+      availabilityReason: 'incomplete_evidence' as const,
       hiddenValue,
     })),
   ]
@@ -1345,7 +1341,6 @@ describe('lesson Orchestrator toolkit', () => {
     expect(serialized).not.toContain('referenceAnswer')
     expect(serialized).not.toContain('answerIndices')
     expect(serialized).not.toContain('"hints"')
-    expect(serialized).not.toContain('reviewedBy')
     expect(exact.pack).not.toHaveProperty('review')
     await expect(call(toolkit, 'read_content_pack', {
       conceptId: 'cj.program.main',
@@ -1405,12 +1400,10 @@ describe('lesson Orchestrator toolkit', () => {
     }))
   })
 
-  it('returns a complete bounded Content Pack and never exposes evaluator or review secrets', async () => {
+  it('returns a complete bounded Content Pack and never exposes evaluator secrets', async () => {
     const secret = 'f'.repeat(64)
     const complete = structuredClone(validatedPack())
     complete.concept.summary = 's'.repeat(10_000)
-    complete.review.reviewedBy
-      = `repository-review-declaration:${secret}`
     complete.exerciseTemplates[0].task.expectedOutput = secret
     const { toolkit } = setup(
       () => ({ mode: 'live', learningTrackId: 'track:active' }),
@@ -2846,10 +2839,8 @@ describe('lesson Orchestrator toolkit', () => {
       contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     }))
 
-    const readOnly = {
-      ...validatedPack(),
-      review: { status: 'pending' as const },
-    }
+    const readOnly = validatedPack()
+    readOnly.exerciseTemplates = []
     const outOfTrack = setup(
       () => ({ mode: 'live', learningTrackId: null }),
       { catalog: createContentPackCatalog([readOnly]) },

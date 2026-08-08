@@ -58,7 +58,6 @@ function unversionedPack(locale: 'en' | 'zh'): CourseContentPack {
         hints: [english ? 'Use let.' : '使用 let。'],
       },
     }],
-    review: { status: 'pending' },
   }
 }
 

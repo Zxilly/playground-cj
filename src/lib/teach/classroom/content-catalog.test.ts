@@ -72,15 +72,11 @@ function validatedPack(
         hints: [],
       },
     }],
-    review: {
-      status: 'approved' as const,
-      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-    },
   }
 }
 
 describe('course Content Pack catalog', () => {
-  it('keeps unapproved content available for review but out of mainline tutoring', () => {
+  it('keeps content without an evidence loop available but out of mainline tutoring', () => {
     const catalog = createContentPackCatalog([{
       id: 'pack:cj.var.immutable',
       version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -103,7 +99,6 @@ describe('course Content Pack catalog', () => {
       }],
       learningSkills: [],
       exerciseTemplates: [],
-      review: { status: 'pending' },
     }])
 
     expect(catalog.list()).toMatchObject([{
@@ -159,10 +154,6 @@ describe('course Content Pack catalog', () => {
           },
         },
       ],
-      review: {
-        status: 'approved',
-        reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
-      },
     } as const
     const catalog = createContentPackCatalog([
       {
@@ -225,7 +216,6 @@ describe('course Content Pack catalog', () => {
       }],
       learningSkills: [],
       exerciseTemplates: [],
-      review: { status: 'pending' },
     } as const
 
     expect(() => createContentPackCatalog([
@@ -257,7 +247,6 @@ describe('course Content Pack catalog', () => {
       }],
       learningSkills: [],
       exerciseTemplates: [],
-      review: { status: 'pending' },
     } as const
 
     expect(() => createContentPackCatalog([pack], {}))
@@ -267,7 +256,7 @@ describe('course Content Pack catalog', () => {
   it('downgrades missing, read-only, and cyclic prerequisite graphs', () => {
     const missing = validatedPack('concept:missing-child', ['concept:absent'])
     const readOnlyRoot = validatedPack('concept:pending')
-    readOnlyRoot.review = { status: 'pending' as const }
+    readOnlyRoot.exerciseTemplates = []
     const readOnlyChild = validatedPack(
       'concept:pending-child',
       ['concept:pending'],
@@ -307,7 +296,7 @@ describe('course Content Pack catalog', () => {
     }
     expect(summaries.get('concept:pending')).toMatchObject({
       availability: 'read_only',
-      availabilityReason: 'editorial_review',
+      availabilityReason: 'incomplete_evidence',
     })
     expect(summaries.get('concept:root')?.availability).toBe('validated')
     expect(summaries.get('concept:child')?.availability).toBe('validated')
