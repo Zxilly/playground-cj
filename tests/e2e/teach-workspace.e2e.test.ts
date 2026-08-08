@@ -1,95 +1,13 @@
-import { Buffer } from 'node:buffer'
-import { generateKeyPairSync, sign } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { chromium } from 'playwright'
 import type { Browser, Page, Route } from 'playwright'
-import toolchainLock from '../../cj-runner/cangjie-toolchain.lock.json'
-import {
-  contentPackExternalReviewAttestationSigningPayload,
-  publishExternallyAttestedArtifact,
-} from '../../src/lib/teach/classroom/content-pack-artifact'
-import type {
-  ContentPackExternalReviewAttestationUnsigned,
-} from '../../src/lib/teach/classroom/content-pack-artifact'
-import { lockedCangjieCompilerIdentity } from '../../src/lib/teach/classroom/cangjie-toolchain'
 import enContentPacks from '../../src/lib/teach/classroom/generated/content-packs/en.json'
-import manifest from '../../src/lib/teach/classroom/generated/content-packs/manifest.json'
-import publicationHistory from '../../src/lib/teach/classroom/generated/content-packs/publication-history.json'
-import reviewDeclaration from '../../src/lib/teach/classroom/generated/content-packs/repository-review-declaration.json'
-import validationReceipt from '../../src/lib/teach/classroom/generated/content-packs/validation-receipt.json'
 import { startNextDevServer } from '../helpers/next-dev-server'
 
 const VIEWPORT = { width: 1280, height: 900 } as const
 const MOCK_LLM_BASE_URL = 'https://mock-llm.invalid/v1'
 const MOCK_COMPLETIONS_URL = `${MOCK_LLM_BASE_URL}/chat/completions`
 const MAIN_CONTENT_VERSION = enContentPacks.currentVersions['cj.program.main']
-
-function createExternallyAttestedEnglishContentPacks() {
-  const historyHead = publicationHistory.entries.at(-1)
-  if (!historyHead)
-    throw new Error('Content Pack publication history is empty')
-
-  const { privateKey, publicKey } = generateKeyPairSync('ed25519')
-  const unsignedAttestation: ContentPackExternalReviewAttestationUnsigned = {
-    schemaVersion: 1,
-    kind: 'external-content-pack-review-attestation',
-    algorithm: 'Ed25519',
-    keyId: 'e2e-curriculum-review',
-    issuedAt: '2026-07-26T00:00:00Z',
-    subject: {
-      publicationEntrySha256: historyHead.entrySha256,
-      manifestSha256: historyHead.manifestSha256,
-      validationReceiptSha256: historyHead.validationReceiptSha256,
-      artifacts: historyHead.artifacts,
-      approvedPacks: [{
-        locale: 'en',
-        conceptId: 'cj.program.main',
-        contentVersion: MAIN_CONTENT_VERSION,
-      }],
-    },
-  }
-  const attestation = {
-    ...unsignedAttestation,
-    signature: sign(
-      null,
-      Buffer.from(
-        contentPackExternalReviewAttestationSigningPayload(
-          unsignedAttestation,
-        ),
-        'utf8',
-      ),
-      privateKey,
-    ).toString('base64'),
-  }
-  const response = publishExternallyAttestedArtifact(
-    enContentPacks,
-    manifest,
-    reviewDeclaration,
-    validationReceipt,
-    publicationHistory,
-    attestation,
-    {
-      'e2e-curriculum-review': publicKey.export({
-        type: 'spki',
-        format: 'pem',
-      }).toString(),
-    },
-    lockedCangjieCompilerIdentity(toolchainLock),
-  )
-  const mainPack = response.packs.find(
-    pack => pack.concept.id === 'cj.program.main'
-      && pack.version === MAIN_CONTENT_VERSION,
-  )
-  if (mainPack?.review.status !== 'approved') {
-    throw new Error(
-      'The E2E external review attestation did not approve cj.program.main',
-    )
-  }
-  return response
-}
-
-const EXTERNALLY_ATTESTED_EN_CONTENT_PACKS
-  = createExternallyAttestedEnglishContentPacks()
 
 interface ChatMessage {
   role?: string
@@ -201,22 +119,6 @@ describe('aI classroom workspace e2e', () => {
 
   beforeEach(async () => {
     page = await browser.newPage({ viewport: VIEWPORT })
-    await page.route(
-      /\/api\/teach\/content-packs(?:\?.*)?$/,
-      async (route) => {
-        const lang = new URL(route.request().url()).searchParams.get('lang')
-        if (lang !== 'en') {
-          await route.continue()
-          return
-        }
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json; charset=utf-8',
-          headers: { 'Cache-Control': 'no-store' },
-          body: JSON.stringify(EXTERNALLY_ATTESTED_EN_CONTENT_PACKS),
-        })
-      },
-    )
     await page.goto(`${server.url}/en`, { waitUntil: 'domcontentloaded' })
     await page.evaluate(async (baseURL) => {
       localStorage.clear()
@@ -236,14 +138,6 @@ describe('aI classroom workspace e2e', () => {
       }))
       await new Promise<void>((resolve) => {
         const request = indexedDB.deleteDatabase('playground-cj-ai-classroom-v8')
-        request.onsuccess = () => resolve()
-        request.onerror = () => resolve()
-        request.onblocked = () => resolve()
-      })
-      await new Promise<void>((resolve) => {
-        const request = indexedDB.deleteDatabase(
-          'playground-cj-ai-classroom-content-packs-v1',
-        )
         request.onsuccess = () => resolve()
         request.onerror = () => resolve()
         request.onblocked = () => resolve()
