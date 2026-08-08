@@ -1,4 +1,5 @@
 import type { DBSchema, IDBPDatabase } from 'idb'
+import { createSettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operation-ownership'
 import { openDB } from 'idb'
 import { z } from 'zod'
 
@@ -165,7 +166,7 @@ export function createIndexedDBPlaygroundWorkspaceStorage(
   let acceptingOperations = true
   let closePromise: Promise<void> | null = null
   const listeners = new Set<(revision: number) => void>()
-  const pendingOperations = new Set<Promise<void>>()
+  const operationOwnership = createSettleAwareOperationOwnership()
 
   function database(): Promise<IDBPDatabase<PlaygroundWorkspaceDatabase>> {
     if (typeof indexedDB === 'undefined')
@@ -189,13 +190,7 @@ export function createIndexedDBPlaygroundWorkspaceStorage(
     catch (error) {
       return Promise.reject(error)
     }
-    const settlement = operation.then(
-      () => undefined,
-      () => undefined,
-    )
-    pendingOperations.add(settlement)
-    void settlement.then(() => pendingOperations.delete(settlement))
-    return operation
+    return operationOwnership.own(operation)
   }
 
   function ensureChannel(): BroadcastChannel | null {
@@ -300,8 +295,7 @@ export function createIndexedDBPlaygroundWorkspaceStorage(
           // The database still has to close if an advisory channel misbehaves.
         }
         channel = null
-        while (pendingOperations.size > 0)
-          await Promise.all([...pendingOperations])
+        await operationOwnership.finish()
         const pendingDatabase = databasePromise
         databasePromise = null
         const db = await pendingDatabase?.catch(() => null)
