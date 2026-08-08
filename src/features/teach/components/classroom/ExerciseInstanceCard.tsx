@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { CheckCircle2, Lightbulb, Loader2, Play, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AnsiOutput } from '@/components/AnsiOutput'
@@ -10,6 +10,7 @@ import type { CangjieEditorHandle } from '@/features/teach/components/editor/Can
 import { TeachMarkdown } from '@/features/teach/components/blocks/TeachMarkdown'
 import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
 import { CLASSROOM_EDITOR_MODEL_SCOPE } from '@/features/teach/state/classroom-editor-model-scope'
+import { useExerciseAttempt } from '@/features/teach/state/exercise-attempt'
 import { useClassroomSnapshot } from '@/features/teach/hooks/use-classroom-snapshot'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import type {
@@ -19,12 +20,6 @@ import type {
 import { renderPersistedDiagnostic } from '@/lib/teach/classroom/persistence-policy'
 
 type AttemptEvidenceType = LearningEvidence['type']
-
-function createAttemptId(): string {
-  if (typeof crypto.randomUUID !== 'function')
-    throw new Error('This browser cannot create a secure Exercise Attempt id')
-  return crypto.randomUUID()
-}
 
 function exercisePurposeLabel(
   instance: ExerciseInstance,
@@ -169,11 +164,12 @@ function CodeOutputExercise({
     ? lastAttempt.submission.code
     : instance.task.starterCode
   const handleRef = useRef<CangjieEditorHandle | null>(null)
-  const controllerRef = useRef<AbortController | null>(null)
-  const sequenceRef = useRef(0)
-  const [running, setRunning] = useState(false)
   const [revealingHint, setRevealingHint] = useState(false)
-  const [transientError, setTransientError] = useState<string | null>(null)
+  const [hintError, setHintError] = useState<string | null>(null)
+  const attempt = useExerciseAttempt({
+    classroom,
+    exerciseInstanceId: instance.id,
+  })
   const activateEditor = useActiveEditorRegistration(activeEditor, handleRef, false)
   const stdout = lastAttempt?.result.stdout
     ? renderPersistedDiagnostic(lastAttempt.result.stdout)
@@ -185,46 +181,22 @@ function CodeOutputExercise({
     ? renderPersistedDiagnostic(lastAttempt.result.compilerOutput)
     : ''
 
-  useEffect(() => () => controllerRef.current?.abort(), [])
-
-  const run = async () => {
-    if (running)
-      return
+  const run = () => {
     const code = handleRef.current?.getCode() ?? initialCode
-    const sequence = sequenceRef.current + 1
-    sequenceRef.current = sequence
-    controllerRef.current?.abort()
-    const controller = new AbortController()
-    controllerRef.current = controller
-    setRunning(true)
-    setTransientError(null)
-    try {
-      const result = await runner.run(code, controller.signal)
-      if (controller.signal.aborted || sequenceRef.current !== sequence)
-        return
+    setHintError(null)
+    void attempt.submit(async (signal) => {
+      const result = await runner.run(code, signal)
       if (result.failureKind === 'runner_unavailable') {
-        setTransientError(result.failureMessage || (english ? 'Runner unavailable.' : '运行服务不可用。'))
-        return
+        throw new Error(result.failureMessage || (english ? 'Runner unavailable.' : '运行服务不可用。'))
       }
-      await classroom.execute({
-        type: 'record_exercise_attempt',
-        attemptId: createAttemptId(),
-        exerciseInstanceId: instance.id,
+      return {
         submission: { type: 'code_output', code },
         observation: { type: 'run_result', result },
-      })
-    }
-    catch (reason) {
-      if (!controller.signal.aborted)
-        setTransientError(reason instanceof Error ? reason.message : String(reason))
-    }
-    finally {
-      if (sequenceRef.current === sequence) {
-        controllerRef.current = null
-        setRunning(false)
       }
-    }
+    })
   }
+
+  const transientError = hintError ?? attempt.error
 
   return (
     <section data-testid="exercise-instance" className="rounded-lg border border-border bg-card p-4">
@@ -249,11 +221,11 @@ function CodeOutputExercise({
         />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" disabled={running} onClick={() => void run()}>
-          {running
+        <Button type="button" size="sm" disabled={attempt.busy} onClick={run}>
+          {attempt.busy
             ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
             : <Play aria-hidden="true" className="size-4" />}
-          {running
+          {attempt.busy
             ? (english ? 'Running…' : '运行中…')
             : (english ? 'Run and record attempt' : '运行并记录尝试')}
         </Button>
@@ -267,13 +239,14 @@ function CodeOutputExercise({
               if (revealingHint)
                 return
               setRevealingHint(true)
-              setTransientError(null)
+              setHintError(null)
+              attempt.clearError()
               void classroom.execute({
                 type: 'record_exercise_assistance',
                 exerciseInstanceId: instance.id,
                 assistance: { type: 'hint', hintIndex: revealedHints },
               }).catch((reason: unknown) => {
-                setTransientError(reason instanceof Error ? reason.message : String(reason))
+                setHintError(reason instanceof Error ? reason.message : String(reason))
               }).finally(() => setRevealingHint(false))
             }}
           >
@@ -339,7 +312,7 @@ function CodeOutputExercise({
         </div>
       )}
       <AttemptStatus
-        busy={running}
+        busy={attempt.busy}
         english={english}
         passed={lastAttempt?.result.passed}
       />
@@ -446,28 +419,17 @@ function RecallExercise({
     ? lastAttempt.submission.answer
     : ''
   const [answer, setAnswer] = useState(previousAnswer)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const attempt = useExerciseAttempt({
+    classroom,
+    exerciseInstanceId: instance.id,
+  })
 
-  const submit = async () => {
-    if (!answer.trim() || submitting)
+  const submit = () => {
+    if (!answer.trim())
       return
-    setSubmitting(true)
-    setError(null)
-    try {
-      await classroom.execute({
-        type: 'record_exercise_attempt',
-        attemptId: createAttemptId(),
-        exerciseInstanceId: instance.id,
-        submission: { type: 'recall', answer },
-      })
-    }
-    catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason))
-    }
-    finally {
-      setSubmitting(false)
-    }
+    void attempt.submit(() => ({
+      submission: { type: 'recall', answer },
+    }))
   }
 
   return (
@@ -489,20 +451,20 @@ function RecallExercise({
         type="button"
         size="sm"
         className="mt-3"
-        disabled={!answer.trim() || submitting}
-        onClick={() => void submit()}
+        disabled={!answer.trim() || attempt.busy}
+        onClick={submit}
       >
-        {submitting && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+        {attempt.busy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
         {english ? 'Submit answer' : '提交回答'}
       </Button>
-      {error && <p role="alert" className="mt-3 text-sm text-error-foreground">{error}</p>}
+      {attempt.error && <p role="alert" className="mt-3 text-sm text-error-foreground">{attempt.error}</p>}
       <AttemptVerdict
         english={english}
         evidenceType={lastEvidenceType}
         passed={lastAttempt?.result.passed}
       />
       <AttemptStatus
-        busy={submitting}
+        busy={attempt.busy}
         english={english}
         passed={lastAttempt?.result.passed}
       />
@@ -529,8 +491,10 @@ function QuizExercise({
     ? lastAttempt.submission.answerIndices
     : instance.task.questions.map(() => [])
   const [answers, setAnswers] = useState<number[][]>(previous)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const attempt = useExerciseAttempt({
+    classroom,
+    exerciseInstanceId: instance.id,
+  })
   const complete = answers.every(answer => answer.length > 0)
 
   const toggle = (questionIndex: number, optionIndex: number, multiple: boolean) => {
@@ -551,25 +515,12 @@ function QuizExercise({
     })
   }
 
-  const submit = async () => {
-    if (!complete || submitting)
+  const submit = () => {
+    if (!complete)
       return
-    setSubmitting(true)
-    setError(null)
-    try {
-      await classroom.execute({
-        type: 'record_exercise_attempt',
-        attemptId: createAttemptId(),
-        exerciseInstanceId: instance.id,
-        submission: { type: 'quiz', answerIndices: answers },
-      })
-    }
-    catch (reason) {
-      setError(reason instanceof Error ? reason.message : String(reason))
-    }
-    finally {
-      setSubmitting(false)
-    }
+    void attempt.submit(() => ({
+      submission: { type: 'quiz', answerIndices: answers },
+    }))
   }
 
   return (
@@ -613,20 +564,20 @@ function QuizExercise({
         type="button"
         size="sm"
         className="mt-4"
-        disabled={!complete || submitting}
-        onClick={() => void submit()}
+        disabled={!complete || attempt.busy}
+        onClick={submit}
       >
-        {submitting && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+        {attempt.busy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
         {english ? 'Submit answers' : '提交答案'}
       </Button>
-      {error && <p role="alert" className="mt-3 text-sm text-error-foreground">{error}</p>}
+      {attempt.error && <p role="alert" className="mt-3 text-sm text-error-foreground">{attempt.error}</p>}
       <AttemptVerdict
         english={english}
         evidenceType={lastEvidenceType}
         passed={lastAttempt?.result.passed}
       />
       <AttemptStatus
-        busy={submitting}
+        busy={attempt.busy}
         english={english}
         passed={lastAttempt?.result.passed}
       />
