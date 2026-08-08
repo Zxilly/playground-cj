@@ -9,6 +9,7 @@ import { DynamicCangjieEditor } from '@/features/teach/components/editor/Dynamic
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useActiveEditorRegistration } from '@/features/teach/hooks/use-active-editor-registration'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { usePlaygroundSession } from '@/features/teach/state/playground-session'
 import type { PlaygroundEditorHostContextValue } from './playground-editor-host-context'
 import { PlaygroundEditorHostContext } from './playground-editor-host-context'
 
@@ -43,16 +44,12 @@ export function PlaygroundEditorHost({
   const { activeEditor } = useWorkspace()
   // The tab strip and active buffer form one editor session, so the host needs
   // the collection together when it persists the previous buffer on selection.
-  const tabs = useWorkspaceStore(state => state.playgroundTabs)
-  const activeTabId = useWorkspaceStore(state => state.currentPlaygroundTabId)
-  const persistenceStatus = useWorkspaceStore(
-    state => state.playgroundPersistenceStatus,
-  )
+  const tabs = usePlaygroundSession(state => state.tabs)
+  const activeTabId = usePlaygroundSession(state => state.activeTabId)
+  const persistenceStatus = usePlaygroundSession(state => state.persistenceStatus)
   const view = useWorkspaceStore(state => state.view)
-  const setCode = useWorkspaceStore(state => state.setPlaygroundTabCode)
-  const acquirePersistence = useWorkspaceStore(
-    state => state.acquirePlaygroundPersistence,
-  )
+  const setCode = usePlaygroundSession(state => state.updateCode)
+  const acquirePersistence = usePlaygroundSession(state => state.acquire)
   const activeTab = tabs.find(tab => tab.id === activeTabId) ?? null
   const editorHandleRef = useRef<CangjieEditorHandle | null>(null)
   const currentTabIdRef = useRef(activeTab?.id ?? null)
@@ -125,7 +122,7 @@ export function PlaygroundEditorHost({
   const persistLiveEditorCode = useCallback(() => {
     const tabId = currentTabIdRef.current
     const code = editorHandleRef.current?.getCode()
-    const persistedTab = useWorkspaceStore.getState().playgroundTabs.find(
+    const persistedTab = usePlaygroundSession.getState().tabs.find(
       tab => tab.id === tabId,
     )
     if (

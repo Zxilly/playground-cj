@@ -4,7 +4,7 @@ import type {
   ReviewArtifact,
 } from '@/lib/teach/classroom/state'
 import { runAutomaticRemediationJob } from '../components/automatic-remediation-job'
-import { assign, fromPromise, setup } from 'xstate'
+import { assign, createActor, fromPromise, setup } from 'xstate'
 
 const INFRASTRUCTURE_RETRY_BASE_MS = 500
 const INFRASTRUCTURE_RETRY_MAX_MS = 4_000
@@ -67,6 +67,10 @@ export interface AutomaticRemediationCoordinatorDependencies {
     unavailable: () => T,
   ) => Promise<T>
   createOwnerNonce?: () => string
+}
+
+export interface AutomaticRemediationCoordinator {
+  dispose: () => void
 }
 
 function createRemediationOwnerNonce(): string {
@@ -431,4 +435,47 @@ export function createAutomaticRemediationCoordinatorMachine(
       },
     },
   })
+}
+
+/**
+ * Start a coordinator that follows the Classroom aggregate directly. React and
+ * other presentation adapters only own this handle; they do not mirror job
+ * schedules or drive the machine from render state.
+ */
+export function startAutomaticRemediationCoordinator(
+  dependencies: AutomaticRemediationCoordinatorDependencies,
+): AutomaticRemediationCoordinator {
+  const actor = createActor(
+    createAutomaticRemediationCoordinatorMachine(dependencies),
+  ).start()
+  let disposed = false
+  const publishJobs = () => {
+    if (disposed)
+      return
+    actor.send({
+      type: 'jobs.changed',
+      jobs: selectPendingRemediationJobs(
+        dependencies.classroom.snapshot().reviewArtifacts,
+      ),
+    })
+  }
+  let unsubscribe: () => void
+  try {
+    unsubscribe = dependencies.classroom.subscribe(publishJobs)
+    publishJobs()
+  }
+  catch (error) {
+    actor.stop()
+    throw error
+  }
+
+  return {
+    dispose: () => {
+      if (disposed)
+        return
+      disposed = true
+      unsubscribe()
+      actor.stop()
+    },
+  }
 }

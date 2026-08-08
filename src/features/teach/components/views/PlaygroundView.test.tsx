@@ -10,10 +10,11 @@ import type { WorkspaceContextValue } from '@/features/teach/context/workspace-c
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import { createActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
+import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import {
   PLAYGROUND_SESSION_LIMITS,
-  useWorkspaceStore,
-} from '@/features/teach/state/workspace-store'
+  usePlaygroundSession,
+} from '@/features/teach/state/playground-session'
 import { createPlaygroundWorkspace } from '@/features/teach/state/playground-workspace'
 import {
   createIndexedDBPlaygroundWorkspaceStorage,
@@ -131,7 +132,7 @@ function PlaygroundRouteHarness() {
 }
 
 beforeEach(async () => {
-  await useWorkspaceStore.getState().closePlaygroundPersistence()
+  await usePlaygroundSession.getState().close()
   await deleteDB(PLAYGROUND_WORKSPACE_V2_DATABASE_NAME)
   workspaceAbortController = new AbortController()
   runner.run.mockReset()
@@ -148,8 +149,9 @@ beforeEach(async () => {
     exitCode: 0,
   }))
   useWorkspaceStore.setState(useWorkspaceStore.getInitialState(), true)
+  usePlaygroundSession.setState(usePlaygroundSession.getInitialState(), true)
   persistenceRelease
-    = await useWorkspaceStore.getState().acquirePlaygroundPersistence()
+    = await usePlaygroundSession.getState().acquire()
   useWorkspaceStore.getState().setView('playground')
 })
 
@@ -157,7 +159,7 @@ afterEach(async () => {
   cleanup()
   await persistenceRelease?.()
   persistenceRelease = null
-  await useWorkspaceStore.getState().closePlaygroundPersistence()
+  await usePlaygroundSession.getState().close()
 })
 
 describe('playgroundView student flow', () => {
@@ -287,7 +289,7 @@ describe('playgroundView student flow', () => {
   it('renames a tab with the IDE-standard F2 shortcut without changing its id', () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
     const tab = screen.getByRole('tab')
-    const tabId = useWorkspaceStore.getState().currentPlaygroundTabId
+    const tabId = usePlaygroundSession.getState().activeTabId
 
     fireEvent.keyDown(tab, { key: 'F2' })
     const input = screen.getByTestId('playground-tab-name')
@@ -295,7 +297,7 @@ describe('playgroundView student flow', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
 
     expect(screen.getByRole('tab').textContent).toContain('变量实验')
-    expect(useWorkspaceStore.getState().currentPlaygroundTabId).toBe(tabId)
+    expect(usePlaygroundSession.getState().activeTabId).toBe(tabId)
   })
 
   it('keeps tab controls flat and moves focus after opening or closing a tab', async () => {
@@ -321,21 +323,21 @@ describe('playgroundView student flow', () => {
     })
 
     await waitFor(() => {
-      expect(useWorkspaceStore.getState().playgroundTabs[0]?.initialCode)
+      expect(usePlaygroundSession.getState().tabs[0]?.initialCode)
         .toBe('main() { println("saved immediately") }')
     })
   })
 
   it('shows a dirty storage failure and lets the learner retry persistence', async () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
-    const retry = vi.fn(() => useWorkspaceStore.setState({
-      playgroundSessionDirty: false,
-      playgroundPersistenceError: null,
+    const retry = vi.fn(() => usePlaygroundSession.setState({
+      dirty: false,
+      persistenceError: null,
     }))
-    act(() => useWorkspaceStore.setState({
-      playgroundSessionDirty: true,
-      playgroundPersistenceError: 'storage_unavailable',
-      retryPlaygroundPersistence: retry,
+    act(() => usePlaygroundSession.setState({
+      dirty: true,
+      persistenceError: 'storage_unavailable',
+      retryPersistence: retry,
     }))
     expect(screen.getByRole('alert').textContent).toContain('尚未保存')
 
@@ -343,14 +345,14 @@ describe('playgroundView student flow', () => {
     await waitFor(() => {
       expect(retry).toHaveBeenCalledOnce()
       expect(screen.queryByRole('alert')).toBeNull()
-      expect(useWorkspaceStore.getState().playgroundSessionDirty).toBe(false)
+      expect(usePlaygroundSession.getState().dirty).toBe(false)
     })
   })
 
   it('explains a bounded-session failure without offering a futile retry', () => {
-    const tabId = useWorkspaceStore.getState().currentPlaygroundTabId
+    const tabId = usePlaygroundSession.getState().activeTabId
     expect(tabId).not.toBeNull()
-    act(() => useWorkspaceStore.getState().renamePlaygroundTab(
+    act(() => usePlaygroundSession.getState().renameTab(
       tabId!,
       'x'.repeat(PLAYGROUND_SESSION_LIMITS.maxTitleBytes + 1),
     ))
@@ -362,12 +364,12 @@ describe('playgroundView student flow', () => {
   })
 
   it('shows recoverable actions instead of silently overwriting a same-tab conflict', () => {
-    const tab = useWorkspaceStore.getState().playgroundTabs[0]!
+    const tab = usePlaygroundSession.getState().tabs[0]!
     const resolveConflict = vi.fn(() => null)
-    useWorkspaceStore.setState({
-      playgroundSessionDirty: true,
-      playgroundPersistenceError: 'conflict',
-      playgroundConflict: {
+    usePlaygroundSession.setState({
+      dirty: true,
+      persistenceError: 'conflict',
+      conflict: {
         tabId: tab.id,
         kind: 'content',
         localTab: {
@@ -385,7 +387,7 @@ describe('playgroundView student flow', () => {
           contentVersion: crypto.randomUUID(),
         },
       },
-      resolvePlaygroundConflict: resolveConflict,
+      resolveConflict,
     })
 
     render(<PlaygroundView />, { wrapper: Wrapper })
@@ -399,10 +401,10 @@ describe('playgroundView student flow', () => {
   it('explains that an over-capacity rebase leaves both remote and local recovery choices intact', () => {
     const localTabId = crypto.randomUUID()
     const resolveConflict = vi.fn(() => null)
-    useWorkspaceStore.setState({
-      playgroundSessionDirty: true,
-      playgroundPersistenceError: 'conflict',
-      playgroundConflict: {
+    usePlaygroundSession.setState({
+      dirty: true,
+      persistenceError: 'conflict',
+      conflict: {
         tabId: localTabId,
         kind: 'capacity',
         localTab: {
@@ -414,7 +416,7 @@ describe('playgroundView student flow', () => {
         },
         remoteTab: null,
       },
-      resolvePlaygroundConflict: resolveConflict,
+      resolveConflict,
     })
 
     render(<PlaygroundView />, { wrapper: Wrapper })
@@ -448,19 +450,19 @@ describe('playgroundView student flow', () => {
     await remote.whenIdle()
 
     await waitFor(() => {
-      expect(useWorkspaceStore.getState().playgroundPersistenceError)
+      expect(usePlaygroundSession.getState().persistenceError)
         .toBe('conflict')
     })
     expect(editor.value).toBe('unflushed local edit')
-    expect(useWorkspaceStore.getState().playgroundConflict).toMatchObject({
+    expect(usePlaygroundSession.getState().conflict).toMatchObject({
       tabId,
       localTab: { code: 'unflushed local edit' },
       remoteTab: { code: 'committed remote edit' },
     })
     fireEvent.click(screen.getByRole('button', { name: '另存为新标签页' }))
-    await useWorkspaceStore.getState().waitForPlaygroundPersistence()
-    expect(useWorkspaceStore.getState().playgroundPersistenceError).toBeNull()
-    expect(useWorkspaceStore.getState().playgroundTabs.map(tab => tab.initialCode))
+    await usePlaygroundSession.getState().whenPersistenceIdle()
+    expect(usePlaygroundSession.getState().persistenceError).toBeNull()
+    expect(usePlaygroundSession.getState().tabs.map(tab => tab.initialCode))
       .toEqual(expect.arrayContaining([
         'committed remote edit',
         'unflushed local edit',
@@ -476,7 +478,7 @@ describe('playgroundView student flow', () => {
       finish = resolve
     }))
     render(<PlaygroundView />, { wrapper: Wrapper })
-    const firstTabId = useWorkspaceStore.getState().currentPlaygroundTabId
+    const firstTabId = usePlaygroundSession.getState().activeTabId
 
     fireEvent.click(screen.getByTestId('playground-run'))
     expect(screen.getByTestId('playground-run').hasAttribute('disabled')).toBe(true)
@@ -494,7 +496,7 @@ describe('playgroundView student flow', () => {
       compilerOutputTruncated: false,
       exitCode: 0,
     }))
-    expect(useWorkspaceStore.getState().playgroundTabs.find(
+    expect(usePlaygroundSession.getState().tabs.find(
       tab => tab.id === firstTabId,
     )).toMatchObject({
       running: false,
@@ -517,13 +519,13 @@ describe('playgroundView student flow', () => {
     render(<PlaygroundRouteHarness />, { wrapper: Wrapper })
 
     fireEvent.click(screen.getByTestId('playground-run'))
-    expect(useWorkspaceStore.getState().playgroundTabs[0]?.running).toBe(true)
+    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(true)
     act(() => useWorkspaceStore.getState().setView('progress'))
-    expect(useWorkspaceStore.getState().playgroundTabs[0]?.running).toBe(false)
+    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(false)
 
     act(() => useWorkspaceStore.getState().setView('playground'))
     fireEvent.click(await screen.findByTestId('playground-run'))
-    expect(useWorkspaceStore.getState().playgroundTabs[0]?.running).toBe(true)
+    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(true)
 
     await act(async () => finishOld({
       ok: true,
@@ -536,7 +538,7 @@ describe('playgroundView student flow', () => {
       compilerOutputTruncated: false,
       exitCode: 0,
     }))
-    expect(useWorkspaceStore.getState().playgroundTabs[0]).toMatchObject({
+    expect(usePlaygroundSession.getState().tabs[0]).toMatchObject({
       running: true,
       result: null,
     })
@@ -553,7 +555,7 @@ describe('playgroundView student flow', () => {
       exitCode: 0,
     }))
     expect(await screen.findByText('current result')).toBeTruthy()
-    expect(useWorkspaceStore.getState().playgroundTabs[0]?.running).toBe(false)
+    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(false)
   })
 
   it('releases a run when its workspace aborts even if the runner ignores the signal', async () => {
@@ -564,10 +566,10 @@ describe('playgroundView student flow', () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
 
     fireEvent.click(screen.getByTestId('playground-run'))
-    expect(useWorkspaceStore.getState().playgroundTabs[0]?.running).toBe(true)
+    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(true)
     act(() => workspaceAbortController.abort())
     await waitFor(() => {
-      expect(useWorkspaceStore.getState().playgroundTabs[0]?.running).toBe(false)
+      expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(false)
     })
 
     await act(async () => finish({
@@ -581,7 +583,7 @@ describe('playgroundView student flow', () => {
       compilerOutputTruncated: false,
       exitCode: 0,
     }))
-    expect(useWorkspaceStore.getState().playgroundTabs[0]?.result).toBeNull()
+    expect(usePlaygroundSession.getState().tabs[0]?.result).toBeNull()
   })
 
   it('aborts an in-flight run when the source version changes', async () => {
@@ -600,7 +602,7 @@ describe('playgroundView student flow', () => {
     })
     await waitFor(() => {
       expect(signal.aborted).toBe(true)
-      expect(useWorkspaceStore.getState().playgroundTabs[0]).toMatchObject({
+      expect(usePlaygroundSession.getState().tabs[0]).toMatchObject({
         initialCode: 'main() { println("changed while running") }',
         running: false,
         result: null,
@@ -618,7 +620,7 @@ describe('playgroundView student flow', () => {
       compilerOutputTruncated: false,
       exitCode: 0,
     }))
-    expect(useWorkspaceStore.getState().playgroundTabs[0]?.result).toBeNull()
+    expect(usePlaygroundSession.getState().tabs[0]?.result).toBeNull()
   })
 
   it('lets the learner resize the output panel with the keyboard and reset it', () => {

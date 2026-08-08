@@ -1,20 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
 import { AlertTriangle, FileCode2, Loader2, Play, Plus, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { t } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import { Trans } from '@lingui/react/macro'
-import type { PlaygroundTab } from '@/features/teach/state/workspace-store'
-import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import type { PlaygroundTab } from '@/features/teach/state/playground-session'
+import { usePlaygroundSession } from '@/features/teach/state/playground-session'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
 import { AnsiOutput } from '@/components/AnsiOutput'
 import { usePlaygroundEditorHost } from './playground-editor-host-context'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
-import { createPlaygroundRunActor } from '@/features/teach/state/playground-run-machine'
 
 const DEFAULT_OUTPUT_HEIGHT = 176
 const MIN_OUTPUT_HEIGHT = 112
@@ -34,22 +33,18 @@ export function PlaygroundView() {
   const { flushPendingCode } = usePlaygroundEditorHost()
   // The tab strip renders and reorders the whole collection; one collection
   // subscription is the granular state this view needs.
-  // eslint-disable-next-line granular-selectors/granular-selectors
-  const tabs = useWorkspaceStore(state => state.playgroundTabs)
-  const activeId = useWorkspaceStore(state => state.currentPlaygroundTabId)
-  const openTab = useWorkspaceStore(state => state.openPlaygroundTab)
-  const selectTab = useWorkspaceStore(state => state.selectPlaygroundTab)
-  const closeTab = useWorkspaceStore(state => state.closePlaygroundTab)
-  const renameTab = useWorkspaceStore(state => state.renamePlaygroundTab)
-  const persistenceStatus = useWorkspaceStore(
-    state => state.playgroundPersistenceStatus,
-  )
-  const persistenceError = useWorkspaceStore(state => state.playgroundPersistenceError)
-  const conflict = useWorkspaceStore(state => state.playgroundConflict)
-  const retryPersistence = useWorkspaceStore(state => state.retryPlaygroundPersistence)
-  const resolveConflict = useWorkspaceStore(
-    state => state.resolvePlaygroundConflict,
-  )
+
+  const tabs = usePlaygroundSession(state => state.tabs)
+  const activeId = usePlaygroundSession(state => state.activeTabId)
+  const openTab = usePlaygroundSession(state => state.openTab)
+  const selectTab = usePlaygroundSession(state => state.selectTab)
+  const closeTab = usePlaygroundSession(state => state.closeTab)
+  const renameTab = usePlaygroundSession(state => state.renameTab)
+  const persistenceStatus = usePlaygroundSession(state => state.persistenceStatus)
+  const persistenceError = usePlaygroundSession(state => state.persistenceError)
+  const conflict = usePlaygroundSession(state => state.conflict)
+  const retryPersistence = usePlaygroundSession(state => state.retryPersistence)
+  const resolveConflict = usePlaygroundSession(state => state.resolveConflict)
   const activeTab = tabs.find(tab => tab.id === activeId) ?? null
   const tabElementRef = useRef(new Map<string, HTMLButtonElement>())
   const [outputHeight, setOutputHeight] = useState(DEFAULT_OUTPUT_HEIGHT)
@@ -357,19 +352,19 @@ function PlaygroundEditorPane({
   const { i18n } = useLingui()
   const { runner } = useWorkspace()
   const abortSignal = useAbortScope()
+  const [paneLifetime] = useState(() => new AbortController())
+  const runSignal = useMemo(
+    () => AbortSignal.any([abortSignal, paneLifetime.signal]),
+    [abortSignal, paneLifetime],
+  )
   const {
     activateEditor,
     editorHandleRef,
     flushPendingCode,
     registerEditorSlot,
   } = usePlaygroundEditorHost()
-  const beginRun = useWorkspaceStore(state => state.beginPlaygroundTabRun)
-  const finishRun = useWorkspaceStore(state => state.finishPlaygroundTabRun)
-  const releaseRunOwner = useWorkspaceStore(state => state.releasePlaygroundRunOwner)
-  const runActorsRef = useRef(new Map<
-    string,
-    ReturnType<typeof createPlaygroundRunActor>
-  >())
+  const runTab = usePlaygroundSession(state => state.runTab)
+  const resetTransient = usePlaygroundSession(state => state.resetTransient)
   const paneRef = useRef<HTMLDivElement | null>(null)
   const resizeStateRef = useRef<{
     pointerId: number
@@ -378,6 +373,11 @@ function PlaygroundEditorPane({
     maxHeight: number
   } | null>(null)
   const running = tab.running
+
+  useEffect(() => () => {
+    paneLifetime.abort(new DOMException('Playground pane closed', 'AbortError'))
+    resetTransient()
+  }, [paneLifetime, resetTransient])
 
   const getMaxOutputHeight = useCallback(() => {
     const paneHeight = paneRef.current?.getBoundingClientRect().height ?? 0
@@ -396,43 +396,6 @@ function PlaygroundEditorPane({
     observer.observe(paneRef.current)
     return () => observer.disconnect()
   }, [onOutputHeightChange])
-
-  const getRunActor = useCallback((tabId: string) => {
-    const existing = runActorsRef.current.get(tabId)
-    if (existing)
-      return existing
-    const created = createPlaygroundRunActor({
-      tabId,
-      workspaceSignal: abortSignal,
-      begin: beginRun,
-      finish: finishRun,
-      releaseOwner: releaseRunOwner,
-      run: (code, signal) => runner.run(code, signal),
-      getContentVersion: targetTabId =>
-        useWorkspaceStore.getState().playgroundTabs.find(
-          candidate => candidate.id === targetTabId,
-        )?.contentVersion ?? null,
-      subscribeToSource: listener =>
-        useWorkspaceStore.subscribe(listener),
-    })
-    runActorsRef.current.set(tabId, created)
-    return created
-  }, [
-    abortSignal,
-    beginRun,
-    finishRun,
-    releaseRunOwner,
-    runner,
-  ])
-
-  useEffect(() => {
-    const actors = runActorsRef.current
-    return () => {
-      for (const actor of actors.values())
-        actor.stop()
-      actors.clear()
-    }
-  }, [])
 
   const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -485,17 +448,18 @@ function PlaygroundEditorPane({
     // normal debounce can publish the exact code already being run as a "new"
     // source version and incorrectly cancel that run moments later.
     flushPendingCode()
-    const currentTab = useWorkspaceStore.getState().playgroundTabs.find(
+    const currentTab = usePlaygroundSession.getState().tabs.find(
       candidate => candidate.id === tab.id,
     )
     if (!currentTab)
       return
     const code = editorHandleRef.current?.getCode() ?? tab.initialCode
-    getRunActor(tab.id).send({
-      type: 'run.requested',
+    await runTab(
+      tab.id,
       code,
-      contentVersion: currentTab.contentVersion,
-    })
+      runSignal,
+      (source, signal) => runner.run(source, signal),
+    )
   }
 
   return (
