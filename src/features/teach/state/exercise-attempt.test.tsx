@@ -95,7 +95,7 @@ describe('useExerciseAttempt', () => {
     expect(execute).not.toHaveBeenCalled()
   })
 
-  it('abandons preparation when the rendered Exercise Instance changes', async () => {
+  it('keeps cancelled attempt ownership until preparation really settles', async () => {
     let release!: () => void
     const gate = new Promise<void>((resolve) => {
       release = resolve
@@ -123,8 +123,81 @@ describe('useExerciseAttempt', () => {
     rerender({ exerciseInstanceId: 'exercise:two' })
 
     expect(preparationSignal.aborted).toBe(true)
+    let callerFinished = false
+    void submission.then(() => {
+      callerFinished = true
+    })
+    await act(async () => Promise.resolve())
+    expect(callerFinished).toBe(true)
+
+    const replacementPreparation = vi.fn(() => ({
+      submission: { type: 'recall' as const, answer: 'new answer' },
+    }))
+    await act(async () => {
+      await result.current.submit(replacementPreparation)
+    })
+    expect(replacementPreparation).not.toHaveBeenCalled()
+
     release()
-    await submission
+    await act(async () => Promise.resolve())
     expect(execute).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await result.current.submit(replacementPreparation)
+    })
+    expect(replacementPreparation).toHaveBeenCalledOnce()
+    expect(execute).toHaveBeenCalledWith({
+      type: 'record_exercise_attempt',
+      attemptId: 'attempt:one',
+      exerciseInstanceId: 'exercise:two',
+      submission: { type: 'recall', answer: 'new answer' },
+    })
+  })
+
+  it('keeps cancelled attempt ownership until Classroom execution settles', async () => {
+    let releaseExecution!: () => void
+    const executionGate = new Promise<void>((resolve) => {
+      releaseExecution = resolve
+    })
+    const execute = vi.fn(async () => {
+      if (execute.mock.calls.length === 1)
+        await executionGate
+      return {} as Awaited<ReturnType<AIClassroom['execute']>>
+    })
+    const classroom = { execute } as Pick<AIClassroom, 'execute'>
+    const { result, rerender } = renderHook(
+      ({ exerciseInstanceId }) => useExerciseAttempt({
+        classroom,
+        exerciseInstanceId,
+        createId: () => 'attempt:one',
+      }),
+      { initialProps: { exerciseInstanceId: 'exercise:one' } },
+    )
+
+    let submission!: Promise<void>
+    await act(async () => {
+      submission = result.current.submit(() => ({
+        submission: { type: 'recall', answer: 'old answer' },
+      }))
+      await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce())
+    })
+    rerender({ exerciseInstanceId: 'exercise:two' })
+    await act(async () => submission)
+
+    const replacementPreparation = vi.fn(() => ({
+      submission: { type: 'recall' as const, answer: 'new answer' },
+    }))
+    await act(async () => {
+      await result.current.submit(replacementPreparation)
+    })
+    expect(replacementPreparation).not.toHaveBeenCalled()
+
+    releaseExecution()
+    await act(async () => Promise.resolve())
+    await act(async () => {
+      await result.current.submit(replacementPreparation)
+    })
+    expect(replacementPreparation).toHaveBeenCalledOnce()
+    expect(execute).toHaveBeenCalledTimes(2)
   })
 })

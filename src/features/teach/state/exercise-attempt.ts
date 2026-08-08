@@ -3,6 +3,8 @@ import type {
   AIClassroom,
   ClassroomCommand,
 } from '@/lib/teach/classroom/ai-classroom'
+import type { SettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operation-ownership'
+import { createSettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operation-ownership'
 
 type RecordAttemptCommand = Extract<
   ClassroomCommand,
@@ -39,6 +41,12 @@ interface ExerciseAttemptState {
   error: string | null
 }
 
+interface ActiveExerciseAttempt {
+  controller: AbortController
+  ownership: SettleAwareOperationOwnership
+  sequence: number
+}
+
 function createAttemptId(): string {
   if (typeof globalThis.crypto.randomUUID !== 'function')
     throw new Error('This browser cannot create a secure Exercise Attempt id')
@@ -50,7 +58,7 @@ export function useExerciseAttempt({
   createId = createAttemptId,
   exerciseInstanceId,
 }: UseExerciseAttemptOptions): ExerciseAttemptHandle {
-  const operationRef = useRef<AbortController | null>(null)
+  const operationRef = useRef<ActiveExerciseAttempt | null>(null)
   const sequenceRef = useRef(0)
   const [state, setState] = useState<ExerciseAttemptState>({
     classroom,
@@ -67,8 +75,7 @@ export function useExerciseAttempt({
 
   useEffect(() => () => {
     sequenceRef.current += 1
-    operationRef.current?.abort()
-    operationRef.current = null
+    operationRef.current?.controller.abort()
   }, [classroom, exerciseInstanceId])
 
   const submit = useCallback(async (prepare: PrepareExerciseAttempt) => {
@@ -78,22 +85,41 @@ export function useExerciseAttempt({
     const sequence = sequenceRef.current + 1
     sequenceRef.current = sequence
     const controller = new AbortController()
-    operationRef.current = controller
+    let operation!: ActiveExerciseAttempt
+    const ownership = createSettleAwareOperationOwnership(() => {
+      if (operationRef.current === operation)
+        operationRef.current = null
+    })
+    operation = { controller, ownership, sequence }
+    operationRef.current = operation
     setState({ classroom, exerciseInstanceId, busy: true, error: null })
 
     try {
-      const prepared = await prepare(controller.signal)
-      if (controller.signal.aborted || sequenceRef.current !== sequence)
+      const prepared = await operation.ownership.wait(
+        Promise.resolve(prepare(controller.signal)),
+        controller.signal,
+      )
+      if (
+        controller.signal.aborted
+        || sequenceRef.current !== operation.sequence
+      ) {
         return
-      await classroom.execute({
-        type: 'record_exercise_attempt',
-        attemptId: createId(),
-        exerciseInstanceId,
-        ...prepared,
-      } as RecordAttemptCommand)
+      }
+      await operation.ownership.wait(
+        classroom.execute({
+          type: 'record_exercise_attempt',
+          attemptId: createId(),
+          exerciseInstanceId,
+          ...prepared,
+        } as RecordAttemptCommand),
+        controller.signal,
+      )
     }
     catch (reason) {
-      if (!controller.signal.aborted && sequenceRef.current === sequence) {
+      if (
+        !controller.signal.aborted
+        && sequenceRef.current === operation.sequence
+      ) {
         setState({
           classroom,
           exerciseInstanceId,
@@ -103,10 +129,10 @@ export function useExerciseAttempt({
       }
     }
     finally {
-      if (sequenceRef.current === sequence) {
-        operationRef.current = null
+      if (sequenceRef.current === operation.sequence) {
         setState(current => ({ ...current, busy: false }))
       }
+      void operation.ownership.finish()
     }
   }, [classroom, createId, exerciseInstanceId])
 
