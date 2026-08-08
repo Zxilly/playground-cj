@@ -7,12 +7,10 @@ import { Input } from '@/components/ui/input'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { MAX_LEARNING_TRACK_CONCEPTS } from '@/lib/teach/classroom/state'
 
-function orderedValidatedConcepts(
+function orderedCourseConcepts(
   catalog: ReturnType<typeof useWorkspace>['catalog'],
 ): string[] {
-  const remaining = catalog.list()
-    .filter(item => item.availability === 'validated')
-    .map(item => item.conceptId)
+  const remaining = catalog.list().map(item => item.conceptId)
   const ordered: string[] = []
   const available = new Set<string>()
   while (remaining.length > 0) {
@@ -41,7 +39,7 @@ function conceptsThroughTarget(
     if (required.has(conceptId))
       return
     const pack = catalog.get(conceptId)
-    if (!pack || catalog.availability(conceptId) !== 'validated')
+    if (!pack)
       throw new Error(`Learning target ${conceptId} has an unavailable prerequisite`)
     for (const prerequisite of pack.concept.prerequisites)
       visit(prerequisite)
@@ -60,7 +58,7 @@ interface TrackSetupProps {
 export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
   const { classroom, catalog, lang } = useWorkspace()
   const orderedConceptIds = useMemo(
-    () => orderedValidatedConcepts(catalog),
+    () => orderedCourseConcepts(catalog),
     [catalog],
   )
   const [goal, setGoal] = useState('')

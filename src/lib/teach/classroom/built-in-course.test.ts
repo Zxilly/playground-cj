@@ -6,25 +6,17 @@ import {
   BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS,
   createBuiltInCourseContentPackCatalog,
 } from './built-in-course'
-import { validateContentPack } from './content-packs'
 import { assignImmutableContentVersion } from './content-pack-version'
 
 describe('built-in immutable Course Content Packs', () => {
   it('compiles both Git-tracked locales without deployment configuration', () => {
     for (const locale of ['en', 'zh'] as const) {
       const response = BUILT_IN_COURSE_CONTENT_PACKS[locale]
-      const currentPacks = response.packs.filter(pack =>
-        response.currentVersions[pack.concept.id] === pack.version)
-
-      expect(currentPacks.length).toBeGreaterThan(0)
-      expect(currentPacks).toHaveLength(49)
-      expect(currentPacks.filter(pack =>
-        validateContentPack(pack).status === 'validated').map(pack =>
-        pack.concept.id)).toEqual([...BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS])
+      expect(response.packs.map(pack => pack.concept.id))
+        .toEqual([...BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS])
       const catalog = createBuiltInCourseContentPackCatalog(locale)
-      expect(catalog.list().filter(summary =>
-        summary.availability === 'validated').map(summary =>
-        summary.conceptId)).toEqual([...BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS])
+      expect(catalog.list().map(summary => summary.conceptId))
+        .toEqual([...BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS])
     }
   })
 
@@ -50,7 +42,9 @@ describe('built-in immutable Course Content Packs', () => {
     ).not.toBe(original.version)
     expect(original.exerciseTemplates.every(template =>
       template.version === original.version)).toBe(true)
-    expect(response.currentVersions[original.concept.id]).toBe(original.version)
-    expect(validateContentPack(original).status).toBe('validated')
+    expect(createBuiltInCourseContentPackCatalog('en').get(
+      original.concept.id,
+      original.version,
+    )).toEqual(original)
   })
 })

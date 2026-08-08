@@ -497,7 +497,7 @@ function requireActiveConcept(
   const contentVersion = track.contentVersions[conceptId]
   if (!contentVersion)
     throw new Error(`Active Learning Track has no Content Version for ${conceptId}`)
-  const pack = catalog.requireValidatedVersion(conceptId, contentVersion)
+  const pack = catalog.require(conceptId, contentVersion)
   assertTrackConceptAccess(snapshot, track, conceptId, use, catalog)
   return pack
 }
@@ -545,7 +545,7 @@ function startLearningTrack(
   const available = new Set<string>()
   const contentVersions: Record<string, string> = {}
   for (const conceptId of command.conceptIds) {
-    const pack = deps.catalog.requireValidated(conceptId)
+    const pack = deps.catalog.require(conceptId)
     const unmet = pack.concept.prerequisites.filter(prerequisite => !available.has(prerequisite))
     if (unmet.length > 0) {
       throw new Error(
@@ -589,7 +589,7 @@ function activateLearningTrack(
         `Learning Track ${track.id} has no Content Version for ${conceptId}`,
       )
     }
-    deps.catalog.requireValidatedVersion(conceptId, contentVersion)
+    deps.catalog.require(conceptId, contentVersion)
   }
   return {
     ...snapshot,
@@ -648,7 +648,7 @@ function adjustLearningTrack(
       `Learning Track ${track.id} has no Content Version for ${command.adjustment.conceptId}`,
     )
   }
-  deps.catalog.requireValidatedVersion(
+  deps.catalog.require(
     command.adjustment.conceptId,
     contentVersion,
   )
@@ -824,7 +824,7 @@ function appendSkipMarker(
       `Active Learning Track has no Content Version for ${command.conceptId}`,
     )
   }
-  const pack = deps.catalog.requireValidatedVersion(
+  const pack = deps.catalog.require(
     command.conceptId,
     contentVersion,
   )
@@ -893,7 +893,7 @@ function createExerciseInstance(
   const trackContentVersion = track.contentVersions[command.conceptId]
   if (!trackContentVersion)
     throw new Error(`Active Learning Track has no Content Version for ${command.conceptId}`)
-  const pack = deps.catalog.requireValidatedVersion(command.conceptId, command.contentVersion)
+  const pack = deps.catalog.require(command.conceptId, command.contentVersion)
   const template = deps.catalog.requireTemplate(
     command.conceptId,
     command.templateId,
@@ -1018,7 +1018,7 @@ function recordExerciseAssistance(
     event.exerciseInstanceId === instance.id)
   if (existingHints.some(event => event.hintIndex === hintIndex))
     return snapshot
-  deps.catalog.requireValidatedVersion(
+  deps.catalog.require(
     instance.conceptId,
     instance.contentVersion,
   )
@@ -1149,7 +1149,7 @@ async function recordExerciseAttempt(
     }
     throw new Error(`Exercise Attempt id ${command.attemptId} is already in use`)
   }
-  deps.catalog.requireValidatedVersion(
+  deps.catalog.require(
     instance.conceptId,
     instance.contentVersion,
   )
@@ -1260,9 +1260,8 @@ function retainClarification(
       )
     }
   }
-  const pack = deps.catalog.getVersion(command.conceptId, command.contentVersion)
-  const availability = deps.catalog.availability(command.conceptId, command.contentVersion)
-  if (!pack || !availability)
+  const pack = deps.catalog.get(command.conceptId, command.contentVersion)
+  if (!pack)
     throw new Error('Out-of-Pack Help cannot create a retained Review Artifact')
   if (snapshot.removedReviewArtifacts.some(artifact => artifact.id === command.artifactId))
     throw new Error(`Removed Review Artifact id ${command.artifactId} cannot be reused`)
@@ -1306,10 +1305,6 @@ function retainClarification(
     contentVersion: command.contentVersion,
     misconceptionTheme: command.misconceptionTheme,
     markdown: command.markdown,
-    // Updating a version-exact group must preserve how it entered history,
-    // even if repository review availability changed in the meantime.
-    retainedAsReadOnly:
-      existing?.retainedAsReadOnly ?? availability === 'read_only',
     createdAt: existing?.createdAt ?? updatedAt,
     updatedAt,
     createdRevision: existing?.createdRevision ?? updatedRevision,
@@ -1371,7 +1366,7 @@ function retainRemediation(
   const request = retentionRequestFor(command)
   if (isCommittedRetentionRequest(snapshot, request))
     return snapshot
-  deps.catalog.requireValidatedVersion(
+  deps.catalog.require(
     instance.conceptId,
     instance.contentVersion,
   )
@@ -1536,10 +1531,7 @@ function claimRemediationDiagnostic(
     : undefined
   if (
     !instance
-    || deps.catalog.availability(
-      instance.conceptId,
-      instance.contentVersion,
-    ) !== 'validated'
+    || !deps.catalog.get(instance.conceptId, instance.contentVersion)
   ) {
     return snapshot
   }
@@ -1799,7 +1791,7 @@ function retryRemediationDiagnostic(
       `Remediation ${artifact.id} has no failed Exercise Instance provenance`,
     )
   }
-  deps.catalog.requireValidatedVersion(
+  deps.catalog.require(
     instance.conceptId,
     instance.contentVersion,
   )

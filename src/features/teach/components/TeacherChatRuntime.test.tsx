@@ -95,21 +95,27 @@ vi.mock('@/features/teach/context/abort-scope', () => ({
 let classroomSnapshot = createEmptyClassroom()
 let currentNow = 123
 let catalogConceptIds = ['cj.program.main']
+const classroomListeners = new Set<() => void>()
+function notifyClassroom() {
+  classroomListeners.forEach(listener => listener())
+}
 const context = {
   catalog: {
     list: () => catalogConceptIds.map(conceptId => ({ conceptId })),
-    get: (conceptId: string) => catalogConceptIds.includes(conceptId)
-      ? { version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', concept: { id: conceptId } }
-      : undefined,
-    getVersion: (conceptId: string, contentVersion: string) =>
-      catalogConceptIds.includes(conceptId)
-      && ['cv:sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'].includes(contentVersion)
-        ? { version: contentVersion, concept: { id: conceptId } }
-        : undefined,
+    get: (conceptId: string, contentVersion?: string) => {
+      const currentVersion = 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+      return catalogConceptIds.includes(conceptId)
+        && (contentVersion === undefined || contentVersion === currentVersion)
+        ? { version: currentVersion, concept: { id: conceptId } }
+        : undefined
+    },
   },
   classroom: {
     snapshot: () => classroomSnapshot,
-    subscribe: () => () => undefined,
+    subscribe: (listener: () => void) => {
+      classroomListeners.add(listener)
+      return () => classroomListeners.delete(listener)
+    },
     execute: vi.fn(),
   },
   knowledge: { id: 'docs', search: vi.fn() },
@@ -223,6 +229,7 @@ beforeEach(() => {
   classroomSnapshot = createEmptyClassroom()
   currentNow = 123
   catalogConceptIds = ['cj.program.main']
+  classroomListeners.clear()
   useWorkspaceStore.setState(useWorkspaceStore.getInitialState(), true)
 })
 
@@ -1062,6 +1069,7 @@ describe('teacherChatRuntime', () => {
         },
       ],
     }
+    notifyClassroom()
     rendered.rerender(
       <WorkspaceContext value={context}>
         <TeacherChatRuntime lang="en" />
@@ -1170,6 +1178,7 @@ describe('teacherChatRuntime', () => {
           updatedRevision: 2,
         }],
       }
+      notifyClassroom()
       rendered.rerender(
         <WorkspaceContext value={context}>
           <TeacherChatRuntime lang="en" />
@@ -1195,6 +1204,7 @@ describe('teacherChatRuntime', () => {
         revision: classroomSnapshot.revision + 1,
         reviewArtifacts: [...classroomSnapshot.reviewArtifacts],
       }
+      notifyClassroom()
       rendered.rerender(
         <WorkspaceContext value={context}>
           <TeacherChatRuntime lang="en" />

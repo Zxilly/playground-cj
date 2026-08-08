@@ -116,8 +116,7 @@ export function ReviewView() {
   const snapshot = useClassroomSnapshot(classroom)
   const selectedId = useWorkspaceStore(state => state.reviewConceptId)
   const openReviewConcept = useWorkspaceStore(state => state.openReviewConcept)
-  const summaries = catalog.list().filter(summary =>
-    summary.availability === 'validated')
+  const summaries = catalog.list()
   const conceptId = resolveReviewConceptId(selectedId, snapshot, catalog)
   const currentPack = conceptId ? catalog.get(conceptId) : undefined
   const english = lang === 'en'
@@ -186,10 +185,6 @@ export function ReviewView() {
   )
   const activeTrack = snapshot.tracks.find(track => track.id === snapshot.activeTrackId)
   const trackPinnedContentVersion = activeTrack?.contentVersions[pack.concept.id]
-  const displayedPackAvailability = catalog.availability(
-    pack.concept.id,
-    pack.version,
-  )
   const reviewTemplate = pack.exerciseTemplates.find(
     template => template.purpose === 'review',
   )
@@ -211,11 +206,6 @@ export function ReviewView() {
     reviewCheckUnavailableReason = english
       ? 'This concept is outside the current learning path. Historical checks remain available below.'
       : '这个知识点不在当前学习路径中；下方仍会保留历史检查。'
-  }
-  else if (displayedPackAvailability !== 'validated') {
-    reviewCheckUnavailableReason = english
-      ? `The displayed Content Version ${pack.version} is read-only, so it cannot create a Review Check.`
-      : '当前课程内容不能用于创建复习检查。'
   }
   else if (!policyAllowsReview) {
     reviewCheckUnavailableReason = english
@@ -416,13 +406,6 @@ export function ReviewView() {
                               <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                                 {artifact.type}
                               </p>
-                              {artifact.type === 'clarification' && artifact.retainedAsReadOnly && (
-                                <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                                  {english
-                                    ? 'Read-only · review and Chat only'
-                                    : '只读 · 仅用于复习与 Chat'}
-                                </span>
-                              )}
                             </div>
                             <p className="mt-1 text-sm font-medium">
                               {artifact.misconceptionTheme

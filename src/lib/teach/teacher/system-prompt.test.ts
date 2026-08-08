@@ -10,24 +10,23 @@ describe.each([
 ] as const)('lesson Orchestrator prompt (%s)', (lang, templateRule, evidenceRule) => {
   const prompt = buildTeacherSystemPrompt(lang)
 
-  it('makes immutable validated content and template-backed practice mandatory', () => {
+  it('makes the current Git-built Course and template-backed practice mandatory', () => {
     expect(prompt).toMatch(/Lesson Orchestrator/)
     expect(prompt).toMatch(/Core Content/)
-    expect(prompt).toMatch(/Validated Concept/)
+    expect(prompt).toMatch(/current Course|当前 Course/)
     expect(prompt).toMatch(/Exercise Template/)
     expect(prompt).toMatch(templateRule)
     expect(prompt).toContain('append_content_reference_group')
     expect(prompt).toContain('create_exercise_instance')
   })
 
-  it('requires explicit version-exact reads, exercises, and Clarifications', () => {
+  it('requires explicit current-version provenance for reads and mutations', () => {
     expect(prompt).toContain('contentVersion')
     expect(prompt).toContain('read_content_pack')
     expect(prompt).toContain('retain_clarification')
     expect(prompt).toMatch(/Track pin/)
     expect(prompt).toContain('chatScope')
-    expect(prompt).toMatch(/displayed version|展示 Content Version/)
-    expect(prompt).toMatch(/fresh temporary Chat|全新的临时 Chat/)
+    expect(prompt).toMatch(/displayed current Course Content Version|当前 Course Content Version/)
   })
 
   it('does not let the model start tracks, record evidence, or assign progress', () => {
@@ -63,9 +62,9 @@ describe.each([
     expect(prompt).toMatch(/raw chat|原始对话/)
   })
 
-  it('separates Out-of-Pack and Read-Only help from mainline tutoring', () => {
+  it('separates Out-of-Pack help from mainline tutoring', () => {
     expect(prompt).toMatch(/Out-of-Pack Help/)
-    expect(prompt).toMatch(/Read-Only Concept/)
+    expect(prompt).not.toMatch(/Read-Only Concept/)
     expect(prompt).toContain('search_docs')
   })
 
@@ -77,7 +76,7 @@ describe.each([
     expect(prompt).toMatch(/runtime|运行时/)
     expect(prompt).toMatch(/all task types|任何类型/)
     expect(prompt).toMatch(/Learning Tracks|任何 Track/)
-    expect(prompt).toMatch(/no validated fresh-assessment reset|没有经过验证的 fresh-assessment/)
+    expect(prompt).toMatch(/no fresh-assessment reset|没有 fresh-assessment/)
     expect(prompt).toMatch(/tool effects alone does not activate|仅通过工具展示.*不会激活/)
     expect(prompt).not.toContain('record_code_suggestion_assistance')
     expect(prompt).not.toMatch(/while a code Exercise Instance is open|代码练习打开期间/)

@@ -7,7 +7,12 @@ import { startNextDevServer } from '../helpers/next-dev-server'
 const VIEWPORT = { width: 1280, height: 900 } as const
 const MOCK_LLM_BASE_URL = 'https://mock-llm.invalid/v1'
 const MOCK_COMPLETIONS_URL = `${MOCK_LLM_BASE_URL}/chat/completions`
-const MAIN_CONTENT_VERSION = enContentPacks.currentVersions['cj.program.main']
+const MAIN_CONTENT_VERSION = enContentPacks.packs.find(
+  pack => pack.concept.id === 'cj.program.main',
+)?.version
+
+if (!MAIN_CONTENT_VERSION)
+  throw new Error('The built-in Course is missing cj.program.main')
 
 interface ChatMessage {
   role?: string

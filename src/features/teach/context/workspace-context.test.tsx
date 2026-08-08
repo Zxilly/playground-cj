@@ -16,11 +16,7 @@ const value: WorkspaceContextValue = {
   catalog: {
     list: () => [],
     get: () => undefined,
-    getVersion: () => undefined,
-    listVersions: () => [],
-    availability: () => undefined,
-    requireValidated: () => { throw new Error('not used') },
-    requireValidatedVersion: () => { throw new Error('not used') },
+    require: () => { throw new Error('not used') },
     requireTemplate: () => { throw new Error('not used') },
   },
   knowledge: { id: 'test', search: async () => [] },

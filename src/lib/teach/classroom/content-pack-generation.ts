@@ -52,6 +52,7 @@ import {
   assignImmutableContentVersion,
   sha256Canonical,
 } from './content-pack-version'
+import { CURRENT_COURSE_CONCEPT_IDS } from './course-definition'
 
 interface CommandResult {
   status: number | null
@@ -619,6 +620,8 @@ export async function buildCurrentCourseContentPacks(
     buildCourseContentPacks(sections, concepts, 'en'),
     buildCourseContentPacks(sections, concepts, 'zh'),
   )
+  const currentConcepts = new Set<string>(CURRENT_COURSE_CONCEPT_IDS)
   return bilingual[lang]
+    .filter(pack => currentConcepts.has(pack.concept.id))
     .map(pack => assignImmutableContentVersion(pack, lang))
 }

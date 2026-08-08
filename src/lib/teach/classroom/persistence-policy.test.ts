@@ -128,7 +128,6 @@ describe('ai classroom persistence policy', () => {
       contentVersion,
       misconceptionTheme: 'entry point',
       markdown: 'Use `main` as the entry point.',
-      retainedAsReadOnly: false,
       createdAt: 1,
       updatedAt: 1,
       createdRevision: 1,

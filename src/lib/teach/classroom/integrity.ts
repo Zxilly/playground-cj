@@ -251,22 +251,6 @@ export function assertClassroomIntegrity(
   catalog: ContentPackCatalog,
 ): void {
   assertUniqueIds(snapshot)
-  // Historical structure is checked against the exact retained pack identity,
-  // not today's mutable approval decision. Command handlers keep using the
-  // original catalog and therefore still require current validation before
-  // authorizing new mainline work.
-  const historicalCatalog: ContentPackCatalog = {
-    ...catalog,
-    requireValidatedVersion: (conceptId, version) => {
-      const pack = catalog.getVersion(conceptId, version)
-      if (!pack) {
-        throw new Error(
-          `Historical Concept Version ${conceptId}@${version} is unavailable`,
-        )
-      }
-      return pack
-    },
-  }
 
   const tracks = new Map(snapshot.tracks.map(track => [track.id, track]))
   if (snapshot.activeTrackId && !tracks.has(snapshot.activeTrackId))
@@ -293,7 +277,7 @@ export function assertClassroomIntegrity(
     for (const conceptId of track.conceptIds) {
       const contentVersion = track.contentVersions[conceptId]
       const pack = contentVersion
-        ? catalog.getVersion(conceptId, contentVersion)
+        ? catalog.get(conceptId, contentVersion)
         : undefined
       if (!pack) {
         throw new Error(
@@ -327,7 +311,7 @@ export function assertClassroomIntegrity(
       }
       if (adjustment.type === 'delay')
         assertUniqueReferences(`Track Adjustment ${adjustment.id}`, adjustment.blockedEvidenceIds)
-      assertTrackAdjustment(snapshot, track, adjustment, historicalCatalog)
+      assertTrackAdjustment(snapshot, track, adjustment, catalog)
     }
   }
 
@@ -438,14 +422,14 @@ export function assertClassroomIntegrity(
           entry.type === 'exercise_instance' && entry.purpose === 'placement'
             ? 'placement'
             : 'mainline',
-          historicalCatalog,
+          catalog,
           entry.recordedRevision,
         )
       }
     }
 
     if ('contentVersion' in entry) {
-      const pack = catalog.getVersion(entry.conceptId, entry.contentVersion)
+      const pack = catalog.get(entry.conceptId, entry.contentVersion)
       if (!pack) {
         throw new Error(
           `Classroom Stream entry ${entry.id} references unknown Content Version `
@@ -476,7 +460,7 @@ export function assertClassroomIntegrity(
           track,
           entry.conceptId,
           entry.basis,
-          historicalCatalog,
+          catalog,
           entry.recordedRevision,
         )
       }
@@ -729,7 +713,7 @@ export function assertClassroomIntegrity(
 
   const evidenceCountByAttempt = new Map<string, number>()
   for (const item of snapshot.evidence) {
-    const pack = catalog.getVersion(item.conceptId, item.contentVersion)
+    const pack = catalog.get(item.conceptId, item.contentVersion)
     if (!pack) {
       throw new Error(
         `Learning Evidence ${item.id} references unknown Content Version `
@@ -781,15 +765,13 @@ export function assertClassroomIntegrity(
   const activeClarificationKeys = new Set<string>()
   for (const artifact of snapshot.reviewArtifacts) {
     if (artifact.type === 'clarification') {
-      const pack = catalog.getVersion(artifact.conceptId, artifact.contentVersion)
+      const pack = catalog.get(artifact.conceptId, artifact.contentVersion)
       if (!pack) {
         throw new Error(
           `Clarification ${artifact.id} references unknown Content Version `
           + `${artifact.conceptId}@${artifact.contentVersion}`,
         )
       }
-      // retainedAsReadOnly records creation provenance. Review availability is
-      // external mutable policy, so reopening history must not equate the two.
       if (artifact.updatedAt < artifact.createdAt)
         throw new Error(`Clarification ${artifact.id} has invalid display timestamps`)
       if (
@@ -986,7 +968,7 @@ export function assertClassroomIntegrity(
       activeSuppressionKeys.add(artifact.suppressionKey)
     }
     if (artifact.type === 'clarification') {
-      if (!catalog.getVersion(artifact.conceptId, artifact.contentVersion)) {
+      if (!catalog.get(artifact.conceptId, artifact.contentVersion)) {
         throw new Error(
           `Removed Clarification ${artifact.id} references unknown Content Version`,
         )

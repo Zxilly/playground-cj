@@ -4,6 +4,7 @@ import type {
 } from './content-packs'
 import type { ContentPackCatalog } from './content-catalog'
 import { createContentPackCatalog } from './content-catalog'
+import { CURRENT_COURSE_CONCEPT_IDS } from './course-definition'
 import enArtifact from './generated/content-packs/en.json'
 import zhArtifact from './generated/content-packs/zh.json'
 
@@ -13,12 +14,7 @@ function compileBuiltInCourse(
   return artifact as ContentPacksResponse
 }
 
-export const BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS = [
-  'cj.program.main',
-  'cj.io.println',
-  'cj.var.immutable',
-  'cj.var.mutable',
-] as const
+export const BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS = CURRENT_COURSE_CONCEPT_IDS
 
 /**
  * Curriculum compiled into the application bundle. There is no runtime course
@@ -37,13 +33,9 @@ export function createBuiltInCourseContentPackCatalog(
   selectedLocale: ContentPackLanguage,
 ): ContentPackCatalog {
   const catalog = createContentPackCatalog(
-    [
-      ...BUILT_IN_COURSE_CONTENT_PACKS.en.packs,
-      ...BUILT_IN_COURSE_CONTENT_PACKS.zh.packs,
-    ],
-    BUILT_IN_COURSE_CONTENT_PACKS[selectedLocale].currentVersions,
+    BUILT_IN_COURSE_CONTENT_PACKS[selectedLocale].packs,
   )
   for (const conceptId of BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS)
-    catalog.requireValidated(conceptId)
+    catalog.require(conceptId)
   return catalog
 }

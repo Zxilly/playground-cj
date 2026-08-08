@@ -464,8 +464,6 @@ function projectContentPackSummary(summary: ContentPackSummary) {
     conceptId,
     title,
     version,
-    availability: summary.availability,
-    availabilityReason: summary.availabilityReason,
     truncated: truncatedFields.length > 0,
     truncatedFields,
   }
@@ -886,7 +884,7 @@ function projectSourceRequirement(
 }
 
 function teacherReadablePack(
-  pack: NonNullable<ReturnType<ContentPackCatalog['getVersion']>>,
+  pack: NonNullable<ReturnType<ContentPackCatalog['get']>>,
 ) {
   const budget = createProjectionBudget(CONTENT_PACK_CHARACTER_LIMIT)
   const exact = (value: string, field: string) => {
@@ -1481,7 +1479,7 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
       ),
     }),
     list_content_packs: tool({
-      description: 'List one deterministic page of Course Content Packs and whether each Concept is validated or read-only. Follow nextOffset to inspect later pages. Only validated Concepts can drive mainline tutoring.',
+      description: 'List one deterministic page of the current Course Content Packs. Follow nextOffset to inspect later pages.',
       inputSchema: z.object({
         offset: z.number().int().min(0).max(1_024).default(0),
       }).strict(),
@@ -1523,7 +1521,7 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
         toolCallBudget,
         'general',
         async ({ conceptId, contentVersion }, options) => {
-          const pack = catalog.getVersion(conceptId, contentVersion)
+          const pack = catalog.get(conceptId, contentVersion)
           if (!pack)
             return fail(`No Course Content Pack for ${conceptId}@${contentVersion}.`)
           const projection = teacherReadablePack(pack)
@@ -1551,7 +1549,6 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
             return fail('Teacher turn ended before the Content Pack read completed.')
           }
           return ok({
-            availability: catalog.availability(conceptId, contentVersion),
             pack: projection.pack,
             personalizationCandidates: {
               unresolvedFailureEvidence,
@@ -1562,7 +1559,7 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
       ),
     }),
     append_content_reference_group: tool({
-      description: 'Append an ordered subset of immutable Core Content references for one Tutoring Step. The aggregate rejects unknown, repeated, reordered, out-of-track, or read-only content.',
+      description: 'Append an ordered subset of immutable Core Content references for one Tutoring Step. The aggregate rejects unknown, repeated, reordered, or out-of-track content.',
       inputSchema: z.object({
         conceptId: toolIdSchema,
         learningSkillId: toolIdSchema,
@@ -1752,7 +1749,7 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
           const learningTrackId = scope.learningTrackId
           if (!learningTrackId)
             return fail('Start a Learning Track before creating an Exercise Instance.')
-          const pack = catalog.getVersion(
+          const pack = catalog.get(
             input.conceptId,
             input.contentVersion,
           )
@@ -1941,7 +1938,7 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
               + `${scope.contentVersion}.`,
             )
           }
-          if (!catalog.getVersion(input.conceptId, input.contentVersion)) {
+          if (!catalog.get(input.conceptId, input.contentVersion)) {
             return fail(
               `No Course Content Pack for ${input.conceptId}@${input.contentVersion}.`,
             )

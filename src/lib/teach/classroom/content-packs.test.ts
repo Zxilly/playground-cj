@@ -106,9 +106,6 @@ describe('content pack validation', () => {
     expect(validateContentPack(pack).status).toBe('validated')
     expect(contentPacksResponseSchema.safeParse({
       packs: [pack],
-      currentVersions: {
-        [pack.concept.id]: contentVersion,
-      },
     }).success).toBe(true)
   })
 
@@ -425,7 +422,7 @@ describe('content pack validation', () => {
     }).success).toBe(false)
   })
 
-  it('requires an explicit current version for every published Concept', () => {
+  it('rejects the removed current-version compatibility index', () => {
     expect(contentPacksResponseSchema.safeParse({
       packs: [approvedPack()],
       currentVersions: {},
