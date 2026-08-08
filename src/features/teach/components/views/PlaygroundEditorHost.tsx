@@ -66,6 +66,11 @@ export function PlaygroundEditorHost({
     expectedContentVersion: string
   } | null>(null)
   const [hostElement] = useState(createHostElement)
+  // Monaco must cold-start in a connected container. Keep the portal dormant
+  // until Playground contributes its first real slot; after that, the editor
+  // remains mounted while the host element is temporarily detached on route
+  // changes so buffers and language-service state survive navigation.
+  const [editorStarted, setEditorStarted] = useState(false)
   const activateEditor = useActiveEditorRegistration(
     activeEditor,
     editorHandleRef,
@@ -154,6 +159,8 @@ export function PlaygroundEditorHost({
 
   const registerEditorSlot = useCallback<RefCallback<HTMLDivElement>>((node) => {
     slotRef.current = node
+    if (node)
+      setEditorStarted(true)
     placeHost()
   }, [placeHost])
 
@@ -240,7 +247,7 @@ export function PlaygroundEditorHost({
   return (
     <PlaygroundEditorHostContext value={context}>
       {children}
-      {hostElement && persistenceStatus === 'ready' && createPortal(
+      {hostElement && editorStarted && persistenceStatus === 'ready' && createPortal(
         <EditorComponent
           initialCode={activeTab?.initialCode ?? ''}
           handleRef={editorHandleRef}

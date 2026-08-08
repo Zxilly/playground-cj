@@ -244,10 +244,25 @@ describe('aI classroom workspace e2e', () => {
       timeout: 60_000,
     })
 
+    // The long-lived Monaco portal must cold-start only after Playground owns
+    // a connected slot. Entering from the default Live route used to mount it
+    // off-DOM permanently, leaving a blank editor for the rest of the session.
+    await page.getByTestId('workspace-nav-playground').click()
+    const playgroundEditor = page.getByTestId('playground-editor').locator('.monaco-editor')
+    await playgroundEditor.waitFor({ state: 'visible', timeout: 60_000 })
+    const initialEditorBox = await playgroundEditor.boundingBox()
+    expect(initialEditorBox?.width ?? 0).toBeGreaterThan(0)
+    expect(initialEditorBox?.height ?? 0).toBeGreaterThan(0)
+    await page.getByTestId('workspace-nav-progress').click()
+    await page.getByTestId('workspace-nav-playground').click()
+    await expect.poll(async () => (await playgroundEditor.boundingBox())?.width ?? 0)
+      .toBeGreaterThan(0)
+    await page.getByTestId('workspace-nav-live').click()
+
     await page.getByLabel('What do you want to be able to do?').fill(
       'Build small Cangjie programs independently',
     )
-    await page.getByRole('button', { name: 'Start Learning Track' }).click()
+    await page.getByRole('button', { name: 'Start learning path' }).click()
     await page.getByText('Build small Cangjie programs independently').waitFor()
 
     // Establish a genuinely independent baseline before exposing any Teacher
@@ -267,7 +282,10 @@ describe('aI classroom workspace e2e', () => {
     await independentReviewCheck
       .getByRole('button', { name: 'Run and record attempt' })
       .click()
-    await independentReviewCheck.getByText('Not passed yet').waitFor()
+    await independentReviewCheck
+      .getByRole('paragraph')
+      .filter({ hasText: /^Not passed yet$/ })
+      .waitFor()
     await independentReviewCheck.getByText('Independent Evidence').waitFor()
 
     await page.getByTestId('workspace-nav-live').click()
@@ -296,7 +314,10 @@ describe('aI classroom workspace e2e', () => {
       ].join('\n'),
     )
     await practice.getByRole('button', { name: 'Run and record attempt' }).click()
-    await practice.getByText('Passed').waitFor()
+    await practice
+      .getByRole('paragraph')
+      .filter({ hasText: /^Passed$/ })
+      .waitFor()
     await practice.getByText('Aided Evidence').waitFor()
 
     await page.getByTestId('workspace-nav-progress').click()
@@ -320,9 +341,15 @@ describe('aI classroom workspace e2e', () => {
     await expect.poll(() => page.getByTestId('exercise-instance').count()).toBe(2)
     expect(await page.getByText('Define main at the top level without the func keyword.').isVisible())
       .toBe(true)
-    await expect.poll(() => page.getByText('Passed', { exact: true }).count())
+    await expect.poll(() => page
+      .getByRole('paragraph')
+      .filter({ hasText: /^Passed$/ })
+      .count())
       .toBe(1)
-    expect(await page.getByText('Not passed yet').isVisible()).toBe(true)
+    expect(await page
+      .getByRole('paragraph')
+      .filter({ hasText: /^Not passed yet$/ })
+      .isVisible()).toBe(true)
     expect(await page.getByText('Aided Evidence').isVisible()).toBe(true)
     expect(await page.getByText(
       'Independent Evidence',

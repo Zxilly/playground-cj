@@ -40,12 +40,30 @@ export const ThreadMessage: FC = () => {
 }
 
 export function MessageError() {
+  const error = useAuiState((state) => {
+    const status = state.message.status
+    return status?.type === 'incomplete' ? status.error : undefined
+  })
+  const serializedError = String(
+    error instanceof Error ? error.message : JSON.stringify(error) ?? '',
+  )
+  const message = serializedError.includes('insufficient_user_quota')
+    || serializedError.includes('rate_limit_exceeded')
+    ? <Trans>本轮共享额度已用完，请稍后再试或在设置中使用自己的模型。</Trans>
+    : serializedError.includes('busy')
+      ? <Trans>共享课堂老师正忙，请稍后重试。</Trans>
+      : serializedError.includes('timeout')
+        ? <Trans>课堂老师响应超时，请重试。</Trans>
+        : serializedError.includes('unavailable')
+          ? <Trans>共享课堂老师暂时不可用，请稍后重试。</Trans>
+          : <Trans>课堂老师暂时无法完成这次回复，请重试。</Trans>
+
   return (
     <MessagePrimitive.Error>
-      <div role="alert" className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-destructive text-sm dark:bg-destructive/5 dark:text-red-200">
+      <div role="alert" className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-error-foreground text-sm dark:bg-destructive/5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <p className="aui-message-error-message min-w-0 flex-1 leading-5">
-            <Trans>课堂老师暂时无法完成这次回复，请重试。</Trans>
+            {message}
           </p>
           <ActionBarPrimitive.Root hideWhenRunning className="aui-message-error-action shrink-0">
             <ActionBarPrimitive.Reload asChild>
@@ -53,7 +71,7 @@ export function MessageError() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-8 shrink-0 gap-1.5 rounded-md border-destructive/30 bg-background px-2.5 text-destructive hover:bg-destructive/10 dark:text-red-200"
+                className="h-8 shrink-0 gap-1.5 rounded-md border-destructive/30 bg-background px-2.5 text-error-foreground hover:bg-destructive/10"
                 aria-label={t`重新生成`}
               >
                 <RefreshCwIcon aria-hidden="true" className="size-3.5" />

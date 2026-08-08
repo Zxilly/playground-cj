@@ -54,7 +54,7 @@ describe('useLLMConfigBootstrap', () => {
     vi.useRealTimers()
   })
 
-  it('fetches and applies shared gateway metadata without storing a browser key', async () => {
+  it('prepares and applies shared gateway metadata without storing a browser key', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(jsonResponse(sharedMetadata({ available: 249_900 })))
 
@@ -71,7 +71,7 @@ describe('useLLMConfigBootstrap', () => {
       })
     })
     expect(result.current.status).toBe('ready')
-    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/metadata', { method: 'GET' })
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/readiness', { method: 'POST' })
 
     await waitFor(() => {
       expect(useLLMConfigStore.getState().autoQuota).toEqual({
@@ -106,7 +106,7 @@ describe('useLLMConfigBootstrap', () => {
         model: 'deepseek-v4-flash',
       })
     })
-    expect(fetch).toHaveBeenCalledWith('/api/ai-gateway/metadata', { method: 'GET' })
+    expect(fetch).toHaveBeenCalledWith('/api/ai-gateway/readiness', { method: 'POST' })
   })
 
   it('stores the per-period daily budget from the shared gateway metadata response', async () => {
@@ -163,7 +163,7 @@ describe('useLLMConfigBootstrap', () => {
         apiKey: '',
       })
     })
-    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/metadata', { method: 'GET' })
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/readiness', { method: 'POST' })
     expect(useLLMConfigStore.getState().autoQuota).toEqual({
       nextResetAt: 2_000,
       exhausted: false,
@@ -193,7 +193,7 @@ describe('useLLMConfigBootstrap', () => {
 
     renderHook(() => useLLMConfigBootstrap(), { wrapper: Wrapper })
 
-    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/metadata', { method: 'GET' })
+    expect(fetch).toHaveBeenNthCalledWith(1, '/api/ai-gateway/readiness', { method: 'POST' })
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500)
@@ -206,18 +206,20 @@ describe('useLLMConfigBootstrap', () => {
         exhausted: false,
       })
     })
-    expect(fetch).toHaveBeenNthCalledWith(2, '/api/ai-gateway/metadata', { method: 'GET' })
+    expect(fetch).toHaveBeenNthCalledWith(2, '/api/ai-gateway/readiness', { method: 'POST' })
   })
 
   it('reports fetch errors when shared gateway bootstrap fails', async () => {
-    vi.mocked(fetch).mockResolvedValue(jsonResponse({}, { status: 503 }))
+    vi.mocked(fetch).mockResolvedValue(jsonResponse({
+      error: { code: 'shared_service_busy' },
+    }, { status: 503 }))
 
     const { result } = renderHook(() => useLLMConfigBootstrap(), { wrapper: Wrapper })
 
     await waitFor(() => {
       expect(result.current).toEqual({
         status: 'error',
-        error: 'Shared gateway metadata request failed: HTTP 503',
+        error: 'shared_service_busy',
       })
     })
     expect(useLLMConfigStore.getState().autoQuota).toBeNull()

@@ -7,6 +7,7 @@ import { ClassroomActivity, MessageError } from './ThreadMessages'
 
 const auiStateMocks = vi.hoisted(() => ({
   messageStatus: 'running',
+  messageError: undefined as unknown,
 }))
 
 function MockMessageErrorSlot({ children }: { children?: ReactNode }) {
@@ -58,7 +59,12 @@ function MockUserMessageAttachments() {
 
 function MockUseAuiState(selector: (state: unknown) => unknown) {
   return selector({
-    message: { status: { type: auiStateMocks.messageStatus } },
+    message: {
+      status: {
+        type: auiStateMocks.messageStatus,
+        error: auiStateMocks.messageError,
+      },
+    },
   })
 }
 
@@ -105,6 +111,17 @@ describe('threadMessages', () => {
   beforeEach(() => {
     globalI18n.load({ zh: {} })
     globalI18n.activate('zh')
+    auiStateMocks.messageStatus = 'running'
+    auiStateMocks.messageError = undefined
+  })
+
+  it('turns safe shared-service codes into actionable learner messages', () => {
+    auiStateMocks.messageStatus = 'incomplete'
+    auiStateMocks.messageError = new Error('shared_service_busy')
+
+    render(<MessageError />, { wrapper: Wrapper })
+
+    expect(screen.getByRole('alert').textContent).toContain('共享课堂老师正忙')
   })
 
   afterEach(() => {

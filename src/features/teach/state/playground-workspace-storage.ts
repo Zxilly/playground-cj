@@ -302,8 +302,10 @@ export function createIndexedDBPlaygroundWorkspaceStorage(
         channel = null
         while (pendingOperations.size > 0)
           await Promise.all([...pendingOperations])
-        if (databasePromise)
-          (await databasePromise).close()
+        const pendingDatabase = databasePromise
+        databasePromise = null
+        const db = await pendingDatabase?.catch(() => null)
+        db?.close()
       })()
       return closePromise
     },

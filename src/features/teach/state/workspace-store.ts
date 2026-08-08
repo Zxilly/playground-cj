@@ -38,7 +38,6 @@ export type PlaygroundPersistenceError = PlaygroundWorkspaceError
 export interface WorkspaceStore {
   view: WorkspaceView
   reviewConceptId: string | null
-  reviewContentVersion: string | null
   pendingPrefill: string | null
   playgroundTabs: PlaygroundTab[]
   currentPlaygroundTabId: string | null
@@ -49,7 +48,6 @@ export interface WorkspaceStore {
   playgroundConflict: PlaygroundWorkspaceConflict | null
   setView: (view: WorkspaceView) => void
   openReviewConcept: (conceptId: string) => void
-  setReviewContentVersion: (contentVersion: string) => void
   openPlaygroundTab: (
     input?: { title?: string, code?: string },
   ) => string | null
@@ -130,7 +128,6 @@ export function createWorkspaceStore(
   const store = create<WorkspaceStore>()((set, get) => ({
     view: 'live',
     reviewConceptId: null,
-    reviewContentVersion: null,
     pendingPrefill: null,
     playgroundTabs: [],
     currentPlaygroundTabId: null,
@@ -140,15 +137,9 @@ export function createWorkspaceStore(
     playgroundPersistenceError: null,
     playgroundConflict: null,
     setView: view => set({ view }),
-    openReviewConcept: conceptId => set(state => ({
+    openReviewConcept: conceptId => set({
       view: 'review',
       reviewConceptId: conceptId,
-      reviewContentVersion: state.reviewConceptId === conceptId
-        ? state.reviewContentVersion
-        : null,
-    })),
-    setReviewContentVersion: contentVersion => set({
-      reviewContentVersion: contentVersion,
     }),
     openPlaygroundTab: (input = {}) => {
       if (!runtime || get().playgroundPersistenceStatus !== 'ready')
@@ -216,7 +207,7 @@ export function createWorkspaceStore(
         get().playgroundPersistenceStatus === 'error'
         && persistenceOwners.size > 0
       ) {
-        void replaceFailedRuntime()
+        void replaceFailedRuntime().catch(() => undefined)
       }
       else if (
         runtime
@@ -270,7 +261,6 @@ export function createWorkspaceStore(
     reset: () => set(state => ({
       view: 'live',
       reviewConceptId: null,
-      reviewContentVersion: null,
       pendingPrefill: null,
       playgroundTabs: state.playgroundTabs.map(tab => ({
         ...tab,

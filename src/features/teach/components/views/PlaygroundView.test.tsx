@@ -24,6 +24,8 @@ import type { RunResult } from '@/lib/teach/feedback/run-cangjie'
 import { PlaygroundEditorHost } from './PlaygroundEditorHost'
 import { PlaygroundView } from './PlaygroundView'
 
+const fakeEditorMountConnections: boolean[] = []
+
 function FakePlaygroundEditor({
   initialCode,
   handleRef,
@@ -36,6 +38,7 @@ function FakePlaygroundEditor({
   if (!modelsRef.current.has(uriHint))
     modelsRef.current.set(uriHint, initialCode)
   useEffect(() => {
+    fakeEditorMountConnections.push(inputRef.current?.isConnected === true)
     handleRef.current = {
       getCode: () => modelsRef.current.get(uriHint) ?? '',
       setCode: (code: string) => {
@@ -132,6 +135,7 @@ beforeEach(async () => {
   await deleteDB(PLAYGROUND_WORKSPACE_V2_DATABASE_NAME)
   workspaceAbortController = new AbortController()
   runner.run.mockReset()
+  fakeEditorMountConnections.length = 0
   runner.run.mockImplementation(async (code: string) => ({
     ok: true,
     phase: 'run',
@@ -157,6 +161,66 @@ afterEach(async () => {
 })
 
 describe('playgroundView student flow', () => {
+  it('announces run start, completion, and failure without reading program output', async () => {
+    let finish!: (result: RunResult) => void
+    runner.run.mockImplementationOnce(() => new Promise<RunResult>((resolve) => {
+      finish = resolve
+    }))
+    render(<PlaygroundView />, { wrapper: Wrapper })
+    const status = screen.getByTestId('playground-run-status')
+
+    expect(status.textContent).toBe('')
+    expect(status.getAttribute('role')).toBe('status')
+    expect(status.getAttribute('aria-live')).toBe('polite')
+    expect(status.getAttribute('aria-atomic')).toBe('true')
+
+    fireEvent.click(screen.getByTestId('playground-run'))
+    expect(screen.getByTestId('playground-run-status')).toBe(status)
+    expect(status.textContent).toBe('正在运行 Playground 代码…')
+
+    await act(async () => finish({
+      ok: true,
+      phase: 'run',
+      stdout: 'large program output that must stay outside the live region',
+      stdoutTruncated: false,
+      stderr: '',
+      stderrTruncated: false,
+      compilerOutput: '',
+      compilerOutputTruncated: false,
+      exitCode: 0,
+    }))
+    await waitFor(() => expect(status.textContent).toBe('Playground 运行完成'))
+    expect(status.textContent).not.toContain('large program output')
+
+    runner.run.mockResolvedValueOnce({
+      ok: false,
+      phase: 'compile',
+      stdout: '',
+      stdoutTruncated: false,
+      stderr: '',
+      stderrTruncated: false,
+      compilerOutput: 'private compiler details',
+      compilerOutputTruncated: false,
+      exitCode: null,
+    })
+    fireEvent.click(screen.getByTestId('playground-run'))
+    expect(status.textContent).toBe('正在运行 Playground 代码…')
+    await waitFor(() => expect(status.textContent).toBe('Playground 运行失败'))
+    expect(status.textContent).not.toContain('private compiler details')
+  })
+
+  it('cold-starts the editor only after its real Playground slot is connected', async () => {
+    useWorkspaceStore.getState().setView('live')
+    render(<PlaygroundRouteHarness />, { wrapper: Wrapper })
+
+    expect(fakeEditorMountConnections).toEqual([])
+    act(() => useWorkspaceStore.getState().setView('playground'))
+
+    const editor = await screen.findByTestId('fake-playground-editor')
+    expect(editor.isConnected).toBe(true)
+    expect(fakeEditorMountConnections).toEqual([true])
+  })
+
   it('keeps the editor instance and buffer while the Playground route page unmounts', async () => {
     render(<PlaygroundRouteHarness />, { wrapper: Wrapper })
     const editor = await screen.findByTestId('fake-playground-editor')
@@ -232,6 +296,22 @@ describe('playgroundView student flow', () => {
 
     expect(screen.getByRole('tab').textContent).toContain('变量实验')
     expect(useWorkspaceStore.getState().currentPlaygroundTabId).toBe(tabId)
+  })
+
+  it('keeps tab controls flat and moves focus after opening or closing a tab', async () => {
+    render(<PlaygroundView />, { wrapper: Wrapper })
+    const firstTab = screen.getByRole('tab')
+    expect(firstTab.querySelector('button, input')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('playground-new-tab'))
+    const tabs = screen.getAllByRole('tab')
+    await waitFor(() => expect(document.activeElement).toBe(tabs[1]))
+    expect(tabs[1]?.querySelector('button, input')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', {
+      name: `关闭标签页: ${tabs[1]?.textContent}`,
+    }))
+    await waitFor(() => expect(document.activeElement).toBe(firstTab))
   })
 
   it('persists each edit into the active Playground tab shortly after it is typed', async () => {
@@ -583,6 +663,7 @@ describe('playgroundView student flow', () => {
     expect(diagnostic.textContent).not.toContain('/opt/cangjie/bin/cjc')
     expect(diagnostic.textContent).not.toContain(ESC)
     expect(diagnostic.innerHTML).toContain('color:rgb(187,0,0)')
+    expect(diagnostic.className).toContain('text-error-foreground')
 
     const raw = screen.getByTestId('playground-stderr-raw')
     expect(raw.getAttribute('open')).toBeNull()
@@ -609,6 +690,8 @@ describe('playgroundView student flow', () => {
     expect(await screen.findByText('answer on stdout')).toBeTruthy()
     expect(screen.getByTestId('playground-runtime-stderr').textContent)
       .toContain('warning on stderr')
+    expect(screen.getByTestId('playground-runtime-stderr').className)
+      .toContain('text-error-foreground')
     expect(screen.getByText('程序标准输出已截断。')).toBeTruthy()
     expect(screen.getByText('程序标准错误已截断。')).toBeTruthy()
     expect(screen.getByText('编译器输出已截断。')).toBeTruthy()

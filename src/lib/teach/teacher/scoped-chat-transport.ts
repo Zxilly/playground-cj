@@ -17,6 +17,16 @@ const MAX_TEACHER_RAW_CHUNKS = 4_096
 const MAX_RETAINED_METADATA_CHARS = 512
 const PROVIDER_CANCEL_GRACE_MS = 1_000
 const TEACHER_TURN_DEADLINE_MS = 120_000
+const SAFE_TEACHER_ERROR_CODES = [
+  'insufficient_user_quota',
+  'rate_limit_exceeded',
+  'server_busy',
+  'shared_service_busy',
+  'shared_service_timeout',
+  'shared_service_unavailable',
+  'upstream_timeout',
+  'upstream_unavailable',
+] as const
 export interface TeacherOutputBoundary {
   commit: (turnSignal: AbortSignal) => Promise<void>
 }
@@ -82,6 +92,11 @@ function boundedMetadata<T extends string>(value: T | undefined): T | undefined 
   return value
 }
 
+function sanitizeTeacherError(errorText: string): string {
+  return SAFE_TEACHER_ERROR_CODES.find(code => errorText.includes(code))
+    ?? 'teacher_response_failed'
+}
+
 /**
  * Strip provider reasoning, tool payloads, retrieved documents, files, and
  * metadata before they enter assistant-ui state. Keeping this boundary in the
@@ -115,7 +130,10 @@ function sanitizeChunk(chunk: UIMessageChunk): UIMessageChunk | null {
     case 'abort':
       return { type: chunk.type }
     case 'error':
-      return { type: chunk.type, errorText: 'Teacher response failed.' }
+      return {
+        type: chunk.type,
+        errorText: sanitizeTeacherError(chunk.errorText),
+      }
     case 'reasoning-start':
     case 'reasoning-delta':
     case 'reasoning-end':

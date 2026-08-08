@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useLLMConfig, useLLMConfigStore } from '@/stores/llmConfig'
-import { fetchSharedGatewayMetadata } from '@/modules/llm-config/runtime/shared-gateway-client'
+import { prepareSharedGateway } from '@/modules/llm-config/runtime/shared-gateway-client'
 
 export interface LLMConfigBootstrapState {
   status: 'loading' | 'ready' | 'error'
@@ -49,7 +49,7 @@ export function useLLMConfigBootstrap({
       return
     let cancelled = false
     hasRequestedAutoConfigRef.current = true
-    fetchSharedGatewayMetadata()
+    prepareSharedGateway()
       .then((data) => {
         if (cancelled)
           return
