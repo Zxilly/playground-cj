@@ -7,6 +7,7 @@ import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-co
 import { QuotaExhaustedDialog } from '@/modules/llm-config/components/QuotaExhaustedDialog'
 import { TeachConfigWizard } from './TeachConfigWizard'
 import { TeachLanding } from './TeachLanding'
+import { TeachLoadingState } from './TeachLoadingState'
 import { TeachWorkspace } from './TeachWorkspace'
 
 export type { WorkspaceCollaborators }
@@ -64,15 +65,6 @@ export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
   )
 }
 
-function TeachAppLoading() {
-  return (
-    <div
-      data-testid="teach-app-loading"
-      className="h-full bg-background"
-    />
-  )
-}
-
 export interface TeachAppProps {
   lang: string
 }
@@ -80,7 +72,7 @@ export interface TeachAppProps {
 /** Browser-only boundary: collaborators depend on IndexedDB and Monaco. */
 const TeachApp = dynamic(() => import('./TeachAppRoot'), {
   ssr: false,
-  loading: TeachAppLoading,
+  loading: TeachLoadingState,
 })
 
 export default TeachApp

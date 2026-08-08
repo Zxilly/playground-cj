@@ -1,4 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { setupI18n } from '@lingui/core'
+import { I18nProvider } from '@lingui/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
@@ -30,7 +32,13 @@ const context = {
 } as WorkspaceContextValue
 
 function Wrapper({ children }: { children: ReactNode }) {
-  return <WorkspaceContext value={context}>{children}</WorkspaceContext>
+  const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
+  i18n.activate('en')
+  return (
+    <I18nProvider i18n={i18n}>
+      <WorkspaceContext value={context}>{children}</WorkspaceContext>
+    </I18nProvider>
+  )
 }
 
 beforeEach(() => {
@@ -49,31 +57,29 @@ describe('teachWorkspaceShell', () => {
     expect(screen.getByText('chat')).toBeTruthy()
   })
 
-  it('opens a compact Chat for a new prefill and closes it on viewport entry', () => {
+  it('opens a compact Chat for a new prefill and resets it across viewports', () => {
     viewport.compact = true
     const rendered = render(
       <TeachWorkspaceShell chat={<div>chat</div>} />,
       { wrapper: Wrapper },
     )
-    const chat = screen.getByTestId('workspace-chat')
-    expect(chat.dataset.open).toBe('false')
+    expect(screen.queryByTestId('workspace-chat')).toBeNull()
 
     act(() => {
       useWorkspaceStore.getState().setPendingPrefill('Please explain this.')
     })
-    expect(chat.dataset.open).toBe('true')
+    expect(screen.getByTestId('workspace-chat').dataset.open).toBe('true')
     act(() => {
       useWorkspaceStore.getState().consumePrefill()
     })
-    fireEvent.click(screen.getByTestId('workspace-chat-toggle'))
-    expect(chat.dataset.open).toBe('false')
+    fireEvent.click(screen.getByRole('button', { name: 'Close teacher chat' }))
+    expect(screen.queryByTestId('workspace-chat')).toBeNull()
 
     viewport.compact = false
     rendered.rerender(<TeachWorkspaceShell chat={<div>chat</div>} />)
-    fireEvent.click(screen.getByTestId('workspace-chat-toggle'))
-    expect(chat.dataset.open).toBe('true')
+    expect(screen.getByTestId('workspace-chat')).toBeTruthy()
     viewport.compact = true
     rendered.rerender(<TeachWorkspaceShell chat={<div>chat</div>} />)
-    expect(chat.dataset.open).toBe('false')
+    expect(screen.queryByTestId('workspace-chat')).toBeNull()
   })
 })

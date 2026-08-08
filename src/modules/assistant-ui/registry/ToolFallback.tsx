@@ -33,6 +33,7 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({ status }) => {
     = status?.type === 'incomplete' && status.reason === 'cancelled'
   const isRunning = status?.type === 'running'
   const isFailed = status?.type === 'incomplete' && !isCancelled
+  const requiresAction = status?.type === 'requires-action'
   const Icon = statusIconMap[status?.type ?? 'complete']
   const label = isRunning
     ? <Trans>老师正在准备课堂内容…</Trans>
@@ -40,16 +41,20 @@ const ToolFallbackImpl: ToolCallMessagePartComponent = ({ status }) => {
       ? <Trans>课堂操作已取消</Trans>
       : isFailed
         ? <Trans>课堂操作失败</Trans>
-        : <Trans>课堂内容已准备</Trans>
+        : requiresAction
+          ? <Trans>课堂操作等待确认</Trans>
+          : <Trans>课堂内容已准备</Trans>
 
   return (
     <div
       data-slot="tool-fallback-safe-summary"
-      role={isRunning ? 'status' : undefined}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
       className={cn(
         'flex w-full items-center gap-2 rounded-md border border-border bg-background px-3.5 py-3 text-xs text-muted-foreground',
         isCancelled && 'bg-muted line-through',
-        isFailed && 'text-destructive',
+        isFailed && 'text-error-foreground',
       )}
     >
       <Icon

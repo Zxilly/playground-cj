@@ -22,7 +22,7 @@ export function CompilerDiagnosticOutput({ output, testId }: CompilerDiagnosticO
       <AnsiOutput
         text={formatted.diagnosticAnsi}
         data-testid={testId}
-        className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 font-mono text-xs leading-relaxed text-destructive"
+        className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 font-mono text-xs leading-relaxed text-error-foreground"
       />
       {formatted.hasHiddenPreamble && (
         <details
