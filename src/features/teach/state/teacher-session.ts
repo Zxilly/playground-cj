@@ -25,7 +25,7 @@ import {
 import {
   RemediationJobBusyError,
   RemediationJobCancelledError,
-} from '../components/automatic-remediation-job'
+} from './automatic-remediation-job'
 import { startAutomaticRemediationCoordinator } from './automatic-remediation-coordinator'
 
 export type TeacherChatMessage = InferAgentUIMessage<TeacherAgent>

@@ -308,17 +308,43 @@ export function createScopedChatTransport<
         admission.release()
       }
       const ownership = createTeacherTurnOwnership(releaseTurn)
+      let undeliveredStream: ReadableStream<UIMessageChunk> | null = null
+      const cancelUndeliveredStream = () => {
+        const stream = undeliveredStream
+        if (!stream)
+          return
+        undeliveredStream = null
+        try {
+          void ownership.observe(stream.cancel(turnSignal.reason))
+        }
+        catch {
+          // A synchronous cancellation failure has no raw work to retain.
+        }
+      }
+      turnSignal.addEventListener('abort', cancelUndeliveredStream, {
+        once: true,
+      })
       try {
         if (prepareTurn) {
           cleanupPreparedTurn = prepareTurn(turnSignal) || undefined
         }
+        const streamOperation = inner.sendMessages({
+          ...opts,
+          abortSignal: turnSignal,
+        }).then((stream) => {
+          undeliveredStream = stream
+          if (turnSignal.aborted) {
+            cancelUndeliveredStream()
+            turnSignal.throwIfAborted()
+          }
+          return stream
+        })
         const stream = await ownership.wait(
-          inner.sendMessages({
-            ...opts,
-            abortSignal: turnSignal,
-          }),
+          streamOperation,
           turnSignal,
         )
+        undeliveredStream = null
+        turnSignal.removeEventListener('abort', cancelUndeliveredStream)
         return boundary
           ? guardTeacherTurn(
               stream,
@@ -330,6 +356,8 @@ export function createScopedChatTransport<
           : stream
       }
       catch (error) {
+        cancelUndeliveredStream()
+        turnSignal.removeEventListener('abort', cancelUndeliveredStream)
         ownership.finish()
         throw error
       }

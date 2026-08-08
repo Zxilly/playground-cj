@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { usePlaygroundSession } from '@/features/teach/state/playground-session'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
 import { createEmptyClassroom } from '@/lib/teach/classroom/state'
 import type {
@@ -126,6 +127,7 @@ const context = {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.toolBudgetOpenSignals.length = 0
+  mocks.config = {}
   vi.mocked(context.classroom.execute).mockImplementation(
     async (command: ClassroomCommand) => {
       if (
@@ -231,6 +233,7 @@ beforeEach(() => {
   catalogConceptIds = ['cj.program.main']
   classroomListeners.clear()
   useWorkspaceStore.setState(useWorkspaceStore.getInitialState(), true)
+  usePlaygroundSession.setState(usePlaygroundSession.getInitialState(), true)
 })
 
 afterEach(() => {
@@ -475,6 +478,68 @@ describe('teacherChatRuntime', () => {
     expect(mocks.createToolkit).toHaveBeenCalledTimes(toolkitBuilds)
     expect(mocks.createAgent).toHaveBeenCalledTimes(agentBuilds)
     expect(mocks.createTransport).toHaveBeenCalledTimes(transportBuilds)
+  })
+
+  it('replaces one scoped session when the LLM configuration changes', async () => {
+    const rendered = render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.createTransport).toHaveBeenCalledOnce())
+    const firstScopeSignal = mocks.createTransport.mock.calls[0]?.[1] as AbortSignal
+
+    mocks.config = { model: 'replacement-model' }
+    rendered.rerender(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+
+    await waitFor(() => expect(mocks.createTransport).toHaveBeenCalledTimes(2))
+    expect(firstScopeSignal.aborted).toBe(true)
+    const replacementScopeSignal = mocks.createTransport.mock.calls[1]?.[1] as AbortSignal
+    expect(replacementScopeSignal.aborted).toBe(false)
+
+    rendered.rerender(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    expect(mocks.createTransport).toHaveBeenCalledTimes(2)
+  })
+
+  it('projects current Playground tab titles through the Teacher toolkit seam', () => {
+    usePlaygroundSession.setState({
+      tabs: [{
+        id: 'tab:one',
+        title: 'First draft',
+        initialCode: 'main() {}',
+        titleVersion: 'title:v1',
+        contentVersion: 'content:v1',
+        result: null,
+        running: false,
+      }],
+    })
+    render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    const deps = mocks.createToolkit.mock.calls[0]?.[0] as {
+      playground: { listTabs: () => Array<{ id: string, title: string }> }
+    }
+
+    expect(deps.playground.listTabs()).toEqual([
+      { id: 'tab:one', title: 'First draft' },
+    ])
+
+    usePlaygroundSession.setState(state => ({
+      tabs: state.tabs.map(tab => ({ ...tab, title: 'Renamed draft' })),
+    }))
+    expect(deps.playground.listTabs()).toEqual([
+      { id: 'tab:one', title: 'Renamed draft' },
+    ])
   })
 
   it('runs a pending Remediation diagnostic outside visible chat history', async () => {

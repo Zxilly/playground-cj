@@ -3,7 +3,7 @@ import type { CourseContentPack } from './content-packs'
 import { createAIClassroom } from './ai-classroom'
 import { createContentPackCatalog } from './content-catalog'
 import { createMemoryClassroomStorage } from './storage'
-import { runAutomaticRemediationJob } from '@/features/teach/components/automatic-remediation-job'
+import { runAutomaticRemediationJob } from '@/features/teach/state/automatic-remediation-job'
 
 const VERSION
   = 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'

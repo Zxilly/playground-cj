@@ -53,7 +53,7 @@ describe('scoped teacher chat transport', () => {
     ).resolves.toBeNull()
   })
 
-  it('holds the turn lease after a deadline until provider stream creation settles', async () => {
+  it('cancels a late-created provider stream before admitting another turn', async () => {
     const firstDeadline = new AbortController()
     const nextDeadline = new AbortController()
     const timeout = vi.spyOn(AbortSignal, 'timeout')
@@ -65,6 +65,11 @@ describe('scoped teacher chat transport', () => {
       const stalledProvider = new Promise<void>((resolve) => {
         finishStalledProvider = resolve
       })
+      let finishProviderCancel!: () => void
+      const providerCancelFinished = new Promise<void>((resolve) => {
+        finishProviderCancel = resolve
+      })
+      const cancelProvider = vi.fn(() => providerCancelFinished)
       const agent = {
         version: 'agent-v1',
         tools: {},
@@ -73,11 +78,15 @@ describe('scoped teacher chat transport', () => {
           if (streamCount === 1)
             await stalledProvider
           return {
-            toUIMessageStream: () => new ReadableStream<UIMessageChunk>({
-              start(controller) {
-                controller.close()
-              },
-            }),
+            toUIMessageStream: () => streamCount === 1
+              ? new ReadableStream<UIMessageChunk>({
+                  cancel: cancelProvider,
+                })
+              : new ReadableStream<UIMessageChunk>({
+                  start(controller) {
+                    controller.close()
+                  },
+                }),
           }
         }),
       } as unknown as Agent<never, ToolSet, never>
@@ -107,6 +116,13 @@ describe('scoped teacher chat transport', () => {
       )
 
       finishStalledProvider()
+      await vi.waitFor(() => expect(cancelProvider).toHaveBeenCalledOnce())
+      expect(closeTurnBudget).not.toHaveBeenCalled()
+      await expect(transport.sendMessages(sendOptions)).rejects.toThrow(
+        /turn is already running/,
+      )
+
+      finishProviderCancel()
       await vi.waitFor(() => expect(closeTurnBudget).toHaveBeenCalledOnce())
       const nextStream = await transport.sendMessages(sendOptions)
       await expect(nextStream.getReader().read()).resolves.toEqual({
