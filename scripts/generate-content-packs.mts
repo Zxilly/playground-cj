@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path'
 import {
   assertBilingualLearningContractArtifacts,
   contentPackArtifactSha256,
-  createGeneratedContentPackArtifact,
+  createGeneratedContentPackArtifacts,
   formatGeneratedJson,
 } from '../src/lib/teach/classroom/content-pack-artifact'
 import {
@@ -22,16 +22,10 @@ const generatedDirectory = join(
 )
 
 async function main(): Promise<void> {
-  const artifacts = {
-    en: createGeneratedContentPackArtifact(
-      'en',
-      await buildCurrentCourseContentPacks('en'),
-    ),
-    zh: createGeneratedContentPackArtifact(
-      'zh',
-      await buildCurrentCourseContentPacks('zh'),
-    ),
-  }
+  const artifacts = createGeneratedContentPackArtifacts({
+    en: await buildCurrentCourseContentPacks('en'),
+    zh: await buildCurrentCourseContentPacks('zh'),
+  })
   assertBilingualLearningContractArtifacts(artifacts.en, artifacts.zh)
   mkdirSync(generatedDirectory, { recursive: true })
 

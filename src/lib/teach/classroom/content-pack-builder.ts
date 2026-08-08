@@ -11,11 +11,13 @@ import type {
   SourceRequirement,
 } from './content-packs'
 import { hasDistinctAssessmentContract } from './content-packs'
+import type { CurrentCourseConceptId } from './course-definition'
+import { CURRENT_COURSE_CONCEPT_IDS } from './course-definition'
 
 export type { ContentPackLanguage } from './content-packs'
 
-// The server replaces this non-publishable placeholder with a content-addressed
-// version before a pack crosses the API boundary.
+// The build replaces this non-publishable placeholder with a content-addressed
+// version before writing the Git-tracked generated artifact.
 const UNVERSIONED_CONTENT_PLACEHOLDER = 'unversioned' as const
 const DEFAULT_CODE_OUTPUT_MATCH_MODE = 'exact' as const
 
@@ -57,13 +59,6 @@ const LANGUAGE_LABELS: Record<string, string> = {
   'scala': 'Scala',
 }
 
-export const VALIDATED_CONTENT_CONCEPT_IDS = [
-  'cj.program.main',
-  'cj.io.println',
-  'cj.var.immutable',
-  'cj.var.mutable',
-] as const
-
 const STATIC_TOUR_CODE_SNIPPET_REFS = new Set([
   // Requires a separately linked native `increment` symbol.
   '09-ffi-unsafe/02-c-types/04',
@@ -74,8 +69,6 @@ const STATIC_TOUR_CODE_SNIPPET_REFS = new Set([
   '10-macros/02-tokens-quote/02',
   '10-macros/02-tokens-quote/03',
 ])
-
-type ValidatedContentConceptId = typeof VALIDATED_CONTENT_CONCEPT_IDS[number]
 
 interface LocalizedText {
   en: string
@@ -92,7 +85,7 @@ interface DefaultExerciseDefinition {
   starterCode: string
 }
 
-interface DefaultValidatedContentDefinition {
+interface DefaultCurrentCourseContentDefinition {
   exercises: [
     DefaultExerciseDefinition,
     DefaultExerciseDefinition,
@@ -103,9 +96,9 @@ interface DefaultValidatedContentDefinition {
   skillTitle: LocalizedText
 }
 
-const DEFAULT_VALIDATED_CONTENT: Record<
-  ValidatedContentConceptId,
-  DefaultValidatedContentDefinition
+const DEFAULT_CURRENT_COURSE_CONTENT: Record<
+  CurrentCourseConceptId,
+  DefaultCurrentCourseContentDefinition
 > = {
   'cj.program.main': {
     sourceRefs: ['01-welcome/01-intro/01'],
@@ -675,14 +668,14 @@ function coreContentBlocks(
   return blocks
 }
 
-function validatedEvidenceLoop(
+function currentCourseEvidenceLoop(
   conceptId: string,
   lang: ContentPackLanguage,
 ): {
   exerciseTemplates: UnversionedExerciseTemplate[]
   learningSkills: LearningSkill[]
 } {
-  const definition = defaultValidatedContent(conceptId)
+  const definition = defaultCurrentCourseContent(conceptId)
   if (!definition)
     return { exerciseTemplates: [], learningSkills: [] }
 
@@ -736,16 +729,16 @@ function validatedEvidenceLoop(
   }
 }
 
-function defaultValidatedContent(
+function defaultCurrentCourseContent(
   conceptId: string,
-): DefaultValidatedContentDefinition | undefined {
-  if (!VALIDATED_CONTENT_CONCEPT_IDS.includes(conceptId as ValidatedContentConceptId))
+): DefaultCurrentCourseContentDefinition | undefined {
+  if (!CURRENT_COURSE_CONCEPT_IDS.includes(conceptId as CurrentCourseConceptId))
     return undefined
-  return DEFAULT_VALIDATED_CONTENT[conceptId as ValidatedContentConceptId]
+  return DEFAULT_CURRENT_COURSE_CONTENT[conceptId as CurrentCourseConceptId]
 }
 
 export interface ContentPackReferenceValidationCase {
-  conceptId: ValidatedContentConceptId
+  conceptId: CurrentCourseConceptId
   expectedOutput: string
   matchMode: Extract<
     ExerciseTask,
@@ -760,8 +753,8 @@ export interface ContentPackReferenceValidationCase {
 
 /** Reference solutions are generation-only and never enter browser artifacts. */
 export function getContentPackReferenceValidationCases(): ContentPackReferenceValidationCase[] {
-  return VALIDATED_CONTENT_CONCEPT_IDS.flatMap((conceptId) => {
-    const definition = DEFAULT_VALIDATED_CONTENT[conceptId]
+  return CURRENT_COURSE_CONCEPT_IDS.flatMap((conceptId) => {
+    const definition = DEFAULT_CURRENT_COURSE_CONTENT[conceptId]
     return definition.exercises.map(exercise => ({
       conceptId,
       expectedOutput: exercise.expectedOutput,
@@ -795,13 +788,13 @@ export function buildCourseContentPacks(
 
   return concepts.flatMap((concept): UnversionedCourseContentPack[] => {
     const matchedByRef = new Map<string, FlatSection>()
-    const definition = defaultValidatedContent(concept.conceptId)
+    const definition = defaultCurrentCourseContent(concept.conceptId)
     const contentRefs = definition?.sourceRefs ?? concept.chapterRefs
     if (definition && contentRefs.some(ref =>
       !concept.chapterRefs.some(chapterRef =>
         ref === chapterRef || ref.startsWith(`${chapterRef}/`)))) {
       throw new Error(
-        `Validated Content source is outside Concept Graph refs for ${concept.conceptId}`,
+        `Current Course source is outside Concept Graph refs for ${concept.conceptId}`,
       )
     }
     if (contentRefs.length === 0)
@@ -820,7 +813,7 @@ export function buildCourseContentPacks(
     const matchedSections = [...matchedByRef.values()]
       .sort((a, b) => compareStableIds(sourceRef(a), sourceRef(b)))
 
-    const evidenceLoop = validatedEvidenceLoop(concept.conceptId, lang)
+    const evidenceLoop = currentCourseEvidenceLoop(concept.conceptId, lang)
     return [{
       id: `pack:${concept.conceptId}`,
       version: UNVERSIONED_CONTENT_PLACEHOLDER,

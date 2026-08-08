@@ -3,7 +3,10 @@ import type { SettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operat
 import { awaitWithSignal } from '@/lib/ai/abortable-operation'
 import { createSettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operation-ownership'
 import { createAIClassroom } from '@/lib/teach/classroom/ai-classroom'
-import { createBuiltInCourseContentPackCatalog } from '@/lib/teach/classroom/built-in-course'
+import {
+  BUILT_IN_COURSE_VERSION,
+  createBuiltInCourseContentPackCatalog,
+} from '@/lib/teach/classroom/built-in-course'
 import { createIndexedDBClassroomStorage } from '@/lib/teach/classroom/storage'
 import { createCangjieMcpKnowledgeSource } from '@/lib/teach/knowledge/cangjie-mcp-source'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
@@ -23,7 +26,7 @@ export interface CreateWorkspaceCollaboratorsOptions {
 
 type ContentLocale = 'en' | 'zh'
 
-const CLASSROOM_STORAGE_SCOPE = 'classroom'
+const CLASSROOM_STORAGE_SCOPE = `classroom:${BUILT_IN_COURSE_VERSION}`
 export const DEFAULT_WORKSPACE_INITIALIZATION_TIMEOUT_MS = 20_000
 
 export class WorkspaceInitializationTimeoutError extends Error {
@@ -195,10 +198,10 @@ async function disposeWorkspaceResources(
 }
 
 /**
- * Build and open the only production AI Classroom aggregate. The v8 IndexedDB
- * scope is shared across UI locales. The bilingual catalog is compiled into
- * the application so one Classroom Stream can reopen every exact Content
- * Version after the learner switches languages.
+ * Build and open the only production AI Classroom aggregate. Its IndexedDB
+ * scope is shared across UI locales and keyed by the logical Course Version,
+ * so a new Git-built Course starts empty. The bilingual catalog lets one
+ * Classroom Stream reopen exact provenance after a language switch.
  */
 export async function createWorkspaceCollaborators(
   lang: string,
@@ -220,6 +223,7 @@ export async function createWorkspaceCollaborators(
     const catalog = createBuiltInCourseContentPackCatalog(selectedLocale)
     resources.storage = createIndexedDBClassroomStorage({
       scope: CLASSROOM_STORAGE_SCOPE,
+      discardOtherScopesWithPrefix: 'classroom',
     })
 
     resources.classroom = createAIClassroom({

@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/teach/classroom/built-in-course', () => ({
+  BUILT_IN_COURSE_VERSION: 'course:sha256:test',
   createBuiltInCourseContentPackCatalog: mocks.createCatalog,
 }))
 vi.mock('@/lib/teach/classroom/storage', () => ({
@@ -43,11 +44,14 @@ beforeEach(() => {
 })
 
 describe('workspace collaborator ownership', () => {
-  it('uses the built-in bilingual catalog for the selected locale', async () => {
+  it('uses the built-in catalog and Course-versioned persistence scope', async () => {
     const collaborators = await createWorkspaceCollaborators('en')
 
     expect(mocks.createCatalog).toHaveBeenCalledWith('en')
-    expect(mocks.createStorage).toHaveBeenCalledWith({ scope: 'classroom' })
+    expect(mocks.createStorage).toHaveBeenCalledWith({
+      scope: 'classroom:course:sha256:test',
+      discardOtherScopesWithPrefix: 'classroom',
+    })
     expect(mocks.createClassroom).toHaveBeenCalledWith(expect.objectContaining({
       catalog: mocks.catalog,
       storage: mocks.storage,
@@ -66,8 +70,14 @@ describe('workspace collaborator ownership', () => {
 
     expect(mocks.createCatalog).toHaveBeenNthCalledWith(1, 'en')
     expect(mocks.createCatalog).toHaveBeenNthCalledWith(2, 'zh')
-    expect(mocks.createStorage).toHaveBeenNthCalledWith(1, { scope: 'classroom' })
-    expect(mocks.createStorage).toHaveBeenNthCalledWith(2, { scope: 'classroom' })
+    expect(mocks.createStorage).toHaveBeenNthCalledWith(1, {
+      scope: 'classroom:course:sha256:test',
+      discardOtherScopesWithPrefix: 'classroom',
+    })
+    expect(mocks.createStorage).toHaveBeenNthCalledWith(2, {
+      scope: 'classroom:course:sha256:test',
+      discardOtherScopesWithPrefix: 'classroom',
+    })
 
     await chinese.dispose()
   })

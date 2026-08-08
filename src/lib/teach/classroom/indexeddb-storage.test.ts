@@ -40,4 +40,43 @@ describe('indexedDB classroom storage', () => {
 
     await Promise.all([first.close?.(), second.close?.()])
   })
+
+  it('discards obsolete Course scopes without touching unrelated classrooms', async () => {
+    const databaseName = `${AI_CLASSROOM_V8_DATABASE_NAME}-test-${crypto.randomUUID()}`
+    const legacy = createIndexedDBClassroomStorage({
+      databaseName,
+      scope: 'classroom',
+    })
+    const oldCourse = createIndexedDBClassroomStorage({
+      databaseName,
+      scope: 'classroom:course:sha256:old',
+    })
+    const unrelated = createIndexedDBClassroomStorage({
+      databaseName,
+      scope: 'classroom-preview',
+    })
+    const revisionOne = { ...createEmptyClassroom(), revision: 1 }
+    await Promise.all([
+      legacy.save(revisionOne, 0),
+      oldCourse.save(revisionOne, 0),
+      unrelated.save(revisionOne, 0),
+    ])
+
+    const current = createIndexedDBClassroomStorage({
+      databaseName,
+      scope: 'classroom:course:sha256:current',
+      discardOtherScopesWithPrefix: 'classroom',
+    })
+    await expect(current.load()).resolves.toBeNull()
+    await expect(legacy.load()).resolves.toBeNull()
+    await expect(oldCourse.load()).resolves.toBeNull()
+    await expect(unrelated.load()).resolves.toEqual(revisionOne)
+
+    await Promise.all([
+      legacy.close?.(),
+      oldCourse.close?.(),
+      unrelated.close?.(),
+      current.close?.(),
+    ])
+  })
 })

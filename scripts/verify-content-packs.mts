@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
   assertBilingualLearningContractArtifacts,
-  createGeneratedContentPackArtifact,
+  createGeneratedContentPackArtifacts,
   formatGeneratedJson,
 } from '../src/lib/teach/classroom/content-pack-artifact'
 import {
@@ -11,16 +11,10 @@ import {
 } from '../src/lib/teach/classroom/content-pack-generation'
 
 async function main(): Promise<void> {
-  const artifacts = {
-    en: createGeneratedContentPackArtifact(
-      'en',
-      await buildCurrentCourseContentPacks('en'),
-    ),
-    zh: createGeneratedContentPackArtifact(
-      'zh',
-      await buildCurrentCourseContentPacks('zh'),
-    ),
-  }
+  const artifacts = createGeneratedContentPackArtifacts({
+    en: await buildCurrentCourseContentPacks('en'),
+    zh: await buildCurrentCourseContentPacks('zh'),
+  })
   assertBilingualLearningContractArtifacts(artifacts.en, artifacts.zh)
 
   const generatedDirectory = join(

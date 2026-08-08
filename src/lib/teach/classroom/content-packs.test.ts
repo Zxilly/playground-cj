@@ -103,8 +103,9 @@ describe('content pack validation', () => {
     for (const template of pack.exerciseTemplates)
       template.version = contentVersion
 
-    expect(validateContentPack(pack).status).toBe('validated')
+    expect(validateContentPack(pack).status).toBe('ready')
     expect(contentPacksResponseSchema.safeParse({
+      courseVersion: `course:sha256:${'c'.repeat(64)}`,
       packs: [pack],
     }).success).toBe(true)
   })
@@ -154,7 +155,7 @@ describe('content pack validation', () => {
   it('keeps prose-only or snippet-only material out of the learning path', () => {
     const pack = approvedPack()
     pack.blocks = pack.blocks.filter(block => block.type === 'prose')
-    expect(validateContentPack(pack).status).toBe('read_only')
+    expect(validateContentPack(pack).status).toBe('incomplete')
 
     const snippetOnly = approvedPack()
     const program = snippetOnly.blocks[1]!
@@ -162,7 +163,7 @@ describe('content pack validation', () => {
       ...program,
       sampleType: 'snippet' as const,
     }] as unknown as typeof snippetOnly.blocks
-    expect(validateContentPack(snippetOnly).status).toBe('read_only')
+    expect(validateContentPack(snippetOnly).status).toBe('incomplete')
   })
 
   it('rejects mainline content when an Exercise Template does not trace to a Learning Skill', () => {
@@ -232,7 +233,7 @@ describe('content pack validation', () => {
 
     const exactEmptyPack = approvedPack()
     exactEmptyPack.exerciseTemplates[0].task.expectedOutput = ''
-    expect(validateContentPack(exactEmptyPack).status).toBe('validated')
+    expect(validateContentPack(exactEmptyPack).status).toBe('ready')
   })
 
   it('rejects output-only code tasks with no Learning Skill source contract', () => {
@@ -256,19 +257,19 @@ describe('content pack validation', () => {
       expect(result.issues.join(' ')).toContain('chapterId/subChapterId/sectionId')
   })
 
-  it('keeps a Concept Read-Only until every skill has practice and review templates', () => {
+  it('marks a Concept incomplete until every skill has practice and review templates', () => {
     const pack = approvedPack()
     pack.exerciseTemplates = pack.exerciseTemplates
       .filter(template => template.purpose === 'practice')
 
-    expect(validateContentPack(pack).status).toBe('read_only')
+    expect(validateContentPack(pack).status).toBe('incomplete')
   })
 
-  it('keeps a Concept Read-Only when review merely repeats the practice assessment contract', () => {
+  it('marks a Concept incomplete when review repeats the practice assessment contract', () => {
     const pack = approvedPack()
     pack.exerciseTemplates[1].task = structuredClone(pack.exerciseTemplates[0].task)
 
-    expect(validateContentPack(pack).status).toBe('read_only')
+    expect(validateContentPack(pack).status).toBe('incomplete')
   })
 
   it('requires every Review Check to be fresh against every earlier assessment form', () => {
@@ -281,13 +282,13 @@ describe('content pack validation', () => {
       pack.exerciseTemplates[0].task,
     )
 
-    expect(validateContentPack(pack).status).toBe('read_only')
+    expect(validateContentPack(pack).status).toBe('incomplete')
 
     const repeatedReview = approvedPack()
     const secondReview = structuredClone(repeatedReview.exerciseTemplates[1])
     secondReview.id = 'template:let:review:duplicate'
     repeatedReview.exerciseTemplates.push(secondReview)
-    expect(validateContentPack(repeatedReview).status).toBe('read_only')
+    expect(validateContentPack(repeatedReview).status).toBe('incomplete')
   })
 
   it('does not mistake a weaker matcher or extra source rule for a fresh code assessment', () => {
@@ -302,16 +303,16 @@ describe('content pack validation', () => {
       { type: 'top_level_main' },
       bindingRequirement,
     ]
-    expect(validateContentPack(sourceRuleOnly).status).toBe('read_only')
+    expect(validateContentPack(sourceRuleOnly).status).toBe('incomplete')
 
     const weakerMatcher = approvedPack()
     weakerMatcher.exerciseTemplates[1].task.expectedOutput = '4'
     weakerMatcher.exerciseTemplates[1].task.matchMode = 'contains'
-    expect(validateContentPack(weakerMatcher).status).toBe('read_only')
+    expect(validateContentPack(weakerMatcher).status).toBe('incomplete')
 
     const provablyDifferentOutput = approvedPack()
     provablyDifferentOutput.exerciseTemplates[1].task.expectedOutput = '84'
-    expect(validateContentPack(provablyDifferentOutput).status).toBe('validated')
+    expect(validateContentPack(provablyDifferentOutput).status).toBe('ready')
   })
 
   it('does not mistake quiz distractors or the multiple flag for a fresh assessment', () => {
@@ -337,7 +338,7 @@ describe('content pack validation', () => {
       }],
     }
 
-    expect(validateContentPack(distractorOnly).status).toBe('read_only')
+    expect(validateContentPack(distractorOnly).status).toBe('incomplete')
 
     const changedAnswer = structuredClone(distractorOnly)
     changedAnswer.exerciseTemplates[1]!.task = {
@@ -350,7 +351,7 @@ describe('content pack validation', () => {
         explanation: '`var` is mutable.',
       }],
     }
-    expect(validateContentPack(changedAnswer).status).toBe('validated')
+    expect(validateContentPack(changedAnswer).status).toBe('ready')
   })
 
   it('rejects unknown fields instead of silently stripping them', () => {
@@ -424,6 +425,7 @@ describe('content pack validation', () => {
 
   it('rejects the removed current-version compatibility index', () => {
     expect(contentPacksResponseSchema.safeParse({
+      courseVersion: `course:sha256:${'c'.repeat(64)}`,
       packs: [approvedPack()],
       currentVersions: {},
     }).success).toBe(false)

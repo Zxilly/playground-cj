@@ -36,4 +36,17 @@ describe('current Course catalog', () => {
       `cv:sha256:${'c'.repeat(64)}`,
     )).toThrow(/not in the current Course/)
   })
+
+  it('uses the selected translation by default and resolves either current translation by provenance', () => {
+    const translated = {
+      ...pack,
+      version: `cv:sha256:${'d'.repeat(64)}`,
+      concept: { ...pack.concept, title: '主函数' },
+    }
+    const catalog = createContentPackCatalog([pack], [translated])
+
+    expect(catalog.get('cj.program.main')).toBe(pack)
+    expect(catalog.list()[0]?.title).toBe('main')
+    expect(catalog.get('cj.program.main', translated.version)).toBe(translated)
+  })
 })
