@@ -371,60 +371,18 @@ export type CourseContentPack = z.infer<typeof courseContentPackSchema>
 
 export const contentPacksResponseSchema = z.object({
   packs: z.array(courseContentPackSchema).max(1_024),
-  currentVersions: z.record(idSchema, contentVersionSchema),
 }).strict().superRefine((response, ctx) => {
-  if (Object.keys(response.currentVersions).length > 1_024) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['currentVersions'],
-      message: 'current Content Version index exceeds 1024 Concepts',
-    })
-  }
-  const versionsByConcept = new Map<string, Set<string>>()
-  const identities = new Set<string>()
+  const concepts = new Set<string>()
 
   for (const pack of response.packs) {
-    const identity = `${pack.concept.id}\0${pack.version}`
-    if (identities.has(identity)) {
+    if (concepts.has(pack.concept.id)) {
       ctx.addIssue({
         code: 'custom',
         path: ['packs'],
-        message: `duplicate Concept Version ${pack.concept.id}@${pack.version}`,
+        message: `duplicate current Concept ${pack.concept.id}`,
       })
     }
-    identities.add(identity)
-
-    const versions = versionsByConcept.get(pack.concept.id) ?? new Set<string>()
-    versions.add(pack.version)
-    versionsByConcept.set(pack.concept.id, versions)
-  }
-
-  for (const [conceptId, versions] of versionsByConcept) {
-    const currentVersion = response.currentVersions[conceptId]
-    if (!currentVersion) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['currentVersions', conceptId],
-        message: `Concept ${conceptId} requires an explicit current Content Version`,
-      })
-    }
-    else if (!versions.has(currentVersion)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['currentVersions', conceptId],
-        message: `current Content Version ${conceptId}@${currentVersion} is absent`,
-      })
-    }
-  }
-
-  for (const conceptId of Object.keys(response.currentVersions)) {
-    if (!versionsByConcept.has(conceptId)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['currentVersions', conceptId],
-        message: `current Content Version references absent Concept ${conceptId}`,
-      })
-    }
+    concepts.add(pack.concept.id)
   }
 })
 export type ContentPacksResponse = z.infer<typeof contentPacksResponseSchema>

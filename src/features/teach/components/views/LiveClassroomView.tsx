@@ -161,7 +161,7 @@ export function LiveClassroomView() {
         {stream.map((entry, index) => {
           const pack = catalog.get(entry.conceptId)
           const entryPack = 'contentVersion' in entry
-            ? catalog.getVersion(entry.conceptId, entry.contentVersion)
+            ? catalog.get(entry.conceptId, entry.contentVersion)
             : pack
           return (
             <li key={entry.id} className="relative">

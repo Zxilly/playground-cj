@@ -7,10 +7,6 @@ import type { ContentPackCatalog } from '../classroom/content-catalog'
 import type { LessonOrchestratorClassroom, TeacherToolkitDeps } from './toolkit'
 import { describe, expect, it, vi } from 'vitest'
 import { createContentPackCatalog } from '../classroom/content-catalog'
-import {
-  clarificationSuppressionKey,
-  remediationSuppressionKey,
-} from '../classroom/retention'
 import { createEmptyClassroom } from '../classroom/state'
 import { summarizeAttemptDiagnostic } from '../classroom/persistence-policy'
 import { KnowledgeSourceError } from '../knowledge/source'
@@ -126,8 +122,6 @@ function catalogWithManySummaries(
       conceptId: `cj.generated.${index}`,
       title: `Concept ${index} ${'t'.repeat(800)}`,
       version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      availability: 'read_only' as const,
-      availabilityReason: 'incomplete_evidence' as const,
       hiddenValue,
     })),
   ]
@@ -1245,8 +1239,6 @@ describe('lesson Orchestrator toolkit', () => {
         conceptId: string
         title: string
         version: string
-        availability: string
-        availabilityReason: string | null
         truncated: boolean
         truncatedFields: string[]
       }>
@@ -1282,8 +1274,6 @@ describe('lesson Orchestrator toolkit', () => {
       truncatedFields: ['title'],
     })
     expect(Object.keys(result.packs[1]).sort()).toEqual([
-      'availability',
-      'availabilityReason',
       'conceptId',
       'title',
       'truncated',
@@ -1302,51 +1292,6 @@ describe('lesson Orchestrator toolkit', () => {
       offset: 64,
       nextOffset: null,
       totalCount: 100,
-    })
-  })
-
-  it('reads an exact Content Version instead of silently substituting current content', async () => {
-    const historical = validatedPack()
-    const current = structuredClone(historical)
-    current.version = 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333'
-    current.exerciseTemplates = current.exerciseTemplates.map(template => ({
-      ...template,
-      version: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-    }))
-    const { toolkit } = setup(
-      () => ({ mode: 'live', learningTrackId: 'track:active' }),
-      {
-        catalog: createContentPackCatalog(
-          [historical, current],
-          { 'cj.program.main': 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333' },
-        ),
-      },
-    )
-
-    const exact = await call<{
-      ok: boolean
-      pack: unknown
-    }>(toolkit, 'read_content_pack', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    })
-    expect(exact).toMatchObject({
-      ok: true,
-      pack: { version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
-      truncation: { truncated: false },
-    })
-    const serialized = JSON.stringify(exact.pack)
-    expect(serialized).not.toContain('expectedOutput')
-    expect(serialized).not.toContain('sourceRequirements')
-    expect(serialized).not.toContain('referenceAnswer')
-    expect(serialized).not.toContain('answerIndices')
-    expect(serialized).not.toContain('"hints"')
-    expect(exact.pack).not.toHaveProperty('review')
-    await expect(call(toolkit, 'read_content_pack', {
-      conceptId: 'cj.program.main',
-    })).resolves.toEqual({
-      ok: false,
-      error: 'No Course Content Pack for cj.program.main@undefined.',
     })
   })
 
@@ -1468,7 +1413,7 @@ describe('lesson Orchestrator toolkit', () => {
     const validCatalog = createContentPackCatalog([validatedPack()])
     const nonConformingCatalog: ContentPackCatalog = {
       ...validCatalog,
-      getVersion: () => pack,
+      get: () => pack,
     }
     const toolCallBudget = createTeacherToolCallBudget()
     const controller = new AbortController()
@@ -1522,145 +1467,6 @@ describe('lesson Orchestrator toolkit', () => {
       error: expect.stringContaining('Read and receive exact Course Content Pack'),
     })
     expect(execute).not.toHaveBeenCalled()
-    lease.close()
-  })
-
-  it('derives active-Track progress from its pin and separately discloses current content', async () => {
-    const historical = validatedPack()
-    const current = structuredClone(historical)
-    current.version = 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333'
-    current.exerciseTemplates = current.exerciseTemplates.map(template => ({
-      ...template,
-      version: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-    }))
-    const snapshot = createEmptyClassroom()
-    snapshot.revision = 1
-    snapshot.activeTrackId = 'track:historical'
-    snapshot.tracks.push({
-      id: 'track:historical',
-      goal: 'Continue the pinned curriculum.',
-      conceptIds: ['cj.program.main'],
-      contentVersions: { 'cj.program.main': 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
-      adjustments: [],
-      createdAt: 1,
-      recordedRevision: 1,
-    })
-    const { toolkit } = setup(
-      () => ({ mode: 'live', learningTrackId: 'track:historical' }),
-      {
-        catalog: createContentPackCatalog(
-          [historical, current],
-          { 'cj.program.main': 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333' },
-        ),
-        snapshot,
-      },
-    )
-
-    const result = await call<{
-      concepts: Array<{
-        version: string
-        currentVersion: string
-        currentAvailability: string
-        trackContentVersion: string | null
-        progress: string | null
-      }>
-    }>(toolkit, 'read_classroom_state', {})
-    expect(result.concepts).toEqual([expect.objectContaining({
-      version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      currentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-      currentAvailability: 'validated',
-      trackContentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      progress: 'unseen',
-    })])
-  })
-
-  it('preserves a full historical Track version through state, exact read, and mutation', async () => {
-    const historicalVersion = `cv:sha256:${'9'.repeat(64)}`
-    const historicalContract = `lc:sha256:${'7'.repeat(64)}`
-    const currentVersion = `cv:sha256:${'8'.repeat(64)}`
-    const currentContract = `lc:sha256:${'6'.repeat(64)}`
-    const historical = validatedPack()
-    historical.version = historicalVersion
-    historical.learningContractVersion = historicalContract
-    historical.exerciseTemplates = historical.exerciseTemplates.map(template => ({
-      ...template,
-      version: historicalVersion,
-    }))
-    const current = structuredClone(historical)
-    current.version = currentVersion
-    current.learningContractVersion = currentContract
-    current.exerciseTemplates = current.exerciseTemplates.map(template => ({
-      ...template,
-      version: currentVersion,
-    }))
-    const snapshot = createEmptyClassroom()
-    snapshot.revision = 1
-    snapshot.activeTrackId = 'track:historical-long-version'
-    snapshot.tracks.push({
-      id: 'track:historical-long-version',
-      goal: 'Continue the exact historical curriculum.',
-      conceptIds: ['cj.program.main'],
-      contentVersions: { 'cj.program.main': historicalVersion },
-      adjustments: [],
-      createdAt: 1,
-      recordedRevision: 1,
-    })
-    const budget = createTeacherToolCallBudget()
-    const controller = new AbortController()
-    const lease = budget.open(controller.signal, {
-      total: 3,
-      documentationSearches: 0,
-    })
-    const { execute, toolkit } = setup(
-      () => ({
-        mode: 'live',
-        learningTrackId: 'track:historical-long-version',
-      }),
-      {
-        catalog: createContentPackCatalog(
-          [historical, current],
-          { 'cj.program.main': currentVersion },
-        ),
-        snapshot,
-        toolCallBudget: budget,
-      },
-    )
-
-    const state = await call<{
-      concepts: Array<{
-        version: string
-        currentVersion: string
-        trackContentVersion: string | null
-        truncated: boolean
-        truncatedFields: string[]
-      }>
-    }>(toolkit, 'read_classroom_state', {}, controller.signal)
-    expect(state.concepts).toEqual([expect.objectContaining({
-      version: historicalVersion,
-      currentVersion,
-      trackContentVersion: historicalVersion,
-      truncated: false,
-      truncatedFields: [],
-    })])
-
-    const read = await call(toolkit, 'read_content_pack', {
-      conceptId: 'cj.program.main',
-      contentVersion: state.concepts[0].trackContentVersion,
-    }, controller.signal)
-    await call(toolkit, 'create_exercise_instance', {
-      conceptId: 'cj.program.main',
-      contentVersion: historicalVersion,
-      templateId: 'template.main',
-      personalizationInputs: {},
-    }, controller.signal, priorToolResultMessages('read_content_pack', read))
-
-    expect(execute).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'create_exercise_instance',
-      learningTrackId: 'track:historical-long-version',
-      conceptId: 'cj.program.main',
-      contentVersion: historicalVersion,
-      templateId: 'template.main',
-    }))
     lease.close()
   })
 
@@ -1760,7 +1566,6 @@ describe('lesson Orchestrator toolkit', () => {
       contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       misconceptionTheme: 'entry point analogy',
       markdown: 'The learner found a doorway analogy useful.',
-      retainedAsReadOnly: false,
       createdAt: 3,
       updatedAt: 3,
       createdRevision: 3,
@@ -1799,7 +1604,6 @@ describe('lesson Orchestrator toolkit', () => {
         id: 'clarification:continuity',
         contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         markdown: 'The learner found a doorway analogy useful.',
-        retainedAsReadOnly: false,
       }),
     ]))
     expect(result.pendingRemediations).toEqual([expect.objectContaining({
@@ -1817,231 +1621,6 @@ describe('lesson Orchestrator toolkit', () => {
       misconceptionTheme: 'entry point',
       contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     })])
-  })
-
-  it('projects suppression identities at exact content and learning-contract versions', async () => {
-    const snapshot = createEmptyClassroom()
-    snapshot.revision = 12
-    const addFailedLineage = (
-      suffix: string,
-      contentVersion: string,
-      learningContractVersion: string,
-      instanceRevision: number,
-    ) => {
-      const instanceId = `exercise:${suffix}`
-      const attemptId = `attempt:${suffix}`
-      const evidenceId = `evidence:${suffix}`
-      const attemptRevision = instanceRevision + 1
-      snapshot.stream.push({
-        id: instanceId,
-        type: 'exercise_instance',
-        learningTrackId: null,
-        tutoringStepId: `step:${suffix}`,
-        conceptId: 'cj.program.main',
-        learningSkillId: 'skill.main',
-        packId: 'pack.main',
-        contentVersion,
-        learningContractVersion,
-        templateId: 'template.main',
-        templateVersion: contentVersion,
-        purpose: 'practice',
-        personalizationInputs: {
-          unresolvedFailureEvidenceIds: [],
-          remediationArtifactIds: [],
-        },
-        personalizationPolicyVersion: 2,
-        effectiveDifficulty: 'standard',
-        task: structuredClone(validatedPack().exerciseTemplates[0].task),
-        createdAt: instanceRevision,
-        recordedRevision: instanceRevision,
-      })
-      snapshot.attempts.push({
-        id: attemptId,
-        exerciseInstanceId: instanceId,
-        assistanceEventIds: [],
-        teacherExposureEpochId: null,
-        submission: {
-          type: 'code_output',
-          code: 'main() { println("wrong") }',
-        },
-        result: {
-          passed: false,
-          runnerOk: true,
-          phase: 'run',
-          stdout: diagnostic('wrong'),
-          stderr: diagnostic(''),
-          compilerOutput: diagnostic(''),
-          outputEvaluation: outputEvaluation('wrong', false),
-          exitCode: 0,
-        },
-        assistance: 'none',
-        createdAt: attemptRevision,
-        recordedRevision: attemptRevision,
-      })
-      snapshot.evidence.push({
-        id: evidenceId,
-        type: 'independent',
-        outcome: 'failure',
-        conceptId: 'cj.program.main',
-        learningSkillId: 'skill.main',
-        contentVersion,
-        learningContractVersion,
-        templateId: 'template.main',
-        templateVersion: contentVersion,
-        exerciseInstanceId: instanceId,
-        attemptId,
-        createdAt: attemptRevision,
-      })
-      return { attemptId, attemptRevision, evidenceId }
-    }
-    const first = addFailedLineage('contract-v1', 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'lc:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 1)
-    const second = addFailedLineage('contract-v2', 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333', 'lc:sha256:4444444444444444444444444444444444444444444444444444444444444444', 3)
-
-    snapshot.removedReviewArtifacts.push(
-      {
-        id: 'clarification:v1',
-        type: 'clarification',
-        conceptId: 'cj.program.main',
-        contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        misconceptionTheme: 'same theme',
-        suppressionKey: clarificationSuppressionKey(
-          'cj.program.main',
-          'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-          'same theme',
-        ),
-        suppressionActive: true,
-        createdAt: 1,
-        updatedAt: 1,
-        createdRevision: 1,
-        updatedRevision: 1,
-        removedAt: 6,
-        removedRevision: 6,
-        retentionAllowedAt: null,
-        retentionAllowedRevision: null,
-      },
-      {
-        id: 'clarification:v2',
-        type: 'clarification',
-        conceptId: 'cj.program.main',
-        contentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-        misconceptionTheme: 'same theme',
-        suppressionKey: clarificationSuppressionKey(
-          'cj.program.main',
-          'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-          'same theme',
-        ),
-        suppressionActive: true,
-        createdAt: 2,
-        updatedAt: 2,
-        createdRevision: 2,
-        updatedRevision: 2,
-        removedAt: 7,
-        removedRevision: 7,
-        retentionAllowedAt: null,
-        retentionAllowedRevision: null,
-      },
-      {
-        id: 'remediation:v1',
-        type: 'remediation',
-        conceptId: 'cj.program.main',
-        learningSkillId: 'skill.main',
-        misconceptionTheme: 'same theme',
-        suppressionKey: remediationSuppressionKey(
-          'cj.program.main',
-          'skill.main',
-          [first.attemptId],
-        ),
-        suppressionActive: true,
-        attemptIds: [first.attemptId],
-        evidenceIds: [first.evidenceId],
-        createdAt: first.attemptRevision,
-        updatedAt: first.attemptRevision,
-        createdRevision: first.attemptRevision,
-        updatedRevision: first.attemptRevision,
-        removedAt: 8,
-        removedRevision: 8,
-        retentionAllowedAt: null,
-        retentionAllowedRevision: null,
-      },
-      {
-        id: 'remediation:v2',
-        type: 'remediation',
-        conceptId: 'cj.program.main',
-        learningSkillId: 'skill.main',
-        misconceptionTheme: 'same theme',
-        suppressionKey: remediationSuppressionKey(
-          'cj.program.main',
-          'skill.main',
-          [second.attemptId],
-        ),
-        suppressionActive: true,
-        attemptIds: [second.attemptId],
-        evidenceIds: [second.evidenceId],
-        createdAt: second.attemptRevision,
-        updatedAt: second.attemptRevision,
-        createdRevision: second.attemptRevision,
-        updatedRevision: second.attemptRevision,
-        removedAt: 9,
-        removedRevision: 9,
-        retentionAllowedAt: null,
-        retentionAllowedRevision: null,
-      },
-    )
-    const versionOnePack = validatedPack()
-    versionOnePack.learningContractVersion = 'lc:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-    const versionTwoPack = structuredClone(validatedPack())
-    versionTwoPack.version = 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333'
-    versionTwoPack.learningContractVersion = 'lc:sha256:4444444444444444444444444444444444444444444444444444444444444444'
-    const versionedCatalog = createContentPackCatalog(
-      [versionOnePack, versionTwoPack],
-      { 'cj.program.main': 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333' },
-    )
-
-    const { toolkit: versionOneToolkit } = setup(
-      () => ({
-        mode: 'review',
-        conceptId: 'cj.program.main',
-        contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        learningTrackId: null,
-      }),
-      { snapshot, catalog: versionedCatalog },
-    )
-    const versionOneResult = await call<{
-      activeRetentionSuppressions: unknown[]
-    }>(versionOneToolkit, 'read_classroom_state', {})
-    expect(versionOneResult.activeRetentionSuppressions).toEqual([
-      expect.objectContaining({
-        id: 'clarification:v1',
-        contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      }),
-      expect.objectContaining({
-        id: 'remediation:v1',
-        learningContractVersion: `lc:sha256:${'b'.repeat(64)}`,
-      }),
-    ])
-
-    const { toolkit: versionTwoToolkit } = setup(
-      () => ({
-        mode: 'review',
-        conceptId: 'cj.program.main',
-        contentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-        learningTrackId: null,
-      }),
-      { snapshot, catalog: versionedCatalog },
-    )
-    const versionTwoResult = await call<{
-      activeRetentionSuppressions: unknown[]
-    }>(versionTwoToolkit, 'read_classroom_state', {})
-    expect(versionTwoResult.activeRetentionSuppressions).toEqual([
-      expect.objectContaining({
-        id: 'clarification:v2',
-        contentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-      }),
-      expect.objectContaining({
-        id: 'remediation:v2',
-        learningContractVersion: `lc:sha256:${'4'.repeat(64)}`,
-      }),
-    ])
   })
 
   it('projects cross-Track assessment eligibility instead of making a cloned form look fresh', async () => {
@@ -2277,7 +1856,6 @@ describe('lesson Orchestrator toolkit', () => {
         contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         misconceptionTheme: `theme ${index}`,
         markdown: `Clarification ${index}.`,
-        retainedAsReadOnly: false,
         createdAt: index + 1,
         updatedAt: index + 1,
         createdRevision: index + 1,
@@ -2701,79 +2279,6 @@ describe('lesson Orchestrator toolkit', () => {
     expect(execute).not.toHaveBeenCalled()
   })
 
-  it('selects the Review Check from the explicitly read historical Content Version', async () => {
-    const historical = validatedPack()
-    const current = structuredClone(historical)
-    current.version = 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333'
-    current.exerciseTemplates = current.exerciseTemplates.map(template => ({
-      ...template,
-      version: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-    }))
-    const { execute, toolkit } = setup(
-      () => ({
-        mode: 'review',
-        conceptId: 'cj.program.main',
-        contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        learningTrackId: 'track:review',
-      }),
-      {
-        catalog: createContentPackCatalog(
-          [historical, current],
-          { 'cj.program.main': 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333' },
-        ),
-      },
-    )
-
-    await expect(call(toolkit, 'read_classroom_state', {})).resolves.toMatchObject({
-      displayedReviewContentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      chatScope: {
-        mode: 'review',
-        conceptId: 'cj.program.main',
-        contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      },
-      concepts: [expect.objectContaining({
-        conceptId: 'cj.program.main',
-        version: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        currentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-      })],
-    })
-    await expect(call(toolkit, 'create_exercise_instance', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      templateId: 'template.main.review',
-      personalizationInputs: {},
-    })).resolves.toEqual({ ok: true })
-    expect(execute).toHaveBeenCalledWith({
-      type: 'create_review_check',
-      learningTrackId: 'track:review',
-      tutoringStepId: 'teacher-tool:test-create_exercise_instance',
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      templateId: 'template.main.review',
-      personalizationInputs: {},
-    })
-
-    await expect(call(toolkit, 'create_exercise_instance', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      templateId: 'template.main',
-      personalizationInputs: {},
-    })).resolves.toMatchObject({ ok: false })
-    await expect(call(toolkit, 'create_exercise_instance', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-      templateId: 'template.main.review',
-      personalizationInputs: {},
-    })).resolves.toMatchObject({ ok: false })
-    await expect(call(toolkit, 'create_exercise_instance', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:0000000000000000000000000000000000000000000000000000000000000000',
-      templateId: 'template.main.review',
-      personalizationInputs: {},
-    })).resolves.toMatchObject({ ok: false })
-    expect(execute).toHaveBeenCalledTimes(1)
-  })
-
   it('cannot create a Review Check from Live Chat', async () => {
     const { execute, toolkit } = setup(() => ({
       mode: 'live',
@@ -2792,118 +2297,6 @@ describe('lesson Orchestrator toolkit', () => {
     expect(execute).not.toHaveBeenCalled()
   })
 
-  it('pins Live Clarifications for a Track Concept but permits exact out-of-Track help', async () => {
-    const historical = validatedPack()
-    const current = structuredClone(historical)
-    current.version = 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333'
-    current.exerciseTemplates = current.exerciseTemplates.map(template => ({
-      ...template,
-      version: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-    }))
-    const catalog = createContentPackCatalog(
-      [historical, current],
-      { 'cj.program.main': 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333' },
-    )
-    const snapshot = createEmptyClassroom()
-    snapshot.activeTrackId = 'track:pinned'
-    snapshot.tracks.push({
-      id: 'track:pinned',
-      goal: 'Use the pinned curriculum.',
-      conceptIds: ['cj.program.main'],
-      contentVersions: { 'cj.program.main': 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
-      adjustments: [],
-      createdAt: 1,
-      recordedRevision: 1,
-    })
-    const live = setup(
-      () => ({ mode: 'live', learningTrackId: 'track:pinned' }),
-      { catalog, snapshot },
-    )
-
-    await expect(call(live.toolkit, 'retain_clarification', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-      misconceptionTheme: 'entry point',
-      markdown: 'The entry point is `main`.',
-    })).resolves.toMatchObject({ ok: false })
-    await expect(call(live.toolkit, 'retain_clarification', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      misconceptionTheme: 'entry point',
-      markdown: 'The entry point is `main`.',
-    })).resolves.toEqual({ ok: true })
-    expect(live.execute).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'retain_clarification',
-      learningTrackId: 'track:pinned',
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    }))
-
-    const readOnly = validatedPack()
-    readOnly.exerciseTemplates = []
-    const outOfTrack = setup(
-      () => ({ mode: 'live', learningTrackId: null }),
-      { catalog: createContentPackCatalog([readOnly]) },
-    )
-    await expect(call(outOfTrack.toolkit, 'retain_clarification', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      misconceptionTheme: 'historical entry point',
-      markdown: 'This explanation is tied to the exact version read.',
-    })).resolves.toEqual({ ok: true })
-    expect(outOfTrack.execute).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'retain_clarification',
-      learningTrackId: null,
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    }))
-  })
-
-  it('lets Review Clarifications bind an exact existing version in their Concept scope', async () => {
-    const historical = validatedPack()
-    const current = structuredClone(historical)
-    current.version = 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333'
-    current.exerciseTemplates = current.exerciseTemplates.map(template => ({
-      ...template,
-      version: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-    }))
-    const { execute, toolkit } = setup(
-      () => ({
-        mode: 'review',
-        conceptId: 'cj.program.main',
-        contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        learningTrackId: 'track:review',
-      }),
-      {
-        catalog: createContentPackCatalog(
-          [historical, current],
-          { 'cj.program.main': 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333' },
-        ),
-      },
-    )
-
-    await expect(call(toolkit, 'retain_clarification', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      misconceptionTheme: 'entry point',
-      markdown: 'The entry point is `main`.',
-    })).resolves.toEqual({ ok: true })
-    await expect(call(toolkit, 'retain_clarification', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:3333333333333333333333333333333333333333333333333333333333333333',
-      misconceptionTheme: 'different displayed version',
-      markdown: 'This must not leak into the displayed historical scope.',
-    })).resolves.toMatchObject({ ok: false })
-    await expect(call(toolkit, 'retain_clarification', {
-      conceptId: 'cj.program.main',
-      contentVersion: 'cv:sha256:0000000000000000000000000000000000000000000000000000000000000000',
-      misconceptionTheme: 'unknown version',
-      markdown: 'This must not be retained.',
-    })).resolves.toMatchObject({ ok: false })
-    expect(execute).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('background Remediation toolkit', () => {
   it('exposes only the assigned context and enforces read-once-before-write on the exact turn', async () => {
     const snapshot = pendingRemediationSnapshot()
     for (let index = 0; index < 9; index += 1) {

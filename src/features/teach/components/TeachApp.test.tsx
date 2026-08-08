@@ -33,9 +33,8 @@ const collaborators = {
   catalog: {
     list: () => [],
     get: () => undefined,
-    getVersion: () => undefined,
-    listVersions: () => [],
-    availability: () => undefined,
+    require: () => { throw new Error('not used') },
+    requireTemplate: () => { throw new Error('not used') },
   },
   knowledge: { id: 'test', search: vi.fn(async () => []) },
   runner: { run: vi.fn() },

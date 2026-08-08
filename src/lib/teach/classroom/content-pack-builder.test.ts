@@ -132,7 +132,7 @@ describe('course content pack builder', () => {
       .toThrow(/99-missing\/01-missing/)
   })
 
-  it('binds each default Validated Concept to its smallest authoritative section', async () => {
+  it('binds each current Course Concept to its smallest authoritative section', async () => {
     const packs = buildCourseContentPacks(
       flattenSections(await loadTourData()),
       getAllConcepts(),
@@ -156,19 +156,14 @@ describe('course content pack builder', () => {
     }
   }, 30_000)
 
-  it('builds the explicit bilingual starter course and reference-only material', async () => {
-    const concepts = getAllConcepts()
-
+  it('builds only the explicit bilingual current Course', async () => {
     for (const lang of ['zh', 'en'] as const) {
       const packs = await buildCurrentCourseContentPacks(lang)
       const validations = packs.map(pack => validateContentPack(pack))
 
-      expect(packs).toHaveLength(concepts.length)
-      expect(packs.slice(0, 4).map(pack => pack.concept.id))
+      expect(packs.map(pack => pack.concept.id))
         .toEqual([...VALIDATED_CONTENT_CONCEPT_IDS])
-      expect(validations.every(result => result.status !== 'invalid')).toBe(true)
-      expect(validations.filter(result => result.status === 'validated'))
-        .toHaveLength(VALIDATED_CONTENT_CONCEPT_IDS.length)
+      expect(validations.every(result => result.status === 'validated')).toBe(true)
       expect(packs.flatMap(pack => pack.blocks)
         .filter(block => block.type === 'code_sample')
         .every(block =>
@@ -197,17 +192,6 @@ describe('course content pack builder', () => {
         expect(validateContentPack(pack), `${lang} ${conceptId} evidence loop`).toMatchObject({
           status: 'validated',
         })
-      }
-
-      for (const concept of concepts) {
-        if (!VALIDATED_CONTENT_CONCEPT_IDS.includes(
-          concept.conceptId as typeof VALIDATED_CONTENT_CONCEPT_IDS[number],
-        )) {
-          const pack = packs.find(candidate =>
-            candidate.concept.id === concept.conceptId)
-          expect(pack?.learningSkills, `${lang} ${concept.conceptId}`)
-            .toEqual([])
-        }
       }
     }
   }, 30_000)

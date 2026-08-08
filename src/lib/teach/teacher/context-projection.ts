@@ -118,8 +118,6 @@ function projectContentPackSummary(summary: ContentPackSummary) {
     conceptId,
     title,
     version,
-    availability: summary.availability,
-    availabilityReason: summary.availabilityReason,
     truncated: truncatedFields.length > 0,
     truncatedFields,
   }
@@ -322,14 +320,14 @@ export function projectTeacherContext({
     snapshot.tracks.map(track => [track.id, track.goal]),
   )
   const displayedReviewPack = scope.mode === 'review'
-    ? catalog.getVersion(scope.conceptId, scope.contentVersion) ?? null
+    ? catalog.get(scope.conceptId, scope.contentVersion) ?? null
     : null
   const activeTrackConceptIds = new Set(activeTrack?.conceptIds ?? [])
   const activeTrackContractVersions = new Map<string, string>()
   for (const conceptId of activeTrack?.conceptIds ?? []) {
     const contentVersion = activeTrack?.contentVersions[conceptId]
     const pack = contentVersion
-      ? catalog.getVersion(conceptId, contentVersion)
+      ? catalog.get(conceptId, contentVersion)
       : undefined
     if (pack) {
       activeTrackContractVersions.set(
@@ -423,26 +421,17 @@ export function projectTeacherContext({
     const version = displayedReviewContentVersion
       ?? trackContentVersion
       ?? currentVersion
-    const pack = catalog.getVersion(summary.conceptId, version)
-    const availability = catalog.availability(summary.conceptId, version)
-      ?? summary.availability
+    const pack = catalog.get(summary.conceptId, version)
     const projected = projectContentPackSummary({
       conceptId: summary.conceptId,
       title: pack?.concept.title ?? summary.title,
       version,
-      availability,
-      availabilityReason: availability === 'validated'
-        ? null
-        : version === currentVersion
-          ? summary.availabilityReason
-          : 'incomplete_evidence',
     })
     return {
       ...projected,
       currentVersion,
-      currentAvailability: summary.availability,
       trackContentVersion,
-      progress: availability === 'validated' && pack
+      progress: pack
         ? deriveConceptProgress(snapshot, pack)
         : null,
     }
@@ -617,7 +606,6 @@ export function projectTeacherContext({
           }
         : {
             contentVersion: artifact.contentVersion,
-            retainedAsReadOnly: artifact.retainedAsReadOnly,
           }),
     }
   })

@@ -28,7 +28,7 @@ function exactTrackPack(
       `Learning Track ${track.id} has no Content Version for ${conceptId}`,
     )
   }
-  return catalog.requireValidatedVersion(conceptId, contentVersion)
+  return catalog.require(conceptId, contentVersion)
 }
 
 interface IndexedEvidence {

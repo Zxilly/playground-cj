@@ -114,7 +114,7 @@ export function ContentReferenceGroup({
           ? <CoreContent key={blockId} block={block} showSource />
           : (
               <p key={blockId} role="alert" className="rounded-md border border-destructive/30 p-3 text-sm text-destructive">
-                Missing historical Core Content Block:
+                Current Course invariant failed: missing Core Content Block
                 {' '}
                 {blockId}
               </p>

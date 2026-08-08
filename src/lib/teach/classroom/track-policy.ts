@@ -125,7 +125,7 @@ function exactTrackPack(
   const version = track.contentVersions[conceptId]
   if (!version)
     throw new Error(`Learning Track ${track.id} has no Content Version for ${conceptId}`)
-  return catalog.requireValidatedVersion(conceptId, version)
+  return catalog.require(conceptId, version)
 }
 
 /**

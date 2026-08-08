@@ -44,14 +44,11 @@ export function ConceptProgressView() {
       </header>
 
       <ul className="grid gap-3 sm:grid-cols-2">
-        {catalog.list().filter(summary =>
-          summary.availability === 'validated').map((summary) => {
+        {catalog.list().map((summary) => {
           const pack = catalog.get(summary.conceptId)
           if (!pack)
             return null
-          const progress = summary.availability === 'validated'
-            ? deriveConceptProgress(snapshot, pack)
-            : null
+          const progress = deriveConceptProgress(snapshot, pack)
           const evidence = snapshot.evidence.filter(item => item.conceptId === summary.conceptId)
           const successes = evidence.filter(item => item.outcome === 'success').length
           return (

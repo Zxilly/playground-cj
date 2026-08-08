@@ -127,7 +127,7 @@ export const learningTrackSchema = z.object({
   id: idSchema,
   goal: shortTextSchema,
   conceptIds: z.array(idSchema).min(1).max(MAX_LEARNING_TRACK_CONCEPTS),
-  /** Content Versions used when the curriculum order was validated. */
+  /** Content Versions recorded when the curriculum order was created. */
   contentVersions: z.record(idSchema, contentVersionSchema).refine(
     versions => Object.keys(versions).length <= MAX_LEARNING_TRACK_CONCEPTS,
     `Learning Track cannot pin more than ${MAX_LEARNING_TRACK_CONCEPTS} Content Versions`,
@@ -468,11 +468,6 @@ export const reviewArtifactSchema = z.discriminatedUnion('type', [
     contentVersion: contentVersionSchema,
     misconceptionTheme: misconceptionThemeSchema,
     markdown: clarificationMarkdownSchema,
-    /**
-     * Immutable creation provenance. Current repository review availability may
-     * later be granted or revoked without rewriting retained history.
-     */
-    retainedAsReadOnly: z.boolean(),
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
     createdRevision: z.number().int().positive(),

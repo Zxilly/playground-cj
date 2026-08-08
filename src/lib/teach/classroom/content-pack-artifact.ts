@@ -1,21 +1,13 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import type { CourseContentPack } from './content-packs'
-import {
-  contentPackIdSchema,
-  contentVersionSchema,
-  courseContentPackSchema,
-} from './content-packs'
+import { courseContentPackSchema, validateContentPack } from './content-packs'
 import {
   assignBilingualLearningContractVersions,
   assignImmutableContentVersion,
   sha256Canonical,
 } from './content-pack-version'
-
-const currentVersionsSchema = z.record(
-  contentPackIdSchema,
-  contentVersionSchema,
-)
+import { CURRENT_COURSE_CONCEPT_IDS } from './course-definition'
 
 /**
  * The generated course module contains only the current Git-tracked curriculum.
@@ -23,20 +15,26 @@ const currentVersionsSchema = z.record(
  * publication log, validation receipt, or compatibility archive.
  */
 export const generatedContentPackArtifactSchema = z.object({
-  schemaVersion: z.literal(3),
+  schemaVersion: z.literal(4),
   locale: z.enum(['zh', 'en']),
   packs: z.array(courseContentPackSchema).min(1),
-  currentVersions: currentVersionsSchema,
 }).strict().superRefine((artifact, ctx) => {
-  if (artifact.packs.length !== Object.keys(artifact.currentVersions).length) {
+  if (artifact.packs.length !== CURRENT_COURSE_CONCEPT_IDS.length) {
     ctx.addIssue({
       code: 'custom',
       path: ['packs'],
-      message: 'generated course must contain exactly one current pack per Concept',
+      message: 'generated artifact does not contain the complete current Course',
     })
   }
   const concepts = new Set<string>()
   for (const [index, pack] of artifact.packs.entries()) {
+    if (pack.concept.id !== CURRENT_COURSE_CONCEPT_IDS[index]) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['packs', index, 'concept', 'id'],
+        message: 'generated artifact differs from the current Course order',
+      })
+    }
     if (concepts.has(pack.concept.id)) {
       ctx.addIssue({
         code: 'custom',
@@ -44,14 +42,26 @@ export const generatedContentPackArtifactSchema = z.object({
         message: `duplicate current Concept ${pack.concept.id}`,
       })
     }
-    concepts.add(pack.concept.id)
-    if (artifact.currentVersions[pack.concept.id] !== pack.version) {
+    const validation = validateContentPack(pack)
+    if (validation.status !== 'validated') {
       ctx.addIssue({
         code: 'custom',
-        path: ['currentVersions', pack.concept.id],
-        message: `current Content Version does not match ${pack.concept.id}`,
+        path: ['packs', index],
+        message: validation.status === 'invalid'
+          ? `invalid Course module: ${validation.issues.join('; ')}`
+          : 'Course module has no complete evidence loop',
       })
     }
+    const unmet = pack.concept.prerequisites.filter(prerequisite =>
+      !concepts.has(prerequisite))
+    if (unmet.length > 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['packs', index, 'concept', 'prerequisites'],
+        message: `Course prerequisite graph is not buildable: ${unmet.join(', ')}`,
+      })
+    }
+    concepts.add(pack.concept.id)
     if (assignImmutableContentVersion(pack, artifact.locale).version !== pack.version) {
       ctx.addIssue({
         code: 'custom',
@@ -70,13 +80,9 @@ export function createGeneratedContentPackArtifact(
   packs: CourseContentPack[],
 ): GeneratedContentPackArtifact {
   return generatedContentPackArtifactSchema.parse({
-    schemaVersion: 3,
+    schemaVersion: 4,
     locale,
     packs,
-    currentVersions: Object.fromEntries(packs.map(pack => [
-      pack.concept.id,
-      pack.version,
-    ])),
   })
 }
 
