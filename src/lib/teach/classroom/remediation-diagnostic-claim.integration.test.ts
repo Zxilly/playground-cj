@@ -81,7 +81,7 @@ function approvedPack(): CourseContentPack {
     review: {
       status: 'approved',
       reviewedBy:
-        `external-review-attestation:test-key:${'0'.repeat(64)}`,
+        `repository-review-declaration:${'0'.repeat(64)}`,
     },
   }
 }

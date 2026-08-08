@@ -1,9 +1,4 @@
-import { Buffer } from 'node:buffer'
-import {
-  createHash,
-  createPublicKey,
-  verify as verifySignature,
-} from 'node:crypto'
+import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import type {
   ContentPacksResponse,
@@ -125,65 +120,6 @@ export const contentPackRepositoryReviewDeclarationSchema = z.object({
 export type ContentPackRepositoryReviewDeclaration = z.infer<
   typeof contentPackRepositoryReviewDeclarationSchema
 >
-
-const externalReviewApprovedPackSchema = z.object({
-  locale: z.enum(['en', 'zh']),
-  conceptId: contentPackIdSchema,
-  contentVersion: contentVersionSchema,
-}).strict()
-
-const contentPackExternalReviewAttestationUnsignedSchema = z.object({
-  schemaVersion: z.literal(1),
-  kind: z.literal('external-content-pack-review-attestation'),
-  algorithm: z.literal('Ed25519'),
-  keyId: z.string().regex(/^[\w.-]{1,64}$/),
-  issuedAt: z.iso.datetime({ offset: true }),
-  subject: z.object({
-    publicationEntrySha256: sha256Schema,
-    manifestSha256: sha256Schema,
-    validationReceiptSha256: sha256Schema,
-    artifacts: localeDigestsSchema,
-    // One locale artifact may retain 1,024 exact versions. A bilingual
-    // attestation must be able to carry approval for both artifacts.
-    approvedPacks: z.array(externalReviewApprovedPackSchema).min(1).max(2_048),
-  }).strict(),
-}).strict().superRefine((attestation, ctx) => {
-  const identities = new Set<string>()
-  for (const [index, pack] of attestation.subject.approvedPacks.entries()) {
-    const identity = `${pack.locale}\0${pack.conceptId}\0${pack.contentVersion}`
-    if (identities.has(identity)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['subject', 'approvedPacks', index],
-        message: 'duplicate externally approved Content Pack identity',
-      })
-    }
-    identities.add(identity)
-  }
-})
-
-export const contentPackExternalReviewAttestationSchema
-  = contentPackExternalReviewAttestationUnsignedSchema.safeExtend({
-    signature: z.string().regex(/^[A-Z0-9+/]+={0,2}$/i).max(1_024),
-  }).strict()
-export type ContentPackExternalReviewAttestation
-  = z.infer<typeof contentPackExternalReviewAttestationSchema>
-export type ContentPackExternalReviewAttestationUnsigned
-  = z.infer<typeof contentPackExternalReviewAttestationUnsignedSchema>
-
-const externalReviewAttestationDomain
-  = 'playground-cj/content-pack-external-review-attestation/v1'
-
-export function contentPackExternalReviewAttestationSigningPayload(
-  input: ContentPackExternalReviewAttestationUnsigned,
-): string {
-  const attestation
-    = contentPackExternalReviewAttestationUnsignedSchema.parse(input)
-  return canonicalJson({
-    domain: externalReviewAttestationDomain,
-    attestation,
-  })
-}
 
 const referenceValidationSchema = z.object({
   templateId: contentPackIdSchema,
@@ -632,7 +568,7 @@ function assertRepositoryReviewedArtifactEnvelope(
   receiptInput: unknown,
   historyInput: unknown,
   expectedCompilerInput?: unknown,
-): ContentPackPublicationHistoryEntry {
+): void {
   const manifest = generatedContentPackManifestSchema.parse(manifestInput)
   const reviewDeclaration = contentPackRepositoryReviewDeclarationSchema.parse(
     reviewDeclarationInput,
@@ -732,7 +668,24 @@ function assertRepositoryReviewedArtifactEnvelope(
       `${artifact.locale} Content Pack current versions do not match the reviewed artifact`,
     )
   }
-  return historyHead
+}
+
+function projectRepositoryApprovedArtifact(
+  artifact: GeneratedContentPackArtifact,
+  reviewDeclaration: ContentPackRepositoryReviewDeclaration,
+): ContentPacksResponse {
+  const reviewedBy = `repository-review-declaration:${
+    contentPackRepositoryReviewDeclarationSha256(reviewDeclaration)}`
+  return contentPacksResponseSchema.parse({
+    currentVersions: artifact.currentVersions,
+    packs: artifact.packs.map(pack => ({
+      ...pack,
+      review: {
+        status: 'approved' as const,
+        reviewedBy,
+      },
+    })),
+  })
 }
 
 export function projectIntegrityCheckedRepositoryArtifact(
@@ -744,23 +697,18 @@ export function projectIntegrityCheckedRepositoryArtifact(
   expectedCompilerInput: unknown,
 ): ContentPacksResponse {
   const artifact = generatedContentPackArtifactSchema.parse(artifactInput)
+  const reviewDeclaration = contentPackRepositoryReviewDeclarationSchema.parse(
+    reviewDeclarationInput,
+  )
   assertRepositoryReviewedArtifactEnvelope(
     artifact,
     manifestInput,
-    reviewDeclarationInput,
+    reviewDeclaration,
     receiptInput,
     historyInput,
     expectedCompilerInput,
   )
-  return contentPacksResponseSchema.parse({
-    currentVersions: artifact.currentVersions,
-    packs: artifact.packs.map(pack => ({
-      ...pack,
-      review: {
-        status: 'pending' as const,
-      },
-    })),
-  })
+  return projectRepositoryApprovedArtifact(artifact, reviewDeclaration)
 }
 
 /**
@@ -777,177 +725,15 @@ export function projectIntegrityCheckedHistoricalRepositoryArtifact(
   historyInput: unknown,
 ): ContentPacksResponse {
   const artifact = generatedContentPackArtifactSchema.parse(artifactInput)
+  const reviewDeclaration = contentPackRepositoryReviewDeclarationSchema.parse(
+    reviewDeclarationInput,
+  )
   assertRepositoryReviewedArtifactEnvelope(
     artifact,
     manifestInput,
-    reviewDeclarationInput,
+    reviewDeclaration,
     receiptInput,
     historyInput,
   )
-  return contentPacksResponseSchema.parse({
-    currentVersions: artifact.currentVersions,
-    packs: artifact.packs.map(pack => ({
-      ...pack,
-      review: {
-        status: 'pending' as const,
-      },
-    })),
-  })
-}
-
-export function publishExternallyAttestedArtifact(
-  artifactInput: unknown,
-  manifestInput: unknown,
-  reviewDeclarationInput: unknown,
-  receiptInput: unknown,
-  historyInput: unknown,
-  attestationInput: unknown,
-  trustedReviewKeys: Readonly<Record<string, string>>,
-  expectedCompilerInput: unknown,
-): ContentPacksResponse {
-  const artifact = generatedContentPackArtifactSchema.parse(artifactInput)
-  const manifest = generatedContentPackManifestSchema.parse(manifestInput)
-  const receipt = assertCurrentContentPackValidationReceipt(
-    receiptInput,
-    expectedCompilerInput,
-  )
-  const attestation = contentPackExternalReviewAttestationSchema.parse(
-    attestationInput,
-  )
-  const historyHead = assertRepositoryReviewedArtifactEnvelope(
-    artifact,
-    manifest,
-    reviewDeclarationInput,
-    receipt,
-    historyInput,
-    expectedCompilerInput,
-  )
-  const trustedKey = Object.hasOwn(trustedReviewKeys, attestation.keyId)
-    ? trustedReviewKeys[attestation.keyId]
-    : undefined
-  if (typeof trustedKey !== 'string' || trustedKey.trim().length === 0) {
-    throw new Error(
-      `Missing trusted external review key ${attestation.keyId}`,
-    )
-  }
-  let publicKey: ReturnType<typeof createPublicKey>
-  try {
-    publicKey = createPublicKey(trustedKey)
-  }
-  catch (error) {
-    throw new Error(
-      `Invalid trusted external review key ${attestation.keyId}`,
-      { cause: error },
-    )
-  }
-  if (publicKey.asymmetricKeyType !== 'ed25519') {
-    throw new Error(
-      `Trusted external review key ${attestation.keyId} is not Ed25519`,
-    )
-  }
-  const {
-    signature,
-    ...unsignedAttestation
-  } = attestation
-  const signatureBytes = Buffer.from(signature, 'base64')
-  if (
-    signatureBytes.toString('base64') !== signature
-    || !verifySignature(
-      null,
-      Buffer.from(
-        contentPackExternalReviewAttestationSigningPayload(
-          unsignedAttestation,
-        ),
-        'utf8',
-      ),
-      publicKey,
-      signatureBytes,
-    )
-  ) {
-    throw new Error('External Content Pack review attestation signature is invalid')
-  }
-
-  const expectedSubject = {
-    publicationEntrySha256: historyHead.entrySha256,
-    manifestSha256: contentPackManifestSha256(manifest),
-    validationReceiptSha256: contentPackValidationReceiptSha256(receipt),
-    artifacts: {
-      en: manifest.locales.en.artifactSha256,
-      zh: manifest.locales.zh.artifactSha256,
-    },
-  }
-  const {
-    approvedPacks,
-    ...signedPublicationSubject
-  } = attestation.subject
-  if (canonicalJson(signedPublicationSubject) !== canonicalJson(expectedSubject)) {
-    throw new Error(
-      'External Content Pack review attestation does not match the publication',
-    )
-  }
-
-  const approvedIdentities = new Set<string>()
-  for (const approved of approvedPacks) {
-    if (approved.locale !== artifact.locale)
-      continue
-    const pack = artifact.packs.find(candidate =>
-      candidate.concept.id === approved.conceptId
-      && candidate.version === approved.contentVersion)
-    if (!pack) {
-      throw new Error(
-        `Externally approved Content Pack is absent: `
-        + `${approved.conceptId}@${approved.contentVersion}`,
-      )
-    }
-    const runnableSamples = pack.blocks.flatMap(block =>
-      block.type === 'code_sample' && block.sampleType === 'program'
-        ? [block]
-        : [])
-    if (runnableSamples.length === 0) {
-      throw new Error(
-        `External review cannot approve ${approved.conceptId} without `
-        + 'a runnable program code sample',
-      )
-    }
-    for (const block of runnableSamples) {
-      const evidence = receipt.codeSamples.find(sample =>
-        sample.locale === artifact.locale
-        && sample.conceptId === pack.concept.id
-        && sample.contentVersion === pack.version
-        && sample.blockId === block.id)
-      if (
-        !evidence
-        || evidence.sourceSha256
-        !== contentPackCodeSampleSourceSha256(block.code)
-      ) {
-        throw new Error(
-          `Missing code sample receipt evidence for `
-          + `${artifact.locale}/${pack.concept.id}/${block.id}`,
-        )
-      }
-    }
-    approvedIdentities.add(
-      `${approved.conceptId}\0${approved.contentVersion}`,
-    )
-  }
-  const attestationDigest = sha256Canonical(unsignedAttestation)
-  return contentPacksResponseSchema.parse({
-    currentVersions: artifact.currentVersions,
-    packs: artifact.packs.map((pack) => {
-      const approved = approvedIdentities.has(
-        `${pack.concept.id}\0${pack.version}`,
-      )
-      return {
-        ...pack,
-        review: approved
-          ? {
-              status: 'approved' as const,
-              reviewedBy:
-                `external-review-attestation:${attestation.keyId}:${
-                  attestationDigest}`,
-            }
-          : { status: 'pending' as const },
-      }
-    }),
-  })
+  return projectRepositoryApprovedArtifact(artifact, reviewDeclaration)
 }

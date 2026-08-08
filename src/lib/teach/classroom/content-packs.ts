@@ -27,9 +27,9 @@ export const contentPackIdSchema = z.string()
   )
 const idSchema = contentPackIdSchema
 const displayTextSchema = z.string().trim().min(1).max(20_000)
-const externalReviewIdentitySchema = z.string().regex(
-  /^external-review-attestation:[\w.-]{1,64}:[a-f0-9]{64}$/,
-  'approved content requires a trusted external review attestation',
+const repositoryReviewIdentitySchema = z.string().regex(
+  /^repository-review-declaration:[a-f0-9]{64}$/,
+  'approved content requires a verified repository review declaration',
 )
 export const contentVersionSchema = z.string().max(128).regex(
   /^cv:sha256:[a-f0-9]{64}$/,
@@ -308,7 +308,7 @@ export const courseContentPackObjectSchema = z.object({
     }).strict(),
     z.object({
       status: z.literal('approved'),
-      reviewedBy: externalReviewIdentitySchema,
+      reviewedBy: repositoryReviewIdentitySchema,
     }).strict(),
   ]),
 }).strict()

@@ -469,7 +469,7 @@ export const reviewArtifactSchema = z.discriminatedUnion('type', [
     misconceptionTheme: misconceptionThemeSchema,
     markdown: clarificationMarkdownSchema,
     /**
-     * Immutable creation provenance. Current external review availability may
+     * Immutable creation provenance. Current repository review availability may
      * later be granted or revoked without rewriting retained history.
      */
     retainedAsReadOnly: z.boolean(),

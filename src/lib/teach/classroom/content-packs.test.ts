@@ -83,7 +83,7 @@ function approvedPack() {
     }],
     review: {
       status: 'approved',
-      reviewedBy: 'external-review-attestation:test-key:0000000000000000000000000000000000000000000000000000000000000000',
+      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
     },
   }
 }
@@ -141,18 +141,18 @@ describe('content pack validation', () => {
       .toBe(false)
   })
 
-  it('rejects repository-local or model-asserted approval identities', () => {
+  it('rejects malformed or model-asserted repository approval identities', () => {
     const pack = approvedPack()
 
     expect(validateContentPack({
       ...pack,
       review: {
         status: 'approved',
-        reviewedBy: 'repository-review-declaration:forged',
+        reviewedBy: 'model-asserted:forged',
       },
     })).toMatchObject({
       status: 'invalid',
-      issues: [expect.stringContaining('external review attestation')],
+      issues: [expect.stringContaining('repository review declaration')],
     })
   })
 
@@ -173,7 +173,7 @@ describe('content pack validation', () => {
     expect(validateContentPack(pack).status).toBe('invalid')
   })
 
-  it('keeps externally reviewed prose or snippets read-only without a runnable program', () => {
+  it('keeps repository-reviewed prose or snippets read-only without a runnable program', () => {
     const pack = approvedPack()
     pack.blocks = pack.blocks.filter(block => block.type === 'prose')
     expect(validateContentPack(pack).status).toBe('read_only')
@@ -225,7 +225,7 @@ describe('content pack validation', () => {
       }],
       review: {
         status: 'approved',
-        reviewedBy: 'external-review-attestation:test-key:0000000000000000000000000000000000000000000000000000000000000000',
+        reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
       },
     })
 

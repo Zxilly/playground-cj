@@ -125,7 +125,7 @@ function pack(review: 'approved' | 'pending'): CourseContentPack {
     review: review === 'approved'
       ? {
           status: 'approved' as const,
-          reviewedBy: 'external-review-attestation:test-key:0000000000000000000000000000000000000000000000000000000000000000',
+          reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
         }
       : { status: 'pending' as const },
   }
@@ -257,7 +257,7 @@ function trackPack(
     ],
     review: {
       status: 'approved',
-      reviewedBy: 'external-review-attestation:test-key:0000000000000000000000000000000000000000000000000000000000000000',
+      reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
     },
   }
 }

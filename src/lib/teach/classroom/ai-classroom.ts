@@ -1307,7 +1307,7 @@ function retainClarification(
     misconceptionTheme: command.misconceptionTheme,
     markdown: command.markdown,
     // Updating a version-exact group must preserve how it entered history,
-    // even if external review availability changed in the meantime.
+    // even if repository review availability changed in the meantime.
     retainedAsReadOnly:
       existing?.retainedAsReadOnly ?? availability === 'read_only',
     createdAt: existing?.createdAt ?? updatedAt,

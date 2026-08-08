@@ -200,7 +200,7 @@ describe('course content pack builder', () => {
           ...pack,
           review: {
             status: 'approved',
-            reviewedBy: 'external-review-attestation:test-key:0000000000000000000000000000000000000000000000000000000000000000',
+            reviewedBy: 'repository-review-declaration:0000000000000000000000000000000000000000000000000000000000000000',
           },
         }), `${lang} ${conceptId} evidence loop`).toMatchObject({
           status: 'validated',
