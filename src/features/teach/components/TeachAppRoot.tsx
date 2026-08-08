@@ -6,6 +6,7 @@ import { RotateCcw, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createWorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { usePlaygroundSession } from '@/features/teach/state/playground-session'
 import { createTeachRuntimeMachine } from '@/features/teach/state/teach-runtime-machine'
 import { TeachAppContent } from './TeachApp'
 import { TeachLoadingState } from './TeachLoadingState'
@@ -14,7 +15,10 @@ function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
   const machine = useMemo(() => createTeachRuntimeMachine({
     locale,
     open: createWorkspaceCollaborators,
-    resetWorkspace: () => useWorkspaceStore.getState().reset(),
+    resetWorkspace: () => {
+      useWorkspaceStore.getState().reset()
+      usePlaygroundSession.getState().resetTransient()
+    },
     reportDisposeError: (error, context) => {
       console.error(`[ai-classroom] ${context}`, error)
     },
