@@ -11,10 +11,16 @@ export function awaitWithSignal<T>(
   operation: PromiseLike<T>,
   signal?: AbortSignal,
 ): Promise<T> {
+  const observed = Promise.resolve(operation)
   if (!signal)
-    return Promise.resolve(operation)
-  if (signal.aborted)
+    return observed
+  if (signal.aborted) {
+    void observed.then(
+      () => undefined,
+      () => undefined,
+    )
     return Promise.reject(abortReason(signal))
+  }
 
   return new Promise<T>((resolve, reject) => {
     let settled = false
@@ -28,7 +34,7 @@ export function awaitWithSignal<T>(
     }
     handleAbort = () => finish(() => reject(abortReason(signal)))
     signal.addEventListener('abort', handleAbort, { once: true })
-    Promise.resolve(operation).then(
+    observed.then(
       value => finish(() => resolve(value)),
       error => finish(() => reject(error)),
     )

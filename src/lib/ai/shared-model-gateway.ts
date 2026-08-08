@@ -1,5 +1,7 @@
 import { z } from 'zod'
+import type { SettleAwareOperationOwnership } from './settle-aware-operation-ownership'
 import { awaitWithSignal } from './abortable-operation'
+import { createSettleAwareOperationOwnership } from './settle-aware-operation-ownership'
 
 const MAX_REQUEST_BYTES = 256 * 1024
 const MAX_OUTPUT_TOKENS = 4096
@@ -213,54 +215,10 @@ class InvalidUpstreamResponseError extends Error {
   }
 }
 
-interface RequestSlotOwnership {
-  readonly wait: <T>(operation: PromiseLike<T>, signal: AbortSignal) => Promise<T>
-  readonly observe: (operation: PromiseLike<unknown>) => Promise<void>
-  readonly finish: () => void
-}
-
-// A deadline may stop the caller from waiting, but it does not prove that an
-// abort-ignoring dependency stopped working. Keep the finite admission slot
-// until both the logical request and every observed operation have settled.
-function createRequestSlotOwnership(release: () => void): RequestSlotOwnership {
-  let pendingOperations = 0
-  let finished = false
-  let released = false
-  const releaseIfSettled = () => {
-    if (!finished || pendingOperations !== 0 || released)
-      return
-    released = true
-    release()
-  }
-  const track = <T>(operation: PromiseLike<T>): Promise<T> => {
-    pendingOperations += 1
-    const tracked = Promise.resolve(operation)
-    tracked.then(
-      () => {
-        pendingOperations -= 1
-        releaseIfSettled()
-      },
-      () => {
-        pendingOperations -= 1
-        releaseIfSettled()
-      },
-    )
-    return tracked
-  }
-
-  return {
-    wait: <T>(operation: PromiseLike<T>, signal: AbortSignal) =>
-      awaitWithSignal(track(operation), signal),
-    observe: operation => track(operation).then(
-      () => undefined,
-      () => undefined,
-    ),
-    finish() {
-      finished = true
-      releaseIfSettled()
-    },
-  }
-}
+type RequestSlotOwnership = Pick<
+  SettleAwareOperationOwnership,
+  'wait' | 'observe' | 'finish'
+>
 
 function responseHeaders(contentType = 'application/json; charset=utf-8'): Headers {
   return new Headers({
@@ -794,7 +752,7 @@ export function createSharedModelGateway(
           'The shared AI service is at its concurrency limit.',
         )
       }
-      slotOwnership = createRequestSlotOwnership(acquiredSlot)
+      slotOwnership = createSettleAwareOperationOwnership(acquiredSlot)
 
       const identity = dependencies.resolveIdentity(request.headers)
       const permitted = await slotOwnership.wait(

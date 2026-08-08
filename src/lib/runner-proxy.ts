@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto'
 import cangjieToolchainLock from '../../cj-runner/cangjie-toolchain.lock.json'
 import type { RunnerRunResponse } from './runner-contract'
-import { awaitWithSignal } from './ai/abortable-operation'
+import { createSettleAwareOperationOwnership } from './ai/settle-aware-operation-ownership'
 import {
   MAX_RUNNER_OUTPUT_BYTES,
   parseRunnerRunResponse,
@@ -81,30 +81,7 @@ function createRunnerSlotOwnership(
   release: () => void,
   dependencyGuard: RunnerDependencyGuard,
 ): RunnerSlotOwnership {
-  let pendingOperations = 0
-  let finished = false
-  let released = false
-  const releaseIfSettled = () => {
-    if (!finished || pendingOperations !== 0 || released)
-      return
-    released = true
-    release()
-  }
-  const track = <T>(operation: PromiseLike<T>): Promise<T> => {
-    pendingOperations += 1
-    const tracked = Promise.resolve(operation)
-    tracked.then(
-      () => {
-        pendingOperations -= 1
-        releaseIfSettled()
-      },
-      () => {
-        pendingOperations -= 1
-        releaseIfSettled()
-      },
-    )
-    return tracked
-  }
+  const operationOwnership = createSettleAwareOperationOwnership(release)
 
   return {
     wait: <T>(
@@ -112,22 +89,18 @@ function createRunnerSlotOwnership(
       signal: AbortSignal,
       dependency: string,
     ) => {
-      const tracked = track(operation)
-      dependencyGuard.watch(tracked, signal, dependency)
-      return awaitWithSignal(tracked, signal)
+      const raw = Promise.resolve(operation)
+      const waiting = operationOwnership.wait(raw, signal)
+      dependencyGuard.watch(raw, signal, dependency)
+      return waiting
     },
     observe: (operation, dependency) => {
-      const tracked = track(operation)
-      dependencyGuard.watchCancellation(tracked, dependency)
-      return tracked.then(
-        () => undefined,
-        () => undefined,
-      )
+      const raw = Promise.resolve(operation)
+      const observed = operationOwnership.observe(raw)
+      dependencyGuard.watchCancellation(raw, dependency)
+      return observed
     },
-    finish() {
-      finished = true
-      releaseIfSettled()
-    },
+    finish: operationOwnership.finish,
   }
 }
 

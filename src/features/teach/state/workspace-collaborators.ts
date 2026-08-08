@@ -1,4 +1,7 @@
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
+import type { SettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operation-ownership'
+import { awaitWithSignal } from '@/lib/ai/abortable-operation'
+import { createSettleAwareOperationOwnership } from '@/lib/ai/settle-aware-operation-ownership'
 import { createAIClassroom } from '@/lib/teach/classroom/ai-classroom'
 import { createBuiltInCourseContentPackCatalog } from '@/lib/teach/classroom/built-in-course'
 import { createIndexedDBClassroomStorage } from '@/lib/teach/classroom/storage'
@@ -53,75 +56,10 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
     throw abortReason(signal)
 }
 
-function waitForOperation<T>(
-  operation: PromiseLike<T>,
-  signal: AbortSignal,
-): Promise<T> {
-  if (signal.aborted) {
-    // The operation may already have started while its arguments were being
-    // evaluated. Observe its eventual rejection even though the boundary wins.
-    void operation.then(
-      () => undefined,
-      () => undefined,
-    )
-    throw abortReason(signal)
-  }
-  return new Promise<T>((resolve, reject) => {
-    let settled = false
-    let onAbort: () => void = () => {}
-    const finish = (complete: () => void) => {
-      if (settled)
-        return
-      settled = true
-      signal.removeEventListener('abort', onAbort)
-      complete()
-    }
-    onAbort = () => finish(() => reject(abortReason(signal)))
-    signal.addEventListener('abort', onAbort, { once: true })
-    void operation.then(
-      value => finish(() => resolve(value)),
-      error => finish(() => reject(error)),
-    )
-  })
-}
-
-interface InitializationOperationOwnership {
-  wait: <T>(operation: PromiseLike<T>, signal: AbortSignal) => Promise<T>
-  settle: () => Promise<void>
-}
-
-/**
- * A caller deadline may stop waiting for initialization, but it cannot prove
- * that an abort-ignoring fetch, IndexedDB transaction, or aggregate open has
- * stopped touching shared resources. Observe every raw operation and retain
- * the workspace lease until all of them actually settle.
- */
-function createInitializationOperationOwnership():
-InitializationOperationOwnership {
-  const pending = new Set<Promise<void>>()
-
-  function track<T>(operation: PromiseLike<T>): Promise<T> {
-    const raw = Promise.resolve(operation)
-    const settlement = raw.then(
-      () => undefined,
-      () => undefined,
-    )
-    pending.add(settlement)
-    void settlement.then(() => {
-      pending.delete(settlement)
-    })
-    return raw
-  }
-
-  return {
-    wait: <T>(operation: PromiseLike<T>, signal: AbortSignal) =>
-      waitForOperation(track(operation), signal),
-    async settle() {
-      while (pending.size > 0)
-        await Promise.all([...pending])
-    },
-  }
-}
+type InitializationOperationOwnership = Pick<
+  SettleAwareOperationOwnership,
+  'wait' | 'finish'
+>
 
 interface InitializationBoundary {
   signal: AbortSignal
@@ -183,7 +121,7 @@ async function acquireWorkspaceLease(
   workspaceLeaseTail = predecessor.then(() => reservation)
 
   try {
-    await waitForOperation(predecessor, signal)
+    await awaitWithSignal(predecessor, signal)
     throwIfAborted(signal)
   }
   catch (error) {
@@ -276,7 +214,7 @@ export async function createWorkspaceCollaborators(
   let initializationOwnership: InitializationOperationOwnership | undefined
   try {
     releaseLease = await acquireWorkspaceLease(boundary.signal)
-    initializationOwnership = createInitializationOperationOwnership()
+    initializationOwnership = createSettleAwareOperationOwnership()
     throwIfAborted(boundary.signal)
 
     const catalog = createBuiltInCourseContentPackCatalog(selectedLocale)
@@ -294,7 +232,7 @@ export async function createWorkspaceCollaborators(
       boundary.signal,
     )
     throwIfAborted(boundary.signal)
-    await initializationOwnership.settle()
+    await initializationOwnership.finish()
     const openedClassroom = resources.classroom
     let disposal: Promise<void> | undefined
     boundary.close()
@@ -322,7 +260,7 @@ export async function createWorkspaceCollaborators(
     releaseLease = undefined
     const fullySettled = Promise.allSettled([
       cleanup,
-      initializationOwnership?.settle() ?? Promise.resolve(),
+      initializationOwnership?.finish() ?? Promise.resolve(),
     ]).then(([cleanupResult]) => {
       ownedLeaseRelease?.()
       return cleanupResult
@@ -337,7 +275,7 @@ export async function createWorkspaceCollaborators(
     }
     else {
       try {
-        const cleanupResult = await waitForOperation(
+        const cleanupResult = await awaitWithSignal(
           fullySettled,
           boundary.signal,
         )
