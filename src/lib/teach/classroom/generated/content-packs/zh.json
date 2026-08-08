@@ -1,6 +1,7 @@
 {
   "schemaVersion": 4,
   "locale": "zh",
+  "courseVersion": "course:sha256:12067f3d62609f42aee7d744a4dfead6807b08a48cc96145726f9a5d15519ec0",
   "packs": [
     {
       "id": "pack:cj.program.main",

@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import type { CourseContentPack } from './content-packs'
-import { courseContentPackSchema, validateContentPack } from './content-packs'
+import {
+  courseContentPackSchema,
+  courseVersionSchema,
+  validateContentPack,
+} from './content-packs'
 import {
   assignBilingualLearningContractVersions,
   assignImmutableContentVersion,
@@ -17,6 +21,7 @@ import { CURRENT_COURSE_CONCEPT_IDS } from './course-definition'
 export const generatedContentPackArtifactSchema = z.object({
   schemaVersion: z.literal(4),
   locale: z.enum(['zh', 'en']),
+  courseVersion: courseVersionSchema,
   packs: z.array(courseContentPackSchema).min(1),
 }).strict().superRefine((artifact, ctx) => {
   if (artifact.packs.length !== CURRENT_COURSE_CONCEPT_IDS.length) {
@@ -43,7 +48,7 @@ export const generatedContentPackArtifactSchema = z.object({
       })
     }
     const validation = validateContentPack(pack)
-    if (validation.status !== 'validated') {
+    if (validation.status !== 'ready') {
       ctx.addIssue({
         code: 'custom',
         path: ['packs', index],
@@ -75,15 +80,40 @@ export const generatedContentPackArtifactSchema = z.object({
 export type GeneratedContentPackArtifact
   = z.infer<typeof generatedContentPackArtifactSchema>
 
-export function createGeneratedContentPackArtifact(
-  locale: 'zh' | 'en',
-  packs: CourseContentPack[],
-): GeneratedContentPackArtifact {
-  return generatedContentPackArtifactSchema.parse({
-    schemaVersion: 4,
-    locale,
-    packs,
-  })
+export function currentCourseVersion(
+  packs: Readonly<Record<'en' | 'zh', readonly CourseContentPack[]>>,
+): string {
+  return `course:sha256:${sha256Canonical({
+    protocol: 'bilingual-current-course-v1',
+    en: packs.en.map(pack => ({
+      conceptId: pack.concept.id,
+      contentVersion: pack.version,
+    })),
+    zh: packs.zh.map(pack => ({
+      conceptId: pack.concept.id,
+      contentVersion: pack.version,
+    })),
+  })}`
+}
+
+export function createGeneratedContentPackArtifacts(
+  packs: Readonly<Record<'en' | 'zh', CourseContentPack[]>>,
+): Record<'en' | 'zh', GeneratedContentPackArtifact> {
+  const courseVersion = currentCourseVersion(packs)
+  return {
+    en: generatedContentPackArtifactSchema.parse({
+      schemaVersion: 4,
+      locale: 'en',
+      courseVersion,
+      packs: packs.en,
+    }),
+    zh: generatedContentPackArtifactSchema.parse({
+      schemaVersion: 4,
+      locale: 'zh',
+      courseVersion,
+      packs: packs.zh,
+    }),
+  }
 }
 
 export function assertBilingualLearningContractArtifacts(
@@ -94,6 +124,16 @@ export function assertBilingualLearningContractArtifacts(
   const chinese = generatedContentPackArtifactSchema.parse(chineseInput)
   if (english.locale !== 'en' || chinese.locale !== 'zh')
     throw new Error('Bilingual Learning Contract validation requires en and zh artifacts')
+  const expectedCourseVersion = currentCourseVersion({
+    en: english.packs,
+    zh: chinese.packs,
+  })
+  if (
+    english.courseVersion !== expectedCourseVersion
+    || chinese.courseVersion !== expectedCourseVersion
+  ) {
+    throw new Error('Bilingual artifacts do not share their logical Course Version')
+  }
 
   const assigned = assignBilingualLearningContractVersions(
     english.packs,

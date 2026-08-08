@@ -35,6 +35,10 @@ export const learningContractVersionSchema = z.string().max(128).regex(
   /^lc:sha256:[a-f0-9]{64}$/,
   'Learning Contract Version must use lc:sha256:<64 lowercase hex>',
 )
+export const courseVersionSchema = z.string().max(128).regex(
+  /^course:sha256:[a-f0-9]{64}$/,
+  'Course Version must use course:sha256:<64 lowercase hex>',
+)
 const staticTourRefSchema = z.string().trim().max(512).regex(
   /^\d+-[a-z0-9-]+\/\d+-[a-z0-9-]+\/\d+$/,
   'Source Reference must use chapterId/subChapterId/sectionId',
@@ -370,6 +374,7 @@ export const courseContentPackSchema = courseContentPackObjectSchema
 export type CourseContentPack = z.infer<typeof courseContentPackSchema>
 
 export const contentPacksResponseSchema = z.object({
+  courseVersion: courseVersionSchema,
   packs: z.array(courseContentPackSchema).max(1_024),
 }).strict().superRefine((response, ctx) => {
   const concepts = new Set<string>()
@@ -389,8 +394,8 @@ export type ContentPacksResponse = z.infer<typeof contentPacksResponseSchema>
 
 export type ContentPackValidation
   = | { status: 'invalid', issues: string[] }
-    | { status: 'read_only', pack: CourseContentPack }
-    | { status: 'validated', pack: CourseContentPack }
+    | { status: 'incomplete', pack: CourseContentPack }
+    | { status: 'ready', pack: CourseContentPack }
 
 function duplicateIds(ids: string[]): string[] {
   const seen = new Set<string>()
@@ -404,10 +409,8 @@ function duplicateIds(ids: string[]): string[] {
 }
 
 /**
- * Enforce the Content Pack Validation gate used by the AI Classroom runtime.
- * Parsing alone is insufficient: this also checks cross-record links and stable
- * identity, which are the invariants a model-authored lesson could previously
- * bypass.
+ * Verify a repository-authored Course module during offline generation.
+ * Runtime code consumes only the generated artifact and never calls this.
  */
 export function validateContentPack(input: unknown): ContentPackValidation {
   const parsed = courseContentPackSchema.safeParse(input)
@@ -468,7 +471,7 @@ export function validateContentPack(input: unknown): ContentPackValidation {
     })
 
   if (!hasEvidenceLoop)
-    return { status: 'read_only', pack }
+    return { status: 'incomplete', pack }
 
-  return { status: 'validated', pack }
+  return { status: 'ready', pack }
 }

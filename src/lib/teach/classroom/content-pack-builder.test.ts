@@ -7,10 +7,10 @@ import {
   buildCourseContentPacks,
   getContentPackReferenceValidationCases,
   mdxToSafeMarkdown,
-  VALIDATED_CONTENT_CONCEPT_IDS,
 } from './content-pack-builder'
 import { buildCurrentCourseContentPacks } from './content-pack-generation'
 import { validateContentPack } from './content-packs'
+import { CURRENT_COURSE_CONCEPT_IDS } from './course-definition'
 
 describe('course content pack builder', () => {
   it('marks builder output as a non-publishable unversioned draft', async () => {
@@ -162,15 +162,15 @@ describe('course content pack builder', () => {
       const validations = packs.map(pack => validateContentPack(pack))
 
       expect(packs.map(pack => pack.concept.id))
-        .toEqual([...VALIDATED_CONTENT_CONCEPT_IDS])
-      expect(validations.every(result => result.status === 'validated')).toBe(true)
+        .toEqual([...CURRENT_COURSE_CONCEPT_IDS])
+      expect(validations.every(result => result.status === 'ready')).toBe(true)
       expect(packs.flatMap(pack => pack.blocks)
         .filter(block => block.type === 'code_sample')
         .every(block =>
           block.sampleType === 'program'
           || block.sampleType === 'snippet')).toBe(true)
 
-      for (const conceptId of VALIDATED_CONTENT_CONCEPT_IDS) {
+      for (const conceptId of CURRENT_COURSE_CONCEPT_IDS) {
         const pack = packs.find(candidate => candidate.concept.id === conceptId)
         expect(pack, `${lang} ${conceptId}`).toBeDefined()
         if (!pack)
@@ -190,7 +190,7 @@ describe('course content pack builder', () => {
           }
         }
         expect(validateContentPack(pack), `${lang} ${conceptId} evidence loop`).toMatchObject({
-          status: 'validated',
+          status: 'ready',
         })
       }
     }

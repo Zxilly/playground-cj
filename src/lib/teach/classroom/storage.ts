@@ -92,6 +92,8 @@ interface AIClassroomDatabase extends DBSchema {
 export interface IndexedDBClassroomStorageOptions {
   /** Isolates independent classrooms inside the v8 database. */
   scope: string
+  /** Deletes obsolete sibling scopes before the first operation. */
+  discardOtherScopesWithPrefix?: string
   /** Primarily useful for isolated tests; production uses the v8 constant. */
   databaseName?: string
 }
@@ -123,6 +125,12 @@ export function createIndexedDBClassroomStorage(
   const databaseName = options.databaseName ?? AI_CLASSROOM_V8_DATABASE_NAME
   if (!databaseName.trim())
     throw new Error('IndexedDB AI Classroom storage requires a database name')
+  const discardPrefix = options.discardOtherScopesWithPrefix?.trim()
+  if (options.discardOtherScopesWithPrefix !== undefined && !discardPrefix) {
+    throw new Error(
+      'IndexedDB AI Classroom obsolete scope prefix must be non-empty',
+    )
+  }
 
   let databasePromise: Promise<IDBPDatabase<AIClassroomDatabase>> | null = null
   let channel: BroadcastChannel | null = null
@@ -139,6 +147,24 @@ export function createIndexedDBClassroomStorage(
         if (!db.objectStoreNames.contains(SNAPSHOT_STORE_NAME))
           db.createObjectStore(SNAPSHOT_STORE_NAME)
       },
+    }).then(async (db) => {
+      if (!discardPrefix)
+        return db
+      try {
+        const transaction = db.transaction(SNAPSHOT_STORE_NAME, 'readwrite')
+        const keys = await transaction.store.getAllKeys()
+        await Promise.all(keys
+          .filter(key => key !== scope
+            && (key === discardPrefix
+              || key.startsWith(`${discardPrefix}:`)))
+          .map(key => transaction.store.delete(key)))
+        await transaction.done
+        return db
+      }
+      catch (error) {
+        db.close()
+        throw error
+      }
     })
     return databasePromise
   }
@@ -213,8 +239,10 @@ export function createIndexedDBClassroomStorage(
       listeners.clear()
       channel?.close()
       channel = null
-      if (databasePromise)
-        (await databasePromise).close()
+      const pendingDatabase = databasePromise
+      databasePromise = null
+      if (pendingDatabase)
+        (await pendingDatabase.catch(() => null))?.close()
     },
   }
 }

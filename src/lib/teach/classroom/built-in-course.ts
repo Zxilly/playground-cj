@@ -29,11 +29,15 @@ export const BUILT_IN_COURSE_CONTENT_PACKS: Record<
   zh: compileBuiltInCourse(zhArtifact),
 }
 
+export const BUILT_IN_COURSE_VERSION
+  = BUILT_IN_COURSE_CONTENT_PACKS.en.courseVersion
+
 export function createBuiltInCourseContentPackCatalog(
   selectedLocale: ContentPackLanguage,
 ): ContentPackCatalog {
   const catalog = createContentPackCatalog(
     BUILT_IN_COURSE_CONTENT_PACKS[selectedLocale].packs,
+    BUILT_IN_COURSE_CONTENT_PACKS[selectedLocale === 'en' ? 'zh' : 'en'].packs,
   )
   for (const conceptId of BUILT_IN_COURSE_MAINLINE_CONCEPT_IDS)
     catalog.require(conceptId)

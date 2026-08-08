@@ -27,18 +27,26 @@ export interface ContentPackCatalog {
 
 /** Index the current Course module already verified by the build. */
 export function createContentPackCatalog(
-  inputs: readonly CourseContentPack[],
+  selectedPacks: readonly CourseContentPack[],
+  translatedPacks: readonly CourseContentPack[] = [],
 ): ContentPackCatalog {
-  const packs = new Map(inputs.map(pack => [pack.concept.id, pack]))
+  const selectedByConcept = new Map(
+    selectedPacks.map(pack => [pack.concept.id, pack]),
+  )
+  const exactByIdentity = new Map(
+    [...selectedPacks, ...translatedPacks].map(pack => [
+      `${pack.concept.id}\0${pack.version}`,
+      pack,
+    ]),
+  )
 
   const get = (
     conceptId: string,
     contentVersion?: string,
   ): CourseContentPack | undefined => {
-    const pack = packs.get(conceptId)
-    return pack && (contentVersion === undefined || pack.version === contentVersion)
-      ? pack
-      : undefined
+    return contentVersion === undefined
+      ? selectedByConcept.get(conceptId)
+      : exactByIdentity.get(`${conceptId}\0${contentVersion}`)
   }
 
   const require = (
@@ -56,7 +64,7 @@ export function createContentPackCatalog(
   }
 
   return {
-    list: () => [...packs.values()].map(pack => ({
+    list: () => [...selectedByConcept.values()].map(pack => ({
       conceptId: pack.concept.id,
       title: pack.concept.title,
       version: pack.version,

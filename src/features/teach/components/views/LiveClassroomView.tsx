@@ -159,31 +159,22 @@ export function LiveClassroomView() {
 
       <ol aria-label="Classroom Stream" className="space-y-5">
         {stream.map((entry, index) => {
-          const pack = catalog.get(entry.conceptId)
+          const pack = catalog.require(entry.conceptId)
           const entryPack = 'contentVersion' in entry
-            ? catalog.get(entry.conceptId, entry.contentVersion)
+            ? catalog.require(entry.conceptId, entry.contentVersion)
             : pack
           return (
             <li key={entry.id} className="relative">
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 {index + 1}
                 {' · '}
-                {entryPack?.concept.title ?? pack?.concept.title ?? entry.conceptId}
+                {entryPack.concept.title}
               </p>
               {entry.type === 'content_reference_group' && (
-                !entryPack || entryPack.id !== entry.packId
-                  ? (
-                      <HistoricalContentUnavailable
-                        contentVersion={entry.contentVersion}
-                        english={english}
-                      />
-                    )
-                  : (
-                      <ContentReferenceGroup
-                        pack={entryPack}
-                        blockIds={entry.blockIds}
-                      />
-                    )
+                <ContentReferenceGroup
+                  pack={entryPack}
+                  blockIds={entry.blockIds}
+                />
               )}
               {entry.type === 'exercise_instance' && <ExerciseInstanceCard instance={entry} />}
               {entry.type === 'bridge_note' && (
@@ -222,21 +213,5 @@ export function LiveClassroomView() {
         })}
       </ol>
     </section>
-  )
-}
-
-function HistoricalContentUnavailable({
-  contentVersion,
-  english,
-}: {
-  contentVersion: string
-  english: boolean
-}) {
-  return (
-    <div role="alert" className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
-      {english
-        ? `This Live View references Content Version ${contentVersion}, which is not in the local catalog. It was not silently replaced with newer content.`
-        : `这条课堂记录引用的旧课程版本（${contentVersion}）已不在当前代码中；系统没有用新版内容替换它。`}
-    </div>
   )
 }
