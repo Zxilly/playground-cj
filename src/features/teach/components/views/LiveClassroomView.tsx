@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { BookmarkCheck, MessageCircle, Plus, Route, SkipForward } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useClassroomSnapshot } from '@/features/teach/hooks/use-classroom-snapshot'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
@@ -52,6 +53,7 @@ export function LiveClassroomView() {
   const english = lang === 'en'
   const [creatingTrack, setCreatingTrack] = useState(false)
   const [activatingTrack, setActivatingTrack] = useState(false)
+  const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null)
   const [trackSelectionError, setTrackSelectionError] = useState<string | null>(null)
 
   if (!track)
@@ -75,9 +77,32 @@ export function LiveClassroomView() {
           <Route aria-hidden="true" className="size-4" />
           {english ? 'Learning path' : '学习路径'}
         </div>
-        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold">{track.goal}</h1>
+        <div className="mt-2 grid gap-3">
+          <div className="min-w-0">
+            <h1
+              id="active-learning-goal"
+              className={cn(
+                'break-words text-xl font-semibold',
+                expandedGoalId !== track.id && 'line-clamp-3',
+              )}
+            >
+              {track.goal}
+            </h1>
+            {track.goal.length > 96 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-controls="active-learning-goal"
+                aria-expanded={expandedGoalId === track.id}
+                onClick={() => setExpandedGoalId(current => current === track.id ? null : track.id)}
+                className="mt-1 min-h-11 px-0 text-xs text-muted-foreground hover:bg-transparent"
+              >
+                {expandedGoalId === track.id
+                  ? (english ? 'Show less' : '收起完整目标')
+                  : (english ? 'Show full goal' : '查看完整目标')}
+              </Button>
+            )}
             <p className="mt-1 text-sm text-muted-foreground">
               {english
                 ? `${track.conceptIds.length} lessons · shown in learning order`
@@ -86,13 +111,16 @@ export function LiveClassroomView() {
           </div>
           <div className="flex flex-wrap items-end gap-2">
             {snapshot.tracks.length > 1 && (
-              <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              <label className="grid min-w-0 flex-[1_1_16rem] gap-1 text-xs font-medium text-muted-foreground">
                 <span>{english ? 'Current learning path' : '当前学习路径'}</span>
                 <select
+                  data-testid="active-learning-track"
                   aria-label={english ? 'Current learning path' : '当前学习路径'}
+                  aria-describedby="active-learning-track-description"
+                  title={track.goal}
                   value={track.id}
                   disabled={activatingTrack}
-                  className="h-8 max-w-64 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  className="h-11 min-w-0 w-full rounded-md border border-input bg-background px-2 text-sm text-foreground lg:h-8"
                   onChange={(event) => {
                     const trackId = event.target.value
                     setActivatingTrack(true)
@@ -105,7 +133,16 @@ export function LiveClassroomView() {
                       setTrackSelectionError(
                         reason instanceof Error ? reason.message : String(reason),
                       )
-                    }).finally(() => setActivatingTrack(false))
+                    }).finally(() => {
+                      setActivatingTrack(false)
+                      requestAnimationFrame(() => {
+                        if (document.activeElement !== document.body)
+                          return
+                        document.querySelector<HTMLSelectElement>(
+                          '[data-testid="active-learning-track"]',
+                        )?.focus()
+                      })
+                    })
                   }}
                 >
                   {snapshot.tracks.map((candidate, index) => (
@@ -117,9 +154,20 @@ export function LiveClassroomView() {
                     </option>
                   ))}
                 </select>
+                <span id="active-learning-track-description" className="sr-only">
+                  {english
+                    ? `Selected learning goal: ${track.goal}`
+                    : `当前选中的学习目标：${track.goal}`}
+                </span>
               </label>
             )}
-            <Button type="button" size="sm" variant="outline" onClick={() => setCreatingTrack(true)}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setCreatingTrack(true)}
+              className="min-h-11 lg:min-h-8"
+            >
               <Plus aria-hidden="true" className="size-4" />
               {english ? 'Start a new learning goal' : '开始新的学习目标'}
             </Button>
@@ -139,22 +187,34 @@ export function LiveClassroomView() {
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
             {english
-              ? 'Ask the teacher to prepare the first explanation and hands-on exercise.'
-              : '请老师准备第一段讲解和动手练习。'}
+              ? 'Prepare a first-lesson request, review it in chat, then send when ready.'
+              : '先把第一课请求放入老师对话，确认内容后再发送。'}
+          </p>
+          <p className="mx-auto mt-2 max-w-lg text-xs leading-5 text-muted-foreground">
+            {english
+              ? 'Once you view a teacher explanation, later answers in this workspace are treated as guided practice rather than an independent check.'
+              : '查看老师讲解后，这个工作区内后续的作答会作为有指导练习，而不会计为独立测验。'}
           </p>
           <Button
             type="button"
-            className="mt-4"
+            className="mt-4 min-h-11 lg:min-h-9"
             onClick={() => setPendingPrefill(
               english
                 ? 'Please start the first lesson in my current learning path.'
                 : '请开始当前学习路径的第一课。',
+              { type: 'first_lesson', learningTrackId: track.id },
             )}
           >
             <MessageCircle aria-hidden="true" className="size-4" />
-            {english ? 'Ask teacher to begin' : '请老师开始'}
+            {english ? 'Prepare first-lesson request' : '准备第一课请求'}
           </Button>
         </div>
+      )}
+
+      {stream.length > 0 && (
+        <h2 className="text-lg font-semibold">
+          {english ? 'Lesson activity' : '课堂活动'}
+        </h2>
       )}
 
       <ol aria-label="Classroom Stream" className="space-y-5">
@@ -190,7 +250,7 @@ export function LiveClassroomView() {
                   <SkipForward aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                   <div>
                     <p className="font-medium">
-                      {english ? 'Core Content skipped for this step' : '本步骤跳过了部分 Core Content'}
+                      {english ? 'Lesson content skipped for this step' : '本步骤跳过了部分课程内容'}
                     </p>
                     <p className="mt-1 text-muted-foreground">
                       {skipMarkerExplanation(entry, track, english)}

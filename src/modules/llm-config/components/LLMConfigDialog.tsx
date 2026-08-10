@@ -220,11 +220,11 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
           }}
         >
           <TabsList aria-label={t`AI 服务来源`} className="grid w-full grid-cols-2">
-            <TabsTrigger value="shared">
+            <TabsTrigger value="shared" className="min-h-11 lg:min-h-9">
               <Wallet aria-hidden="true" className="size-3.5" />
               <Trans>共享额度</Trans>
             </TabsTrigger>
-            <TabsTrigger value="custom">
+            <TabsTrigger value="custom" className="min-h-11 lg:min-h-9">
               <ShieldCheck aria-hidden="true" className="size-3.5" />
               <Trans>自定义 API Key</Trans>
             </TabsTrigger>
@@ -317,13 +317,13 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
         </p>
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button type="button" variant="ghost" size="sm" aria-describedby={resetDraftHelpId} onClick={handleReset} className="cursor-pointer">
+          <Button type="button" variant="ghost" size="sm" aria-describedby={resetDraftHelpId} onClick={handleReset} className="min-h-11 cursor-pointer lg:min-h-8">
             <RotateCw aria-hidden="true" className="size-3.5 mr-1" />
             <Trans>重置默认</Trans>
           </Button>
           <div className="flex gap-2">
             <DialogClose asChild>
-              <Button type="button" variant="outline" size="sm" className="cursor-pointer"><Trans>取消</Trans></Button>
+              <Button type="button" variant="outline" size="sm" className="min-h-11 cursor-pointer lg:min-h-8"><Trans>取消</Trans></Button>
             </DialogClose>
             <Button
               type="button"
@@ -331,7 +331,7 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
               disabled={userConfigIncomplete}
               aria-describedby={userConfigIncomplete ? userConfigValidationId : undefined}
               onClick={handleSave}
-              className="cursor-pointer disabled:cursor-not-allowed"
+              className="min-h-11 cursor-pointer disabled:cursor-not-allowed lg:min-h-8"
             >
               <Trans>保存</Trans>
             </Button>

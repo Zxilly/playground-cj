@@ -58,10 +58,12 @@ function CodeBlock({ block }: { block: Extract<CoreContentBlock, { type: 'code_s
 export function CoreContent({
   block,
   exposure,
+  exposureLabel,
   showSource = true,
 }: {
   block: CoreContentBlock
   exposure?: 'seen' | 'skipped' | 'unseen'
+  exposureLabel?: string
   showSource?: boolean
 }) {
   return (
@@ -74,7 +76,7 @@ export function CoreContent({
     >
       {exposure && (
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {exposure}
+          {exposureLabel ?? exposure}
         </p>
       )}
       {block.type === 'prose'

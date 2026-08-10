@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { MAX_LEARNING_TRACK_CONCEPTS } from '@/lib/teach/classroom/state'
 
+const MAX_GOAL_LENGTH = 240
+
 function orderedCourseConcepts(
   catalog: ReturnType<typeof useWorkspace>['catalog'],
 ): string[] {
@@ -118,7 +120,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
       </span>
       <div className="flex items-start justify-between gap-3">
         <h1 className="text-xl font-semibold">
-          {english ? 'Choose your learning goal' : '先确定你的学习目标'}
+          {english ? 'Set your practice goal' : '设置你的练习目标'}
         </h1>
         {onCancel && (
           <Button
@@ -127,6 +129,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
             variant="ghost"
             aria-label={english ? 'Cancel new learning path' : '取消新学习路径'}
             onClick={onCancel}
+            className="size-11 lg:size-8"
           >
             <X aria-hidden="true" className="size-4" />
           </Button>
@@ -134,8 +137,8 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
       </div>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
         {english
-          ? 'Your goal starts a stable learning path. The teacher may adapt individual steps, but cannot silently replace it.'
-          : '你的目标会启动一条稳定的学习路径。老师可以调整局部步骤，但不会悄悄替换整条路径。'}
+          ? 'Your goal tailors explanations and practice within the built-in course range you select in this form.'
+          : '目标会用于调整讲解与练习，课程范围以你在表单中选择的内置路径为准。'}
       </p>
       <form
         className="mt-5 space-y-3"
@@ -144,27 +147,36 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           void submit()
         }}
       >
-        <label htmlFor="learning-goal" className="block text-sm font-medium">
-          {english ? 'What do you want to be able to do?' : '你希望最终能够完成什么？'}
-        </label>
+        <div className="flex items-baseline justify-between gap-3">
+          <label htmlFor="learning-goal" className="block text-sm font-medium">
+            {english ? 'What do you want to be able to do?' : '你希望最终能够完成什么？'}
+          </label>
+          <span id="learning-goal-count" className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {goal.length}
+            /
+            {MAX_GOAL_LENGTH}
+          </span>
+        </div>
         <Input
           id="learning-goal"
           value={goal}
-          maxLength={240}
+          maxLength={MAX_GOAL_LENGTH}
+          aria-describedby="learning-goal-count"
           onChange={event => setGoal(event.target.value)}
           placeholder={english
             ? 'For example: understand Cangjie basics and write small programs independently'
             : '例如：掌握仓颉基础并独立编写小程序'}
           autoComplete="off"
+          className="h-11 lg:h-9"
         />
         <label htmlFor="learning-target" className="block text-sm font-medium">
-          {english ? 'How far should this path go?' : '这条路径希望学到哪里？'}
+          {english ? 'How far should this built-in path go?' : '这条内置路径学到哪里？'}
         </label>
         <select
           id="learning-target"
           value={targetConceptId}
           onChange={event => setTargetConceptId(event.target.value)}
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 lg:h-9"
         >
           <option value="">
             {orderedConceptIds.length > MAX_LEARNING_TRACK_CONCEPTS
@@ -206,6 +218,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <Button
           type="submit"
+          className="min-h-11 lg:min-h-9"
           disabled={
             !goal.trim()
             || conceptIds.length === 0

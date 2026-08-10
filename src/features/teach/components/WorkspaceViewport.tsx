@@ -27,8 +27,8 @@ export function WorkspaceViewport({ view }: { view: WorkspaceView }) {
           />
           <p>
             {english
-              ? 'Teacher guidance is active. There is no verified fresh-assessment boundary, so every later attempt is recorded as aided and cannot produce independent evidence. This classroom never claims mastery without trusted assessment freshness.'
-              : '教师引导已激活。当前没有已验证的 fresh-assessment boundary，因此之后所有 attempts 都会记为 aided，且不能产生 independent evidence；在没有可信评估新鲜度证明时，本课堂不会宣称 mastery。'}
+              ? 'You have viewed teacher explanations or guidance. Later answers are still useful for practice and feedback, but they are not treated as an independent check in this workspace.'
+              : '你已查看老师讲解或指导。之后的作答仍可用于练习和反馈，但在这个工作区内不会被视为独立测验。'}
           </p>
         </aside>
       )}

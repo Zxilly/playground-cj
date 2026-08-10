@@ -45,6 +45,32 @@ function exposureFor(
   return 'unseen'
 }
 
+function artifactTypeLabel(type: 'clarification' | 'remediation', english: boolean): string {
+  if (type === 'clarification')
+    return english ? 'Saved explanation' : '讲解笔记'
+  return english ? 'Mistake diagnosis' : '错题诊断'
+}
+
+function revisionLabel(
+  type: 'clarification' | 'remediation',
+  version: string | null,
+  english: boolean,
+): string {
+  if (type === 'clarification') {
+    return english
+      ? `Course revision ${formatRevisionLabel(version ?? '')}`
+      : `课程版本 ${formatRevisionLabel(version ?? '')}`
+  }
+  if (version) {
+    return english
+      ? `Exercise criteria revision ${formatRevisionLabel(version)}`
+      : `练习规则版本 ${formatRevisionLabel(version)}`
+  }
+  return english
+    ? 'Exercise criteria revision unavailable'
+    : '暂时无法确认练习规则版本'
+}
+
 function TeacherArtifactExposureGate({
   children,
   required,
@@ -116,6 +142,18 @@ export function ReviewView() {
   const snapshot = useClassroomSnapshot(classroom)
   const selectedId = useWorkspaceStore(state => state.reviewConceptId)
   const openReviewConcept = useWorkspaceStore(state => state.openReviewConcept)
+
+  const selectReviewConcept = (conceptId: string) => {
+    openReviewConcept(conceptId)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const button = Array.from(
+          document.querySelectorAll<HTMLButtonElement>('[data-review-concept-id]'),
+        ).find(candidate => candidate.dataset.reviewConceptId === conceptId)
+        button?.focus()
+      })
+    })
+  }
   const summaries = catalog.list()
   const conceptId = resolveReviewConceptId(selectedId, snapshot, catalog)
   const currentPack = conceptId ? catalog.get(conceptId) : undefined
@@ -167,7 +205,7 @@ export function ReviewView() {
       if (suppression.type === 'clarification') {
         return [
           suppression.id,
-          `Content Version ${formatRevisionLabel(suppression.contentVersion)}`,
+          revisionLabel('clarification', suppression.contentVersion, english),
         ]
       }
       const learningContractVersion = remediationProvenance
@@ -175,11 +213,7 @@ export function ReviewView() {
         ?.learningContractVersion
       return [
         suppression.id,
-        learningContractVersion
-          ? `Learning Contract ${formatRevisionLabel(learningContractVersion)}`
-          : (english
-              ? 'Unresolved Learning Contract provenance'
-              : 'Learning Contract 溯源无法解析'),
+        revisionLabel('remediation', learningContractVersion ?? null, english),
       ]
     }),
   )
@@ -204,8 +238,8 @@ export function ReviewView() {
   }
   else if (!activeTrack.conceptIds.includes(pack.concept.id)) {
     reviewCheckUnavailableReason = english
-      ? 'This concept is outside the current learning path. Historical checks remain available below.'
-      : '这个知识点不在当前学习路径中；下方仍会保留历史检查。'
+      ? 'This concept is outside the current learning path. Historical checks remain available on this page.'
+      : '这个知识点不在当前学习路径中；本页仍会保留历史检查。'
   }
   else if (!policyAllowsReview) {
     reviewCheckUnavailableReason = english
@@ -214,7 +248,7 @@ export function ReviewView() {
   }
   else if (!reviewTemplate) {
     reviewCheckUnavailableReason = english
-      ? `The displayed Content Version ${pack.version} has no Review Check template.`
+      ? 'This course revision does not include a review check.'
       : '这个知识点暂时没有复习练习。'
   }
   const canCreateReviewCheck = reviewCheckUnavailableReason === null
@@ -315,14 +349,15 @@ export function ReviewView() {
         </h1>
       </header>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         {summaries.map(summary => (
           <button
             key={summary.conceptId}
             type="button"
             aria-pressed={summary.conceptId === pack.concept.id}
-            onClick={() => openReviewConcept(summary.conceptId)}
-            className="shrink-0 rounded-md border border-border px-3 py-2 text-sm aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+            data-review-concept-id={summary.conceptId}
+            onClick={() => selectReviewConcept(summary.conceptId)}
+            className="min-h-11 min-w-0 rounded-md border border-border px-3 py-2 text-sm leading-5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground lg:min-h-0 lg:shrink-0"
           >
             {summary.title}
           </button>
@@ -340,13 +375,27 @@ export function ReviewView() {
       </article>
 
       <div className="space-y-3">
-        {pack.blocks.map(block => (
-          <CoreContent
-            key={block.id}
-            block={block}
-            exposure={exposureFor(snapshot, pack.concept.id, pack.version, block.id)}
-          />
-        ))}
+        {pack.blocks.map((block) => {
+          const exposure = exposureFor(
+            snapshot,
+            pack.concept.id,
+            pack.version,
+            block.id,
+          )
+          const exposureLabel = exposure === 'seen'
+            ? (english ? 'Viewed' : '已学习')
+            : exposure === 'skipped'
+              ? (english ? 'Skipped' : '已跳过')
+              : (english ? 'Not viewed' : '未学习')
+          return (
+            <CoreContent
+              key={block.id}
+              block={block}
+              exposure={exposure}
+              exposureLabel={exposureLabel}
+            />
+          )
+        })}
       </div>
 
       <section className="rounded-xl border border-border bg-card p-5">
@@ -357,12 +406,12 @@ export function ReviewView() {
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {english
-                ? 'Clarifications and Remediations support Core Content; they never replace it.'
-                : '保留的澄清与补救说明只补充课程内容，不会替代它。'}
+                ? 'Saved explanations and mistake diagnoses supplement the lesson; they never replace it.'
+                : '已保存的讲解与错题诊断只补充课程内容，不会替代它。'}
             </p>
           </div>
           {canCreateReviewCheck && reviewTemplate && (
-            <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void createReviewCheck()}>
+            <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void createReviewCheck()} className="min-h-11 lg:min-h-8">
               {busy
                 ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                 : <RotateCcw aria-hidden="true" className="size-4" />}
@@ -404,7 +453,7 @@ export function ReviewView() {
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                                {artifact.type}
+                                {artifactTypeLabel(artifact.type, english)}
                               </p>
                             </div>
                             <p className="mt-1 text-sm font-medium">
@@ -414,18 +463,14 @@ export function ReviewView() {
                             <p
                               className="mt-1 font-mono text-xs text-muted-foreground"
                               title={artifact.type === 'clarification'
-                                ? `Content Version ${artifact.contentVersion}`
+                                ? (english ? 'Course revision details' : '课程版本详情')
                                 : group.learningContractVersion !== null
-                                  ? `Learning Contract ${group.learningContractVersion}`
+                                  ? (english ? 'Exercise criteria revision details' : '练习规则版本详情')
                                   : undefined}
                             >
                               {artifact.type === 'clarification'
-                                ? `Content Version ${formatRevisionLabel(artifact.contentVersion)}`
-                                : group.learningContractVersion !== null
-                                  ? `Learning Contract ${formatRevisionLabel(group.learningContractVersion)}`
-                                  : (english
-                                      ? 'Unresolved Learning Contract provenance'
-                                      : 'Learning Contract 溯源无法解析')}
+                                ? revisionLabel('clarification', artifact.contentVersion, english)
+                                : revisionLabel('remediation', group.learningContractVersion, english)}
                             </p>
                             {failedAttemptCount > 1 && (
                               <p className="mt-1 text-xs text-muted-foreground">
@@ -469,16 +514,16 @@ export function ReviewView() {
                                         <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
                                           <p className="text-sm text-muted-foreground">
                                             {english
-                                              ? 'The persisted claim is old enough to be potentially abandoned. Time does not prove that its provider call has stopped, so no automatic replacement will run.'
-                                              : '这个持久 claim 已可能遗留，但时间无法证明原 provider 调用已经停止，因此系统不会自动发起替代调用。'}
+                                              ? 'This saved diagnostic task may have been interrupted. The app cannot know whether its earlier model request has stopped, so it will not start another automatically.'
+                                              : '这项已保存的诊断任务可能已经中断。应用无法确认先前的模型请求是否已停止，因此不会自动再次发起请求。'}
                                           </p>
                                           {recoveryCandidateId === artifact.id
                                             ? (
                                                 <div role="alert" className="space-y-2">
                                                   <p className="text-sm text-destructive">
                                                     {english
-                                                      ? 'The previous provider call may still be running. Recovering can start another model call and may cause duplicate charges.'
-                                                      : '之前的 provider 调用可能仍在运行。恢复后可能再次发起模型调用，并产生重复计费。'}
+                                                      ? 'The previous model request may still be running. Recovering can send another request and may cause duplicate charges.'
+                                                      : '先前的模型请求可能仍在运行。恢复后会再次发送请求，并可能产生重复计费。'}
                                                   </p>
                                                   <div className="flex flex-wrap gap-2">
                                                     <Button
@@ -521,8 +566,8 @@ export function ReviewView() {
                                     : (
                                         <p className="text-xs text-muted-foreground">
                                           {english
-                                            ? 'A persisted owner still holds this diagnostic. It will not be replaced automatically.'
-                                            : '一个持久 owner 仍持有此诊断，系统不会自动替换它。'}
+                                            ? 'Another browser session is still marked as handling this diagnosis. It will not be replaced automatically.'
+                                            : '另一个浏览器会话仍在处理这项诊断，系统不会自动替换它。'}
                                         </p>
                                       )
                                 )}
@@ -572,8 +617,8 @@ export function ReviewView() {
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 {english
-                  ? 'These topics stay visible as retention controls. Allowing a remediation again starts a fresh diagnosis from its retained failed-attempt provenance; deleted text is never restored.'
-                  : '这些主题会继续显示为保留控制；重新允许补救项时，会基于保留的失败尝试来源重新诊断，但绝不会恢复已删除的文本。'}
+                  ? 'These topics stay visible so you can restore them. Restoring a mistake diagnosis starts again from the saved failed attempt; deleted text is never recovered.'
+                  : '这些主题会继续显示，方便你恢复。恢复错题诊断后，系统会基于已保存的失败尝试重新诊断，但不会找回已删除的文字。'}
               </p>
               <ul className="mt-3 space-y-2">
                 {activeSuppressions.map(suppression => (
@@ -583,20 +628,19 @@ export function ReviewView() {
                   >
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {suppression.type}
+                        {artifactTypeLabel(suppression.type, english)}
                       </p>
                       <p className="mt-1 text-sm">
                         {suppression.misconceptionTheme
                           ?? (english
-                            ? `Failed attempt · ${suppression.type === 'remediation' ? suppression.learningSkillId : ''}`
-                            : `失败尝试 · ${suppression.type === 'remediation' ? suppression.learningSkillId : ''}`)}
+                            ? 'Saved failed attempt'
+                            : '已保存的失败尝试')}
                       </p>
                       <p
                         className="mt-1 font-mono text-xs text-muted-foreground"
                         title={suppression.type === 'clarification'
-                          ? `Content Version ${suppression.contentVersion}`
-                          : remediationProvenance.resolve(suppression)
-                            ?.learningContractVersion}
+                          ? (english ? 'Course revision details' : '课程版本详情')
+                          : (english ? 'Exercise criteria revision details' : '练习规则版本详情')}
                       >
                         {suppressionVersionLabels.get(suppression.id)}
                       </p>
@@ -629,8 +673,8 @@ export function ReviewView() {
           {historicalReviewCheckCount > 0 && (
             <p className="text-sm text-muted-foreground">
               {english
-                ? 'Some checks below come from an earlier learning path. New checks are created only in the current path.'
-                : '下方部分检查来自较早的学习路径；新检查只会创建在当前路径中。'}
+                ? 'Some checks on this page come from an earlier learning path. New checks are created only in the current path.'
+                : '本页部分检查来自较早的学习路径；新检查只会创建在当前路径中。'}
             </p>
           )}
           {reviewChecks.map(instance => (

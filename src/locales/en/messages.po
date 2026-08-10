@@ -13,6 +13,10 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
+#: src/features/teach/components/views/PlaygroundView.tsx:408
+msgid "“{pendingCloseTitle}”中的代码会从本机永久删除，此操作无法撤销。"
+msgstr "The code in “{pendingCloseTitle}” will be permanently deleted from this device. This cannot be undone."
+
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:299
 msgid "（北京时间）"
 msgstr "(Beijing time)"
@@ -42,11 +46,15 @@ msgstr "AI service settings"
 msgid "AI 课堂"
 msgstr "AI Classroom"
 
-#: src/modules/llm-config/components/LLMConfigFields.tsx:49
+#: src/modules/llm-config/components/LLMConfigFields.tsx:52
 msgid "API Key"
 msgstr "API Key"
 
-#: src/modules/llm-config/components/LLMConfigFields.tsx:63
+#: src/modules/llm-config/components/LLMConfigFields.tsx:65
+msgid "API Key 会保存在当前浏览器。请仅在受信设备上使用；在 AI 服务设置中切换到共享额度并保存，可将它从本机删除。"
+msgstr "Your API Key is saved in this browser. Use it only on a trusted device; to remove it locally, switch to Shared Quota in AI service settings and save."
+
+#: src/modules/llm-config/components/LLMConfigFields.tsx:69
 msgid "API 风格"
 msgstr "API style"
 
@@ -58,23 +66,31 @@ msgstr "Close"
 msgid "exit code {code}"
 msgstr "exit code {code}"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:488
+#: src/features/teach/components/views/PlaygroundView.tsx:585
 msgid "Playground 代码编辑区"
 msgstr "Playground code editor"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:125
+#: src/features/teach/components/views/PlaygroundView.tsx:169
 msgid "Playground 标签页"
 msgstr "Playground tabs"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:237
+#: src/features/teach/components/views/PlaygroundView.tsx:301
 msgid "Playground 草稿尚未保存：浏览器存储不可用。"
 msgstr "The Playground draft has not been saved because browser storage is unavailable."
+
+#: src/features/teach/components/views/PlaygroundView.tsx:579
+msgid "Playground 运行失败"
+msgstr "Playground run failed"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:578
+msgid "Playground 运行完成"
+msgstr "Playground run complete"
 
 #: src/modules/assistant-ui/chat/BranchPicker.tsx:22
 msgid "上一条回复"
 msgstr "Previous response"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:208
+#: src/features/teach/components/TeachConfigWizard.tsx:225
 msgid "上一步"
 msgstr "Back"
 
@@ -82,7 +98,7 @@ msgstr "Back"
 msgid "下一条回复"
 msgstr "Next response"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:185
+#: src/features/teach/components/TeachConfigWizard.tsx:202
 msgid "下一步"
 msgstr "Next"
 
@@ -98,11 +114,11 @@ msgstr "Only resets the current form. It takes effect after Save; Cancel keeps t
 msgid "今日 AI 额度已用完"
 msgstr "Daily AI quota exhausted"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:298
+#: src/features/teach/components/TeachConfigWizard.tsx:325
 msgid "今日共享额度已用完，{resetMoment} 刷新；可改用自定义 API Key。"
 msgstr "Today's shared quota is used up; it resets at {resetMoment}. You can switch to a custom API Key."
 
-#: src/features/teach/components/TeachConfigWizard.tsx:305
+#: src/features/teach/components/TeachConfigWizard.tsx:332
 msgid "今日共享额度已用完；可改用自定义 API Key。"
 msgstr "Today's shared quota is used up. You can switch to a custom API Key."
 
@@ -110,10 +126,10 @@ msgstr "Today's shared quota is used up. You can switch to a custom API Key."
 msgid "今日剩余"
 msgstr "Remaining today"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:349
-#: src/features/teach/components/TeachConfigWizard.tsx:351
-#: src/features/teach/components/TeachConfigWizard.tsx:366
-#: src/features/teach/components/TeachConfigWizard.tsx:373
+#: src/features/teach/components/TeachConfigWizard.tsx:376
+#: src/features/teach/components/TeachConfigWizard.tsx:378
+#: src/features/teach/components/TeachConfigWizard.tsx:393
+#: src/features/teach/components/TeachConfigWizard.tsx:400
 msgid "今日额度剩余"
 msgstr "Daily quota remaining"
 
@@ -183,22 +199,22 @@ msgstr "Code assistance stopped manually"
 msgid "代码提示暂不可用"
 msgstr "Code assistance unavailable"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:269
+#: src/features/teach/components/views/PlaygroundView.tsx:688
+msgid "代码运行服务暂时不可用，请稍后重试。"
+msgstr "The code runner is temporarily unavailable. Please try again later."
+
+#: src/features/teach/components/views/PlaygroundView.tsx:333
 msgid "使用已保存版本"
 msgstr "Use saved version"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:172
+#: src/features/teach/components/TeachConfigWizard.tsx:189
 #: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:117
 msgid "使用自定义 API Key"
 msgstr "Use a custom API Key"
 
-#: src/modules/llm-config/components/LLMConfigFields.tsx:108
+#: src/modules/llm-config/components/LLMConfigFields.tsx:117
 msgid "使用自定义 API Key 时，需同时配置服务地址与模型。"
 msgstr "A custom API Key also requires a service address and model."
-
-#: src/features/teach/components/TeachLanding.tsx:36
-msgid "依据你的目标定制仓颉课程"
-msgstr "Cangjie lessons tailored to your goal"
 
 #: src/features/teach/components/TeachLanding.tsx:68
 msgid "依据记忆曲线安排复习，帮助你长期留存所学内容。"
@@ -220,33 +236,41 @@ msgstr "Save Code"
 msgid "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
 msgstr "After saving, the custom API Key will be used. To restore shared quota, switch to “Shared quota”."
 
+#: src/features/teach/components/views/PlaygroundView.tsx:413
+msgid "保留标签页"
+msgstr "Keep tab"
+
 #: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:117
 msgid "停止"
 msgstr "Stop"
 
-#: src/modules/assistant-ui/chat/ThreadComposer.tsx:45
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:73
 msgid "停止生成"
 msgstr "Stop generating"
 
 #: src/features/teach/components/TeachLanding.tsx:39
-msgid "先与课堂明确你的学习目的与预期成果，课堂将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。"
-msgstr "Start by clarifying your learning purpose and expected outcomes with the classroom; it plans lessons, exercises, and reviews accordingly. The entire workspace is a single exportable file, and your progress always stays on this device."
+msgid "先明确你想用仓颉完成什么，课堂会围绕这个目标调整讲解、示例与练习；课程范围由你选择的内置路径决定。整个工作区可导出，进度保存在本机。"
+msgstr "Start with what you want to build in Cangjie. The classroom adapts explanations, examples, and practice to that goal; course scope comes from the built-in path you select. You can export the workspace, and progress stays on this device."
 
-#: src/features/teach/components/TeachLanding.tsx:62
-msgid "先明确你希望用仓颉实现的目标，课堂据此安排课程，而非套用固定大纲。"
-msgstr "Define the goal you want to achieve with Cangjie first; the classroom plans lessons around it rather than applying a fixed syllabus."
-
-#: src/features/teach/components/TeachConfigWizard.tsx:136
+#: src/features/teach/components/TeachConfigWizard.tsx:151
 msgid "先选择驱动课堂的 AI 服务"
 msgstr "First, choose the AI service that powers the classroom"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:154
+#: src/features/teach/components/TeachConfigWizard.tsx:169
 msgid "共享 AI 服务"
 msgstr "Shared AI service"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:327
+#: src/features/teach/components/TeachConfigWizard.tsx:354
 msgid "共享服务暂不可用，可改用自定义 API Key。"
 msgstr "The shared service is unavailable; you can switch to a custom API Key."
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:78
+msgid "共享课堂老师暂时不可用，请稍后重试。"
+msgstr "The shared classroom teacher is temporarily unavailable. Please try again later."
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:74
+msgid "共享课堂老师正忙，请稍后重试。"
+msgstr "The shared classroom teacher is busy. Please try again later."
 
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:225
 msgid "共享额度"
@@ -270,9 +294,13 @@ msgstr "Close"
 msgid "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
 msgstr "You can keep viewing the current page after closing this notice. Shared quota will recover after the refresh."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:201
+#: src/features/teach/components/views/PlaygroundView.tsx:253
 msgid "关闭标签页"
 msgstr "Close tab"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:111
+msgid "关闭错误提示"
+msgstr "Dismiss error"
 
 #: src/features/playground/components/ShareButton.tsx:59
 msgid "分享"
@@ -325,6 +353,14 @@ msgstr "Share successful"
 msgid "切换侧边栏"
 msgstr "Toggle Sidebar"
 
+#: src/features/teach/components/views/PlaygroundView.tsx:425
+msgid "删除标签页"
+msgstr "Delete tab"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:406
+msgid "删除这个 Playground 标签页？"
+msgstr "Delete this Playground tab?"
+
 #: src/features/teach/components/TeachLanding.tsx:64
 msgid "动手练习"
 msgstr "Hands-on practice"
@@ -337,29 +373,29 @@ msgstr "When selected, the tour shows comparison notes for that language."
 msgid "即将刷新…"
 msgstr "Refreshing soon…"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:149
+#: src/features/teach/components/views/PlaygroundView.tsx:198
 msgid "双击或按 F2 重命名"
 msgstr "Double-click or press F2 to rename"
 
-#: src/modules/assistant-ui/chat/ThreadComposer.tsx:26
-#: src/modules/assistant-ui/chat/ThreadComposer.tsx:32
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:53
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:59
 msgid "发送消息"
 msgstr "Send message"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:261
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:322
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:326
 msgid "取消"
 msgstr "Cancel"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:243
+#: src/features/teach/components/views/PlaygroundView.tsx:307
 msgid "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
 msgstr "Another window changed the same draft. Your version did not overwrite it; choose how to recover."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:242
+#: src/features/teach/components/views/PlaygroundView.tsx:306
 msgid "另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。"
 msgstr "Merging another window's changes with your local draft exceeds the storage limit; the saved version remains usable, and your draft can still be recovered."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:259
+#: src/features/teach/components/views/PlaygroundView.tsx:323
 msgid "另存为新标签页"
 msgstr "Save as new tab"
 
@@ -371,7 +407,7 @@ msgstr "Ask about the current concept, exercise requirements, code issues, or as
 msgid "可以这样问"
 msgstr "Try asking"
 
-#: src/modules/assistant-ui/chat/ThreadComposer.tsx:13
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:18
 msgid "向 AI 课堂提问…"
 msgstr "Ask AI Classroom..."
 
@@ -382,6 +418,10 @@ msgstr "Start"
 #: src/modules/assistant-ui/chat/ThreadScrollToBottom.tsx:11
 msgid "回到最新内容"
 msgstr "Back to latest content"
+
+#: src/features/teach/components/TeachLanding.tsx:36
+msgid "围绕你的目标学习仓颉基础"
+msgstr "Learn Cangjie basics around your goal"
 
 #: src/modules/assistant-ui/registry/Attachment.tsx:68
 msgid "图片附件预览"
@@ -395,11 +435,11 @@ msgstr "View source code on GitHub"
 msgid "在内置编辑器中编写仓颉代码并直接运行查看结果，课堂据此给出反馈。"
 msgstr "Write Cangjie code in the built-in editor and run it directly to see the result; the classroom gives feedback based on it."
 
-#: src/features/teach/components/TeachConfigWizard.tsx:196
+#: src/features/teach/components/TeachConfigWizard.tsx:213
 msgid "填写你的 API Key"
 msgstr "Enter your API Key"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:137
+#: src/features/teach/components/TeachConfigWizard.tsx:152
 msgid "填写你的 API 服务"
 msgstr "Set up your API service"
 
@@ -407,7 +447,7 @@ msgstr "Set up your API service"
 msgid "复习巩固"
 msgstr "Review and reinforce"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:164
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:225
 msgid "复制"
 msgstr "Copy"
 
@@ -436,13 +476,17 @@ msgstr "Full link"
 msgid "对比"
 msgstr "Compare"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:195
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:256
 msgid "导出为 Markdown"
 msgstr "Export as Markdown"
 
 #: src/lib/monaco/actions.ts:148
 msgid "已保存代码"
 msgstr "Code saved"
+
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:120
+msgid "已停止生成。消息已放回输入框，你可以修改后重新发送。"
+msgstr "Generation stopped. Your message is back in the composer so you can edit and resend it."
 
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:235
 msgid "已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。"
@@ -452,7 +496,7 @@ msgstr "Switched to a shared quota draft. Save to replace the current API Key, o
 msgid "已复制分享链接"
 msgstr "Share link copied"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:319
+#: src/features/teach/components/TeachConfigWizard.tsx:346
 msgid "已就绪，可直接进入"
 msgstr "Ready — you can enter directly"
 
@@ -480,11 +524,11 @@ msgstr "Open AI service settings to enter a custom API Key. Existing classroom c
 msgid "打开 AI 课堂，从当前教程主题开始学习和练习。"
 msgstr "Open AI Classroom from the current tour topic to learn and practice."
 
-#: src/features/teach/components/TeachConfigWizard.tsx:173
+#: src/features/teach/components/TeachConfigWizard.tsx:190
 msgid "接入你自己的 OpenAI 兼容或 Anthropic 服务。"
 msgstr "Connect your own OpenAI-compatible or Anthropic service."
 
-#: src/features/teach/components/TeachConfigWizard.tsx:155
+#: src/features/teach/components/TeachConfigWizard.tsx:170
 msgid "推荐 · 开箱即用，无需任何配置。"
 msgstr "Recommended · Works out of the box, no setup needed."
 
@@ -492,7 +536,11 @@ msgstr "Recommended · Works out of the box, no setup needed."
 msgid "提示"
 msgstr "Note"
 
-#: src/features/playground/components/ExamplesDropdown.tsx:45
+#: src/features/playground/components/ExamplesDropdown.tsx:60
+msgid "搜索示例"
+msgstr "Search examples"
+
+#: src/features/playground/components/ExamplesDropdown.tsx:65
 msgid "搜索示例..."
 msgstr "Search examples..."
 
@@ -501,19 +549,19 @@ msgstr "Search examples..."
 msgid "教程"
 msgstr "Tour"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:213
+#: src/features/teach/components/views/PlaygroundView.tsx:266
 msgid "新建 Playground 标签页"
 msgstr "Create a Playground tab"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:312
+#: src/features/teach/components/views/PlaygroundView.tsx:376
 msgid "新建标签页"
 msgstr "New tab"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:273
+#: src/features/teach/components/views/PlaygroundView.tsx:337
 msgid "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
 msgstr "Unable to save a copy. Close a tab or shorten the draft, then try again."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:239
+#: src/features/teach/components/views/PlaygroundView.tsx:303
 msgid "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
 msgstr "The v2 Playground draft could not be read. Stored data was left unchanged and will not be migrated or overwritten."
 
@@ -529,29 +577,29 @@ msgstr "Show"
 msgid "显示移动端侧边栏。"
 msgstr "Displays the mobile sidebar."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:304
+#: src/features/teach/components/views/PlaygroundView.tsx:368
 msgid "暂无 Playground 标签页。"
 msgstr "There are no Playground tabs."
 
 #: src/components/ui/breadcrumb.tsx:110
 #: src/components/ui/ui-i18n.test.tsx:54
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:181
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:242
 msgid "更多"
 msgstr "More"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:265
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:326
 msgid "更新"
 msgstr "Update"
 
-#: src/modules/llm-config/components/LLMConfigFields.tsx:81
+#: src/modules/llm-config/components/LLMConfigFields.tsx:87
 msgid "服务地址"
 msgstr "Service address"
 
-#: src/features/playground/components/ExamplesDropdown.tsx:47
+#: src/features/playground/components/ExamplesDropdown.tsx:68
 msgid "未找到示例。"
 msgstr "No examples found."
 
-#: src/features/playground/components/LanguageSelector.tsx:58
+#: src/features/playground/components/LanguageSelector.tsx:81
 msgid "未找到语言。"
 msgstr "No languages found."
 
@@ -559,16 +607,20 @@ msgstr "No languages found."
 msgid "未配置 API Key 时使用共享额度；共享额度有限，可能耗尽。"
 msgstr "Shared quota will be used when no API Key is provided; it is limited and may run out."
 
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:72
+msgid "本轮共享额度已用完，请稍后再试或在设置中使用自己的模型。"
+msgstr "The shared allowance is used up for now. Try again later or use your own model in settings."
+
 #: src/features/playground/components/OutputPanel.tsx:47
 #: src/features/teach/components/blocks/CompilerDiagnosticOutput.tsx:33
 msgid "查看原始编译信息"
 msgstr "View raw compiler output"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:551
+#: src/features/teach/components/views/PlaygroundView.tsx:648
 msgid "标准输出为空。"
 msgstr "Standard output is empty."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:169
+#: src/features/teach/components/views/PlaygroundView.tsx:224
 msgid "标签页名称"
 msgstr "Tab name"
 
@@ -585,7 +637,7 @@ msgstr "Format failed"
 msgid "格式化成功"
 msgstr "Format successful"
 
-#: src/modules/llm-config/components/LLMConfigFields.tsx:93
+#: src/modules/llm-config/components/LLMConfigFields.tsx:99
 msgid "模型"
 msgstr "Model"
 
@@ -597,11 +649,11 @@ msgstr "Stopping Cangjie code assistance{originSuffix}."
 msgid "正在停止代码提示"
 msgstr "Stopping code assistance"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:334
+#: src/features/teach/components/TeachConfigWizard.tsx:361
 msgid "正在准备共享服务…"
 msgstr "Preparing the shared service…"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:142
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:203
 msgid "正在准备课堂内容…"
 msgstr "Preparing classroom content…"
 
@@ -617,13 +669,17 @@ msgstr "Starting Cangjie code assistance{originSuffix}."
 msgid "正在启动代码提示"
 msgstr "Starting code assistance"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:225
+#: src/features/teach/components/views/PlaygroundView.tsx:289
 msgid "正在打开 Playground 草稿存储…"
 msgstr "Opening Playground draft storage…"
 
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:66
 msgid "正在格式化..."
 msgstr "Formatting..."
+
+#: src/features/teach/components/views/PlaygroundView.tsx:575
+msgid "正在运行 Playground 代码…"
+msgstr "Running Playground code…"
 
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:46
 msgid "正在运行..."
@@ -646,6 +702,10 @@ msgstr "Add attachment"
 msgid "清除缓存并重启"
 msgstr "Clear Cache and Restart"
 
+#: src/modules/assistant-ui/registry/MarkdownText.tsx:160
+msgid "滚动查看完整表格"
+msgstr "Scroll to view the full table"
+
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:310
 msgid "留空使用共享额度"
 msgstr "Leave blank to use shared quota"
@@ -653,6 +713,10 @@ msgstr "Leave blank to use shared quota"
 #: src/features/teach/components/TeachLanding.tsx:61
 msgid "目标优先"
 msgstr "Goal-first"
+
+#: src/features/teach/components/TeachLanding.tsx:62
+msgid "目标会影响所选内置路径中的讲解、示例与练习，不会暗示当前没有提供的课程。"
+msgstr "Your goal shapes explanations, examples, and practice within the selected built-in path without implying courses that are not currently included."
 
 #: src/features/playground/components/ShareButton.tsx:80
 msgid "短链接"
@@ -662,30 +726,30 @@ msgstr "Short link"
 msgid "移除文件"
 msgstr "Remove file"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:552
+#: src/features/teach/components/views/PlaygroundView.tsx:649
 msgid "程序未运行。"
 msgstr "The program did not run."
 
 #: src/features/playground/components/OutputPanel.tsx:73
-#: src/features/teach/components/views/PlaygroundView.tsx:556
+#: src/features/teach/components/views/PlaygroundView.tsx:653
 msgid "程序标准输出已截断。"
 msgstr "Program standard output was truncated."
 
 #: src/features/playground/components/OutputPanel.tsx:76
-#: src/features/teach/components/views/PlaygroundView.tsx:568
+#: src/features/teach/components/views/PlaygroundView.tsx:665
 msgid "程序标准错误已截断。"
 msgstr "Program standard error was truncated."
 
 #: src/features/playground/components/OutputPanel.tsx:64
-#: src/features/teach/components/views/PlaygroundView.tsx:540
+#: src/features/teach/components/views/PlaygroundView.tsx:637
 msgid "程序输出"
 msgstr "Program Output"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:131
+#: src/features/teach/components/TeachConfigWizard.tsx:141
 msgid "第 1 步 · 选择 AI 来源"
 msgstr "Step 1 · Choose an AI source"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:132
+#: src/features/teach/components/TeachConfigWizard.tsx:142
 msgid "第 2 步 · 配置 API 服务"
 msgstr "Step 2 · Configure the API service"
 
@@ -701,16 +765,16 @@ msgstr "Compiling"
 msgid "编译信息"
 msgstr "Compile info"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:593
+#: src/features/teach/components/views/PlaygroundView.tsx:690
 msgid "编译器未返回输出。"
 msgstr "The compiler returned no output."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:582
+#: src/features/teach/components/views/PlaygroundView.tsx:679
 msgid "编译器输出"
 msgstr "Compiler output"
 
 #: src/features/playground/components/OutputPanel.tsx:57
-#: src/features/teach/components/views/PlaygroundView.tsx:608
+#: src/features/teach/components/views/PlaygroundView.tsx:705
 msgid "编译器输出已截断。"
 msgstr "Compiler output was truncated."
 
@@ -722,17 +786,29 @@ msgstr "Compilation failed"
 msgid "编译运行"
 msgstr "Compile & Run"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:238
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:299
 msgid "编辑"
 msgstr "Edit"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:256
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:317
 msgid "编辑消息"
 msgstr "Edit message"
 
-#: src/modules/assistant-ui/registry/ToolFallback.tsx:38
+#: src/modules/assistant-ui/chat/ThreadStatusAnnouncer.tsx:29
+msgid "老师回复已停止"
+msgstr "Teacher response stopped"
+
+#: src/modules/assistant-ui/chat/ThreadStatusAnnouncer.tsx:31
+msgid "老师回复已完成"
+msgstr "Teacher response complete"
+
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:39
 msgid "老师正在准备课堂内容…"
 msgstr "The teacher is preparing classroom content…"
+
+#: src/modules/assistant-ui/chat/ThreadStatusAnnouncer.tsx:27
+msgid "老师正在生成回复…"
+msgstr "Teacher is generating a response…"
 
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:229
 msgid "自定义 API Key"
@@ -742,23 +818,35 @@ msgstr "Custom API Key"
 msgid "请先输入代码"
 msgstr "Please enter code first"
 
-#: src/modules/assistant-ui/registry/ToolFallback.tsx:43
+#: src/modules/llm-config/components/LLMConfigFields.tsx:116
+msgid "请输入以 http:// 或 https:// 开头的有效服务地址。"
+msgstr "Enter a valid service address beginning with http:// or https://."
+
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:46
 msgid "课堂内容已准备"
 msgstr "Classroom content is ready"
 
-#: src/modules/assistant-ui/registry/ToolFallback.tsx:42
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:43
 msgid "课堂操作失败"
 msgstr "Classroom action failed"
 
-#: src/modules/assistant-ui/registry/ToolFallback.tsx:40
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:41
 msgid "课堂操作已取消"
 msgstr "Classroom action canceled"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:142
+#: src/modules/assistant-ui/registry/ToolFallback.tsx:45
+msgid "课堂操作等待确认"
+msgstr "Classroom action awaiting confirmation"
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:203
 msgid "课堂活动"
 msgstr "Classroom activity"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:48
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:76
+msgid "课堂老师响应超时，请重试。"
+msgstr "The classroom teacher timed out. Please try again."
+
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:79
 msgid "课堂老师暂时无法完成这次回复，请重试。"
 msgstr "The classroom teacher could not complete this response. Please try again."
 
@@ -766,30 +854,30 @@ msgstr "The classroom teacher could not complete this response. Please try again
 msgid "课堂进行中"
 msgstr "Classroom in progress"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:501
+#: src/features/teach/components/views/PlaygroundView.tsx:598
 msgid "调整输出面板高度"
 msgstr "Resize output panel"
 
-#: src/modules/assistant-ui/chat/ThreadComposer.tsx:67
+#: src/modules/assistant-ui/chat/ThreadComposer.tsx:99
 msgid "输入消息"
 msgstr "Input message"
 
 #: src/features/playground/components/PlaygroundHeader.tsx:74
 #: src/features/playground/components/PlaygroundHeader.tsx:117
-#: src/features/teach/components/views/PlaygroundView.tsx:530
+#: src/features/teach/components/views/PlaygroundView.tsx:627
 msgid "运行"
 msgstr "Run"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:530
+#: src/features/teach/components/views/PlaygroundView.tsx:627
 #: src/service/run.ts:31
 msgid "运行中"
 msgstr "Running"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:573
+#: src/features/teach/components/views/PlaygroundView.tsx:670
 msgid "运行后，程序输出会显示在这里。"
 msgstr "Program output will appear here after you run the code."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:605
+#: src/features/teach/components/views/PlaygroundView.tsx:702
 msgid "运行后，编译器输出会显示在这里。"
 msgstr "Compiler output will appear here after you run the code."
 
@@ -806,20 +894,24 @@ msgstr "Run successful"
 msgid "运行环境：Modal 沙箱 · 仓颉 1.1.3 / STDX 1.1.3.1 | 浏览器工具：LSP + cjfmt 1.2.0-alpha.20260724 | "
 msgstr "Runtime: Modal sandbox · Cangjie 1.1.3 / STDX 1.1.3.1 | Browser tools: LSP + cjfmt 1.2.0-alpha.20260724 | "
 
-#: src/features/teach/components/views/PlaygroundView.tsx:532
+#: src/features/teach/components/views/PlaygroundView.tsx:629
 msgid "运行结果"
 msgstr "Run result"
 
-#: src/features/teach/components/TeachConfigWizard.tsx:118
+#: src/features/teach/components/TeachConfigWizard.tsx:128
 msgid "返回介绍页"
 msgstr "Back to intro"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:244
+#: src/features/teach/components/views/PlaygroundView.tsx:308
 msgid "这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。"
 msgstr "This Playground change was rejected because its tab count, title, or code exceeds the local storage limits."
 
-#: src/features/teach/components/TeachConfigWizard.tsx:185
-#: src/features/teach/components/TeachConfigWizard.tsx:218
+#: src/features/teach/components/views/PlaygroundView.tsx:277
+msgid "这里的标签页和草稿属于整个 AI 课堂工作区，会在所有学习目标之间共享。"
+msgstr "These tabs and drafts belong to the whole AI Classroom workspace and are shared across all learning goals."
+
+#: src/features/teach/components/TeachConfigWizard.tsx:202
+#: src/features/teach/components/TeachConfigWizard.tsx:235
 msgid "进入工作区"
 msgstr "Enter workspace"
 
@@ -827,7 +919,7 @@ msgstr "Enter workspace"
 msgid "选择对比语言"
 msgstr "Select comparison language"
 
-#: src/features/playground/components/ExamplesDropdown.tsx:36
+#: src/features/playground/components/ExamplesDropdown.tsx:44
 msgid "选择示例"
 msgstr "Select example"
 
@@ -835,13 +927,13 @@ msgstr "Select example"
 msgid "重启"
 msgstr "Restart"
 
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:57
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:60
-#: src/modules/assistant-ui/chat/ThreadMessages.tsx:174
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:99
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:102
+#: src/modules/assistant-ui/chat/ThreadMessages.tsx:235
 msgid "重新生成"
 msgstr "Regenerate"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:286
+#: src/features/teach/components/views/PlaygroundView.tsx:350
 msgid "重新读取"
 msgstr "Reload"
 
@@ -853,9 +945,13 @@ msgstr "Reset local cache and restart code assistance"
 msgid "重置默认"
 msgstr "Reset defaults"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:287
+#: src/features/teach/components/views/PlaygroundView.tsx:351
 msgid "重试保存"
 msgstr "Retry save"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:280
+msgid "键盘提示：在编辑器中按 Ctrl+M，可切换 Tab 键是缩进代码还是移出编辑器。"
+msgstr "Keyboard tip: in the editor, press Ctrl+M to switch whether Tab indents code or moves focus out of the editor."
 
 #: src/modules/assistant-ui/registry/Attachment.tsx:40
 #: src/modules/assistant-ui/registry/Attachment.tsx:85

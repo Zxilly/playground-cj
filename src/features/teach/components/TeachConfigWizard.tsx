@@ -130,7 +130,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
         onBack={onBack}
       />
 
-      <main className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-background px-4 py-8 sm:px-6 sm:py-10">
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-background px-4 py-8 sm:px-6 sm:py-10">
         <div className="w-full max-w-xl rounded-lg border border-border bg-background p-5 sm:p-6">
           <div aria-hidden="true" className="mb-6 grid grid-cols-2 gap-2">
             <span className="h-1.5 rounded-full bg-primary" />
@@ -197,7 +197,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                       data-testid="teach-source-next"
                       disabled={source === 'shared' && !sharedReady}
                       onClick={handleSourceNext}
-                      className="h-10 rounded-md px-5 font-semibold"
+                      className="min-h-11 rounded-md px-5 font-semibold lg:min-h-10"
                     >
                       {source === 'custom' ? <Trans>下一步</Trans> : <Trans>进入工作区</Trans>}
                       <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
@@ -219,7 +219,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                       variant="outline"
                       data-testid="teach-wizard-back"
                       onClick={() => setStep('source')}
-                      className="rounded-md text-muted-foreground"
+                      className="min-h-11 rounded-md text-muted-foreground lg:min-h-9"
                     >
                       <ArrowLeft aria-hidden="true" className="size-4 shrink-0" />
                       <Trans>上一步</Trans>
@@ -230,7 +230,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                       data-testid="teach-config-enter"
                       disabled={!customComplete}
                       onClick={handleCustomEnter}
-                      className="h-10 rounded-md px-5 font-semibold"
+                      className="min-h-11 rounded-md px-5 font-semibold lg:min-h-10"
                     >
                       <Trans>进入工作区</Trans>
                       <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
@@ -239,7 +239,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                 </div>
               )}
         </div>
-      </main>
+      </div>
     </div>
   )
 }

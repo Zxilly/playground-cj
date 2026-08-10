@@ -260,10 +260,16 @@ describe('llmConfigDialog', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
+    expect(screen.getByRole('tab', { name: '共享额度' }).className).toContain('min-h-11')
+    expect(screen.getByRole('tab', { name: '自定义 API Key' }).className).toContain('min-h-11')
     fireEvent.mouseDown(screen.getByRole('tab', { name: '自定义 API Key' }))
+    expect(screen.getByText(/API Key 会保存在当前浏览器/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: '重置默认' }).className).toContain('min-h-11')
+    expect(screen.getByRole('button', { name: '保存' }).className).toContain('min-h-11')
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'user-key' } })
     expect(screen.getByLabelText('服务地址')).toHaveProperty('disabled', false)
     expect(screen.getByRole('button', { name: 'Anthropic' })).toHaveProperty('disabled', false)
+    expect(screen.getByRole('button', { name: 'Anthropic' }).className).toContain('min-h-11')
     fireEvent.change(screen.getByLabelText('服务地址'), { target: { value: 'https://api.test' } })
     fireEvent.change(screen.getByLabelText('模型'), { target: { value: 'test-model' } })
     fireEvent.click(screen.getByRole('button', { name: '保存' }))
@@ -316,6 +322,24 @@ describe('llmConfigDialog', () => {
       model: 'test-model',
     })
     expect(useLLMConfigStore.getState().settingsDialogOpen).toBe(false)
+  })
+
+  it('rejects a malformed custom service address in place', () => {
+    render(
+      <Wrapper>
+        <LLMConfigDialog />
+      </Wrapper>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '自定义 API Key' }))
+    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'user-key' } })
+    fireEvent.change(screen.getByLabelText('服务地址'), { target: { value: 'not-a-url' } })
+
+    const save = screen.getByRole('button', { name: '保存' })
+    expect(save).toHaveProperty('disabled', true)
+    expect(screen.getByLabelText('服务地址').getAttribute('aria-invalid')).toBe('true')
+    expect(describedByText(save)).toBe('请输入以 http:// 或 https:// 开头的有效服务地址。')
   })
 
   it('uses compiled English copy for incomplete user-key drafts', async () => {

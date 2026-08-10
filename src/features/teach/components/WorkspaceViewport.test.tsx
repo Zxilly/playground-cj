@@ -90,7 +90,7 @@ describe('workspace viewport teacher exposure disclosure', () => {
     for (const view of views) {
       rendered.rerender(<WorkspaceViewport view={view} />)
       expect(screen.getByRole('status').textContent).toBe(
-        'Teacher guidance is active. There is no verified fresh-assessment boundary, so every later attempt is recorded as aided and cannot produce independent evidence. This classroom never claims mastery without trusted assessment freshness.',
+        'You have viewed teacher explanations or guidance. Later answers are still useful for practice and feedback, but they are not treated as an independent check in this workspace.',
       )
       expect(screen.getByRole('status').nextElementSibling?.textContent).toBe(`${view} view`)
     }
@@ -108,7 +108,7 @@ describe('workspace viewport teacher exposure disclosure', () => {
     render(<WorkspaceViewport view="progress" />, { wrapper })
 
     expect(screen.getByRole('status').textContent).toBe(
-      '教师引导已激活。当前没有已验证的 fresh-assessment boundary，因此之后所有 attempts 都会记为 aided，且不能产生 independent evidence；在没有可信评估新鲜度证明时，本课堂不会宣称 mastery。',
+      '你已查看老师讲解或指导。之后的作答仍可用于练习和反馈，但在这个工作区内不会被视为独立测验。',
     )
     classroom.dispose()
   })

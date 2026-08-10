@@ -24,7 +24,7 @@ export function TeachLanding({ onStart }: TeachLandingProps) {
     >
       <TeachTopBar />
 
-      <main className="min-h-0 flex-1 overflow-y-auto bg-background">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-background">
         <div className="mx-auto grid min-h-full w-full max-w-7xl grid-cols-1 border-x border-border lg:grid-cols-[minmax(0,1.12fr)_minmax(21rem,0.88fr)]">
           <section className="flex min-w-0 items-center px-6 py-12 sm:px-10 lg:min-h-0 lg:px-14 lg:py-14 xl:px-16">
             <div className="min-w-0 max-w-3xl">
@@ -33,11 +33,11 @@ export function TeachLanding({ onStart }: TeachLandingProps) {
                 <span className="min-w-0 break-words"><Trans>AI 课堂</Trans></span>
               </div>
               <h1 className="mt-5 max-w-3xl text-balance break-words text-3xl font-bold leading-[1.08] tracking-[-0.035em] text-foreground sm:text-4xl lg:text-5xl xl:text-[3.4rem]">
-                <Trans>依据你的目标定制仓颉课程</Trans>
+                <Trans>围绕你的目标学习仓颉基础</Trans>
               </h1>
               <p className="mt-5 max-w-2xl text-pretty break-words text-base leading-7 text-muted-foreground sm:text-[1.05rem]">
                 <Trans>
-                  先与课堂明确你的学习目的与预期成果，课堂将据此安排课程、练习与复习。整个工作区即一份可导出的文件，进度始终保存在本机。
+                  先明确你想用仓颉完成什么，课堂会围绕这个目标调整讲解、示例与练习；课程范围由你选择的内置路径决定。整个工作区可导出，进度保存在本机。
                 </Trans>
               </p>
 
@@ -47,7 +47,7 @@ export function TeachLanding({ onStart }: TeachLandingProps) {
                   size="lg"
                   onClick={onStart}
                   data-testid="teach-landing-start"
-                  className="h-10 max-w-full rounded-md px-5 font-semibold"
+                  className="min-h-11 max-w-full rounded-md px-5 font-semibold lg:min-h-10"
                 >
                   <span className="min-w-0 break-words"><Trans>开始</Trans></span>
                   <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
@@ -59,7 +59,7 @@ export function TeachLanding({ onStart }: TeachLandingProps) {
           <aside className="flex min-w-0 items-center border-t border-border bg-muted px-6 py-9 sm:px-10 lg:border-l lg:border-t-0 lg:px-10 xl:px-12">
             <div className="w-full">
               <LandingFeature index="01" icon={Target} title={<Trans>目标优先</Trans>}>
-                <Trans>先明确你希望用仓颉实现的目标，课堂据此安排课程，而非套用固定大纲。</Trans>
+                <Trans>目标会影响所选内置路径中的讲解、示例与练习，不会暗示当前没有提供的课程。</Trans>
               </LandingFeature>
               <LandingFeature index="02" icon={Code2} title={<Trans>动手练习</Trans>}>
                 <Trans>在内置编辑器中编写仓颉代码并直接运行查看结果，课堂据此给出反馈。</Trans>
@@ -70,7 +70,7 @@ export function TeachLanding({ onStart }: TeachLandingProps) {
             </div>
           </aside>
         </div>
-      </main>
+      </div>
     </div>
   )
 }
