@@ -239,6 +239,66 @@ describe('playground workspace concurrency', () => {
     await Promise.all([first.close(), second.close()])
   })
 
+  it('does not silently replace a locally edited buffer after a later remote edit', async () => {
+    const databaseName
+      = `${PLAYGROUND_WORKSPACE_V2_DATABASE_NAME}-test-${crypto.randomUUID()}`
+    const first = createPlaygroundWorkspace({
+      storage: createIndexedDBPlaygroundWorkspaceStorage({
+        databaseName,
+        scope: 'workspace',
+      }),
+    })
+    const second = createPlaygroundWorkspace({
+      storage: createIndexedDBPlaygroundWorkspaceStorage({
+        databaseName,
+        scope: 'workspace',
+      }),
+    })
+    await Promise.all([first.open(), second.open()])
+    const tabId = first.snapshot().tabs[0]!.id
+
+    expect(first.setTabCode(tabId, 'first local editing session')).toBe(true)
+    await first.whenIdle()
+    await vi.waitFor(() => {
+      expect(second.snapshot().tabs.find(tab => tab.id === tabId)?.code)
+        .toBe('first local editing session')
+    })
+
+    expect(second.setTabCode(tabId, 'later remote edit')).toBe(true)
+    await second.whenIdle()
+    await vi.waitFor(() => {
+      expect(first.snapshot().conflict).not.toBeNull()
+    })
+
+    expect(first.snapshot()).toMatchObject({
+      error: 'conflict',
+      dirty: true,
+      conflict: {
+        tabId,
+        kind: 'content',
+        localTab: { code: 'first local editing session' },
+        remoteTab: { code: 'later remote edit' },
+      },
+    })
+    expect(first.snapshot().tabs.find(tab => tab.id === tabId)?.code)
+      .toBe('first local editing session')
+
+    const recoveredId = first.resolveConflict('keep_copy')
+    expect(recoveredId).not.toBeNull()
+    await first.whenIdle()
+    await second.refresh()
+    expect(first.snapshot().tabs.find(tab => tab.id === tabId)?.code)
+      .toBe('later remote edit')
+    expect(first.snapshot().tabs.find(tab => tab.id === recoveredId)?.code)
+      .toBe('first local editing session')
+    expect(first.snapshot().tabs.find(tab => tab.id === recoveredId)?.title)
+      .toBe('Playground 1 (2)')
+    expect(new Set(first.snapshot().tabs.map(tab => tab.title)).size)
+      .toBe(first.snapshot().tabs.length)
+
+    await Promise.all([first.close(), second.close()])
+  })
+
   it('keeps a conflicting draft recoverable when the tab cap initially blocks a copy', async () => {
     const databaseName
       = `${PLAYGROUND_WORKSPACE_V2_DATABASE_NAME}-test-${crypto.randomUUID()}`

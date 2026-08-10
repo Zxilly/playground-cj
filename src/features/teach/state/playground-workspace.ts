@@ -8,13 +8,14 @@ import {
   parsePersistedPlaygroundWorkspace,
   PLAYGROUND_WORKSPACE_LIMITS,
   PlaygroundWorkspaceRevisionConflictError,
+  utf8ByteLength,
 } from './playground-workspace-storage'
 import { createPlaygroundWorkspaceLifecycle } from './playground-workspace-lifecycle'
 
-const DEFAULT_PLAYGROUND_CODE = `package playground
+export const DEFAULT_PLAYGROUND_CODE = `package playground
 
 main(): Int64 {
-    println("你好，仓颉！")
+    println("Hello, Cangjie!")
     return 0
 }`
 
@@ -249,6 +250,30 @@ function mutationLocalTab(mutation: Mutation): PlaygroundDraftTab {
   return cloneTab(mutation.baseTab)
 }
 
+function uniqueRecoveredTitle(
+  requestedTitle: string,
+  tabs: PersistedPlaygroundTab[],
+): string {
+  const titles = new Set(tabs.map(tab => tab.title))
+  if (!titles.has(requestedTitle))
+    return requestedTitle
+  for (let ordinal = 2; ordinal <= PLAYGROUND_WORKSPACE_LIMITS.maxTabs + 1; ordinal += 1) {
+    const suffix = ` (${ordinal})`
+    const baseCharacters = Array.from(requestedTitle)
+    while (
+      baseCharacters.length > 0
+      && utf8ByteLength(`${baseCharacters.join('')}${suffix}`)
+      > PLAYGROUND_WORKSPACE_LIMITS.maxTitleBytes
+    ) {
+      baseCharacters.pop()
+    }
+    const candidate = `${baseCharacters.join('').trimEnd()}${suffix}`
+    if (!titles.has(candidate))
+      return candidate
+  }
+  throw new Error('Playground recovery could not allocate a unique title')
+}
+
 function classifyValidationError(error: z.ZodError): PlaygroundWorkspaceError {
   const issue = error.issues[0]
   const message = issue?.message ?? ''
@@ -284,6 +309,10 @@ export function createPlaygroundWorkspace(
   let blockedMutation: Mutation | null = null
   const deferredMutations: Mutation[] = []
   const mutations: Mutation[] = []
+  // A durable write is not the end of an editing session. Remember which
+  // buffers this browser tab has touched so a later BroadcastChannel update
+  // cannot silently replace the learner's visible version.
+  const locallyEditedTabIds = new Set<string>()
   const listeners = new Set<() => void>()
 
   function transition(
@@ -567,6 +596,62 @@ export function createPlaygroundWorkspace(
     if (!loaded) {
       refreshRequested = false
       return
+    }
+    if (publishLoaded && durable) {
+      const remoteConflict = state.tabs.reduce<{
+        kind: PlaygroundWorkspaceConflict['kind']
+        localTab: PlaygroundDraftTab
+        remoteTab: PlaygroundDraftTab | null
+      } | null>((found, localTab) => {
+        if (found || !locallyEditedTabIds.has(localTab.id))
+          return found
+        const previousTab = durable?.tabs.find(tab => tab.id === localTab.id)
+        const remoteTab = loaded.tabs.find(tab => tab.id === localTab.id)
+        if (!previousTab || (
+          remoteTab
+          && remoteTab.titleVersion === previousTab.titleVersion
+          && remoteTab.contentVersion === previousTab.contentVersion
+        )) {
+          return null
+        }
+        return {
+          kind: !remoteTab
+            ? 'deleted'
+            : remoteTab.contentVersion !== previousTab.contentVersion
+              ? 'content'
+              : 'title',
+          localTab: cloneTab(localTab),
+          remoteTab: remoteTab ? cloneTab(remoteTab) : null,
+        }
+      }, null)
+      if (remoteConflict) {
+        durable = loaded
+        requestedRevision = loaded.revision
+        refreshRequested = false
+        const remoteTabs = loaded.tabs.map(cloneTab)
+        const remoteIndex = remoteTabs.findIndex(
+          tab => tab.id === remoteConflict.localTab.id,
+        )
+        if (remoteIndex >= 0)
+          remoteTabs[remoteIndex] = cloneTab(remoteConflict.localTab)
+        else
+          remoteTabs.push(cloneTab(remoteConflict.localTab))
+        state = {
+          ...state,
+          revision: loaded.revision,
+          tabs: remoteTabs,
+          dirty: true,
+          error: 'conflict',
+          conflict: {
+            tabId: remoteConflict.localTab.id,
+            kind: remoteConflict.kind,
+            localTab: remoteConflict.localTab,
+            remoteTab: remoteConflict.remoteTab,
+          },
+        }
+        emit()
+        return
+      }
     }
     durable = loaded
     // Broadcast messages are only a wake-up hint. Never spin forever if a
@@ -882,7 +967,7 @@ export function createPlaygroundWorkspace(
         return false
       if (tab.title === normalized)
         return true
-      return addMutation({
+      const accepted = addMutation({
         type: 'rename',
         tabId,
         baseTab: { ...tab },
@@ -890,6 +975,9 @@ export function createPlaygroundWorkspace(
         titleVersion: createId(),
         title: normalized,
       })
+      if (accepted)
+        locallyEditedTabIds.add(tabId)
+      return accepted
     },
     setTabCode: (tabId, code, expectedContentVersion) => {
       const workspace = requireReady()
@@ -900,7 +988,7 @@ export function createPlaygroundWorkspace(
         return false
       if (tab.code === code)
         return true
-      return addMutation({
+      const accepted = addMutation({
         type: 'set_code',
         tabId,
         baseTab: { ...tab },
@@ -909,6 +997,9 @@ export function createPlaygroundWorkspace(
         contentVersion: createId(),
         code,
       })
+      if (accepted)
+        locallyEditedTabIds.add(tabId)
+      return accepted
     },
     retry: () => {
       if (lifecycle.matches('closing') || lifecycle.matches('disposed'))
@@ -940,7 +1031,7 @@ export function createPlaygroundWorkspace(
           type: 'add',
           tab: {
             id: recoveredId,
-            title: conflict.localTab.title,
+            title: uniqueRecoveredTitle(conflict.localTab.title, durable!.tabs),
             code: conflict.localTab.code,
             titleVersion: createId(),
             contentVersion: createId(),
@@ -972,6 +1063,8 @@ export function createPlaygroundWorkspace(
         )
         blockedMutation = null
         state = { ...state, error: null, conflict: null }
+        locallyEditedTabIds.delete(conflict.tabId)
+        locallyEditedTabIds.add(recoveredId)
         selectedTabId = recoveredId
         publish()
         kick()
@@ -985,6 +1078,7 @@ export function createPlaygroundWorkspace(
       )
       blockedMutation = null
       state = { ...state, error: null, conflict: null }
+      locallyEditedTabIds.delete(conflict.tabId)
       publish()
       kick()
       return null

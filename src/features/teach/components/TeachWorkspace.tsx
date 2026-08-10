@@ -11,6 +11,8 @@ import { CLASSROOM_EDITOR_MODEL_SCOPE } from '@/features/teach/state/classroom-e
 import { TeachTopBar } from './TeachTopBar'
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
+import { PlaygroundEditorHost } from './views/PlaygroundEditorHost'
+import { WorkspaceHistoryProvider } from './WorkspaceHistoryProvider'
 
 export function TeachWorkspace({ lang }: { lang: string }) {
   const setSettingsDialogOpen = useLLMConfigStore(state => state.setSettingsDialogOpen)
@@ -24,30 +26,37 @@ export function TeachWorkspace({ lang }: { lang: string }) {
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <TeachTopBar
-        actions={(
-          <Button
-            ref={settingsButtonRef}
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label={english ? 'AI service settings' : 'AI 服务设置'}
-            onClick={() => setSettingsDialogOpen(true)}
-          >
-            <Settings2 aria-hidden="true" className="size-3.5" />
-            <span className="hidden sm:inline">
-              {english ? 'AI service settings' : 'AI 服务设置'}
-            </span>
-          </Button>
-        )}
-      />
-      <div className="min-h-0 flex-1">
-        <AbortScopeProvider controller={workspaceController}>
-          <TeachWorkspaceShell chat={<TeacherChatRuntime lang={lang} />} />
-        </AbortScopeProvider>
+    <WorkspaceHistoryProvider>
+      <div className="flex h-full min-h-0 flex-col">
+        <TeachTopBar
+          actions={(
+            <Button
+              ref={settingsButtonRef}
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="size-11 lg:h-8 lg:w-auto"
+              aria-label={english ? 'AI service settings' : 'AI 服务设置'}
+              onClick={() => setSettingsDialogOpen(true)}
+            >
+              <Settings2 aria-hidden="true" className="size-3.5" />
+              <span className="hidden lg:inline">
+                {english ? 'AI service settings' : 'AI 服务设置'}
+              </span>
+            </Button>
+          )}
+        />
+        <div className="min-h-0 flex-1">
+          <AbortScopeProvider controller={workspaceController}>
+            <PlaygroundEditorHost>
+              <TeacherChatRuntime lang={lang}>
+                {chat => <TeachWorkspaceShell chat={chat} />}
+              </TeacherChatRuntime>
+            </PlaygroundEditorHost>
+          </AbortScopeProvider>
+        </div>
+        <LLMConfigDialog withTrigger={false} returnFocusRef={settingsButtonRef} />
       </div>
-      <LLMConfigDialog withTrigger={false} returnFocusRef={settingsButtonRef} />
-    </div>
+    </WorkspaceHistoryProvider>
   )
 }
