@@ -15,9 +15,9 @@ export const ThreadWelcome: FC = () => {
           <span className="mb-3 inline-flex text-muted-foreground">
             <Sparkles aria-hidden="true" className="size-5" />
           </span>
-          <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-xl font-semibold tracking-[-0.02em] duration-200 motion-reduce:animate-none">
+          <h3 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-xl font-semibold tracking-[-0.02em] duration-200 motion-reduce:animate-none">
             <Trans>可以这样问</Trans>
-          </h1>
+          </h3>
           <p className="aui-thread-welcome-message-inner mt-1.5 max-w-md text-pretty fade-in slide-in-from-bottom-1 animate-in fill-mode-both text-sm leading-6 text-muted-foreground delay-75 duration-200 motion-reduce:animate-none">
             <Trans>可以询问当前概念、练习要求、代码问题，或让讲解更慢一些。</Trans>
           </p>

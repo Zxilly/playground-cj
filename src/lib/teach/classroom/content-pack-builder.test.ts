@@ -169,6 +169,16 @@ describe('course content pack builder', () => {
         .every(block =>
           block.sampleType === 'program'
           || block.sampleType === 'snippet')).toBe(true)
+      const prose = packs.flatMap(pack => pack.blocks)
+        .filter(block => block.type === 'prose')
+        .map(block => block.markdown)
+        .join('\n')
+      expect(prose).not.toContain('右侧代码')
+      expect(prose).not.toContain('下方代码示例')
+      expect(prose).not.toContain('结果显示在下方')
+      expect(prose).not.toMatch(/(?:the|The) code on the right/u)
+      expect(prose).not.toMatch(/(?:the|The) code example below/u)
+      expect(prose).not.toContain('results displayed below')
 
       for (const conceptId of CURRENT_COURSE_CONCEPT_IDS) {
         const pack = packs.find(candidate => candidate.concept.id === conceptId)

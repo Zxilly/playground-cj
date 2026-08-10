@@ -1,11 +1,11 @@
 {
   "schemaVersion": 4,
   "locale": "zh",
-  "courseVersion": "course:sha256:12067f3d62609f42aee7d744a4dfead6807b08a48cc96145726f9a5d15519ec0",
+  "courseVersion": "course:sha256:8ea69dabcf3c8b331e403eeebd2ed6bce67cf5921f574a0ac269cdb968d5ff2d",
   "packs": [
     {
       "id": "pack:cj.program.main",
-      "version": "cv:sha256:f830e3a14fae7544fd4518a595fe97b25a96996031672d76031bb6a57cdb4a56",
+      "version": "cv:sha256:6e933bad540d318b7db74c75edee910a79da986c79f30dc867c8773564724a7a",
       "learningContractVersion": "lc:sha256:1abd94744e45caef01c2811419b70055b173534faad2b2bdf9612ff9d2e63482",
       "concept": {
         "id": "cj.program.main",
@@ -24,7 +24,7 @@
             }
           ],
           "type": "prose",
-          "markdown": "# Hello, 世界\n\n欢迎来到[仓颉编程语言](https://cangjie-lang.cn)之旅。本教程将带你逐步掌握仓颉的核心特性。\n\n教程分为若干模块，每个页面都包含讲解和一个可交互的代码示例。你可以按顺序学习，也可以通过侧边栏随意跳转。\n\n先试着点击 **运行** 按钮（或按 `Shift` + `Enter`），代码会被发送到远程服务器编译执行，结果显示在下方。\n\n右侧代码中，`main()` 是程序入口。与许多语言不同，仓颉的 `main` 不需要 `func` 关键字修饰。我们用 `let` 声明不可变变量，通过 `${...}` 语法将其嵌入字符串。\n\n尝试把变量值改成你的名字，再运行一次。\n\n\n### 与其他语言对比\n#### C\n\nC 的程序入口为 `int main(void)`，需要 `int` 返回类型和 `void` 参数；仓颉的 `main` 无需显式修饰符。\n\n\n#### Java\n\nJava 的入口为 `public static void main(String[] args)`，需要修饰符和参数；仓颉更简洁，只需 `main()` 函数。\n\n\n#### Go\n\nGo 的 `main` 必须在 `package main` 中定义；仓颉的 `main` 直接在顶层定义，无需包声明。\n\n\n#### Rust\n\nRust 用 `fn main()` 定义入口；仓颉省略了 `fn` 关键字，语法更简洁。"
+          "markdown": "# Hello, 世界\n\n欢迎来到[仓颉编程语言](https://cangjie-lang.cn)之旅。本教程将带你逐步掌握仓颉的核心特性。\n\n教程分为若干模块，每个页面都包含讲解和一个可交互的代码示例。你可以按顺序学习，也可以通过侧边栏随意跳转。\n\n先试着点击 **运行** 按钮（或按 `Shift` + `Enter`），代码会被发送到远程服务器编译执行，结果会显示在运行结果区。\n\n课堂活动区的代码示例中，`main()` 是程序入口。与许多语言不同，仓颉的 `main` 不需要 `func` 关键字修饰。我们用 `let` 声明不可变变量，通过 `${...}` 语法将其嵌入字符串。\n\n尝试把变量值改成你的名字，再运行一次。\n\n\n### 与其他语言对比\n#### C\n\nC 的程序入口为 `int main(void)`，需要 `int` 返回类型和 `void` 参数；仓颉的 `main` 无需显式修饰符。\n\n\n#### Java\n\nJava 的入口为 `public static void main(String[] args)`，需要修饰符和参数；仓颉更简洁，只需 `main()` 函数。\n\n\n#### Go\n\nGo 的 `main` 必须在 `package main` 中定义；仓颉的 `main` 直接在顶层定义，无需包声明。\n\n\n#### Rust\n\nRust 用 `fn main()` 定义入口；仓颉省略了 `fn` 关键字，语法更简洁。"
         },
         {
           "id": "block:cj.program.main:01-welcome/01-intro/01:code",
@@ -53,7 +53,7 @@
       "exerciseTemplates": [
         {
           "id": "template:cj.program.main:practice",
-          "version": "cv:sha256:f830e3a14fae7544fd4518a595fe97b25a96996031672d76031bb6a57cdb4a56",
+          "version": "cv:sha256:6e933bad540d318b7db74c75edee910a79da986c79f30dc867c8773564724a7a",
           "learningSkillId": "skill:cj.program.main:core",
           "purpose": "practice",
           "task": {
@@ -74,7 +74,7 @@
         },
         {
           "id": "template:cj.program.main:review",
-          "version": "cv:sha256:f830e3a14fae7544fd4518a595fe97b25a96996031672d76031bb6a57cdb4a56",
+          "version": "cv:sha256:6e933bad540d318b7db74c75edee910a79da986c79f30dc867c8773564724a7a",
           "learningSkillId": "skill:cj.program.main:core",
           "purpose": "review",
           "task": {
@@ -105,7 +105,7 @@
         },
         {
           "id": "template:cj.program.main:placement",
-          "version": "cv:sha256:f830e3a14fae7544fd4518a595fe97b25a96996031672d76031bb6a57cdb4a56",
+          "version": "cv:sha256:6e933bad540d318b7db74c75edee910a79da986c79f30dc867c8773564724a7a",
           "learningSkillId": "skill:cj.program.main:core",
           "purpose": "placement",
           "task": {
@@ -126,7 +126,7 @@
     },
     {
       "id": "pack:cj.io.println",
-      "version": "cv:sha256:f4dea3d83d7bfcb5118bae5ebd35510f8d8f6ec82ba46804f3d7390a0a1506db",
+      "version": "cv:sha256:f2e54b83c5a7cb6fae8ddcccf183526ec24a9f4b49dd930d7e028cfa0f15cec2",
       "learningContractVersion": "lc:sha256:fe0cae53f8b6d2b33d824b78ae93150e8c1b717d937b41f878fb15266ebe8ecf",
       "concept": {
         "id": "cj.io.println",
@@ -147,7 +147,7 @@
             }
           ],
           "type": "prose",
-          "markdown": "# Hello, 世界\n\n欢迎来到[仓颉编程语言](https://cangjie-lang.cn)之旅。本教程将带你逐步掌握仓颉的核心特性。\n\n教程分为若干模块，每个页面都包含讲解和一个可交互的代码示例。你可以按顺序学习，也可以通过侧边栏随意跳转。\n\n先试着点击 **运行** 按钮（或按 `Shift` + `Enter`），代码会被发送到远程服务器编译执行，结果显示在下方。\n\n右侧代码中，`main()` 是程序入口。与许多语言不同，仓颉的 `main` 不需要 `func` 关键字修饰。我们用 `let` 声明不可变变量，通过 `${...}` 语法将其嵌入字符串。\n\n尝试把变量值改成你的名字，再运行一次。\n\n\n### 与其他语言对比\n#### C\n\nC 的程序入口为 `int main(void)`，需要 `int` 返回类型和 `void` 参数；仓颉的 `main` 无需显式修饰符。\n\n\n#### Java\n\nJava 的入口为 `public static void main(String[] args)`，需要修饰符和参数；仓颉更简洁，只需 `main()` 函数。\n\n\n#### Go\n\nGo 的 `main` 必须在 `package main` 中定义；仓颉的 `main` 直接在顶层定义，无需包声明。\n\n\n#### Rust\n\nRust 用 `fn main()` 定义入口；仓颉省略了 `fn` 关键字，语法更简洁。"
+          "markdown": "# Hello, 世界\n\n欢迎来到[仓颉编程语言](https://cangjie-lang.cn)之旅。本教程将带你逐步掌握仓颉的核心特性。\n\n教程分为若干模块，每个页面都包含讲解和一个可交互的代码示例。你可以按顺序学习，也可以通过侧边栏随意跳转。\n\n先试着点击 **运行** 按钮（或按 `Shift` + `Enter`），代码会被发送到远程服务器编译执行，结果会显示在运行结果区。\n\n课堂活动区的代码示例中，`main()` 是程序入口。与许多语言不同，仓颉的 `main` 不需要 `func` 关键字修饰。我们用 `let` 声明不可变变量，通过 `${...}` 语法将其嵌入字符串。\n\n尝试把变量值改成你的名字，再运行一次。\n\n\n### 与其他语言对比\n#### C\n\nC 的程序入口为 `int main(void)`，需要 `int` 返回类型和 `void` 参数；仓颉的 `main` 无需显式修饰符。\n\n\n#### Java\n\nJava 的入口为 `public static void main(String[] args)`，需要修饰符和参数；仓颉更简洁，只需 `main()` 函数。\n\n\n#### Go\n\nGo 的 `main` 必须在 `package main` 中定义；仓颉的 `main` 直接在顶层定义，无需包声明。\n\n\n#### Rust\n\nRust 用 `fn main()` 定义入口；仓颉省略了 `fn` 关键字，语法更简洁。"
         },
         {
           "id": "block:cj.io.println:01-welcome/01-intro/01:code",
@@ -176,7 +176,7 @@
       "exerciseTemplates": [
         {
           "id": "template:cj.io.println:practice",
-          "version": "cv:sha256:f4dea3d83d7bfcb5118bae5ebd35510f8d8f6ec82ba46804f3d7390a0a1506db",
+          "version": "cv:sha256:f2e54b83c5a7cb6fae8ddcccf183526ec24a9f4b49dd930d7e028cfa0f15cec2",
           "learningSkillId": "skill:cj.io.println:core",
           "purpose": "practice",
           "task": {
@@ -199,7 +199,7 @@
         },
         {
           "id": "template:cj.io.println:review",
-          "version": "cv:sha256:f4dea3d83d7bfcb5118bae5ebd35510f8d8f6ec82ba46804f3d7390a0a1506db",
+          "version": "cv:sha256:f2e54b83c5a7cb6fae8ddcccf183526ec24a9f4b49dd930d7e028cfa0f15cec2",
           "learningSkillId": "skill:cj.io.println:core",
           "purpose": "review",
           "task": {
@@ -227,7 +227,7 @@
         },
         {
           "id": "template:cj.io.println:placement",
-          "version": "cv:sha256:f4dea3d83d7bfcb5118bae5ebd35510f8d8f6ec82ba46804f3d7390a0a1506db",
+          "version": "cv:sha256:f2e54b83c5a7cb6fae8ddcccf183526ec24a9f4b49dd930d7e028cfa0f15cec2",
           "learningSkillId": "skill:cj.io.println:core",
           "purpose": "placement",
           "task": {
@@ -250,7 +250,7 @@
     },
     {
       "id": "pack:cj.var.immutable",
-      "version": "cv:sha256:48a683f84bf7aec4318e829d6713ff051acecfafba2d494b61861751ea35f9a7",
+      "version": "cv:sha256:48b258b56a429eb44f28819624c96f051fc767299a404bbc79bd2947590b2551",
       "learningContractVersion": "lc:sha256:1557c561de7e60027a176330ffc38f2d6c579a44d61c5cfccdec43ffabcaa2d6",
       "concept": {
         "id": "cj.var.immutable",
@@ -271,7 +271,7 @@
             }
           ],
           "type": "prose",
-          "markdown": "# let（不可变绑定）\n\n`let` 关键字用于创建不可变绑定，将一个名字与值关联起来。一旦绑定完成，该名字就不能再指向新的值。这种不可变性是仓颉的默认选择，有助于编写更安全、更易推理的代码。\n\n在仓颉中，变量定义的基本形式是：`修饰符 变量名: 变量类型 = 初始值`。其中 `let` 修饰符表示该变量不可变，且必须修饰符是必要的（不能省略）。`let` 修饰的变量只能被赋值一次，即在初始化时赋值。\n\n右侧代码定义了三个不可变绑定：`name` 绑定到字符串，`year` 绑定到整数，`pi` 绑定到浮点数。每个变量的类型都由初始值自动推断。如果尝试在第 10 行取消注释，编译器会报错——`let` 绑定的值不能被重新赋值。\n\n\n> **提示：** 局部变量可以先声明后初始化，但必须在被引用前完成初始化。全局变量和静态成员变量必须在声明时初始化。\n\n\n\n### 与其他语言对比\n#### C\n\nC 可以用 `const` 为对象或指针表达不可修改约束，但 `const` 不等同于编译时常量。仓颉则用 `let` 声明不可重新赋值的绑定。\n\n\n\n#### Java\n\nJava 用 `final` 修饰符声明不可变变量，语义与仓颉的 `let` 相似，但 Java 还需要显式初始化。\n\n\n\n#### Go\n\nGo 使用 `:=` 声明变量，声明的变量始终可变，没有不可变变量的概念。仓颉的 `let` 提供了不可变性保证。\n\n\n\n#### Rust\n\nRust 的 `let` 也默认不可变，语义与仓颉相同，但 Rust 允许同作用域内变量遮蔽（shadowing），仓颉不允许。\n\n\n试着添加一个新的 `let` 绑定并打印它的值，或者尝试修改一个已有的绑定，观察编译器的错误提示。"
+          "markdown": "# let（不可变绑定）\n\n`let` 关键字用于创建不可变绑定，将一个名字与值关联起来。一旦绑定完成，该名字就不能再指向新的值。这种不可变性是仓颉的默认选择，有助于编写更安全、更易推理的代码。\n\n在仓颉中，变量定义的基本形式是：`修饰符 变量名: 变量类型 = 初始值`。其中 `let` 修饰符表示该变量不可变，且必须修饰符是必要的（不能省略）。`let` 修饰的变量只能被赋值一次，即在初始化时赋值。\n\n课堂活动区的代码示例定义了三个不可变绑定：`name` 绑定到字符串，`year` 绑定到整数，`pi` 绑定到浮点数。每个变量的类型都由初始值自动推断。如果尝试在第 10 行取消注释，编译器会报错——`let` 绑定的值不能被重新赋值。\n\n\n> **提示：** 局部变量可以先声明后初始化，但必须在被引用前完成初始化。全局变量和静态成员变量必须在声明时初始化。\n\n\n\n### 与其他语言对比\n#### C\n\nC 可以用 `const` 为对象或指针表达不可修改约束，但 `const` 不等同于编译时常量。仓颉则用 `let` 声明不可重新赋值的绑定。\n\n\n\n#### Java\n\nJava 用 `final` 修饰符声明不可变变量，语义与仓颉的 `let` 相似，但 Java 还需要显式初始化。\n\n\n\n#### Go\n\nGo 使用 `:=` 声明变量，声明的变量始终可变，没有不可变变量的概念。仓颉的 `let` 提供了不可变性保证。\n\n\n\n#### Rust\n\nRust 的 `let` 也默认不可变，语义与仓颉相同，但 Rust 允许同作用域内变量遮蔽（shadowing），仓颉不允许。\n\n\n试着添加一个新的 `let` 绑定并打印它的值，或者尝试修改一个已有的绑定，观察编译器的错误提示。"
         },
         {
           "id": "block:cj.var.immutable:02-basics/01-bindings/01:code",
@@ -300,7 +300,7 @@
       "exerciseTemplates": [
         {
           "id": "template:cj.var.immutable:practice",
-          "version": "cv:sha256:48a683f84bf7aec4318e829d6713ff051acecfafba2d494b61861751ea35f9a7",
+          "version": "cv:sha256:48b258b56a429eb44f28819624c96f051fc767299a404bbc79bd2947590b2551",
           "learningSkillId": "skill:cj.var.immutable:core",
           "purpose": "practice",
           "task": {
@@ -328,7 +328,7 @@
         },
         {
           "id": "template:cj.var.immutable:review",
-          "version": "cv:sha256:48a683f84bf7aec4318e829d6713ff051acecfafba2d494b61861751ea35f9a7",
+          "version": "cv:sha256:48b258b56a429eb44f28819624c96f051fc767299a404bbc79bd2947590b2551",
           "learningSkillId": "skill:cj.var.immutable:core",
           "purpose": "review",
           "task": {
@@ -370,7 +370,7 @@
         },
         {
           "id": "template:cj.var.immutable:placement",
-          "version": "cv:sha256:48a683f84bf7aec4318e829d6713ff051acecfafba2d494b61861751ea35f9a7",
+          "version": "cv:sha256:48b258b56a429eb44f28819624c96f051fc767299a404bbc79bd2947590b2551",
           "learningSkillId": "skill:cj.var.immutable:core",
           "purpose": "placement",
           "task": {
@@ -398,7 +398,7 @@
     },
     {
       "id": "pack:cj.var.mutable",
-      "version": "cv:sha256:4d4c18e96bcc303aae90485142f6ac8fb00001cbaf4eacc5f2220e600c2f99ab",
+      "version": "cv:sha256:bc8f9ba6a31946c3a737da37a86b38d0937684ad721209cf4721f2685dda47c9",
       "learningContractVersion": "lc:sha256:8da520656d5d8d55f923df778cbada12d5b5f3325bf38d13d54436de318408a8",
       "concept": {
         "id": "cj.var.mutable",
@@ -419,7 +419,7 @@
             }
           ],
           "type": "prose",
-          "markdown": "# var（可变绑定）\n\n`var` 关键字用于创建可变绑定，绑定的值可以在后续代码中被重新赋值。当你需要计数、累积结果或更新状态时，使用 `var` 是合适的选择。\n\n`var` 修饰的变量可以被多次赋值，每次赋值都会改变变量所持有的值。赋值操作符 `=` 用于修改变量的值，要求右侧表达式的类型是左侧变量类型的子类型。仓颉不支持链式赋值（如 `a = b = 0`），这可以避免常见的编码错误。\n\n右侧代码展示了 `var` 的典型用法：`count` 从 0 开始，被多次修改；`message` 从 `\"hello\"` 改为 `\"world\"`。每次赋值后，我们打印变量的新值来观察变化。\n\n\n> **提示：** 一个好的编程实践是：默认使用 `let`，只有当你确定需要修改变量时才改用 `var`。这样可以减少意外修改带来的 bug。\n\n\n\n### 与其他语言对比\n#### C\n\nC 的所有变量默认可变，无法在编译期强制实现不可变性。仓颉用 `var` 明确标记可变性，更清晰。\n\n\n\n#### Java\n\nJava 默认所有变量可变，需要用 `final` 修饰才能实现不可变；仓颉反其道而行之，默认 `let` 不可变，需要 `var` 时才改。\n\n\n\n#### Go\n\nGo 的变量默认可变，没有提供不可变变量的语法支持。仓颉通过 `let` 和 `var` 明确区分，让意图更清晰。\n\n\n\n#### Rust\n\nRust 使用 `let mut` 声明可变变量，仓颉使用 `var` 关键字，语义相同但语法更简洁直观。\n\n\n试着把其中一个 `var` 改成 `let`，观察编译器会给出什么错误提示。然后思考哪些变量真正需要可变性。"
+          "markdown": "# var（可变绑定）\n\n`var` 关键字用于创建可变绑定，绑定的值可以在后续代码中被重新赋值。当你需要计数、累积结果或更新状态时，使用 `var` 是合适的选择。\n\n`var` 修饰的变量可以被多次赋值，每次赋值都会改变变量所持有的值。赋值操作符 `=` 用于修改变量的值，要求右侧表达式的类型是左侧变量类型的子类型。仓颉不支持链式赋值（如 `a = b = 0`），这可以避免常见的编码错误。\n\n课堂活动区的代码示例展示了 `var` 的典型用法：`count` 从 0 开始，被多次修改；`message` 从 `\"hello\"` 改为 `\"world\"`。每次赋值后，我们打印变量的新值来观察变化。\n\n\n> **提示：** 一个好的编程实践是：默认使用 `let`，只有当你确定需要修改变量时才改用 `var`。这样可以减少意外修改带来的 bug。\n\n\n\n### 与其他语言对比\n#### C\n\nC 的所有变量默认可变，无法在编译期强制实现不可变性。仓颉用 `var` 明确标记可变性，更清晰。\n\n\n\n#### Java\n\nJava 默认所有变量可变，需要用 `final` 修饰才能实现不可变；仓颉反其道而行之，默认 `let` 不可变，需要 `var` 时才改。\n\n\n\n#### Go\n\nGo 的变量默认可变，没有提供不可变变量的语法支持。仓颉通过 `let` 和 `var` 明确区分，让意图更清晰。\n\n\n\n#### Rust\n\nRust 使用 `let mut` 声明可变变量，仓颉使用 `var` 关键字，语义相同但语法更简洁直观。\n\n\n试着把其中一个 `var` 改成 `let`，观察编译器会给出什么错误提示。然后思考哪些变量真正需要可变性。"
         },
         {
           "id": "block:cj.var.mutable:02-basics/01-bindings/02:code",
@@ -448,7 +448,7 @@
       "exerciseTemplates": [
         {
           "id": "template:cj.var.mutable:practice",
-          "version": "cv:sha256:4d4c18e96bcc303aae90485142f6ac8fb00001cbaf4eacc5f2220e600c2f99ab",
+          "version": "cv:sha256:bc8f9ba6a31946c3a737da37a86b38d0937684ad721209cf4721f2685dda47c9",
           "learningSkillId": "skill:cj.var.mutable:core",
           "purpose": "practice",
           "task": {
@@ -491,7 +491,7 @@
         },
         {
           "id": "template:cj.var.mutable:review",
-          "version": "cv:sha256:4d4c18e96bcc303aae90485142f6ac8fb00001cbaf4eacc5f2220e600c2f99ab",
+          "version": "cv:sha256:bc8f9ba6a31946c3a737da37a86b38d0937684ad721209cf4721f2685dda47c9",
           "learningSkillId": "skill:cj.var.mutable:core",
           "purpose": "review",
           "task": {
@@ -534,7 +534,7 @@
         },
         {
           "id": "template:cj.var.mutable:placement",
-          "version": "cv:sha256:4d4c18e96bcc303aae90485142f6ac8fb00001cbaf4eacc5f2220e600c2f99ab",
+          "version": "cv:sha256:bc8f9ba6a31946c3a737da37a86b38d0937684ad721209cf4721f2685dda47c9",
           "learningSkillId": "skill:cj.var.mutable:core",
           "purpose": "placement",
           "task": {

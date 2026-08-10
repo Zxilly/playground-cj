@@ -562,13 +562,13 @@ export async function proxyToRunner(request: Request, action: RunnerAction): Pro
       return jsonError(
         503,
         'runner_invalid_configuration',
-        'CJ_RUNNER_MODAL_URL must be an HTTPS Modal base URL without credentials, query parameters, or a fragment.',
+        'Code runner is temporarily unavailable.',
       )
     }
     return jsonError(
       503,
       'runner_not_configured',
-      'Runner service is not configured. Set CJ_RUNNER_MODAL_URL to the deployed Modal HTTPS base URL.',
+      'Code runner is temporarily unavailable.',
     )
   }
 
@@ -577,9 +577,7 @@ export async function proxyToRunner(request: Request, action: RunnerAction): Pro
     return jsonError(
       503,
       'runner_invalid_auth_configuration',
-      runnerToken.error === 'missing'
-        ? 'CJ_RUNNER_SHARED_TOKEN must be set for the Modal runner.'
-        : `CJ_RUNNER_SHARED_TOKEN must contain ${MIN_RUNNER_SHARED_TOKEN_BYTES}-${MAX_RUNNER_SHARED_TOKEN_BYTES} printable ASCII bytes without spaces.`,
+      'Code runner is temporarily unavailable.',
     )
   }
 
@@ -588,9 +586,7 @@ export async function proxyToRunner(request: Request, action: RunnerAction): Pro
     return jsonError(
       503,
       'runner_invalid_modal_auth_configuration',
-      modalProxyAuth.error === 'missing'
-        ? 'Modal runner endpoints require CJ_RUNNER_MODAL_PROXY_KEY and CJ_RUNNER_MODAL_PROXY_SECRET.'
-        : 'Modal runner proxy credentials are malformed or incomplete.',
+      'Code runner is temporarily unavailable.',
     )
   }
 

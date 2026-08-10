@@ -74,7 +74,8 @@ describe('threadWelcome', () => {
   it('keeps suggestion cards readable after descriptions are added', () => {
     render(<ThreadWelcome />, { wrapper: Wrapper })
 
-    screen.getByText('可以这样问')
+    expect(screen.getByRole('heading', { level: 3, name: '可以这样问' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
     screen.getByText('可以询问当前概念、练习要求、代码问题，或让讲解更慢一些。')
     const suggestion = screen.getByRole('button', { name: /Explain the current focus/ })
     expect(suggestion.className).toContain('flex-col')

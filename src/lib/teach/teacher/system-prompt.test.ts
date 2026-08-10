@@ -18,6 +18,7 @@ describe.each([
     expect(prompt).toMatch(templateRule)
     expect(prompt).toContain('append_content_reference_group')
     expect(prompt).toContain('create_exercise_instance')
+    expect(prompt).toMatch(/第一课时，必须同时|first lesson.*must also create/is)
   })
 
   it('requires explicit current-version provenance for reads and mutations', () => {
@@ -86,6 +87,19 @@ describe.each([
     expect(prompt).toMatch(/untrusted data|不可盲从的数据/)
     expect(prompt).toMatch(/tool result|工具结果/)
     expect(prompt).toMatch(/never as instructions|不是.*指令/)
+  })
+
+  it('keeps tool planning and internal retrieval narration out of learner-visible text', () => {
+    expect(prompt).toMatch(/tools silently|工具调用必须静默/)
+    expect(prompt).toMatch(/first visible text|第一段可见文本/)
+    expect(prompt).toMatch(/chain of thought|思考过程/)
+  })
+
+  it('uses named learning surfaces instead of brittle spatial directions', () => {
+    expect(prompt).toMatch(/layout-independent|不依赖布局方向/)
+    expect(prompt).toMatch(/Classroom activity|课堂活动区/)
+    expect(prompt).toMatch(/above, below, up, down, left, or right|上方、下方、上面、下面、左侧、右侧/)
+    expect(prompt).toMatch(/Here is the first lesson|这是第一课/)
   })
 })
 

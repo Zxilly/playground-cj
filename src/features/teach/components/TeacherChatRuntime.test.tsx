@@ -5,6 +5,7 @@ import type { WorkspaceContextValue } from '@/features/teach/context/workspace-c
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { usePlaygroundSession } from '@/features/teach/state/playground-session'
+import type { TeacherChatMessage } from '@/features/teach/state/teacher-session'
 import { TeacherChatRuntime } from './TeacherChatRuntime'
 import { createEmptyClassroom } from '@/lib/teach/classroom/state'
 import type {
@@ -14,7 +15,31 @@ import type {
 
 const mocks = vi.hoisted(() => ({
   abortSignal: new AbortController().signal,
+  composerSendListeners: [] as Array<() => void>,
+  composerRuntime: {
+    getState: () => ({ text: '' }),
+    setText: vi.fn<(text: string) => void>(),
+    setRunConfig: vi.fn<(runConfig: Record<string, unknown>) => void>(),
+    unstable_on: vi.fn((_event: string, listener: () => void) => {
+      mocks.composerSendListeners.push(listener)
+      return () => {
+        const index = mocks.composerSendListeners.indexOf(listener)
+        if (index >= 0)
+          mocks.composerSendListeners.splice(index, 1)
+      }
+    }),
+  },
   config: {},
+  threadRunning: false,
+  chatRuntimeOptions: [] as Array<{
+    messages?: TeacherChatMessage[]
+    onError?: (error: Error) => void
+    onFinish?: (event: {
+      isAbort?: boolean
+      isError?: boolean
+      messages: TeacherChatMessage[]
+    }) => void
+  }>,
   toolBudgetOpenSignals: [] as AbortSignal[],
   createToolkit: vi.fn((_deps: unknown) => ({})),
   generate: vi.fn(async (_options: {
@@ -31,14 +56,47 @@ const mocks = vi.hoisted(() => ({
   ) => ({})),
 }))
 
+function createComposerRuntime(initialText = '') {
+  let text = initialText
+  return {
+    getState: () => ({ text }),
+    setText: vi.fn((nextText: string) => {
+      text = nextText
+    }),
+    setRunConfig: vi.fn<(runConfig: Record<string, unknown>) => void>(),
+    unstable_on: vi.fn((_event: string, listener: () => void) => {
+      mocks.composerSendListeners.push(listener)
+      return () => {
+        const index = mocks.composerSendListeners.indexOf(listener)
+        if (index >= 0)
+          mocks.composerSendListeners.splice(index, 1)
+      }
+    }),
+  }
+}
+
 /* eslint-disable react/component-hook-factories -- Vitest module factories intentionally provide hook and component test doubles. */
 vi.mock('@assistant-ui/react', () => ({
   AssistantRuntimeProvider: ({ children }: { children: ReactNode }) => children,
-  useComposerRuntime: () => ({ setText: vi.fn() }),
-  useAuiState: () => false,
+  useComposerRuntime: () => mocks.composerRuntime,
+  useAuiState: (selector: (state: { composer: { text: string }, thread: { isRunning: boolean, messages: never[] } }) => unknown) => selector({
+    composer: mocks.composerRuntime.getState(),
+    thread: { isRunning: mocks.threadRunning, messages: [] },
+  }),
 }))
 vi.mock('@assistant-ui/react-ai-sdk', () => ({
-  useChatRuntime: () => ({}),
+  useChatRuntime: (options: {
+    messages?: TeacherChatMessage[]
+    onError?: (error: Error) => void
+    onFinish?: (event: {
+      isAbort?: boolean
+      isError?: boolean
+      messages: TeacherChatMessage[]
+    }) => void
+  }) => {
+    mocks.chatRuntimeOptions.push(options)
+    return {}
+  },
 }))
 vi.mock('@/components/ui/tooltip', () => ({
   TooltipProvider: ({ children }: { children: ReactNode }) => children,
@@ -126,6 +184,10 @@ const context = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.composerSendListeners.length = 0
+  mocks.composerRuntime = createComposerRuntime()
+  mocks.threadRunning = false
+  mocks.chatRuntimeOptions.length = 0
   mocks.toolBudgetOpenSignals.length = 0
   mocks.config = {}
   vi.mocked(context.classroom.execute).mockImplementation(
@@ -241,6 +303,81 @@ afterEach(() => {
 })
 
 describe('teacherChatRuntime', () => {
+  it('replays a prepared prompt after the composer runtime is replaced', async () => {
+    const prompt = 'Please start the first lesson.'
+    useWorkspaceStore.getState().setPendingPrefill(prompt)
+    const rendered = render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+
+    await waitFor(() => {
+      expect(mocks.composerRuntime.setText).toHaveBeenCalledWith(prompt)
+    })
+    expect(useWorkspaceStore.getState().pendingPrefill).toBe(prompt)
+
+    const replacement = {
+      getState: () => ({ text: '' }),
+      setText: vi.fn<(text: string) => void>(),
+      setRunConfig: vi.fn<(runConfig: Record<string, unknown>) => void>(),
+      unstable_on: vi.fn((_event: string, listener: () => void) => {
+        mocks.composerSendListeners.push(listener)
+        return () => {
+          const index = mocks.composerSendListeners.indexOf(listener)
+          if (index >= 0)
+            mocks.composerSendListeners.splice(index, 1)
+        }
+      }),
+    }
+    mocks.composerRuntime = replacement
+    rendered.rerender(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(replacement.setText).toHaveBeenCalledWith(prompt))
+  })
+
+  it('attaches first-lesson intent to the submitted run metadata', async () => {
+    const prompt = 'Please start the first lesson.'
+    useWorkspaceStore.getState().setPendingPrefill(prompt, {
+      type: 'first_lesson',
+      learningTrackId: 'track:first',
+    })
+    render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+
+    await waitFor(() => {
+      expect(mocks.composerRuntime.setRunConfig).toHaveBeenCalledWith({
+        custom: {
+          teacherIntent: 'first_lesson',
+          teacherLearningTrackId: 'track:first',
+        },
+      })
+    })
+    act(() => mocks.composerSendListeners.at(-1)?.())
+    expect(mocks.composerRuntime.setRunConfig).toHaveBeenLastCalledWith({})
+  })
+
+  it('clears a recoverable composer draft after sending', async () => {
+    useWorkspaceStore.getState().setCancelledDraft('Please try again.')
+    render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+
+    await waitFor(() => expect(mocks.composerSendListeners).toHaveLength(1))
+    act(() => mocks.composerSendListeners[0]?.())
+
+    expect(useWorkspaceStore.getState().cancelledDraft).toBeNull()
+    expect(useWorkspaceStore.getState().pendingPrefill).toBeNull()
+  })
+
   it('builds a Review-scoped, capability-limited Lesson Orchestrator', () => {
     useWorkspaceStore.getState().openReviewConcept('cj.program.main')
     render(
@@ -478,6 +615,239 @@ describe('teacherChatRuntime', () => {
     expect(mocks.createToolkit).toHaveBeenCalledTimes(toolkitBuilds)
     expect(mocks.createAgent).toHaveBeenCalledTimes(agentBuilds)
     expect(mocks.createTransport).toHaveBeenCalledTimes(transportBuilds)
+  })
+
+  it('keeps one Live chat session across non-chat workspace views', async () => {
+    render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.createTransport).toHaveBeenCalledOnce())
+
+    act(() => useWorkspaceStore.getState().setView('progress'))
+    act(() => useWorkspaceStore.getState().setView('playground'))
+    act(() => useWorkspaceStore.getState().setView('live'))
+
+    expect(mocks.createTransport).toHaveBeenCalledOnce()
+  })
+
+  it('publishes the running Chat scope so navigation cannot dispose it silently', async () => {
+    const rendered = render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.createTransport).toHaveBeenCalledOnce())
+
+    mocks.threadRunning = true
+    rendered.rerender(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    expect(useWorkspaceStore.getState().teacherChatRunMode).toBe('live')
+
+    mocks.threadRunning = false
+    rendered.rerender(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    expect(useWorkspaceStore.getState().teacherChatRunMode).toBeNull()
+  })
+
+  it('restores a completed Live thread after visiting an isolated Review thread', async () => {
+    const liveHistory: TeacherChatMessage[] = [{
+      id: 'message:user',
+      role: 'user',
+      parts: [{ type: 'text', text: 'WAVE7_SCOPE_MARKER' }],
+    }, {
+      id: 'message:assistant',
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'Your lesson is ready.' }],
+    }]
+    render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.chatRuntimeOptions.length).toBeGreaterThan(0))
+
+    const liveOptions = mocks.chatRuntimeOptions.at(-1)
+    act(() => liveOptions?.onFinish?.({ messages: liveHistory }))
+
+    const beforeReview = mocks.chatRuntimeOptions.length
+    act(() => useWorkspaceStore.getState().setView('review'))
+    await waitFor(() => {
+      expect(mocks.chatRuntimeOptions.length).toBeGreaterThan(beforeReview)
+    })
+    expect(mocks.chatRuntimeOptions.at(-1)?.messages).toBeUndefined()
+
+    const beforeReturn = mocks.chatRuntimeOptions.length
+    act(() => useWorkspaceStore.getState().setView('live'))
+    await waitFor(() => {
+      expect(mocks.chatRuntimeOptions.length).toBeGreaterThan(beforeReturn)
+    })
+    expect(mocks.chatRuntimeOptions.at(-1)?.messages).toEqual(liveHistory)
+  })
+
+  it('shows a safe scoped error when the teacher cannot complete a response', async () => {
+    const rendered = render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="zh" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.chatRuntimeOptions.length).toBeGreaterThan(0))
+
+    act(() => {
+      mocks.chatRuntimeOptions.at(-1)?.onError?.(
+        new Error('429 upstream rejected sk-should-never-render'),
+      )
+      mocks.chatRuntimeOptions.at(-1)?.onFinish?.({
+        isError: true,
+        messages: [],
+      })
+    })
+    const alert = rendered.getByTestId('teacher-runtime-error')
+    expect(alert.getAttribute('role')).toBe('alert')
+    expect(alert.textContent).toContain('AI 服务当前请求过多')
+    expect(alert.textContent).not.toContain('sk-should-never-render')
+
+    act(() => useWorkspaceStore.getState().setView('review'))
+    await waitFor(() => {
+      expect(rendered.queryByTestId('teacher-runtime-error')).toBeNull()
+    })
+    act(() => useWorkspaceStore.getState().setView('live'))
+    expect(await rendered.findByTestId('teacher-runtime-error')).toBeTruthy()
+
+    act(() => mocks.composerSendListeners.at(-1)?.())
+    await waitFor(() => {
+      expect(rendered.queryByTestId('teacher-runtime-error')).toBeNull()
+    })
+  })
+
+  it('does not turn an intentional stop into an error banner', async () => {
+    const rendered = render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.chatRuntimeOptions.length).toBeGreaterThan(0))
+
+    act(() => {
+      mocks.chatRuntimeOptions.at(-1)?.onError?.(
+        new DOMException('The learner stopped generation', 'AbortError'),
+      )
+    })
+    expect(rendered.queryByTestId('teacher-runtime-error')).toBeNull()
+  })
+
+  it('clears a previous scoped error as soon as a retry starts', async () => {
+    const rendered = render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.chatRuntimeOptions.length).toBeGreaterThan(0))
+    act(() => {
+      mocks.chatRuntimeOptions.at(-1)?.onError?.(new Error('request failed'))
+      mocks.chatRuntimeOptions.at(-1)?.onFinish?.({
+        isError: true,
+        messages: [],
+      })
+    })
+    expect(rendered.getByTestId('teacher-runtime-error')).toBeTruthy()
+
+    mocks.threadRunning = true
+    rendered.rerender(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => {
+      expect(rendered.queryByTestId('teacher-runtime-error')).toBeNull()
+    })
+  })
+
+  it('restores unsent composer drafts only in their original learning path', async () => {
+    const makeTrack = (id: string) => ({
+      id,
+      goal: id,
+      conceptIds: ['cj.program.main'],
+      contentVersions: {
+        'cj.program.main': 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      },
+      adjustments: [],
+      createdAt: 1,
+      recordedRevision: 1,
+    })
+    classroomSnapshot = {
+      ...createEmptyClassroom(),
+      revision: 1,
+      activeTrackId: 'track:first',
+      tracks: [makeTrack('track:first'), makeTrack('track:second')],
+    }
+    const rendered = render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.chatRuntimeOptions.length).toBeGreaterThan(0))
+
+    mocks.composerRuntime.setText('draft for first')
+    rendered.rerender(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+
+    const secondComposer = createComposerRuntime()
+    mocks.composerRuntime = secondComposer
+    act(() => {
+      classroomSnapshot = {
+        ...classroomSnapshot,
+        revision: 2,
+        activeTrackId: 'track:second',
+      }
+      notifyClassroom()
+    })
+    expect(secondComposer.setText).not.toHaveBeenCalledWith('draft for first')
+
+    secondComposer.setText('draft for second')
+    rendered.rerender(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="en" />
+      </WorkspaceContext>,
+    )
+
+    const restoredFirstComposer = createComposerRuntime()
+    mocks.composerRuntime = restoredFirstComposer
+    act(() => {
+      classroomSnapshot = {
+        ...classroomSnapshot,
+        revision: 3,
+        activeTrackId: 'track:first',
+      }
+      notifyClassroom()
+    })
+    await waitFor(() => {
+      expect(restoredFirstComposer.setText).toHaveBeenCalledWith('draft for first')
+    })
+
+    const restoredSecondComposer = createComposerRuntime()
+    mocks.composerRuntime = restoredSecondComposer
+    act(() => {
+      classroomSnapshot = {
+        ...classroomSnapshot,
+        revision: 4,
+        activeTrackId: 'track:second',
+      }
+      notifyClassroom()
+    })
+    await waitFor(() => {
+      expect(restoredSecondComposer.setText).toHaveBeenCalledWith('draft for second')
+    })
   })
 
   it('replaces one scoped session when the LLM configuration changes', async () => {

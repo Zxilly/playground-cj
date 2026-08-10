@@ -632,6 +632,25 @@ function sourceReference(
   }
 }
 
+/** Tour pages use a fixed side-by-side editor; AI Classroom is responsive. */
+function adaptTourSpatialReferences(
+  markdown: string,
+  lang: ContentPackLanguage,
+): string {
+  if (lang === 'zh') {
+    return markdown
+      .replaceAll('右侧代码', '课堂活动区的代码示例')
+      .replaceAll('下方代码示例', '课堂活动区的代码示例')
+      .replaceAll('结果显示在下方', '结果会显示在运行结果区')
+  }
+  return markdown
+    .replaceAll('The code on the right', 'The code example in the classroom activity area')
+    .replaceAll('the code on the right', 'the code example in the classroom activity area')
+    .replaceAll('The code example below', 'The code example in the classroom activity area')
+    .replaceAll('the code example below', 'the code example in the classroom activity area')
+    .replaceAll('with results displayed below', 'with results displayed in the Run results area')
+}
+
 function coreContentBlocks(
   conceptId: string,
   sections: FlatSection[],
@@ -646,7 +665,10 @@ function coreContentBlocks(
     blocks.push({
       id: `block:${conceptId}:${ref}:prose`,
       type: 'prose',
-      markdown: mdxToSafeMarkdown(markdown, lang),
+      markdown: adaptTourSpatialReferences(
+        mdxToSafeMarkdown(markdown, lang),
+        lang,
+      ),
       sourceReferences: [reference],
     })
 

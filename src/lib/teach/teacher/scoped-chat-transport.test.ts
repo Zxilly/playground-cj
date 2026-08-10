@@ -227,7 +227,10 @@ describe('scoped teacher chat transport', () => {
     await expect(transport.sendMessages(sendOptions)).rejects.toThrow(
       /turn is already running/,
     )
-    expect(prepareTurn).toHaveBeenCalledWith(expect.any(AbortSignal))
+    expect(prepareTurn).toHaveBeenCalledWith(
+      expect.any(AbortSignal),
+      expect.objectContaining({ trigger: 'submit-message' }),
+    )
     expect(closeTurnBudget).not.toHaveBeenCalled()
 
     finishProviderCancel()
@@ -421,6 +424,49 @@ describe('scoped teacher chat transport', () => {
       type: 'error',
       errorText: 'teacher_response_failed',
     })
+  })
+
+  it('exposes only the final agent step instead of intermediate tool narration', async () => {
+    const guard = vi.fn(async () => undefined)
+    const transport = createScopedChatTransport(
+      agentStreaming([
+        { type: 'start', messageId: 'message:teacher' },
+        { type: 'start-step' },
+        { type: 'text-start', id: 'text:planning' },
+        {
+          type: 'text-delta',
+          id: 'text:planning',
+          delta: 'Let me inspect the internal classroom state first.',
+        },
+        { type: 'text-end', id: 'text:planning' },
+        { type: 'finish-step' },
+        { type: 'start-step' },
+        { type: 'text-start', id: 'text:answer' },
+        {
+          type: 'text-delta',
+          id: 'text:answer',
+          delta: 'A Cangjie program begins at main.',
+        },
+        { type: 'text-end', id: 'text:answer' },
+        { type: 'finish-step' },
+        { type: 'finish', finishReason: 'stop' },
+      ]),
+      new AbortController().signal,
+      boundary(guard),
+    )
+    const reader = (await transport.sendMessages(sendOptions)).getReader()
+    const chunks: UIMessageChunk[] = []
+    while (true) {
+      const next = await reader.read()
+      if (next.done)
+        break
+      chunks.push(next.value)
+    }
+
+    expect(JSON.stringify(chunks)).not.toContain('internal classroom state')
+    expect(JSON.stringify(chunks)).toContain('A Cangjie program begins at main.')
+    expect(chunks.filter(chunk => chunk.type === 'start-step')).toHaveLength(1)
+    expect(guard).toHaveBeenCalledOnce()
   })
 
   it('retains only allowlisted shared-service error codes', async () => {

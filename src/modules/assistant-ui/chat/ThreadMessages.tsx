@@ -15,6 +15,7 @@ import {
   MoreHorizontalIcon,
   PencilIcon,
   RefreshCwIcon,
+  XIcon,
 } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
@@ -28,7 +29,15 @@ import { ToolFallback } from '@/modules/assistant-ui/registry/ToolFallback'
 import { TooltipIconButton } from '@/modules/assistant-ui/registry/TooltipIconButton'
 import { UserMessageAttachments } from '@/modules/assistant-ui/registry/Attachment'
 
-export const ThreadMessage: FC = () => {
+interface ThreadMessageProps {
+  onDismissMessageError?: () => void
+  showMessageErrors?: boolean
+}
+
+export const ThreadMessage: FC<ThreadMessageProps> = ({
+  onDismissMessageError,
+  showMessageErrors = true,
+}) => {
   const role = useAuiState(s => s.message.role)
   const isEditing = useAuiState(s => s.message.composer.isEditing)
 
@@ -36,10 +45,21 @@ export const ThreadMessage: FC = () => {
     return <EditComposer />
   if (role === 'user')
     return <UserMessage />
-  return <AssistantMessage />
+  return (
+    <AssistantMessage
+      onDismissMessageError={onDismissMessageError}
+      showMessageErrors={showMessageErrors}
+    />
+  )
 }
 
-export function MessageError() {
+export function MessageError({
+  onDismiss,
+  visible = true,
+}: {
+  onDismiss?: () => void
+  visible?: boolean
+} = {}) {
   const error = useAuiState((state) => {
     const status = state.message.status
     return status?.type === 'incomplete' ? status.error : undefined
@@ -58,6 +78,9 @@ export function MessageError() {
           ? <Trans>共享课堂老师暂时不可用，请稍后重试。</Trans>
           : <Trans>课堂老师暂时无法完成这次回复，请重试。</Trans>
 
+  if (!visible)
+    return null
+
   return (
     <MessagePrimitive.Error>
       <div role="alert" className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-error-foreground text-sm dark:bg-destructive/5">
@@ -66,18 +89,32 @@ export function MessageError() {
             {message}
           </p>
           <ActionBarPrimitive.Root hideWhenRunning className="aui-message-error-action shrink-0">
-            <ActionBarPrimitive.Reload asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 shrink-0 gap-1.5 rounded-md border-destructive/30 bg-background px-2.5 text-error-foreground hover:bg-destructive/10"
-                aria-label={t`重新生成`}
-              >
-                <RefreshCwIcon aria-hidden="true" className="size-3.5" />
-                <span><Trans>重新生成</Trans></span>
-              </Button>
-            </ActionBarPrimitive.Reload>
+            <div className="flex items-center gap-2">
+              <ActionBarPrimitive.Reload asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11 shrink-0 gap-1.5 rounded-md border-destructive/30 bg-background px-2.5 text-error-foreground hover:bg-destructive/10 lg:min-h-8"
+                  aria-label={t`重新生成`}
+                >
+                  <RefreshCwIcon aria-hidden="true" className="size-3.5" />
+                  <span><Trans>重新生成</Trans></span>
+                </Button>
+              </ActionBarPrimitive.Reload>
+              {onDismiss && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 shrink-0 lg:size-8"
+                  aria-label={t`关闭错误提示`}
+                  onClick={onDismiss}
+                >
+                  <XIcon aria-hidden="true" className="size-4" />
+                </Button>
+              )}
+            </div>
           </ActionBarPrimitive.Root>
         </div>
       </div>
@@ -85,9 +122,12 @@ export function MessageError() {
   )
 }
 
-function AssistantMessage() {
+function AssistantMessage({
+  onDismissMessageError,
+  showMessageErrors,
+}: Required<Pick<ThreadMessageProps, 'showMessageErrors'>> & Pick<ThreadMessageProps, 'onDismissMessageError'>) {
   const ACTION_BAR_PT = 'pt-1.5'
-  const ACTION_BAR_HEIGHT = `-mb-7.5 min-h-7.5 ${ACTION_BAR_PT}`
+  const ACTION_BAR_HEIGHT = `mb-0 min-h-11 sm:-mb-7.5 sm:min-h-7.5 ${ACTION_BAR_PT}`
 
   return (
     <MessagePrimitive.Root
@@ -126,7 +166,10 @@ function AssistantMessage() {
             }
           }}
         </MessagePrimitive.GroupedParts>
-        <MessageError />
+        <MessageError
+          onDismiss={onDismissMessageError}
+          visible={showMessageErrors}
+        />
       </div>
 
       <div
@@ -152,7 +195,7 @@ export function ClassroomActivity({ children }: PropsWithChildren) {
       data-slot="aui_chain-of-thought"
       className="mb-3 rounded-md border border-border bg-background"
     >
-      <CollapsibleTrigger className="group/cot flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+      <CollapsibleTrigger className="group/cot flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-0">
         {running
           ? <LoaderIcon aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
           : <CheckIcon aria-hidden="true" className="size-3.5 shrink-0" />}
@@ -208,7 +251,7 @@ function AssistantActionBar() {
           className="aui-action-bar-more-content z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
         >
           <ActionBarPrimitive.ExportMarkdown asChild>
-            <ActionBarMorePrimitive.Item className="aui-action-bar-more-item flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+            <ActionBarMorePrimitive.Item className="aui-action-bar-more-item flex min-h-11 cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground sm:min-h-0">
               <DownloadIcon aria-hidden="true" className="size-4" />
               <Trans>导出为 Markdown</Trans>
             </ActionBarMorePrimitive.Item>
@@ -275,12 +318,12 @@ function EditComposer() {
         />
         <div className="aui-edit-composer-footer mx-3 mb-3 flex items-center gap-2 self-end">
           <ComposerPrimitive.Cancel asChild>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="min-h-11 lg:min-h-8">
               <Trans>取消</Trans>
             </Button>
           </ComposerPrimitive.Cancel>
           <ComposerPrimitive.Send asChild>
-            <Button size="sm"><Trans>更新</Trans></Button>
+            <Button size="sm" className="min-h-11 lg:min-h-8"><Trans>更新</Trans></Button>
           </ComposerPrimitive.Send>
         </div>
       </ComposerPrimitive.Root>

@@ -15,6 +15,7 @@ import {
   createTeacherAgent,
 } from '@/lib/teach/teacher/agent'
 import { createScopedChatTransport } from '@/lib/teach/teacher/scoped-chat-transport'
+import { ensureFirstLessonScaffold } from '@/lib/teach/teacher/first-lesson-scaffold'
 import {
   createLessonOrchestratorClassroom,
   createRemediationToolkit,
@@ -56,6 +57,20 @@ interface LocalRemediationGenerationGate {
   readonly currentClaim: RemediationDiagnosticClaimAuthority | null
   acquire: (claim: RemediationDiagnosticClaimAuthority) => () => void
   waitUntilIdle: (signal: AbortSignal) => Promise<void>
+}
+
+function isFirstLessonTurn(
+  metadata: unknown,
+  learningTrackId: string,
+): boolean {
+  if (typeof metadata !== 'object' || metadata === null)
+    return false
+  const candidate = metadata as Record<string, unknown>
+  if (typeof candidate.custom !== 'object' || candidate.custom === null)
+    return false
+  const custom = candidate.custom as Record<string, unknown>
+  return custom.teacherIntent === 'first_lesson'
+    && custom.teacherLearningTrackId === learningTrackId
 }
 
 function createLocalRemediationGenerationGate(): LocalRemediationGenerationGate {
@@ -160,8 +175,22 @@ export function createTeacherSessionRuntime(): TeacherSessionRuntime {
         remediationToolkit,
         lang,
       )
+      let shouldEnsureFirstLessonScaffold = false
       const teacherOutputBoundary = {
         commit: async (turnSignal: AbortSignal) => {
+          turnSignal.throwIfAborted()
+          if (
+            shouldEnsureFirstLessonScaffold
+            && scope.mode === 'live'
+            && scope.learningTrackId !== null
+          ) {
+            await ensureFirstLessonScaffold({
+              catalog,
+              classroom,
+              learningTrackId: scope.learningTrackId,
+              turnSignal,
+            })
+          }
           turnSignal.throwIfAborted()
           const committed = await classroom.execute(
             {
@@ -185,13 +214,23 @@ export function createTeacherSessionRuntime(): TeacherSessionRuntime {
         teacherAgent,
         scopeSignal,
         teacherOutputBoundary,
-        (turnSignal) => {
+        (turnSignal, request) => {
+          const turnSnapshot = classroom.snapshot()
+          shouldEnsureFirstLessonScaffold = scope.mode === 'live'
+            && scope.learningTrackId !== null
+            && isFirstLessonTurn(request.metadata, scope.learningTrackId)
+            && turnSnapshot.activeTrackId === scope.learningTrackId
+            && !turnSnapshot.stream.some(entry =>
+              entry.learningTrackId === scope.learningTrackId)
           const lease = teacherToolCallBudget.open(turnSignal, {
             total: 16,
             documentationSearches: 3,
           })
           teacherMutationBudget.reset(6)
-          return lease.close
+          return () => {
+            shouldEnsureFirstLessonScaffold = false
+            lease.close()
+          }
         },
       )
       const generateRemediation = async (

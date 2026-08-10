@@ -82,7 +82,7 @@ describe('proxyToRunner', () => {
     expect(response.status).toBe(503)
     await expect(response.json()).resolves.toMatchObject({
       code: 'runner_not_configured',
-      error: expect.stringContaining('CJ_RUNNER_MODAL_URL'),
+      error: 'Code runner is temporarily unavailable.',
     })
     expect(fetch).not.toHaveBeenCalled()
   })
@@ -110,7 +110,7 @@ describe('proxyToRunner', () => {
     expect(response.status).toBe(503)
     await expect(response.json()).resolves.toMatchObject({
       code: 'runner_not_configured',
-      error: expect.stringContaining('CJ_RUNNER_MODAL_URL'),
+      error: 'Code runner is temporarily unavailable.',
     })
     expect(fetch).not.toHaveBeenCalled()
   })
