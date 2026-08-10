@@ -187,7 +187,9 @@ function CodeOutputExercise({
     void attempt.submit(async (signal) => {
       const result = await runner.run(code, signal)
       if (result.failureKind === 'runner_unavailable') {
-        throw new Error(result.failureMessage || (english ? 'Runner unavailable.' : '运行服务不可用。'))
+        throw new Error(english
+          ? 'The code runner is temporarily unavailable. Your answer is still in the editor; try again later.'
+          : '代码运行服务暂时不可用。你的答案仍保留在编辑器中，请稍后重试。')
       }
       return {
         submission: { type: 'code_output', code },
@@ -221,7 +223,13 @@ function CodeOutputExercise({
         />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" disabled={attempt.busy} onClick={run}>
+        <Button
+          type="button"
+          size="sm"
+          disabled={attempt.busy}
+          onClick={run}
+          className="min-h-11 lg:min-h-8"
+        >
           {attempt.busy
             ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
             : <Play aria-hidden="true" className="size-4" />}
@@ -235,6 +243,7 @@ function CodeOutputExercise({
             size="sm"
             variant="outline"
             disabled={revealingHint}
+            className="min-h-11 lg:min-h-8"
             onClick={() => {
               if (revealingHint)
                 return
@@ -389,9 +398,9 @@ function AttemptEvidenceLabel({
   if (!type)
     return null
   const labels: Record<AttemptEvidenceType, { en: string, zh: string }> = {
-    aided: { en: 'Aided Evidence', zh: '辅助证据' },
-    practice: { en: 'Practice Evidence', zh: '练习证据' },
-    independent: { en: 'Independent Evidence', zh: '独立证据' },
+    aided: { en: 'Completed with teacher help', zh: '在老师帮助下完成' },
+    practice: { en: 'Practice attempt', zh: '练习尝试' },
+    independent: { en: 'Completed independently', zh: '独立完成' },
   }
   return (
     <p className="text-xs text-muted-foreground">

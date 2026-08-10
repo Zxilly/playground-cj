@@ -302,6 +302,74 @@ describe('aI Classroom views', () => {
     classroom.dispose()
   })
 
+  it('explains the teacher-guidance boundary before preparing the first lesson', async () => {
+    const { classroom, wrapper } = await setup()
+    await classroom.execute({
+      type: 'start_learning_track',
+      trackId: globalThis.crypto.randomUUID(),
+      goal: 'Understand the first lesson',
+      conceptIds: ['cj.program.main'],
+      explicitLearnerGoal: true,
+    })
+
+    render(<LiveClassroomView />, { wrapper })
+
+    expect(screen.getByText(
+      'Once you view a teacher explanation, later answers in this workspace are treated as guided practice rather than an independent check.',
+    )).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Prepare first-lesson request' }).className)
+      .toContain('min-h-11')
+    fireEvent.click(screen.getByRole('button', { name: 'Prepare first-lesson request' }))
+    expect(useWorkspaceStore.getState().pendingPrefillIntent).toEqual({
+      type: 'first_lesson',
+      learningTrackId: classroom.snapshot().activeTrackId,
+    })
+    expect(classroom.snapshot().stream).toEqual([])
+    classroom.dispose()
+  })
+
+  it('gives completed Live lesson content a level-two section and mobile-sized actions', async () => {
+    const course = pack()
+    const intro = course.blocks[0]
+    if (intro?.type === 'prose')
+      intro.markdown = '# Program entry\n\nA program starts at `main`.'
+    const { classroom, wrapper } = await setup([course])
+    await classroom.execute({
+      type: 'start_learning_track',
+      trackId: globalThis.crypto.randomUUID(),
+      goal: 'Learn main',
+      conceptIds: ['cj.program.main'],
+      explicitLearnerGoal: true,
+    })
+    await classroom.execute({
+      type: 'append_content_reference_group',
+      learningTrackId: activeTrackId(classroom),
+      tutoringStepId: 'lesson-content',
+      conceptId: 'cj.program.main',
+      learningSkillId: 'skill:run-main',
+      blockIds: ['block:intro'],
+    })
+    await classroom.execute({
+      type: 'create_exercise_instance',
+      learningTrackId: activeTrackId(classroom),
+      tutoringStepId: 'lesson-exercise',
+      conceptId: 'cj.program.main',
+      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      templateId: 'template:practice',
+      personalizationInputs: {},
+    })
+
+    render(<LiveClassroomView />, { wrapper })
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Lesson activity' }))
+      .toBeTruthy()
+    expect(screen.getByRole('heading', { level: 3, name: 'Program entry' }))
+      .toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Run and record attempt' }).className)
+      .toContain('min-h-11')
+    classroom.dispose()
+  })
+
   it('groups quiz choices by question and announces only attempt state changes', async () => {
     const { classroom, wrapper } = await setup([quizPack()])
     await classroom.execute({
@@ -451,7 +519,7 @@ describe('aI Classroom views', () => {
     fireEvent.change(screen.getByLabelText('What do you want to be able to do?'), {
       target: { value: 'Understand the program entry point' },
     })
-    fireEvent.change(screen.getByLabelText('How far should this path go?'), {
+    fireEvent.change(screen.getByLabelText('How far should this built-in path go?'), {
       target: { value: 'cj.program.main' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Start learning path' }))
@@ -476,7 +544,7 @@ describe('aI Classroom views', () => {
       name: 'Start learning path',
     }) as HTMLButtonElement).disabled).toBe(true)
 
-    fireEvent.change(screen.getByLabelText('How far should this path go?'), {
+    fireEvent.change(screen.getByLabelText('How far should this built-in path go?'), {
       target: { value: 'cj.capacity.0' },
     })
     expect(screen.queryByText(/one path can contain at most 64/)).toBeNull()
@@ -507,6 +575,17 @@ describe('aI Classroom views', () => {
     render(<LiveClassroomView />, { wrapper })
     expect(screen.getByText('Only the first track should show this note.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Start a new learning goal' }))
+    expect(screen.getByRole('button', { name: 'Cancel new learning path' }).className)
+      .toContain('size-11')
+    expect(screen.getByRole('button', { name: 'Start learning path' }).className)
+      .toContain('min-h-11')
+    expect(screen.getByLabelText('What do you want to be able to do?').className)
+      .toContain('h-11')
+    expect(screen.getByLabelText('What do you want to be able to do?').getAttribute('aria-describedby'))
+      .toBe('learning-goal-count')
+    expect(screen.getByText('0/240')).toBeTruthy()
+    expect(screen.getByLabelText('How far should this built-in path go?').className)
+      .toContain('h-11')
     fireEvent.change(screen.getByLabelText('What do you want to be able to do?'), {
       target: { value: 'Second goal' },
     })
@@ -520,7 +599,37 @@ describe('aI Classroom views', () => {
       target: { value: classroom.snapshot().tracks[0]!.id },
     })
     expect(await screen.findByText('First goal')).toBeTruthy()
+    const trackSelector = screen.getByLabelText('Current learning path')
+    expect(trackSelector.className).toContain('h-11')
+    expect(trackSelector.className).toContain('w-full')
+    expect(trackSelector.getAttribute('title')).toBe('First goal')
+    expect(trackSelector.getAttribute('aria-describedby')).toBe('active-learning-track-description')
+    expect(screen.getByText('Selected learning goal: First goal').className).toContain('sr-only')
     expect(screen.getByText('Only the first track should show this note.')).toBeTruthy()
+    classroom.dispose()
+  })
+
+  it('clamps a long mobile goal and exposes an explicit full-title control', async () => {
+    const { classroom, wrapper } = await setup()
+    const longGoal = 'Build independently with Cangjie '.repeat(8).slice(0, 220)
+    await classroom.execute({
+      type: 'start_learning_track',
+      trackId: globalThis.crypto.randomUUID(),
+      goal: longGoal,
+      conceptIds: ['cj.program.main'],
+      explicitLearnerGoal: true,
+    })
+
+    render(<LiveClassroomView />, { wrapper })
+    const heading = screen.getByRole('heading', { level: 1, name: longGoal })
+    const expand = screen.getByRole('button', { name: 'Show full goal' })
+    expect(heading.className).toContain('line-clamp-3')
+    expect(expand.getAttribute('aria-expanded')).toBe('false')
+
+    fireEvent.click(expand)
+    expect(heading.className).not.toContain('line-clamp-3')
+    expect(screen.getByRole('button', { name: 'Show less' }).getAttribute('aria-expanded'))
+      .toBe('true')
     classroom.dispose()
   })
 
@@ -588,9 +697,12 @@ describe('aI Classroom views', () => {
     })
 
     render(<ReviewView />, { wrapper })
-    expect(screen.getByText('seen')).toBeTruthy()
-    expect(screen.getByText('skipped')).toBeTruthy()
+    expect(screen.getByText('Viewed')).toBeTruthy()
+    expect(screen.getByText('Skipped')).toBeTruthy()
     expect(await screen.findByText('entry point')).toBeTruthy()
+    expect(screen.getByText('Saved explanation')).toBeTruthy()
+    expect(screen.getByText(/Course revision/)).toBeTruthy()
+    expect(screen.queryByText(/Content Version/)).toBeNull()
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Remove retained item' }))
     })
@@ -796,6 +908,7 @@ describe('aI Classroom views', () => {
 
     render(<ReviewView />, { wrapper })
     const createButton = screen.getByRole('button', { name: 'Create Review Check' })
+    expect(createButton.className).toContain('min-h-11')
     fireEvent.click(createButton)
     await waitFor(() => {
       expect(classroom.snapshot().stream.filter(
@@ -876,6 +989,36 @@ describe('aI Classroom views', () => {
     classroom.dispose()
   })
 
+  it('restores keyboard focus to the selected Review Concept after the view changes', async () => {
+    const other = dependentPack()
+    other.concept.prerequisites = []
+    const { classroom, wrapper } = await setup([pack(), other])
+    await classroom.execute({
+      type: 'start_learning_track',
+      trackId: globalThis.crypto.randomUUID(),
+      goal: 'Learn main and output',
+      conceptIds: ['cj.program.main', 'cj.io.println'],
+      explicitLearnerGoal: true,
+    })
+
+    render(<ReviewView />, { wrapper })
+    const outputButton = screen.getByRole('button', { name: 'Print output' })
+    outputButton.focus()
+    fireEvent.keyDown(outputButton, { key: 'Enter' })
+    fireEvent.click(outputButton)
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Print output' }),
+      )
+    })
+    expect(
+      screen.getByRole('button', { name: 'Print output' })
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+    classroom.dispose()
+  })
+
   it('keeps earlier-track Review Checks visible while stating that new checks belong to the active Track', async () => {
     const other = dependentPack()
     other.concept.prerequisites = []
@@ -952,11 +1095,13 @@ describe('aI Classroom views', () => {
 
     render(<ReviewView />, { wrapper })
     expect(screen.getByText('Preparing failure diagnosis…')).toBeTruthy()
+    expect(screen.getByText('Mistake diagnosis')).toBeTruthy()
+    expect(screen.getByText(/Exercise criteria revision/)).toBeTruthy()
     expect(screen.getByText(/failed attempt is already retained/i)).toBeTruthy()
     const originalRemediation = classroom.snapshot().reviewArtifacts[0]!
     fireEvent.click(screen.getByRole('button', { name: 'Remove retained item' }))
     expect(await screen.findByText('Dismissed retained topics')).toBeTruthy()
-    expect(screen.getByText('Failed attempt · skill:run-main')).toBeTruthy()
+    expect(screen.getByText('Saved failed attempt')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Allow retention again' }))
     await waitFor(() =>
       expect(screen.queryByText('Dismissed retained topics')).toBeNull())
@@ -1087,7 +1232,7 @@ describe('aI Classroom views', () => {
       name: 'Review manual recovery',
     }))
     expect(screen.getByRole('alert').textContent).toMatch(
-      /previous provider call may still be running.*duplicate charges/i,
+      /previous model request may still be running.*duplicate charges/i,
     )
     expect(classroom.snapshot().reviewArtifacts[0]).toMatchObject({
       diagnosticClaim: {
@@ -1140,7 +1285,7 @@ describe('aI Classroom views', () => {
     classroom.dispose()
   })
 
-  it('labels a successful retry as Practice Evidence instead of Independent Evidence', async () => {
+  it('labels a successful retry as a practice attempt instead of independent completion', async () => {
     const { classroom, wrapper } = await setup()
     await classroom.execute({
       type: 'start_learning_track',
@@ -1194,8 +1339,8 @@ describe('aI Classroom views', () => {
       'practice',
     ])
     render(<LiveClassroomView />, { wrapper })
-    expect(screen.getByText('Practice Evidence')).toBeTruthy()
-    expect(screen.queryByText('Independent Evidence')).toBeNull()
+    expect(screen.getByText('Practice attempt')).toBeTruthy()
+    expect(screen.queryByText('Completed independently')).toBeNull()
     classroom.dispose()
   })
 })

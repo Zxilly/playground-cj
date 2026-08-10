@@ -66,6 +66,7 @@ describe('teachConfigWizard', () => {
   it('runs the LLM config bootstrap so gateway metadata can be fetched', () => {
     renderWizard()
     expect(bootstrapMock).toHaveBeenCalled()
+    expect(screen.queryByRole('main')).toBeNull()
   })
 
   it('defaults to the shared source and enters directly once the shared gateway is ready', () => {
@@ -125,6 +126,10 @@ describe('teachConfigWizard', () => {
     fireEvent.click(screen.getByTestId('teach-source-custom'))
     fireEvent.click(screen.getByTestId('teach-source-next'))
     expect(screen.getByTestId('teach-wizard-step-credentials')).toBeTruthy()
+    expect(screen.getByText(/API Key 会保存在当前浏览器/)).toBeTruthy()
+    expect(screen.getByTestId('teach-wizard-back').className).toContain('min-h-11')
+    expect(screen.getByTestId('teach-config-enter').className).toContain('min-h-11')
+    expect(screen.getByRole('button', { name: 'Anthropic' }).className).toContain('min-h-11')
 
     // baseURL + model are seeded from the provider defaults; only the key is missing.
     const enter = screen.getByTestId('teach-config-enter')
@@ -136,6 +141,20 @@ describe('teachConfigWizard', () => {
     expect(onEnter).toHaveBeenCalledTimes(1)
     expect(useLLMConfigStore.getState().config.apiKey).toBe('my-key')
     expect(useLLMConfigStore.getState().keySource).toBe('user')
+  })
+
+  it('blocks a malformed custom service address before entering', () => {
+    useLLMConfigStore.setState({ config: DEFAULT_LLM_CONFIG, keySource: 'auto' })
+    renderWizard()
+
+    fireEvent.click(screen.getByTestId('teach-source-custom'))
+    fireEvent.click(screen.getByTestId('teach-source-next'))
+    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'my-key' } })
+    fireEvent.change(screen.getByLabelText('服务地址'), { target: { value: 'not-a-url' } })
+
+    expect(screen.getByTestId('teach-config-enter').hasAttribute('disabled')).toBe(true)
+    expect(screen.getByLabelText('服务地址').getAttribute('aria-invalid')).toBe('true')
+    expect(screen.getByRole('alert').textContent).toContain('请输入以 http:// 或 https:// 开头的有效服务地址。')
   })
 
   it('can step back from credentials to the source choice', () => {

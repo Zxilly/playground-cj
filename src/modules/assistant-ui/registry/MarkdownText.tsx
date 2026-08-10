@@ -155,13 +155,20 @@ const defaultComponents = memoizeMarkdownComponents({
     />
   ),
   table: ({ className, ...props }) => (
-    <table
-      className={cn(
-        'aui-md-table my-2 w-full border-separate border-spacing-0 overflow-y-auto',
-        className,
-      )}
-      {...props}
-    />
+    <div
+      role="region"
+      aria-label={t`滚动查看完整表格`}
+      tabIndex={0}
+      className="aui-md-table-scroll my-2 max-w-full overflow-x-auto rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+    >
+      <table
+        className={cn(
+          'aui-md-table w-max min-w-full border-separate border-spacing-0',
+          className,
+        )}
+        {...props}
+      />
+    </div>
   ),
   th: ({ className, ...props }) => (
     <th

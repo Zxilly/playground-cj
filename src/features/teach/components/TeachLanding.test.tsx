@@ -25,6 +25,7 @@ describe('teachLanding intro', () => {
   it('renders the classroom intro', () => {
     render(<TeachLanding onStart={vi.fn()} />)
     expect(screen.getByTestId('teach-landing')).toBeTruthy()
+    expect(screen.queryByRole('main')).toBeNull()
   })
 
   it('advances to the configuration step via the start button', () => {

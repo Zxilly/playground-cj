@@ -23,7 +23,7 @@ export function TeachTopBar({ actions, backLabel, backTestId, onBack }: TeachTop
             data-testid={backTestId}
             aria-label={backLabel}
             onClick={onBack}
-            className="rounded-md text-muted-foreground"
+            className="size-11 rounded-md text-muted-foreground lg:size-8"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
           </Button>

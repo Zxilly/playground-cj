@@ -44,4 +44,13 @@ describe('teach Markdown trust boundary', () => {
     expect(screen.getByText('credentials')).toBeTruthy()
     expect(screen.getByText('script')).toBeTruthy()
   })
+
+  it('keeps embedded document headings subordinate to the workspace view title', () => {
+    render(<TeachMarkdown source="validated" markdown={'# Lesson\n\n## Detail\n\n### Note'} />)
+
+    expect(screen.getByRole('heading', { level: 3, name: 'Lesson' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 4, name: 'Detail' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 4, name: 'Note' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+  })
 })

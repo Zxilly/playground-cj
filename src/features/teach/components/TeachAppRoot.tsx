@@ -45,7 +45,12 @@ function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
               ? 'The local classroom workspace could not be opened. Your stored data was left unchanged.'
               : '无法打开本地课堂工作区；已有数据保持原样。'}
           </p>
-          <p className="mt-2 break-words font-mono text-xs text-muted-foreground">{runtime.context.message}</p>
+          <details className="mt-3 text-start text-xs text-muted-foreground">
+            <summary className="cursor-pointer font-medium">
+              {locale === 'en' ? 'Technical details' : '技术详情'}
+            </summary>
+            <p className="mt-2 break-words font-mono">{runtime.context.message}</p>
+          </details>
         </div>
         <Button type="button" variant="outline" onClick={() => send({ type: 'retry' })}>
           <RotateCcw aria-hidden="true" className="size-4" />

