@@ -80,11 +80,26 @@ export function normaliseLLMConfig(input: Partial<LLMConfig>): LLMConfig {
   }
 }
 
+/** A direct provider needs an absolute HTTP(S) endpoint before it can be used. */
+export function isValidLLMBaseURL(value: string | undefined): boolean {
+  const raw = value?.trim()
+  if (!raw)
+    return false
+  try {
+    const parsed = new URL(raw)
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:')
+      && Boolean(parsed.hostname)
+  }
+  catch {
+    return false
+  }
+}
+
 export function isLLMConfigReady(config: Partial<LLMConfig>): boolean {
   const next = normaliseLLMConfig(config)
   if (next.transport === 'shared-gateway')
     return Boolean(next.model)
-  return Boolean(next.baseURL && next.apiKey && next.model)
+  return Boolean(isValidLLMBaseURL(next.baseURL) && next.apiKey && next.model)
 }
 
 /**
@@ -94,7 +109,7 @@ export function isLLMConfigReady(config: Partial<LLMConfig>): boolean {
  * onboarding wizard adds it via {@link isLLMConfigReady}).
  */
 export function isUserConfigIncomplete(config: LLMConfig): boolean {
-  return config.baseURL.trim().length === 0 || config.model.trim().length === 0
+  return !isValidLLMBaseURL(config.baseURL) || config.model.trim().length === 0
 }
 
 export function createConfiguredModel(config: Partial<LLMConfig>, name = 'tour-llm'): LanguageModel {

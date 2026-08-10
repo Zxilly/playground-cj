@@ -129,7 +129,8 @@ describe('threadMessages', () => {
   })
 
   it('shows a generic chat error without exposing internal failures', () => {
-    render(<MessageError />, { wrapper: Wrapper })
+    const onDismiss = vi.fn()
+    render(<MessageError onDismiss={onDismiss} />, { wrapper: Wrapper })
 
     const alert = screen.getByRole('alert')
     expect(alert.textContent).toContain('课堂老师暂时无法完成这次回复')
@@ -139,6 +140,13 @@ describe('threadMessages', () => {
     expect(screen.getByTestId('reload-action').contains(retry)).toBe(true)
     expect(retry.className).toContain('rounded-md')
     expect(retry.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: '关闭错误提示' }))
+    expect(onDismiss).toHaveBeenCalledOnce()
+  })
+
+  it('lets a scoped runtime hide a dismissed message error', () => {
+    const rendered = render(<MessageError visible={false} />, { wrapper: Wrapper })
+    expect(rendered.queryByRole('alert')).toBeNull()
   })
 
   it('shows only payload-free classroom activity statuses', () => {

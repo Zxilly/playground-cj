@@ -3,6 +3,8 @@ import {
   ANTHROPIC_DEFAULT_BASE_URL,
   createConfiguredModel,
   isLLMConfigReady,
+  isUserConfigIncomplete,
+  isValidLLMBaseURL,
   normaliseLLMConfig,
   OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
   resolveProviderDefaults,
@@ -88,6 +90,25 @@ describe('model provider config', () => {
       model: 'gpt-test',
     })).toBe(false)
     expect(isLLMConfigReady({ apiKey: '' })).toBe(false)
+  })
+
+  it('rejects malformed and non-http custom endpoints before use', () => {
+    expect(isValidLLMBaseURL('https://api.example.test/v1')).toBe(true)
+    expect(isValidLLMBaseURL('http://localhost:11434/v1')).toBe(true)
+    expect(isValidLLMBaseURL('not-a-url')).toBe(false)
+    expect(isValidLLMBaseURL('ftp://api.example.test/v1')).toBe(false)
+    expect(isLLMConfigReady({
+      provider: 'openai-compatible',
+      baseURL: 'not-a-url',
+      apiKey: 'user-key',
+      model: 'gpt-test',
+    })).toBe(false)
+    expect(isUserConfigIncomplete({
+      provider: 'openai-compatible',
+      baseURL: 'not-a-url',
+      apiKey: 'user-key',
+      model: 'gpt-test',
+    })).toBe(true)
   })
 
   it('clears the credential when switching provider families', () => {

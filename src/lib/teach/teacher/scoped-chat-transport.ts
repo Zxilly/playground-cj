@@ -31,6 +31,12 @@ export interface TeacherOutputBoundary {
   commit: (turnSignal: AbortSignal) => Promise<void>
 }
 
+export interface TeacherTurnRequestMetadata {
+  trigger: 'submit-message' | 'regenerate-message'
+  messageId: string | undefined
+  metadata: unknown
+}
+
 function mergeSignal(
   upstream: AbortSignal | undefined,
   scope: AbortSignal,
@@ -175,17 +181,29 @@ function guardTeacherTurn(
 
   return new ReadableStream<UIMessageChunk>({
     async start(controller) {
-      const buffered: UIMessageChunk[] = []
+      const leadingChunks: UIMessageChunk[] = []
+      let latestStepChunks: UIMessageChunk[] = []
+      let trailingChunks: UIMessageChunk[] = []
+      let sawStep = false
+      let insideStep = false
       let textCharacters = 0
       let rawChunkCount = 0
-      let hasVisibleTeacherText = false
       let pendingTextId: string | null = null
       let pendingTextDeltas: string[] = []
+
+      const appendChunk = (chunk: UIMessageChunk) => {
+        if (insideStep)
+          latestStepChunks.push(chunk)
+        else if (sawStep)
+          trailingChunks.push(chunk)
+        else
+          leadingChunks.push(chunk)
+      }
 
       const flushTextDeltas = () => {
         if (pendingTextId === null || pendingTextDeltas.length === 0)
           return
-        buffered.push({
+        appendChunk({
           type: 'text-delta',
           id: pendingTextId,
           delta: pendingTextDeltas.join(''),
@@ -212,7 +230,6 @@ function guardTeacherTurn(
             if (chunk.delta.length === 0)
               continue
             textCharacters += chunk.delta.length
-            hasVisibleTeacherText ||= /\S/u.test(chunk.delta)
             if (textCharacters > MAX_BUFFERED_TEACHER_TEXT_CHARS) {
               throw new RangeError(
                 'Teacher response exceeded the learner-facing text limit',
@@ -225,9 +242,28 @@ function guardTeacherTurn(
             continue
           }
           flushTextDeltas()
-          buffered.push(chunk)
+          if (chunk.type === 'start-step') {
+            // Each new step supersedes the preceding model/tool-planning text.
+            // Only the final step is learner-facing; tool payloads remain
+            // filtered independently by sanitizeChunk.
+            sawStep = true
+            insideStep = true
+            latestStepChunks = [chunk]
+            trailingChunks = []
+          }
+          else {
+            appendChunk(chunk)
+            if (chunk.type === 'finish-step')
+              insideStep = false
+          }
         }
         flushTextDeltas()
+
+        const buffered = sawStep
+          ? [...leadingChunks, ...latestStepChunks, ...trailingChunks]
+          : leadingChunks
+        const hasVisibleTeacherText = buffered.some(chunk =>
+          chunk.type === 'text-delta' && /\S/u.test(chunk.delta))
 
         if (hasVisibleTeacherText) {
           await ownership.wait(
@@ -276,7 +312,10 @@ export function createScopedChatTransport<
   agent: Agent<CALL_OPTIONS, TOOLS, never>,
   scopeSignal: AbortSignal,
   boundary?: TeacherOutputBoundary,
-  prepareTurn?: (turnSignal: AbortSignal) => void | (() => void),
+  prepareTurn?: (
+    turnSignal: AbortSignal,
+    request: TeacherTurnRequestMetadata,
+  ) => void | (() => void),
 ): ChatTransport<InferAgentUIMessage<Agent<CALL_OPTIONS, TOOLS, never>>> {
   const inner = new DirectChatTransport({ agent })
   const admission = createTeacherTurnAdmission()
@@ -326,7 +365,11 @@ export function createScopedChatTransport<
       })
       try {
         if (prepareTurn) {
-          cleanupPreparedTurn = prepareTurn(turnSignal) || undefined
+          cleanupPreparedTurn = prepareTurn(turnSignal, {
+            trigger: opts.trigger,
+            messageId: opts.messageId,
+            metadata: opts.metadata,
+          }) || undefined
         }
         const streamOperation = inner.sendMessages({
           ...opts,

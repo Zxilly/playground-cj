@@ -1,11 +1,11 @@
 {
   "schemaVersion": 4,
   "locale": "en",
-  "courseVersion": "course:sha256:12067f3d62609f42aee7d744a4dfead6807b08a48cc96145726f9a5d15519ec0",
+  "courseVersion": "course:sha256:8ea69dabcf3c8b331e403eeebd2ed6bce67cf5921f574a0ac269cdb968d5ff2d",
   "packs": [
     {
       "id": "pack:cj.program.main",
-      "version": "cv:sha256:127ac9ddeaf33a37807343de4c78e99741afc156ea3e1b181c5c88bc62dbf914",
+      "version": "cv:sha256:35dd5361e143472fb11d91805e64ea16b88da65390a3f2571bf3767258c16e3a",
       "learningContractVersion": "lc:sha256:1abd94744e45caef01c2811419b70055b173534faad2b2bdf9612ff9d2e63482",
       "concept": {
         "id": "cj.program.main",
@@ -24,7 +24,7 @@
             }
           ],
           "type": "prose",
-          "markdown": "# Hello, World\n\nWelcome to the [Cangjie Programming Language](https://cangjie-lang.cn) tour. This tutorial will guide you through Cangjie's core features step by step.\n\nThe tutorial is organized into several modules, with each page containing explanations and an interactive code example. You can learn sequentially or navigate freely using the sidebar.\n\nStart by clicking the **Run** button (or pressing `Shift` + `Enter`). The code will be sent to a remote server for compilation and execution, with results displayed below.\n\nIn the code on the right, `main()` is the program entry point. Unlike many languages, Cangjie's `main` doesn't require the `func` keyword. We use `let` to declare immutable variables and embed them in strings using the `${...}` syntax.\n\nTry changing the variable value to your name, then run it again.\n\n\n### Language comparison\n#### C\n\nC's program entry point is `int main(void)`, requiring `int` return type and `void` parameters; Cangjie's `main` needs no explicit modifiers.\n\n\n#### Java\n\nJava's entry point is `public static void main(String[] args)`, requiring modifiers and parameters; Cangjie is simpler with just `main()`.\n\n\n#### Go\n\nGo's `main` must be defined within `package main`; Cangjie's `main` is defined directly at the top level without package declarations.\n\n\n#### Rust\n\nRust defines the entry point with `fn main()`; Cangjie omits the `fn` keyword for more concise syntax."
+          "markdown": "# Hello, World\n\nWelcome to the [Cangjie Programming Language](https://cangjie-lang.cn) tour. This tutorial will guide you through Cangjie's core features step by step.\n\nThe tutorial is organized into several modules, with each page containing explanations and an interactive code example. You can learn sequentially or navigate freely using the sidebar.\n\nStart by clicking the **Run** button (or pressing `Shift` + `Enter`). The code will be sent to a remote server for compilation and execution, with results displayed in the Run results area.\n\nIn the code example in the classroom activity area, `main()` is the program entry point. Unlike many languages, Cangjie's `main` doesn't require the `func` keyword. We use `let` to declare immutable variables and embed them in strings using the `${...}` syntax.\n\nTry changing the variable value to your name, then run it again.\n\n\n### Language comparison\n#### C\n\nC's program entry point is `int main(void)`, requiring `int` return type and `void` parameters; Cangjie's `main` needs no explicit modifiers.\n\n\n#### Java\n\nJava's entry point is `public static void main(String[] args)`, requiring modifiers and parameters; Cangjie is simpler with just `main()`.\n\n\n#### Go\n\nGo's `main` must be defined within `package main`; Cangjie's `main` is defined directly at the top level without package declarations.\n\n\n#### Rust\n\nRust defines the entry point with `fn main()`; Cangjie omits the `fn` keyword for more concise syntax."
         },
         {
           "id": "block:cj.program.main:01-welcome/01-intro/01:code",
@@ -53,7 +53,7 @@
       "exerciseTemplates": [
         {
           "id": "template:cj.program.main:practice",
-          "version": "cv:sha256:127ac9ddeaf33a37807343de4c78e99741afc156ea3e1b181c5c88bc62dbf914",
+          "version": "cv:sha256:35dd5361e143472fb11d91805e64ea16b88da65390a3f2571bf3767258c16e3a",
           "learningSkillId": "skill:cj.program.main:core",
           "purpose": "practice",
           "task": {
@@ -74,7 +74,7 @@
         },
         {
           "id": "template:cj.program.main:review",
-          "version": "cv:sha256:127ac9ddeaf33a37807343de4c78e99741afc156ea3e1b181c5c88bc62dbf914",
+          "version": "cv:sha256:35dd5361e143472fb11d91805e64ea16b88da65390a3f2571bf3767258c16e3a",
           "learningSkillId": "skill:cj.program.main:core",
           "purpose": "review",
           "task": {
@@ -105,7 +105,7 @@
         },
         {
           "id": "template:cj.program.main:placement",
-          "version": "cv:sha256:127ac9ddeaf33a37807343de4c78e99741afc156ea3e1b181c5c88bc62dbf914",
+          "version": "cv:sha256:35dd5361e143472fb11d91805e64ea16b88da65390a3f2571bf3767258c16e3a",
           "learningSkillId": "skill:cj.program.main:core",
           "purpose": "placement",
           "task": {
@@ -126,7 +126,7 @@
     },
     {
       "id": "pack:cj.io.println",
-      "version": "cv:sha256:87185d58f8726c8033ebb65930f66d4cd37c2584537762039b6b99aff97a6727",
+      "version": "cv:sha256:44b58d34208b11e5c9634f3704d31de27d82daeb8719eb4be69be44485b5628f",
       "learningContractVersion": "lc:sha256:fe0cae53f8b6d2b33d824b78ae93150e8c1b717d937b41f878fb15266ebe8ecf",
       "concept": {
         "id": "cj.io.println",
@@ -147,7 +147,7 @@
             }
           ],
           "type": "prose",
-          "markdown": "# Hello, World\n\nWelcome to the [Cangjie Programming Language](https://cangjie-lang.cn) tour. This tutorial will guide you through Cangjie's core features step by step.\n\nThe tutorial is organized into several modules, with each page containing explanations and an interactive code example. You can learn sequentially or navigate freely using the sidebar.\n\nStart by clicking the **Run** button (or pressing `Shift` + `Enter`). The code will be sent to a remote server for compilation and execution, with results displayed below.\n\nIn the code on the right, `main()` is the program entry point. Unlike many languages, Cangjie's `main` doesn't require the `func` keyword. We use `let` to declare immutable variables and embed them in strings using the `${...}` syntax.\n\nTry changing the variable value to your name, then run it again.\n\n\n### Language comparison\n#### C\n\nC's program entry point is `int main(void)`, requiring `int` return type and `void` parameters; Cangjie's `main` needs no explicit modifiers.\n\n\n#### Java\n\nJava's entry point is `public static void main(String[] args)`, requiring modifiers and parameters; Cangjie is simpler with just `main()`.\n\n\n#### Go\n\nGo's `main` must be defined within `package main`; Cangjie's `main` is defined directly at the top level without package declarations.\n\n\n#### Rust\n\nRust defines the entry point with `fn main()`; Cangjie omits the `fn` keyword for more concise syntax."
+          "markdown": "# Hello, World\n\nWelcome to the [Cangjie Programming Language](https://cangjie-lang.cn) tour. This tutorial will guide you through Cangjie's core features step by step.\n\nThe tutorial is organized into several modules, with each page containing explanations and an interactive code example. You can learn sequentially or navigate freely using the sidebar.\n\nStart by clicking the **Run** button (or pressing `Shift` + `Enter`). The code will be sent to a remote server for compilation and execution, with results displayed in the Run results area.\n\nIn the code example in the classroom activity area, `main()` is the program entry point. Unlike many languages, Cangjie's `main` doesn't require the `func` keyword. We use `let` to declare immutable variables and embed them in strings using the `${...}` syntax.\n\nTry changing the variable value to your name, then run it again.\n\n\n### Language comparison\n#### C\n\nC's program entry point is `int main(void)`, requiring `int` return type and `void` parameters; Cangjie's `main` needs no explicit modifiers.\n\n\n#### Java\n\nJava's entry point is `public static void main(String[] args)`, requiring modifiers and parameters; Cangjie is simpler with just `main()`.\n\n\n#### Go\n\nGo's `main` must be defined within `package main`; Cangjie's `main` is defined directly at the top level without package declarations.\n\n\n#### Rust\n\nRust defines the entry point with `fn main()`; Cangjie omits the `fn` keyword for more concise syntax."
         },
         {
           "id": "block:cj.io.println:01-welcome/01-intro/01:code",
@@ -176,7 +176,7 @@
       "exerciseTemplates": [
         {
           "id": "template:cj.io.println:practice",
-          "version": "cv:sha256:87185d58f8726c8033ebb65930f66d4cd37c2584537762039b6b99aff97a6727",
+          "version": "cv:sha256:44b58d34208b11e5c9634f3704d31de27d82daeb8719eb4be69be44485b5628f",
           "learningSkillId": "skill:cj.io.println:core",
           "purpose": "practice",
           "task": {
@@ -199,7 +199,7 @@
         },
         {
           "id": "template:cj.io.println:review",
-          "version": "cv:sha256:87185d58f8726c8033ebb65930f66d4cd37c2584537762039b6b99aff97a6727",
+          "version": "cv:sha256:44b58d34208b11e5c9634f3704d31de27d82daeb8719eb4be69be44485b5628f",
           "learningSkillId": "skill:cj.io.println:core",
           "purpose": "review",
           "task": {
@@ -227,7 +227,7 @@
         },
         {
           "id": "template:cj.io.println:placement",
-          "version": "cv:sha256:87185d58f8726c8033ebb65930f66d4cd37c2584537762039b6b99aff97a6727",
+          "version": "cv:sha256:44b58d34208b11e5c9634f3704d31de27d82daeb8719eb4be69be44485b5628f",
           "learningSkillId": "skill:cj.io.println:core",
           "purpose": "placement",
           "task": {
@@ -250,7 +250,7 @@
     },
     {
       "id": "pack:cj.var.immutable",
-      "version": "cv:sha256:ca6f42e5cddf7c2cfddee2102e52ecc21d4604b48a929369225b86c21d9c3ab1",
+      "version": "cv:sha256:5c17cb2e541f54feab6b6490df679a3bffe60f1d4e9be6ec62bcc83897ea2477",
       "learningContractVersion": "lc:sha256:1557c561de7e60027a176330ffc38f2d6c579a44d61c5cfccdec43ffabcaa2d6",
       "concept": {
         "id": "cj.var.immutable",
@@ -271,7 +271,7 @@
             }
           ],
           "type": "prose",
-          "markdown": "# let (Immutable Bindings)\n\nThe `let` keyword is used to create immutable bindings, associating a name with a value. Once bound, that name cannot point to a new value. This immutability is the default choice in Cangjie, helping you write safer and more predictable code.\n\nIn Cangjie, the basic form of variable definition is: `modifier variable_name: variable_type = initial_value`. The `let` modifier indicates that the variable is immutable, and the modifier is mandatory (cannot be omitted). Variables modified with `let` can only be assigned once, during initialization.\n\nThe code on the right defines three immutable bindings: `name` bound to a string, `year` bound to an integer, and `pi` bound to a floating-point number. The type of each variable is automatically inferred from its initial value. If you try to uncomment line 10, the compiler will report an error—`let` bound values cannot be reassigned.\n\n\n> **Note:** Local variables can be declared first and initialized later, but must be initialized before being referenced. Global variables and static member variables must be initialized at declaration.\n\n\n\n### Language comparison\n#### C\n\nC can use `const` to express non-modifiable constraints on objects or through pointers, but `const` does not mean compile-time constant. Cangjie instead uses `let` for bindings that cannot be reassigned.\n\n\n\n#### Java\n\nJava uses the `final` modifier to declare immutable variables, with semantics similar to Cangjie's `let`, but requires explicit initialization.\n\n\n\n#### Go\n\nGo uses `:=` to declare variables, and declared variables are always mutable with no concept of immutable variables. Cangjie's `let` provides immutability guarantees.\n\n\n\n#### Rust\n\nRust's `let` is also immutable by default with the same semantics as Cangjie, but Rust allows variable shadowing within the same scope, while Cangjie does not.\n\n\nTry adding a new `let` binding and printing its value, or try to modify an existing binding and observe the compiler's error message."
+          "markdown": "# let (Immutable Bindings)\n\nThe `let` keyword is used to create immutable bindings, associating a name with a value. Once bound, that name cannot point to a new value. This immutability is the default choice in Cangjie, helping you write safer and more predictable code.\n\nIn Cangjie, the basic form of variable definition is: `modifier variable_name: variable_type = initial_value`. The `let` modifier indicates that the variable is immutable, and the modifier is mandatory (cannot be omitted). Variables modified with `let` can only be assigned once, during initialization.\n\nThe code example in the classroom activity area defines three immutable bindings: `name` bound to a string, `year` bound to an integer, and `pi` bound to a floating-point number. The type of each variable is automatically inferred from its initial value. If you try to uncomment line 10, the compiler will report an error—`let` bound values cannot be reassigned.\n\n\n> **Note:** Local variables can be declared first and initialized later, but must be initialized before being referenced. Global variables and static member variables must be initialized at declaration.\n\n\n\n### Language comparison\n#### C\n\nC can use `const` to express non-modifiable constraints on objects or through pointers, but `const` does not mean compile-time constant. Cangjie instead uses `let` for bindings that cannot be reassigned.\n\n\n\n#### Java\n\nJava uses the `final` modifier to declare immutable variables, with semantics similar to Cangjie's `let`, but requires explicit initialization.\n\n\n\n#### Go\n\nGo uses `:=` to declare variables, and declared variables are always mutable with no concept of immutable variables. Cangjie's `let` provides immutability guarantees.\n\n\n\n#### Rust\n\nRust's `let` is also immutable by default with the same semantics as Cangjie, but Rust allows variable shadowing within the same scope, while Cangjie does not.\n\n\nTry adding a new `let` binding and printing its value, or try to modify an existing binding and observe the compiler's error message."
         },
         {
           "id": "block:cj.var.immutable:02-basics/01-bindings/01:code",
@@ -300,7 +300,7 @@
       "exerciseTemplates": [
         {
           "id": "template:cj.var.immutable:practice",
-          "version": "cv:sha256:ca6f42e5cddf7c2cfddee2102e52ecc21d4604b48a929369225b86c21d9c3ab1",
+          "version": "cv:sha256:5c17cb2e541f54feab6b6490df679a3bffe60f1d4e9be6ec62bcc83897ea2477",
           "learningSkillId": "skill:cj.var.immutable:core",
           "purpose": "practice",
           "task": {
@@ -328,7 +328,7 @@
         },
         {
           "id": "template:cj.var.immutable:review",
-          "version": "cv:sha256:ca6f42e5cddf7c2cfddee2102e52ecc21d4604b48a929369225b86c21d9c3ab1",
+          "version": "cv:sha256:5c17cb2e541f54feab6b6490df679a3bffe60f1d4e9be6ec62bcc83897ea2477",
           "learningSkillId": "skill:cj.var.immutable:core",
           "purpose": "review",
           "task": {
@@ -370,7 +370,7 @@
         },
         {
           "id": "template:cj.var.immutable:placement",
-          "version": "cv:sha256:ca6f42e5cddf7c2cfddee2102e52ecc21d4604b48a929369225b86c21d9c3ab1",
+          "version": "cv:sha256:5c17cb2e541f54feab6b6490df679a3bffe60f1d4e9be6ec62bcc83897ea2477",
           "learningSkillId": "skill:cj.var.immutable:core",
           "purpose": "placement",
           "task": {
@@ -398,7 +398,7 @@
     },
     {
       "id": "pack:cj.var.mutable",
-      "version": "cv:sha256:b3fa35b765c4215afdd0663bd7a8d263b3c26e001c07d46618a56d4068af93ce",
+      "version": "cv:sha256:2c5ec214d438e52db17aa1a979650aba263f37a345573f5c5c07fac3351a3bac",
       "learningContractVersion": "lc:sha256:8da520656d5d8d55f923df778cbada12d5b5f3325bf38d13d54436de318408a8",
       "concept": {
         "id": "cj.var.mutable",
@@ -419,7 +419,7 @@
             }
           ],
           "type": "prose",
-          "markdown": "# var (Mutable Bindings)\n\nThe `var` keyword is used to create mutable bindings, where the bound value can be reassigned in subsequent code. When you need to count, accumulate results, or update state, using `var` is the appropriate choice.\n\nVariables modified with `var` can be assigned multiple times, and each assignment changes the value held by the variable. The assignment operator `=` is used to modify the variable's value, requiring the type of the right-hand expression to be a subtype of the left-hand variable's type. Cangjie does not support chained assignment (like `a = b = 0`), which helps avoid common coding errors.\n\nThe code on the right demonstrates typical usage of `var`: `count` starts at 0 and is modified multiple times; `message` changes from `\"hello\"` to `\"world\"`. After each assignment, we print the variable's new value to observe the changes.\n\n\n> **Note:** A good programming practice is: use `let` by default, and only switch to `var` when you're certain you need to modify the variable. This reduces bugs from accidental modifications.\n\n\n\n### Language comparison\n#### C\n\nAll C variables are mutable by default with no way to enforce immutability at compile time. Cangjie explicitly marks mutability with `var` for clarity.\n\n\n\n#### Java\n\nJava variables are mutable by default; immutability requires `final`. Cangjie reverses this: `let` is immutable by default, switch to `var` only when needed.\n\n\n\n#### Go\n\nGo variables are mutable by default, with no syntax support for immutable variables. Cangjie clearly distinguishes between them through `let` and `var`, making intentions more explicit.\n\n\n\n#### Rust\n\nRust uses `let mut` to declare mutable variables, while Cangjie uses the `var` keyword, with the same semantics but simpler and more intuitive syntax.\n\n\nTry changing one of the `var` to `let` and observe what error message the compiler gives. Then think about which variables truly need mutability."
+          "markdown": "# var (Mutable Bindings)\n\nThe `var` keyword is used to create mutable bindings, where the bound value can be reassigned in subsequent code. When you need to count, accumulate results, or update state, using `var` is the appropriate choice.\n\nVariables modified with `var` can be assigned multiple times, and each assignment changes the value held by the variable. The assignment operator `=` is used to modify the variable's value, requiring the type of the right-hand expression to be a subtype of the left-hand variable's type. Cangjie does not support chained assignment (like `a = b = 0`), which helps avoid common coding errors.\n\nThe code example in the classroom activity area demonstrates typical usage of `var`: `count` starts at 0 and is modified multiple times; `message` changes from `\"hello\"` to `\"world\"`. After each assignment, we print the variable's new value to observe the changes.\n\n\n> **Note:** A good programming practice is: use `let` by default, and only switch to `var` when you're certain you need to modify the variable. This reduces bugs from accidental modifications.\n\n\n\n### Language comparison\n#### C\n\nAll C variables are mutable by default with no way to enforce immutability at compile time. Cangjie explicitly marks mutability with `var` for clarity.\n\n\n\n#### Java\n\nJava variables are mutable by default; immutability requires `final`. Cangjie reverses this: `let` is immutable by default, switch to `var` only when needed.\n\n\n\n#### Go\n\nGo variables are mutable by default, with no syntax support for immutable variables. Cangjie clearly distinguishes between them through `let` and `var`, making intentions more explicit.\n\n\n\n#### Rust\n\nRust uses `let mut` to declare mutable variables, while Cangjie uses the `var` keyword, with the same semantics but simpler and more intuitive syntax.\n\n\nTry changing one of the `var` to `let` and observe what error message the compiler gives. Then think about which variables truly need mutability."
         },
         {
           "id": "block:cj.var.mutable:02-basics/01-bindings/02:code",
@@ -448,7 +448,7 @@
       "exerciseTemplates": [
         {
           "id": "template:cj.var.mutable:practice",
-          "version": "cv:sha256:b3fa35b765c4215afdd0663bd7a8d263b3c26e001c07d46618a56d4068af93ce",
+          "version": "cv:sha256:2c5ec214d438e52db17aa1a979650aba263f37a345573f5c5c07fac3351a3bac",
           "learningSkillId": "skill:cj.var.mutable:core",
           "purpose": "practice",
           "task": {
@@ -491,7 +491,7 @@
         },
         {
           "id": "template:cj.var.mutable:review",
-          "version": "cv:sha256:b3fa35b765c4215afdd0663bd7a8d263b3c26e001c07d46618a56d4068af93ce",
+          "version": "cv:sha256:2c5ec214d438e52db17aa1a979650aba263f37a345573f5c5c07fac3351a3bac",
           "learningSkillId": "skill:cj.var.mutable:core",
           "purpose": "review",
           "task": {
@@ -534,7 +534,7 @@
         },
         {
           "id": "template:cj.var.mutable:placement",
-          "version": "cv:sha256:b3fa35b765c4215afdd0663bd7a8d263b3c26e001c07d46618a56d4068af93ce",
+          "version": "cv:sha256:2c5ec214d438e52db17aa1a979650aba263f37a345573f5c5c07fac3351a3bac",
           "learningSkillId": "skill:cj.var.mutable:core",
           "purpose": "placement",
           "task": {
