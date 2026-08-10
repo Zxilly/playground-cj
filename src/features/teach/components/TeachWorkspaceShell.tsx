@@ -20,7 +20,6 @@ import { useIsCompactViewport } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 import { WorkspaceNav } from './WorkspaceNav'
 import { WorkspaceViewport } from './WorkspaceViewport'
-import { PlaygroundEditorHost } from './views/PlaygroundEditorHost'
 
 export interface TeachWorkspaceShellProps {
   chat: ReactNode
@@ -62,23 +61,26 @@ function WorkspaceViewTransition({
 function useResponsiveChatOpen(
   compact: boolean,
   pendingPrefill: string | null,
+  prefillRevision: number,
 ) {
-  const [chatOpen, setChatOpen] = useState(
-    compact && pendingPrefill !== null,
-  )
-  const [observed, setObserved] = useState({ compact, pendingPrefill })
+  // Opening is an edge-triggered learner action. A retained draft must not
+  // reopen the mobile sheet when the active learning path remounts the shell.
+  const [chatOpen, setChatOpen] = useState(false)
+  const [observed, setObserved] = useState({ compact, pendingPrefill, prefillRevision })
   if (
     observed.compact !== compact
     || observed.pendingPrefill !== pendingPrefill
+    || observed.prefillRevision !== prefillRevision
   ) {
     const enteredCompact = compact && !observed.compact
     const receivedCompactPrefill = compact
       && pendingPrefill !== null
       && (
         observed.pendingPrefill !== pendingPrefill
+        || observed.prefillRevision !== prefillRevision
         || !observed.compact
       )
-    setObserved({ compact, pendingPrefill })
+    setObserved({ compact, pendingPrefill, prefillRevision })
     if (receivedCompactPrefill)
       setChatOpen(true)
     else if (enteredCompact)
@@ -92,10 +94,12 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
   const { lang } = useWorkspace()
   const view = useWorkspaceStore(state => state.view)
   const pendingPrefill = useWorkspaceStore(state => state.pendingPrefill)
+  const prefillRevision = useWorkspaceStore(state => state.prefillRevision)
   const compact = useIsCompactViewport()
   const [chatOpen, setChatOpen] = useResponsiveChatOpen(
     compact,
     pendingPrefill,
+    prefillRevision,
   )
   const reduceMotion = useReducedMotion() === true
   const chatRegionId = useId()
@@ -121,23 +125,22 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         <WorkspaceNav />
       </aside>
 
-      <main
+      <section
+        aria-label={english ? 'Classroom workspace' : '课堂工作区'}
         data-testid="workspace-viewport"
         className="relative col-start-1 row-start-2 min-h-0 min-w-0 overflow-hidden bg-background lg:col-start-2 lg:row-start-1"
       >
-        <PlaygroundEditorHost>
-          <AnimatePresence initial={false} mode="wait">
-            <WorkspaceViewTransition key={view} reduceMotion={reduceMotion} view={view}>
-              <div className={view === 'playground'
-                ? 'h-full min-h-0 w-full'
-                : 'mx-auto w-full max-w-4xl'}
-              >
-                <WorkspaceViewport view={view} />
-              </div>
-            </WorkspaceViewTransition>
-          </AnimatePresence>
-        </PlaygroundEditorHost>
-      </main>
+        <AnimatePresence initial={false} mode="wait">
+          <WorkspaceViewTransition key={view} reduceMotion={reduceMotion} view={view}>
+            <div className={view === 'playground'
+              ? 'h-full min-h-0 w-full'
+              : 'mx-auto w-full max-w-4xl'}
+            >
+              <WorkspaceViewport view={view} />
+            </div>
+          </WorkspaceViewTransition>
+        </AnimatePresence>
+      </section>
 
       {compact
         ? (
@@ -159,7 +162,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
                   aria-label={english ? 'Open teacher chat' : '打开老师对话'}
                   aria-controls={chatRegionId}
                   className={cn(
-                    'fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] end-4 z-20 size-12 rounded-md shadow-md',
+                    'fixed top-1.5 end-16 z-40 size-11 rounded-md',
                     chatOpen && 'hidden',
                   )}
                 >
@@ -179,6 +182,13 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
                     mobileChatRef.current?.querySelector<HTMLElement>('textarea:not([disabled])')?.focus()
                   })
                 }}
+                onKeyDownCapture={(event) => {
+                  if (event.key !== 'Escape')
+                    return
+                  event.preventDefault()
+                  event.stopPropagation()
+                  closeChat()
+                }}
                 className="teach-workspace-theme h-[min(78dvh,46rem)] gap-0 overflow-hidden rounded-t-lg border-t border-border p-0"
               >
                 <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
@@ -197,7 +207,8 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-sm"
+                      size="icon-lg"
+                      className="size-11"
                       aria-label={english ? 'Close teacher chat' : '收起老师对话'}
                     >
                       <X aria-hidden="true" className="size-4" />

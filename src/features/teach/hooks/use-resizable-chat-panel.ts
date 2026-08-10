@@ -9,7 +9,7 @@ export const CHAT_MAX_WIDTH = 640
 export const CHAT_DEFAULT_WIDTH = 400
 const CHAT_KEYBOARD_STEP = 24
 const SIDEBAR_WIDTH = 208
-const CENTER_MIN_WIDTH = 480
+const CENTER_MIN_WIDTH = 600
 
 function effectiveMaxWidth(): number {
   if (typeof window === 'undefined')

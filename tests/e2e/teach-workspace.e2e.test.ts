@@ -125,6 +125,7 @@ describe('aI classroom workspace e2e', () => {
   beforeEach(async () => {
     page = await browser.newPage({ viewport: VIEWPORT })
     await page.goto(`${server.url}/en`, { waitUntil: 'domcontentloaded' })
+    expect(await page.locator('html').getAttribute('lang')).toBe('en')
     await page.evaluate(async (baseURL) => {
       localStorage.clear()
       localStorage.setItem('teach:onboarded', '1')
@@ -291,7 +292,7 @@ describe('aI classroom workspace e2e', () => {
       .getByRole('paragraph')
       .filter({ hasText: /^Not passed yet$/ })
       .waitFor()
-    await independentReviewCheck.getByText('Independent Evidence').waitFor()
+    await independentReviewCheck.getByText('Completed independently').waitFor()
 
     await page.getByTestId('workspace-nav-live').click()
     const composer = page.getByTestId('workspace-chat').locator('textarea')
@@ -323,7 +324,7 @@ describe('aI classroom workspace e2e', () => {
       .getByRole('paragraph')
       .filter({ hasText: /^Passed$/ })
       .waitFor()
-    await practice.getByText('Aided Evidence').waitFor()
+    await practice.getByText('Completed with teacher help').waitFor()
 
     await page.getByTestId('workspace-nav-progress').click()
     await page.getByTestId('concept-progress-view').waitFor({ state: 'visible' })
@@ -331,10 +332,15 @@ describe('aI classroom workspace e2e', () => {
 
     await page.getByTestId('workspace-nav-review').click()
     await page.getByTestId('review-view').waitFor({ state: 'visible' })
-    await expect.poll(() => page.getByText('seen').count()).toBeGreaterThan(0)
+    await expect.poll(() => page.getByText('Viewed').count()).toBeGreaterThan(0)
     expect(await page.getByTestId('review-view').isVisible()).toBe(true)
 
     await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.getByTestId('review-view').waitFor({
+      state: 'visible',
+      timeout: 60_000,
+    })
+    await page.getByTestId('workspace-nav-live').click()
     await page.getByTestId('live-classroom-view').waitFor({
       state: 'visible',
       timeout: 60_000,
@@ -355,9 +361,9 @@ describe('aI classroom workspace e2e', () => {
       .getByRole('paragraph')
       .filter({ hasText: /^Not passed yet$/ })
       .isVisible()).toBe(true)
-    expect(await page.getByText('Aided Evidence').isVisible()).toBe(true)
+    expect(await page.getByText('Completed with teacher help').isVisible()).toBe(true)
     expect(await page.getByText(
-      'Independent Evidence',
+      'Completed independently',
       { exact: true },
     ).isVisible()).toBe(true)
   }, 180_000)

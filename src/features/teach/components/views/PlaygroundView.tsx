@@ -2,13 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
-import { AlertTriangle, FileCode2, Loader2, Play, Plus, X } from 'lucide-react'
+import { AlertTriangle, FileCode2, Info, Loader2, Play, Plus, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { t } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import { Trans } from '@lingui/react/macro'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import type { PlaygroundTab } from '@/features/teach/state/playground-session'
 import { usePlaygroundSession } from '@/features/teach/state/playground-session'
+import { DEFAULT_PLAYGROUND_CODE } from '@/features/teach/state/playground-workspace'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
 import { AnsiOutput } from '@/components/AnsiOutput'
@@ -30,6 +41,7 @@ function clampOutputHeight(height: number, maxHeight: number): number {
  * classroom evidence.
  */
 export function PlaygroundView() {
+  const { i18n } = useLingui()
   const { flushPendingCode } = usePlaygroundEditorHost()
   // The tab strip renders and reorders the whole collection; one collection
   // subscription is the granular state this view needs.
@@ -47,9 +59,12 @@ export function PlaygroundView() {
   const resolveConflict = usePlaygroundSession(state => state.resolveConflict)
   const activeTab = tabs.find(tab => tab.id === activeId) ?? null
   const tabElementRef = useRef(new Map<string, HTMLButtonElement>())
+  const closeDialogTriggerRef = useRef<HTMLButtonElement | null>(null)
   const [outputHeight, setOutputHeight] = useState(DEFAULT_OUTPUT_HEIGHT)
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
+  const [pendingCloseTab, setPendingCloseTab] = useState<PlaygroundTab | null>(null)
+  const pendingCloseTitle = pendingCloseTab?.title ?? ''
   const conflictRecoveryKey = conflict
     ? [
         conflict.tabId,
@@ -128,10 +143,27 @@ export function PlaygroundView() {
       requestAnimationFrame(() => tabElementRef.current.get(focusId)?.focus())
   }
 
+  const requestCloseTab = (tab: PlaygroundTab, trigger: HTMLButtonElement) => {
+    if (tab.id === activeId)
+      flushPendingCode()
+    const current = usePlaygroundSession.getState().tabs.find(
+      candidate => candidate.id === tab.id,
+    ) ?? tab
+    if (
+      current.initialCode.trim() !== ''
+      && current.initialCode !== DEFAULT_PLAYGROUND_CODE
+    ) {
+      closeDialogTriggerRef.current = trigger
+      setPendingCloseTab(current)
+      return
+    }
+    closeAndFocusTab(tab.id)
+  }
+
   return (
     <section data-testid="playground-view" className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background">
-      <h2 className="sr-only">Playground</h2>
-      <div className="flex h-10 shrink-0 items-stretch border-b border-border bg-muted/35 shadow-[inset_0_-1px_0_hsl(var(--border))]">
+      <h1 className="sr-only">Playground</h1>
+      <div className="flex h-12 shrink-0 items-stretch border-b border-border bg-muted/35 shadow-[inset_0_-1px_0_hsl(var(--border))] lg:h-10">
         <div
           role="tablist"
           aria-label={t`Playground 标签页`}
@@ -144,7 +176,7 @@ export function PlaygroundView() {
               data-ide-tab
               data-active={tab.id === activeId ? 'true' : 'false'}
               role="presentation"
-              className="group relative flex h-10 min-w-36 max-w-56 shrink-0 items-center border-e border-border/80 text-[13px] transition-colors data-[active=false]:bg-muted/15 data-[active=false]:text-muted-foreground hover:bg-muted/60 data-[active=true]:bg-background data-[active=true]:text-foreground"
+              className="group relative flex h-12 min-w-36 max-w-56 shrink-0 items-center border-e border-border/80 text-[13px] transition-colors data-[active=false]:bg-muted/15 data-[active=false]:text-muted-foreground hover:bg-muted/60 data-[active=true]:bg-background data-[active=true]:text-foreground lg:h-10"
             >
               <button
                 ref={(node) => {
@@ -215,26 +247,38 @@ export function PlaygroundView() {
                 onKeyDown={event => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation()
-                  closeAndFocusTab(tab.id)
+                  requestCloseTab(tab, event.currentTarget)
                 }}
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-muted-foreground/15 hover:text-foreground focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary group-hover:opacity-100 group-data-[active=true]:opacity-70"
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-muted-foreground/15 hover:text-foreground focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary group-hover:opacity-100 group-data-[active=true]:opacity-70 lg:size-8"
                 aria-label={`${t`关闭标签页`}: ${tab.title}`}
               >
                 <X aria-hidden="true" className="size-3" />
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            data-testid="playground-new-tab"
-            onClick={openAndFocusTab}
-            disabled={persistenceStatus !== 'ready'}
-            className="m-1 inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/45"
-            aria-label={t`新建 Playground 标签页`}
-          >
-            <Plus aria-hidden="true" className="size-4" />
-          </button>
         </div>
+        <button
+          type="button"
+          data-testid="playground-new-tab"
+          onClick={openAndFocusTab}
+          disabled={persistenceStatus !== 'ready'}
+          className="m-0.5 inline-flex size-11 shrink-0 items-center justify-center rounded-sm border-s border-border bg-background text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/45 lg:m-1 lg:size-8"
+          aria-label={t`新建 Playground 标签页`}
+        >
+          <Plus aria-hidden="true" className="size-4" />
+        </button>
+      </div>
+      <div
+        data-testid="playground-scope-note"
+        className="flex min-h-8 shrink-0 flex-col gap-1 border-b border-border bg-muted/20 px-3 py-1.5 text-xs leading-5 text-muted-foreground"
+      >
+        <p className="flex min-w-0 items-center gap-2">
+          <Info aria-hidden="true" className="size-3.5 shrink-0" />
+          <Trans>这里的标签页和草稿属于整个 AI 课堂工作区，会在所有学习目标之间共享。</Trans>
+        </p>
+        <p>
+          <Trans>键盘提示：在编辑器中按 Ctrl+M，可切换 Tab 键是缩进代码还是移出编辑器。</Trans>
+        </p>
       </div>
       {persistenceStatus === 'opening' && (
         <div
@@ -274,7 +318,7 @@ export function PlaygroundView() {
                     recoveredId === null ? conflictRecoveryKey : null,
                   )
                 }}
-                className="shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+                className="min-h-11 shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 sm:min-h-0"
               >
                 <Trans>另存为新标签页</Trans>
               </button>
@@ -284,7 +328,7 @@ export function PlaygroundView() {
                   flushPendingCode()
                   resolveConflict('use_remote')
                 }}
-                className="shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+                className="min-h-11 shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 sm:min-h-0"
               >
                 <Trans>使用已保存版本</Trans>
               </button>
@@ -300,7 +344,7 @@ export function PlaygroundView() {
             <button
               type="button"
               onClick={retryPersistence}
-              className="shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
+              className="min-h-11 shrink-0 rounded border border-current/30 px-2 py-1 font-semibold hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 sm:min-h-0"
             >
               {persistenceError === 'corrupt_workspace'
                 ? <Trans>重新读取</Trans>
@@ -326,7 +370,7 @@ export function PlaygroundView() {
                   type="button"
                   onClick={openAndFocusTab}
                   disabled={persistenceStatus !== 'ready'}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground lg:min-h-9"
                 >
                   <Plus aria-hidden="true" className="size-4" />
                   <Trans>新建标签页</Trans>
@@ -334,6 +378,55 @@ export function PlaygroundView() {
               </div>
             </div>
           )}
+      <Dialog
+        open={pendingCloseTab !== null}
+        onOpenChange={(open) => {
+          if (!open)
+            setPendingCloseTab(null)
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            const trigger = closeDialogTriggerRef.current
+            closeDialogTriggerRef.current = null
+            requestAnimationFrame(() => {
+              if (trigger?.isConnected) {
+                trigger.focus()
+                return
+              }
+              const currentActiveId = usePlaygroundSession.getState().activeTabId
+              if (currentActiveId)
+                tabElementRef.current.get(currentActiveId)?.focus()
+            })
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle><Trans>删除这个 Playground 标签页？</Trans></DialogTitle>
+            <DialogDescription>
+              {i18n._(t`“${pendingCloseTitle}”中的代码会从本机永久删除，此操作无法撤销。`)}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col sm:flex-row">
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="min-h-11 lg:min-h-9"><Trans>保留标签页</Trans></Button>
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              className="min-h-11 lg:min-h-9"
+              onClick={() => {
+                if (pendingCloseTab)
+                  closeAndFocusTab(pendingCloseTab.id)
+                setPendingCloseTab(null)
+              }}
+            >
+              <Trans>删除标签页</Trans>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }
@@ -520,13 +613,13 @@ function PlaygroundEditorPane({
         >
           <span className="absolute inset-x-0 top-1 h-px bg-border transition-colors group-hover:bg-primary/60 group-focus-visible:h-0.5 group-focus-visible:bg-primary" />
         </div>
-        <div className="flex h-11 shrink-0 items-center gap-3 border-b border-border bg-muted/20 px-2">
+        <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-muted/20 px-2 sm:h-11">
           <button
             type="button"
             data-testid="playground-run"
             disabled={running}
             onClick={() => void run()}
-            className="inline-flex h-8 items-center gap-2 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:brightness-95 disabled:opacity-50"
+            className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:brightness-95 disabled:opacity-50 lg:h-8"
           >
             {running
               ? <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
@@ -537,12 +630,12 @@ function PlaygroundEditorPane({
         </div>
         <div className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-border overflow-hidden sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           <section className="flex min-h-0 flex-col" aria-labelledby={`playground-program-output-${tab.id}`}>
-            <h3
+            <h2
               id={`playground-program-output-${tab.id}`}
               className="h-8 shrink-0 border-b border-border/70 bg-muted/10 px-3 py-2 text-[11px] font-semibold text-muted-foreground"
             >
               <Trans>程序输出</Trans>
-            </h3>
+            </h2>
             <div className="min-h-0 flex-1 overflow-auto p-3">
               {tab.result
                 ? (
@@ -579,12 +672,12 @@ function PlaygroundEditorPane({
           </section>
 
           <section className="flex min-h-0 flex-col" aria-labelledby={`playground-compiler-output-${tab.id}`}>
-            <h3
+            <h2
               id={`playground-compiler-output-${tab.id}`}
               className="h-8 shrink-0 border-b border-border/70 bg-muted/10 px-3 py-2 text-[11px] font-semibold text-muted-foreground"
             >
               <Trans>编译器输出</Trans>
-            </h3>
+            </h2>
             <div className="min-h-0 flex-1 overflow-auto p-3">
               {tab.result
                 ? (
@@ -592,7 +685,7 @@ function PlaygroundEditorPane({
                       ? (
                           <AnsiOutput
                             text={tab.result.phase === null
-                              ? tab.result.failureMessage
+                              ? i18n._(t`代码运行服务暂时不可用，请稍后重试。`)
                               : tab.result.compilerOutput.trim()
                                 || i18n._(t`编译器未返回输出。`)}
                             data-testid="playground-compiler-output"

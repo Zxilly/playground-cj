@@ -124,7 +124,7 @@ export async function startNextDevServer(): Promise<StartedNextDevServer> {
   const child = spawn(process.execPath, [
     nextCli,
     'dev',
-    '--webpack',
+    '--turbopack',
     '--hostname',
     '127.0.0.1',
     '--port',

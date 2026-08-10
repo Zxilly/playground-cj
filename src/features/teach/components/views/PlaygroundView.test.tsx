@@ -163,6 +163,14 @@ afterEach(async () => {
 })
 
 describe('playgroundView student flow', () => {
+  it('exposes Playground as the active workspace view heading', () => {
+    render(<PlaygroundView />, { wrapper: Wrapper })
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Playground' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: '程序输出' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: '编译器输出' })).toBeTruthy()
+  })
+
   it('announces run start, completion, and failure without reading program output', async () => {
     let finish!: (result: RunResult) => void
     runner.run.mockImplementationOnce(() => new Promise<RunResult>((resolve) => {
@@ -314,6 +322,63 @@ describe('playgroundView student flow', () => {
       name: `关闭标签页: ${tabs[1]?.textContent}`,
     }))
     await waitFor(() => expect(document.activeElement).toBe(firstTab))
+  })
+
+  it('discloses shared draft scope and keeps mobile controls at least 44px tall', () => {
+    render(<PlaygroundView />, { wrapper: Wrapper })
+
+    expect(screen.getByTestId('playground-scope-note').textContent).toContain(
+      '会在所有学习目标之间共享',
+    )
+    expect(screen.getByTestId('playground-scope-note').textContent).toContain('Ctrl+M')
+    expect(screen.getByTestId('playground-close-tab').className).toContain('size-11')
+    expect(screen.getByTestId('playground-new-tab').className).toContain('size-11')
+    expect(screen.getByRole('tablist').contains(screen.getByTestId('playground-new-tab')))
+      .toBe(false)
+    expect(screen.getByTestId('playground-run').className).toContain('h-11')
+  })
+
+  it('requires confirmation before deleting a tab with edited code', async () => {
+    render(<PlaygroundView />, { wrapper: Wrapper })
+    fireEvent.change(screen.getByTestId('fake-playground-editor'), {
+      target: { value: 'main() { println("keep me") }' },
+    })
+    await waitFor(() => {
+      expect(usePlaygroundSession.getState().tabs[0]?.initialCode)
+        .toBe('main() { println("keep me") }')
+    })
+
+    fireEvent.click(screen.getByTestId('playground-close-tab'))
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.textContent).toContain('此操作无法撤销')
+    expect(dialog.querySelector('[data-slot="dialog-footer"]')?.className)
+      .toContain('flex-col sm:flex-row')
+    expect(usePlaygroundSession.getState().tabs).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('button', { name: '保留标签页' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    fireEvent.click(screen.getByTestId('playground-close-tab'))
+    fireEvent.click(screen.getByRole('button', { name: '删除标签页' }))
+    await waitFor(() => expect(usePlaygroundSession.getState().tabs).toHaveLength(0))
+  })
+
+  it('returns focus to the edited-tab close button after dismissing deletion with Escape', async () => {
+    render(<PlaygroundView />, { wrapper: Wrapper })
+    fireEvent.change(screen.getByTestId('fake-playground-editor'), {
+      target: { value: 'main() { println("keep focus") }' },
+    })
+    await waitFor(() => {
+      expect(usePlaygroundSession.getState().tabs[0]?.initialCode)
+        .toBe('main() { println("keep focus") }')
+    })
+
+    const closeButton = screen.getByTestId('playground-close-tab')
+    fireEvent.click(closeButton)
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await waitFor(() => expect(document.activeElement).toBe(closeButton))
   })
 
   it('persists each edit into the active Playground tab shortly after it is typed', async () => {
