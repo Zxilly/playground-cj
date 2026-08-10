@@ -3,7 +3,7 @@ import type { Messages } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import { I18nProvider } from '@lingui/react'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { messages as enMessages } from '@/locales/en/messages.mjs'
 import { messages as zhMessages } from '@/locales/zh/messages.mjs'
@@ -107,7 +107,7 @@ describe('ui accessibility copy uses Lingui translations', () => {
     expect(screen.getByTitle('切换侧边栏')).toBeTruthy()
   })
 
-  it('renders translated mobile sidebar accessibility copy in zh locale', () => {
+  it('renders translated mobile sidebar accessibility copy in zh locale', async () => {
     renderWithZh(
       <SidebarProvider>
         <SidebarTrigger />
@@ -115,10 +115,16 @@ describe('ui accessibility copy uses Lingui translations', () => {
       </SidebarProvider>
     )
 
-    fireEvent.click(screen.getByRole('button', { name: '切换侧边栏' }))
+    const trigger = screen.getByRole('button', { name: '切换侧边栏' })
+    fireEvent.click(trigger)
 
     screen.getByText('侧边栏')
     screen.getByText('显示移动端侧边栏。')
+    const close = screen.getByRole('button', { name: '关闭' })
+    expect(close.className).toContain('size-11')
+    expect(close.className).toContain('lg:size-auto')
+    fireEvent.click(close)
+    await waitFor(() => expect(document.activeElement).toBe(trigger))
   })
 
   it('renders english accessibility copy from compiled catalogs', () => {

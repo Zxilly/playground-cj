@@ -117,7 +117,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
               <Button
                 onClick={toggleOutput}
                 variant="outline"
-                className="w-full flex justify-between items-center my-2"
+                className="my-2 min-h-11 w-full flex items-center justify-between"
               >
                 <span>
                   <Trans>
@@ -148,7 +148,7 @@ function Playground({ defaultCode }: PlaygroundProps) {
         </Trans>
         <a
           href="https://github.com/Zxilly/playground-cj"
-          className="hover:underline"
+          className="inline-flex min-h-11 items-center justify-center px-1 hover:underline lg:min-h-0"
           target="_blank"
           rel="noopener noreferrer"
         >

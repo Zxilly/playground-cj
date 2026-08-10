@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { uiFontFamily } from '@/app/font'
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { notFound } from 'next/navigation'
 import { LinguiClientProvider } from '@/modules/i18n/LinguiClientProvider'
+import TrackingScript from '@/modules/analytics/TrackingScript'
 import { isLocale } from '@/lib/i18n'
+import '../globals.css'
 
 interface LayoutProps {
   children: ReactNode
@@ -31,14 +36,33 @@ export default async function LangLayout({ children, params }: LayoutProps) {
     notFound()
 
   const { messages } = await import(`@/locales/${lang}/messages.mjs`)
+  const documentLanguage = lang === 'en' ? 'en' : 'zh-CN'
 
   return (
-    <LinguiClientProvider
-      initialLocale={lang}
-      initialMessages={messages}
-    >
-      {children}
-    </LinguiClientProvider>
+    <html lang={documentLanguage} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=localStorage.getItem('classroom-theme-mode')||'auto';var d=m==='dark'||(m==='auto'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body
+        style={{
+          fontFamily: uiFontFamily,
+        }}
+      >
+        <LinguiClientProvider
+          initialLocale={lang}
+          initialMessages={messages}
+        >
+          {children}
+        </LinguiClientProvider>
+        <Analytics />
+        <TrackingScript />
+        <SpeedInsights />
+      </body>
+    </html>
   )
 }
 

@@ -55,7 +55,7 @@ const ShareButton = memo(() => {
     <>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button className="w-full sm:w-auto">
+          <Button className="min-h-11 w-full px-2 sm:w-auto lg:min-h-9 lg:px-4">
             <Trans>分享</Trans>
             {' '}
             <ChevronDown className="ml-2 h-4 w-4" />
@@ -65,7 +65,7 @@ const ShareButton = memo(() => {
           <div className="flex flex-col space-y-2">
             <Button
               variant="ghost"
-              className="justify-start"
+              className="min-h-11 justify-start lg:min-h-9"
               onClick={() => handleShare('url')}
             >
               <Link className="mr-2 h-4 w-4" />
@@ -73,7 +73,7 @@ const ShareButton = memo(() => {
             </Button>
             <Button
               variant="ghost"
-              className="justify-start"
+              className="min-h-11 justify-start lg:min-h-9"
               onClick={() => handleShare('hash')}
             >
               <Hash className="mr-2 h-4 w-4" />

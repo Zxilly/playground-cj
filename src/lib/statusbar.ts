@@ -14,6 +14,8 @@ export interface StatusBarOptions {
   position?: 'top' | 'bottom'
   /** 状态栏高度，默认 22px */
   height?: number
+  /** 窄屏触控高度；省略时沿用 height */
+  compactHeight?: number
   /** 自定义样式类名 */
   className?: string
 }
@@ -58,6 +60,7 @@ export async function createCustomStatusBar(
   const {
     position = 'bottom',
     height = 22,
+    compactHeight = height,
     className = '',
   } = options
 
@@ -73,7 +76,6 @@ export async function createCustomStatusBar(
   container.style.cssText = `
     position: absolute;
     z-index: 1;
-    height: ${height}px;
     width: 100%;
     left: 0;
     right: 0;
@@ -85,6 +87,16 @@ export async function createCustomStatusBar(
     overflow: hidden;
     flex-shrink: 0;
   `
+
+  // The status bar is created imperatively after React has rendered. Keep its
+  // responsive height in the same lifecycle instead of relying on a global
+  // stylesheet that may not reach Monaco's auxiliary workbench part.
+  const compactViewport = window.matchMedia('(max-width: 1023px)')
+  const applyResponsiveHeight = () => {
+    container.style.height = `${compactViewport.matches ? compactHeight : height}px`
+  }
+  applyResponsiveHeight()
+  compactViewport.addEventListener('change', applyResponsiveHeight)
 
   if (position === 'top') {
     container.style.top = '0'
@@ -186,6 +198,7 @@ export async function createCustomStatusBar(
     },
 
     dispose() {
+      compactViewport.removeEventListener('change', applyResponsiveHeight)
       entries.forEach(entryData => entryData.accessor.dispose())
       entries.clear()
       auxiliaryPart.dispose()

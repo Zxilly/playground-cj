@@ -8,7 +8,7 @@ import type { Locale } from '@/lib/i18n'
 import { getLocaleHref } from '@/lib/siteHref'
 import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, Globe } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Trans } from '@lingui/react/macro'
 
 import { useLanguage } from '@/hooks/useLanguage'
@@ -29,6 +29,14 @@ function navigateToLocale(locale: Locale) {
 export function LanguageSelector() {
   const { locale } = useLanguage()
   const [open, setOpen] = useState(false)
+  const [commandSession, setCommandSession] = useState(0)
+  const popoverContentRef = useRef<HTMLDivElement>(null)
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen)
+      setCommandSession(current => current + 1)
+    setOpen(nextOpen)
+  }
 
   const handleLanguageChange = (newLocale: Locale) => {
     if (newLocale !== locale) {
@@ -39,21 +47,36 @@ export function LanguageSelector() {
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-auto justify-between"
+          className="min-h-11 w-auto justify-between lg:min-h-9"
         >
           <Globe className="mr-2 h-4 w-4" />
           {languageNames[locale]?.nativeName || locale}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[180px] p-0">
-        <Command>
+      <PopoverContent
+        ref={popoverContentRef}
+        className="w-[180px] p-0"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          requestAnimationFrame(() => {
+            popoverContentRef.current
+              ?.querySelector<HTMLElement>('[cmdk-root]')
+              ?.focus()
+          })
+        }}
+      >
+        <Command
+          key={commandSession}
+          label={locale === 'zh' ? '选择语言' : 'Select language'}
+          defaultValue={locale}
+        >
           <CommandEmpty>
             <Trans>未找到语言。</Trans>
           </CommandEmpty>
@@ -63,6 +86,7 @@ export function LanguageSelector() {
                 <CommandItem
                   key={lang}
                   value={lang}
+                  className="min-h-11 lg:min-h-8"
                   onSelect={() => handleLanguageChange(lang as Locale)}
                 >
                   <Check

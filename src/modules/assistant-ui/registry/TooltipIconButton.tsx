@@ -31,7 +31,7 @@ export function TooltipIconButton({
           variant="ghost"
           size="icon"
           {...rest}
-          className={cn('aui-button-icon size-6 p-1', className)}
+          className={cn('aui-button-icon size-11 p-1 lg:size-6', className)}
           ref={ref}
         >
           <span aria-hidden="true" className="aui-button-icon-visual inline-flex items-center justify-center">
