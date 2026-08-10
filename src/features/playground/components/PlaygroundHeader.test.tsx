@@ -1,12 +1,14 @@
 import * as React from 'react'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { PlaygroundHeader } from '@/features/playground/components/PlaygroundHeader'
 
+let desktop = true
+
 function mockUseMedia() {
-  return true
+  return desktop
 }
 
 function mockUseLanguage() {
@@ -55,6 +57,7 @@ vi.mock('@/features/playground/components/ShareButton', () => ({
 
 describe('playground header', () => {
   beforeEach(() => {
+    desktop = true
     vi.stubGlobal('location', {
       ...window.location,
       origin: 'https://playground.cj.zxilly.dev',
@@ -62,6 +65,7 @@ describe('playground header', () => {
   })
 
   afterEach(() => {
+    cleanup()
     vi.unstubAllGlobals()
   })
 
@@ -83,5 +87,33 @@ describe('playground header', () => {
     )
 
     expect(screen.getByRole('link', { name: '教程' }).getAttribute('href')).toBe('https://tour.cj.zxilly.dev/zh')
+    const heading = screen.getByRole('heading', { level: 1 })
+    expect(heading.className).toContain('whitespace-nowrap')
+    expect(heading.parentElement?.className).toContain('shrink-0')
+    expect(screen.getByText('Examples Dropdown').parentElement?.className).toContain('w-[160px]')
+    expect(screen.getByText('Examples Dropdown').parentElement?.className).toContain('xl:w-[200px]')
+  })
+
+  it('stacks the narrow header and keeps its primary actions touch sized', () => {
+    desktop = false
+    const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
+    i18n.activate('zh')
+
+    render(
+      <I18nProvider i18n={i18n}>
+        <PlaygroundHeader
+          handleRun={() => {}}
+          handleFormat={() => {}}
+          wrapperRef={{ current: undefined }}
+        />
+      </I18nProvider>,
+    )
+
+    const narrowHeader = screen.getByRole('heading', { level: 1 }).parentElement?.parentElement
+    expect(narrowHeader?.className).toContain('flex-col')
+    expect(narrowHeader?.className).not.toContain('sm:flex-row')
+    expect(screen.getByRole('link', { name: '教程' }).className).toContain('min-h-11')
+    expect(screen.getByRole('button', { name: '运行' }).className).toContain('min-h-11')
+    expect(screen.getByRole('button', { name: '格式化' }).className).toContain('min-h-11')
   })
 })

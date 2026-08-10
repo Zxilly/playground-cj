@@ -24,5 +24,7 @@ describe('tooltipIconButton', () => {
 
     expect(visual?.getAttribute('aria-hidden')).toBe('true')
     expect(visual?.contains(icon)).toBe(true)
+    expect(button.className).toContain('size-11')
+    expect(button.className).toContain('lg:size-6')
   })
 })

@@ -363,6 +363,7 @@ export function MonacoEditorReactComp({
             const statusBar = await createCustomStatusBar(parentContainer, {
               position: 'bottom',
               height: 22,
+              compactHeight: 44,
             })
             if (!isActive()) {
               statusBar.dispose()

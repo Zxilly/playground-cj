@@ -49,7 +49,7 @@ function ActionRow({ icon, label, description, disabled, onSelect }: ActionRowPr
       disabled={disabled}
       onClick={onSelect}
       className={cn(
-        'flex items-center gap-2 px-2 py-1.5 rounded-sm text-left w-full text-sm',
+        'flex min-h-11 items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm lg:min-h-8 w-full',
         'hover:bg-accent hover:text-accent-foreground',
         'focus:bg-accent focus:text-accent-foreground focus:outline-none',
         'disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed',

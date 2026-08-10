@@ -47,7 +47,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: Playgr
   if (isDesktop) {
     return (
       <div className="flex flex-row justify-between items-center">
-        <div className="flex items-center">
+        <div className="flex shrink-0 items-center">
           <Image
             src="/icon.png"
             alt=""
@@ -55,7 +55,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: Playgr
             height={32}
             className="m-4"
           />
-          <h1 className="text-2xl font-bold">
+          <h1 className="whitespace-nowrap text-2xl font-bold">
             <Trans>仓颉 Playground</Trans>
           </h1>
         </div>
@@ -66,7 +66,7 @@ export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: Playgr
               <Trans>教程</Trans>
             </a>
           </Button>
-          <div className="w-[200px]">
+          <div className="w-[160px] xl:w-[200px]">
             <ExamplesAction wrapperRef={wrapperRef} />
           </div>
           <LanguageSelector />
@@ -84,8 +84,8 @@ export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: Playgr
 
   return (
     <div>
-      <div className="flex flex-row justify-between items-center mb-2">
-        <div className="flex items-center">
+      <div className="mb-2 flex flex-col items-stretch gap-2">
+        <div className="flex min-w-0 items-center">
           <Image
             src="/icon.png"
             alt=""
@@ -93,12 +93,12 @@ export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: Playgr
             height={24}
             className="m-2"
           />
-          <h1 className="text-base font-bold">
+          <h1 className="min-w-0 text-base font-bold">
             <Trans>仓颉 Playground</Trans>
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+        <div className="flex w-full items-center gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&_button]:w-full">
+          <Button variant="outline" size="sm" className="min-h-11 lg:min-h-8" asChild>
             <a href={tourHref}>
               <BookOpen className="h-4 w-4 mr-1" />
               <Trans>教程</Trans>
@@ -112,11 +112,11 @@ export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: Playgr
         <div className="w-full">
           <ExamplesAction wrapperRef={wrapperRef} />
         </div>
-        <div className="flex flex-row space-x-2 [&>*]:flex-1 [&_button]:w-full">
-          <Button onClick={handleRun}>
+        <div className="flex flex-row space-x-2 [&>*]:min-w-0 [&>*]:flex-1 [&_button]:w-full">
+          <Button className="min-h-11 px-2 lg:min-h-9 lg:px-4" onClick={handleRun}>
             <Trans>运行</Trans>
           </Button>
-          <Button onClick={handleFormat}>
+          <Button className="min-h-11 px-2 lg:min-h-9 lg:px-4" onClick={handleFormat}>
             <Trans>格式化</Trans>
           </Button>
           <ShareButton />
