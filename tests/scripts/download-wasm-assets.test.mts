@@ -11,7 +11,7 @@ import {
   resolveZipEntryPath,
 } from '../../scripts/download-wasm-assets.mjs'
 
-const WASM_ASSETS_ZIP_SHA256 = '1dbf2c7fb5d36873009076449778c5c6373b4c0680b4a9a94ac9910560fc5585'
+const WASM_ASSETS_ZIP_SHA256 = '5c726813946e4a791b3a4f7e2f0c5ca85eee944a30678b40e9ad4ec40ea064d0'
 
 let tempDirs: string[] = []
 

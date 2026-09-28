@@ -19,5 +19,18 @@ modal run modal/build_runner_image.py
 modal deploy modal/runner.py
 ```
 
+To deploy an image built and tested in WSL, push it to the existing public
+`ghcr.io/zxilly/cj-runner` repository, then import its immutable registry digest:
+
+```sh
+modal run modal/build_runner_image.py \
+  --prebuilt-image ghcr.io/zxilly/cj-runner@sha256:<digest>
+modal deploy modal/runner.py
+```
+
+This imports the already-built runner and only adds Modal's Python runtime.
+`--prebuilt-image` rejects mutable tags. Omitting it preserves the Dockerfile
+build used by the deployment workflow.
+
 Use the deployed base URL without `/run` for `CJ_RUNNER_MODAL_URL`. Production
 deployments are automated by `.github/workflows/deploy-runner.yml`.

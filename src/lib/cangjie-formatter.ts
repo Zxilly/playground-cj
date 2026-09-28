@@ -30,6 +30,7 @@ function isFormatterModule(value: unknown): value is CangjieFormatterModule {
 async function loadBrowserFormatterModule(): Promise<CangjieFormatterModule> {
   const imported: unknown = await import(
     /* webpackIgnore: true */
+    /* @vite-ignore */
     FORMATTER_MODULE_URL,
   )
   if (

@@ -6,6 +6,7 @@ import {
   loadCangjieToolchainLock,
 } from '../../src/lib/teach/classroom/cangjie-toolchain'
 import { canonicalJson } from '../../src/lib/teach/classroom/canonical-json'
+import { PLAYGROUND_PROJECT_MANIFEST } from '../../src/lib/monaco/lsp-document-mirror'
 
 const repositoryRoot = resolve(process.cwd())
 function readRepositoryFile(...segments: string[]): string {
@@ -92,5 +93,8 @@ describe('cangjie toolchain alignment', () => {
 
     const compatibility = /^cjc-version\s*=\s*"([^"]+)"\s*$/m.exec(cjpm)
     expect(compatibility?.[1]).toBe(lock.release)
+    expect(PLAYGROUND_PROJECT_MANIFEST).toContain(`cjc-version = "${lock.release}"`)
+    const wasmBuild = JSON.parse(readRepositoryFile('cangjie_patch', 'wasm-build.lock.json'))
+    expect(wasmBuild.release).toBe(lock.release)
   })
 })

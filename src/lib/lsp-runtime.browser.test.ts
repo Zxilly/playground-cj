@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, expect, it } from 'vitest'
+import toolchainLock from '../../cj-runner/cangjie-toolchain.lock.json'
 import { CJO_MODULES, clearAllLspCache } from './lsp-server-runtime'
 
 beforeEach(clearAllLspCache)
 afterEach(clearAllLspCache)
 
-async function initializeWorker() {
+async function initializeWorker(verify?: (port: MessagePort) => Promise<void>) {
   const logs: string[] = []
   const worker = new Worker(new URL('../workers/lsp-runtime.worker.ts', import.meta.url), { type: 'module' })
   const channel = new MessageChannel()
@@ -24,7 +25,7 @@ async function initializeWorker() {
             params: {
               processId: null,
               rootUri: 'file:///playground',
-              capabilities: {},
+              capabilities: { textDocument: {} },
               workspaceFolders: [{ uri: 'file:///playground', name: 'playground' }],
               initializationOptions: {
                 cangjiePath: '/cangjie',
@@ -47,6 +48,9 @@ async function initializeWorker() {
     })
     worker.postMessage({ type: 'start', serverPort: channel.port2 }, [channel.port2])
     expect((await initialized).capabilities).toHaveProperty('textDocumentSync')
+    expect(logs).toContain(`Cangjie LSP ${toolchainLock.release}`)
+    channel.port1.postMessage({ jsonrpc: '2.0', method: 'initialized', params: {} })
+    await verify?.(channel.port1)
     return logs
   }
   finally {
@@ -54,6 +58,34 @@ async function initializeWorker() {
     channel.port1.close()
   }
 }
+
+it('type-checks STDX imports with the matching CJO modules and updates diagnostics', async () => {
+  await initializeWorker(async (port) => {
+    const uri = 'file:///playground/src/main.cj'
+    const diagnostics: { message: string, severity: number }[][] = []
+    port.onmessage = ({ data }) => {
+      if (data.method === 'textDocument/publishDiagnostics' && data.params.uri === uri)
+        diagnostics.push(data.params.diagnostics)
+    }
+    const source = (type: string) => `import stdx.encoding.base64.*\nmain() {\n    let encoded: ${type} = toBase64String("test".toArray())\n    println(encoded)\n}\n`
+    port.postMessage({
+      jsonrpc: '2.0',
+      method: 'textDocument/didOpen',
+      params: { textDocument: { uri, languageId: 'Cangjie', version: 1, text: source('Int64') } },
+    })
+    await expect.poll(() => diagnostics.flat(), { timeout: 30_000 }).toEqual(expect.arrayContaining([
+      expect.objectContaining({ severity: 1, message: expect.stringMatching(/Int64/) }),
+    ]))
+
+    diagnostics.length = 0
+    port.postMessage({
+      jsonrpc: '2.0',
+      method: 'textDocument/didChange',
+      params: { textDocument: { uri, version: 2 }, contentChanges: [{ text: source('String') }] },
+    })
+    await expect.poll(() => diagnostics.at(-1), { timeout: 30_000 }).toEqual([])
+  })
+}, 60_000)
 
 it('starts the real LSP worker with production caching and answers initialize', async () => {
   expect(CJO_MODULES.length).toBeGreaterThan(0)

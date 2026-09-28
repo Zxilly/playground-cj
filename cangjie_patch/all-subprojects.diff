@@ -1,6 +1,7 @@
 # ======================================================================
-# sub-project: cangjie_compiler   base: 70a5a6740f9e7a33683890334cb3347cf51629d7
+# sub-project: cangjie_compiler   base: 2fe6b291d37153aa1da56c6c7c020d5ab67fa93d
 # ======================================================================
+
 diff --git a/cangjie_compiler/CMakeLists.txt b/cangjie_compiler/CMakeLists.txt
 index 24a39915..1a8832b5 100644
 --- a/cangjie_compiler/CMakeLists.txt
@@ -210,10 +211,10 @@ index a5be87f5..88240f16 100644
  
  class CjoManager {
 diff --git a/cangjie_compiler/include/cangjie/Option/Option.h b/cangjie_compiler/include/cangjie/Option/Option.h
-index 86c6daee..867175fb 100644
+index 1f6508a0..da4df499 100644
 --- a/cangjie_compiler/include/cangjie/Option/Option.h
 +++ b/cangjie_compiler/include/cangjie/Option/Option.h
-@@ -838,9 +838,7 @@ public:
+@@ -837,9 +837,7 @@ public:
      bool interpMainNoLinkage = false;
      bool interpCHIR = false;
      bool constEvalDebug = false;
@@ -749,10 +750,10 @@ index 29a882ea..9b9c533c 100644
  #endif
      Utils::ProfileRecorder::Start("ResolveImportedPackages", "AddPackageDeclMap");
 diff --git a/cangjie_compiler/src/Option/OptionAction.cpp b/cangjie_compiler/src/Option/OptionAction.cpp
-index c803af7f..4062c66f 100644
+index 9f9db321..3a99b152 100644
 --- a/cangjie_compiler/src/Option/OptionAction.cpp
 +++ b/cangjie_compiler/src/Option/OptionAction.cpp
-@@ -858,6 +858,7 @@ std::unordered_map<Options::ID, std::function<bool(GlobalOptions&, OptionArgInst
+@@ -859,6 +859,7 @@ std::unordered_map<Options::ID, std::function<bool(GlobalOptions&, OptionArgInst
      }},
  
      // ---------- COMPILE CONTROL OPTIONS ----------*/
@@ -760,7 +761,7 @@ index c803af7f..4062c66f 100644
      { Options::ID::OUTPUT_TYPE, [](GlobalOptions& opts, const OptionArgInstance& arg) {
          // `--output-type=hotreload` generates DSO as well, except that we need to do more (or less) work on it.
          // To prevent adding checking everywhere `SharedLib` is checked for newly added hotreload output type,
-@@ -881,6 +882,7 @@ std::unordered_map<Options::ID, std::function<bool(GlobalOptions&, OptionArgInst
+@@ -882,6 +883,7 @@ std::unordered_map<Options::ID, std::function<bool(GlobalOptions&, OptionArgInst
          opts.compileTarget = GlobalOptions::CompileTarget(COMPILE_TARGET_MAP.at(arg.value));
          return true;
      }},
@@ -1305,10 +1306,10 @@ index 846814da..a74d7fc7 100644
  }
  
 diff --git a/cangjie_compiler/src/Sema/TypeCheckUtil.cpp b/cangjie_compiler/src/Sema/TypeCheckUtil.cpp
-index 760915c0..160ce713 100644
+index e6851389..9248d89f 100644
 --- a/cangjie_compiler/src/Sema/TypeCheckUtil.cpp
 +++ b/cangjie_compiler/src/Sema/TypeCheckUtil.cpp
-@@ -859,7 +859,6 @@ bool AcceptPlaceholderTarget(const AST::Node& n)
+@@ -862,7 +862,6 @@ bool AcceptPlaceholderTarget(const AST::Node& n)
      return PLACEHOLDABLE_NODES.count(n.astKind) != 0;
  }
  
@@ -1316,7 +1317,7 @@ index 760915c0..160ce713 100644
  bool IsNeedRuntimeCheck(TypeManager& typeManager, Ty& srcTy, Ty& targetTy)
  {
      auto isFinalType = [](Ty& ty) {
-@@ -888,7 +887,6 @@ bool IsNeedRuntimeCheck(TypeManager& typeManager, Ty& srcTy, Ty& targetTy)
+@@ -891,7 +890,6 @@ bool IsNeedRuntimeCheck(TypeManager& typeManager, Ty& srcTy, Ty& targetTy)
          srcTy.HasGeneric() || targetTy.HasGeneric() || typeManager.IsSubtype(&srcTy, &targetTy, true, false) ||
          typeManager.IsSubtype(&targetTy, &srcTy, true, false);
  }
@@ -1543,10 +1544,9 @@ index b14a9ae7..6da0eda7 100644
      std::pair<ResultDataType, std::vector<std::string>> GetDataAndOrder() const;
 
 # ======================================================================
-
-# sub-project: cangjie_tools      base: 1c06a8da1a9e0a5543904259ef918ba5ba606f95
-
+# sub-project: cangjie_tools   base: 69ba88c0cafad01f854ca4ea30c82730a4ff5135
 # ======================================================================
+
 diff --git a/cangjie_tools/cangjie-language-server/CMakeLists.txt b/cangjie_tools/cangjie-language-server/CMakeLists.txt
 index b60f30c0..e12cb9ef 100644
 --- a/cangjie_tools/cangjie-language-server/CMakeLists.txt
@@ -1951,7 +1951,7 @@ index 53fb79ee..6abb9189 100644
          action();
          // Make sure function stored by ThreadFunc is destroyed before Cleanup runs.
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
-index 09252d8d..dfc4e88a 100644
+index 09252d8d..d169a7ac 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
 +++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkLanguageServer.cpp
 @@ -4,6 +4,9 @@
@@ -1989,7 +1989,7 @@ index 09252d8d..dfc4e88a 100644
      bool success = PerformCompiler(params);
      if (!success) {
          transp.Reply(std::move(id), std::move(ValueOrError(ValueOrErrorCheck::ERR,
-@@ -543,9 +557,16 @@ void ArkLanguageServer::OnShutdown(nlohmann::json id)
+@@ -543,14 +557,23 @@ void ArkLanguageServer::OnShutdown(nlohmann::json id)
  void ArkLanguageServer::OnDocumentDidOpen(const DidOpenTextDocumentParams &params)
  {
      std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
@@ -2007,7 +2007,27 @@ index 09252d8d..dfc4e88a 100644
      DocCache::Doc doc = DocMgr.GetDoc(file);
      const std::string &contents = params.textDocument.text;
      bool reBuild = false;
-@@ -584,12 +605,22 @@ void ArkLanguageServer::OnDocumentDidClose(const DidCloseTextDocumentParams &par
+     // file not in pkgInfo or content change need reBuild
+-    if (!doc.isInitCompiled || (doc.version != -1 && doc.contents != contents)) {
++    // Standalone documents are authoritative even when initialize precompiled
++    // an empty virtual file before the first didOpen version was received.
++    if (!doc.isInitCompiled || ((standaloneDocuments || doc.version != -1) && doc.contents != contents)) {
+         reBuild = true;
+     }
+     if (IsInCjlibDir(file)) {
+@@ -574,5 +597,11 @@ void ArkLanguageServer::OnDocumentDidOpen(const DidOpenTextDocumentParams &param
+             UpdateFileStatusInCI(pkgName, file,CompilerInstance::SrcCodeChangeState::CHANGED);
+     }
+     int64_t version = DocMgr.AddDoc(file, params.textDocument.version, contents);
++    if (standaloneDocuments && reBuild) {
++        // Rebuild must also invalidate the compiler package cache and copy
++        // the newly opened text, just as didChange does. Otherwise the
++        // compiler can reuse the empty file analyzed during initialize.
++        CompilerCangjieProject::GetInstance()->UpdateBuffCache(file, true);
++    }
+     Server->AddDoc(file, contents, version, ark::NeedDiagnostics::YES, reBuild);
+ }
+@@ -584,12 +613,22 @@ void ArkLanguageServer::OnDocumentDidClose(const DidCloseTextDocumentParams &par
      logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::onDocumentDidClose in");
  
      std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
@@ -2031,7 +2051,7 @@ index 09252d8d..dfc4e88a 100644
      if (Options::GetInstance().GetLSPFlag("enableParallel").has_value()) {
          if (!Options::GetInstance().GetLSPFlag("enableParallel").value()) {
              return;
-@@ -605,15 +636,24 @@ void ArkLanguageServer::OnDocumentDidChange(const DidChangeTextDocumentParams &p
+@@ -605,15 +644,24 @@ void ArkLanguageServer::OnDocumentDidChange(const DidChangeTextDocumentParams &p
      Logger& logger = Logger::Instance();
      logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::OnDocumentDidChange in");
      std::string file = FileStore::NormalizePath(URI::Resolve(params.textDocument.uri.file));
@@ -2056,7 +2076,7 @@ index 09252d8d..dfc4e88a 100644
      }
  }
  
-@@ -856,6 +896,12 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
+@@ -856,6 +904,12 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
      Logger& logger = Logger::Instance();
      logger.LogMessage(MessageType::MSG_LOG, "ArkLanguageServer::OnDidChangeWatchedFiles in.");
  
@@ -2069,7 +2089,7 @@ index 09252d8d..dfc4e88a 100644
      std::vector<FileWatchedEvent> changes;
      WrapClientWatchedFiles(changes, params);
      for (auto &event : changes) {
-@@ -866,6 +912,7 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
+@@ -866,6 +920,7 @@ void ArkLanguageServer::OnDidChangeWatchedFiles(const DidChangeWatchedFilesParam
          }
          Server->ChangeWatchedFiles(file, event.type, &DocMgr);
      }
@@ -2077,7 +2097,7 @@ index 09252d8d..dfc4e88a 100644
  }
  // LCOV_EXCL_STOP
  bool ArkLanguageServer::CheckFileInCangjieProject(const std::string &filePath, bool ignoreMacro) const
-@@ -874,6 +921,9 @@ bool ArkLanguageServer::CheckFileInCangjieProject(const std::string &filePath, b
+@@ -874,6 +929,9 @@ bool ArkLanguageServer::CheckFileInCangjieProject(const std::string &filePath, b
          CANGJIE_MACRO_FILE_EXTENSION()))) {
          return false;
      }
@@ -2087,7 +2107,7 @@ index 09252d8d..dfc4e88a 100644
      return CompilerCangjieProject::GetInstance()->GetCangjieFileKind(filePath).first != CangjieFileKind::MISSING;
  }
  // LCOV_EXCL_START
-@@ -1251,6 +1301,19 @@ std::vector<DiagnosticToken> ArkLanguageServer::GetDiagsOfCurFile(std::string fi
+@@ -1251,6 +1309,19 @@ std::vector<DiagnosticToken> ArkLanguageServer::GetDiagsOfCurFile(std::string fi
  void ArkLanguageServer::RemoveDiagOfCurPkg(const std::string& dirName)
  {
      std::lock_guard<std::mutex> lock(fixItsMutex);
@@ -2107,7 +2127,7 @@ index 09252d8d..dfc4e88a 100644
      std::vector<std::string> files = GetAllFilesUnderCurrentPath(dirName, CANGJIE_FILE_EXTENSION(), false);
      for (auto &iter : files) {
          LowFileName(iter);
-@@ -1262,6 +1325,7 @@ void ArkLanguageServer::RemoveDiagOfCurPkg(const std::string& dirName)
+@@ -1262,6 +1333,7 @@ void ArkLanguageServer::RemoveDiagOfCurPkg(const std::string& dirName)
          std::string path = JoinPath(dirName, iter);
          (void) fixItsMap.erase(path);
      }
@@ -2115,7 +2135,7 @@ index 09252d8d..dfc4e88a 100644
  }
  
  void ArkLanguageServer::RemoveDiagOfCurFile(const std::string& filePath)
-@@ -1305,6 +1369,12 @@ void ArkLanguageServer::RemoveDiagnostic(std::string file, DiagnosticToken diagT
+@@ -1305,6 +1377,12 @@ void ArkLanguageServer::RemoveDiagnostic(std::string file, DiagnosticToken diagT
      }
  }
  
@@ -2175,10 +2195,10 @@ index 12d2d65c..8d1e3158 100644
  } // namespace ark
  
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp
-index a7506b40..e716934d 100644
+index 0c180052..efe0395f 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp
 +++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkServer.cpp
-@@ -1072,9 +1072,11 @@ void ArkServer::ChangeWatchedFiles(const std::string &file, FileChangeType type,
+@@ -1065,9 +1065,11 @@ void ArkServer::ChangeWatchedFiles(const std::string &file, FileChangeType type,
          if (type == FileChangeType::DELETED) {
              Logger::Instance().LogMessage(MessageType::MSG_INFO, "delete the file:  " + file);
              CompilerCangjieProject::GetInstance()->IncrementForFileDelete(file);
@@ -2231,7 +2251,7 @@ index 60f310a8..6d4e440d 100644
  foreach(file ${LSP_SRC})
      message(STATUS "${file}")
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
-index 611fc77f..e7e9fd34 100644
+index 7e8eeab7..23b4da06 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
 +++ b/cangjie_tools/cangjie-language-server/src/languageserver/CompilerCangjieProject.cpp
 @@ -20,7 +20,9 @@
@@ -2321,7 +2341,7 @@ index 611fc77f..e7e9fd34 100644
      for (const auto &file : packages[0]->files) {
          auto userWrittenPackage = file->package == nullptr ? DEFAULT_PACKAGE_NAME : file->curPackage->fullPackageName;
          if (userWrittenPackage != expectedPkgName) {
-@@ -1289,6 +1320,9 @@ std::pair<CangjieFileKind, std::string> CompilerCangjieProject::GetCangjieFileKi
+@@ -1290,6 +1321,9 @@ std::pair<CangjieFileKind, std::string> CompilerCangjieProject::GetCangjieFileKi
      }
  
      std::string normalizeFilePath = Normalize(filePath);
@@ -2331,7 +2351,7 @@ index 611fc77f..e7e9fd34 100644
      std::string dirPath = isPkg ? normalizeFilePath : GetDirPath(normalizeFilePath);
      if (pathToFullPkgName.find(dirPath) != pathToFullPkgName.end()) {
          return {CangjieFileKind::IN_OLD_PACKAGE, pkgInfoMap.at(pathToFullPkgName.at(dirPath))->modulePath};
-@@ -1608,6 +1642,9 @@ void CompilerCangjieProject::InitPkgInfoAndParseNotInModule()
+@@ -1613,6 +1647,9 @@ void CompilerCangjieProject::InitPkgInfoAndParseNotInModule()
              }
              std::string expectedPkgName = packages[0]->fullPackageName;
              for (const auto &file : packages[0]->files) {
@@ -2341,7 +2361,7 @@ index 611fc77f..e7e9fd34 100644
                  auto userWrittenPackage =
                      file->package == nullptr ? DEFAULT_PACKAGE_NAME : file->package->packageName;
                  if (userWrittenPackage != expectedPkgName) {
-@@ -1684,9 +1721,11 @@ void CompilerCangjieProject::EraseOtherCache(const std::string &fullPkgName)
+@@ -1689,9 +1726,11 @@ void CompilerCangjieProject::EraseOtherCache(const std::string &fullPkgName)
  // LCOV_EXCL_STOP
  void CompilerCangjieProject::FullCompilation()
  {
@@ -2353,7 +2373,7 @@ index 611fc77f..e7e9fd34 100644
      // Construct a dummy instance to load the CJO.
      auto buildCjoTaskId = GenTaskId("buildCjo");
      auto buildCjoTask = [this, buildCjoTaskId]() {
-@@ -1811,6 +1850,7 @@ void CompilerCangjieProject::FullCompilation()
+@@ -1816,6 +1855,7 @@ void CompilerCangjieProject::FullCompilation()
  // LCOV_EXCL_START
  bool CompilerCangjieProject::LoadASTCache(const std::string &package)
  {
@@ -2361,7 +2381,7 @@ index 611fc77f..e7e9fd34 100644
      if (!cacheManager->IsStale(package, Digest(GetPathFromPkg(package)))) {
          auto I = cacheManager->Load(package);
          CjoData cjoData;
-@@ -1825,6 +1865,9 @@ bool CompilerCangjieProject::LoadASTCache(const std::string &package)
+@@ -1830,6 +1870,9 @@ bool CompilerCangjieProject::LoadASTCache(const std::string &package)
          cjoManager->SetData(package, cjoData);
          return true;
      }
@@ -2371,7 +2391,7 @@ index 611fc77f..e7e9fd34 100644
  
      return false;
  }
-@@ -1885,6 +1928,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+@@ -1890,6 +1933,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
      moduleManager->WorkspaceModeParser(moduleUri);
      moduleManager->SetRequireAllPackages();
  
@@ -2379,7 +2399,7 @@ index 611fc77f..e7e9fd34 100644
      // In DevEco, cache path will be pass to create cache manager
      std::string cachePath = workspace;
      if (MessageHeaderEndOfLine::GetIsDeveco() && initializationOptions.contains(CACHE_PATH())) {
-@@ -1894,6 +1938,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+@@ -1899,6 +1943,7 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
  #ifndef TEST_FLAG
      cacheManager->InitDir();
  #endif
@@ -2387,7 +2407,7 @@ index 611fc77f..e7e9fd34 100644
  
      // get condition compile from initializationOptions
      ark::GetConditionCompile(initializationOptions, passedWhenKeyValue);
-@@ -1934,9 +1979,11 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
+@@ -1939,9 +1984,11 @@ bool CompilerCangjieProject::Compiler(const std::string &moduleUri,
  #endif
          cjdCachePathOption = FileStore::NormalizePath(cjdCachePathOption);
      }
@@ -2399,7 +2419,7 @@ index 611fc77f..e7e9fd34 100644
      FullCompilation();
      ReleaseMemoryAsync();
      Logger::Instance().CleanKernelLog(std::this_thread::get_id());
-@@ -1958,8 +2005,12 @@ void CompilerCangjieProject::ReleaseMemoryAsync() {
+@@ -1963,8 +2010,12 @@ void CompilerCangjieProject::ReleaseMemoryAsync() {
      auto taskId = GenTaskId("delete_cjd_indexer");
      auto deleteTask = [this, taskId]() {
          thrdPool->TaskCompleted(taskId);
@@ -2412,7 +2432,7 @@ index 611fc77f..e7e9fd34 100644
          for (auto& pkgCI: CIMap) {
              pkgCI.second.reset();
          }
-@@ -2248,6 +2299,10 @@ void CompilerCangjieProject::CheckPackageNameByAbsName(const File &needCheckedFi
+@@ -2253,6 +2304,10 @@ void CompilerCangjieProject::CheckPackageNameByAbsName(const File &needCheckedFi
  
      // check whether the package name is reasonable.
      std::string expectedPkgName = moduleManager->GetExpectedPkgName(needCheckedFile);
@@ -2423,7 +2443,7 @@ index 611fc77f..e7e9fd34 100644
      if (needCheckedFile.package == nullptr) {
          if (!expectedPkgName.empty() && expectedPkgName != DEFAULT_PACKAGE_NAME) {
              if (!pkgInfoMap.count(fullPackageName)) {
-@@ -2588,6 +2643,7 @@ void CompilerCangjieProject::StoreAllPackagesCache()
+@@ -2593,6 +2648,7 @@ void CompilerCangjieProject::StoreAllPackagesCache()
  // LCOV_EXCL_START
  void CompilerCangjieProject::StorePackageCache(const std::string& pkgName)
  {
@@ -2431,7 +2451,7 @@ index 611fc77f..e7e9fd34 100644
      if (!useDB) {
          std::string sourceCodePath = GetPathFromPkg(pkgName);
          if (sourceCodePath.empty()) {
-@@ -2605,6 +2661,9 @@ void CompilerCangjieProject::StorePackageCache(const std::string& pkgName)
+@@ -2610,6 +2666,9 @@ void CompilerCangjieProject::StorePackageCache(const std::string& pkgName)
      }
      cacheManager->Store(
          pkgName, Digest(GetPathFromPkg(pkgName)), *cjoManager->GetData(pkgName));
@@ -2441,7 +2461,7 @@ index 611fc77f..e7e9fd34 100644
  }
  // LCOV_EXCL_STOP
  void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstance> &ci, bool isFullCompilation)
-@@ -2677,6 +2736,7 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+@@ -2682,6 +2741,7 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
      lsp::SymbolCollector sc = lsp::SymbolCollector(*ci->typeManager, *ci->importManager, false);
      sc.SetArkAstMap(std::move(astMap));
      sc.Build(*packages[0], pkgPath);
@@ -2449,7 +2469,7 @@ index 611fc77f..e7e9fd34 100644
      if (useDB) {
          auto shard = lsp::IndexFileOut();
          shard.symbols = sc.GetSymbolMap();
-@@ -2687,7 +2747,9 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+@@ -2692,7 +2752,9 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
          shard.reExportSymbols = sc.GetReExportSymbolMap();
          backgroundIndexDb->UpdateFile(fileMap);
          backgroundIndexDb->Update(curPkgName, shard);
@@ -2460,7 +2480,7 @@ index 611fc77f..e7e9fd34 100644
          // Merge index to memory
          std::unique_lock<std::mutex> indexLock(indexMtx);
          (void) memIndex->pkgSymsMap.insert_or_assign(curPkgName, *sc.GetSymbolMap());
-@@ -2717,12 +2779,16 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
+@@ -2722,12 +2784,16 @@ void CompilerCangjieProject::BuildIndex(const std::unique_ptr<LSPCompilerInstanc
  
  void CompilerCangjieProject::UpdateOnDisk(const std::string &path)
  {
@@ -2477,7 +2497,7 @@ index 611fc77f..e7e9fd34 100644
  }
  
  Position CompilerCangjieProject::getPackageNameErrPos(const File &file) const
-@@ -2804,6 +2870,7 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+@@ -2809,6 +2875,7 @@ void CompilerCangjieProject::BuildIndexFromCjo()
          pkgToModMap.insert_or_assign(cjoPkgName, GetModifilerByAccessLevel(cjoPkg->accessible));
          bool toUpdateDB = true;
          std::string digest;
@@ -2485,7 +2505,7 @@ index 611fc77f..e7e9fd34 100644
          if (useDB) {
              auto cjoID = GetFileIdForDB(cjoPath);
              digest = DigestForCjo(cjoPath);
-@@ -2820,7 +2887,9 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+@@ -2825,7 +2892,9 @@ void CompilerCangjieProject::BuildIndexFromCjo()
                  toUpdateDB = false;
            }
          }
@@ -2495,7 +2515,7 @@ index 611fc77f..e7e9fd34 100644
          if (!useDB || (useDB && toUpdateDB)) {
              Trace::Log("build for cjo:", cjoPkgName);
              sc.Build(*cjoPkg);
-@@ -2843,8 +2912,12 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+@@ -2848,8 +2917,12 @@ void CompilerCangjieProject::BuildIndexFromCjo()
              (void) memIndex->pkgExtendsMap.insert_or_assign(cjoPkgName, *sc.GetSymbolExtendMap());
              (void) memIndex->pkgCrossSymsMap.insert_or_assign(cjoPkgName, *sc.GetCrossSymbolMap());
              (void) memIndex->pkgReExportSymsMap.insert_or_assign(cjoPkgName, *sc.GetReExportSymbolMap());
@@ -2510,7 +2530,7 @@ index 611fc77f..e7e9fd34 100644
              (void) memIndex->pkgSymsMap.insert_or_assign(cjoPkgName, *sc.GetSymbolMap());
              (void) memIndex->pkgRefsMap.insert_or_assign(cjoPkgName, *sc.GetReferenceMap());
              (void) memIndex->pkgRelationsMap.insert_or_assign(cjoPkgName, *sc.GetRelations());
-@@ -2853,14 +2926,17 @@ void CompilerCangjieProject::BuildIndexFromCjo()
+@@ -2858,14 +2931,17 @@ void CompilerCangjieProject::BuildIndexFromCjo()
              (void) memIndex->pkgReExportSymsMap.insert_or_assign(cjoPkgName, *sc.GetReExportSymbolMap());
          }
      }
@@ -2528,7 +2548,7 @@ index 611fc77f..e7e9fd34 100644
          std::string sourceCodePath = GetPathFromPkg(package);
          if (sourceCodePath.empty()) {
              sourceCodePath = package;
-@@ -2879,6 +2955,9 @@ void CompilerCangjieProject::BuildIndexFromCache(const std::string &package) {
+@@ -2884,6 +2960,9 @@ void CompilerCangjieProject::BuildIndexFromCache(const std::string &package) {
              (void) memIndex->pkgCrossSymsMap.insert_or_assign(package, indexCache->get()->crossSymbols);
              (void) memIndex->pkgReExportSymsMap.insert_or_assign(package, indexCache->get()->reExportSymbols);
          }
@@ -3789,7 +3809,7 @@ index 00000000..10a89193
 +
 +#endif // BUILD_WASM
 diff --git a/cangjie_tools/cjfmt/CMakeLists.txt b/cangjie_tools/cjfmt/CMakeLists.txt
-index 3f797eee..04422b03 100644
+index 18f29e34..cc0c429b 100644
 --- a/cangjie_tools/cjfmt/CMakeLists.txt
 +++ b/cangjie_tools/cjfmt/CMakeLists.txt
 @@ -26,9 +26,10 @@ else()

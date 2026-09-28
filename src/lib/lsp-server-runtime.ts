@@ -97,6 +97,7 @@ export async function clearAllLspCache(): Promise<void> {
 }
 
 export interface EmscriptenModule {
+  getVersion: () => string
   onLSPMessage: (messageStr: string) => void
   initLSP: () => void
   startServerLoop: () => void
@@ -250,6 +251,7 @@ export async function initializeLspServerInWorker(
   }
   wasmMod.onLSPMessage = lspMessageHandler
 
+  onLog(`Cangjie LSP ${wasmMod.getVersion()}`)
   onLog('Initializing LSP server...')
   wasmMod.initLSP()
 

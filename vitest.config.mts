@@ -17,13 +17,14 @@ const browserEnv = {
 // Serve Emscripten glue unchanged, as Next does. Vite otherwise rewrites the
 // dynamic import with ?import and rejects imports from public/.
 const lspGluePlugin: Plugin = {
-  name: 'lsp-glue-static-module',
+  name: 'wasm-glue-static-module',
   configureServer(server) {
     server.middlewares.use((req, res, next) => {
-      if (req.url?.split('?')[0] !== '/lsp/LSPServer-wasm.js')
+      const path = req.url?.split('?')[0]
+      if (path !== '/lsp/LSPServer-wasm.js' && path !== '/lsp/cjfmt-wasm.mjs')
         return next()
       res.setHeader('Content-Type', 'text/javascript')
-      res.end(readFileSync(new URL('./public/lsp/LSPServer-wasm.js', import.meta.url)))
+      res.end(readFileSync(new URL(`./public${path}`, import.meta.url)))
     })
   },
 }

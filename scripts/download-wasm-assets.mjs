@@ -6,8 +6,8 @@ import { pipeline } from 'node:stream/promises'
 import * as yauzl from 'yauzl'
 
 const WASM_ASSETS_DIR = join(import.meta.dirname, '..', 'public', 'lsp')
-const WASM_ASSETS_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-assets-1.2.0-alpha.20260724/wasm_assets.zip'
-const WASM_ASSETS_ZIP_SHA256 = '1dbf2c7fb5d36873009076449778c5c6373b4c0680b4a9a94ac9910560fc5585'
+const WASM_ASSETS_ZIP_URL = 'https://github.com/Zxilly/playground-cj/releases/download/wasm-assets-1.2.0/wasm_assets.zip'
+const WASM_ASSETS_ZIP_SHA256 = '5c726813946e4a791b3a4f7e2f0c5ca85eee944a30678b40e9ad4ec40ea064d0'
 const WASM_ASSETS_VERSION_FILE = '.wasm-assets.sha256'
 const CJO_TARGET = 'linux_x86_64_cjnative'
 const REQUIRED_LSP_FILES = [

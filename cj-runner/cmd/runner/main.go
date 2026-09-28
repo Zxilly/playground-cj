@@ -293,13 +293,22 @@ func compileAndRun(ctx context.Context, code, stdin string) (runMessage, error) 
 }
 
 func compilerArguments(requestDirectory string) []string {
-	return []string{
+	arguments := []string{
 		"--import-path=/linux_x86_64_cjnative/dynamic",
 		"--no-sub-pkg",
 		"--output-dir=" + requestDirectory,
 		"-L", "/linux_x86_64_cjnative/dynamic/stdx",
+		"--link-option=--as-needed",
 		"-ldl", "-V", "-j1", "-p", requestDirectory, "--output-type=exe", "-o=main",
 	}
+	// An import path exposes CJO declarations but does not link STDX libraries.
+	// Offer the installed libraries to the linker; --as-needed retains only the
+	// ones referenced by this program, without parsing learner source ourselves.
+	libraries, _ := filepath.Glob("/linux_x86_64_cjnative/dynamic/stdx/libstdx.*.so")
+	for _, library := range libraries {
+		arguments = append(arguments, "-l:"+filepath.Base(library))
+	}
+	return arguments
 }
 
 func runProcess(

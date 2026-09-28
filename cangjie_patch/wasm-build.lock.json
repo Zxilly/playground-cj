@@ -1,0 +1,24 @@
+{
+  "release": "1.2.0",
+  "emscripten": "5.0.6",
+  "compiler": {
+    "repository": "https://gitcode.com/Cangjie/cangjie_compiler.git",
+    "commit": "2fe6b291d37153aa1da56c6c7c020d5ab67fa93d"
+  },
+  "tools": {
+    "repository": "https://gitcode.com/Cangjie/cangjie_tools.git",
+    "commit": "69ba88c0cafad01f854ca4ea30c82730a4ff5135"
+  },
+  "tinytoml": {
+    "repository": "https://gitcode.com/src-openeuler/tinytoml.git",
+    "commit": "c2cb1be509d571e581fdb95bbc7afdf341791c21"
+  },
+  "flatbuffers": {
+    "repository": "https://gitcode.com/openharmony/third_party_flatbuffers.git",
+    "commit": "8355307828c7a6bc6bae9d2dba48ad3ab0b5ff2d"
+  },
+  "json": {
+    "repository": "https://gitcode.com/openharmony/third_party_json.git",
+    "commit": "3c3d8e61bde0f2e8aaa206a102e50fed7b9b2199"
+  }
+}

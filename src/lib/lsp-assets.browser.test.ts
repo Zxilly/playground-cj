@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import toolchainLock from '../../cj-runner/cangjie-toolchain.lock.json'
 
 async function fetchAsset(path: string) {
   const response = await fetch(path)
@@ -7,6 +8,13 @@ async function fetchAsset(path: string) {
 }
 
 describe('lsp browser assets', () => {
+  it('ships browser tools and standard libraries from the production SDK release', async () => {
+    const wasmBuild = await (await fetchAsset('/lsp/wasm-build.lock.json')).json()
+    const nativeBuild = await (await fetchAsset('/lsp/cangjie-toolchain.lock.json')).json()
+    expect(wasmBuild.release).toBe(toolchainLock.release)
+    expect(nativeBuild).toEqual(toolchainLock)
+  })
+
   it('serves a compileable wasm binary through the browser runtime', async () => {
     const response = await fetchAsset('/lsp/LSPServer-wasm.wasm')
     const bytes = await response.arrayBuffer()
