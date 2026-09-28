@@ -65,7 +65,10 @@ export default function CodeRunner({
       }, {
         loading: i18n._(msg`正在格式化...`),
         success: i18n._(msg`格式化成功`),
-        error: error => error instanceof Error ? error.message : i18n._(msg`格式化失败`),
+        error: (error) => {
+          console.error('[Formatter] Failed to format code:', error)
+          return i18n._(msg`格式化失败，请检查代码并重试。`)
+        },
       })
     }
 

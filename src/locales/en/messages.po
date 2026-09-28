@@ -133,6 +133,10 @@ msgstr "Remaining today"
 msgid "今日额度剩余"
 msgstr "Daily quota remaining"
 
+#: src/features/playground/components/Playground.tsx:146
+msgid "仓颉 1.2.0 · STDX 1.2.0.1 · "
+msgstr "Cangjie 1.2.0 · STDX 1.2.0.1 · "
+
 #: src/features/playground/components/PlaygroundHeader.tsx:59
 #: src/features/playground/components/PlaygroundHeader.tsx:97
 msgid "仓颉 Playground"
@@ -306,14 +310,6 @@ msgstr "Dismiss error"
 msgid "分享"
 msgstr "Share"
 
-#: src/lib/monaco/actions.ts:121
-msgid "分享 (Hash 方式)"
-msgstr "Share (Hash Method)"
-
-#: src/lib/monaco/actions.ts:108
-msgid "分享 (URL 方式)"
-msgstr "Share (URL Method)"
-
 #: src/features/playground/components/ShareButton.tsx:45
 #: src/lib/monaco/actions.ts:131
 msgid "分享中..."
@@ -343,10 +339,18 @@ msgstr "Shared code loaded successfully"
 msgid "分享失败"
 msgstr "Share failed"
 
+#: src/lib/monaco/actions.ts:108
+msgid "分享完整链接"
+msgstr "Share full link"
+
 #: src/features/playground/components/ShareButton.tsx:46
 #: src/lib/monaco/actions.ts:132
 msgid "分享成功"
 msgstr "Share successful"
+
+#: src/lib/monaco/actions.ts:121
+msgid "分享短链接"
+msgstr "Share short link"
 
 #: src/components/ui/sidebar.tsx:284
 #: src/components/ui/sidebar.tsx:292
@@ -388,8 +392,8 @@ msgid "取消"
 msgstr "Cancel"
 
 #: src/features/teach/components/views/PlaygroundView.tsx:307
-msgid "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
-msgstr "Another window changed the same draft. Your version did not overwrite it; choose how to recover."
+msgid "另一个窗口已修改同一草稿；你的修改尚未覆盖已保存内容。请选择如何处理。"
+msgstr "Another window changed this draft. Your changes have not overwritten the saved version. Choose how to continue."
 
 #: src/features/teach/components/views/PlaygroundView.tsx:306
 msgid "另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。"
@@ -561,13 +565,13 @@ msgstr "New tab"
 msgid "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
 msgstr "Unable to save a copy. Close a tab or shorten the draft, then try again."
 
-#: src/features/teach/components/views/PlaygroundView.tsx:303
-msgid "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
-msgstr "The v2 Playground draft could not be read. Stored data was left unchanged and will not be migrated or overwritten."
-
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:259
 msgid "无法读取剩余额度，请稍后重试。"
 msgstr "Could not read remaining quota. Please try again later."
+
+#: src/features/teach/components/views/PlaygroundView.tsx:303
+msgid "无法读取已保存的 Playground 草稿。原有内容已保留，不会被覆盖。"
+msgstr "The saved Playground drafts could not be read. Existing content has been preserved and will not be overwritten."
 
 #: src/features/playground/components/Playground.tsx:89
 msgid "显示"
@@ -629,9 +633,9 @@ msgstr "Tab name"
 msgid "格式化"
 msgstr "Format"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:68
-msgid "格式化失败"
-msgstr "Format failed"
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:70
+msgid "格式化失败，请检查代码并重试。"
+msgstr "Formatting failed. Check your code and try again."
 
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:67
 msgid "格式化成功"
@@ -657,6 +661,10 @@ msgstr "Preparing the shared service…"
 msgid "正在准备课堂内容…"
 msgstr "Preparing classroom content…"
 
+#: src/features/teach/components/views/PlaygroundView.tsx:289
+msgid "正在加载 Playground 草稿…"
+msgstr "Loading Playground drafts…"
+
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:255
 msgid "正在加载剩余额度…"
 msgstr "Loading remaining quota..."
@@ -668,10 +676,6 @@ msgstr "Starting Cangjie code assistance{originSuffix}."
 #: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:36
 msgid "正在启动代码提示"
 msgstr "Starting code assistance"
-
-#: src/features/teach/components/views/PlaygroundView.tsx:289
-msgid "正在打开 Playground 草稿存储…"
-msgstr "Opening Playground draft storage…"
 
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:66
 msgid "正在格式化..."
@@ -889,10 +893,6 @@ msgstr "Run failed"
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:47
 msgid "运行成功"
 msgstr "Run successful"
-
-#: src/features/playground/components/Playground.tsx:146
-msgid "运行环境：Modal 沙箱 · 仓颉 1.2.0 / STDX 1.2.0.1 | 浏览器工具：LSP + cjfmt 1.2.0 | "
-msgstr "Runtime: Modal sandbox · Cangjie 1.2.0 / STDX 1.2.0.1 | Browser tools: LSP + cjfmt 1.2.0 | "
 
 #: src/features/teach/components/views/PlaygroundView.tsx:629
 msgid "运行结果"

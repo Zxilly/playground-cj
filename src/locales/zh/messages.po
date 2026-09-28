@@ -133,6 +133,10 @@ msgstr "今日剩余"
 msgid "今日额度剩余"
 msgstr "今日额度剩余"
 
+#: src/features/playground/components/Playground.tsx:146
+msgid "仓颉 1.2.0 · STDX 1.2.0.1 · "
+msgstr "仓颉 1.2.0 · STDX 1.2.0.1 · "
+
 #: src/features/playground/components/PlaygroundHeader.tsx:59
 #: src/features/playground/components/PlaygroundHeader.tsx:97
 msgid "仓颉 Playground"
@@ -306,14 +310,6 @@ msgstr "关闭错误提示"
 msgid "分享"
 msgstr "分享"
 
-#: src/lib/monaco/actions.ts:121
-msgid "分享 (Hash 方式)"
-msgstr "分享 (Hash 方式)"
-
-#: src/lib/monaco/actions.ts:108
-msgid "分享 (URL 方式)"
-msgstr "分享 (URL 方式)"
-
 #: src/features/playground/components/ShareButton.tsx:45
 #: src/lib/monaco/actions.ts:131
 msgid "分享中..."
@@ -343,10 +339,18 @@ msgstr "分享代码加载成功"
 msgid "分享失败"
 msgstr "分享失败"
 
+#: src/lib/monaco/actions.ts:108
+msgid "分享完整链接"
+msgstr "分享完整链接"
+
 #: src/features/playground/components/ShareButton.tsx:46
 #: src/lib/monaco/actions.ts:132
 msgid "分享成功"
 msgstr "分享成功"
+
+#: src/lib/monaco/actions.ts:121
+msgid "分享短链接"
+msgstr "分享短链接"
 
 #: src/components/ui/sidebar.tsx:284
 #: src/components/ui/sidebar.tsx:292
@@ -388,8 +392,8 @@ msgid "取消"
 msgstr "取消"
 
 #: src/features/teach/components/views/PlaygroundView.tsx:307
-msgid "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
-msgstr "另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。"
+msgid "另一个窗口已修改同一草稿；你的修改尚未覆盖已保存内容。请选择如何处理。"
+msgstr "另一个窗口已修改同一草稿；你的修改尚未覆盖已保存内容。请选择如何处理。"
 
 #: src/features/teach/components/views/PlaygroundView.tsx:306
 msgid "另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。"
@@ -561,13 +565,13 @@ msgstr "新建标签页"
 msgid "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
 msgstr "无法另存副本；请先关闭一个标签页或缩短草稿后重试。"
 
-#: src/features/teach/components/views/PlaygroundView.tsx:303
-msgid "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
-msgstr "无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。"
-
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:259
 msgid "无法读取剩余额度，请稍后重试。"
 msgstr "无法读取剩余额度，请稍后重试。"
+
+#: src/features/teach/components/views/PlaygroundView.tsx:303
+msgid "无法读取已保存的 Playground 草稿。原有内容已保留，不会被覆盖。"
+msgstr "无法读取已保存的 Playground 草稿。原有内容已保留，不会被覆盖。"
 
 #: src/features/playground/components/Playground.tsx:89
 msgid "显示"
@@ -629,9 +633,9 @@ msgstr "标签页名称"
 msgid "格式化"
 msgstr "格式化"
 
-#: src/modules/cangjie-editor/components/CodeRunner.tsx:68
-msgid "格式化失败"
-msgstr "格式化失败"
+#: src/modules/cangjie-editor/components/CodeRunner.tsx:70
+msgid "格式化失败，请检查代码并重试。"
+msgstr "格式化失败，请检查代码并重试。"
 
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:67
 msgid "格式化成功"
@@ -657,6 +661,10 @@ msgstr "正在准备共享服务…"
 msgid "正在准备课堂内容…"
 msgstr "正在准备课堂内容…"
 
+#: src/features/teach/components/views/PlaygroundView.tsx:289
+msgid "正在加载 Playground 草稿…"
+msgstr "正在加载 Playground 草稿…"
+
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:255
 msgid "正在加载剩余额度…"
 msgstr "正在加载剩余额度…"
@@ -668,10 +676,6 @@ msgstr "正在启动仓颉代码提示{originSuffix}。"
 #: src/modules/cangjie-editor/hooks/useLspStatusRender.ts:36
 msgid "正在启动代码提示"
 msgstr "正在启动代码提示"
-
-#: src/features/teach/components/views/PlaygroundView.tsx:289
-msgid "正在打开 Playground 草稿存储…"
-msgstr "正在打开 Playground 草稿存储…"
 
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:66
 msgid "正在格式化..."
@@ -889,10 +893,6 @@ msgstr "运行失败"
 #: src/modules/cangjie-editor/components/CodeRunner.tsx:47
 msgid "运行成功"
 msgstr "运行成功"
-
-#: src/features/playground/components/Playground.tsx:146
-msgid "运行环境：Modal 沙箱 · 仓颉 1.2.0 / STDX 1.2.0.1 | 浏览器工具：LSP + cjfmt 1.2.0 | "
-msgstr "运行环境：Modal 沙箱 · 仓颉 1.2.0 / STDX 1.2.0.1 | 浏览器工具：LSP + cjfmt 1.2.0 | "
 
 #: src/features/teach/components/views/PlaygroundView.tsx:629
 msgid "运行结果"

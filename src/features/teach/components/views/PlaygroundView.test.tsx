@@ -457,7 +457,7 @@ describe('playgroundView student flow', () => {
 
     render(<PlaygroundView />, { wrapper: Wrapper })
 
-    expect(screen.getByRole('alert').textContent).toContain('未覆盖远端版本')
+    expect(screen.getByRole('alert').textContent).toContain('尚未覆盖已保存内容')
     fireEvent.click(screen.getByRole('button', { name: '另存为新标签页' }))
     expect(resolveConflict).toHaveBeenCalledWith('keep_copy')
     expect(screen.getByRole('alert').textContent).toContain('无法另存副本')

@@ -105,7 +105,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
   ed.addAction({
     id: 'cangjie.share.url',
-    label: t`分享 (URL 方式)`,
+    label: t`分享完整链接`,
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     run: (editor: monaco.editor.ICodeEditor) => {
@@ -118,7 +118,7 @@ export function updateEditor(deps: OnMountFunctionDependencies) {
 
   ed.addAction({
     id: 'cangjie.share.hash',
-    label: t`分享 (Hash 方式)`,
+    label: t`分享短链接`,
     contextMenuGroupId: 'cangjie',
     contextMenuOrder: 1.5,
     run: async (editor: monaco.editor.ICodeEditor) => {

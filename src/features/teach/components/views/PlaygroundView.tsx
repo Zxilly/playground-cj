@@ -286,7 +286,7 @@ export function PlaygroundView() {
           className="flex shrink-0 items-center gap-2 border-b border-border bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
         >
           <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
-          <Trans>正在打开 Playground 草稿存储…</Trans>
+          <Trans>正在加载 Playground 草稿…</Trans>
         </div>
       )}
       {persistenceError && (
@@ -300,11 +300,11 @@ export function PlaygroundView() {
             {persistenceError === 'storage_unavailable'
               ? <Trans>Playground 草稿尚未保存：浏览器存储不可用。</Trans>
               : persistenceError === 'corrupt_workspace'
-                ? <Trans>无法读取 v2 Playground 草稿；存储内容保持原样，系统不会迁移或覆盖它。</Trans>
+                ? <Trans>无法读取已保存的 Playground 草稿。原有内容已保留，不会被覆盖。</Trans>
                 : persistenceError === 'conflict'
                   ? conflict?.kind === 'capacity'
                     ? <Trans>另一个窗口的修改与本地草稿合并后超过保存限额；已保存版本保持可用，你的草稿仍可恢复。</Trans>
-                    : <Trans>另一个窗口已修改同一草稿；你的版本未覆盖远端版本。请选择恢复方式。</Trans>
+                    : <Trans>另一个窗口已修改同一草稿；你的修改尚未覆盖已保存内容。请选择如何处理。</Trans>
                   : <Trans>这次 Playground 修改已被拒绝：标签页、标题或代码超过本地保存限额。</Trans>}
           </span>
           {persistenceError === 'conflict' && conflict && (
