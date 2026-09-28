@@ -17,7 +17,7 @@ const LSP_MODULES_PATH = '/lsp/modules'
 // picked up without manually clearing site data.
 const CACHE_ENABLED = process.env.NODE_ENV !== 'development'
 
-export const CACHE_STORAGE_KEY = 'wasm-assets-cache-version'
+const CACHE_VERSION_PATH = '/lsp/.cache-version'
 const WASM_CACHE_NAME_PREFIX = 'wasm-'
 const CJO_DB_NAME = 'cjo-cache'
 const CJO_STORE_NAME = 'modules'
@@ -31,11 +31,16 @@ async function checkAndUpdateCacheVersion(): Promise<void> {
     return
   }
 
-  const storedVersion = localStorage.getItem(CACHE_STORAGE_KEY)
+  // This runs in a dedicated Worker, where localStorage is unavailable.
+  // Keep the marker with the WASM cache so clearing caches also invalidates it.
+  const cache = await caches.open(wasmCacheName)
+  const marker = await cache.match(CACHE_VERSION_PATH)
+  const storedVersion = marker ? await marker.text() : null
   if (storedVersion !== WASM_ASSETS_VERSION) {
     console.log(`[Cache] Build version changed: ${storedVersion} -> ${WASM_ASSETS_VERSION}`)
     await clearAllLspCache()
-    localStorage.setItem(CACHE_STORAGE_KEY, WASM_ASSETS_VERSION)
+    const freshCache = await caches.open(wasmCacheName)
+    await freshCache.put(CACHE_VERSION_PATH, new Response(WASM_ASSETS_VERSION))
   }
 }
 

@@ -1,10 +1,32 @@
 import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import type { Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
 const srcRoot = fileURLToPath(new URL('./src', import.meta.url))
+const cjoRoot = new URL('./public/lsp/modules/linux_x86_64_cjnative/', import.meta.url)
+const browserEnv = {
+  NODE_ENV: 'test',
+  WASM_ASSETS_VERSION: 'browser-test',
+  CJO_TARGET: 'linux_x86_64_cjnative',
+  CJO_MODULES: JSON.stringify((existsSync(cjoRoot) ? readdirSync(cjoRoot, { recursive: true }) : [])
+    .map(String).filter(path => path.endsWith('.cjo')).map(path => path.replaceAll('\\', '/'))),
+}
+// Serve Emscripten glue unchanged, as Next does. Vite otherwise rewrites the
+// dynamic import with ?import and rejects imports from public/.
+const lspGluePlugin: Plugin = {
+  name: 'lsp-glue-static-module',
+  configureServer(server) {
+    server.middlewares.use((req, res, next) => {
+      if (req.url?.split('?')[0] !== '/lsp/LSPServer-wasm.js')
+        return next()
+      res.setHeader('Content-Type', 'text/javascript')
+      res.end(readFileSync(new URL('./public/lsp/LSPServer-wasm.js', import.meta.url)))
+    })
+  },
+}
 const sharedResolve = {
   alias: {
     '@': srcRoot,
@@ -145,9 +167,15 @@ export default defineConfig({
         },
       },
       {
-        plugins: [reactPlugin, cangjieRawPlugin],
+        plugins: [reactPlugin, cangjieRawPlugin, lspGluePlugin],
         define: {
-          'process.env': JSON.stringify({ NODE_ENV: 'test' }),
+          'process.env': JSON.stringify(browserEnv),
+        },
+        server: {
+          headers: {
+            'Cross-Origin-Opener-Policy': 'same-origin',
+            'Cross-Origin-Embedder-Policy': 'require-corp',
+          },
         },
         optimizeDeps: {
           exclude: monacoVscodePackages,

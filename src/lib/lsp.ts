@@ -1,6 +1,5 @@
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 import {
-  CACHE_STORAGE_KEY,
   CJO_MODULES,
   clearAllLspCache,
 } from '@/lib/lsp-server-runtime'
@@ -359,10 +358,6 @@ async function clearCacheAndRestartLspInternal(
     await disposeConnection(instance)
   }
   await clearAllLspCache()
-  try {
-    localStorage.removeItem(CACHE_STORAGE_KEY)
-  }
-  catch {}
   setState({ state: 'stopped', origin, stdlibModulesLoaded: 0 })
   return startLspInternal(origin)
 }
