@@ -587,26 +587,6 @@ func readRegularFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
-func hashRegularExecutable(path string) (string, error) {
-	info, err := os.Lstat(path)
-	if err != nil {
-		return "", err
-	}
-	if !info.Mode().IsRegular() || info.Mode()&0o111 == 0 {
-		return "", errors.New("compiler path must be a regular executable")
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-	digest := sha256.New()
-	if _, err := io.Copy(digest, file); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", digest.Sum(nil)), nil
-}
-
 func verifyInstalledCangjieToolchain(
 	ctx context.Context,
 	lockPath string,
@@ -636,14 +616,6 @@ func verifyInstalledCangjieToolchain(
 		return "", errors.New("installed toolchain marker does not match bundled lock")
 	}
 
-	compilerSHA256, err := hashRegularExecutable(compilerPath)
-	if err != nil {
-		return "", fmt.Errorf("hash installed compiler: %w", err)
-	}
-	if compilerSHA256 != lock.Compiler.ExecutableSHA256 {
-		return "", errors.New("installed compiler bytes do not match bundled lock")
-	}
-
 	probeContext, cancel := context.WithTimeout(ctx, toolchainProbeTimeout)
 	defer cancel()
 	command := exec.CommandContext(probeContext, compilerPath, "--version")
@@ -658,13 +630,6 @@ func verifyInstalledCangjieToolchain(
 			"Cangjie Compiler: "+lock.Compiler.Version+" ("+lock.Compiler.Backend+")" ||
 		lines[1] != "Target: "+lock.Compiler.Target {
 		return "", errors.New("installed compiler identity does not match bundled lock")
-	}
-	compilerSHA256AfterProbe, err := hashRegularExecutable(compilerPath)
-	if err != nil {
-		return "", fmt.Errorf("rehash installed compiler: %w", err)
-	}
-	if compilerSHA256AfterProbe != compilerSHA256 {
-		return "", errors.New("installed compiler changed during identity verification")
 	}
 	return lockSHA256, nil
 }
@@ -763,9 +728,7 @@ func (s *runnerServer) verifyToolchainExpectation(
 		)
 		return false
 	}
-	providedDigest := sha256.Sum256([]byte(values[0]))
-	expectedDigest := sha256.Sum256([]byte(s.config.toolchainLockSha256))
-	if subtle.ConstantTimeCompare(providedDigest[:], expectedDigest[:]) != 1 {
+	if values[0] != s.config.toolchainLockSha256 {
 		w.Header().Set(toolchainMismatchHeader, "mismatch")
 		writeError(
 			w,

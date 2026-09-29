@@ -540,7 +540,7 @@ func TestLoadRunnerConfigFailsClosed(t *testing.T) {
 	})
 }
 
-func TestInstalledCangjieToolchainIsBoundToLockBytesIdentityAndTarget(t *testing.T) {
+func TestInstalledCangjieToolchainChecksIdentityWithoutHashingCompiler(t *testing.T) {
 	lockBytes, err := os.ReadFile("../../cangjie-toolchain.lock.json")
 	if err != nil {
 		t.Fatalf("read repository toolchain lock: %v", err)
@@ -561,11 +561,6 @@ func TestInstalledCangjieToolchainIsBoundToLockBytesIdentityAndTarget(t *testing
 	if err := os.WriteFile(compilerPath, []byte(compilerScript), 0o700); err != nil {
 		t.Fatalf("write compiler probe: %v", err)
 	}
-	compilerSHA256, err := hashRegularExecutable(compilerPath)
-	if err != nil {
-		t.Fatalf("hash compiler probe: %v", err)
-	}
-	lock.Compiler.ExecutableSHA256 = compilerSHA256
 	fixtureLockBytes, err := json.MarshalIndent(lock, "", "  ")
 	if err != nil {
 		t.Fatalf("marshal fixture lock: %v", err)
@@ -611,15 +606,24 @@ func TestInstalledCangjieToolchainIsBoundToLockBytesIdentityAndTarget(t *testing
 	}
 
 	if err := os.WriteFile(compilerPath, []byte(compilerScript+"\n"), 0o700); err != nil {
-		t.Fatalf("tamper compiler probe: %v", err)
+		t.Fatalf("update compiler probe: %v", err)
 	}
 	if _, err := verifyInstalledCangjieToolchain(
 		context.Background(),
 		lockPath,
 		compilerPath,
 		markerPath,
-	); err == nil || !strings.Contains(err.Error(), "compiler bytes") {
-		t.Fatalf("tampered compiler verification error = %v", err)
+	); err != nil {
+		t.Fatalf("same-identity compiler must not require a byte hash: %v", err)
+	}
+
+	if err := os.WriteFile(compilerPath, []byte("#!/bin/sh\necho wrong-version\n"), 0o700); err != nil {
+		t.Fatalf("write incorrect compiler identity: %v", err)
+	}
+	if _, err := verifyInstalledCangjieToolchain(
+		context.Background(), lockPath, compilerPath, markerPath,
+	); err == nil || !strings.Contains(err.Error(), "identity") {
+		t.Fatalf("incorrect compiler identity verification error = %v", err)
 	}
 }
 
