@@ -29,3 +29,5 @@ Rust 的 `quote!` 使用 `#变量` 插值，概念相同但语法不同。Rust �
 </CompareGroup>
 
 <Note>`input.toString()` 返回代码片段的字符串表示，适合用于调试输出。而 `$(input)` 直接插入代码本身，会被编译执行。</Note>
+
+<Note>宏包需要在本地单独编译。将宏定义保存为 `define.cj`，将注释中的调用示例保存为 `main.cj`，依次运行 `cjc define.cj --compile-macro` 和 `cjc main.cj --import-path . -o main && ./main`。在线单文件运行不支持这个多文件构建步骤。</Note>

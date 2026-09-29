@@ -1,31 +1,11 @@
-# 编译后端：CJNative 与 CJVM
+# 原生编译与条件编译
 
-仓颉支持两种编译后端：**CJNative** 和 **CJVM**。CJNative 后端将代码编译为原生机器码，直接在操作系统上运行，具有最佳性能和最小内存占用。CJVM 后端将代码编译为 JVM 字节码，可以与 Java 生态无缝互操作，复用 Java 库和框架。
+本教程使用仓颉 1.2.0 的 **CJNative** SDK，将代码编译为原生可执行文件。运行程序时需要对应平台的运行时库，或使用 SDK 支持的静态链接方式。
 
-两种后端的源代码语法相同，只需选择对应的 SDK 即可切换。使用 CJNative SDK 编译得到原生二进制，使用 CJVM SDK 则编译得到 JVM 字节码（`.class` 文件）。同一份代码可以在不同后端间移植。
+条件编译注解 `@When` 根据编译目标选择声明。例如，`@When[backend == "cjnative"]` 选择原生后端实现，`@When[arch == "x86_64"]` 和 `@When[arch == "aarch64"]` 选择对应处理器架构的实现。
 
-编写跨后端代码时，可以使用条件编译注解 `@When[backend == "cjnative"]` 来区分不同后端的实现。后端条件变量 `backend` 支持 `==` 和 `!=` 操作，目前可选值为 `cjnative` 和 `cjvm`。
+右侧示例为不同架构声明同名的 `getArchitecture()` 函数，编译器只保留符合条件的版本。`main()` 调用这个函数，无需在运行时判断架构。
 
-<CompareGroup>
+<Note>`@When` 用于选择声明，不能直接标注 `println()` 等表达式语句。本教程锁定的 1.2.0 SDK 只接受 `cjnative` 后端条件值；不要添加 `backend == "cjvm"` 分支。</Note>
 
-<CompareWith lang="c">
-C 只编译为原生代码。编译后的代码与目标平台高度耦合，无法跨平台运行。
-</CompareWith>
-
-<CompareWith lang="java">
-Java 编译为平台无关的字节码，需要 JVM 解释或编译执行。仓颉的 CJVM 后端试图融合这一特性。
-</CompareWith>
-
-<CompareWith lang="rust">
-Rust 只编译为原生代码，没有 JVM 后端。仓颉提供两个后端，兼顾原生性能和 Java 生态兼容。
-</CompareWith>
-
-<CompareWith lang="go">
-Go 只支持原生编译。Kotlin 才同时支持 JVM 和原生（Native），类似仓颉的双后端策略。
-</CompareWith>
-
-</CompareGroup>
-
-<Note>CJVM 后端支持正在持续完善中，具体功能范围请参考官方文档。本教程默认使用 CJNative 后端。</Note>
-
-右侧代码中，使用条件编译定义了后端特定的函数。修改条件尝试编译不同后端的代码。
+修改函数返回的提示文本后运行，观察当前编译目标对应的分支。切换目标架构还需要匹配的 SDK、库与执行环境，仅修改条件不会改变编译目标。

@@ -1,31 +1,11 @@
-# Compilation Backends: CJNative and CJVM
+# Native and Conditional Compilation
 
-Cangjie supports two compilation backends: **CJNative** and **CJVM**. The CJNative backend compiles code into native machine code that runs directly on the operating system, offering the best performance and minimal memory footprint. The CJVM backend compiles code into JVM bytecode, enabling seamless interoperability with the Java ecosystem and reuse of Java libraries and frameworks.
+This tutorial uses the **CJNative** SDK for Cangjie 1.2.0 to compile native executables. Running them requires the runtime libraries for the target platform, or a static-linking configuration supported by the SDK.
 
-The source code syntax for both backends is identical - you only need to select the corresponding SDK to switch between them. Compiling with the CJNative SDK produces native binaries, while using the CJVM SDK produces JVM bytecode (`.class` files). The same code can be ported between different backends.
+The `@When` annotation selects declarations according to the compilation target. For example, `@When[backend == "cjnative"]` selects the native backend implementation, while `@When[arch == "x86_64"]` and `@When[arch == "aarch64"]` select processor-specific implementations.
 
-When writing cross-backend code, you can use the conditional compilation annotation `@When[backend == "cjnative"]` to distinguish implementations for different backends. The backend condition variable `backend` supports `==` and `!=` operations, with current possible values being `cjnative` and `cjvm`.
+The example declares a `getArchitecture()` function for each architecture. The compiler retains only the matching declaration, so `main()` can call it without checking the architecture at runtime.
 
-<CompareGroup>
+<Note>`@When` selects declarations; it cannot directly annotate expression statements such as `println()`. The 1.2.0 SDK pinned by this tutorial accepts only `cjnative` as a backend condition value. Do not add a `backend == "cjvm"` branch.</Note>
 
-<CompareWith lang="c">
-C only compiles to native code. Compiled code is highly coupled to the target platform and cannot run across platforms.
-</CompareWith>
-
-<CompareWith lang="java">
-Java compiles into platform-independent bytecode that requires the JVM for interpretation or compilation execution. Cangjie's CJVM backend attempts to incorporate this feature.
-</CompareWith>
-
-<CompareWith lang="rust">
-Rust only compiles to native code with no JVM backend. Cangjie provides two backends, balancing native performance and Java ecosystem compatibility.
-</CompareWith>
-
-<CompareWith lang="go">
-Go only supports native compilation. Kotlin is the one that supports both JVM and Native, similar to Cangjie's dual-backend strategy.
-</CompareWith>
-
-</CompareGroup>
-
-<Note>CJVM backend support is continuously being improved. Please refer to the official documentation for specific functionality scope. This tutorial defaults to using the CJNative backend.</Note>
-
-In the code on the right, backend-specific functions are defined using conditional compilation. Modify the conditions to try compiling code for different backends.
+Change the returned message and run the example to see the branch selected for the current target. Changing the target architecture also requires matching SDK tools, libraries, and an execution environment; editing a condition alone does not change the target.

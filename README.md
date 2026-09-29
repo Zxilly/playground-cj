@@ -13,6 +13,23 @@
 pnpm dev
 ```
 
+## 仓颉代码验证
+
+在 Linux 或 WSL 中安装 `cj-runner/cangjie-toolchain.lock.json` 锁定的 SDK，
+加载其环境后执行：
+
+```bash
+source /path/to/cangjie/envsetup.sh
+python3 scripts/verify-cangjie.py
+pnpm content-packs:verify
+```
+
+全量检查会校验编译器版本及 SHA-256，编译并运行所有 Git 跟踪的 `.cj` 文件。
+宏包使用 `--compile-macro`，并提取注释中的 `main.cj` 调用示例运行、核对输出；
+测试宏额外使用 `--test` 执行断言。普通程序在独立临时目录中运行，使用空标准输入，
+执行超时为 20 秒。可通过 `--jobs 4` 控制并发，`--report result.json` 保存结果。
+课程验证另行检查练习参考答案、起始代码和课程样例的教学判定。
+
 ## 环境变量
 
 ### 服务端

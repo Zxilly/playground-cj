@@ -29,3 +29,5 @@ Rust's `quote!` macro has similar functionality, using `#variable` for interpola
 </CompareGroup>
 
 <Note>Macro definition files need to be declared with `macro package` and compiled with the `--compile-macro` option.</Note>
+
+<Note>Compile this macro package locally. Save the definitions as `define.cj` and the commented usage example as `main.cj`. Run `cjc define.cj --compile-macro`, then `cjc main.cj --import-path . -o main && ./main`. The online single-file runner does not support this multi-file build step.</Note>

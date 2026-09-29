@@ -29,3 +29,5 @@ Rust 的 `std::net` 也提供 TCP/UDP API，但使用 `Result` 处理错误。�
 <Note>HTTP 相关的 API 在 `stdx.net.http` 包中，需要在 `cjpm.toml` 中添加 stdx 依赖。Socket API 在 `std.net` 包中，属于标准库。</Note>
 
 运行此代码会启动一个 TCP 服务端和一个客户端，观察客户端发送的数据如何被服务端接收并打印。
+
+示例先绑定端口 `0`，由系统分配空闲端口，再读取实际端口启动客户端；不依赖固定端口或延时等待。TCP 是字节流，一次 `read()` 不保证读完一条消息，实际协议需要处理分帧和分段读取。

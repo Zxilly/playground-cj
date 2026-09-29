@@ -21,3 +21,5 @@ Rust uses `&mut` for mutable reference passing. Cangjie's `inout` is similar but
 <Note>Pointers passed via `inout` are only valid during the function call; the C side should not save this pointer for later use.</Note>
 
 Try modifying the code to use `inout` to pass multiple variables to a function simultaneously.
+
+<Note>This standalone example uses local `@C` functions to demonstrate the C calling convention and `inout`. Replacing them with `foreign` declarations requires providing and linking the corresponding C implementation.</Note>

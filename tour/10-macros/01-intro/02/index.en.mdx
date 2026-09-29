@@ -26,3 +26,5 @@ Rust macro definitions use `macro_rules!` or `proc_macro` attribute in regular m
 Go does not have a built-in macro system. Code generation is implemented through external tools and `text/template`. Cangjie's macros are natively supported in the compiler.
 </CompareWith>
 </CompareGroup>
+
+<Note>Compile this macro package locally. Save the definitions as `define.cj` and the commented usage example as `main.cj`. Run `cjc define.cj --compile-macro`, then `cjc main.cj --import-path . -o main && ./main`. The online single-file runner does not support this multi-file build step.</Note>

@@ -20,3 +20,5 @@ Rust's declarative macros `macro_rules!` support various matching patterns, and 
 Java uses annotation processors to handle `@Annotate` at compile time, but the mechanism generates new files rather than replacing code. Cangjie macros directly transform code at compile time, making them more powerful and flexible.
 </CompareWith>
 </CompareGroup>
+
+<Note>Compile this macro package locally. Save the definitions as `define.cj` and the commented usage example as `main.cj`. Run `cjc define.cj --compile-macro`, then `cjc main.cj --import-path . -o main && ./main`. The online single-file runner does not support this multi-file build step.</Note>

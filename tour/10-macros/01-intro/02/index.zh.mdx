@@ -26,3 +26,5 @@ Rust 宏定义在普通模块中使用 `macro_rules!` 或 `proc_macro` 属性。
 Go 没有内置宏系统。代码生成通过外部工具和 `text/template` 实现。仓颉的宏在编译器中原生支持。
 </CompareWith>
 </CompareGroup>
+
+<Note>宏包需要在本地单独编译。将宏定义保存为 `define.cj`，将注释中的调用示例保存为 `main.cj`，依次运行 `cjc define.cj --compile-macro` 和 `cjc main.cj --import-path . -o main && ./main`。在线单文件运行不支持这个多文件构建步骤。</Note>

@@ -29,3 +29,5 @@ Rust's `quote!` uses `#variable` for interpolation, same concept but different s
 </CompareGroup>
 
 <Note>`input.toString()` returns the string representation of the code fragment, suitable for debug output. While `$(input)` directly inserts the code itself, which will be compiled and executed.</Note>
+
+<Note>Compile this macro package locally. Save the definitions as `define.cj` and the commented usage example as `main.cj`. Run `cjc define.cj --compile-macro`, then `cjc main.cj --import-path . -o main && ./main`. The online single-file runner does not support this multi-file build step.</Note>

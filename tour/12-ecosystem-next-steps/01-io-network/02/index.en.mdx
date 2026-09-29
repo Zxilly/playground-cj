@@ -29,3 +29,5 @@ Rust's `std::net` also provides TCP/UDP APIs, but uses `Result` for error handli
 <Note>HTTP-related APIs are in the `stdx.net.http` package and require adding the stdx dependency in `cjpm.toml`. Socket APIs are in the `std.net` package and are part of the standard library.</Note>
 
 Running this code will start a TCP server and a client. Observe how data sent by the client is received and printed by the server.
+
+The example binds port `0` first so the system allocates an available port, then uses that port for the client. No fixed port or startup delay is required. TCP is a byte stream: a single `read()` does not guarantee a complete message; real protocols must handle framing and partial reads.
