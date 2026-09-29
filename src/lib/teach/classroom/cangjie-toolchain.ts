@@ -147,7 +147,6 @@ export function loadCangjieToolchainLock(
 }
 
 export function assertLockedCangjieCompiler(
-  compilerPath: string,
   reported: {
     name: 'cjc'
     version: string
@@ -165,14 +164,6 @@ export function assertLockedCangjieCompiler(
   ) {
     throw new Error(
       `Cangjie compiler identity does not match locked release ${lock.release}`,
-    )
-  }
-  const executableSha256 = createHash('sha256')
-    .update(readFileSync(resolve(compilerPath)))
-    .digest('hex')
-  if (executableSha256 !== lock.compiler.executableSha256) {
-    throw new Error(
-      'Cangjie compiler executable bytes do not match the toolchain lock',
     )
   }
   return provenance

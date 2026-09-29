@@ -3,7 +3,6 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
   assertBilingualLearningContractArtifacts,
-  contentPackArtifactSha256,
   createGeneratedContentPackArtifacts,
   formatGeneratedJson,
 } from '../src/lib/teach/classroom/content-pack-artifact'
@@ -32,7 +31,7 @@ async function main(): Promise<void> {
   for (const locale of ['en', 'zh'] as const) {
     const output = formatGeneratedJson(artifacts[locale])
     writeFileSync(join(generatedDirectory, `${locale}.json`), output, 'utf8')
-    console.log(`${locale}: ${artifacts[locale].packs.length} packs, ${Buffer.byteLength(output)} bytes, ${contentPackArtifactSha256(artifacts[locale])}`)
+    console.log(`${locale}: ${artifacts[locale].packs.length} packs, ${Buffer.byteLength(output)} bytes`)
   }
 }
 

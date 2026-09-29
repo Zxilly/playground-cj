@@ -307,10 +307,7 @@ export function verifyContentPackExecutables(
   const reportedCompilerIdentity = parseCangjieCompilerIdentity(
     compilerVersionOutput,
   )
-  const toolchain = assertLockedCangjieCompiler(
-    compiler,
-    reportedCompilerIdentity,
-  )
+  const toolchain = assertLockedCangjieCompiler(reportedCompilerIdentity)
   const compilerIdentity: ContentPackCompilerIdentity = {
     ...reportedCompilerIdentity,
     toolchain,

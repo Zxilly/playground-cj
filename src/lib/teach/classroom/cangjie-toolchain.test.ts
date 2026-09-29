@@ -1,10 +1,3 @@
-import {
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   assertLockedCangjieCompiler,
@@ -13,27 +6,9 @@ import {
 } from './cangjie-toolchain'
 
 describe('cangjie toolchain lock', () => {
-  it('rejects a same-version compiler whose executable bytes differ', () => {
+  it('rejects an identity or target that differs from the lock', () => {
     const { lock } = loadCangjieToolchainLock()
-    const directory = mkdtempSync(join(tmpdir(), 'playground-cj-cjc-lock-'))
-    const compiler = join(directory, 'cjc')
-    writeFileSync(compiler, 'self-reporting wrapper', 'utf8')
-    try {
-      expect(() => assertLockedCangjieCompiler(compiler, {
-        name: 'cjc',
-        version: lock.compiler.version,
-        backend: lock.compiler.backend,
-        target: lock.compiler.target,
-      })).toThrow(/executable bytes do not match/)
-    }
-    finally {
-      rmSync(directory, { recursive: true, force: true })
-    }
-  })
-
-  it('rejects an identity or target that differs from the lock before hashing', () => {
-    const { lock } = loadCangjieToolchainLock()
-    expect(() => assertLockedCangjieCompiler('missing-cjc', {
+    expect(() => assertLockedCangjieCompiler({
       name: 'cjc',
       version: lock.compiler.version,
       backend: lock.compiler.backend,

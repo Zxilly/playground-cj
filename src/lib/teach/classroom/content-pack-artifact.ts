@@ -159,14 +159,6 @@ export function formatGeneratedJson(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`
 }
 
-export function contentPackArtifactSha256(
-  artifact: GeneratedContentPackArtifact,
-): string {
-  return createHash('sha256')
-    .update(formatGeneratedJson(generatedContentPackArtifactSchema.parse(artifact)))
-    .digest('hex')
-}
-
 export function contentPackCodeSampleSourceSha256(source: string): string {
   return createHash('sha256').update(source, 'utf8').digest('hex')
 }
