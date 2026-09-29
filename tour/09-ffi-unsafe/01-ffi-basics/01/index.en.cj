@@ -15,7 +15,7 @@ main() {
     println("Second random number: ${r2}")
     
     // Call C standard library absolute value function
-    let negative = -123
+    let negative: Int32 = -123
     let absolute = unsafe { abs(negative) }
     println("abs(${negative}) = ${absolute}")
     

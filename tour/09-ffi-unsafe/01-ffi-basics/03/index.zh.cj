@@ -29,7 +29,7 @@ main() {
     unsafe {
         let a = rand()
         let b = rand()
-        let sum = a + b
+        let sum = Int64(a) + Int64(b)
         println("unsafe 块内计算和: ${sum}")
     }
 }

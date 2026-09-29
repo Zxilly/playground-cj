@@ -1,5 +1,8 @@
-// 声明一个接受指针的 foreign 函数（模拟 C 函数）。
-foreign func increment(ptr: CPointer<Int32>): Unit
+// 用 @C 定义可接受 C 指针的函数，让示例可以独立运行。
+@C
+func increment(ptr: CPointer<Int32>): Unit {
+    unsafe { ptr.write(ptr.read() + 1) }
+}
 
 // 使用 @C 定义的仓颉函数，它也可以接受指针。
 @C

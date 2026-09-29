@@ -15,7 +15,7 @@ main() {
     println("第二个随机数: ${r2}")
     
     // 调用 C 标准库的绝对值函数
-    let negative = -123
+    let negative: Int32 = -123
     let absolute = unsafe { abs(negative) }
     println("abs(${negative}) = ${absolute}")
     

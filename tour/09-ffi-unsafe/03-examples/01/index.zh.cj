@@ -26,7 +26,8 @@ main() {
     let check = unsafe { abs(rand()) >= 0 }
     println("abs(rand()) >= 0: ${check}")
 
-    // 边界值测试
-    let minInt = unsafe { abs(-2147483648) }  // Int32 最小值
-    println("abs(Int32.MIN) = ${minInt}")
+    // Int32 最小值的绝对值超出 Int32；先扩宽，避免 C abs 的未定义行为。
+    let minInt: Int32 = -2147483648
+    let magnitude = -Int64(minInt)
+    println("abs(Int32.MIN) = ${magnitude}")
 }

@@ -1,5 +1,8 @@
-// Declare a foreign function that accepts a pointer (simulating a C function).
-foreign func increment(ptr: CPointer<Int32>): Unit
+// Define a C-compatible function locally so this example runs standalone.
+@C
+func increment(ptr: CPointer<Int32>): Unit {
+    unsafe { ptr.write(ptr.read() + 1) }
+}
 
 // A Cangjie function defined with @C, which can also accept pointers.
 @C

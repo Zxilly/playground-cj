@@ -8,6 +8,12 @@ struct Point3D {
     var x: Int64
     var y: Int64
     var z: Int64
+
+    init(x: Int64, y: Int64, z: Int64) {
+        this.x = x
+        this.y = y
+        this.z = z
+    }
 }
 
 main() {
@@ -15,15 +21,18 @@ main() {
     let p1 = CPointer<Point3D>()
     println("p1 是否为空: ${p1.isNull()}")
 
-    // 在堆上分配 24 字节（Point3D 的大小）。
-    let raw = unsafe { malloc(24) }
+    // 按 Point3D 的实际大小分配内存。
+    let raw = unsafe { malloc(UIntNative(sizeOf<Point3D>())) }
+    if (raw.isNull()) {
+        throw Exception("Allocation failed")
+    }
     
     // 将 CPointer<Unit> 转换为 CPointer<Point3D>。
-    var p2 = unsafe { CPointer<Point3D>(raw) }
+    let p2 = unsafe { CPointer<Point3D>(raw) }
     println("p2 是否为空: ${p2.isNull()}")
 
     // 通过指针写入数据。
-    unsafe { p2.write(Point3D(x: 10, y: 20, z: 30)) }
+    unsafe { p2.write(Point3D(10, 20, 30)) }
 
     // 通过指针读取数据。
     let point = unsafe { p2.read() }

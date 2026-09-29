@@ -26,7 +26,8 @@ main() {
     let check = unsafe { abs(rand()) >= 0 }
     println("abs(rand()) >= 0: ${check}")
 
-    // Boundary value test
-    let minInt = unsafe { abs(-2147483648) }  // Int32 minimum value
-    println("abs(Int32.MIN) = ${minInt}")
+    // Widen first: abs(Int32.MIN) cannot fit in Int32 and is undefined in C.
+    let minInt: Int32 = -2147483648
+    let magnitude = -Int64(minInt)
+    println("abs(Int32.MIN) = ${magnitude}")
 }

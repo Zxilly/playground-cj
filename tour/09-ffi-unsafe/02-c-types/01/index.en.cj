@@ -8,6 +8,12 @@ struct Point3D {
     var x: Int64
     var y: Int64
     var z: Int64
+
+    init(x: Int64, y: Int64, z: Int64) {
+        this.x = x
+        this.y = y
+        this.z = z
+    }
 }
 
 main() {
@@ -15,15 +21,18 @@ main() {
     let p1 = CPointer<Point3D>()
     println("Is p1 null: ${p1.isNull()}")
 
-    // Allocate 24 bytes on the heap (size of Point3D).
-    let raw = unsafe { malloc(24) }
+    // Allocate enough memory for Point3D.
+    let raw = unsafe { malloc(UIntNative(sizeOf<Point3D>())) }
+    if (raw.isNull()) {
+        throw Exception("Allocation failed")
+    }
     
     // Convert CPointer<Unit> to CPointer<Point3D>.
-    var p2 = unsafe { CPointer<Point3D>(raw) }
+    let p2 = unsafe { CPointer<Point3D>(raw) }
     println("Is p2 null: ${p2.isNull()}")
 
     // Write data through pointer.
-    unsafe { p2.write(Point3D(x: 10, y: 20, z: 30)) }
+    unsafe { p2.write(Point3D(10, 20, 30)) }
 
     // Read data through pointer.
     let point = unsafe { p2.read() }

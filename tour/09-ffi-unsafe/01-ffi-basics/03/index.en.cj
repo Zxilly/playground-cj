@@ -29,7 +29,7 @@ main() {
     unsafe {
         let a = rand()
         let b = rand()
-        let sum = a + b
+        let sum = Int64(a) + Int64(b)
         println("Sum calculated in unsafe block: ${sum}")
     }
 }
