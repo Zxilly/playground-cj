@@ -23,7 +23,7 @@ public macro dprint(input: Tokens): Tokens {
 // Usage example (requires a separate call file):
 // 
 // File: main.cj
-// package main
+// package example
 // import define.*
 // 
 // main() {

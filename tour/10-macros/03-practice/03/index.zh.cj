@@ -20,7 +20,7 @@ class FinalReview {
         let greeting = "你好"
         let name = "仓颉"
         @Expect(greeting + name, "你好仓颉")
-        @Expect(greeting.size, 2)
+        @Expect(greeting.size, 6)
     }
     
     @TestCase

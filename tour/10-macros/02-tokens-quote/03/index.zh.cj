@@ -23,7 +23,7 @@ public macro dprint(input: Tokens): Tokens {
 // 使用示例（需要单独的调用文件）:
 // 
 // 文件: main.cj
-// package main
+// package example
 // import define.*
 // 
 // main() {

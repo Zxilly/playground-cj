@@ -17,7 +17,7 @@ public macro PrintExpr(input: Tokens): Tokens {
 // Below is a usage example (requires a separate call file):
 // 
 // File: main.cj
-// package main
+// package example
 // import define.*
 // 
 // main() {

@@ -16,7 +16,7 @@ public macro Identity(input: Tokens): Tokens {
 public macro Log(input: Tokens): Tokens {
     let inputStr = input.toString()
     return quote(
-        println("调试: 执行 ${inputStr}")
+        println("调试: 执行 " + $(inputStr))
         $(input)
     )
 }
@@ -27,3 +27,14 @@ public macro Twice(input: Tokens): Tokens {
         ($(input) + $(input))
     )
 }
+// 使用示例：将以下代码另存为 main.cj。
+// cjc main.cj --import-path . -o main && ./main
+// File: main.cj
+// package example
+// import myMacros.*
+//
+// main() {
+//     let value = @Identity(21)
+//     println(@Twice(value))
+//     @Log(println("hello"))
+// }

@@ -33,7 +33,20 @@ public macro Init(attr: Tokens, input: Tokens): Tokens {
 public macro DebugShow(input: Tokens): Tokens {
     let codeStr = input.toString()
     return quote(
-        println("表达式: ${$(codeStr)}")
-        println("结果: ${$(input)}")
+        println("表达式: " + $(codeStr))
+        println("结果: " + ($(input)).toString())
     )
 }
+// 使用示例：将以下代码另存为 main.cj。
+// cjc main.cj --import-path . -o main && ./main
+// File: main.cj
+// package example
+// import macros.*
+//
+// @AddPrefix[public] struct Example {}
+//
+// main() {
+//     @Init[42] let value: Int64
+//     println(@NoChange(value))
+//     @DebugShow(value + 1)
+// }
