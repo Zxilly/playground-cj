@@ -65,6 +65,9 @@ jobs:
       - name: Generate Git-tracked course modules and compile exercises with cjc
         run: pnpm content-packs:verify
 
+      - name: Compile and run all Cangjie examples and macro tests
+        run: python3 scripts/verify-cangjie.py
+
       - name: Run Lint
         run: pnpm run lint
 

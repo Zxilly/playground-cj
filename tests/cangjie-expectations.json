@@ -1,0 +1,100 @@
+{
+  "tour/10-macros/01-intro/02/index.en.cj": {
+    "stdout": "42\nDebug: executing println(\"hello\")\nhello\n"
+  },
+  "tour/10-macros/01-intro/03/index.en.cj": {
+    "stdout": "42\nExpression: value + 1\nResult: 43\n"
+  },
+  "tour/10-macros/02-tokens-quote/02/index.en.cj": {
+    "stdout": "3\nhello\n"
+  },
+  "tour/10-macros/02-tokens-quote/03/index.en.cj": {
+    "stdout": "x + y = 15\nx * 2 = 20\nx = 10\n"
+  },
+  "tour/09-ffi-unsafe/02-c-types/01/index.en.cj": {
+    "contains": [
+      "(10, 20, 30)",
+      "24"
+    ]
+  },
+  "tour/09-ffi-unsafe/02-c-types/04/index.en.cj": {
+    "contains": [
+      "n = 11",
+      "a = 200, b = 100",
+      "15 + 27 = 42",
+      "value = 1, count = 1"
+    ]
+  },
+  "tour/09-ffi-unsafe/03-examples/01/index.en.cj": {
+    "contains": [
+      "abs(Int32.MIN) = 2147483648"
+    ]
+  },
+  "tour/12-ecosystem-next-steps/02-runtime-deploy/02/index.en.cj": {
+    "contains": [
+      "150",
+      "(100, 200)"
+    ]
+  },
+  "tour/12-ecosystem-next-steps/02-runtime-deploy/03/index.en.cj": {
+    "contains": [
+      "CJNative",
+      "385",
+      "x86_64"
+    ]
+  },
+  "tour/12-ecosystem-next-steps/01-io-network/02/index.en.cj": {
+    "contains": [
+      "Server received: Hello, Cangjie network programming!"
+    ]
+  },
+  "tour/10-macros/01-intro/02/index.zh.cj": {
+    "stdout": "42\n调试: 执行 println(\"hello\")\nhello\n"
+  },
+  "tour/10-macros/01-intro/03/index.zh.cj": {
+    "stdout": "42\n表达式: value + 1\n结果: 43\n"
+  },
+  "tour/10-macros/02-tokens-quote/02/index.zh.cj": {
+    "stdout": "3\nhello\n"
+  },
+  "tour/10-macros/02-tokens-quote/03/index.zh.cj": {
+    "stdout": "x + y = 15\nx * 2 = 20\nx = 10\n"
+  },
+  "tour/09-ffi-unsafe/02-c-types/01/index.zh.cj": {
+    "contains": [
+      "(10, 20, 30)",
+      "24"
+    ]
+  },
+  "tour/09-ffi-unsafe/02-c-types/04/index.zh.cj": {
+    "contains": [
+      "n = 11",
+      "a = 200, b = 100",
+      "15 + 27 = 42",
+      "value = 1, count = 1"
+    ]
+  },
+  "tour/09-ffi-unsafe/03-examples/01/index.zh.cj": {
+    "contains": [
+      "abs(Int32.MIN) = 2147483648"
+    ]
+  },
+  "tour/12-ecosystem-next-steps/02-runtime-deploy/02/index.zh.cj": {
+    "contains": [
+      "150",
+      "(100, 200)"
+    ]
+  },
+  "tour/12-ecosystem-next-steps/02-runtime-deploy/03/index.zh.cj": {
+    "contains": [
+      "CJNative",
+      "385",
+      "x86_64"
+    ]
+  },
+  "tour/12-ecosystem-next-steps/01-io-network/02/index.zh.cj": {
+    "contains": [
+      "服务端收到: 你好，仓颉网络编程！"
+    ]
+  }
+}
