@@ -6,7 +6,7 @@ main() {
     println("这是一个编译为原生二进制的程序。")
     
     // 简单计算示例
-    let sum = 0
+    var sum = 0
     for (i in 1..=10) {
         sum += i
     }

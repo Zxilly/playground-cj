@@ -32,5 +32,5 @@ main() {
     }
     let pi = Float64(n) / Float64(M * N) * 4.0
     println("π ≈ ${pi}")
-    println("deviation: ${abs(Float64.PI - pi)}")
+    println("deviation: ${abs(Float64.getPI() - pi)}")
 }

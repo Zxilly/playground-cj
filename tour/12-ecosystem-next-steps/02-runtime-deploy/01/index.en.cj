@@ -6,7 +6,7 @@ main() {
     println("This is a program compiled to native binary.")
     
     // Simple calculation example
-    let sum = 0
+    var sum = 0
     for (i in 1..=10) {
         sum += i
     }

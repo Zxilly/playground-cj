@@ -17,9 +17,9 @@ import std.collection.ArrayList
 
 main(): Unit {
     let numbers = ArrayList<Int64>()
-    numbers.append(100)
-    numbers.append(200)
-    numbers.append(300)
+    numbers.add(100)
+    numbers.add(200)
+    numbers.add(300)
     
     println("Re-export demonstration:")
     println("Count: ${numbers.size}")

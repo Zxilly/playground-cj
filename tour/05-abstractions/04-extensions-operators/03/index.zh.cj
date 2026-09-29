@@ -1,3 +1,5 @@
+import std.math.*
+
 struct Rectangle {
     public let width: Float64
     public let height: Float64
@@ -39,7 +41,7 @@ extend Rectangle {
 
     // 计算对角线长度
     func diagonal(): Float64 {
-        return (this.width * this.width + this.height * this.height).sqrt()
+        return sqrt(this.width * this.width + this.height * this.height)
     }
 }
 

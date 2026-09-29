@@ -5,9 +5,9 @@ import std.collection.HashMap as Map
 main(): Unit {
     // 使用别名为 ArrayList 的名称 "List"
     let names = List<String>()
-    names.append("张三")
-    names.append("李四")
-    names.append("王五")
+    names.add("张三")
+    names.add("李四")
+    names.add("王五")
     
     println("用户列表:")
     for (name in names) {

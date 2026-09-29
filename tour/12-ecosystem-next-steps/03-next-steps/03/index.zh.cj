@@ -23,12 +23,13 @@ main() {
     topics.add("并发高级模式")
     
     println("进阶学习方向:")
-    for ((topic, i) in topics) {
+    for (i in 0..topics.size) {
+        let topic = topics[i]
         println("  ${i + 1}. ${topic}")
     }
     
     println("\n祝你学习愉快，编码顺利！")
     
     // 小彩蛋：用学过的知识做一个简单的随机选择器
-    println("\n随机推荐学习: ${topics[Random().nextUInt64() % topics.size.toUInt64()].value}")
+    println("\n随机推荐学习: ${topics[Int64(Random().nextUInt64() % UInt64(topics.size))]}")
 }

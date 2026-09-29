@@ -1,18 +1,10 @@
 // CJNative backend compilation:
 //   cjc backend_demo.cj -o backend_demo
-//
-// CJVM backend compilation (requires CJVM SDK):
-//   cjc backend_demo.cj -o backend_demo
 
 // Define different functions based on backend type
 @When[backend == "cjnative"]
 func getBackendInfo(): String {
     "CJNative native backend - compiles directly to machine code"
-}
-
-@When[backend == "cjvm"]
-func getBackendInfo(): String {
-    "CJVM backend - compiles to JVM bytecode"
 }
 
 // Common backend-agnostic code
@@ -23,6 +15,12 @@ func calculateSequence(n: Int64): Int64 {
     }
     result
 }
+
+@When[arch == "x86_64"]
+func getArchitecture(): String { "x86_64" }
+
+@When[arch == "aarch64"]
+func getArchitecture(): String { "aarch64" }
 
 main() {
     println("=== Compilation Backend Demo ===")
@@ -36,11 +34,7 @@ main() {
     println("Sum of 1² to ${n}²: ${sum}")
     
     // Display architecture information
-    @When[arch == "x86_64"]
-    println("Running platform: x86_64")
-    
-    @When[arch == "aarch64"]
-    println("Running platform: aarch64")
+    println("Running platform: ${getArchitecture()}")
     
     println("Program execution complete!")
 }

@@ -7,6 +7,15 @@
 //   cjc runtime_check.cj -o runtime_check --static
 //   ./runtime_check
 
+class Point {
+    public let x: Int64
+    public let y: Int64
+    init(x: Int64, y: Int64) {
+        this.x = x
+        this.y = y
+    }
+}
+
 main() {
     println("=== Cangjie Runtime Check ===")
     
@@ -24,14 +33,6 @@ main() {
     println("String content: ${text}")
     
     // Test object creation (depends on memory management)
-    class Point {
-        let x: Int64
-        let y: Int64
-        init(x: Int64, y: Int64) {
-            this.x = x
-            this.y = y
-        }
-    }
     let p = Point(100, 200)
     println("Coordinate point: (${p.x}, ${p.y})")
     

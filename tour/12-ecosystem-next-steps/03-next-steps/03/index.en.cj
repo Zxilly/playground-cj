@@ -23,12 +23,13 @@ main() {
     topics.add("Advanced concurrency patterns")
     
     println("Advanced learning directions:")
-    for ((topic, i) in topics) {
+    for (i in 0..topics.size) {
+        let topic = topics[i]
         println("  ${i + 1}. ${topic}")
     }
     
     println("\nHappy learning and smooth coding!")
     
     // Easter egg: a simple random selector using what we've learned
-    println("\nRandom recommendation: ${topics[Random().nextUInt64() % topics.size.toUInt64()].value}")
+    println("\nRandom recommendation: ${topics[Int64(Random().nextUInt64() % UInt64(topics.size))]}")
 }

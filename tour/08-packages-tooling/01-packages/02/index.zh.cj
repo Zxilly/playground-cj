@@ -4,10 +4,10 @@ import std.math.sqrt
 main(): Unit {
     // 使用显式导入的 ArrayList
     let numbers = ArrayList<Int64>()
-    numbers.append(10)
-    numbers.append(20)
-    numbers.append(30)
-    numbers.append(40)
+    numbers.add(10)
+    numbers.add(20)
+    numbers.add(30)
+    numbers.add(40)
     
     println("列表中的元素:")
     for (num in numbers) {

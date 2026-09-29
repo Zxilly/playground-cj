@@ -7,6 +7,15 @@
 //   cjc runtime_check.cj -o runtime_check --static
 //   ./runtime_check
 
+class Point {
+    public let x: Int64
+    public let y: Int64
+    init(x: Int64, y: Int64) {
+        this.x = x
+        this.y = y
+    }
+}
+
 main() {
     println("=== 仓颉运行时检查 ===")
     
@@ -24,14 +33,6 @@ main() {
     println("字符串内容: ${text}")
     
     // 测试对象创建（依赖内存管理）
-    class Point {
-        let x: Int64
-        let y: Int64
-        init(x: Int64, y: Int64) {
-            this.x = x
-            this.y = y
-        }
-    }
     let p = Point(100, 200)
     println("坐标点: (${p.x}, ${p.y})")
     
