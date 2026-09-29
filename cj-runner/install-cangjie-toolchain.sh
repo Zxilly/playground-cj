@@ -169,7 +169,9 @@ else
     --fail --location --retry 5 --retry-all-errors \
     --connect-timeout 30 --output "$archive_download" "$sdk_url"
   printf '%s  %s\n' "$sdk_sha256" "$archive_download" | sha256sum --check
-  mv -T --no-clobber -- "$archive_download" "$archive"
+  mv -T --no-clobber -- "$archive_download" "$archive" || {
+    [ -f "$archive" ] && [ ! -L "$archive" ]
+  }
   if [ -e "$archive_download" ] || [ -L "$archive_download" ]; then
     rm -f -- "$archive_download"
   else
@@ -247,7 +249,9 @@ if [ -n "$stdx_root" ]; then
       --connect-timeout 30 --output "$stdx_download" "$stdx_url"
     printf '%s  %s\n' "$stdx_sha256" "$stdx_download" \
       | sha256sum --check
-    mv -T --no-clobber -- "$stdx_download" "$stdx_archive"
+    mv -T --no-clobber -- "$stdx_download" "$stdx_archive" || {
+      [ -f "$stdx_archive" ] && [ ! -L "$stdx_archive" ]
+    }
     if [ -e "$stdx_download" ] || [ -L "$stdx_download" ]; then
       rm -f -- "$stdx_download"
     else

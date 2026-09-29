@@ -17,7 +17,8 @@ ROOT = Path(__file__).resolve().parent
 
 class InstallerTests(unittest.TestCase):
     def test_archive_verification(self):
-        for mode in ("download", "cache", "corrupt-cache", "collision", "corrupt-collision"):
+        for mode in ("download", "cache", "corrupt-cache", "collision", "corrupt-collision",
+                     "strict-collision", "strict-corrupt-collision"):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 lock = json.loads((ROOT / "cangjie-toolchain.lock.json").read_text())
@@ -74,6 +75,17 @@ fi
 """)
                 curl.chmod(0o755)
                 sha.chmod(0o755)
+                # Recent coreutils returns nonzero when --no-clobber skips a
+                # destination; reproduce that behavior on older local systems.
+                move = bin_dir / "mv"
+                move.write_text("""#!/usr/bin/env python3
+import os, subprocess, sys
+status = subprocess.run(['/usr/bin/mv', *sys.argv[1:]]).returncode
+if os.environ['TEST_STRICT_MV'] == '1' and os.path.exists(sys.argv[-2]):
+    status = 1
+sys.exit(status)
+""")
+                move.chmod(0o755)
                 log = root / "hashes.log"
                 result = subprocess.run(
                     ["sh", str(ROOT / "install-cangjie-toolchain.sh"),
@@ -81,10 +93,12 @@ fi
                      "--archive", str(cached_sdk), "--stdx-root", str(root / "stdx")],
                     env={**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}",
                          "TEST_SDK": str(sdk), "TEST_STDX": str(stdx),
-                         "TEST_MODE": mode, "TEST_HASH_LOG": str(log)},
+                         "TEST_MODE": mode.removeprefix("strict-"),
+                         "TEST_STRICT_MV": "1" if mode.startswith("strict-") else "0",
+                         "TEST_HASH_LOG": str(log)},
                     capture_output=True, text=True,
                 )
-                if mode.startswith("corrupt"):
+                if "corrupt" in mode:
                     self.assertNotEqual(result.returncode, 0)
                     self.assertFalse((parent / "cangjie").exists())
                 else:
@@ -92,7 +106,7 @@ fi
                     self.assertTrue((parent / "cangjie/bin/cjc").exists())
                     # SDK + stdx + compiler exactly once. A no-clobber collision
                     # must additionally check the two files actually published.
-                    self.assertEqual(len(log.read_text().splitlines()), 5 if mode == "collision" else 3)
+                    self.assertEqual(len(log.read_text().splitlines()), 5 if "collision" in mode else 3)
 
 
 if __name__ == "__main__":
