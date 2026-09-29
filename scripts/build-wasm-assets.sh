@@ -48,8 +48,9 @@ download() {
       --output "$path.download" "$url"
     printf '%s  %s\n' "$hash" "$path.download" | sha256sum --check
     mv -- "$path.download" "$path"
+  else
+    printf '%s  %s\n' "$hash" "$path" | sha256sum --check
   fi
-  printf '%s  %s\n' "$hash" "$path" | sha256sum --check
 }
 
 compiler="$work/cangjie_compiler"

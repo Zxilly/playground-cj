@@ -94,7 +94,9 @@ jobs:
 
       - name: Test runner with race detection
         working-directory: cj-runner
-        run: go test -race ./...
+        run: |
+          go test -race ./...
+          python3 test_installer.py
 
       - name: Vet runner
         working-directory: cj-runner

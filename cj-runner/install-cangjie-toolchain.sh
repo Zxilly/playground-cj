@@ -156,6 +156,7 @@ if [ -z "$archive" ]; then
   archive="$sdk_parent/cangjie-sdk-linux-x64-$release.tar.gz"
 fi
 mkdir -p "$(dirname -- "$archive")"
+sdk_archive_verified=false
 if [ -e "$archive" ] || [ -L "$archive" ]; then
   if [ ! -f "$archive" ] || [ -L "$archive" ]; then
     printf 'SDK cache must be a regular, non-symlink file: %s\n' \
@@ -171,6 +172,8 @@ else
   mv -T --no-clobber -- "$archive_download" "$archive"
   if [ -e "$archive_download" ] || [ -L "$archive_download" ]; then
     rm -f -- "$archive_download"
+  else
+    sdk_archive_verified=true
   fi
   archive_download=
 fi
@@ -179,7 +182,9 @@ if [ ! -f "$archive" ] || [ -L "$archive" ]; then
     "$archive" >&2
   exit 1
 fi
-printf '%s  %s\n' "$sdk_sha256" "$archive" | sha256sum --check
+if [ "$sdk_archive_verified" = false ]; then
+  printf '%s  %s\n' "$sdk_sha256" "$archive" | sha256sum --check
+fi
 
 install_staging=$(mktemp -d "$sdk_parent/.cangjie-install.XXXXXX")
 tar -xzf "$archive" -C "$install_staging"
@@ -203,8 +208,6 @@ if [ "$compiler_output" != "$expected_compiler_output" ]; then
     "$compiler_output" >&2
   exit 1
 fi
-printf '%s  %s\n' "$compiler_sha256" "$staged_sdk_root/bin/cjc" \
-  | sha256sum --check
 
 canonical_lock="$install_staging/cangjie-toolchain.lock.canonical.json"
 jq -cS -j . "$lock_file" >"$canonical_lock"
@@ -229,6 +232,7 @@ if [ -n "$stdx_root" ]; then
   stdx_release_page=$(jq -er '.stdx.releasePage' "$lock_file")
   stdx_sha256=$(jq -er '.stdx.sha256' "$lock_file")
   stdx_archive="$sdk_parent/cangjie-stdx.zip"
+  stdx_archive_verified=false
   if [ -e "$stdx_archive" ] || [ -L "$stdx_archive" ]; then
     if [ ! -f "$stdx_archive" ] || [ -L "$stdx_archive" ]; then
       printf 'stdx cache must be a regular, non-symlink file: %s\n' \
@@ -246,6 +250,8 @@ if [ -n "$stdx_root" ]; then
     mv -T --no-clobber -- "$stdx_download" "$stdx_archive"
     if [ -e "$stdx_download" ] || [ -L "$stdx_download" ]; then
       rm -f -- "$stdx_download"
+    else
+      stdx_archive_verified=true
     fi
     stdx_download=
   fi
@@ -254,7 +260,9 @@ if [ -n "$stdx_root" ]; then
       "$stdx_archive" >&2
     exit 1
   fi
-  printf '%s  %s\n' "$stdx_sha256" "$stdx_archive" | sha256sum --check
+  if [ "$stdx_archive_verified" = false ]; then
+    printf '%s  %s\n' "$stdx_sha256" "$stdx_archive" | sha256sum --check
+  fi
   staged_stdx_root="$install_staging/stdx"
   mkdir "$staged_stdx_root"
   unzip -q "$stdx_archive" -d "$staged_stdx_root"
