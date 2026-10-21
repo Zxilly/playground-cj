@@ -21,15 +21,11 @@ GitHub Actions 需要配置 `EDGEONE_API_TOKEN` secret 和
 EdgeOne 项目的生产环境中，部署时由 CLI 同步；不需要在仓库中保存环境变量值。
 EdgeOne 的 `AI_GATEWAY_TRUSTED_IP_HEADER` 设置为 `eo-connecting-ip`，
 其余 Runner、Redis 和 AI 配置沿用现有服务。
-若平台拒绝 Modal URL 中的连续连字符，可将主机名中的 `--` 写成 `%2D%2D`；
-标准 URL 解析会将其还原为同一主机名。配置后应回读核对，CLI 的退出码不能单独证明保存成功。
 
 原 `playground.cj.zxilly.dev` 和 `tour.cj.zxilly.dev` 继续由 Vercel 提供服务。
 `proxy.ts` 使用 Vercel 的国家标记，将中国大陆的页面访问临时重定向至
 `play.cj.zxilly.com`，保留路径和查询参数；独立教程域名映射至新站的 `/语言/tour/`。
 其他地区继续访问原站，API 和静态资源不参与重定向。
-在新站通过验证后，将 Vercel 生产环境的 `CHINA_SITE_REDIRECT` 设置为 `1`
-并重新部署以启用跳转；移除此变量并重新部署可恢复所有地区访问原站。
 
 ## 开发
 

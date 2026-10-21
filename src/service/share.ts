@@ -22,10 +22,6 @@ async function fetchDpasteContent(hash: string): Promise<string | undefined> {
   return undefined
 }
 
-export async function getShareCode(hash: string): Promise<string | undefined> {
-  return fetchDpasteContent(hash)
-}
-
 export function loadDataShareCode(): string | undefined {
   const params = new URLSearchParams(window.location.hash.slice(1))
 

@@ -94,8 +94,7 @@ export function proxy(request: NextRequest): NextResponse {
   // Vercel supplies this country header. Keep the original domains on Vercel
   // for other countries; the Makers origin must never redirect back to itself.
   if (
-    process.env.CHINA_SITE_REDIRECT === '1'
-    && (process.env.VERCEL === '1' || process.env.VERCEL_ENV)
+    (process.env.VERCEL === '1' || process.env.VERCEL_ENV)
     && request.headers.get('x-vercel-ip-country') === 'CN'
     && (request.method === 'GET' || request.method === 'HEAD')
     && ['playground.cj.zxilly.dev', 'tour.cj.zxilly.dev'].includes(request.nextUrl.hostname)

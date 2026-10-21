@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { NextRequest } from 'next/server'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { proxy } from './proxy'
 
 function request(url: string, country = 'CN', method = 'GET') {
@@ -15,16 +15,9 @@ function request(url: string, country = 'CN', method = 'GET') {
   })
 }
 
-beforeEach(() => vi.stubEnv('CHINA_SITE_REDIRECT', '1'))
 afterEach(() => vi.unstubAllEnvs())
 
 describe('china website redirect', () => {
-  it('keeps the original site active until the Makers deployment is enabled', () => {
-    vi.stubEnv('VERCEL', '1')
-    vi.stubEnv('CHINA_SITE_REDIRECT', '')
-    expect(proxy(request('https://playground.cj.zxilly.dev/en')).headers.get('location')).toBeNull()
-  })
-
   it('preserves the playground path and query on Vercel', () => {
     vi.stubEnv('VERCEL', '1')
     const response = proxy(request('https://playground.cj.zxilly.dev/en?code=example'))
