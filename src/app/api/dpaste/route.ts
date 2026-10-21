@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 async function dpaste(content: string): Promise<string> {
   const body = new URLSearchParams({

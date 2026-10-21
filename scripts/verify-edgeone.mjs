@@ -38,6 +38,14 @@ for (const path of ['/lsp/cjfmt-wasm.mjs', '/lsp/LSPServer-wasm.js']) {
 }
 console.log('WASM JavaScript module MIME types: OK')
 
+const share = await request('/api/dpaste', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: '{}',
+}, [400])
+assert.equal((await share.json()).error, 'Content is required')
+console.log('Sharing route and request validation: OK')
+
 const metadata = await request('/api/ai-gateway/metadata')
 assert.match(metadata.headers.get('cache-control') ?? '', /no-store/)
 const shared = await metadata.json()
