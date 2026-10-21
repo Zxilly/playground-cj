@@ -46,6 +46,18 @@ const share = await request('/api/dpaste', {
 assert.equal((await share.json()).error, 'Content is required')
 console.log('Sharing route and request validation: OK')
 
+const createdShare = await request('/api/dpaste', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ content: 'main() { println("EdgeOne share smoke") }' }),
+})
+const { hash } = await createdShare.json()
+assert.equal(typeof hash, 'string')
+assert.match(hash, /^[a-z0-9]+$/i)
+const sharedPage = await request(`/zh?hash=${encodeURIComponent(hash)}`)
+assert.match(await sharedPage.text(), /EdgeOne share smoke/)
+console.log('Short share creation and page restoration: OK')
+
 const metadata = await request('/api/ai-gateway/metadata')
 assert.match(metadata.headers.get('cache-control') ?? '', /no-store/)
 const shared = await metadata.json()
