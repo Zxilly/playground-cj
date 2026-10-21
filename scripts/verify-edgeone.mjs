@@ -7,7 +7,10 @@ async function request(path, options = {}, statuses = [200]) {
     ...options,
     signal: AbortSignal.timeout(60_000),
   })
-  assert.ok(statuses.includes(response.status), `${path}: HTTP ${response.status}`)
+  if (!statuses.includes(response.status)) {
+    const detail = (await response.text()).slice(0, 500)
+    throw new Error(`${path}: HTTP ${response.status}: ${detail}`)
+  }
   return response
 }
 
@@ -28,6 +31,12 @@ for (const path of ['/lsp/LSPServer-wasm.wasm', '/lsp/cjfmt-wasm.wasm']) {
   await reader.cancel()
 }
 console.log('Language server and formatter WASM: OK')
+
+for (const path of ['/lsp/cjfmt-wasm.mjs', '/lsp/LSPServer-wasm.js']) {
+  const response = await request(path, { method: 'HEAD' })
+  assert.match(response.headers.get('content-type') ?? '', /(?:application|text)\/javascript/)
+}
+console.log('WASM JavaScript module MIME types: OK')
 
 const metadata = await request('/api/ai-gateway/metadata')
 assert.match(metadata.headers.get('cache-control') ?? '', /no-store/)
