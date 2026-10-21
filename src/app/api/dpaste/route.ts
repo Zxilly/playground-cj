@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server'
+import { Buffer } from 'node:buffer'
+import { request as httpsRequest } from 'node:https'
+import { rootCertificates } from 'node:tls'
+import { DPASTE_CHAIN_CERTIFICATE } from '@/lib/dpaste-ca'
 
 export const runtime = 'nodejs'
 
@@ -9,15 +13,37 @@ async function dpaste(content: string): Promise<string> {
     expiry_days: '200',
   })
 
-  const response = await fetch('https://dpaste.com/api/v2/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'User-Agent': 'Cangjie Playground/1.0',
-    },
-    body: body.toString(),
+  const payload = body.toString()
+  return new Promise((resolve, reject) => {
+    const request = httpsRequest('https://dpaste.com/api/v2/', {
+      method: 'POST',
+      ca: [...rootCertificates, DPASTE_CHAIN_CERTIFICATE],
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(payload),
+        'User-Agent': 'Cangjie Playground/1.0',
+      },
+    }, (response) => {
+      let result = ''
+      response.setEncoding('utf8')
+      response.on('data', (chunk: string) => {
+        result += chunk
+        if (result.length > 4_096)
+          response.destroy(new Error('dpaste response is too large'))
+      })
+      response.on('error', reject)
+      response.on('end', () => {
+        if (response.statusCode !== 201) {
+          reject(new Error(`dpaste returned HTTP ${response.statusCode}`))
+          return
+        }
+        resolve(result.trim())
+      })
+    })
+    request.setTimeout(15_000, () => request.destroy(new Error('dpaste request timed out')))
+    request.on('error', reject)
+    request.end(payload)
   })
-  return response.text()
 }
 
 export async function POST(request: Request) {
