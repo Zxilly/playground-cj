@@ -21,7 +21,7 @@ const lspGluePlugin: Plugin = {
   configureServer(server) {
     server.middlewares.use((req, res, next) => {
       const path = req.url?.split('?')[0]
-      if (path !== '/lsp/LSPServer-wasm.js' && path !== '/lsp/cjfmt-wasm.mjs')
+      if (path !== '/lsp/LSPServer-wasm.js' && path !== '/lsp/cjfmt-wasm.js')
         return next()
       res.setHeader('Content-Type', 'text/javascript')
       res.end(readFileSync(new URL(`./public${path}`, import.meta.url)))

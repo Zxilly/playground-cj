@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { createHash } from 'node:crypto'
-import { createWriteStream, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, createWriteStream, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve as resolvePath } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import * as yauzl from 'yauzl'
@@ -154,8 +154,18 @@ async function extractZipFromBuffer(buffer, destDir) {
   })
 }
 
+function prepareBrowserFormatterModule() {
+  // Some static hosts serve .mjs as application/octet-stream. Keep the pinned
+  // archive unchanged and publish the same ES module at a JavaScript MIME URL.
+  copyFileSync(
+    join(WASM_ASSETS_DIR, 'cjfmt-wasm.mjs'),
+    join(WASM_ASSETS_DIR, 'cjfmt-wasm.js'),
+  )
+}
+
 export async function ensureWasmAssets() {
   if (isWasmAssetsComplete()) {
+    prepareBrowserFormatterModule()
     return
   }
 
@@ -182,6 +192,7 @@ export async function ensureWasmAssets() {
   )
   if (!isWasmAssetsComplete())
     throw new Error('Extracted WASM asset archive is incomplete')
+  prepareBrowserFormatterModule()
   console.log('Browser toolchain files extracted successfully.')
 }
 

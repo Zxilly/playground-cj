@@ -17,7 +17,7 @@ interface EmscriptenFormatterFactory {
 
 const WASM_ASSETS_VERSION = process.env.WASM_ASSETS_VERSION ?? 'fallback'
 const VERSION_QUERY = `?v=${WASM_ASSETS_VERSION}`
-const FORMATTER_MODULE_URL = `/lsp/cjfmt-wasm.mjs${VERSION_QUERY}`
+const FORMATTER_MODULE_URL = `/lsp/cjfmt-wasm.js${VERSION_QUERY}`
 const FORMATTER_WASM_URL = `/lsp/cjfmt-wasm.wasm${VERSION_QUERY}`
 
 function isFormatterModule(value: unknown): value is CangjieFormatterModule {

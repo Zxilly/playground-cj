@@ -32,7 +32,7 @@ for (const path of ['/lsp/LSPServer-wasm.wasm', '/lsp/cjfmt-wasm.wasm']) {
 }
 console.log('Language server and formatter WASM: OK')
 
-for (const path of ['/lsp/cjfmt-wasm.mjs', '/lsp/LSPServer-wasm.js']) {
+for (const path of ['/lsp/cjfmt-wasm.js', '/lsp/LSPServer-wasm.js']) {
   const response = await request(path, { method: 'HEAD' })
   assert.match(response.headers.get('content-type') ?? '', /(?:application|text)\/javascript/)
 }
