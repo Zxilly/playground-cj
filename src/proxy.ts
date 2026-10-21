@@ -91,6 +91,26 @@ export function proxy(request: NextRequest): NextResponse {
   const domain = getSiteDomain(host)
   const parsed = parsePath(pathname)
 
+  // Vercel supplies this country header. Keep the original domains on Vercel
+  // for other countries; the Makers origin must never redirect back to itself.
+  if (
+    process.env.CHINA_SITE_REDIRECT === '1'
+    && (process.env.VERCEL === '1' || process.env.VERCEL_ENV)
+    && request.headers.get('x-vercel-ip-country') === 'CN'
+    && (request.method === 'GET' || request.method === 'HEAD')
+    && ['playground.cj.zxilly.dev', 'tour.cj.zxilly.dev'].includes(request.nextUrl.hostname)
+  ) {
+    const url = new URL('https://play.cj.zxilly.com')
+    url.pathname = domain === 'tour'
+      ? buildPath(parsed.lang ?? getPreferredLocale(request), true, parsed.rest)
+      : pathname
+    url.search = request.nextUrl.search
+    const response = NextResponse.redirect(url, 302)
+    response.headers.set('Cache-Control', 'private, no-store')
+    response.headers.set('Vary', 'x-vercel-ip-country')
+    return response
+  }
+
   if (domain === 'tour') {
     const lang = parsed.lang ?? getPreferredLocale(request)
 

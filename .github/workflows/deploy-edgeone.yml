@@ -22,6 +22,7 @@ jobs:
        github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: edgeone-production
     env:
       EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME }}
