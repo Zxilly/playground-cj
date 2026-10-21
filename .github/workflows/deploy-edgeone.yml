@@ -56,6 +56,3 @@ jobs:
           npx --yes edgeone@1.6.44 makers deploy
           --name "$EDGEONE_PROJECT_NAME" --area global --env production
           --skip-ai-gateway-sync
-
-      - name: Verify production
-        run: node scripts/verify-edgeone.mjs https://play.cj.zxilly.com

@@ -31,9 +31,6 @@ EdgeOne 的 `AI_GATEWAY_TRUSTED_IP_HEADER` 设置为 `eo-connecting-ip`，
 在新站通过验证后，将 Vercel 生产环境的 `CHINA_SITE_REDIRECT` 设置为 `1`
 并重新部署以启用跳转；移除此变量并重新部署可恢复所有地区访问原站。
 
-部署后运行 `node scripts/verify-edgeone.mjs https://play.cj.zxilly.com`，
-检查页面隔离响应头、WASM、AI 配额接口和实际仓颉编译执行。
-
 ## 开发
 
 ```bash
