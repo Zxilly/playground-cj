@@ -7,6 +7,24 @@
 
 [https://playground.cj.zxilly.dev](https://playground.cj.zxilly.dev)
 
+国内访问入口：[https://play.cj.zxilly.com](https://play.cj.zxilly.com)
+
+## 部署
+
+Vercel 与 EdgeOne Makers 分别部署同一 Next.js 应用，代码执行共用 Modal Runner。
+EdgeOne 项目 `playground-cj-global` 使用全球可用区（含中国大陆）。
+`master` 的单元测试工作流成功后，`EdgeOne Makers` 工作流自动构建并部署该次提交；
+也可手动触发部署。构建使用 `edgeone.json` 和固定版本的 EdgeOne CLI。
+
+GitHub Actions 需要配置 `EDGEONE_API_TOKEN` secret 和
+`EDGEONE_PROJECT_NAME=playground-cj-global` variable。应用环境变量保存在
+EdgeOne 项目的生产环境中，部署时由 CLI 同步；不需要在仓库中保存环境变量值。
+EdgeOne 的 `AI_GATEWAY_TRUSTED_IP_HEADER` 设置为 `eo-connecting-ip`，
+其余 Runner、Redis 和 AI 配置沿用现有服务。
+
+部署后运行 `node scripts/verify-edgeone.mjs https://play.cj.zxilly.com`，
+检查页面隔离响应头、WASM、AI 配额接口和实际仓颉编译执行。
+
 ## 开发
 
 ```bash

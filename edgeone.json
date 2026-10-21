@@ -1,0 +1,25 @@
+{
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "outputDirectory": ".next",
+  "nodeVersion": "24.18.0",
+  "cloudFunctions": {
+    "maxDuration": 60
+  },
+  "headers": [
+    {
+      "source": "/*",
+      "headers": [
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
+        { "key": "Content-Security-Policy", "value": "base-uri 'self'; object-src 'none'; frame-src 'none'; img-src 'self' blob: data:; media-src 'self' blob: data:" }
+      ]
+    },
+    {
+      "source": "/lsp/*",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}

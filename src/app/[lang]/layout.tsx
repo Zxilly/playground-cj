@@ -58,9 +58,9 @@ export default async function LangLayout({ children, params }: LayoutProps) {
         >
           {children}
         </LinguiClientProvider>
-        <Analytics />
+        {process.env.VERCEL === '1' && <Analytics />}
         <TrackingScript />
-        <SpeedInsights />
+        {process.env.VERCEL === '1' && <SpeedInsights />}
       </body>
     </html>
   )

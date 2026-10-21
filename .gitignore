@@ -17,6 +17,7 @@ next-env.d.ts
 .env*.local
 .claude
 /.vercel/
+/.edgeone/
 
 # Editor and OS files
 .DS_Store
