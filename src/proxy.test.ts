@@ -15,8 +15,8 @@ function request(url: string, country = 'CN', method = 'GET') {
   })
 }
 
-afterEach(() => vi.unstubAllEnvs())
 beforeEach(() => vi.stubEnv('CHINA_SITE_REDIRECT', '1'))
+afterEach(() => vi.unstubAllEnvs())
 
 describe('china website redirect', () => {
   it('keeps the original site active until the Makers deployment is enabled', () => {
