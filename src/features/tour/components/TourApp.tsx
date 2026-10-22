@@ -8,7 +8,7 @@ import { TourEditor } from './TourEditor'
 import { TourNavigation } from './TourNavigation'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { useDarkMode } from '@/lib/theme/useDarkMode'
-import { harmonyFont, jetbrainsFont } from '@/app/font'
+import { fontFamily, uiFontFamily } from '@/app/font'
 import { useMedia } from 'react-use'
 import type { FlatSection, TourChapterSlim } from '@/tour/types'
 import { getTourPath } from '@/lib/siteHref'
@@ -45,8 +45,8 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
       <div
         className={`h-screen ${dark ? 'dark' : ''}`}
         style={{
-          'fontFamily': `${harmonyFont.style.fontFamily}, sans-serif`,
-          '--tour-code-font': `${jetbrainsFont.style.fontFamily}, monospace`,
+          'fontFamily': uiFontFamily,
+          '--tour-code-font': fontFamily,
         } as React.CSSProperties}
       >
         <TourLayout

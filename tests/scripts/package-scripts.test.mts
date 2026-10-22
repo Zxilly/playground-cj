@@ -4,8 +4,9 @@ import packageJson from '../../package.json'
 describe('package scripts', () => {
   it('prepares assets and compiles Git-tracked curriculum before consumers', () => {
     expect(packageJson.scripts.prebuild)
-      .toBe('pnpm prep && pnpm content-packs:generate')
-    expect(packageJson.scripts.predev).toBe('pnpm prep')
+      .toBe('pnpm prep && pnpm content-packs:generate && pnpm lingui:compile')
+    expect(packageJson.scripts.predev).toBe('pnpm prep && pnpm lingui:compile')
+    expect(packageJson.scripts['lingui:compile']).toBe('lingui compile && pnpm fonts:generate')
     expect(packageJson.scripts.pretest)
       .toBe('pnpm prep && pnpm content-packs:generate')
     expect(packageJson.scripts.test)

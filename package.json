@@ -7,11 +7,11 @@
   },
   "scripts": {
     "prep": "node scripts/download-wasm-assets-cli.mjs",
-    "predev": "pnpm prep",
+    "predev": "pnpm prep && pnpm lingui:compile",
     "dev": "next dev",
     "content-packs:generate": "tsx scripts/generate-content-packs.mts",
     "content-packs:verify": "tsx scripts/verify-content-packs.mts",
-    "prebuild": "pnpm prep && pnpm content-packs:generate",
+    "prebuild": "pnpm prep && pnpm content-packs:generate && pnpm lingui:compile",
     "build": "next build",
     "prestart": "pnpm prep",
     "start": "next start",
@@ -27,7 +27,8 @@
     "precoverage": "pnpm prep",
     "coverage": "vitest run --coverage",
     "lingui:extract": "lingui extract --clean",
-    "lingui:compile": "lingui compile"
+    "lingui:compile": "lingui compile && pnpm fonts:generate",
+    "fonts:generate": "node scripts/generate-fonts.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.84",
@@ -111,6 +112,7 @@
     "eslint-plugin-lingui": "^0.13.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "fake-indexeddb": "^6.2.5",
+    "fontkit": "2.0.4",
     "is-mobile": "^5.0.0",
     "jsdom": "^29.0.1",
     "lucide-react": "^1.7.0",
@@ -121,6 +123,7 @@
     "raw-loader": "^4.0.2",
     "react-use": "^17.6.0",
     "shadcn": "^4.1.0",
+    "subset-font": "2.9.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
     "tailwindcss-animate": "^1.0.7",
