@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from '@/lib/monaco/vscode-api'
@@ -28,6 +28,10 @@ export interface MonacoEditorProps {
   onLoad?: (editorApp: MonacoEditorHandle) => void
   locale?: string
   enableLanguageClient?: boolean
+  // Mount-time presentation options; language services remain enabled separately.
+  statusBarCompactHeight?: number
+  // Resolved once on mount; an external host owns its own layout space.
+  statusBarHostRef?: RefObject<HTMLElement | null>
   // Disambiguator that becomes part of the model URI so multiple editors on
   // the same page hold independent models. Reuse across React mounts requires
   // retainModelOnUnmount plus a parent modelScope.
@@ -169,6 +173,8 @@ export function MonacoEditorReactComp({
   code,
   locale,
   enableLanguageClient = true,
+  statusBarCompactHeight = 44,
+  statusBarHostRef,
   uriHint,
   modelScope,
   retainModelOnUnmount = false,
@@ -186,6 +192,8 @@ export function MonacoEditorReactComp({
   const releaseLanguageServiceRef = useRef<(() => Promise<void>) | null>(null)
   const editorAppRef = useRef<MonacoEditorHandle | null>(null)
   const statusBarRef = useRef<StatusBarHandle | null>(null)
+  const statusBarCompactHeightRef = useRef(statusBarCompactHeight)
+  const initialStatusBarHostRef = useRef(statusBarHostRef)
   const containerRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
   const layoutFrameRef = useRef<number | null>(null)
@@ -210,6 +218,7 @@ export function MonacoEditorReactComp({
   const [indicatorHost, setIndicatorHost] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
+    const externalStatusBarHost = initialStatusBarHostRef.current?.current
     const reconcileEpoch = ++reconcileEpochRef.current
     const isActive = () => reconcileEpochRef.current === reconcileEpoch
     const getLiveContainer = () => {
@@ -233,7 +242,7 @@ export function MonacoEditorReactComp({
         const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
 
         const width = Math.max(0, outerWidth - paddingLeft - paddingRight)
-        const statusBarHeight = statusBarRef.current?.container.offsetHeight ?? 0
+        const statusBarHeight = externalStatusBarHost ? 0 : statusBarRef.current?.container.offsetHeight ?? 0
         const height = Math.max(0, outerHeight - paddingTop - paddingBottom - statusBarHeight)
 
         if (lastLayout?.width === width && lastLayout.height === height)
@@ -371,19 +380,20 @@ export function MonacoEditorReactComp({
         markEditorStartup('ready')
 
         if (hasLanguageClient) {
-          const parentContainer = containerAfterWrapperStart.parentElement
+          const parentContainer = externalStatusBarHost ?? containerAfterWrapperStart.parentElement
           if (parentContainer) {
             const statusBar = await createCustomStatusBar(parentContainer, {
               position: 'bottom',
               height: 22,
-              compactHeight: 44,
+              compactHeight: statusBarCompactHeightRef.current,
             })
-            if (!isActive()) {
+            if (!getLiveContainer()) {
               statusBar.dispose()
               return
             }
             statusBarRef.current = statusBar
-            resizeObserverRef.current?.observe(statusBar.container)
+            if (!externalStatusBarHost)
+              resizeObserverRef.current?.observe(statusBar.container)
 
             const host = document.createElement('div')
             host.style.position = 'absolute'

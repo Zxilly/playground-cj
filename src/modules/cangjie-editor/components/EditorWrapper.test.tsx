@@ -1,9 +1,11 @@
 import { act, cleanup, render } from '@testing-library/react'
+import { createRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { retainModelScope } from '@/lib/monaco/model-lifecycle'
 import { createEditorAppConfig } from '@/lib/monaco'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
+import { subscribeLspStatus } from '@/lib/lsp'
 import { MonacoEditorReactComp } from './EditorWrapper'
 
 function deferred<T>() {
@@ -12,6 +14,13 @@ function deferred<T>() {
     resolve = r
   })
   return { promise, resolve }
+}
+
+function createStatusBarHandle(parent: HTMLElement) {
+  const container = document.createElement('footer')
+  Object.defineProperty(container, 'offsetHeight', { value: 22 })
+  parent.appendChild(container)
+  return { container, dispose: vi.fn(() => container.remove()) }
 }
 
 const monacoInit = vi.hoisted(() => ({
@@ -102,7 +111,7 @@ vi.mock('@/lib/statusbar', () => ({
 }))
 
 vi.mock('@/modules/cangjie-editor/components/LspStatusIndicator', () => ({
-  LspStatusIndicator: () => null,
+  LspStatusIndicator: () => <span data-testid="lsp-status-indicator" />,
 }))
 
 afterEach(() => {
@@ -124,7 +133,8 @@ describe('monacoEditorReactComp', () => {
     configureMonacoWorkers.mockReset()
     acquireLanguageService.mockReset().mockReturnValue(vi.fn(async () => {}))
     isLanguageClientAvailable.mockReset().mockReturnValue(true)
-    vi.mocked(createCustomStatusBar).mockReset()
+    vi.mocked(createCustomStatusBar).mockReset().mockImplementation(async parent => createStatusBarHandle(parent))
+    vi.mocked(subscribeLspStatus).mockReset().mockReturnValue(vi.fn())
     monacoEditorGetModel.mockReset().mockReturnValue(undefined)
     monacoEditorCreateModel.mockReset().mockImplementation((_text, _language, uri) => ({
       dispose: vi.fn(),
@@ -153,13 +163,17 @@ describe('monacoEditorReactComp', () => {
     const gate = deferred<StatusBarHandle>()
     vi.mocked(createCustomStatusBar).mockReturnValueOnce(gate.promise)
     const onLoad = vi.fn()
-    const view = render(<MonacoEditorReactComp code="main() {}" onLoad={onLoad} />)
+    const view = render(<MonacoEditorReactComp code="main() {}" statusBarCompactHeight={22} onLoad={onLoad} />)
     await act(async () => {
       monacoInit.resolve()
       await monacoInit.promise
     })
     expect(monacoEditorCreate).toHaveBeenCalled()
-    expect(createCustomStatusBar).toHaveBeenCalled()
+    expect(createCustomStatusBar).toHaveBeenCalledWith(expect.any(HTMLElement), {
+      position: 'bottom',
+      height: 22,
+      compactHeight: 22,
+    })
     expect(onLoad).toHaveBeenCalledOnce()
     const dispose = vi.fn()
     view.unmount()
@@ -168,6 +182,120 @@ describe('monacoEditorReactComp', () => {
       dispose,
     }))
     expect(dispose).toHaveBeenCalledOnce()
+  })
+
+  it.each(['default', 'unresolved'] as const)('reserves and observes the status bar height with a %s host', async (host) => {
+    const observe = vi.fn()
+    vi.stubGlobal('ResizeObserver', class {
+      observe = observe
+      disconnect = vi.fn()
+    })
+    const view = render(
+      <MonacoEditorReactComp
+        code="main() {}"
+        statusBarHostRef={host === 'unresolved' ? createRef<HTMLDivElement>() : undefined}
+      />,
+    )
+    const editorContainer = view.container.firstElementChild!
+    vi.spyOn(editorContainer, 'getBoundingClientRect').mockReturnValue({ width: 640, height: 320 } as DOMRect)
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+    })
+
+    const editor = monacoEditorCreate.mock.results.at(-1)!.value
+    const statusBar = await vi.mocked(createCustomStatusBar).mock.results.at(-1)!.value
+    expect(createCustomStatusBar).toHaveBeenCalledWith(editorContainer, {
+      position: 'bottom',
+      height: 22,
+      compactHeight: 44,
+    })
+    expect(editor.layout).toHaveBeenLastCalledWith({ width: 640, height: 298 }, true)
+    expect(observe.mock.calls).toEqual([[editorContainer], [statusBar.container]])
+  })
+
+  it('mounts the native status control externally without subtracting or observing its height', async () => {
+    const statusBarHostRef = createRef<HTMLDivElement>()
+    const nextStatusBarHostRef = createRef<HTMLDivElement>()
+    const observe = vi.fn()
+    const disconnect = vi.fn()
+    vi.stubGlobal('ResizeObserver', class {
+      observe = observe
+      disconnect = disconnect
+    })
+    const surface = (hostRef = statusBarHostRef) => (
+      <>
+        <MonacoEditorReactComp code="main() {}" statusBarHostRef={hostRef} statusBarCompactHeight={22} />
+        <div ref={statusBarHostRef} />
+        <div ref={nextStatusBarHostRef} />
+      </>
+    )
+    const view = render(surface())
+    const editorContainer = view.container.firstElementChild!
+    const externalHost = statusBarHostRef.current!
+    vi.spyOn(editorContainer, 'getBoundingClientRect').mockReturnValue({ width: 640, height: 320 } as DOMRect)
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+    })
+
+    const editor = monacoEditorCreate.mock.results.at(-1)!.value
+    const statusBar = await vi.mocked(createCustomStatusBar).mock.results.at(-1)!.value
+    expect(createCustomStatusBar).toHaveBeenCalledWith(externalHost, {
+      position: 'bottom',
+      height: 22,
+      compactHeight: 22,
+    })
+    expect(externalHost.contains(view.getByTestId('lsp-status-indicator'))).toBe(true)
+    expect(editor.layout).toHaveBeenLastCalledWith({ width: 640, height: 320 }, true)
+    expect(observe.mock.calls).toEqual([[editorContainer]])
+    expect(acquireLanguageService).toHaveBeenCalledOnce()
+
+    view.rerender(surface(nextStatusBarHostRef))
+    expect(monacoEditorCreate).toHaveBeenCalledOnce()
+    expect(createCustomStatusBar).toHaveBeenCalledOnce()
+    expect(statusBar.container.parentElement).toBe(externalHost)
+
+    const releaseLanguageService = acquireLanguageService.mock.results.at(-1)!.value
+    const unsubscribeLspStatus = vi.mocked(subscribeLspStatus).mock.results.at(-1)!.value
+    view.unmount()
+    await act(async () => {})
+    expect(statusBar.dispose).toHaveBeenCalledOnce()
+    expect(externalHost.childElementCount).toBe(0)
+    expect(editor.dispose).toHaveBeenCalledOnce()
+    expect(unsubscribeLspStatus).toHaveBeenCalledOnce()
+    expect(releaseLanguageService).toHaveBeenCalledOnce()
+    expect(disconnect).toHaveBeenCalledOnce()
+  })
+
+  it('disposes a pending external status bar after unmount without restoring its portal', async () => {
+    const statusBarHostRef = createRef<HTMLDivElement>()
+    const gate = deferred<StatusBarHandle>()
+    vi.mocked(createCustomStatusBar).mockReturnValueOnce(gate.promise)
+    const view = render(
+      <>
+        <MonacoEditorReactComp code="main() {}" statusBarHostRef={statusBarHostRef} />
+        <div ref={statusBarHostRef} />
+      </>,
+    )
+    const externalHost = statusBarHostRef.current!
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+    })
+
+    expect(createCustomStatusBar).toHaveBeenCalledWith(externalHost, expect.any(Object))
+    const releaseLanguageService = acquireLanguageService.mock.results.at(-1)!.value
+    view.unmount()
+    const statusBar = createStatusBarHandle(externalHost)
+    await act(async () => gate.resolve(statusBar))
+
+    expect(statusBar.dispose).toHaveBeenCalledOnce()
+    expect(statusBar.container.childElementCount).toBe(0)
+    expect(externalHost.childElementCount).toBe(0)
+    expect(releaseLanguageService).toHaveBeenCalledOnce()
   })
 
   it('coalesces resize notifications and skips layouts when dimensions are unchanged', async () => {
