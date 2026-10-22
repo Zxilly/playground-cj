@@ -9,10 +9,11 @@ async function verify() {
     })
     assert.equal(response.status, 200, `${locale}: HTTP status`)
     assert.equal(response.headers.get('cross-origin-opener-policy'), 'same-origin')
-    assert.equal(response.headers.get('cross-origin-embedder-policy'), 'require-corp')
+    assert.equal(response.headers.get('cross-origin-embedder-policy'), 'credentialless')
     const html = await response.text()
     assert.ok(html.includes('/_next/static/'), `${locale}: missing application assets`)
-    assert.ok(html.includes(`lang="${locale}"`), `${locale}: missing localized document`)
+    const language = locale === 'zh' ? 'zh-CN' : 'en'
+    assert.ok(html.includes(`lang="${language}"`), `${locale}: missing localized document`)
     console.log(`${locale}: HTTP 200, localized HTML, assets and isolation headers`)
   }
   const redirect = await fetch(base, {
@@ -22,7 +23,8 @@ async function verify() {
   assert.equal(redirect.status, 307, 'language redirect status')
   assert.equal(new URL(redirect.headers.get('location'), base).pathname.replace(/\/$/, ''), '/en')
   const guard = await fetch(new URL('/api/run', base), {
-    method: 'POST', signal: AbortSignal.timeout(30_000),
+    method: 'POST', headers: { 'content-type': 'text/plain' },
+    signal: AbortSignal.timeout(30_000),
   })
   assert.equal(guard.status, 403, 'cross-origin API guard')
   console.log('Language redirect and API origin guard passed')
