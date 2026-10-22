@@ -45,9 +45,9 @@ export const useTourEditorStore = create<TourEditorState>(set => ({
   }),
 
   setProgramOutput: output => set((state) => {
-    if (state.programOutput === output)
+    const activeTab: TourOutputTab = output ? 'program' : state.compilerOutput ? 'tool' : state.activeTab
+    if (state.programOutput === output && state.activeTab === activeTab)
       return state
-    const activeTab: TourOutputTab = output ? 'program' : state.activeTab
     return { programOutput: output, activeTab }
   }),
   setTruncation: truncation => set({ truncation }),

@@ -18,6 +18,7 @@ interface CodeRunnerProps {
   setProgramOutput: (output: string) => void
   setTruncation: (state: RunnerTruncationState) => void
   onFormatted?: (code: string) => void
+  onRunningChange?: (running: boolean) => void
 }
 
 export default function CodeRunner({
@@ -25,6 +26,7 @@ export default function CodeRunner({
   setProgramOutput,
   setTruncation,
   onFormatted,
+  onRunningChange,
 }: CodeRunnerProps) {
   const { i18n } = useLingui()
 
@@ -36,11 +38,17 @@ export default function CodeRunner({
 
       toast.promise(async () => {
         await remoteLock.acquire('run', async () => {
-          await remoteRun(code, {
-            setToolOutput,
-            setProgramOutput,
-            setTruncation,
-          })
+          try {
+            onRunningChange?.(true)
+            await remoteRun(code, {
+              setToolOutput,
+              setProgramOutput,
+              setTruncation,
+            })
+          }
+          finally {
+            onRunningChange?.(false)
+          }
         })
       }, {
         loading: i18n._(msg`正在运行...`),
@@ -79,7 +87,7 @@ export default function CodeRunner({
       eventEmitter.off(EVENTS.RUN_CODE, handleRun)
       eventEmitter.off(EVENTS.FORMAT_CODE, handleFormat)
     }
-  }, [setToolOutput, setProgramOutput, setTruncation, onFormatted, i18n])
+  }, [setToolOutput, setProgramOutput, setTruncation, onFormatted, onRunningChange, i18n])
 
   return null
 }
