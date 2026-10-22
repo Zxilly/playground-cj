@@ -1,15 +1,19 @@
 'use client'
 
+import { lazy, Suspense } from 'react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
-import { Globe, Sparkles } from 'lucide-react'
+import { Code2, Globe, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { LanguagePicker } from './mdx/LanguagePicker'
 import type { FlatSection } from '@/tour/types'
 import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourAIHref, getTourPath } from '@/lib/siteHref'
-import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
+
+const LLMConfigDialog = lazy(() => import('@/modules/llm-config/components/LLMConfigDialog').then(
+  module => ({ default: module.LLMConfigDialog }),
+))
 
 export interface TourHeaderProps {
   lang: string
@@ -35,7 +39,7 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
   const hasSidebar = !aiMode
 
   return (
-    <header className="flex h-[50px] shrink-0 items-center gap-2 bg-gradient-to-r from-tour-teal-deep via-tour-teal to-tour-teal-end px-4 text-white shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
+    <header className="flex h-[50px] shrink-0 items-center gap-1.5 bg-gradient-to-r from-tour-teal-deep via-tour-teal to-tour-teal-end px-2 text-white shadow-[0_2px_4px_rgba(0,0,0,0.15)] sm:gap-2 sm:px-4">
       {hasSidebar && (
         <>
           <SidebarTrigger className="-ml-1 text-white hover:text-white hover:bg-white/10" />
@@ -48,7 +52,7 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
       <Separator orientation="vertical" className="!h-5 !bg-white/30" />
       {section
         ? (
-            <span className="text-[15px] text-white truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
+            <span className="min-w-0 text-[15px] text-white truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
               {section.chapterName[lang] ?? section.chapterName.zh}
               <span className="mx-1.5 text-white/60">/</span>
               {section.subChapterName[lang] ?? section.subChapterName.zh}
@@ -71,7 +75,9 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
                 <span className="hidden sm:inline text-[12px] font-medium text-white/95">
                   <Trans>课堂进行中</Trans>
                 </span>
-                <LLMConfigDialog />
+                <Suspense fallback={<span className="block size-8" aria-hidden="true" />}>
+                  <LLMConfigDialog />
+                </Suspense>
               </div>
             )
           : (
@@ -96,9 +102,12 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
         </a>
         <a
           href={playgroundHref}
+          aria-label="Playground"
+          title="Playground"
           className="inline-flex items-center px-2.5 py-1.5 text-[13px] font-medium text-white hover:bg-white/15 rounded transition-colors"
         >
-          Playground
+          <Code2 className="size-4 sm:hidden" aria-hidden="true" />
+          <span className="hidden sm:inline">Playground</span>
         </a>
       </div>
     </header>

@@ -126,7 +126,7 @@ describe('tour header', () => {
     expect(screen.getByRole('link', { name: 'AI 课堂' }).getAttribute('href')).toBe('/zh/tour/ai')
   })
 
-  it('omits the sidebar trigger on the AI route because it has no sidebar provider', () => {
+  it('omits the sidebar trigger on the AI route because it has no sidebar provider', async () => {
     render(
       <Wrapper>
         <TourHeader lang="zh" aiMode />
@@ -134,7 +134,7 @@ describe('tour header', () => {
     )
 
     expect(screen.queryByTestId('sidebar-trigger')).toBeNull()
-    screen.getByRole('button', { name: 'AI 服务设置' })
+    await screen.findByRole('button', { name: 'AI 服务设置' })
     expect(screen.queryByRole('link', { name: 'AI 课堂' })).toBeNull()
   })
 })

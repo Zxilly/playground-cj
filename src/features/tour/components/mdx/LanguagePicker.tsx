@@ -21,7 +21,7 @@ export function LanguagePicker() {
           className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-white hover:bg-white/15 rounded transition-colors"
         >
           <Settings2 className="size-4" />
-          <span className="hidden sm:inline">
+          <span className="hidden max-w-32 truncate sm:inline" title={knownLanguages.map(lang => LANGUAGE_LABELS[lang]).join(', ')}>
             {knownLanguages.length > 0
               ? knownLanguages.map(lang => LANGUAGE_LABELS[lang]).join(', ')
               : <Trans>对比</Trans>}

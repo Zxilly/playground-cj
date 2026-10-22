@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import type { ReactNode } from 'react'
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +13,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -27,6 +30,14 @@ interface TourSidebarProps {
   onNavigate: (chapterId: string, subChapterId: string, sectionId: string) => void
 }
 
+function ActiveCollapsible({ active, children, className }: { active: boolean, children: ReactNode, className: string }) {
+  const [state, setState] = useState({ active, open: active })
+  if (state.active !== active)
+    setState({ active, open: active || state.open })
+
+  return <Collapsible open={state.open} onOpenChange={open => setState({ active, open })} className={className}>{children}</Collapsible>
+}
+
 export function TourSidebar({
   lang,
   tourData,
@@ -35,6 +46,8 @@ export function TourSidebar({
   currentSection,
   onNavigate,
 }: TourSidebarProps) {
+  const { isMobile, setOpenMobile } = useSidebar()
+
   return (
     <Sidebar collapsible="offcanvas">
       <SidebarContent>
@@ -45,9 +58,9 @@ export function TourSidebar({
             </SidebarGroupLabel>
             <SidebarMenu>
               {tourData.map(chapter => (
-                <Collapsible
+                <ActiveCollapsible
                   key={chapter.id}
-                  defaultOpen={chapter.id === currentChapter}
+                  active={chapter.id === currentChapter}
                   className="group/collapsible"
                 >
                   <SidebarMenuItem>
@@ -60,9 +73,9 @@ export function TourSidebar({
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         {chapter.subChapters.map(sub => (
-                          <Collapsible
+                          <ActiveCollapsible
                             key={sub.id}
-                            defaultOpen={chapter.id === currentChapter && sub.id === currentSubChapter}
+                            active={chapter.id === currentChapter && sub.id === currentSubChapter}
                             className="group/sub"
                           >
                             <SidebarMenuSubItem>
@@ -84,8 +97,13 @@ export function TourSidebar({
                                       <SidebarMenuSubItem key={s.id}>
                                         <SidebarMenuButton
                                           isActive={isActive}
+                                          aria-current={isActive ? 'page' : undefined}
                                           className="text-xs cursor-pointer"
-                                          onClick={() => onNavigate(chapter.id, sub.id, s.id)}
+                                          onClick={() => {
+                                            onNavigate(chapter.id, sub.id, s.id)
+                                            if (isMobile)
+                                              setOpenMobile(false)
+                                          }}
                                         >
                                           {s.name[lang] ?? s.name.zh}
                                         </SidebarMenuButton>
@@ -95,12 +113,12 @@ export function TourSidebar({
                                 </SidebarMenuSub>
                               </CollapsibleContent>
                             </SidebarMenuSubItem>
-                          </Collapsible>
+                          </ActiveCollapsible>
                         ))}
                       </SidebarMenuSub>
                     </CollapsibleContent>
                   </SidebarMenuItem>
-                </Collapsible>
+                </ActiveCollapsible>
               ))}
             </SidebarMenu>
           </SidebarGroup>

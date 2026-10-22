@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FlatSection } from '@/tour/types'
 
 interface UseTourNavigationOptions {
@@ -13,9 +13,12 @@ function pushSectionUrl(basePath: string, section: FlatSection): void {
   window.history.pushState(null, '', `${basePath}/${section.chapterSlug}/${section.chapterStep}`)
 }
 
-function eventStartedInsideTourEditor(event: KeyboardEvent): boolean {
+function eventStartedInsideInput(event: KeyboardEvent): boolean {
   return event.composedPath().some(
-    node => node instanceof Element && node.hasAttribute('data-tour-editor-root'),
+    node => node instanceof Element && (
+      node.hasAttribute('data-tour-editor-root')
+      || node.matches('input, textarea, select, [contenteditable]:not([contenteditable="false"])')
+    ),
   )
 }
 
@@ -25,42 +28,26 @@ export function useTourNavigation({
   initialIndex,
 }: UseTourNavigationOptions) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
+  const currentIndexRef = useRef(initialIndex)
   const currentSection = allSections[currentIndex]
 
   const navigateToIndex = useCallback((index: number) => {
     const target = allSections[index]
-    if (!target)
+    if (!target || index === currentIndexRef.current)
       return
 
+    currentIndexRef.current = index
     setCurrentIndex(index)
     pushSectionUrl(basePath, target)
   }, [allSections, basePath])
 
   const goPrev = useCallback(() => {
-    setCurrentIndex((index) => {
-      if (index <= 0)
-        return index
-
-      const nextIndex = index - 1
-      const target = allSections[nextIndex]
-      if (target)
-        pushSectionUrl(basePath, target)
-      return nextIndex
-    })
-  }, [allSections, basePath])
+    navigateToIndex(currentIndexRef.current - 1)
+  }, [navigateToIndex])
 
   const goNext = useCallback(() => {
-    setCurrentIndex((index) => {
-      if (index >= allSections.length - 1)
-        return index
-
-      const nextIndex = index + 1
-      const target = allSections[nextIndex]
-      if (target)
-        pushSectionUrl(basePath, target)
-      return nextIndex
-    })
-  }, [allSections, basePath])
+    navigateToIndex(currentIndexRef.current + 1)
+  }, [navigateToIndex])
 
   const goToSection = useCallback((chapterId: string, subChapterId: string, sectionId: string) => {
     const index = allSections.findIndex(
@@ -74,10 +61,29 @@ export function useTourNavigation({
   }, [allSections, navigateToIndex])
 
   useEffect(() => {
+    const onPopState = () => {
+      const pathname = window.location.pathname.replace(/\/$/, '')
+      const index = allSections.findIndex(
+        section => `${basePath}/${section.chapterSlug}/${section.chapterStep}` === pathname,
+      )
+      if (index === -1)
+        return
+
+      currentIndexRef.current = index
+      setCurrentIndex(index)
+    }
+
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [allSections, basePath])
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'PageDown' && event.key !== 'PageUp')
         return
-      if (eventStartedInsideTourEditor(event))
+      if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
+        return
+      if (eventStartedInsideInput(event))
         return
 
       event.preventDefault()

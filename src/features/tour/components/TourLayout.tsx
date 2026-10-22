@@ -10,9 +10,9 @@ interface TourLayoutProps {
 
 export function TourLayout({ sidebar, children }: TourLayoutProps) {
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={false} className="min-h-0">
       {sidebar}
-      <SidebarInset className="h-screen overflow-hidden">
+      <SidebarInset className="h-dvh overflow-hidden">
         {children}
       </SidebarInset>
     </SidebarProvider>
