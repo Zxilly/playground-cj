@@ -111,9 +111,8 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
   // but the next open misleadingly restores the abandoned tab and field edits.
   useEffect(() => {
     if (open && !wasOpenRef.current) {
-      // eslint-disable-next-line react/set-state-in-effect -- reset the controlled modal draft only on a closed -> open transition
       setDraft(createEditableDraft(config, keySource))
-      // eslint-disable-next-line react/set-state-in-effect -- keep the source tab aligned with the persisted config on external reopen
+
       setMode(keySource === 'user' ? 'custom' : 'shared')
     }
     wasOpenRef.current = open

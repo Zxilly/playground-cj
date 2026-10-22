@@ -14,8 +14,8 @@ export function TourNavigation({ lang, currentIndex, total, onPrev, onNext }: To
   const hasPrev = currentIndex > 0
   const hasNext = currentIndex < total - 1
 
-  const prevLabel = lang === 'en' ? 'Previous' : String.fromCodePoint(0x4E0A, 0x4E00, 0x9875)
-  const nextLabel = lang === 'en' ? 'Next' : String.fromCodePoint(0x4E0B, 0x4E00, 0x9875)
+  const prevLabel = lang === 'en' ? 'Previous' : String.fromCharCode(0x4E0A, 0x4E00, 0x9875)
+  const nextLabel = lang === 'en' ? 'Next' : String.fromCharCode(0x4E0B, 0x4E00, 0x9875)
 
   return (
     <div className="shrink-0 flex items-center justify-between px-6 py-3 border-t border-tour-border bg-tour-surface">

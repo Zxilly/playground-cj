@@ -9,7 +9,7 @@ export default antfu({
     'granular-selectors': pluginGranularSelectors,
   },
   rules: {
-    'react-dom/no-dangerously-set-innerhtml': 'off',
+    'react/dom-no-dangerously-set-innerhtml': 'off',
     'no-template-curly-in-string': 'off',
     'prefer-promise-reject-errors': 'off',
     'node/prefer-global/process': 'off',
@@ -39,4 +39,12 @@ export default antfu({
     '**/*.json',
     '**/*.mjs',
   ],
-}, pluginLingui.configs['flat/recommended'])
+}, pluginLingui.configs['flat/recommended'], {
+  files: ['pnpm-workspace.yaml'],
+  rules: {
+    // Keep dependency policy independent of a lint preset upgrade.
+    'pnpm/yaml-enforce-settings': ['error', {
+      settings: { minimumReleaseAgeExcludePrune: true, shellEmulator: true },
+    }],
+  },
+})

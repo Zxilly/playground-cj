@@ -63,7 +63,7 @@ function collectCjoModules(): string[] {
 function lspDirEmpty(): boolean {
   if (!existsSync(WASM_ASSETS_PUBLIC_DIR))
     return true
-  return readdirSync(WASM_ASSETS_PUBLIC_DIR).filter(f => !f.startsWith('.')).length === 0
+  return !readdirSync(WASM_ASSETS_PUBLIC_DIR).some(f => !f.startsWith('.'))
 }
 if (lspDirEmpty()) {
   throw new Error(
@@ -90,6 +90,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   turbopack: {
     rules: {
+      '*.js': {
+        condition: {
+          path: /node_modules\/.*@codingame\/monaco-vscode-/,
+          content: /import \* as [\w$]+ from ['"][^'"]+\.css['"]/,
+        },
+        loaders: ['./scripts/monaco-css-imports.cjs'],
+      },
       // .cj source files are imported as raw text.
       '*.cj': {
         loaders: ['raw-loader'],

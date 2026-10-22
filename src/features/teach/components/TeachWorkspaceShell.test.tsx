@@ -10,7 +10,6 @@ import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 
 const viewport = vi.hoisted(() => ({ compact: false }))
 
-/* eslint-disable react/component-hook-factories -- Vitest module factories intentionally provide hook and component test doubles. */
 vi.mock('@/hooks/use-mobile', () => ({
   useIsCompactViewport: () => viewport.compact,
 }))
@@ -25,7 +24,6 @@ vi.mock('./WorkspaceViewport', () => ({
     </div>
   ),
 }))
-/* eslint-enable react/component-hook-factories */
 
 const context = {
   lang: 'en',

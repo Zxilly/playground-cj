@@ -1,4 +1,4 @@
-import type { ToolCallOptions, ToolSet } from 'ai'
+import type { ToolExecutionOptions, ToolSet } from 'ai'
 import type { AIClassroom, ClassroomCommand } from '../classroom/ai-classroom'
 import type { ClassroomCommitGuard } from '../classroom/storage'
 import type {
@@ -43,6 +43,9 @@ import {
 } from '../classroom/personalization-candidates'
 import { renderPersistedDiagnostic } from '../classroom/persistence-policy'
 import { projectTeacherContext } from './context-projection'
+
+// The classroom owns its state; its budget guards only need these call fields.
+export type TeacherToolCallOptions = Pick<ToolExecutionOptions<unknown>, 'toolCallId' | 'messages' | 'abortSignal'>
 
 type OrchestratorCommand = Extract<ClassroomCommand, {
   type:
@@ -107,25 +110,25 @@ type TeacherMutationIdentityPurpose
 
 export interface TeacherToolCallBudget {
   allocateMutationId: (
-    options: ToolCallOptions,
+    options: TeacherToolCallOptions,
     purpose: TeacherMutationIdentityPurpose,
   ) => string | null
   consume: (
-    options: ToolCallOptions,
+    options: TeacherToolCallOptions,
     kind: TeacherToolCallKind,
   ) => string | null
   hasReadContentVersion: (
-    options: ToolCallOptions,
+    options: TeacherToolCallOptions,
     conceptId: string,
     contentVersion: string,
   ) => boolean
   recordReadContentVersion: (
-    options: ToolCallOptions,
+    options: TeacherToolCallOptions,
     conceptId: string,
     contentVersion: string,
   ) => boolean
   createMutationCommitGuard: (
-    options: ToolCallOptions,
+    options: TeacherToolCallOptions,
   ) => ClassroomCommitGuard | null
 }
 
@@ -636,7 +639,7 @@ function fail(error: string) {
 }
 
 function successfulToolResultValues(
-  options: ToolCallOptions,
+  options: TeacherToolCallOptions,
   toolName: string,
 ): unknown[] {
   const values: unknown[] = []
@@ -685,7 +688,7 @@ interface ContentReadRequirement {
 }
 
 function hasPriorSuccessfulContentRead(
-  options: ToolCallOptions,
+  options: TeacherToolCallOptions,
   conceptId: string,
   contentVersion: string,
   requirement: ContentReadRequirement,
@@ -722,7 +725,7 @@ function hasPriorSuccessfulContentRead(
 
 function requireSameTurnContentRead(
   budget: TeacherToolCallBudget,
-  options: ToolCallOptions,
+  options: TeacherToolCallOptions,
   conceptId: string,
   contentVersion: string,
   requirement: ContentReadRequirement = {},
@@ -756,9 +759,9 @@ function pinnedTrackContentVersion(
 function withTeacherToolCallBudget<Input, Output>(
   budget: TeacherToolCallBudget,
   kind: TeacherToolCallKind,
-  run: (input: Input, options: ToolCallOptions) => Output | Promise<Output>,
+  run: (input: Input, options: TeacherToolCallOptions) => Output | Promise<Output>,
 ) {
-  return async (input: Input, options: ToolCallOptions) => {
+  return async (input: Input, options: TeacherToolCallOptions) => {
     const denial = budget.consume(options, kind)
     if (denial)
       return fail(denial)
@@ -779,7 +782,7 @@ const ABORTED_RESULT: AbortedToolResult = {
 }
 
 function withAbort<Output>(
-  options: ToolCallOptions,
+  options: TeacherToolCallOptions,
   run: (signal: AbortSignal | undefined) => Promise<Output>,
 ): Promise<Output | AbortedToolResult> {
   const signal = options.abortSignal
@@ -813,7 +816,7 @@ async function executeMutation(
   classroom: LessonOrchestratorClassroom,
   budget: TeacherMutationBudget,
   toolCallBudget: TeacherToolCallBudget,
-  options: ToolCallOptions,
+  options: TeacherToolCallOptions,
   command: () => OrchestratorCommand,
 ) {
   const commitGuard = toolCallBudget.createMutationCommitGuard(options)
@@ -828,7 +831,7 @@ async function executeIdentifiedMutation(
   classroom: LessonOrchestratorClassroom,
   mutationBudget: TeacherMutationBudget,
   toolCallBudget: TeacherToolCallBudget,
-  options: ToolCallOptions,
+  options: TeacherToolCallOptions,
   purpose: TeacherMutationIdentityPurpose,
   command: (internalId: string) => OrchestratorCommand,
 ) {
@@ -1311,7 +1314,7 @@ export function createRemediationToolkit(
     }).passthrough(),
   }).passthrough()
   const hasPriorSuccessfulAssignedRead = (
-    options: ToolCallOptions,
+    options: TeacherToolCallOptions,
     failedAttemptId: string,
   ) => successfulToolResultValues(
     options,
@@ -1757,6 +1760,8 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
             item => item.id === input.templateId,
           )
           if (scope.mode === 'review') {
+            if (Object.keys(input.personalizationInputs).length > 0)
+              return fail('Review Checks do not accept personalization.')
             if (scope.conceptId !== input.conceptId)
               return fail(`Review Chat is scoped to ${scope.conceptId}.`)
             if (scope.contentVersion !== input.contentVersion) {
@@ -1816,6 +1821,7 @@ export function createTeacherToolkit(deps: TeacherToolkitDeps): ToolSet {
                   learningTrackId,
                   tutoringStepId,
                   ...input,
+                  personalizationInputs: {},
                 }
               : {
                   type: 'create_exercise_instance',

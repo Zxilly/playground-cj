@@ -1,0 +1,13 @@
+diff --git a/dist/converters/convertMessage.js b/dist/converters/convertMessage.js
+index 863b7badea5fc44cdb338bf719ac61d7ad299088..5c3bf3fc0b5924be4d6eb6cef5c2984ca7566948 100644
+--- a/dist/converters/convertMessage.js
++++ b/dist/converters/convertMessage.js
+@@ -291,7 +291,7 @@ function convertParts(message, metadata) {
+ 					}));
+ 				}
+ 				metadata.toolArgsKeyOrderCache?.delete(argsKeyOrderCacheKey);
+-				if (part.state === "output-available" || part.state === "output-error" || part.state === "output-denied") metadata.toolLastInputCache?.delete(argsKeyOrderCacheKey);
++				// Keep the last input for later completed-tool frames that omit input.
+ 			}
+ 			const toolStatus = metadata.toolStatuses?.[toolCallId];
+ 			const mcpApp = extractMcpAppMetadata(part, metadata.mcpAppMetadataCache);

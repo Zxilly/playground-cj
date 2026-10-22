@@ -10,7 +10,6 @@ const config: LinguiConfig = {
       exclude: ['**/node_modules/**'],
     },
   ],
-  format: 'po',
   compileNamespace: 'es',
   runtimeConfigModule: {
     i18n: ['@/lib/i18n', 'i18n'],

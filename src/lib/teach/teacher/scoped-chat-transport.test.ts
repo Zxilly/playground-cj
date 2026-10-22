@@ -2,6 +2,23 @@ import type { Agent, ToolSet, UIMessageChunk } from 'ai'
 import { describe, expect, it, vi } from 'vitest'
 import { createScopedChatTransport } from './scoped-chat-transport'
 
+// These fixtures exercise the application's UI-stream boundary, including
+// deliberately malformed chunks. The real SDK's raw-stream conversion is
+// covered separately in scoped-chat-transport.integration.test.ts.
+vi.mock('ai', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('ai')>()
+  return {
+    ...actual,
+    DirectChatTransport: class {
+      constructor(private options: { agent: { stream: (options: unknown) => Promise<{ uiStream: () => ReadableStream<UIMessageChunk> }> } }) {}
+
+      async sendMessages(options: { abortSignal?: AbortSignal }) {
+        return (await this.options.agent.stream(options)).uiStream()
+      }
+    },
+  }
+})
+
 function agentStreaming(chunks: UIMessageChunk[]): Agent<never, ToolSet, never> {
   return agentFromUIStream(() => new ReadableStream<UIMessageChunk>({
     start(controller) {
@@ -19,7 +36,7 @@ function agentFromUIStream(
     version: 'agent-v1',
     tools: {},
     stream: vi.fn(async () => ({
-      toUIMessageStream: createStream,
+      uiStream: createStream,
     })),
   } as unknown as Agent<never, ToolSet, never>
 }
@@ -78,7 +95,7 @@ describe('scoped teacher chat transport', () => {
           if (streamCount === 1)
             await stalledProvider
           return {
-            toUIMessageStream: () => streamCount === 1
+            uiStream: () => streamCount === 1
               ? new ReadableStream<UIMessageChunk>({
                   cancel: cancelProvider,
                 })

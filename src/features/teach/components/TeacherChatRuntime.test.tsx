@@ -1,5 +1,6 @@
 import { act, cleanup, render, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
@@ -75,10 +76,12 @@ function createComposerRuntime(initialText = '') {
   }
 }
 
-/* eslint-disable react/component-hook-factories -- Vitest module factories intentionally provide hook and component test doubles. */
 vi.mock('@assistant-ui/react', () => ({
   AssistantRuntimeProvider: ({ children }: { children: ReactNode }) => children,
-  useComposerRuntime: () => mocks.composerRuntime,
+  useAui: () => ({ composer: mocks.composerRuntime }),
+  useAuiEvent: (_event: string, listener: () => void) => {
+    useEffect(() => mocks.composerRuntime.unstable_on('send', listener), [listener])
+  },
   useAuiState: (selector: (state: { composer: { text: string }, thread: { isRunning: boolean, messages: never[] } }) => unknown) => selector({
     composer: mocks.composerRuntime.getState(),
     thread: { isRunning: mocks.threadRunning, messages: [] },
@@ -149,7 +152,6 @@ vi.mock('@/stores/llmConfig', () => ({
 vi.mock('@/features/teach/context/abort-scope', () => ({
   useAbortScope: () => mocks.abortSignal,
 }))
-/* eslint-enable react/component-hook-factories */
 
 let classroomSnapshot = createEmptyClassroom()
 let currentNow = 123

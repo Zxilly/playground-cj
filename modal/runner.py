@@ -17,7 +17,7 @@ TOOLCHAIN_HEADER = "X-Playground-Cangjie-Toolchain-Lock-Sha256"
 app = modal.App(APP_NAME)
 runner_secret = modal.Secret.from_name("playground-cj-runner-auth")
 gateway_image = modal.Image.debian_slim(python_version="3.13").uv_pip_install(
-    "fastapi==0.116.1"
+    "fastapi==0.159.1"
 )
 runner_image = modal.Image.from_name(RUNNER_IMAGE_NAME)
 

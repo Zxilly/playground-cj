@@ -60,7 +60,6 @@ function MockTeachWorkspaceShell({ chat }: { chat: ReactNode }) {
   )
 }
 
-/* eslint-disable react/component-hook-factories -- Vitest module factories intentionally provide hook and component test doubles. */
 vi.mock('@/features/teach/context/abort-scope', () => ({
   AbortScopeProvider: ({ children }: { children: ReactNode }) => children,
 }))
@@ -87,7 +86,6 @@ vi.mock('./TeachWorkspaceShell', () => ({
 vi.mock('./TeacherChatRuntime', () => ({
   TeacherChatRuntime: MockTeacherChatRuntime,
 }))
-/* eslint-enable react/component-hook-factories */
 
 afterEach(cleanup)
 

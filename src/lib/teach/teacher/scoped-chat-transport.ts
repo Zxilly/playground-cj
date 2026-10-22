@@ -309,14 +309,14 @@ export function createScopedChatTransport<
   CALL_OPTIONS,
   TOOLS extends ToolSet,
 >(
-  agent: Agent<CALL_OPTIONS, TOOLS, never>,
+  agent: Agent<CALL_OPTIONS, TOOLS>,
   scopeSignal: AbortSignal,
   boundary?: TeacherOutputBoundary,
   prepareTurn?: (
     turnSignal: AbortSignal,
     request: TeacherTurnRequestMetadata,
   ) => void | (() => void),
-): ChatTransport<InferAgentUIMessage<Agent<CALL_OPTIONS, TOOLS, never>>> {
+): ChatTransport<InferAgentUIMessage<Agent<CALL_OPTIONS, TOOLS>>> {
   const inner = new DirectChatTransport({ agent })
   const admission = createTeacherTurnAdmission()
 

@@ -54,13 +54,13 @@ interface CompilerDiagnostic {
 
 function createLocalizedLabels(locale: string) {
   return {
-    run: locale === 'en' ? 'Run' : String.fromCodePoint(0x8FD0, 0x884C),
-    format: locale === 'en' ? 'Format' : String.fromCodePoint(0x683C, 0x5F0F, 0x5316),
-    reset: locale === 'en' ? 'Reset' : String.fromCodePoint(0x91CD, 0x7F6E),
-    compilerOutput: locale === 'en' ? 'Compiler Output' : String.fromCodePoint(0x7F16, 0x8BD1, 0x8F93, 0x51FA),
-    programOutput: locale === 'en' ? 'Program Output' : String.fromCodePoint(0x7A0B, 0x5E8F, 0x8F93, 0x51FA),
-    compilerPlaceholder: locale === 'en' ? 'Run to see compiler output.' : String.fromCodePoint(0x8FD0, 0x884C, 0x540E, 0x5728, 0x6B64, 0x67E5, 0x770B, 0x7F16, 0x8BD1, 0x8F93, 0x51FA, 0x3002),
-    programPlaceholder: locale === 'en' ? 'Run to see program output.' : String.fromCodePoint(0x8FD0, 0x884C, 0x540E, 0x5728, 0x6B64, 0x67E5, 0x770B, 0x7A0B, 0x5E8F, 0x8F93, 0x51FA, 0x3002),
+    run: locale === 'en' ? 'Run' : String.fromCharCode(0x8FD0, 0x884C),
+    format: locale === 'en' ? 'Format' : String.fromCharCode(0x683C, 0x5F0F, 0x5316),
+    reset: locale === 'en' ? 'Reset' : String.fromCharCode(0x91CD, 0x7F6E),
+    compilerOutput: locale === 'en' ? 'Compiler Output' : String.fromCharCode(0x7F16, 0x8BD1, 0x8F93, 0x51FA),
+    programOutput: locale === 'en' ? 'Program Output' : String.fromCharCode(0x7A0B, 0x5E8F, 0x8F93, 0x51FA),
+    compilerPlaceholder: locale === 'en' ? 'Run to see compiler output.' : String.fromCharCode(0x8FD0, 0x884C, 0x540E, 0x5728, 0x6B64, 0x67E5, 0x770B, 0x7F16, 0x8BD1, 0x8F93, 0x51FA, 0x3002),
+    programPlaceholder: locale === 'en' ? 'Run to see program output.' : String.fromCharCode(0x8FD0, 0x884C, 0x540E, 0x5728, 0x6B64, 0x67E5, 0x770B, 0x7A0B, 0x5E8F, 0x8F93, 0x51FA, 0x3002),
   }
 }
 

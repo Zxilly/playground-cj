@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import { TeachAppContent } from './TeachApp'
 
-/* eslint-disable react/component-hook-factories -- Vitest module factories intentionally provide component test doubles. */
 vi.mock('./TeachLanding', () => ({
   TeachLanding: ({ onStart }: { onStart: () => void }) => (
     <button type="button" onClick={onStart}>landing</button>
@@ -20,7 +19,6 @@ vi.mock('./TeachWorkspace', () => ({
 vi.mock('@/modules/llm-config/components/QuotaExhaustedDialog', () => ({
   QuotaExhaustedDialog: () => null,
 }))
-/* eslint-enable react/component-hook-factories */
 
 const collaborators = {
   classroom: {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { AssistantRuntimeProvider, useAuiState, useComposerRuntime } from '@assistant-ui/react'
+import { AssistantRuntimeProvider, useAui, useAuiEvent, useAuiState } from '@assistant-ui/react'
 import { useChatRuntime } from '@assistant-ui/react-ai-sdk'
 import { CircleAlert, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -468,7 +468,7 @@ function ComposerDraftBridge({
   onDraftChange: (draft: string) => void
   onSend: () => void
 }) {
-  const composer = useComposerRuntime()
+  const composer = useAui().composer
   const composerText = useAuiState(state => state.composer.text)
   const pendingPrefill = useWorkspaceStore(state => state.pendingPrefill)
   const pendingPrefillIntent = useWorkspaceStore(
@@ -482,14 +482,11 @@ function ComposerDraftBridge({
   const restoredTextRef = useRef<string | null>(null)
   const hydratedRef = useRef(false)
 
-  useEffect(
-    () => composer.unstable_on('send', () => {
-      clearComposerDraft()
-      composer.setRunConfig({})
-      onSend()
-    }),
-    [clearComposerDraft, composer, onSend],
-  )
+  useAuiEvent('composer.send', () => {
+    clearComposerDraft()
+    composer.setRunConfig({})
+    onSend()
+  })
 
   useEffect(() => {
     if (pendingPrefill === null || pendingPrefillIntent === null)

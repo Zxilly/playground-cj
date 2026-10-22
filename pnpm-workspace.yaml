@@ -1,0 +1,40 @@
+minimumReleaseAgeExcludePrune: true
+minimumReleaseAgeExclude:
+  - '@codingame/monaco-vscode-api@38.0.3'
+  - '@codingame/monaco-vscode-base-service-override@38.0.3'
+  - '@codingame/monaco-vscode-bulk-edit-service-override@38.0.3'
+  - '@codingame/monaco-vscode-configuration-service-override@38.0.3'
+  - '@codingame/monaco-vscode-editor-api@38.0.3'
+  - '@codingame/monaco-vscode-editor-service-override@38.0.3'
+  - '@codingame/monaco-vscode-environment-service-override@38.0.3'
+  - '@codingame/monaco-vscode-extension-api@38.0.3'
+  - '@codingame/monaco-vscode-extensions-service-override@38.0.3'
+  - '@codingame/monaco-vscode-files-service-override@38.0.3'
+  - '@codingame/monaco-vscode-host-service-override@38.0.3'
+  - '@codingame/monaco-vscode-keybindings-service-override@38.0.3'
+  - '@codingame/monaco-vscode-language-pack-zh-hans@38.0.3'
+  - '@codingame/monaco-vscode-languages-service-override@38.0.3'
+  - '@codingame/monaco-vscode-layout-service-override@38.0.3'
+  - '@codingame/monaco-vscode-log-service-override@38.0.3'
+  - '@codingame/monaco-vscode-model-service-override@38.0.3'
+  - '@codingame/monaco-vscode-quickaccess-service-override@38.0.3'
+  - '@codingame/monaco-vscode-textmate-service-override@38.0.3'
+  - '@codingame/monaco-vscode-theme-defaults-default-extension@38.0.3'
+  - '@codingame/monaco-vscode-theme-service-override@38.0.3'
+  - '@codingame/monaco-vscode-view-common-service-override@38.0.3'
+  - '@codingame/monaco-vscode-view-status-bar-service-override@38.0.3'
+  - '@codingame/monaco-vscode-views-service-override@38.0.3'
+  - zustand@5.0.16
+
+shellEmulator: true
+
+patchedDependencies:
+  '@assistant-ui/ai-sdk@0.0.14': patches/@assistant-ui__ai-sdk@0.0.14.patch
+
+allowBuilds:
+  '@tailwindcss/oxide': true
+  '@vercel/speed-insights': true
+  esbuild: true
+  msw: false
+  sharp: true
+  unrs-resolver: true

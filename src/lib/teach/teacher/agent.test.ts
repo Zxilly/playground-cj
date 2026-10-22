@@ -1,4 +1,5 @@
-import type { ToolCallOptions, ToolSet } from 'ai'
+import type { ToolSet } from 'ai'
+import type { TeacherToolCallOptions } from './toolkit'
 import { tool } from 'ai'
 import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
@@ -126,19 +127,8 @@ describe('createTeacherAgent', () => {
 
   it('preserves an explicitly composed timeout signal through real tool execution', async () => {
     const model = new MockLanguageModelV3({
-      // The SDK test double indexes scripted values by its 1-based call count.
+      // AI SDK 7 indexes scripted values from zero.
       doGenerate: [
-        {
-          content: [{
-            type: 'tool-call',
-            toolCallId: 'call:read',
-            toolName: 'read_assigned_remediation_context',
-            input: '{}',
-          }],
-          finishReason: { unified: 'tool-calls', raw: undefined },
-          usage,
-          warnings: [],
-        },
         {
           content: [{
             type: 'tool-call',
@@ -169,7 +159,7 @@ describe('createTeacherAgent', () => {
       total: 1,
       documentationSearches: 0,
     })
-    const execute = vi.fn((_input: object, options: ToolCallOptions) => ({
+    const execute = vi.fn((_input: object, options: TeacherToolCallOptions) => ({
       ok: budget.consume(options, 'general') === null,
       sameSignal: options.abortSignal === operationSignal,
     }))

@@ -1,4 +1,4 @@
-import type { ModelMessage, ToolSet } from 'ai'
+import type { ModelMessage, Tool, ToolSet } from 'ai'
 import type {
   ClassroomSnapshot,
   RemediationDiagnosticClaimAuthority,
@@ -535,13 +535,14 @@ async function call<T = unknown>(
   messages: ModelMessage[] = successfulContentReadMessages(),
   toolCallId = 'call-1',
 ): Promise<T> {
-  const execute = toolkit[name]?.execute
+  const execute = (toolkit[name] as Tool<unknown, unknown>)?.execute
   if (!execute)
     throw new Error(`${name} is not executable`)
   return execute(input, {
     toolCallId,
     messages,
     abortSignal: signal,
+    context: undefined,
   }) as Promise<T>
 }
 

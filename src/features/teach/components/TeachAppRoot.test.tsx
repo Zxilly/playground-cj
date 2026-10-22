@@ -20,7 +20,6 @@ vi.mock('@/features/teach/state/workspace-collaborators', () => ({
 vi.mock('./TeachApp', () => ({
   // The mock must be declared in this hoisted factory so Vitest can replace
   // the module before TeachAppRoot is imported.
-  // eslint-disable-next-line react/component-hook-factories
   TeachAppContent: ({ lang }: { lang: string }) => <div>{`ready:${lang}`}</div>,
 }))
 

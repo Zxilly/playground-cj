@@ -1,7 +1,7 @@
 import type { ToolSet } from 'ai'
 import type { LLMConfig } from '@/lib/ai/model-provider'
 import type { TeacherLang } from './system-prompt'
-import { hasToolCall, stepCountIs, ToolLoopAgent } from 'ai'
+import { hasToolCall, isStepCount, ToolLoopAgent } from 'ai'
 import { createConfiguredModel } from '@/lib/ai/model-provider'
 import {
   buildRemediationSystemPrompt,
@@ -9,7 +9,7 @@ import {
 } from './system-prompt'
 
 /** The teacher agent type, parameterised by its concrete tool set. */
-export type TeacherAgent<TOOLS extends ToolSet = ToolSet> = ToolLoopAgent<never, TOOLS>
+export type TeacherAgent = ToolLoopAgent<never, ToolSet>
 
 /**
  * Assemble the single Cangjie Lesson Orchestrator.
@@ -18,22 +18,22 @@ export type TeacherAgent<TOOLS extends ToolSet = ToolSet> = ToolLoopAgent<never,
  * by the user's `llmConfig`) for the language model, wires the language-specific
  * system prompt (see {@link buildTeacherSystemPrompt}) as the agent's
  * `instructions`, and runs the supplied capability-limited toolkit in an AI SDK
- * v6 {@link ToolLoopAgent} loop.
+ * {@link ToolLoopAgent} loop.
  *
  * @param config The resolved LLM configuration (provider / baseURL / key / model).
  * @param toolkit The Lesson Orchestrator tool set.
  * @param lang UI language for the system prompt.
  */
-export function createTeacherAgent<TOOLS extends ToolSet>(
+export function createTeacherAgent(
   config: Partial<LLMConfig>,
-  toolkit: TOOLS,
+  toolkit: ToolSet,
   lang: TeacherLang,
-): TeacherAgent<TOOLS> {
-  return new ToolLoopAgent<never, TOOLS>({
+): TeacherAgent {
+  return new ToolLoopAgent<never, ToolSet>({
     model: createConfiguredModel(config),
     instructions: buildTeacherSystemPrompt(lang),
     tools: toolkit,
-    stopWhen: stepCountIs(8),
+    stopWhen: isStepCount(8),
   })
 }
 
@@ -43,18 +43,18 @@ export function createTeacherAgent<TOOLS extends ToolSet>(
  * Orchestrator and a hard three-step ceiling; a successful retention tool call
  * ends the loop immediately.
  */
-export function createRemediationAgent<TOOLS extends ToolSet>(
+export function createRemediationAgent(
   config: Partial<LLMConfig>,
-  toolkit: TOOLS,
+  toolkit: ToolSet,
   lang: TeacherLang,
-): TeacherAgent<TOOLS> {
-  return new ToolLoopAgent<never, TOOLS>({
+): TeacherAgent {
+  return new ToolLoopAgent<never, ToolSet>({
     model: createConfiguredModel(config),
     instructions: buildRemediationSystemPrompt(lang),
     tools: toolkit,
     stopWhen: [
       hasToolCall('retain_remediation'),
-      stepCountIs(3),
+      isStepCount(3),
     ],
   })
 }

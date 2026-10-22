@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import type { Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 
@@ -53,11 +54,11 @@ const monacoVscodePackages = [
   '@codingame/monaco-vscode-views-service-override',
 ]
 
-const reactPlugin = react({
-  babel: {
-    plugins: ['@lingui/babel-plugin-lingui-macro'],
-  },
-})
+const reactPlugins = [react(), babel({
+  // Macro calls live in source .ts/.tsx files; .mts tests need no Babel pass.
+  include: /\.[jt]sx?$/,
+  plugins: ['@lingui/babel-plugin-lingui-macro'],
+})]
 
 const cangjieRawPlugin = {
   name: 'cangjie-raw-source',
@@ -71,7 +72,7 @@ const cangjieRawPlugin = {
 }
 
 export default defineConfig({
-  plugins: [reactPlugin, cangjieRawPlugin],
+  plugins: [...reactPlugins, cangjieRawPlugin],
   test: {
     coverage: {
       provider: 'v8',
@@ -134,11 +135,12 @@ export default defineConfig({
     },
     projects: [
       {
+        extends: false,
         // Unit project needs the lingui macro plugin because some pure .ts
         // utility modules (e.g. src/service/run.ts) call the `t\`...\``
         // template macro directly — without the transform, `t` resolves to
         // undefined and the module throws at runtime.
-        plugins: [reactPlugin, cangjieRawPlugin],
+        plugins: [...reactPlugins, cangjieRawPlugin],
         resolve: sharedResolve,
         test: {
           name: 'unit',
@@ -155,7 +157,8 @@ export default defineConfig({
         },
       },
       {
-        plugins: [reactPlugin, cangjieRawPlugin],
+        extends: false,
+        plugins: [...reactPlugins, cangjieRawPlugin],
         resolve: sharedResolve,
         test: {
           name: 'component',
@@ -168,7 +171,8 @@ export default defineConfig({
         },
       },
       {
-        plugins: [reactPlugin, cangjieRawPlugin, lspGluePlugin],
+        extends: false,
+        plugins: [...reactPlugins, cangjieRawPlugin, lspGluePlugin],
         define: {
           'process.env': JSON.stringify(browserEnv),
         },
@@ -185,6 +189,8 @@ export default defineConfig({
         resolve: sharedResolve,
         test: {
           name: 'browser',
+          // Vitest's default 63315 falls in Windows' reserved port ranges.
+          api: { port: 3151 },
           include: ['src/**/*.browser.test.{ts,tsx}'],
           fileParallelism: false,
           testTimeout: 30_000,
@@ -199,6 +205,7 @@ export default defineConfig({
         },
       },
       {
+        extends: false,
         resolve: sharedResolve,
         test: {
           name: 'e2e',
