@@ -10,16 +10,8 @@ vi.mock('@/app/font', () => ({
   fontFamily: 'monospace',
 }))
 
-vi.mock('@/lib/statusbar', () => ({
-  getStatusBarServiceOverrides: vi.fn(() => ({})),
-}))
-
 vi.mock('./workers', () => ({
   configureMonacoWorkers: vi.fn(),
-}))
-
-vi.mock('./views', () => ({
-  initializeMonacoViewsService: vi.fn(),
 }))
 
 describe('monaco Cangjie language configuration', () => {
@@ -40,7 +32,6 @@ describe('monaco Cangjie language configuration', () => {
       name: 'cangjie',
       displayName: 'Cangjie Extension',
       publisher: 'zxilly',
-      browser: './extension.js',
     })
     expect(contributes?.languages?.[0]).toMatchObject({
       id: CANGJIE_LANGUAGE_ID,
@@ -50,7 +41,8 @@ describe('monaco Cangjie language configuration', () => {
       language: CANGJIE_LANGUAGE_ID,
       scopeName: 'source.cj',
     })
-    expect(extension?.filesOrContents?.has('./extension.js')).toBe(true)
+    expect(extension?.config.browser).toBeUndefined()
+    expect(extension?.filesOrContents?.has('./extension.js')).toBe(false)
     expect(extension?.filesOrContents?.has('./cangjie-grammar.json')).toBe(true)
   })
 })

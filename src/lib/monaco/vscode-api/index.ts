@@ -1,4 +1,3 @@
-export { defaultViewsHtml } from './default-views-html'
 export { getEnhancedMonacoEnvironment } from './environment'
 export { MonacoVscodeApiWrapper } from './init-api'
 export type { MonacoLanguageClient } from './monaco-language-client'

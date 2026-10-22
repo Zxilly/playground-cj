@@ -1,4 +1,5 @@
-import * as vscode from 'vscode'
+import { URI } from '@codingame/monaco-vscode-api/vscode/vs/base/common/uri'
+import { writeFile } from '@codingame/monaco-vscode-api/monaco'
 
 export interface ModelFileMirror {
   update: (text: string) => void
@@ -14,13 +15,12 @@ export interface ModelFileMirror {
  * those background reads from falling through to a nonexistent browser file.
  */
 export async function createModelFileMirror(uri: string, initialText: string): Promise<ModelFileMirror> {
-  const resource = vscode.Uri.parse(uri)
-  const encoder = new TextEncoder()
+  const resource = URI.parse(uri)
   let pendingText: string | null = null
   let writePromise: Promise<void> | null = null
   let disposed = false
 
-  const write = (text: string) => vscode.workspace.fs.writeFile(resource, encoder.encode(text))
+  const write = (text: string) => writeFile(resource, text)
   await write(initialText)
 
   const flush = async () => {

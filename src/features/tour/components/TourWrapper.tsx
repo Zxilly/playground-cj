@@ -9,7 +9,7 @@ const TourApp = dynamic(
 )
 
 const ChineseTourApp = dynamic(
-  () => import('@codingame/monaco-vscode-language-pack-zh-hans').then(
+  () => import('@/lib/monaco/localization').then(
     () => import('./TourApp'),
   ),
   { ssr: false },

@@ -1,7 +1,8 @@
 import { cleanup, render, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import * as vscode from 'vscode'
+import { getService } from '@codingame/monaco-vscode-api'
+import { IFileService } from '@codingame/monaco-vscode-api/services'
 import { createEditorAppConfig } from '@/lib/monaco'
 import { MonacoEditorReactComp } from './EditorWrapper'
 
@@ -40,13 +41,12 @@ describe('monacoEditorReactComp browser lifecycle', () => {
     render(<Editor hint={hint} code="let value = 1" onLoad={resolveLoaded} />)
 
     await loaded
-    expect(new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.parse(uri.toString()))))
-      .toBe('let value = 1')
+    const fileService = await getService(IFileService)
+    expect((await fileService.readFile(uri)).value.toString()).toBe('let value = 1')
 
     monaco.editor.getModel(uri)!.setValue('let value = 2')
     await waitFor(async () => {
-      expect(new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.parse(uri.toString()))))
-        .toBe('let value = 2')
+      expect((await fileService.readFile(uri)).value.toString()).toBe('let value = 2')
     })
   }, 30_000)
 

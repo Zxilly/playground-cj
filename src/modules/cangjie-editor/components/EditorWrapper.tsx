@@ -1,10 +1,9 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { defaultViewsHtml, getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from '@/lib/monaco/vscode-api'
+import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from '@/lib/monaco/vscode-api'
 import type { CodeResources, MonacoLanguageClient } from '@/lib/monaco/vscode-api'
 import { acquireLanguageService, createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
-import type { MonacoViewsType } from '@/lib/monaco'
 import { acquireModel } from '@/lib/monaco/model-lifecycle'
 import { createModelFileMirror } from '@/lib/monaco/model-file-mirror'
 import { createCustomStatusBar } from '@/lib/statusbar'
@@ -28,7 +27,6 @@ export interface MonacoEditorProps {
   code?: string
   onLoad?: (editorApp: MonacoEditorHandle) => void
   locale?: string
-  viewsType?: MonacoViewsType
   enableLanguageClient?: boolean
   // Disambiguator that becomes part of the model URI so multiple editors on
   // the same page hold independent models. Reuse across React mounts requires
@@ -170,7 +168,6 @@ export function MonacoEditorReactComp({
   onLoad,
   code,
   locale,
-  viewsType = 'EditorService',
   enableLanguageClient = true,
   uriHint,
   modelScope,
@@ -190,7 +187,6 @@ export function MonacoEditorReactComp({
   const editorAppRef = useRef<MonacoEditorHandle | null>(null)
   const statusBarRef = useRef<StatusBarHandle | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const standaloneHostRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
   const lspUnsubscribeRef = useRef<(() => void) | null>(null)
   const boundGenerationRef = useRef<number>(0)
@@ -224,9 +220,7 @@ export function MonacoEditorReactComp({
 
     const updateEditorLayout = () => {
       if (containerRef.current && editorAppRef.current) {
-        const parent = viewsType === 'EditorService'
-          ? containerRef.current.parentElement!
-          : standaloneHostRef.current ?? containerRef.current.parentElement!
+        const parent = containerRef.current.parentElement!
         const { width: outerWidth, height: outerHeight } = parent.getBoundingClientRect()
 
         const computedStyle = window.getComputedStyle(parent)
@@ -236,9 +230,7 @@ export function MonacoEditorReactComp({
         const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
 
         const width = outerWidth - paddingLeft - paddingRight
-        const statusBarHeight = viewsType === 'EditorService'
-          ? (statusBarRef.current?.container.offsetHeight ?? 0)
-          : 0
+        const statusBarHeight = statusBarRef.current?.container.offsetHeight ?? 0
         const height = outerHeight - paddingTop - paddingBottom - statusBarHeight
 
         editorAppRef.current.getEditor()?.layout({ width, height }, true)
@@ -304,11 +296,7 @@ export function MonacoEditorReactComp({
         if (!containerAfterGlobalInit)
           return
 
-        if (viewsType === 'ViewsService' && !containerAfterGlobalInit.querySelector('#workbench-container')) {
-          containerAfterGlobalInit.innerHTML = defaultViewsHtml
-        }
-
-        const vscodeApiConfig = createMonacoVscodeApiConfig(containerAfterGlobalInit, viewsType)
+        const vscodeApiConfig = createMonacoVscodeApiConfig()
         const vscodeApiWrapper = new MonacoVscodeApiWrapper(vscodeApiConfig)
         try {
           await vscodeApiWrapper.start()
@@ -330,18 +318,9 @@ export function MonacoEditorReactComp({
           releaseLanguageServiceRef.current ??= acquireLanguageService()
         }
 
-        const editorContainer = viewsType === 'EditorService'
-          ? containerAfterWrapperStart
-          : standaloneHostRef.current && standaloneHostRef.current.isConnected
-            ? standaloneHostRef.current
-            : containerAfterWrapperStart
-
         const initialEditorAppConfig = editorAppConfigRef.current
-        // Both EditorService and ViewsService modes drive the editor directly
-        // via a standalone handle (monaco.editor.create + model reuse). The old
-        // EditorApp abstraction from monaco-languageclient is no longer used.
         const editorHandle: MonacoEditorHandle = await createStandaloneEditorHandle(
-          editorContainer,
+          containerAfterWrapperStart,
           initialEditorAppConfig,
           modelScopeRef.current,
           retainModelOnUnmountRef.current,
@@ -374,7 +353,7 @@ export function MonacoEditorReactComp({
         onLoadRef.current?.(editorHandle)
         markEditorStartup('ready')
 
-        if (hasLanguageClient && viewsType === 'EditorService') {
+        if (hasLanguageClient) {
           const parentContainer = containerAfterWrapperStart.parentElement
           if (parentContainer) {
             const statusBar = await createCustomStatusBar(parentContainer, {
@@ -420,7 +399,7 @@ export function MonacoEditorReactComp({
     // through refs above. Including them would force a full editor
     // teardown + rebuild on every parent re-render that produces a fresh
     // callback or memoized config (especially common during HMR).
-  }, [hasLanguageClient, viewsType])
+  }, [hasLanguageClient])
 
   // Push code/locale changes into the running editor without re-creating
   // it. The init effect ignores `editorAppConfig` for this reason — model
@@ -479,9 +458,6 @@ export function MonacoEditorReactComp({
       style={style}
     >
       <div ref={containerRef} className="absolute inset-0 overflow-hidden" />
-      {viewsType === 'ViewsService' && (
-        <div ref={standaloneHostRef} className="absolute inset-0 z-10" />
-      )}
       {indicatorHost && hasLanguageClient && createPortal(<LspStatusIndicator />, indicatorHost)}
     </div>
   )

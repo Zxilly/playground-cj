@@ -49,6 +49,7 @@ export function hmrFlag(key: string): { get: () => boolean, set: (v: boolean) =>
 export const HMR_SLOT_KEYS = {
   LSP_STATE: 'lsp.state',
   LSP_OUTPUT_CHANNEL: 'lsp.outputChannel',
+  LSP_EXTENSION_HOST: 'lsp.extensionHost',
   LSP_COMMAND_REGISTRATION: 'lsp.commandRegistration',
   LSP_LANGUAGE_CLIENT: 'lsp.languageClient',
   LSP_SERVICE_LEASES: 'lsp.serviceLeases',

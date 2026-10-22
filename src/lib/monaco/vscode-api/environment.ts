@@ -1,7 +1,5 @@
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 
-export type ViewsServiceType = 'EditorService' | 'ViewsService'
-
 // The global `MonacoEnvironment` object doubles as our cross-editor init
 // coordinator. monaco reads `getWorker` off it; we additionally hang the
 // one-time vscode-api init state on it so multiple editors on one page boot
@@ -10,9 +8,7 @@ export interface MonacoEnvironmentEnhanced extends monaco.Environment {
   vscodeApiInitialising?: boolean
   vscodeApiInitialised?: boolean
   vscodeApiServicesInitialised?: boolean
-  vscodeApiViewsInitialised?: boolean
   vscodeApiExtensionsInitialised?: boolean
-  vscodeApiViewsType?: ViewsServiceType
   vscodeApiGlobalInitAwait?: Promise<void>
   vscodeApiGlobalInitResolve?: (value: void | PromiseLike<void>) => void
 }
@@ -25,7 +21,6 @@ export function getEnhancedMonacoEnvironment(): MonacoEnvironmentEnhanced {
   env.vscodeApiInitialising ??= false
   env.vscodeApiInitialised ??= false
   env.vscodeApiServicesInitialised ??= false
-  env.vscodeApiViewsInitialised ??= false
   env.vscodeApiExtensionsInitialised ??= false
   return env
 }

@@ -50,8 +50,6 @@ const monacoVscodePackages = [
   '@codingame/monaco-vscode-textmate-service-override',
   '@codingame/monaco-vscode-theme-defaults-default-extension',
   '@codingame/monaco-vscode-theme-service-override',
-  '@codingame/monaco-vscode-view-status-bar-service-override',
-  '@codingame/monaco-vscode-views-service-override',
 ]
 
 const reactPlugins = [react(), babel({

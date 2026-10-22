@@ -6,6 +6,7 @@ import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 import { createCangjieProtocolMiddleware } from './cangjie-protocol'
 import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
 import { LatestLanguageClientController } from './language-client-controller'
+import { ensureExtensionHost } from './vscode-api/extension-host'
 
 // A single Output Channel shared across every LanguageClient instance.
 // When clientOptions.outputChannel is set, vscode-languageclient treats it
@@ -60,6 +61,8 @@ function buildWorkspaceFolder() {
 export async function createLanguageClient(port: MessagePort): Promise<MonacoLanguageClient | undefined> {
   if (isMobile({ tablet: true, featureDetect: true }))
     return undefined
+
+  await ensureExtensionHost()
 
   // The editor can render before the WASM server is ready. Load the protocol
   // client only when there is a live port to connect, not with the editor UI.

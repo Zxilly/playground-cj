@@ -1,10 +1,8 @@
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
-import { getStatusBarServiceOverrides } from '@/lib/statusbar'
 import { getStarterCode } from './starter-code'
 import { fontFamily } from '@/app/font'
 import type { EditorAppConfig, MonacoVscodeApiConfig } from './vscode-api'
 import { configureMonacoWorkers } from './workers'
-import { initializeMonacoViewsService } from './views'
 import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
 import { exerciseModelSlot, playgroundModelUri } from './model-identity'
 
@@ -12,7 +10,6 @@ import langConf from '@/lib/language-configuration.json'
 import textMate from '@/grammars/Cangjie.tmLanguage.json'
 
 export type { MonacoVscodeApiConfig }
-export type MonacoViewsType = 'EditorService' | 'ViewsService'
 
 export function setEditorValue(ed: monaco.editor.ICodeEditor, code: string) {
   const model = ed.getModel()
@@ -21,17 +18,9 @@ export function setEditorValue(ed: monaco.editor.ICodeEditor, code: string) {
   }
 }
 
-export function createMonacoVscodeApiConfig(
-  htmlContainer?: HTMLElement,
-  viewsType: MonacoViewsType = 'EditorService',
-): MonacoVscodeApiConfig {
-  const serviceOverrides = viewsType === 'EditorService'
-    ? getStatusBarServiceOverrides()
-    : {}
-
+export function createMonacoVscodeApiConfig(): MonacoVscodeApiConfig {
   return {
     $type: 'extended',
-    serviceOverrides,
     userConfiguration: {
       json: JSON.stringify({
         'editor.wordBasedSuggestions': 'off',
@@ -51,15 +40,6 @@ export function createMonacoVscodeApiConfig(
         'editor.cursorSmoothCaretAnimation': 'on',
       }),
     },
-    viewsConfig: {
-      $type: viewsType,
-      htmlContainer,
-      ...(viewsType === 'ViewsService'
-        ? {
-            viewsInitFunc: initializeMonacoViewsService,
-          }
-        : {}),
-    },
     monacoWorkerFactory: configureMonacoWorkers,
     extensions: [
       {
@@ -71,7 +51,6 @@ export function createMonacoVscodeApiConfig(
           engines: {
             vscode: '*',
           },
-          browser: './extension.js',
           contributes: {
             languages: [{
               id: CANGJIE_LANGUAGE_ID,
@@ -87,7 +66,6 @@ export function createMonacoVscodeApiConfig(
           },
         },
         filesOrContents: new Map<string, string>([
-          ['./extension.js', '// Cangjie syntax extension'],
           ['./language-configuration.json', JSON.stringify(langConf)],
           ['./cangjie-grammar.json', JSON.stringify(textMate)],
         ]),

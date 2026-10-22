@@ -30,7 +30,7 @@ const Editor = dynamic(() => {
 const ChineseEditor = dynamic(
   () => {
     markEditorStartup('requested')
-    return import('@codingame/monaco-vscode-language-pack-zh-hans').then(() => {
+    return import('@/lib/monaco/localization').then(() => {
       markEditorStartup('locale-ready')
       return Promise.all([import('./PlaygroundEditor'), preloadEditorServices()]).then(([editor]) => editor)
     })

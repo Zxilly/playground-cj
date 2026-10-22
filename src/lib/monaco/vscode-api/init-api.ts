@@ -1,11 +1,10 @@
 import { initialize } from '@codingame/monaco-vscode-api'
 import type { IWorkbenchConstructionOptions } from '@codingame/monaco-vscode-api'
 import {
-  ExtensionHostKind,
   getBuiltinExtensions,
   registerExtension,
 } from '@codingame/monaco-vscode-api/extensions'
-import type { IExtensionManifest, RegisterExtensionResult } from '@codingame/monaco-vscode-api/extensions'
+import type { IExtensionManifest, RegisterExtensionResult, RegisterLocalExtensionResult } from '@codingame/monaco-vscode-api/extensions'
 import { DisposableStore, setUnexpectedErrorHandler } from '@codingame/monaco-vscode-api/monaco'
 import getBaseServiceOverride from '@codingame/monaco-vscode-base-service-override'
 import getConfigurationServiceOverride, { initUserConfiguration } from '@codingame/monaco-vscode-configuration-service-override'
@@ -13,8 +12,7 @@ import getLogServiceOverride from '@codingame/monaco-vscode-log-service-override
 import getModelServiceOverride from '@codingame/monaco-vscode-model-service-override'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import type { OpenEditor } from '@codingame/monaco-vscode-editor-service-override'
-import * as vscode from 'vscode'
-import 'vscode/localExtensionHost'
+import { URI } from '@codingame/monaco-vscode-api/vscode/vs/base/common/uri'
 import { encodeStringOrUrlToDataUrl } from './data-url'
 import { getEnhancedMonacoEnvironment, mergeServices } from './environment'
 import type { ExtensionConfig, MonacoVscodeApiConfig } from './types'
@@ -28,7 +26,7 @@ function buildDefaultWorkspaceConfig(): IWorkbenchConstructionOptions {
   return {
     workspaceProvider: {
       trusted: true,
-      workspace: { workspaceUri: vscode.Uri.file('/workspace.code-workspace') },
+      workspace: { workspaceUri: URI.file('/workspace.code-workspace') },
       async open() {
         window.open(window.location.href)
         return true
@@ -39,8 +37,8 @@ function buildDefaultWorkspaceConfig(): IWorkbenchConstructionOptions {
 
 /**
  * Boots the global monaco-vscode-api services for this project's needs:
- * `extended` highlighting (textmate/theme/languages), one of EditorService or
- * ViewsService, the user-configuration blob, and a single (Cangjie) extension.
+ * `extended` highlighting (textmate/theme/languages), standalone editor
+ * services, user configuration, and declarative Cangjie syntax contributions.
  *
  * The vscode services are a process-wide singleton — `start()` is idempotent
  * and only the first caller on a page performs the boot. Later editors await
@@ -80,41 +78,26 @@ export class MonacoVscodeApiWrapper {
       env.vscodeApiInitialising = true
       this.markGlobalInit()
       try {
-        const requestedViewsType = this.config.viewsConfig.$type
-        if (env.vscodeApiViewsType && env.vscodeApiViewsType !== requestedViewsType) {
-          throw new Error(
-            `vscode-api is already initialized with ${env.vscodeApiViewsType}; cannot switch to ${requestedViewsType}`,
-          )
-        }
-
         if (!env.vscodeApiServicesInitialised) {
           // These modules are independent. Fetch them together, then apply the
           // overrides in the same order before initializing the global services.
-          const [getLanguages, getTextmate, getTheme, getViews, getExtensions] = await Promise.all([
+          const [getLanguages, getTextmate, getTheme, getEditor, getExtensions] = await Promise.all([
             import('@codingame/monaco-vscode-languages-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-textmate-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-theme-service-override').then(m => m.default),
-            this.config.viewsConfig.$type === 'ViewsService'
-              ? import('@codingame/monaco-vscode-views-service-override').then(m => m.default)
-              : import('@codingame/monaco-vscode-editor-service-override').then(m => m.default),
+            import('@codingame/monaco-vscode-editor-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-extensions-service-override').then(m => m.default),
           ])
           markEditorStartup('overrides-loaded')
           mergeServices(this.serviceOverrides, { ...getLanguages(), ...getTextmate(), ...getTheme() })
 
-          this.configureViewsServices(getViews)
+          mergeServices(this.serviceOverrides, getEditor(openEditorStub))
           if (this.config.userConfiguration?.json)
             await initUserConfiguration(this.config.userConfiguration.json)
 
           await this.initAllServices(getExtensions)
           markEditorStartup('services-ready')
           env.vscodeApiServicesInitialised = true
-          env.vscodeApiViewsType = requestedViewsType
-        }
-
-        if (!env.vscodeApiViewsInitialised) {
-          await this.applyViewsPostConfig()
-          env.vscodeApiViewsInitialised = true
         }
 
         if (!env.vscodeApiExtensionsInitialised) {
@@ -141,27 +124,10 @@ export class MonacoVscodeApiWrapper {
     }
   }
 
-  private configureViewsServices(getServiceOverride: (openEditor: OpenEditor) => monaco.editor.IEditorOverrideServices): void {
-    if (this.config.viewsConfig.$type === 'ViewsService') {
-      if (!this.config.viewsConfig.htmlContainer) {
-        throw new Error('ViewsService requires an htmlContainer')
-      }
-    }
-    mergeServices(this.serviceOverrides, getServiceOverride(openEditorStub))
-  }
-
-  private async applyViewsPostConfig(): Promise<void> {
-    // ViewsService mode injects the workbench DOM skeleton (defaultViewsHtml);
-    // viewsInitFunc (initializeMonacoViewsService) attaches the workbench parts
-    // (sidebar/panel/editor/statusbar) to it. Without this the workbench is empty.
-    if (this.config.viewsConfig.$type === 'ViewsService') {
-      await this.config.viewsConfig.viewsInitFunc?.()
-    }
-  }
-
   private async initAllServices(getExtensionServiceOverride: () => monaco.editor.IEditorOverrideServices): Promise<void> {
     // monaco-vscode-api auto-loads layout/environment/extension/files/quickAccess;
-    // we always add configuration/log/model + the extension host.
+    // we add configuration/log/model. The language client loads the local
+    // extension host later; declarative grammar/theme extensions do not need it.
     const services: monaco.editor.IEditorOverrideServices = {
       ...getBaseServiceOverride(),
       ...getConfigurationServiceOverride(),
@@ -175,12 +141,7 @@ export class MonacoVscodeApiWrapper {
     this.checkServiceConsistency(services)
 
     const workspaceConfig = buildDefaultWorkspaceConfig()
-    if (this.config.viewsConfig.$type === 'ViewsService') {
-      await initialize(services, this.config.viewsConfig.htmlContainer, workspaceConfig)
-    }
-    else {
-      await initialize(services, undefined, workspaceConfig)
-    }
+    await initialize(services, undefined, workspaceConfig)
 
     setUnexpectedErrorHandler((e) => {
       // monaco-vscode-api surfaces internal, non-fatal errors through this hook
@@ -225,7 +186,7 @@ export class MonacoVscodeApiWrapper {
 
   private initExtension(extensionConfig: ExtensionConfig): Promise<void> {
     const manifest = extensionConfig.config as IExtensionManifest
-    const result = registerExtension(manifest, ExtensionHostKind.LocalProcess)
+    const result = registerExtension(manifest) as RegisterLocalExtensionResult
     this.extensionRegisterResults.set(manifest.name, result)
     if (extensionConfig.filesOrContents && Object.hasOwn(result, 'registerFileUrl')) {
       for (const [path, content] of extensionConfig.filesOrContents) {

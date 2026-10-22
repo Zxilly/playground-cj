@@ -1,0 +1,49 @@
+{
+  "manifest": {
+    "name": "vscode-language-pack-zh-hans",
+    "displayName": "Chinese (Simplified) (简体中文) Language Pack for Visual Studio Code",
+    "description": "Language pack extension for Chinese (Simplified)",
+    "version": "1.131.0",
+    "publisher": "MS-CEINTL",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Microsoft/vscode-loc"
+    },
+    "license": "SEE MIT LICENSE IN LICENSE.md",
+    "engines": {
+      "vscode": "^1.131.0"
+    },
+    "icon": "languagepack.png",
+    "categories": [
+      "Language Packs"
+    ],
+    "keywords": [
+      "中文(简体)"
+    ],
+    "contributes": {
+      "localizations": [
+        {
+          "languageId": "zh-cn",
+          "languageName": "Chinese Simplified",
+          "localizedLanguageName": "中文(简体)",
+          "translations": [
+            {
+              "id": "vscode",
+              "path": "./translations/main.i18n.json"
+            },
+            {
+              "id": "vscode.theme-defaults",
+              "path": "./translations/extensions/vscode.theme-defaults.i18n.json"
+            }
+          ]
+        }
+      ]
+    },
+    "scripts": {
+      "update": "cd ../vscode && npm run update-localization-extension zh-hans"
+    }
+  },
+  "extensionTranslations": {
+    "vscode.theme-defaults": "data:application/json;charset=utf-8,%7B%22%22%3A%5B%22--------------------------------------------------------------------------------------------%22%2C%22Copyright%20(c)%20Microsoft%20Corporation.%20All%20rights%20reserved.%22%2C%22Licensed%20under%20the%20MIT%20License.%20See%20License.txt%20in%20the%20project%20root%20for%20license%20information.%22%2C%22--------------------------------------------------------------------------------------------%22%2C%22Do%20not%20edit%20this%20file.%20It%20is%20machine%20generated.%22%5D%2C%22version%22%3A%221.0.0%22%2C%22contents%22%3A%7B%22package%22%3A%7B%22dark2026ThemeLabel%22%3A%222026%20%E6%B7%B1%E8%89%B2%22%2C%22darkColorThemeLabel%22%3A%22%E6%B7%B1%E8%89%B2(Visual%20Studio)%22%2C%22darkModernThemeLabel%22%3A%22%E7%8E%B0%E4%BB%A3%E6%B7%B1%E8%89%B2%22%2C%22darkPlusColorThemeLabel%22%3A%22%E6%B7%B1%E8%89%B2%2B%22%2C%22description%22%3A%22%E9%BB%98%E8%AE%A4%20Visual%20Studio%20%E6%B5%85%E8%89%B2%E5%92%8C%E6%B7%B1%E8%89%B2%E4%B8%BB%E9%A2%98%22%2C%22displayName%22%3A%22%E9%BB%98%E8%AE%A4%E4%B8%BB%E9%A2%98%22%2C%22hcColorThemeLabel%22%3A%22%E6%B7%B1%E8%89%B2%E9%AB%98%E5%AF%B9%E6%AF%94%E5%BA%A6%22%2C%22light2026ThemeLabel%22%3A%222026%20%E6%B5%85%E8%89%B2%22%2C%22lightColorThemeLabel%22%3A%22%E6%B5%85%E8%89%B2(Visual%20Studio)%22%2C%22lightHcColorThemeLabel%22%3A%22%E6%B5%85%E8%89%B2%E9%AB%98%E5%AF%B9%E6%AF%94%E5%BA%A6%22%2C%22lightModernThemeLabel%22%3A%22%E7%8E%B0%E4%BB%A3%E6%B5%85%E8%89%B2%22%2C%22lightPlusColorThemeLabel%22%3A%22%E6%B5%85%E8%89%B2%2B%22%2C%22minimalIconThemeLabel%22%3A%22%E6%9C%80%E5%B0%8F(Visual%20Studio%20Code)%22%7D%7D%7D"
+  }
+}

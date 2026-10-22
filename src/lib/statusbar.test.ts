@@ -1,32 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCustomStatusBar } from './statusbar'
 
-const addEntry = vi.fn(() => ({ update: vi.fn(), dispose: vi.fn() }))
-const auxiliaryDispose = vi.fn()
-const createAuxiliaryStatusbarPart = vi.fn(() => ({
-  addEntry,
-  dispose: auxiliaryDispose,
-}))
-const getService = vi.fn()
-
-vi.mock('@codingame/monaco-vscode-view-status-bar-service-override', () => ({
-  default: vi.fn(() => ({})),
-}))
-
-vi.mock('@codingame/monaco-vscode-api', () => ({ getService }))
-
-vi.mock('@codingame/monaco-vscode-api/services', () => ({
-  getService,
-  IInstantiationService: Symbol('IInstantiationService'),
-  IStatusbarService: Symbol('IStatusbarService'),
-}))
-
 describe('createCustomStatusBar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    getService
-      .mockResolvedValueOnce({ createAuxiliaryStatusbarPart })
-      .mockResolvedValueOnce({})
   })
 
   it('uses a touch-safe compact height and follows viewport changes', async () => {

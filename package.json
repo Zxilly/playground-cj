@@ -7,11 +7,11 @@
   },
   "scripts": {
     "prep": "node scripts/download-wasm-assets-cli.mjs",
-    "predev": "pnpm prep && pnpm lingui:compile && pnpm fonts:generate",
+    "predev": "pnpm prep && pnpm lingui:compile && pnpm fonts:generate && pnpm monaco:generate-nls",
     "dev": "next dev",
     "content-packs:generate": "tsx scripts/generate-content-packs.mts",
     "content-packs:verify": "tsx scripts/verify-content-packs.mts",
-    "prebuild": "pnpm prep && pnpm content-packs:generate && pnpm lingui:compile && pnpm fonts:generate",
+    "prebuild": "pnpm prep && pnpm content-packs:generate && pnpm lingui:compile && pnpm fonts:generate && pnpm monaco:generate-nls",
     "build": "next build",
     "prestart": "pnpm prep",
     "start": "next start",
@@ -28,7 +28,8 @@
     "coverage": "vitest run --coverage",
     "lingui:extract": "lingui extract --clean",
     "lingui:compile": "lingui compile",
-    "fonts:generate": "node scripts/generate-fonts.mjs"
+    "fonts:generate": "node scripts/generate-fonts.mjs",
+    "monaco:generate-nls": "node scripts/generate-monaco-nls.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.85",
@@ -83,8 +84,6 @@
     "@codingame/monaco-vscode-textmate-service-override": "38.0.3",
     "@codingame/monaco-vscode-theme-defaults-default-extension": "38.0.3",
     "@codingame/monaco-vscode-theme-service-override": "38.0.3",
-    "@codingame/monaco-vscode-view-status-bar-service-override": "38.0.3",
-    "@codingame/monaco-vscode-views-service-override": "38.0.3",
     "@eslint-react/eslint-plugin": "^5.28.4",
     "@lingui/babel-plugin-lingui-macro": "^6.10.0",
     "@lingui/cli": "^6.10.0",

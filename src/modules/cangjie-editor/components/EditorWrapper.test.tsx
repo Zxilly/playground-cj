@@ -33,7 +33,6 @@ const modelFileMirrorUpdate = vi.hoisted(() => vi.fn())
 const modelFileMirrorDispose = vi.hoisted(() => vi.fn())
 
 vi.mock('@/lib/monaco/vscode-api', () => ({
-  defaultViewsHtml: '<div id="workbench-container"></div>',
   getEnhancedMonacoEnvironment: () => ({
     vscodeApiGlobalInitAwait: monacoInit.promise,
     vscodeApiInitialised: monacoInit.initialised,
@@ -160,9 +159,6 @@ describe('monacoEditorReactComp', () => {
     view.unmount()
     await act(async () => gate.resolve({
       container: document.createElement('div'),
-      addEntry: vi.fn(),
-      updateEntry: vi.fn(),
-      removeEntry: vi.fn(),
       dispose,
     }))
     expect(dispose).toHaveBeenCalledOnce()

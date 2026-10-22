@@ -1,58 +1,16 @@
-import getStatusbarServiceOverride from '@codingame/monaco-vscode-view-status-bar-service-override'
-import type { IEditorOverrideServices } from '@codingame/monaco-vscode-api'
-
-/**
- * 获取状态栏服务覆盖
- * 用于 MonacoVscodeApiConfig.serviceOverrides
- */
-export function getStatusBarServiceOverrides(): IEditorOverrideServices {
-  return getStatusbarServiceOverride()
-}
-
 export interface StatusBarOptions {
-  /** 状态栏位置，默认 bottom */
   position?: 'top' | 'bottom'
-  /** 状态栏高度，默认 22px */
   height?: number
-  /** 窄屏触控高度；省略时沿用 height */
   compactHeight?: number
-  /** 自定义样式类名 */
   className?: string
-}
-
-export interface StatusBarEntry {
-  id: string
-  name: string
-  text: string
-  ariaLabel?: string
-  tooltip?: string
-  command?: string
-  alignment: 'left' | 'right'
-  priority?: number
-}
-
-export interface StatusBarEntryAccessor {
-  update: (entry: Partial<StatusBarEntry>) => void
-  dispose: () => void
 }
 
 export interface StatusBarHandle {
   container: HTMLElement
-  addEntry: (entry: StatusBarEntry) => StatusBarEntryAccessor
-  updateEntry: (id: string, entry: Partial<StatusBarEntry>) => void
-  removeEntry: (id: string) => void
   dispose: () => void
 }
 
-/**
- * 在 EditorService 模式下创建自定义状态栏
- *
- * 必须在 MonacoVscodeApiWrapper.start() 完成后调用
- *
- * @param parentContainer 父容器元素
- * @param options 状态栏选项
- * @returns 状态栏句柄
- */
+/** Hosts the application's LSP control without a VS Code workbench statusbar. */
 export async function createCustomStatusBar(
   parentContainer: HTMLElement,
   options: StatusBarOptions = {},
@@ -63,16 +21,10 @@ export async function createCustomStatusBar(
     compactHeight = height,
     className = '',
   } = options
-
-  const { getService } = await import('@codingame/monaco-vscode-api')
-  const { IStatusbarService, IInstantiationService } = await import('@codingame/monaco-vscode-api/services')
-
   const container = document.createElement('footer')
   container.className = `statusbar-container ${className}`.trim()
-  if (window.getComputedStyle(parentContainer).position === 'static') {
+  if (window.getComputedStyle(parentContainer).position === 'static')
     parentContainer.style.position = 'relative'
-  }
-
   container.style.cssText = `
     position: absolute;
     z-index: 1;
@@ -88,16 +40,12 @@ export async function createCustomStatusBar(
     flex-shrink: 0;
   `
 
-  // The status bar is created imperatively after React has rendered. Keep its
-  // responsive height in the same lifecycle instead of relying on a global
-  // stylesheet that may not reach Monaco's auxiliary workbench part.
   const compactViewport = window.matchMedia('(max-width: 1023px)')
   const applyResponsiveHeight = () => {
     container.style.height = `${compactViewport.matches ? compactHeight : height}px`
   }
   applyResponsiveHeight()
   compactViewport.addEventListener('change', applyResponsiveHeight)
-
   if (position === 'top') {
     container.style.top = '0'
     parentContainer.insertBefore(container, parentContainer.firstChild)
@@ -107,101 +55,10 @@ export async function createCustomStatusBar(
     parentContainer.appendChild(container)
   }
 
-  const statusbarService = await getService(IStatusbarService)
-  const instantiationService = await getService(IInstantiationService)
-
-  const auxiliaryPart = statusbarService.createAuxiliaryStatusbarPart(
-    container,
-    instantiationService,
-  )
-
-  interface EntryData {
-    accessor: StatusBarEntryAccessor
-    currentState: {
-      name: string
-      text: string
-      ariaLabel: string
-      tooltip?: string
-      command?: string
-    }
-  }
-  const entries = new Map<string, EntryData>()
-
   return {
     container,
-
-    addEntry(entry: StatusBarEntry): StatusBarEntryAccessor {
-      const alignment = entry.alignment === 'left' ? 0 : 1
-
-      const currentState = {
-        name: entry.name,
-        text: entry.text,
-        ariaLabel: entry.ariaLabel || entry.text,
-        tooltip: entry.tooltip,
-        command: entry.command,
-      }
-
-      const nativeAccessor = auxiliaryPart.addEntry(
-        {
-          name: currentState.name,
-          text: currentState.text,
-          ariaLabel: currentState.ariaLabel,
-          tooltip: currentState.tooltip,
-          command: currentState.command,
-        },
-        entry.id,
-        alignment,
-        entry.priority || 0,
-      )
-
-      const entryAccessor: StatusBarEntryAccessor = {
-        update: (update) => {
-          if (update.name !== undefined)
-            currentState.name = update.name
-          if (update.text !== undefined)
-            currentState.text = update.text
-          if (update.ariaLabel !== undefined)
-            currentState.ariaLabel = update.ariaLabel
-          if (update.tooltip !== undefined)
-            currentState.tooltip = update.tooltip
-
-          nativeAccessor.update({
-            name: currentState.name,
-            text: currentState.text,
-            ariaLabel: currentState.ariaLabel,
-            tooltip: currentState.tooltip,
-            command: currentState.command,
-          })
-        },
-        dispose: () => {
-          nativeAccessor.dispose()
-          entries.delete(entry.id)
-        },
-      }
-
-      entries.set(entry.id, { accessor: entryAccessor, currentState })
-      return entryAccessor
-    },
-
-    updateEntry(id: string, update: Partial<StatusBarEntry>) {
-      const entryData = entries.get(id)
-      if (entryData) {
-        entryData.accessor.update(update)
-      }
-    },
-
-    removeEntry(id: string) {
-      const entryData = entries.get(id)
-      if (entryData) {
-        entryData.accessor.dispose()
-      }
-    },
-
     dispose() {
       compactViewport.removeEventListener('change', applyResponsiveHeight)
-      entries.forEach(entryData => entryData.accessor.dispose())
-      entries.clear()
-      auxiliaryPart.dispose()
       container.remove()
     },
   }
