@@ -29,9 +29,9 @@ describe('cangjie toolchain alignment', () => {
     expect(dockerfile).toContain(
       'COPY cangjie-toolchain.lock.json install-cangjie-toolchain.sh',
     )
-    expect(dockerfile.match(/snapshot\.debian\.org\/archive\/debian\/20260725T000000Z/g))
+    expect(dockerfile.match(/snapshot\.debian\.org\/archive\/debian\/20261021T000000Z/g))
       .toHaveLength(2)
-    expect(dockerfile.match(/snapshot\.debian\.org\/archive\/debian-security\/20260725T000000Z/g))
+    expect(dockerfile.match(/snapshot\.debian\.org\/archive\/debian-security\/20261021T000000Z/g))
       .toHaveLength(2)
     expect(dockerfile).not.toContain('deb.debian.org')
     expect(dockerfile).not.toContain('security.debian.org')
