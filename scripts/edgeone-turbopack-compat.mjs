@@ -1,10 +1,4 @@
 import { createHash } from 'node:crypto'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const adapterVersion = '0.2.10-beta.11'
 const originalHash = 'f45add8b2aa122b943e1af19c5bed74af1340a8d28cd56ecc51021593cf34d77'
 const signature = 'function installCompressedModuleFactories(chunkModules, offset) {'
 
@@ -42,7 +36,7 @@ const replacement = `function installCompressedModuleFactories(chunkModules, off
   }
 }`
 
-export function patchEdgeOneTurbopack(source) {
+export function transformEdgeOneTurbopack(source) {
   source = source.replaceAll('\r\n', '\n')
   const start = source.indexOf(signature)
   const end = source.indexOf('\n}\n', start) + 2
@@ -54,24 +48,4 @@ export function patchEdgeOneTurbopack(source) {
   if (createHash('sha256').update(original).digest('hex') !== originalHash)
     throw new Error('EdgeOne Turbopack installer changed; review the adapter before deploying')
   return source.slice(0, start) + replacement + source.slice(end)
-}
-
-export function patchEdgeOneAdapter(cliDirectory) {
-  const require = createRequire(join(resolve(cliDirectory), 'package.json'))
-  const packagePath = require.resolve('@edgeone/opennextjs-pages/package.json')
-  const metadata = JSON.parse(readFileSync(packagePath, 'utf8'))
-  if (metadata.version !== adapterVersion)
-    throw new Error(`Expected EdgeOne adapter ${adapterVersion}, found ${metadata.version}; review the patch`)
-  const compilerPath = join(dirname(packagePath), 'dist/build/functions/middleware/compiler.js')
-  const source = readFileSync(compilerPath, 'utf8')
-  const patched = patchEdgeOneTurbopack(source)
-  if (patched !== source)
-    writeFileSync(compilerPath, patched)
-  console.log(`EdgeOne adapter ${adapterVersion}: Turbopack strict groups and aliases supported`)
-}
-
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if (!process.argv[2])
-    throw new Error('Usage: node scripts/patch-edgeone-turbopack.mjs <installed edgeone package directory>')
-  patchEdgeOneAdapter(process.argv[2])
 }

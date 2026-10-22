@@ -3,14 +3,14 @@
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
-import { patchEdgeOneTurbopack } from '../../scripts/patch-edgeone-turbopack.mjs'
+import { transformEdgeOneTurbopack } from '../../scripts/edgeone-turbopack-compat.mjs'
 
 const upstream = readFileSync('tests/fixtures/edgeone-module-installer.txt', 'utf8')
 
 function installer() {
   return runInNewContext(`
     const moduleFactories = new Map();
-    ${patchEdgeOneTurbopack(upstream)}
+    ${transformEdgeOneTurbopack(upstream)}
     ({ install: installCompressedModuleFactories, factories: moduleFactories });
   `) as {
     install: (entries: unknown[], offset?: number) => void
@@ -55,15 +55,15 @@ describe('edgeOne Turbopack module registration', () => {
 
   it('does not modify unrelated runtime code and is idempotent', () => {
     const source = `// prefix\n${upstream}\n// suffix\n`
-    const patched = patchEdgeOneTurbopack(source)
+    const patched = transformEdgeOneTurbopack(source)
     expect(patched.startsWith('// prefix\n')).toBe(true)
     expect(patched.endsWith('\n// suffix\n')).toBe(true)
-    expect(patchEdgeOneTurbopack(patched)).toBe(patched)
+    expect(transformEdgeOneTurbopack(patched)).toBe(patched)
   })
 
   it('refuses changed or missing upstream implementations', () => {
-    expect(() => patchEdgeOneTurbopack('')).toThrow('Unrecognized')
-    expect(() => patchEdgeOneTurbopack(upstream.replace('let end = i + 1;', 'let end = i + 2;')))
+    expect(() => transformEdgeOneTurbopack('')).toThrow('Unrecognized')
+    expect(() => transformEdgeOneTurbopack(upstream.replace('let end = i + 1;', 'let end = i + 2;')))
       .toThrow('installer changed')
   })
 })

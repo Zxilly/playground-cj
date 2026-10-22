@@ -50,22 +50,25 @@ jobs:
           node-version: '24'
           cache: pnpm
 
-      - name: Prepare EdgeOne CLI with Turbopack compatibility fix
+      - name: Install the pinned EdgeOne CLI
         run: |
-          npm install --prefix "$RUNNER_TEMP/edgeone-cli" --no-package-lock --no-audit --no-fund edgeone@1.6.44
-          node scripts/patch-edgeone-turbopack.mjs "$RUNNER_TEMP/edgeone-cli/node_modules/edgeone"
+          npm install --prefix "$RUNNER_TEMP/edgeone-cli" --no-package-lock --no-audit --no-fund edgeone@1.6.45
+          echo "EDGEONE_CLI_DIRECTORY=$RUNNER_TEMP/edgeone-cli/node_modules/edgeone" >> "$GITHUB_ENV"
 
       - name: Login to Tencent Cloud China
-        run: node "$RUNNER_TEMP/edgeone-cli/node_modules/edgeone/edgeone-bin/edgeone.js" login --site china --token "$EDGEONE_API_TOKEN"
+        run: node "$EDGEONE_CLI_DIRECTORY/edgeone-bin/edgeone.js" login --site china --token "$EDGEONE_API_TOKEN"
 
       - name: Build and deploy the Next.js application
         run: >-
-          node "$RUNNER_TEMP/edgeone-cli/node_modules/edgeone/edgeone-bin/edgeone.js" makers deploy
+          node --import ./scripts/edgeone-compat-hook.mjs
+          "$EDGEONE_CLI_DIRECTORY/edgeone-bin/edgeone.js" makers deploy
           --name "$EDGEONE_PROJECT_NAME" --area global --env production
           --skip-ai-gateway-sync
 
       - name: Verify compiled Turbopack middleware
-        run: node scripts/verify-edgeone-middleware.mjs "$RUNNER_TEMP/edgeone-cli/node_modules/edgeone"
+        run: >-
+          node --import ./scripts/edgeone-compat-hook.mjs
+          scripts/verify-edgeone-middleware.mjs "$EDGEONE_CLI_DIRECTORY"
 
       - name: Verify public deployment
         run: node scripts/verify-edgeone-deployment.mjs https://play.cj.zxilly.com
