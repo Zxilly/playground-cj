@@ -1,12 +1,12 @@
 'use client'
 
-import { isValidElement, useEffect, useState } from 'react'
+import { isValidElement, memo, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { t } from '@lingui/core/macro'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { Components } from 'react-markdown'
 import { cn } from '@/lib/utils'
-import { highlightCangjie } from '@/lib/shiki/cangjie-highlighter'
 import { useRootDarkMode } from '@/lib/theme/useRootDarkMode'
 
 /**
@@ -22,10 +22,17 @@ function CangjieFence({ code }: { code: string }) {
 
   useEffect(() => {
     let cancelled = false
-    void highlightCangjie(code, { dark }).then((result) => {
-      if (!cancelled)
-        setHighlight({ key: highlightKey, html: result })
-    })
+    // Plain notes should not download Shiki or the Cangjie grammar. The code
+    // remains readable while this optional enhancement loads or if it fails.
+    void import('@/lib/shiki/cangjie-highlighter')
+      .then(module => cancelled ? null : module.highlightCangjie(code, { dark }))
+      .then((result) => {
+        if (!cancelled && result !== null)
+          setHighlight({ key: highlightKey, html: result })
+      })
+      .catch(() => {
+        // Keep the existing plain-text fence if the optional chunk is offline.
+      })
     return () => {
       cancelled = true
     }
@@ -123,6 +130,22 @@ const components: Components = {
   hr: ({ className, ...props }) => (
     <hr className={cn('my-3 border-muted-foreground/20', className)} {...props} />
   ),
+  table: ({ className, ...props }) => (
+    <div
+      role="region"
+      aria-label={t`滚动查看完整表格`}
+      tabIndex={0}
+      className="my-3 max-w-full overflow-x-auto rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+    >
+      <table className={cn('w-max min-w-full border-collapse text-sm', className)} {...props} />
+    </div>
+  ),
+  th: ({ className, ...props }) => (
+    <th className={cn('border border-border bg-muted px-3 py-2 text-start font-semibold', className)} {...props} />
+  ),
+  td: ({ className, ...props }) => (
+    <td className={cn('border border-border px-3 py-2 text-start align-top', className)} {...props} />
+  ),
   code: ({ className, ...props }) => (
     <code
       className={cn(
@@ -202,13 +225,13 @@ function safeValidatedUrl(url: string): string {
   }
 }
 
-export function TeachMarkdown({
+function TeachMarkdownImpl({
   markdown,
   className,
   source = 'generated',
 }: TeachMarkdownProps) {
   return (
-    <div data-testid="teach-markdown" className={cn('text-[15px] leading-7', className)}>
+    <div data-testid="teach-markdown" className={cn('min-w-0 text-[15px] leading-7 [overflow-wrap:anywhere]', className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         skipHtml
@@ -220,3 +243,5 @@ export function TeachMarkdown({
     </div>
   )
 }
+
+export const TeachMarkdown = memo(TeachMarkdownImpl)

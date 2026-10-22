@@ -1,25 +1,24 @@
 'use client'
 
-import { useState } from 'react'
 import dynamic from 'next/dynamic'
-import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
-import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
-import { QuotaExhaustedDialog } from '@/modules/llm-config/components/QuotaExhaustedDialog'
-import { TeachConfigWizard } from './TeachConfigWizard'
-import { TeachLanding } from './TeachLanding'
+import { useState, useSyncExternalStore } from 'react'
 import { TeachLoadingState } from './TeachLoadingState'
-import { TeachWorkspace } from './TeachWorkspace'
 
-export type { WorkspaceCollaborators }
-
-type TeachStage = 'landing' | 'config' | 'workspace'
-
-export interface TeachAppContentProps {
+export interface TeachAppProps {
   lang: string
-  collaborators: WorkspaceCollaborators
 }
 
+const TeachOnboarding = dynamic(() => import('./TeachOnboarding').then(module => module.TeachOnboarding), {
+  loading: () => <TeachLoadingState />,
+})
+const TeachAppRoot = dynamic(() => import('./TeachAppRoot'), {
+  loading: () => <TeachLoadingState />,
+})
+
 const ONBOARDED_KEY = 'teach:onboarded'
+const subscribeToClient = () => () => undefined
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
 
 function hasOnboarded(): boolean {
   try {
@@ -30,49 +29,28 @@ function hasOnboarded(): boolean {
   }
 }
 
-function markOnboarded(): void {
-  try {
-    localStorage.setItem(ONBOARDED_KEY, '1')
-  }
-  catch {
-    // Storage can be unavailable in private browsing; onboarding remains usable.
-  }
-}
+function TeachEntry({ lang }: TeachAppProps) {
+  const [entered, setEntered] = useState(hasOnboarded)
 
-/** Orchestrates onboarding around one already-opened AI Classroom runtime. */
-export function TeachAppContent({ lang, collaborators }: TeachAppContentProps) {
-  const [stage, setStage] = useState<TeachStage>(() => (hasOnboarded() ? 'workspace' : 'landing'))
+  if (entered)
+    return <TeachAppRoot lang={lang} />
 
   return (
-    <WorkspaceProvider lang={lang === 'en' ? 'en' : 'zh'} {...collaborators}>
-      {stage === 'landing' && <TeachLanding onStart={() => setStage('config')} />}
-      {stage === 'config' && (
-        <TeachConfigWizard
-          onEnter={() => {
-            markOnboarded()
-            setStage('workspace')
-          }}
-          onBack={() => setStage('landing')}
-        />
-      )}
-      {stage === 'workspace' && (
-        <>
-          <TeachWorkspace lang={lang} />
-          <QuotaExhaustedDialog />
-        </>
-      )}
-    </WorkspaceProvider>
+    <TeachOnboarding onEnter={() => {
+      try {
+        localStorage.setItem(ONBOARDED_KEY, '1')
+      }
+      catch {
+        // Storage can be unavailable in private browsing; entry remains usable.
+      }
+      setEntered(true)
+    }}
+    />
   )
 }
 
-export interface TeachAppProps {
-  lang: string
+/** Select the browser entry before downloading either onboarding or runtime. */
+export default function TeachApp(props: TeachAppProps) {
+  const client = useSyncExternalStore(subscribeToClient, getClientSnapshot, getServerSnapshot)
+  return client ? <TeachEntry {...props} /> : <TeachLoadingState />
 }
-
-/** Browser-only boundary: collaborators depend on IndexedDB and Monaco. */
-const TeachApp = dynamic(() => import('./TeachAppRoot'), {
-  ssr: false,
-  loading: TeachLoadingState,
-})
-
-export default TeachApp

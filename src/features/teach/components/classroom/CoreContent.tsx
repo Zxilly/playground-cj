@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 import type { CoreContentBlock, CourseContentPack } from '@/lib/teach/classroom/content-packs'
 import { TeachMarkdown } from '@/features/teach/components/blocks/TeachMarkdown'
-import { highlightCangjie } from '@/lib/shiki/cangjie-highlighter'
 import { cn } from '@/lib/utils'
 import { useRootDarkMode } from '@/lib/theme/useRootDarkMode'
 
@@ -18,10 +17,15 @@ function CodeBlock({ block }: { block: Extract<CoreContentBlock, { type: 'code_s
 
   useEffect(() => {
     let active = true
-    void highlightCangjie(block.code, { dark }).then((value) => {
-      if (active)
-        setHighlight({ key: highlightKey, html: value })
-    })
+    void import('@/lib/shiki/cangjie-highlighter')
+      .then(module => active ? module.highlightCangjie(block.code, { dark }) : null)
+      .then((value) => {
+        if (active && value !== null)
+          setHighlight({ key: highlightKey, html: value })
+      })
+      .catch(() => {
+        // Keep the readable code sample if the optional highlighter is offline.
+      })
     return () => {
       active = false
     }

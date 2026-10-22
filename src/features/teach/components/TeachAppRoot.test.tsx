@@ -2,11 +2,14 @@ import {
   act,
   cleanup,
   fireEvent,
-  render,
+  render as renderUI,
   screen,
   waitFor,
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setupI18n } from '@lingui/core'
+import { I18nProvider } from '@lingui/react'
+import type { ReactNode } from 'react'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import TeachAppRoot from './TeachAppRoot'
 
@@ -14,13 +17,24 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
 }))
 
+const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
+
+function render(ui: ReactNode) {
+  return renderUI(ui, {
+    wrapper: ({ children }) => <I18nProvider i18n={i18n}>{children}</I18nProvider>,
+  })
+}
+
 vi.mock('@/features/teach/state/workspace-collaborators', () => ({
   createWorkspaceCollaborators: mocks.create,
 }))
-vi.mock('./TeachApp', () => ({
+vi.mock('./TeachWorkspace', () => ({
   // The mock must be declared in this hoisted factory so Vitest can replace
   // the module before TeachAppRoot is imported.
-  TeachAppContent: ({ lang }: { lang: string }) => <div>{`ready:${lang}`}</div>,
+  TeachWorkspace: ({ lang }: { lang: string }) => <div>{`ready:${lang}`}</div>,
+}))
+vi.mock('@/modules/llm-config/components/QuotaExhaustedDialog', () => ({
+  QuotaExhaustedDialog: () => null,
 }))
 
 afterEach(() => {
@@ -34,6 +48,7 @@ describe('teach app root', () => {
     mocks.create.mockResolvedValue({ dispose } as unknown as WorkspaceCollaborators)
     const { unmount } = render(<TeachAppRoot lang="en" />)
     expect(screen.getByTestId('teach-app-loading')).toBeTruthy()
+    expect(screen.getByRole('status').textContent).toBe('Opening AI Classroom…')
     expect(await screen.findByText('ready:en')).toBeTruthy()
     expect(mocks.create).toHaveBeenCalledWith(
       'en',

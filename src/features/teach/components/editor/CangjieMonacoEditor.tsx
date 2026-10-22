@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useId, useRef } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { MonacoEditorReactComp } from '@/modules/cangjie-editor/components/EditorWrapper'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
 import { EditorBridgeProvider } from '@/modules/cangjie-editor/context/EditorBridgeProvider'
 import { cn } from '@/lib/utils'
 import type { CangjieEditorProps } from './CangjieEditor'
+import { CangjieEditorLoadingState } from './CangjieEditorLoadingState'
 
 /**
  * Long-lived Monaco-backed editor shared by Exercise Instances and Playground.
@@ -29,6 +30,7 @@ export function CangjieMonacoEditor({
   replaceCodeOnMount = false,
   onCodeChange,
 }: CangjieEditorProps) {
+  const [ready, setReady] = useState(false)
   const monacoHandleRef = useRef<MonacoEditorHandle | null>(null)
   const contentSubscriptionRef = useRef<{ dispose: () => void } | null>(null)
   const onCodeChangeRef = useRef(onCodeChange)
@@ -68,6 +70,7 @@ export function CangjieMonacoEditor({
       if (code !== undefined)
         onCodeChangeRef.current?.(code)
     }) ?? null
+    setReady(true)
   }, [initialCode, replaceCodeOnMount])
 
   useEffect(() => () => {
@@ -83,10 +86,12 @@ export function CangjieMonacoEditor({
         and let the learner drag the bottom edge taller for longer tasks
         (resize-y needs a non-visible overflow to show the handle).
       */}
-      <div className={cn(
-        'relative w-full overflow-hidden',
-        fillHeight ? 'h-full min-h-0' : 'h-80 min-h-56 resize-y',
-      )}
+      <div
+        aria-busy={!ready}
+        className={cn(
+          'relative w-full overflow-hidden',
+          fillHeight ? 'h-full min-h-0' : 'h-80 min-h-56 resize-y',
+        )}
       >
         <MonacoEditorReactComp
           code={initialCode}
@@ -96,6 +101,11 @@ export function CangjieMonacoEditor({
           modelScope={modelScope}
           retainModelOnUnmount={modelScope != null}
         />
+        {!ready && (
+          <div className="absolute inset-0 z-10">
+            <CangjieEditorLoadingState />
+          </div>
+        )}
       </div>
     </EditorBridgeProvider>
   )

@@ -1,7 +1,18 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render as renderUI, screen } from '@testing-library/react'
+import { setupI18n } from '@lingui/core'
+import { I18nProvider } from '@lingui/react'
+import type { ReactNode } from 'react'
+import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
-import { TeachAppContent } from './TeachApp'
+import TeachApp from './TeachApp'
+
+const modules = vi.hoisted(() => ({ openRuntime: vi.fn() }))
+
+const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
+
+function render(ui: ReactNode) {
+  return renderUI(<I18nProvider i18n={i18n}>{ui}</I18nProvider>)
+}
 
 vi.mock('./TeachLanding', () => ({
   TeachLanding: ({ onStart }: { onStart: () => void }) => (
@@ -13,52 +24,42 @@ vi.mock('./TeachConfigWizard', () => ({
     <button type="button" onClick={onEnter}>config</button>
   ),
 }))
-vi.mock('./TeachWorkspace', () => ({
-  TeachWorkspace: () => <div>workspace</div>,
-}))
-vi.mock('@/modules/llm-config/components/QuotaExhaustedDialog', () => ({
-  QuotaExhaustedDialog: () => null,
-}))
-
-const collaborators = {
-  classroom: {
-    open: vi.fn(),
-    snapshot: vi.fn(),
-    subscribe: vi.fn(() => () => undefined),
-    execute: vi.fn(),
-    dispose: vi.fn(),
-  },
-  catalog: {
-    list: () => [],
-    get: () => undefined,
-    require: () => { throw new Error('not used') },
-    requireTemplate: () => { throw new Error('not used') },
-  },
-  knowledge: { id: 'test', search: vi.fn(async () => []) },
-  runner: { run: vi.fn() },
-  activeEditor: {
-    getCode: () => null,
-    register: () => () => undefined,
-  },
-  now: () => 0,
-  dispose: vi.fn(async () => undefined),
-} as unknown as WorkspaceCollaborators
+vi.mock('./TeachAppRoot', () => {
+  modules.openRuntime()
+  return { default: () => <div>workspace</div> }
+})
 
 beforeEach(() => localStorage.clear())
 afterEach(cleanup)
 
-describe('teachAppContent', () => {
-  it('moves through explicit onboarding before entering the classroom', () => {
-    render(<TeachAppContent lang="en" collaborators={collaborators} />)
-    fireEvent.click(screen.getByRole('button', { name: 'landing' }))
-    fireEvent.click(screen.getByRole('button', { name: 'config' }))
-    expect(screen.getByText('workspace')).toBeTruthy()
+describe('teachOnboarding', () => {
+  it('renders a stable server loading state without reading browser storage', () => {
+    localStorage.setItem('teach:onboarded', '1')
+    const readStorage = vi.spyOn(Storage.prototype, 'getItem')
+    try {
+      const html = renderToString(<I18nProvider i18n={i18n}><TeachApp lang="en" /></I18nProvider>)
+      expect(html).toContain('Opening AI Classroom…')
+      expect(readStorage).not.toHaveBeenCalled()
+      expect(modules.openRuntime).not.toHaveBeenCalled()
+    }
+    finally {
+      readStorage.mockRestore()
+    }
+  })
+
+  it('defers loading the classroom runtime until onboarding is complete', async () => {
+    render(<TeachApp lang="en" />)
+    expect(modules.openRuntime).not.toHaveBeenCalled()
+    fireEvent.click(await screen.findByRole('button', { name: 'landing' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'config' }))
+    expect(await screen.findByText('workspace')).toBeTruthy()
+    expect(modules.openRuntime).toHaveBeenCalledOnce()
     expect(localStorage.getItem('teach:onboarded')).toBe('1')
   })
 
-  it('returns directly to the classroom after onboarding', () => {
+  it('returns directly to the classroom after onboarding', async () => {
     localStorage.setItem('teach:onboarded', '1')
-    render(<TeachAppContent lang="zh" collaborators={collaborators} />)
-    expect(screen.getByText('workspace')).toBeTruthy()
+    render(<TeachApp lang="zh" />)
+    expect(await screen.findByText('workspace')).toBeTruthy()
   })
 })

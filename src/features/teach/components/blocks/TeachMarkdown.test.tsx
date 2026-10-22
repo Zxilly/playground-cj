@@ -1,6 +1,18 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TeachMarkdown } from './TeachMarkdown'
+
+const highlighting = vi.hoisted(() => ({ highlight: vi.fn(), loaded: vi.fn() }))
+
+vi.mock('@/lib/shiki/cangjie-highlighter', () => {
+  highlighting.loaded()
+  return { highlightCangjie: highlighting.highlight }
+})
+
+afterEach(() => {
+  cleanup()
+  highlighting.highlight.mockReset()
+})
 
 describe('teach Markdown trust boundary', () => {
   it('never creates image requests and renders generated links as inert text', () => {
@@ -12,6 +24,7 @@ describe('teach Markdown trust boundary', () => {
     expect(screen.queryByRole('link')).toBeNull()
     expect(screen.getByText('encoded editor')).toBeTruthy()
     expect(screen.getByText('[pixel]')).toBeTruthy()
+    expect(highlighting.loaded).not.toHaveBeenCalled()
   })
 
   it('allows safe links from validated content but still omits images', () => {
@@ -52,5 +65,14 @@ describe('teach Markdown trust boundary', () => {
     expect(screen.getByRole('heading', { level: 4, name: 'Detail' })).toBeTruthy()
     expect(screen.getByRole('heading', { level: 4, name: 'Note' })).toBeTruthy()
     expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+  })
+
+  it('keeps code readable when the optional syntax highlighter fails', async () => {
+    highlighting.highlight.mockRejectedValue(new Error('offline'))
+    const { container } = render(<TeachMarkdown markdown={'```cangjie\nlet answer = 42\n```'} />)
+
+    expect(container.querySelector('pre code')?.textContent).toBe('let answer = 42')
+    await waitFor(() => expect(highlighting.highlight).toHaveBeenCalledOnce())
+    expect(container.querySelector('pre code')?.textContent).toBe('let answer = 42')
   })
 })

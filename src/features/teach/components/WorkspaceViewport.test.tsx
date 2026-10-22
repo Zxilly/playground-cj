@@ -89,6 +89,7 @@ describe('workspace viewport teacher exposure disclosure', () => {
 
     for (const view of views) {
       rendered.rerender(<WorkspaceViewport view={view} />)
+      await screen.findByText(`${view} view`)
       expect(screen.getByRole('status').textContent).toBe(
         'You have viewed teacher explanations or guidance. Later answers are still useful for practice and feedback, but they are not treated as an independent check in this workspace.',
       )

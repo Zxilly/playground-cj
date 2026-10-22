@@ -8,8 +8,10 @@ import { createWorkspaceCollaborators } from '@/features/teach/state/workspace-c
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { usePlaygroundSession } from '@/features/teach/state/playground-session'
 import { createTeachRuntimeMachine } from '@/features/teach/state/teach-runtime-machine'
-import { TeachAppContent } from './TeachApp'
+import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
+import { QuotaExhaustedDialog } from '@/modules/llm-config/components/QuotaExhaustedDialog'
 import { TeachLoadingState } from './TeachLoadingState'
+import { TeachWorkspace } from './TeachWorkspace'
 
 function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
   const machine = useMemo(() => createTeachRuntimeMachine({
@@ -26,7 +28,7 @@ function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
   const [runtime, send] = useMachine(machine)
 
   if (runtime.matches('loading'))
-    return <TeachLoadingState />
+    return <TeachLoadingState lang={locale} />
 
   if (runtime.matches('error')) {
     return (
@@ -65,10 +67,10 @@ function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
     throw new Error('Ready Teach runtime is missing its collaborators.')
 
   return (
-    <TeachAppContent
-      lang={locale}
-      collaborators={collaborators}
-    />
+    <WorkspaceProvider lang={locale} {...collaborators}>
+      <TeachWorkspace lang={locale} />
+      <QuotaExhaustedDialog />
+    </WorkspaceProvider>
   )
 }
 

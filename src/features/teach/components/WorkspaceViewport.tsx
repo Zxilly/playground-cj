@@ -1,13 +1,34 @@
 'use client'
 
-import { ShieldAlert } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { Loader2, ShieldAlert } from 'lucide-react'
 import type { WorkspaceView } from '@/features/teach/state/workspace-store'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useClassroomSnapshot } from '@/features/teach/hooks/use-classroom-snapshot'
-import { ConceptProgressView } from './views/ConceptProgressView'
 import { LiveClassroomView } from './views/LiveClassroomView'
-import { PlaygroundView } from './views/PlaygroundView'
-import { ReviewView } from './views/ReviewView'
+
+const ConceptProgressView = dynamic(
+  () => import('./views/ConceptProgressView').then(module => module.ConceptProgressView),
+  { loading: WorkspaceViewLoading },
+)
+const PlaygroundView = dynamic(
+  () => import('./views/PlaygroundView').then(module => module.PlaygroundView),
+  { loading: WorkspaceViewLoading },
+)
+const ReviewView = dynamic(
+  () => import('./views/ReviewView').then(module => module.ReviewView),
+  { loading: WorkspaceViewLoading },
+)
+
+function WorkspaceViewLoading() {
+  const { lang } = useWorkspace()
+  return (
+    <div role="status" className="flex min-h-48 items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
+      <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
+      {lang === 'en' ? 'Loading view…' : '正在加载视图…'}
+    </div>
+  )
+}
 
 export function WorkspaceViewport({ view }: { view: WorkspaceView }) {
   const { classroom, lang } = useWorkspace()

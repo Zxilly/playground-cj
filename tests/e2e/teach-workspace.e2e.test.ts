@@ -115,16 +115,17 @@ async function replaceExerciseCode(
 describe('aI classroom workspace e2e', () => {
   let browser: Browser
   let page: Page
-  let server: Awaited<ReturnType<typeof startNextDevServer>>
+  let server: Awaited<ReturnType<typeof startNextDevServer>> | undefined
+  let baseUrl: string
 
   beforeAll(async () => {
-    server = await startNextDevServer()
+    baseUrl = process.env.PLAYGROUND_TEST_URL ?? (server = await startNextDevServer()).url
     browser = await chromium.launch({ headless: true })
   }, 180_000)
 
   beforeEach(async () => {
     page = await browser.newPage({ viewport: VIEWPORT })
-    await page.goto(`${server.url}/en`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`${baseUrl}/en`, { waitUntil: 'domcontentloaded' })
     expect(await page.locator('html').getAttribute('lang')).toBe('en')
     await page.evaluate(async (baseURL) => {
       localStorage.clear()
@@ -243,8 +244,58 @@ describe('aI classroom workspace e2e', () => {
     await server?.stop()
   })
 
+  it('loads fresh onboarding before opening the classroom and remembers entry', async () => {
+    let readinessRequests = 0
+    const unexpectedGatewayRequests: string[] = []
+    await page.route('**/api/ai-gateway/**', async (route) => {
+      const pathname = new URL(route.request().url()).pathname
+      if (pathname !== '/api/ai-gateway/readiness' && pathname !== '/api/ai-gateway/metadata') {
+        unexpectedGatewayRequests.push(pathname)
+        await route.abort()
+        return
+      }
+      if (pathname === '/api/ai-gateway/readiness')
+        readinessRequests += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          transport: 'shared-gateway',
+          model: 'mock-model',
+          quota: {
+            nextResetAt: Date.now() + 86_400_000,
+            perPeriod: 100,
+            available: 75,
+            exhausted: false,
+          },
+        }),
+      })
+    })
+    await page.evaluate(() => localStorage.clear())
+    await page.goto(`${baseUrl}/en/tour/ai`, { waitUntil: 'domcontentloaded' })
+    await page.getByTestId('teach-landing').waitFor({ state: 'visible', timeout: 60_000 })
+    expect(await page.getByTestId('teach-workspace-shell').count()).toBe(0)
+    expect(readinessRequests).toBe(0)
+    expect(await page.evaluate(() => localStorage.getItem('teach:onboarded'))).toBeNull()
+
+    await page.getByTestId('teach-landing-start').click()
+    await page.getByTestId('teach-config').waitFor({ state: 'visible' })
+    expect(await page.getByTestId('teach-source-shared').getAttribute('aria-checked')).toBe('true')
+    await expect.poll(() => page.getByTestId('teach-source-next').isEnabled()).toBe(true)
+    expect(readinessRequests).toBeGreaterThan(0)
+    await page.getByTestId('teach-source-next').click()
+    await page.getByTestId('teach-workspace-shell').waitFor({ state: 'visible', timeout: 60_000 })
+    expect(await page.evaluate(() => localStorage.getItem('teach:onboarded'))).toBe('1')
+    expect(await page.getByTestId('teach-landing').count()).toBe(0)
+
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.getByTestId('teach-workspace-shell').waitFor({ state: 'visible', timeout: 60_000 })
+    expect(await page.getByTestId('teach-landing').count()).toBe(0)
+    expect(unexpectedGatewayRequests).toEqual([])
+  }, 120_000)
+
   it('runs the complete evidence, review, assistance, and persistence path', async () => {
-    await page.goto(`${server.url}/en/tour/ai`, { waitUntil: 'domcontentloaded' })
+    await page.goto(`${baseUrl}/en/tour/ai`, { waitUntil: 'domcontentloaded' })
     await page.getByTestId('teach-workspace-shell').waitFor({
       state: 'visible',
       timeout: 60_000,
