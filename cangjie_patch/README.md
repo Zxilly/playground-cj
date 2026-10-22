@@ -32,11 +32,26 @@ The build directory is reusable for the same source revisions. Use a fresh
 directory when changing the release; the script refuses an unexpected source
 revision rather than resetting an existing checkout.
 
+## Completion and diagnostic concurrency
+
+The WASM adaptation serializes top-level protocol handling, diagnostic rebuilds,
+and completion through one compiler mutex. A rebuild can replace AST nodes before
+updating the file cache, so the file-cache lock alone does not keep nodes alive
+while completion reads them. Compiler pool jobs remain parallel within each
+operation and do not acquire this mutex.
+
+Completion also reserves its running slot before starting its thread, preventing
+adjacent requests from starting concurrent owners of the completion cache. The
+browser regression test sends overlapping completion requests while repeatedly
+changing a document and checking its diagnostics; it requires the latest request
+to return the local variable from the current source.
+
 ## Publish and verify
 
-Upload the archive to the repository's `wasm-assets-1.2.0` release. Update the
-release URL and archive checksum in `scripts/download-wasm-assets.mjs`, and the
-checksum fixture in `tests/scripts/download-wasm-assets.test.mts`.
+Publish fixes as a new prerelease, such as `wasm-assets-1.2.0-r2`, keeping previous
+asset URLs available. Update the release URL and archive checksum in
+`scripts/download-wasm-assets.mjs`, and the checksum fixture in
+`tests/scripts/download-wasm-assets.test.mts`.
 
 ```sh
 pnpm prep
