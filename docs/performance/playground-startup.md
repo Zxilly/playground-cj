@@ -68,6 +68,9 @@ The changes in this round address two measured serial waits:
   regression test holds status bar creation pending and verifies both editor
   readiness and cleanup after unmount.
 
+The measurements in this section precede the [module-graph follow-up](./monaco-startup.md),
+which defers the extension host and generates a smaller Chinese catalog.
+
 Chinese localization must still execute before importing the VS Code runtime.
 Its approximately 297 KB compressed catalog introduces a roughly 300–360 ms
 serial step in the original profiles. Changing evaluation order breaks Chinese

@@ -1,0 +1,2199 @@
+{
+  "experiments": {
+    "baseline": {
+      "browser": "156.0.8078.4",
+      "sourceBase": "64add8e1dc2c3634cec2ee47a707142dce45f42b",
+      "dirty": false,
+      "conditions": "Cold cache, 40 ms latency, 10 Mbps, 4x CPU throttle, 1440x900. firstEditVerified and assistanceReadyObserved include browser automation overhead. Resource totals exclude workers and incomplete requests.",
+      "samples": [
+        {
+          "locale": "en",
+          "run": 0,
+          "visible": 5921.920000076294,
+          "editorReady": 5806.464999914169,
+          "firstEditVerified": 6882.420000076294,
+          "assistanceReadyObserved": 27652.08999991417,
+          "diagnosticObserved": 29370.734999895096,
+          "jsEncodedAtVisible": 2629930,
+          "jsDecodedAtVisible": 9863951,
+          "longTaskMsBeforeVisible": 3143,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1020.7650001049042
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4700.004999876022
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4728.299999952316
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4729.545000076294
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 5255.349999904633
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5394.375
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5411.865000009537
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5757.680000066757
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5806.464999914169
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 6060.5
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 1,
+          "visible": 5317.235000133514,
+          "editorReady": 5222.914999961853,
+          "firstEditVerified": 6025.575000047684,
+          "assistanceReadyObserved": 27436.25,
+          "diagnosticObserved": 29109.125,
+          "jsEncodedAtVisible": 2629930,
+          "jsDecodedAtVisible": 9863951,
+          "longTaskMsBeforeVisible": 2602,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 947.420000076294
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4284.340000152588
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4303.799999952316
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4304.840000152588
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4729.65499997139
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4881.7699999809265
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4896.900000095367
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5192
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5222.914999961853
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5449.3550000190735
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 2,
+          "visible": 5240.2699999809265,
+          "editorReady": 5136.535000085831,
+          "firstEditVerified": 6014.865000009537,
+          "assistanceReadyObserved": 26931.259999990463,
+          "diagnosticObserved": 29140.039999961853,
+          "jsEncodedAtVisible": 2629930,
+          "jsDecodedAtVisible": 9863951,
+          "longTaskMsBeforeVisible": 2544,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 854.1100001335144
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4227.700000047684
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4244.465000152588
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4245.075000047684
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4673.174999952316
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4818.3949999809265
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4831.545000076294
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5107.775000095367
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5136.535000085831
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5363.805000066757
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 0,
+          "visible": 6138.034999847412,
+          "editorReady": 6018.159999847412,
+          "firstEditVerified": 7043.1849999427795,
+          "assistanceReadyObserved": 28132.355000019073,
+          "diagnosticObserved": 30309.189999818802,
+          "jsEncodedAtVisible": 2927582,
+          "jsDecodedAtVisible": 10896161,
+          "longTaskMsBeforeVisible": 2969,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1059.784999847412
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1420.8399999141693
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 5113.384999990463
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 5141.379999876022
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 5142.424999952316
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 5629.6849999427795
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5780.804999828339
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5798.689999818802
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5984.284999847412
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 6018.159999847412
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 6297.15499997139
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 1,
+          "visible": 5558.8949999809265,
+          "editorReady": 5475.3150000572205,
+          "firstEditVerified": 6417.725000143051,
+          "assistanceReadyObserved": 27390.995000123978,
+          "diagnosticObserved": 29059.049999952316,
+          "jsEncodedAtVisible": 2927582,
+          "jsDecodedAtVisible": 10896161,
+          "longTaskMsBeforeVisible": 2471,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 939.5150001049042
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1314.3700001239777
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4779.4800000190735
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4797.705000162125
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4798.305000066757
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 5171.650000095367
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5285.400000095367
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5297.705000162125
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5451.539999961853
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5475.3150000572205
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5675.22000002861
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 2,
+          "visible": 6056.155000209808,
+          "editorReady": 5921.6900000572205,
+          "firstEditVerified": 7077.755000114441,
+          "assistanceReadyObserved": 28124.16500020027,
+          "diagnosticObserved": 30390.09500002861,
+          "jsEncodedAtVisible": 2927582,
+          "jsDecodedAtVisible": 10896161,
+          "longTaskMsBeforeVisible": 2915,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 996.2800002098083
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1369.4050002098083
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4805.47000002861
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4836.655000209808
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4837.875
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 5415.020000219345
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5626.420000076294
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5650.645000219345
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5878.535000085831
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5921.6900000572205
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 6242.390000104904
+            }
+          ]
+        }
+      ]
+    },
+    "deferred-host": {
+      "browser": "156.0.8078.4",
+      "sourceBase": "64add8e1dc2c3634cec2ee47a707142dce45f42b",
+      "dirty": true,
+      "conditions": "Cold cache, 40 ms latency, 10 Mbps, 4x CPU throttle, 1440x900. firstEditVerified and assistanceReadyObserved include browser automation overhead. Resource totals exclude workers and incomplete requests.",
+      "samples": [
+        {
+          "locale": "en",
+          "run": 0,
+          "visible": 5447.069999933243,
+          "editorReady": 5308.90499997139,
+          "firstEditVerified": 6357.375,
+          "assistanceReadyObserved": 27194.134999990463,
+          "diagnosticObserved": 30034.860000133514,
+          "jsEncodedAtVisible": 2464865,
+          "jsDecodedAtVisible": 9198679,
+          "longTaskMsBeforeVisible": 2868,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 978.7750000953674
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4535.6050000190735
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4557.920000076294
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4558.924999952316
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4741.840000152588
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4916.805000066757
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4980.775000095367
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5272.600000143051
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5308.90499997139
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5619.960000038147
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27158.110000133514
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27847
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 1,
+          "visible": 5076.069999933243,
+          "editorReady": 4964.009999990463,
+          "firstEditVerified": 5880.329999923706,
+          "assistanceReadyObserved": 27355.805000066757,
+          "diagnosticObserved": 29703.00500011444,
+          "jsEncodedAtVisible": 2464865,
+          "jsDecodedAtVisible": 9198679,
+          "longTaskMsBeforeVisible": 2538,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 884.5750000476837
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4207.5199999809265
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4223.34500002861
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4223.954999923706
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4396.615000009537
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4563.27999997139
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4629.40499997139
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 4930.3099999427795
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 4964.009999990463
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5207.589999914169
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26738.424999952316
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27314.980000019073
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 2,
+          "visible": 4576.049999952316,
+          "editorReady": 4482.610000133514,
+          "firstEditVerified": 5378.305000066757,
+          "assistanceReadyObserved": 26757.44000005722,
+          "diagnosticObserved": 29081.259999990463,
+          "jsEncodedAtVisible": 2464865,
+          "jsDecodedAtVisible": 9198679,
+          "longTaskMsBeforeVisible": 2078,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 858.9850001335144
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 3901.7050001621246
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 3917.4850001335144
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 3918.4900000095367
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4044.380000114441
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4177.22000002861
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4229.9349999427795
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 4457.1900000572205
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 4482.610000133514
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 4685.870000123978
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26135.07000017166
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 26719.5
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 0,
+          "visible": 5494.085000038147,
+          "editorReady": 5325.930000066757,
+          "firstEditVerified": 6400.5,
+          "assistanceReadyObserved": 27236.539999961853,
+          "diagnosticObserved": 30068.900000095367,
+          "jsEncodedAtVisible": 2762517,
+          "jsDecodedAtVisible": 10230889,
+          "longTaskMsBeforeVisible": 2515,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1093.1900000572205
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1485.539999961853
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4617.070000171661
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4643.985000133514
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4645.045000076294
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4829.335000038147
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5011.335000038147
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5082.1449999809265
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5290.25
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5325.930000066757
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5700.0650000572205
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27193.860000133514
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27898.400000095367
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 1,
+          "visible": 5748.075000047684,
+          "editorReady": 5613.035000085831,
+          "firstEditVerified": 6587.875,
+          "assistanceReadyObserved": 27399.730000019073,
+          "diagnosticObserved": 30318.24499988556,
+          "jsEncodedAtVisible": 2762517,
+          "jsDecodedAtVisible": 10230889,
+          "longTaskMsBeforeVisible": 2664,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1247.7300000190735
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1633.9349999427795
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4983.444999933243
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 5006.1449999809265
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 5007.164999961853
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 5154.254999876022
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5327.984999895096
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5399.805000066757
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5580.1449999809265
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5613.035000085831
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5898.5650000572205
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27335.849999904633
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28148.980000019073
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 2,
+          "visible": 5812.585000038147,
+          "editorReady": 5648.410000085831,
+          "firstEditVerified": 6643.505000114441,
+          "assistanceReadyObserved": 27520.385000228882,
+          "diagnosticObserved": 30434.66500020027,
+          "jsEncodedAtVisible": 2762517,
+          "jsDecodedAtVisible": 10230889,
+          "longTaskMsBeforeVisible": 2710,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1195.5
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1593.2800002098083
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4911.245000123978
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4933.7300000190735
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4934.800000190735
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 5134.1050000190735
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5333.300000190735
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5405.8550000190735
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5604.795000076294
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5648.410000085831
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5965.135000228882
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27443.675000190735
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28265.825000047684
+            }
+          ]
+        }
+      ]
+    },
+    "light-statusbar": {
+      "browser": "156.0.8078.4",
+      "sourceBase": "64add8e1dc2c3634cec2ee47a707142dce45f42b",
+      "dirty": true,
+      "conditions": "Cold cache, 40 ms latency, 10 Mbps, 4x CPU throttle, 1440x900. firstEditVerified and assistanceReadyObserved include browser automation overhead. Resource totals exclude workers and incomplete requests.",
+      "samples": [
+        {
+          "locale": "en",
+          "run": 0,
+          "visible": 5316.834999799728,
+          "editorReady": 5183.299999952316,
+          "firstEditVerified": 6355.954999923706,
+          "assistanceReadyObserved": 27429.099999904633,
+          "diagnosticObserved": 29728.990000009537,
+          "jsEncodedAtVisible": 2450566,
+          "jsDecodedAtVisible": 9150064,
+          "longTaskMsBeforeVisible": 2790,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 952.5999999046326
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4354.064999818802
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4384.344999790192
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4385.579999923706
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4581.674999952316
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4779.15499997139
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4858.704999923706
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5151.669999837875
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5183.299999952316
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5217.214999914169
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27083.424999952316
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27922.794999837875
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 1,
+          "visible": 4850.825000047684,
+          "editorReady": 4692.6050000190735,
+          "firstEditVerified": 5850.555000066757,
+          "assistanceReadyObserved": 26708.41500020027,
+          "diagnosticObserved": 29606.35000014305,
+          "jsEncodedAtVisible": 2450566,
+          "jsDecodedAtVisible": 9150064,
+          "longTaskMsBeforeVisible": 2363,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 860.8650000095367
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4019.8949999809265
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4038.810000181198
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4039.4500000476837
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4181.055000066757
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4341.570000171661
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4400.34500002861
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 4656.800000190735
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 4692.6050000190735
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 4722.0199999809265
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26543.085000038147
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27409.110000133514
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 2,
+          "visible": 5118.740000009537,
+          "editorReady": 4956.875,
+          "firstEditVerified": 6001.775000095367,
+          "assistanceReadyObserved": 27461.07000017166,
+          "diagnosticObserved": 29791.805000066757,
+          "jsEncodedAtVisible": 2450566,
+          "jsDecodedAtVisible": 9150064,
+          "longTaskMsBeforeVisible": 2597,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 889.8250000476837
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4135.1050000190735
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4157.740000009537
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4158.759999990463
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4346.420000076294
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4541.110000133514
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4627.540000200272
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 4916.870000123978
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 4956.875
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 4995.22000002861
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26794.94500017166
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27425.025000095367
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 0,
+          "visible": 5424.259999990463,
+          "editorReady": 5253.47000002861,
+          "firstEditVerified": 6410.575000047684,
+          "assistanceReadyObserved": 27261.420000076294,
+          "diagnosticObserved": 30276.03500008583,
+          "jsEncodedAtVisible": 2748218,
+          "jsDecodedAtVisible": 10182274,
+          "longTaskMsBeforeVisible": 2548,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 970.9049999713898
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1343.1050000190735
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4599.960000038147
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4617.275000095367
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4618.099999904633
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4782.849999904633
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4958.8550000190735
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5043.335000038147
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5218.089999914169
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5253.47000002861
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5281.430000066757
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27112.015000104904
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28090.480000019073
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 1,
+          "visible": 5619.170000076294,
+          "editorReady": 5445.9400000572205,
+          "firstEditVerified": 6590.680000066757,
+          "assistanceReadyObserved": 27450.28500008583,
+          "diagnosticObserved": 30465.670000076294,
+          "jsEncodedAtVisible": 2748218,
+          "jsDecodedAtVisible": 10182274,
+          "longTaskMsBeforeVisible": 2631,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1031.3949999809265
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1420.9450001716614
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4702.045000076294
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4726.070000171661
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4727.120000123978
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4907.180000066757
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5118.275000095367
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5193.255000114441
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5415.6900000572205
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5445.9400000572205
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5477.210000038147
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27263.680000066757
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28276.03500008583
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 2,
+          "visible": 5525.259999990463,
+          "editorReady": 5352.1849999427795,
+          "firstEditVerified": 6548.939999818802,
+          "assistanceReadyObserved": 27401.389999866486,
+          "diagnosticObserved": 30328.789999961853,
+          "jsEncodedAtVisible": 2748218,
+          "jsDecodedAtVisible": 10182274,
+          "longTaskMsBeforeVisible": 2548,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1077.789999961853
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1464.9049999713898
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4702.115000009537
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4720.834999799728
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4721.459999799728
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4878.604999780655
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5060.27999997139
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5139.579999923706
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5313.954999923706
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5352.1849999427795
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5379.299999952316
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27202.324999809265
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28134.019999980927
+            }
+          ]
+        }
+      ]
+    },
+    "pruned-final": {
+      "browser": "156.0.8078.4",
+      "sourceBase": "64add8e1dc2c3634cec2ee47a707142dce45f42b",
+      "dirty": true,
+      "conditions": "Cold cache, 40 ms latency, 10 Mbps, 4x CPU throttle, 1440x900. firstEditVerified and assistanceReadyObserved include browser automation overhead. Resource totals exclude workers and incomplete requests.",
+      "samples": [
+        {
+          "locale": "en",
+          "run": 0,
+          "visible": 5193.214999914169,
+          "editorReady": 5074.109999895096,
+          "firstEditVerified": 5968.609999895096,
+          "assistanceReadyObserved": 27288.27999997139,
+          "diagnosticObserved": 29880.189999818802,
+          "jsEncodedAtVisible": 2424558,
+          "jsDecodedAtVisible": 9094117,
+          "longTaskMsBeforeVisible": 2656,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 929.9249999523163
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4407.325000047684
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4423.929999828339
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4424.539999961853
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4585.944999933243
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4728.919999837875
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4786.6449999809265
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5047.429999828339
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5074.109999895096
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5100.014999866486
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26854.674999952316
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27543.93499994278
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 1,
+          "visible": 4967.305000066757,
+          "editorReady": 4825.555000066757,
+          "firstEditVerified": 5901.975000143051,
+          "assistanceReadyObserved": 26727.455000162125,
+          "diagnosticObserved": 29663.980000019073,
+          "jsEncodedAtVisible": 2424558,
+          "jsDecodedAtVisible": 9094117,
+          "longTaskMsBeforeVisible": 2422,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 876.9750001430511
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4158.570000171661
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4175.445000171661
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4176.050000190735
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4311.965000152588
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4469.040000200272
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4538.5
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 4789.5650000572205
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 4825.555000066757
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 4859.710000038147
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26684.375
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27480.02999997139
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 2,
+          "visible": 5605.0199999809265,
+          "editorReady": 5461.799999952316,
+          "firstEditVerified": 6554.179999828339,
+          "assistanceReadyObserved": 27509.490000009537,
+          "diagnosticObserved": 30633.96499991417,
+          "jsEncodedAtVisible": 2424558,
+          "jsDecodedAtVisible": 9094117,
+          "longTaskMsBeforeVisible": 3019,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 975.1399998664856
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4600.575000047684
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4623.129999876022
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4624.119999885559
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4828.075000047684
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5034.825000047684
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5130.254999876022
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5430.240000009537
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5461.799999952316
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5481.875
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27310.335000038147
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28291.90499997139
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 0,
+          "visible": 5641.435000181198,
+          "editorReady": 5448.97000002861,
+          "firstEditVerified": 6579.445000171661,
+          "assistanceReadyObserved": 27413.585000038147,
+          "diagnosticObserved": 30311.509999990463,
+          "jsEncodedAtVisible": 2580148,
+          "jsDecodedAtVisible": 9691088,
+          "longTaskMsBeforeVisible": 2767,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1096.5300002098083
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1364.625
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4703.005000114441
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4723.535000085831
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4724.325000047684
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4887.600000143051
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5137
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5215.360000133514
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5406.505000114441
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5448.97000002861
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5494.6050000190735
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27339.015000104904
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28133.420000076294
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 1,
+          "visible": 5638.205000162125,
+          "editorReady": 5459.225000143051,
+          "firstEditVerified": 6501.795000076294,
+          "assistanceReadyObserved": 27993.509999990463,
+          "diagnosticObserved": 30382.460000038147,
+          "jsEncodedAtVisible": 2580148,
+          "jsDecodedAtVisible": 9691088,
+          "longTaskMsBeforeVisible": 2800,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1030.710000038147
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1290.6500000953674
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4696.47000002861
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4718.664999961853
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4719.289999961853
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4891.870000123978
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5170.805000066757
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5238.585000038147
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5423.465000152588
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5459.225000143051
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5493.495000123978
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27302.13000011444
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27937.950000047684
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 2,
+          "visible": 5681.400000095367,
+          "editorReady": 5515.47000002861,
+          "firstEditVerified": 6696.875,
+          "assistanceReadyObserved": 27496.134999990463,
+          "diagnosticObserved": 30428.664999961853,
+          "jsEncodedAtVisible": 2580148,
+          "jsDecodedAtVisible": 9691088,
+          "longTaskMsBeforeVisible": 2771,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1141.0950000286102
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1406.2249999046326
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4711.740000009537
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4731.6849999427795
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4732.5
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4922.210000038147
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5180.130000114441
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5251.214999914169
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5477.4800000190735
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5515.47000002861
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5539.295000076294
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27351.474999904633
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28257.319999933243
+            }
+          ]
+        }
+      ]
+    },
+    "pruned-repeat": {
+      "browser": "156.0.8078.4",
+      "sourceBase": "64add8e1dc2c3634cec2ee47a707142dce45f42b",
+      "dirty": true,
+      "conditions": "Cold cache, 40 ms latency, 10 Mbps, 4x CPU throttle, 1440x900. firstEditVerified and assistanceReadyObserved include browser automation overhead. Resource totals exclude workers and incomplete requests.",
+      "samples": [
+        {
+          "locale": "en",
+          "run": 0,
+          "visible": 5924.804999828339,
+          "editorReady": 5773.549999952316,
+          "firstEditVerified": 6939.729999780655,
+          "assistanceReadyObserved": 27745.17999982834,
+          "diagnosticObserved": 30690.96499991417,
+          "jsEncodedAtVisible": 2424558,
+          "jsDecodedAtVisible": 9094117,
+          "longTaskMsBeforeVisible": 3323,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1191.7549998760223
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4876.584999799728
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4897.119999885559
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4897.9349999427795
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 5087.829999923706
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 5264.524999856949
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5347.365000009537
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5730.740000009537
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5773.549999952316
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5801.7699999809265
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 27607.659999847412
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 28489.89999985695
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 1,
+          "visible": 5039.169999837875,
+          "editorReady": 4905.804999828339,
+          "firstEditVerified": 5944,
+          "assistanceReadyObserved": 26762.865000009537,
+          "diagnosticObserved": 29689.234999895096,
+          "jsEncodedAtVisible": 2424558,
+          "jsDecodedAtVisible": 9094117,
+          "longTaskMsBeforeVisible": 2483,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 899.4849998950958
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4170.914999961853
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4187.974999904633
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4188.585000038147
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4339.8099999427795
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4501.814999818802
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4570.494999885559
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 4873.569999933243
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 4905.804999828339
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 4934.924999952316
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26686.240000009537
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27512.609999895096
+            }
+          ]
+        },
+        {
+          "locale": "en",
+          "run": 2,
+          "visible": 5112.495000123978,
+          "editorReady": 4986.0599999427795,
+          "firstEditVerified": 5806.8150000572205,
+          "assistanceReadyObserved": 27112.099999904633,
+          "diagnosticObserved": 29426.69000005722,
+          "jsEncodedAtVisible": 2424558,
+          "jsDecodedAtVisible": 9094117,
+          "longTaskMsBeforeVisible": 2566,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 900.210000038147
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4220.65499997139
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4253.15499997139
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4254
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4435.964999914169
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4604.22000002861
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4680.180000066757
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 4952.704999923706
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 4986.0599999427795
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5010.200000047684
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26740.865000009537
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27510.120000123978
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 0,
+          "visible": 5040.4400000572205,
+          "editorReady": 4929.390000104904,
+          "firstEditVerified": 5758.475000143051,
+          "assistanceReadyObserved": 27025.299999952316,
+          "diagnosticObserved": 29315.105000019073,
+          "jsEncodedAtVisible": 2580148,
+          "jsDecodedAtVisible": 9691088,
+          "longTaskMsBeforeVisible": 2224,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 837.5199999809265
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1094.414999961853
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4285.8550000190735
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4304.539999961853
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4305.170000076294
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4444.914999961853
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4702.90499997139
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4757.370000123978
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 4901.045000076294
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 4929.390000104904
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 4951.180000066757
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26659.269999980927
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27532.490000009537
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 1,
+          "visible": 5293.3150000572205,
+          "editorReady": 5165.680000066757,
+          "firstEditVerified": 6102.990000009537,
+          "assistanceReadyObserved": 27641.144999980927,
+          "diagnosticObserved": 30013.52999997139,
+          "jsEncodedAtVisible": 2580148,
+          "jsDecodedAtVisible": 9691088,
+          "longTaskMsBeforeVisible": 2462,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 920.8949999809265
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1162.6200001239777
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4473.1849999427795
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4490.860000133514
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4491.6849999427795
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4635.40499997139
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4894.444999933243
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 4948.884999990463
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5132.200000047684
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5165.680000066757
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5189.299999952316
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26952.085000038147
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27613.995000123978
+            }
+          ]
+        },
+        {
+          "locale": "zh",
+          "run": 2,
+          "visible": 5330.274999856949,
+          "editorReady": 5187.629999876022,
+          "firstEditVerified": 6119.7699999809265,
+          "assistanceReadyObserved": 27399.960000038147,
+          "diagnosticObserved": 29903.014999866486,
+          "jsEncodedAtVisible": 2580148,
+          "jsDecodedAtVisible": 9691088,
+          "longTaskMsBeforeVisible": 2404,
+          "errors": [],
+          "marks": [
+            {
+              "name": "cj:editor:requested",
+              "start": 1052.4900000095367
+            },
+            {
+              "name": "cj:editor:locale-ready",
+              "start": 1305.1549999713898
+            },
+            {
+              "name": "cj:editor:module-evaluated",
+              "start": 4480.115000009537
+            },
+            {
+              "name": "cj:editor:services-start",
+              "start": 4500.450000047684
+            },
+            {
+              "name": "cj:editor:overrides-loaded",
+              "start": 4501.47000002861
+            },
+            {
+              "name": "cj:editor:services-ready",
+              "start": 4655.669999837875
+            },
+            {
+              "name": "cj:editor:extensions-ready",
+              "start": 4927.8150000572205
+            },
+            {
+              "name": "cj:editor:model-file-ready",
+              "start": 5001.034999847412
+            },
+            {
+              "name": "cj:editor:created",
+              "start": 5159.044999837875
+            },
+            {
+              "name": "cj:editor:ready",
+              "start": 5187.629999876022
+            },
+            {
+              "name": "cj:editor:statusbar-ready",
+              "start": 5210.454999923706
+            },
+            {
+              "name": "cj:editor:extension-host-start",
+              "start": 26977.74499988556
+            },
+            {
+              "name": "cj:editor:extension-host-ready",
+              "start": 27630.379999876022
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "summaries": {
+    "baseline": {
+      "en": {
+        "samples": 3,
+        "median": {
+          "visible": 5317,
+          "editorReady": 5223,
+          "firstEditVerified": 6026,
+          "assistanceReadyObserved": 27436,
+          "diagnosticObserved": 29140,
+          "jsEncodedAtVisible": 2629930,
+          "jsDecodedAtVisible": 9863951,
+          "longTaskMsBeforeVisible": 2602
+        },
+        "firstEditRange": [
+          6015,
+          6882
+        ]
+      },
+      "zh": {
+        "samples": 3,
+        "median": {
+          "visible": 6056,
+          "editorReady": 5922,
+          "firstEditVerified": 7043,
+          "assistanceReadyObserved": 28124,
+          "diagnosticObserved": 30309,
+          "jsEncodedAtVisible": 2927582,
+          "jsDecodedAtVisible": 10896161,
+          "longTaskMsBeforeVisible": 2915
+        },
+        "firstEditRange": [
+          6418,
+          7078
+        ]
+      }
+    },
+    "final": {
+      "en": {
+        "samples": 6,
+        "median": {
+          "visible": 5153,
+          "editorReady": 5030,
+          "firstEditVerified": 5956,
+          "assistanceReadyObserved": 27200,
+          "diagnosticObserved": 29785,
+          "jsEncodedAtVisible": 2424558,
+          "jsDecodedAtVisible": 9094117,
+          "longTaskMsBeforeVisible": 2611
+        },
+        "firstEditRange": [
+          5807,
+          6940
+        ]
+      },
+      "zh": {
+        "samples": 6,
+        "median": {
+          "visible": 5484,
+          "editorReady": 5318,
+          "firstEditVerified": 6311,
+          "assistanceReadyObserved": 27455,
+          "diagnosticObserved": 30163,
+          "jsEncodedAtVisible": 2580148,
+          "jsDecodedAtVisible": 9691088,
+          "longTaskMsBeforeVisible": 2615
+        },
+        "firstEditRange": [
+          5758,
+          6697
+        ]
+      }
+    }
+  },
+  "graphs": {
+    "baseline": {
+      "root": "[project]/src/modules/cangjie-editor/components/EditorWrapper.tsx",
+      "synchronousModules": 2646,
+      "extensionHostExclusiveModules": 131,
+      "extensionHostExclusiveAnalyzerBytes": 727398,
+      "largestSynchronousParts": [
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/missing-services.js",
+          "bytes": 230028
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/editor/common/config/editorOptions.js",
+          "bytes": 119358
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/api/common/extHostTypeConverters.js",
+          "bytes": 62974
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/base/common/strings.js",
+          "bytes": 62374
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/platform/actionWidget/browser/actionList.js",
+          "bytes": 60382
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/base/browser/ui/tree/abstractTree.js",
+          "bytes": 59856
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/api/common/extHostLanguageFeatures.js",
+          "bytes": 58247
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/browser/workbench.contribution.js",
+          "bytes": 52537
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/editor/browser/widget/codeEditor/codeEditorWidget.js",
+          "bytes": 50336
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/api/common/extHost.api.impl.js",
+          "bytes": 48745
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/api/common/extHostTypes.js",
+          "bytes": 47360
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/editor/common/model/textModel.js",
+          "bytes": 47028
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/common/theme.js",
+          "bytes": 43686
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/contrib/chat/common/languageModels.js",
+          "bytes": 36209
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-co_aae9180d5eabe8b653b1e22d238dcd6f/node_modules/@codingame/monaco-vscode-configuration-service-override/vscode/src/vs/workbench/services/configuration/browser/configurationService.js",
+          "bytes": 35834
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/sonner@2.0.8_@types+react@1_a4a83cacc98a5853740e8e3e24a10bd1/node_modules/sonner/dist/index.mjs",
+          "bytes": 35300
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/contrib/accessibility/browser/accessibilityConfiguration.js",
+          "bytes": 34943
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/marked@14.0.0/node_modules/marked/lib/marked.esm.js",
+          "bytes": 34278
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/base/browser/ui/list/listView.js",
+          "bytes": 34224
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/base/browser/ui/list/listWidget.js",
+          "bytes": 33768
+        }
+      ]
+    },
+    "final": {
+      "root": "[project]/src/modules/cangjie-editor/components/EditorWrapper.tsx",
+      "synchronousModules": 2507,
+      "extensionHostExclusiveModules": 0,
+      "extensionHostExclusiveAnalyzerBytes": 0,
+      "largestSynchronousParts": [
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/missing-services.js",
+          "bytes": 230539
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/editor/common/config/editorOptions.js",
+          "bytes": 119358
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/api/common/extHostTypeConverters.js",
+          "bytes": 63048
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/base/common/strings.js",
+          "bytes": 62313
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/platform/actionWidget/browser/actionList.js",
+          "bytes": 60382
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/base/browser/ui/tree/abstractTree.js",
+          "bytes": 59854
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/browser/workbench.contribution.js",
+          "bytes": 52739
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/editor/browser/widget/codeEditor/codeEditorWidget.js",
+          "bytes": 50330
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/api/common/extHostTypes.js",
+          "bytes": 47036
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/editor/common/model/textModel.js",
+          "bytes": 47028
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/common/theme.js",
+          "bytes": 42376
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/contrib/chat/common/languageModels.js",
+          "bytes": 36225
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-co_aae9180d5eabe8b653b1e22d238dcd6f/node_modules/@codingame/monaco-vscode-configuration-service-override/vscode/src/vs/workbench/services/configuration/browser/configurationService.js",
+          "bytes": 35866
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/sonner@2.0.8_@types+react@1_a4a83cacc98a5853740e8e3e24a10bd1/node_modules/sonner/dist/index.mjs",
+          "bytes": 35300
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/contrib/accessibility/browser/accessibilityConfiguration.js",
+          "bytes": 34943
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/marked@14.0.0/node_modules/marked/lib/marked.esm.js",
+          "bytes": 34278
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/base/browser/ui/list/listView.js",
+          "bytes": 34224
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/base/browser/ui/list/listWidget.js",
+          "bytes": 33768
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/workbench/contrib/chat/browser/speechToText/chatSpeechToTextService.js",
+          "bytes": 33538
+        },
+        {
+          "path": "[project]/node_modules/.pnpm/@codingame+monaco-vscode-api@38.0.3/node_modules/@codingame/monaco-vscode-api/vscode/src/vs/editor/browser/viewParts/minimap/minimap.js",
+          "bytes": 31727
+        }
+      ]
+    }
+  },
+  "implementationCommit": "8f8d699ba7d258f3a4b2f7f3dfaf7fc126fddd5b"
+}
