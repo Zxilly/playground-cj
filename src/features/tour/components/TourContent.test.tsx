@@ -49,7 +49,7 @@ describe('tourContent', () => {
     expect(screen.getByTestId('mdx-source').textContent).toBe('en mdx')
   })
 
-  it('falls back to markdown and strips the duplicated top heading', () => {
+  it('falls back to markdown and strips the duplicated top heading', async () => {
     render(
       <TourContent
         lang="en"
@@ -61,7 +61,7 @@ describe('tourContent', () => {
     )
 
     expect(screen.getByRole('heading', { name: '中文标题' })).toBeTruthy()
-    expect(screen.getByTestId('markdown-source').textContent).toContain('正文内容')
+    expect((await screen.findByTestId('markdown-source')).textContent).toContain('正文内容')
     expect(screen.getByTestId('markdown-source').textContent).not.toContain('# 中文标题')
   })
 

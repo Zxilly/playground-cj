@@ -1,11 +1,12 @@
 'use client'
 
+import { lazy, Suspense } from 'react'
 import { TourLayout } from './TourLayout'
 import { TourSidebar } from './TourSidebar'
 import { TourHeader } from './TourHeader'
 import { TourContent } from './TourContent'
-import { TourEditor } from './TourEditor'
 import { TourNavigation } from './TourNavigation'
+import { TourEditorLoading } from './TourEditorLoading'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { useDarkMode } from '@/lib/theme/useDarkMode'
 import { fontFamily, uiFontFamily } from '@/app/font'
@@ -14,6 +15,11 @@ import type { FlatSection, TourChapterSlim } from '@/tour/types'
 import { getTourPath } from '@/lib/siteHref'
 import { EditorBridgeProvider } from '@/modules/cangjie-editor/context/EditorBridgeProvider'
 import { useTourNavigation } from '@/features/tour/hooks/useTourNavigation'
+
+const TourEditor = lazy(() => import('./TourEditor').then(module => ({ default: module.TourEditor })))
+const ChineseTourEditor = lazy(() => import('@/lib/monaco/localization').then(
+  () => import('./TourEditor').then(module => ({ default: module.TourEditor })),
+))
 
 interface TourAppProps {
   lang: string
@@ -39,11 +45,12 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
     return null
 
   const code = section.code[lang] || section.code.zh || ''
+  const Editor = lang === 'zh' ? ChineseTourEditor : TourEditor
 
   return (
     <EditorBridgeProvider lang={lang}>
       <div
-        className={`h-screen ${dark ? 'dark' : ''}`}
+        className={`h-dvh ${dark ? 'dark' : ''}`}
         style={{
           'fontFamily': uiFontFamily,
           '--tour-code-font': fontFamily,
@@ -74,7 +81,7 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                   minSize={isDesktop ? 25 : 25}
                 >
                   <div className="flex h-full min-h-0 flex-col">
-                    <div className="min-h-0 flex-1 overflow-auto">
+                    <div className="min-h-0 flex-1">
                       <TourContent lang={lang} section={section} />
                     </div>
                     <TourNavigation
@@ -92,7 +99,9 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                   defaultSize={isDesktop ? 62 : 50}
                   minSize={isDesktop ? 30 : 25}
                 >
-                  <TourEditor code={code} locale={lang} />
+                  <Suspense fallback={<TourEditorLoading code={code} locale={lang} />}>
+                    <Editor code={code} locale={lang} />
+                  </Suspense>
                 </ResizablePanel>
               </ResizablePanelGroup>
             </div>

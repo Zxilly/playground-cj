@@ -129,11 +129,14 @@ async function loadChapter(chapterDir: string, chapterId: string): Promise<TourC
 }
 
 let cachedTourData: TourChapter[] | null = null
+let pendingTourData: Promise<TourChapter[]> | null = null
 let cachedFlatSections: FlatSection[] | null = null
 
 export async function loadTourData(): Promise<TourChapter[]> {
   if (cachedTourData)
     return cachedTourData
+  if (pendingTourData)
+    return pendingTourData
 
   if (!existsSync(TOUR_DIR))
     return []
@@ -142,8 +145,16 @@ export async function loadTourData(): Promise<TourChapter[]> {
     .filter(e => e.isDirectory() && TOP_LEVEL_DIR_RE.test(e.name))
     .sort((a, b) => compareIds(a.name, b.name))
 
-  cachedTourData = await Promise.all(entries.map(e => loadChapter(join(TOUR_DIR, e.name), e.name)))
-  return cachedTourData
+  // Metadata and the page can request the same course concurrently on a cold
+  // server. Share the expensive MDX compilation, but allow a failed load to retry.
+  pendingTourData = Promise.all(entries.map(e => loadChapter(join(TOUR_DIR, e.name), e.name)))
+  try {
+    cachedTourData = await pendingTourData
+    return cachedTourData
+  }
+  finally {
+    pendingTourData = null
+  }
 }
 
 export function flattenSections(data: TourChapter[]): FlatSection[] {

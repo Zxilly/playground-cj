@@ -9,10 +9,11 @@ import { updateEditor } from '@/lib/monaco'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { Play, RotateCcw } from 'lucide-react'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnsiUp } from 'ansi_up'
 import { useEditorBridge } from '@/modules/cangjie-editor/context/useEditorBridge'
 import { useTourEditorStore } from '@/stores/tourEditor'
+import { TourEditorLoading } from './TourEditorLoading'
 
 interface TourEditorProps {
   code: string
@@ -155,6 +156,7 @@ export function TourEditor({
   onCursorPositionChange,
 }: TourEditorProps) {
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
+  const [editorReady, setEditorReady] = useState(false)
   const cursorPositionDisposableRef = useRef<{ dispose: () => void } | null>(null)
   const codeRef = useRef(code)
   const ansiRef = useRef(new AnsiUp())
@@ -254,6 +256,7 @@ export function TourEditor({
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     editorAppRef.current = editorApp
     const ed = editorApp.getEditor()
+    setEditorReady(Boolean(ed))
     ed?.updateOptions({ readOnly })
     cursorPositionDisposableRef.current?.dispose()
     cursorPositionDisposableRef.current = null
@@ -314,6 +317,11 @@ export function TourEditor({
           enableLanguageClient={enableLanguageClient}
           uriHint={uriHint}
         />
+        {!editorReady && (
+          <div className="absolute inset-0 z-10">
+            <TourEditorLoading code={code} locale={locale} />
+          </div>
+        )}
       </div>
     )
   }
@@ -331,45 +339,55 @@ export function TourEditor({
               locale={locale}
               enableLanguageClient={enableLanguageClient}
             />
+            {!editorReady && (
+              <div className="absolute inset-0 z-10">
+                <TourEditorLoading code={code} locale={locale} />
+              </div>
+            )}
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle className="bg-border/80" />
         <ResizablePanel defaultSize={32} minSize={18}>
           <div className="flex h-full min-h-0 flex-col bg-muted/20">
-            <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-3 py-2">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-3 py-2">
+              <div className="flex items-center gap-2 whitespace-nowrap">
                 <button
                   onClick={handleRun}
+                  disabled={!editorReady}
                   data-tour-highlight="run"
-                  className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-tour-teal to-tour-teal-light px-3.5 py-1.5 text-xs font-medium text-white shadow-sm shadow-tour-teal/20 transition-all hover:from-tour-teal-hover hover:to-tour-teal"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-tour-teal to-tour-teal-light px-3.5 py-1.5 text-xs font-medium text-white shadow-sm shadow-tour-teal/20 transition-colors hover:from-tour-teal-hover hover:to-tour-teal disabled:cursor-wait disabled:opacity-50"
                 >
                   <Play className="size-3" />
                   {labels.run}
                 </button>
                 <button
                   onClick={handleFormat}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  disabled={!editorReady}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
                 >
                   {labels.format}
                 </button>
                 <button
                   onClick={handleReset}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  disabled={!editorReady}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
                 >
                   <RotateCcw className="size-3" />
                   {labels.reset}
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 whitespace-nowrap text-xs">
                 <button
                   onClick={() => setActiveTab('program')}
+                  aria-pressed={activeTab === 'program'}
                   className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'program' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                 >
                   {labels.programOutput}
                 </button>
                 <button
                   onClick={() => setActiveTab('tool')}
+                  aria-pressed={activeTab === 'tool'}
                   className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'tool' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
                 >
                   {labels.compilerOutput}

@@ -1,4 +1,5 @@
 import { flattenSections, getSlimTourData, loadTourData } from '@/tour/loader'
+import { getClientTourSections } from '@/tour/client-data'
 import TourWrapper from '@/features/tour/components/TourWrapper'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
@@ -66,7 +67,7 @@ export default async function TourStepPage({ params }: PageProps) {
       <TourWrapper
         lang={lang}
         tourData={slimTourData}
-        allSections={flat}
+        allSections={getClientTourSections(flat, lang)}
         initialIndex={initialIndex}
         isTourDomain={isTourDomain}
       />
