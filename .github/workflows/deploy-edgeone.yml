@@ -23,7 +23,9 @@ jobs:
        github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: edgeone-production
+    environment:
+      name: EdgeOne Production
+      url: https://play.cj.zxilly.com
     env:
       EDGEONE_PROJECT_NAME: ${{ vars.EDGEONE_PROJECT_NAME }}
       EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
