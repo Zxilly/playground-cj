@@ -965,3 +965,7 @@ msgstr "Hide"
 #: src/components/ui/breadcrumb.tsx:16
 msgid "面包屑"
 msgstr "Breadcrumb"
+
+#: src/features/playground/components/Playground.tsx
+msgid "正在加载编辑器…"
+msgstr "Loading editor…"

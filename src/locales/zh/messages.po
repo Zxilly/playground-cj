@@ -965,3 +965,7 @@ msgstr "隐藏"
 #: src/components/ui/breadcrumb.tsx:16
 msgid "面包屑"
 msgstr "面包屑"
+
+#: src/features/playground/components/Playground.tsx
+msgid "正在加载编辑器…"
+msgstr "正在加载编辑器…"

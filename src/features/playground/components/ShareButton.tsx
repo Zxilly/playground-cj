@@ -15,6 +15,7 @@ import { usePlaygroundStore } from '@/stores/playground'
 const ShareButton = memo(() => {
   const { i18n } = useLingui()
   const [isOpen, setIsOpen] = useState(false)
+  const editorReady = usePlaygroundStore(state => state.editor !== undefined)
   const shareDialogUrl = usePlaygroundStore(state => state.shareDialogUrl)
   const openShareDialog = usePlaygroundStore(state => state.openShareDialog)
   const closeShareDialog = usePlaygroundStore(state => state.closeShareDialog)
@@ -55,7 +56,7 @@ const ShareButton = memo(() => {
     <>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
-          <Button className="min-h-11 w-full px-2 sm:w-auto lg:min-h-9 lg:px-4">
+          <Button disabled={!editorReady} className="min-h-11 w-full px-2 sm:w-auto lg:min-h-9 lg:px-4">
             <Trans>分享</Trans>
             {' '}
             <ChevronDown className="ml-2 h-4 w-4" />

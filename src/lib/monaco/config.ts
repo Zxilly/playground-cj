@@ -1,6 +1,6 @@
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
 import { getStatusBarServiceOverrides } from '@/lib/statusbar'
-import { examples } from '@/const'
+import { getStarterCode } from './starter-code'
 import { fontFamily } from '@/app/font'
 import type { EditorAppConfig, MonacoVscodeApiConfig } from './vscode-api'
 import { configureMonacoWorkers } from './workers'
@@ -100,9 +100,7 @@ export function createMonacoVscodeApiConfig(
 // for example) so each gets its own persistent Monaco model. Same hint → same
 // model (preserved across React mounts); different hints → different models.
 export function createEditorAppConfig(shareCode?: string, locale?: string, uriHint?: string): EditorAppConfig {
-  const helloWorldExample = examples.find(([key]) => key === 'hello-world')?.[1]
-  const localizedContent = locale === 'en' ? helloWorldExample?.en.content : helloWorldExample?.zh.content
-  const defaultCode = shareCode ?? localizedContent ?? ''
+  const defaultCode = shareCode ?? getStarterCode(locale)
   const slot = uriHint ? exerciseModelSlot(uriHint) : 'src'
 
   return {

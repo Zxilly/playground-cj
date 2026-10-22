@@ -1,126 +1,62 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { ExamplesDropdown } from '@/features/playground/components/ExamplesDropdown'
 import { LanguageSelector } from '@/features/playground/components/LanguageSelector'
 import ShareButton from '@/features/playground/components/ShareButton'
 import { Button } from '@/components/ui/button'
 import { Trans } from '@lingui/react/macro'
-import Image from 'next/image'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
-import { useMedia } from 'react-use'
-import { useLanguage } from '@/hooks/useLanguage'
-import { getTourHref } from '@/lib/siteHref'
-import { BookOpen } from 'lucide-react'
 import { usePlaygroundStore } from '@/stores/playground'
 import { CANGJIE_LANGUAGE_ID } from '@/lib/monaco/language'
 
 interface PlaygroundHeaderProps {
+  brand: ReactNode
+  tourLink: ReactNode
   handleRun: () => void
   handleFormat: () => void
   wrapperRef: React.RefObject<MonacoEditorHandle | undefined>
 }
 
 function ExamplesAction({ wrapperRef }: Pick<PlaygroundHeaderProps, 'wrapperRef'>) {
+  const editorReady = usePlaygroundStore(state => state.editor !== undefined)
   return (
-    <ExamplesDropdown action={(code) => {
-      const editor = usePlaygroundStore.getState().editor
-      const uri = editor?.getModel()?.uri.toString()
-      if (!uri)
-        return
-      wrapperRef.current?.updateCodeResources?.({
-        modified: {
-          text: code,
-          enforceLanguageId: CANGJIE_LANGUAGE_ID,
-          uri,
-        },
-      })
-    }}
+    <ExamplesDropdown
+      disabled={!editorReady}
+      action={(code) => {
+        const editor = usePlaygroundStore.getState().editor
+        const uri = editor?.getModel()?.uri.toString()
+        if (!uri)
+          return
+        wrapperRef.current?.updateCodeResources?.({
+          modified: { text: code, enforceLanguageId: CANGJIE_LANGUAGE_ID, uri },
+        })
+      }}
     />
   )
 }
 
-export function PlaygroundHeader({ handleRun, handleFormat, wrapperRef }: PlaygroundHeaderProps) {
-  const isDesktop = useMedia('(min-width: 1024px)')
-  const { locale } = useLanguage()
-  const tourHref = getTourHref(locale, { currentOrigin: window.location.origin })
+export function PlaygroundHeader({ brand, tourLink, handleRun, handleFormat, wrapperRef }: PlaygroundHeaderProps) {
+  const editorReady = usePlaygroundStore(state => state.editor !== undefined)
 
-  if (isDesktop) {
-    return (
-      <div className="flex flex-row justify-between items-center">
-        <div className="flex shrink-0 items-center">
-          <Image
-            src="/icon.png"
-            alt=""
-            width={32}
-            height={32}
-            className="m-4"
-          />
-          <h1 className="whitespace-nowrap text-2xl font-bold">
-            <Trans>仓颉 Playground</Trans>
-          </h1>
-        </div>
-        <div className="flex flex-row space-x-2">
-          <Button variant="outline" asChild>
-            <a href={tourHref}>
-              <BookOpen className="h-4 w-4 mr-1" />
-              <Trans>教程</Trans>
-            </a>
-          </Button>
-          <div className="w-[160px] xl:w-[200px]">
-            <ExamplesAction wrapperRef={wrapperRef} />
-          </div>
-          <LanguageSelector />
-          <Button onClick={handleRun}>
-            <Trans>运行</Trans>
-          </Button>
-          <Button onClick={handleFormat}>
-            <Trans>格式化</Trans>
-          </Button>
-          <ShareButton />
-        </div>
-      </div>
-    )
-  }
-
+  // One DOM tree at every width: the server-rendered layout is already correct
+  // before hydration, and resizing cannot remount open menus or focused controls.
   return (
-    <div>
-      <div className="mb-2 flex flex-col items-stretch gap-2">
-        <div className="flex min-w-0 items-center">
-          <Image
-            src="/icon.png"
-            alt=""
-            width={24}
-            height={24}
-            className="m-2"
-          />
-          <h1 className="min-w-0 text-base font-bold">
-            <Trans>仓颉 Playground</Trans>
-          </h1>
-        </div>
-        <div className="flex w-full items-center gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&_button]:w-full">
-          <Button variant="outline" size="sm" className="min-h-11 lg:min-h-8" asChild>
-            <a href={tourHref}>
-              <BookOpen className="h-4 w-4 mr-1" />
-              <Trans>教程</Trans>
-            </a>
-          </Button>
-          <LanguageSelector />
-        </div>
+    <div className="mb-2 grid grid-cols-6 items-center gap-2 lg:mb-0 lg:flex">
+      <div className="col-span-6 min-w-0 lg:mr-auto lg:shrink-0">{brand}</div>
+      <div className="col-span-3 lg:order-1">{tourLink}</div>
+      <div className="col-span-3 [&_button]:w-full lg:order-3"><LanguageSelector /></div>
+      <div className="col-span-6 min-w-0 lg:order-2 lg:w-[160px] xl:w-[200px]">
+        <ExamplesAction wrapperRef={wrapperRef} />
       </div>
-
-      <div className="flex flex-col space-y-2 mb-2">
-        <div className="w-full">
-          <ExamplesAction wrapperRef={wrapperRef} />
-        </div>
-        <div className="flex flex-row space-x-2 [&>*]:min-w-0 [&>*]:flex-1 [&_button]:w-full">
-          <Button className="min-h-11 px-2 lg:min-h-9 lg:px-4" onClick={handleRun}>
-            <Trans>运行</Trans>
-          </Button>
-          <Button className="min-h-11 px-2 lg:min-h-9 lg:px-4" onClick={handleFormat}>
-            <Trans>格式化</Trans>
-          </Button>
-          <ShareButton />
-        </div>
+      <div className="col-span-6 flex gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&_button]:w-full lg:order-4">
+        <Button className="min-h-11 px-2 lg:min-h-9 lg:px-4" onClick={handleRun} disabled={!editorReady}>
+          <Trans>运行</Trans>
+        </Button>
+        <Button className="min-h-11 px-2 lg:min-h-9 lg:px-4" onClick={handleFormat} disabled={!editorReady}>
+          <Trans>格式化</Trans>
+        </Button>
+        <ShareButton />
       </div>
     </div>
   )

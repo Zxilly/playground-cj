@@ -4,14 +4,12 @@ import { PlaygroundHeader } from '@/features/playground/components/PlaygroundHea
 import { OutputPanel } from '@/features/playground/components/OutputPanel'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
-import { updateEditor } from '@/lib/monaco'
 import { useDarkMode } from '@/lib/theme/useDarkMode'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { Suspense, useCallback, useEffect, useRef } from 'react'
+import type { ReactNode } from 'react'
+import dynamic from 'next/dynamic'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
-import { MonacoEditorReactComp } from '@/modules/cangjie-editor/components/EditorWrapper'
-import { loadDataShareCode } from '@/service/share'
-import CodeRunner from '@/modules/cangjie-editor/components/CodeRunner'
 import { useMedia } from 'react-use'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import type { PanelImperativeHandle } from 'react-resizable-panels'
@@ -21,13 +19,26 @@ import { useLingui } from '@lingui/react'
 import { useLanguage } from '@/hooks/useLanguage'
 import { usePlaygroundStore } from '@/stores/playground'
 
+// Keep the page shell server-rendered. Only the editor requires browser globals
+// and the VS Code runtime; Chinese localization must run before that runtime.
+const Editor = dynamic(() => import('./PlaygroundEditor'), { ssr: false })
+const ChineseEditor = dynamic(
+  () => import('@codingame/monaco-vscode-language-pack-zh-hans').then(() => import('./PlaygroundEditor')),
+  { ssr: false },
+)
+
 export interface PlaygroundProps {
-  defaultCode?: string
+  sharedCode?: Promise<string | undefined>
+  brand: ReactNode
+  tourLink: ReactNode
+  editorFallback: ReactNode
+  footer: ReactNode
 }
 
-function Playground({ defaultCode }: PlaygroundProps) {
-  const { i18n } = useLingui()
+function Playground({ sharedCode, brand, tourLink, editorFallback, footer }: PlaygroundProps) {
   const dark = useDarkMode()
+  const { i18n } = useLingui()
+  const editorReady = usePlaygroundStore(state => state.editor !== undefined)
   const toolOutput = usePlaygroundStore(state => state.toolOutput)
   const programOutput = usePlaygroundStore(state => state.programOutput)
   const truncation = usePlaygroundStore(state => state.truncation)
@@ -59,17 +70,11 @@ function Playground({ defaultCode }: PlaygroundProps) {
       panel.collapse()
   }, [toggleOutputState])
 
-  const isDesktop = useMedia('(min-width: 1024px)')
+  const isDesktop = useMedia('(min-width: 1024px)', false)
 
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     wrapperRef.current = editorApp
     const ed = editorApp.getEditor()!
-    const store = usePlaygroundStore.getState()
-    updateEditor({
-      setProgramOutput: store.setProgramOutput,
-      setToolOutput: store.setToolOutput,
-      ed,
-    })
     setEditor(ed)
   }, [setEditor])
 
@@ -80,55 +85,54 @@ function Playground({ defaultCode }: PlaygroundProps) {
     }
   }, [])
 
-  const handleFormatted = useCallback((code: string) => {
-    usePlaygroundStore.getState().editor?.getModel()?.setValue(code)
-  }, [])
-
-  const renderedCode = useMemo(() => defaultCode ?? loadDataShareCode(), [defaultCode])
+  const EditorComponent = locale === 'zh' ? ChineseEditor : Editor
 
   const outputTip = isOutputCollapsed ? i18n._(msg`显示`) : i18n._(msg`隐藏`)
 
   return (
-    <div className={`flex flex-col h-screen bg-background text-foreground ${dark ? 'dark' : ''}`}>
-      <div className="flex flex-col h-full bg-background text-foreground p-4">
+    <div className={`flex h-screen flex-col bg-background text-foreground ${dark ? 'dark' : ''}`}>
+      <div className="flex min-h-0 flex-1 flex-col bg-background text-foreground p-4">
         <div id="header" className="flex-none px-2 lg:px-4">
           <PlaygroundHeader
+            brand={brand}
+            tourLink={tourLink}
             handleRun={handleRun}
             handleFormat={handleFormat}
             wrapperRef={wrapperRef}
           />
         </div>
-        <div id="main" className="flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-1">
+        <div id="main" className="min-h-0 flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-1">
           <ResizablePanelGroup
             orientation={isDesktop ? 'horizontal' : 'vertical'}
-            className="!overflow-visible"
+            className="!overflow-visible !flex-col lg:!flex-row"
           >
-            <ResizablePanel defaultSize={65} className="!overflow-visible">
+            <ResizablePanel defaultSize="65%" className="!overflow-visible">
               <div id="editor" className="flex-1 flex flex-col h-full w-full relative border border-border">
-                <MonacoEditorReactComp
-                  code={renderedCode}
-                  onLoad={onLoad}
-                  locale={locale}
-                />
+                {!editorReady && editorFallback}
+                <Suspense fallback={null}>
+                  <EditorComponent
+                    sharedCode={sharedCode}
+                    onLoad={onLoad}
+                    locale={locale}
+                  />
+                </Suspense>
               </div>
             </ResizablePanel>
-            {isDesktop && <ResizableHandle withHandle className="lg:mx-4" />}
-            {!isDesktop && (
-              <Button
-                onClick={toggleOutput}
-                variant="outline"
-                className="my-2 min-h-11 w-full flex items-center justify-between"
-              >
-                <span>
-                  <Trans>
-                    {outputTip}
-                    输出内容
-                  </Trans>
-                </span>
-                {!isOutputCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-              </Button>
-            )}
-            <ResizablePanel defaultSize={35} collapsible panelRef={outputPanelRef}>
+            <ResizableHandle withHandle className="hidden lg:flex lg:mx-4 lg:!w-px lg:!h-auto lg:[&>div]:!rotate-0" />
+            <Button
+              onClick={toggleOutput}
+              variant="outline"
+              className="my-2 min-h-11 w-full flex items-center justify-between lg:hidden"
+            >
+              <span>
+                <Trans>
+                  {outputTip}
+                  输出内容
+                </Trans>
+              </span>
+              {!isOutputCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </Button>
+            <ResizablePanel defaultSize="35%" collapsible panelRef={outputPanelRef}>
               <div id="panel" className="flex flex-col h-full overflow-hidden">
                 {!isOutputCollapsed && (
                   <OutputPanel
@@ -142,26 +146,8 @@ function Playground({ defaultCode }: PlaygroundProps) {
           </ResizablePanelGroup>
         </div>
       </div>
-      <div className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">
-        <Trans>
-          仓颉 1.2.0 · STDX 1.2.0.1 ·&nbsp;
-        </Trans>
-        <a
-          href="https://github.com/Zxilly/playground-cj"
-          className="inline-flex min-h-11 items-center justify-center px-1 hover:underline lg:min-h-0"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Trans>在 GitHub 查看源代码</Trans>
-        </a>
-      </div>
+      {footer}
       <Toaster richColors closeButton position="top-center" />
-      <CodeRunner
-        setToolOutput={usePlaygroundStore.getState().setToolOutput}
-        setProgramOutput={usePlaygroundStore.getState().setProgramOutput}
-        setTruncation={usePlaygroundStore.getState().setTruncation}
-        onFormatted={handleFormatted}
-      />
     </div>
   )
 }

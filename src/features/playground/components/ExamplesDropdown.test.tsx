@@ -1,6 +1,6 @@
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ExamplesDropdown } from './ExamplesDropdown'
 
@@ -54,7 +54,10 @@ describe('examples dropdown', () => {
     )
 
     const combobox = screen.getByRole('combobox', { name: '选择示例' })
-    fireEvent.click(combobox)
+    await act(async () => {
+      fireEvent.click(combobox)
+      await vi.dynamicImportSettled()
+    })
     const helloOption = await screen.findByRole('option', { name: 'Hello World' })
     const arrayOption = screen.getByRole('option', { name: 'Array' })
     expect(helloOption.getAttribute('aria-selected')).toBe('true')
@@ -81,7 +84,10 @@ describe('examples dropdown', () => {
     )
 
     const combobox = screen.getByRole('combobox', { name: '选择示例' })
-    fireEvent.click(combobox)
+    await act(async () => {
+      fireEvent.click(combobox)
+      await vi.dynamicImportSettled()
+    })
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('combobox', { name: '搜索示例' })))
     const listbox = await screen.findByRole('listbox')
     fireEvent.keyDown(listbox, { key: 'ArrowDown' })
