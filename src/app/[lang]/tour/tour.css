@@ -1,0 +1,186 @@
+@import "tailwindcss/utilities" layer(utilities) source(none);
+@import "tailwindcss/theme" layer(theme);
+@reference "../../tailwind-theme.css";
+@source "../../../features/tour";
+
+/* ═══════════════════════════════════════════════════
+   Tour Design System: Global Styles
+   ═══════════════════════════════════════════════════ */
+
+/* ── Highlight Pulse Animation ── */
+@keyframes tour-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(54, 158, 143, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(54, 158, 143, 0.45); }
+}
+
+.tour-highlight-pulse {
+  animation: tour-pulse 0.8s ease-in-out 3;
+  border-radius: 6px;
+  position: relative;
+  z-index: 50;
+}
+
+/* ── Tour Prose: mdBook-inspired typography ──
+   Use alongside Tailwind `prose` class:
+   <div className="prose dark:prose-invert max-w-none tour-prose">
+   Requires --tour-code-font CSS var set on an ancestor.
+*/
+.tour-prose {
+  font-size: 16px;
+  line-height: 1.45em;
+  overflow-wrap: break-word;
+}
+
+.tour-prose p,
+.tour-prose ol,
+.tour-prose ul,
+.tour-prose li {
+  line-height: 1.45em;
+  color: var(--tour-text);
+}
+
+.tour-prose p {
+  margin: 0 0 1em;
+}
+
+.tour-prose h1,
+.tour-prose h2,
+.tour-prose h3 {
+  color: var(--tour-heading);
+  font-weight: 700;
+}
+
+.tour-prose h1 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.tour-prose h2 {
+  font-size: 1.15rem;
+  margin-top: 2.5em;
+  margin-bottom: 0.75rem;
+}
+
+.tour-prose h3 {
+  font-size: 1rem;
+  margin-top: 2.5em;
+  margin-bottom: 0.5rem;
+}
+
+.tour-prose strong {
+  color: var(--tour-heading);
+  font-weight: 600;
+}
+
+.tour-prose ul,
+.tour-prose ol {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.tour-prose a {
+  color: var(--tour-link);
+  text-decoration: none;
+}
+
+.tour-prose a:hover {
+  text-decoration: underline;
+}
+
+/* Inline code */
+.tour-prose code::before,
+.tour-prose code::after {
+  content: '' !important;
+}
+
+.tour-prose code:not(pre code) {
+  font-family: var(--tour-code-font);
+  display: inline-block;
+  background: var(--tour-code-bg);
+  color: var(--tour-code-text);
+  border: 1px solid var(--tour-code-border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.875em;
+  font-weight: normal;
+  line-height: 1.35;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+  vertical-align: baseline;
+}
+
+/* Fenced code blocks */
+.tour-prose pre {
+  font-family: var(--tour-code-font);
+  background: var(--tour-surface);
+  border: 1px solid var(--tour-border);
+  border-radius: 4px;
+  font-size: 0.875em;
+  line-height: 1.45em;
+  margin: 1em 0;
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.tour-prose pre code {
+  font-family: var(--tour-code-font);
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ── CompareWith: left-bordered callout (mdBook blockquote-tag style) ── */
+.tour-compare {
+  margin: 1rem 0;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid var(--tour-compare-border);
+  background: var(--tour-compare-bg);
+  border-radius: 0 4px 4px 0;
+}
+
+.tour-compare-label {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--tour-compare-label);
+  margin: 8px 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tour-compare-body {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--tour-compare-text);
+  padding: 0 12px 8px 0;
+}
+
+.tour-compare-body code {
+  font-family: var(--tour-code-font);
+  background: var(--tour-code-bg);
+  color: var(--tour-code-text);
+  border: 1px solid var(--tour-code-border);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+
+/* ── Note: Amber callout ── */
+.note-content code {
+  font-family: var(--tour-code-font);
+  background: rgba(217, 119, 6, 0.1);
+  color: #92400e;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.875em;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.dark .note-content code {
+  background: rgba(217, 119, 6, 0.15);
+  color: #fbbf24;
+  border-color: rgba(217, 119, 6, 0.25);
+}
