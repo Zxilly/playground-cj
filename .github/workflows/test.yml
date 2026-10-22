@@ -75,7 +75,19 @@ jobs:
         run: pnpm run test:run
 
       - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
+        timeout-minutes: 5
+        run: |
+          pnpm exec playwright install chromium
+          # Hosted runners normally have the runtime libraries. Probe them before
+          # upgrading system packages and installing optional language fonts.
+          if ! node --input-type=module -e '
+            import { chromium } from "playwright";
+            const browser = await chromium.launch({ headless: true });
+            await browser.close();
+            console.log("Chromium launch verified");
+          '; then
+            pnpm exec playwright install-deps chromium
+          fi
 
       - name: Execute Browser tests
         run: pnpm run test:browser
