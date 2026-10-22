@@ -3,8 +3,9 @@
 `HarmonyOS_Sans.woff2` and `JetBrainsMono.woff2` are source fonts. Browser code
 imports only files in `generated/`; the complete source fonts are not bundled.
 
-`pnpm lingui:compile` compiles translations and runs `pnpm fonts:generate`.
-Both development and production builds run this automatically. The generator
+`pnpm lingui:compile` only compiles translations. `pnpm fonts:generate` is a
+separate task. Development and production build hooks run these tasks in order.
+The generator
 uses Node.js and HarfBuzz WASM, with no Python or native font tools required.
 
 The generator reads rendered literals from compiled Lingui catalogs, including

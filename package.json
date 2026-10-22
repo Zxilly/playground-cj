@@ -7,11 +7,11 @@
   },
   "scripts": {
     "prep": "node scripts/download-wasm-assets-cli.mjs",
-    "predev": "pnpm prep && pnpm lingui:compile",
+    "predev": "pnpm prep && pnpm lingui:compile && pnpm fonts:generate",
     "dev": "next dev",
     "content-packs:generate": "tsx scripts/generate-content-packs.mts",
     "content-packs:verify": "tsx scripts/verify-content-packs.mts",
-    "prebuild": "pnpm prep && pnpm content-packs:generate && pnpm lingui:compile",
+    "prebuild": "pnpm prep && pnpm content-packs:generate && pnpm lingui:compile && pnpm fonts:generate",
     "build": "next build",
     "prestart": "pnpm prep",
     "start": "next start",
@@ -27,7 +27,7 @@
     "precoverage": "pnpm prep",
     "coverage": "vitest run --coverage",
     "lingui:extract": "lingui extract --clean",
-    "lingui:compile": "lingui compile && pnpm fonts:generate",
+    "lingui:compile": "lingui compile",
     "fonts:generate": "node scripts/generate-fonts.mjs"
   },
   "dependencies": {
