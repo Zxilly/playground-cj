@@ -32,8 +32,10 @@ describe('playground initial load', () => {
       await page.goto(`${baseUrl}/${locale}`, { waitUntil: 'load' })
       expect(await page.locator('#header h1').isVisible()).toBe(true)
       expect(await page.locator('#panel-content').isVisible()).toBe(true)
-      expect(await page.getByTestId('code-preview').isVisible()).toBe(true)
-      expect(await page.getByTestId('code-preview').textContent()).toContain('main(): Int64')
+      expect(await page.getByTestId('editor-loading').isVisible()).toBe(true)
+      expect(await page.getByTestId('editor-loading').getAttribute('aria-busy')).toBe('true')
+      expect(await page.locator('#editor [data-slot="skeleton"]').first().isVisible()).toBe(true)
+      expect(await page.locator('#editor pre, #editor code').count()).toBe(0)
       const editorBox = (await page.locator('#editor').boundingBox())!
       const outputBox = (await page.locator('#panel').boundingBox())!
       expect(editorBox.width).toBeGreaterThan(200)
@@ -114,6 +116,7 @@ describe('playground initial load', () => {
       await page.goto(`${baseUrl}/${locale}#data=${data}`, { waitUntil: 'domcontentloaded' })
       const run = page.getByRole('button', { name: locale === 'zh' ? '运行' : 'Run', exact: true })
       await expect.poll(() => run.isEnabled(), { timeout: 90_000 }).toBe(true)
+      expect(await page.getByTestId('editor-loading').count()).toBe(0)
       expect(await page.locator('.monaco-editor .view-lines').textContent()).toContain('shared-initial-source')
       await page.evaluate(() => document.fonts.ready.then(() => new Promise<void>((resolve) => {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()))

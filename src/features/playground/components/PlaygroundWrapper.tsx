@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import { headers } from 'next/headers'
 import Image from 'next/image'
 import { BookOpen } from 'lucide-react'
@@ -6,21 +5,8 @@ import { setupI18n } from '@lingui/core'
 import { msg } from '@lingui/core/macro'
 import Playground from '@/features/playground/components/Playground'
 import { buttonVariants } from '@/components/ui/button'
-import { fontFamily } from '@/app/font'
+import { Skeleton } from '@/components/ui/skeleton'
 import { getTourHref } from '@/lib/siteHref'
-import { getStarterCode } from '@/lib/monaco/starter-code'
-
-function CodePreview({ code }: { code: string }) {
-  return (
-    <pre data-testid="code-preview" className="m-0 overflow-hidden p-4 text-[15px] leading-5" style={{ fontFamily }}>
-      <code>{code.split('\n', 40).join('\n').slice(0, 8000)}</code>
-    </pre>
-  )
-}
-
-async function SharedCodePreview({ locale, sharedCode }: { locale: string, sharedCode: Promise<string | undefined> }) {
-  return <CodePreview code={await sharedCode ?? getStarterCode(locale)} />
-}
 
 export default async function Wrapper({ lang, sharedCode }: { lang: string, sharedCode?: Promise<string | undefined> }) {
   const locale = lang === 'en' ? 'en' : 'zh'
@@ -33,7 +19,6 @@ export default async function Wrapper({ lang, sharedCode }: { lang: string, shar
   const host = requestHeaders.get('host') ?? ''
   const protocol = requestHeaders.get('x-forwarded-proto') === 'http' ? 'http' : 'https'
   const tourHref = getTourHref(locale, { currentOrigin: host ? `${protocol}://${host}` : undefined })
-  const loading = <p role="status" className="p-4 text-sm text-muted-foreground">{i18n._(msg`正在加载编辑器…`)}</p>
 
   return (
     <Playground
@@ -51,15 +36,15 @@ export default async function Wrapper({ lang, sharedCode }: { lang: string, shar
         </a>
       )}
       editorFallback={(
-        <div className="absolute inset-0 overflow-hidden bg-background" aria-busy="true">
-          <Suspense fallback={loading}>
-            {/* Keep the default preview synchronous: streamed Suspense reveals
-                need JavaScript even when the async work is already resolved. */}
-            {sharedCode
-              ? <SharedCodePreview locale={locale} sharedCode={sharedCode} />
-              : <CodePreview code={getStarterCode(locale)} />}
-            {loading}
-          </Suspense>
+        <div data-testid="editor-loading" role="status" className="absolute inset-0 z-10 overflow-hidden bg-background" aria-busy="true">
+          <span className="sr-only">{i18n._(msg`正在加载编辑器…`)}</span>
+          <div aria-hidden="true" className="max-w-md space-y-3 p-4">
+            <Skeleton className="mb-6 h-3 w-1/2 bg-muted motion-reduce:animate-none" />
+            <Skeleton className="h-3 w-2/5 bg-muted motion-reduce:animate-none" />
+            <Skeleton className="ml-4 h-3 w-3/5 bg-muted motion-reduce:animate-none" />
+            <Skeleton className="ml-4 h-3 w-1/3 bg-muted motion-reduce:animate-none" />
+            <Skeleton className="h-3 w-8 bg-muted motion-reduce:animate-none" />
+          </div>
         </div>
       )}
       footer={(

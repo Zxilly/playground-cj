@@ -6,7 +6,7 @@ Client Components still produce initial HTML; only the Monaco editor has SSR dis
 | Content | Rendering and loading |
 | --- | --- |
 | Title, tour link, footer | Server Components, passed into the client workspace as React nodes. The tour URL uses the request host. |
-| Initial code preview | Server-rendered plain text, capped at 40 lines and 8,000 characters. It remains visible until the editor is ready. |
+| Editor loading state | Server-rendered skeleton with a screen-reader status. It remains visible until Monaco is ready; source code is displayed only in the editor. |
 | Header and panel layout | SSR with CSS breakpoints. JavaScript supplies the resize interaction, not the initial responsive layout. Panel defaults use explicit percentage units. |
 | Run/format/share controls and output | SSR followed by client hydration. Editor actions remain disabled until initialization finishes. |
 | Example menu and example sources | Loaded when the menu opens. The editor imports only the two localized Hello World starters. |
@@ -16,7 +16,7 @@ Client Components still produce initial HTML; only the Monaco editor has SSR dis
 | LSP client and WASM | Browser-only. The protocol client is imported when the WASM server provides a live port. The existing page-wide client and service leases remain in use. |
 
 Short-link requests start on the server but are passed down as promises. Suspense
-streams the surrounding page while the preview and editor wait for the shared source.
+streams the surrounding page while the editor waits for the shared source. The skeleton does not wait for that request.
 URL-fragment shares are read only inside the browser editor, before creating its model.
 
 The UI font subset is checked in. To regenerate it after changing translations or
