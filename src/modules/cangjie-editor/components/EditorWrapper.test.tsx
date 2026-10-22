@@ -1,5 +1,5 @@
-import { act, render } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, render } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { retainModelScope } from '@/lib/monaco/model-lifecycle'
 import { createEditorAppConfig } from '@/lib/monaco'
 import { createCustomStatusBar } from '@/lib/statusbar'
@@ -105,6 +105,12 @@ vi.mock('@/modules/cangjie-editor/components/LspStatusIndicator', () => ({
   LspStatusIndicator: () => null,
 }))
 
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
+
 describe('monacoEditorReactComp', () => {
   beforeEach(() => {
     const gate = deferred<void>()
@@ -162,6 +168,59 @@ describe('monacoEditorReactComp', () => {
       dispose,
     }))
     expect(dispose).toHaveBeenCalledOnce()
+  })
+
+  it('coalesces resize notifications and skips layouts when dimensions are unchanged', async () => {
+    isLanguageClientAvailable.mockReturnValue(false)
+    let notifyResize!: () => void
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: () => void) { notifyResize = callback }
+      observe = vi.fn()
+      disconnect = vi.fn()
+    })
+    let nextFrame = 0
+    const frames = new Map<number, FrameRequestCallback>()
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+      frames.set(++nextFrame, callback)
+      return nextFrame
+    }))
+    vi.stubGlobal('cancelAnimationFrame', vi.fn((frame: number) => frames.delete(frame)))
+    const flushFrames = () => {
+      const callbacks = [...frames.values()]
+      frames.clear()
+      callbacks.forEach(callback => callback(0))
+    }
+    const view = render(<MonacoEditorReactComp code="main() {}" />)
+    let width = 640
+    vi.spyOn(view.container.firstElementChild!, 'getBoundingClientRect').mockImplementation(() => ({ width, height: 320 } as DOMRect))
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+    })
+    const editor = monacoEditorCreate.mock.results.at(-1)!.value
+    expect(editor.layout).toHaveBeenCalledOnce()
+    expect(editor.layout).toHaveBeenLastCalledWith({ width: 640, height: 320 }, true)
+
+    notifyResize()
+    flushFrames()
+    expect(editor.layout).toHaveBeenCalledOnce()
+
+    width = 720
+    notifyResize()
+    notifyResize()
+    notifyResize()
+    expect(frames.size).toBe(1)
+    expect(editor.layout).toHaveBeenCalledOnce()
+    flushFrames()
+    expect(editor.layout).toHaveBeenCalledTimes(2)
+    expect(editor.layout).toHaveBeenLastCalledWith({ width: 720, height: 320 }, true)
+
+    notifyResize()
+    view.unmount()
+    expect(frames.size).toBe(0)
+    expect(cancelAnimationFrame).toHaveBeenCalledOnce()
+    flushFrames()
+    expect(editor.layout).toHaveBeenCalledTimes(2)
   })
 
   it('does not create the editor after the host unmounts during async Monaco init', async () => {

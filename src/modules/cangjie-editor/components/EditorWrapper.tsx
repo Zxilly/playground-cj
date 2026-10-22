@@ -188,6 +188,7 @@ export function MonacoEditorReactComp({
   const statusBarRef = useRef<StatusBarHandle | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const resizeObserverRef = useRef<ResizeObserver | null>(null)
+  const layoutFrameRef = useRef<number | null>(null)
   const lspUnsubscribeRef = useRef<(() => void) | null>(null)
   const boundGenerationRef = useRef<number>(0)
   const rebuildPromiseRef = useRef<Promise<void> | null>(null)
@@ -218,9 +219,11 @@ export function MonacoEditorReactComp({
       return container
     }
 
+    let lastLayout: { width: number, height: number } | undefined
     const updateEditorLayout = () => {
-      if (containerRef.current && editorAppRef.current) {
-        const parent = containerRef.current.parentElement!
+      const container = getLiveContainer()
+      if (container && editorAppRef.current) {
+        const parent = container.parentElement!
         const { width: outerWidth, height: outerHeight } = parent.getBoundingClientRect()
 
         const computedStyle = window.getComputedStyle(parent)
@@ -229,12 +232,26 @@ export function MonacoEditorReactComp({
         const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0
         const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
 
-        const width = outerWidth - paddingLeft - paddingRight
+        const width = Math.max(0, outerWidth - paddingLeft - paddingRight)
         const statusBarHeight = statusBarRef.current?.container.offsetHeight ?? 0
-        const height = outerHeight - paddingTop - paddingBottom - statusBarHeight
+        const height = Math.max(0, outerHeight - paddingTop - paddingBottom - statusBarHeight)
 
+        if (lastLayout?.width === width && lastLayout.height === height)
+          return
+        lastLayout = { width, height }
         editorAppRef.current.getEditor()?.layout({ width, height }, true)
       }
+    }
+
+    // Panel drags can notify several times per frame, especially with multiple
+    // lesson editors. Measure and lay out each editor once before the next paint.
+    const scheduleEditorLayout = () => {
+      if (layoutFrameRef.current !== null || !isActive())
+        return
+      layoutFrameRef.current = requestAnimationFrame(() => {
+        layoutFrameRef.current = null
+        updateEditorLayout()
+      })
     }
 
     // Per-editor lifecycle no longer owns the MonacoLanguageClient. The
@@ -345,7 +362,7 @@ export function MonacoEditorReactComp({
         // Reveal the editor and bind its lifecycle before waiting for that UI.
         updateEditorLayout()
         resizeObserverRef.current?.disconnect()
-        resizeObserverRef.current = new ResizeObserver(updateEditorLayout)
+        resizeObserverRef.current = new ResizeObserver(scheduleEditorLayout)
         const resizeParent = containerAfterWrapperStart.parentElement
         if (resizeParent)
           resizeObserverRef.current.observe(resizeParent)
@@ -366,6 +383,7 @@ export function MonacoEditorReactComp({
               return
             }
             statusBarRef.current = statusBar
+            resizeObserverRef.current?.observe(statusBar.container)
 
             const host = document.createElement('div')
             host.style.position = 'absolute'
@@ -443,6 +461,10 @@ export function MonacoEditorReactComp({
     }
 
     return () => {
+      if (layoutFrameRef.current !== null) {
+        cancelAnimationFrame(layoutFrameRef.current)
+        layoutFrameRef.current = null
+      }
       if (resizeObserverRef.current) {
         resizeObserverRef.current.disconnect()
         resizeObserverRef.current = null
