@@ -1,16 +1,13 @@
 import { i18n } from '@lingui/core'
-import { messages as zhMessages } from '@/locales/zh/messages.mjs'
-import { messages as enMessages } from '@/locales/en/messages.mjs'
 
 export const locales = ['zh', 'en'] as const
 export type Locale = typeof locales[number]
 export const defaultLocale: Locale = 'zh'
 
-// Pre-load all messages for SSR support
-i18n.load({
-  zh: zhMessages,
-  en: enMessages,
-})
+// LinguiClientProvider loads the current request's catalog, already serialized
+// by the server layout. Importing both catalogs here duplicates that payload
+// and adds the unused language to every client entry point.
+i18n.load({ zh: {}, en: {} })
 i18n.activate(defaultLocale)
 
 export function isLocale(value: string): value is Locale {

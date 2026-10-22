@@ -2,6 +2,7 @@
 
 import { I18nProvider } from '@lingui/react'
 import { setupI18n } from '@lingui/core'
+import type { Messages } from '@lingui/core'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { LanguageContext } from '@/hooks/useLanguage'
@@ -11,7 +12,7 @@ import { i18n as globalI18n } from '@/lib/i18n'
 interface LinguiClientProviderProps {
   children: ReactNode
   initialLocale: Locale
-  initialMessages: any
+  initialMessages: Messages
 }
 
 export function LinguiClientProvider({
