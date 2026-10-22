@@ -6,6 +6,7 @@
 !.vercelignore
 !package.json
 !pnpm-lock.yaml
+!pnpm-workspace.yaml
 !patches
 !cj-runner
 !lingui.config.ts
