@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DeferredPopover } from './DeferredPopover'
 import type { Locale } from '@/lib/i18n'
 import { getLocaleHref } from '@/lib/siteHref'
 import { ChevronsUpDown, Globe } from 'lucide-react'
@@ -24,8 +24,12 @@ export function LanguageSelector() {
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <DeferredPopover
+      open={open}
+      onOpenChange={setOpen}
+      className="w-[180px] p-0"
+      preventOpenAutoFocus
+      trigger={(
         <Button
           variant="outline"
           role="combobox"
@@ -37,10 +41,9 @@ export function LanguageSelector() {
           {locale === 'zh' ? '中文' : 'English'}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[180px] p-0" onOpenAutoFocus={event => event.preventDefault()}>
-        {open && <LanguageMenu locale={locale} onSelect={handleLanguageChange} />}
-      </PopoverContent>
-    </Popover>
+      )}
+    >
+      {open && <LanguageMenu locale={locale} onSelect={handleLanguageChange} />}
+    </DeferredPopover>
   )
 }

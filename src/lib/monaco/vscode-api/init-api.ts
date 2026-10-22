@@ -18,6 +18,7 @@ import 'vscode/localExtensionHost'
 import { encodeStringOrUrlToDataUrl } from './data-url'
 import { getEnhancedMonacoEnvironment, mergeServices } from './environment'
 import type { ExtensionConfig, MonacoVscodeApiConfig } from './types'
+import { markEditorStartup } from '../startup-timing'
 
 // We never open editors via the editor service (the app drives editors
 // directly), so the open-editor hook is a no-op.
@@ -58,6 +59,7 @@ export class MonacoVscodeApiWrapper {
   }
 
   async start(): Promise<void> {
+    markEditorStartup('services-start')
     const env = getEnhancedMonacoEnvironment()
     // Install the worker factory on every mount: the global env persists across
     // HMR, but a remount must re-seed getWorker before monaco spawns workers.
@@ -97,6 +99,7 @@ export class MonacoVscodeApiWrapper {
               : import('@codingame/monaco-vscode-editor-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-extensions-service-override').then(m => m.default),
           ])
+          markEditorStartup('overrides-loaded')
           mergeServices(this.serviceOverrides, { ...getLanguages(), ...getTextmate(), ...getTheme() })
 
           this.configureViewsServices(getViews)
@@ -104,6 +107,7 @@ export class MonacoVscodeApiWrapper {
             await initUserConfiguration(this.config.userConfiguration.json)
 
           await this.initAllServices(getExtensions)
+          markEditorStartup('services-ready')
           env.vscodeApiServicesInitialised = true
           env.vscodeApiViewsType = requestedViewsType
         }
@@ -115,6 +119,7 @@ export class MonacoVscodeApiWrapper {
 
         if (!env.vscodeApiExtensionsInitialised) {
           await this.initExtensions()
+          markEditorStartup('extensions-ready')
           env.vscodeApiExtensionsInitialised = true
         }
 

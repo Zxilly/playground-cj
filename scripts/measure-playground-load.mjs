@@ -20,7 +20,11 @@ try {
           await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 40, downloadThroughput: 1250000, uploadThroughput: 1250000 })
           await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 })
           await page.addInitScript(() => {
-            window.loadMetrics = { cls: 0, lcp: 0, shifts: [] }
+            window.loadMetrics = { cls: 0, lcp: 0, shifts: [], longTasks: [] }
+            new PerformanceObserver((list) => {
+              for (const entry of list.getEntries())
+                window.loadMetrics.longTasks.push({ start: entry.startTime, duration: entry.duration })
+            }).observe({ type: 'longtask', buffered: true })
             let sessionStart = 0
             let lastShift = 0
             let sessionValue = 0
@@ -57,8 +61,17 @@ try {
           const data = await page.evaluate(() => ({
             ...window.loadMetrics,
             fcp: performance.getEntriesByName('first-contentful-paint')[0]?.startTime,
-            resources: performance.getEntriesByType('resource').map(r => ({ name: r.name, encoded: r.encodedBodySize, decoded: r.decodedBodySize, end: r.responseEnd })),
+            milestones: performance.getEntriesByType('mark').filter(e => e.name.startsWith('cj:editor:')).map(e => ({ name: e.name, start: e.startTime })),
+            resources: performance.getEntriesByType('resource').map(r => ({ name: r.name, encoded: r.encodedBodySize, decoded: r.decodedBodySize, start: r.startTime, end: r.responseEnd })),
           }))
+          // Check actual editing separately, after collecting Web Vitals. This
+          // round-trip includes automation overhead; it is not startup time.
+          await page.locator('.monaco-editor .view-lines').click({ position: { x: 80, y: 10 }, force: true })
+          await page.keyboard.press('Control+End')
+          const inputStart = await page.evaluate(() => performance.now())
+          await page.keyboard.insertText(' // editable-probe')
+          await page.waitForFunction(() => document.querySelector('.monaco-editor .view-lines')?.textContent.includes('editable-probe'))
+          const inputRoundTripMs = await page.evaluate(start => performance.now() - start, inputStart)
           const shellJs = data.resources.filter(r => shellScripts.includes(r.name))
           const shellCss = data.resources.filter(r => shellStyles.includes(r.name))
           const fonts = data.resources.filter(r => new URL(r.name).pathname.endsWith('.woff2'))
@@ -71,9 +84,13 @@ try {
             fontBytes: fonts.reduce((sum, r) => sum + r.encoded, 0),
             largestFontBytes: Math.max(0, ...fonts.map(r => r.encoded)),
             completedPageBytesAtEditor: data.resources.filter(r => r.end <= data.editor).reduce((sum, r) => sum + r.encoded, 0),
+            editorReady: data.milestones.find(m => m.name === 'cj:editor:ready')?.start,
+            longTaskMsBeforeEditor: data.longTasks.filter(t => t.start < data.editor).reduce((sum, t) => sum + t.duration, 0),
+            largestLongTaskMs: Math.max(0, ...data.longTasks.map(t => t.duration)),
+            inputRoundTripMs,
             errors,
           }
-          results.push({ ...summary, shifts: data.shifts, resources: data.resources })
+          results.push({ ...summary, milestones: data.milestones, longTasks: data.longTasks, shifts: data.shifts, resources: data.resources })
           console.log(JSON.stringify(summary))
         }
         finally {

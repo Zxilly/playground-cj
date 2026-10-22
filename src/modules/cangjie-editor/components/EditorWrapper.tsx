@@ -13,6 +13,9 @@ import { getCurrentEditorPort, subscribeLspStatus } from '@/lib/lsp'
 import { registerLspCommands } from '@/lib/lsp-commands'
 import { LspStatusIndicator } from '@/modules/cangjie-editor/components/LspStatusIndicator'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
+import { markEditorStartup } from '@/lib/monaco/startup-timing'
+
+markEditorStartup('module-evaluated')
 
 export interface MonacoEditorHandle {
   getEditor: () => monaco.editor.IStandaloneCodeEditor | undefined
@@ -56,6 +59,7 @@ async function createStandaloneEditorHandle(
     uri.toString(),
     existingModel?.getValue() ?? resource?.text ?? '',
   )
+  markEditorStartup('model-file-ready')
   let modelLease = acquireModel(uri.toString(), () => {
     if (existingModel)
       return { resource: existingModel, owned: false }
@@ -79,6 +83,7 @@ async function createStandaloneEditorHandle(
       ...editorAppConfig.editorOptions,
       model,
     })
+    markEditorStartup('created')
   }
   catch (error) {
     modelFileSubscription.dispose()
@@ -357,6 +362,18 @@ export function MonacoEditorReactComp({
           })
         }
 
+        // Editing does not depend on the status bar's asynchronous setup.
+        // Reveal the editor and bind its lifecycle before waiting for that UI.
+        updateEditorLayout()
+        resizeObserverRef.current?.disconnect()
+        resizeObserverRef.current = new ResizeObserver(updateEditorLayout)
+        const resizeParent = containerAfterWrapperStart.parentElement
+        if (resizeParent)
+          resizeObserverRef.current.observe(resizeParent)
+        isInitializedRef.current = true
+        onLoadRef.current?.(editorHandle)
+        markEditorStartup('ready')
+
         if (hasLanguageClient && viewsType === 'EditorService') {
           const parentContainer = containerAfterWrapperStart.parentElement
           if (parentContainer) {
@@ -387,21 +404,8 @@ export function MonacoEditorReactComp({
         if (!getLiveContainer())
           return
 
-        onLoadRef.current?.(editorHandle)
-
         updateEditorLayout()
-
-        if (resizeObserverRef.current) {
-          resizeObserverRef.current.disconnect()
-        }
-
-        resizeObserverRef.current = new ResizeObserver(updateEditorLayout)
-
-        const resizeParent = containerAfterWrapperStart.parentElement
-        if (resizeParent)
-          resizeObserverRef.current.observe(resizeParent)
-
-        isInitializedRef.current = true
+        markEditorStartup('statusbar-ready')
       }
       catch (error) {
         console.error('Editor initialization failed:', error)

@@ -50,3 +50,4 @@ cangjie-mcp.log
 /tour_gen/
 /.tmp/
 /docs/*
+!/docs/performance/

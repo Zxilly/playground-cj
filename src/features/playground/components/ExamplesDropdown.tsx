@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DeferredPopover } from './DeferredPopover'
 import { ChevronsUpDown } from 'lucide-react'
 import { useState } from 'react'
 import { msg } from '@lingui/core/macro'
@@ -21,8 +21,12 @@ export function ExamplesDropdown({ action, disabled }: ExamplesDropdownProps) {
   const [selected, setSelected] = useState({ key: 'hello-world', name: 'Hello World' })
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <DeferredPopover
+      open={open}
+      onOpenChange={setOpen}
+      className="w-[300px] p-0"
+      preventOpenAutoFocus
+      trigger={(
         <Button
           variant="outline"
           disabled={disabled}
@@ -34,19 +38,18 @@ export function ExamplesDropdown({ action, disabled }: ExamplesDropdownProps) {
           <span className="truncate">{selected.name}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" onOpenAutoFocus={event => event.preventDefault()}>
-        {open && (
-          <ExamplesMenu
-            selectedKey={selected.key}
-            onSelect={(key, name, content) => {
-              setSelected({ key, name })
-              action(content)
-              setOpen(false)
-            }}
-          />
-        )}
-      </PopoverContent>
-    </Popover>
+      )}
+    >
+      {open && (
+        <ExamplesMenu
+          selectedKey={selected.key}
+          onSelect={(key, name, content) => {
+            setSelected({ key, name })
+            action(content)
+            setOpen(false)
+          }}
+        />
+      )}
+    </DeferredPopover>
   )
 }

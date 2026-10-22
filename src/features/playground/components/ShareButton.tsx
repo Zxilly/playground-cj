@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { DeferredPopover } from './DeferredPopover'
 import { ChevronDown, Hash, Link } from 'lucide-react'
 import { memo, useCallback, useState } from 'react'
 import { toast } from 'sonner'
@@ -57,35 +57,37 @@ const ShareButton = memo(() => {
 
   return (
     <>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
+      <DeferredPopover
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        className="w-56"
+        trigger={(
           <Button disabled={!editorReady} className="min-h-11 w-full px-2 sm:w-auto lg:min-h-9 lg:px-4">
             <Trans>分享</Trans>
             {' '}
             <ChevronDown className="ml-2 h-4 w-4" />
           </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-56">
-          <div className="flex flex-col space-y-2">
-            <Button
-              variant="ghost"
-              className="min-h-11 justify-start lg:min-h-9"
-              onClick={() => handleShare('url')}
-            >
-              <Link className="mr-2 h-4 w-4" />
-              <Trans>完整链接</Trans>
-            </Button>
-            <Button
-              variant="ghost"
-              className="min-h-11 justify-start lg:min-h-9"
-              onClick={() => handleShare('hash')}
-            >
-              <Hash className="mr-2 h-4 w-4" />
-              <Trans>短链接</Trans>
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+        )}
+      >
+        <div className="flex flex-col space-y-2">
+          <Button
+            variant="ghost"
+            className="min-h-11 justify-start lg:min-h-9"
+            onClick={() => handleShare('url')}
+          >
+            <Link className="mr-2 h-4 w-4" />
+            <Trans>完整链接</Trans>
+          </Button>
+          <Button
+            variant="ghost"
+            className="min-h-11 justify-start lg:min-h-9"
+            onClick={() => handleShare('hash')}
+          >
+            <Hash className="mr-2 h-4 w-4" />
+            <Trans>短链接</Trans>
+          </Button>
+        </div>
+      </DeferredPopover>
       {shareDialogUrl !== null && (
         <ShareDialog isOpen onClose={closeShareDialog} url={shareDialogUrl} />
       )}

@@ -2,6 +2,8 @@ import { act, render } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { retainModelScope } from '@/lib/monaco/model-lifecycle'
 import { createEditorAppConfig } from '@/lib/monaco'
+import { createCustomStatusBar } from '@/lib/statusbar'
+import type { StatusBarHandle } from '@/lib/statusbar'
 import { MonacoEditorReactComp } from './EditorWrapper'
 
 function deferred<T>() {
@@ -117,6 +119,7 @@ describe('monacoEditorReactComp', () => {
     configureMonacoWorkers.mockReset()
     acquireLanguageService.mockReset().mockReturnValue(vi.fn(async () => {}))
     isLanguageClientAvailable.mockReset().mockReturnValue(true)
+    vi.mocked(createCustomStatusBar).mockReset()
     monacoEditorGetModel.mockReset().mockReturnValue(undefined)
     monacoEditorCreateModel.mockReset().mockImplementation((_text, _language, uri) => ({
       dispose: vi.fn(),
@@ -139,6 +142,30 @@ describe('monacoEditorReactComp', () => {
       observe = vi.fn()
       disconnect = vi.fn()
     })
+  })
+
+  it('makes the editor usable while the status bar is still loading', async () => {
+    const gate = deferred<StatusBarHandle>()
+    vi.mocked(createCustomStatusBar).mockReturnValueOnce(gate.promise)
+    const onLoad = vi.fn()
+    const view = render(<MonacoEditorReactComp code="main() {}" onLoad={onLoad} />)
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+    })
+    expect(monacoEditorCreate).toHaveBeenCalled()
+    expect(createCustomStatusBar).toHaveBeenCalled()
+    expect(onLoad).toHaveBeenCalledOnce()
+    const dispose = vi.fn()
+    view.unmount()
+    await act(async () => gate.resolve({
+      container: document.createElement('div'),
+      addEntry: vi.fn(),
+      updateEntry: vi.fn(),
+      removeEntry: vi.fn(),
+      dispose,
+    }))
+    expect(dispose).toHaveBeenCalledOnce()
   })
 
   it('does not create the editor after the host unmounts during async Monaco init', async () => {

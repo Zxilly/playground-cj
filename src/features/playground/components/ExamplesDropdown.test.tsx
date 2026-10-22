@@ -53,21 +53,21 @@ describe('examples dropdown', () => {
       </I18nProvider>,
     )
 
-    const combobox = screen.getByRole('combobox', { name: '选择示例' })
+    const combobox = () => screen.getByRole('combobox', { name: '选择示例' })
     await act(async () => {
-      fireEvent.click(combobox)
+      fireEvent.click(combobox())
       await vi.dynamicImportSettled()
     })
-    const helloOption = await screen.findByRole('option', { name: 'Hello World' })
+    const helloOption = await screen.findByRole('option', { name: 'Hello World' }, { timeout: 5000 })
     const arrayOption = screen.getByRole('option', { name: 'Array' })
     expect(helloOption.getAttribute('aria-selected')).toBe('true')
     expect(arrayOption.getAttribute('aria-selected')).toBe('false')
 
     fireEvent.click(arrayOption)
     expect(action).toHaveBeenCalledOnce()
-    expect(combobox.textContent).toContain('Array')
+    expect(combobox().textContent).toContain('Array')
 
-    fireEvent.click(combobox)
+    fireEvent.click(combobox())
     expect((await screen.findByRole('option', { name: 'Array' })).getAttribute('aria-selected')).toBe('true')
     expect(screen.getByRole('option', { name: 'Hello World' }).getAttribute('aria-selected')).toBe('false')
   })
@@ -83,9 +83,9 @@ describe('examples dropdown', () => {
       </I18nProvider>,
     )
 
-    const combobox = screen.getByRole('combobox', { name: '选择示例' })
+    const combobox = () => screen.getByRole('combobox', { name: '选择示例' })
     await act(async () => {
-      fireEvent.click(combobox)
+      fireEvent.click(combobox())
       await vi.dynamicImportSettled()
     })
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('combobox', { name: '搜索示例' })))
@@ -96,8 +96,8 @@ describe('examples dropdown', () => {
     fireEvent.keyDown(listbox, { key: 'Enter' })
 
     expect(action).toHaveBeenCalledOnce()
-    expect(combobox.textContent).toContain('Array')
-    fireEvent.click(combobox)
+    expect(combobox().textContent).toContain('Array')
+    fireEvent.click(combobox())
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('combobox', { name: '搜索示例' })))
     const reopenedListbox = await screen.findByRole('listbox')
     expect(screen.getByRole('option', { name: 'Array' }).getAttribute('aria-selected')).toBe('true')
@@ -105,6 +105,6 @@ describe('examples dropdown', () => {
     expect(screen.getByRole('option', { name: 'For Loop' }).getAttribute('aria-selected')).toBe('true')
     fireEvent.keyDown(reopenedListbox, { key: 'Enter' })
     expect(action).toHaveBeenCalledTimes(2)
-    expect(combobox.textContent).toContain('For Loop')
+    expect(combobox().textContent).toContain('For Loop')
   })
 })
