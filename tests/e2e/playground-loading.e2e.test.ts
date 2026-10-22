@@ -122,6 +122,11 @@ describe('playground initial load', () => {
       await expect.poll(() => page.locator('#panel-content').textContent()).toContain('shared-initial-source')
       await page.evaluate(() => document.fonts.ready.then(() => undefined))
       expect(fullFontRequests).toEqual([])
+      // A character outside the catalogs must load a bounded fallback shard.
+      expect(await page.evaluate(async () => (await document.fonts.load('16px "HarmonyOS Sans Web"', '龘')).length)).toBeGreaterThan(0)
+      expect(await page.evaluate(() => performance.getEntriesByType('resource')
+        .filter(entry => entry.name.includes('.woff2'))
+        .every(entry => (entry as PerformanceResourceTiming).decodedBodySize < 150_000))).toBe(true)
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
       // Exercise the deferred UI chunks and the current server-provided catalog.
       await page.getByRole('combobox', { name: locale === 'zh' ? '中文' : 'English', exact: true }).click()

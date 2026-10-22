@@ -50,6 +50,7 @@ try {
           page.on('pageerror', error => errors.push(error.message))
           await page.goto(`${baseUrl}/${locale}`, { waitUntil: 'domcontentloaded' })
           const shellScripts = await page.locator('script[src]').evaluateAll(nodes => nodes.map(n => n.src))
+          const shellStyles = await page.locator('link[rel="stylesheet"]').evaluateAll(nodes => nodes.map(n => n.href))
           await page.waitForFunction(() => window.loadMetrics.editor, undefined, { timeout: 90000 })
           await page.evaluate(() => document.fonts.ready.then(() => undefined))
           await page.waitForTimeout(2000)
@@ -59,10 +60,16 @@ try {
             resources: performance.getEntriesByType('resource').map(r => ({ name: r.name, encoded: r.encodedBodySize, decoded: r.decodedBodySize, end: r.responseEnd })),
           }))
           const shellJs = data.resources.filter(r => shellScripts.includes(r.name))
+          const shellCss = data.resources.filter(r => shellStyles.includes(r.name))
+          const fonts = data.resources.filter(r => new URL(r.name).pathname.endsWith('.woff2'))
           const summary = {
             locale, width, run, fcp: data.fcp, lcp: data.lcp, cls: data.cls, editor: data.editor,
             shellJsEncoded: shellJs.reduce((sum, r) => sum + r.encoded, 0),
             shellJsDecoded: shellJs.reduce((sum, r) => sum + r.decoded, 0),
+            shellCssEncoded: shellCss.reduce((sum, r) => sum + r.encoded, 0),
+            shellCssDecoded: shellCss.reduce((sum, r) => sum + r.decoded, 0),
+            fontBytes: fonts.reduce((sum, r) => sum + r.encoded, 0),
+            largestFontBytes: Math.max(0, ...fonts.map(r => r.encoded)),
             completedPageBytesAtEditor: data.resources.filter(r => r.end <= data.editor).reduce((sum, r) => sum + r.encoded, 0),
             errors,
           }
