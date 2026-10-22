@@ -86,19 +86,24 @@ export class MonacoVscodeApiWrapper {
         }
 
         if (!env.vscodeApiServicesInitialised) {
-          // extended highlighting services
-          const [getLanguages, getTextmate, getTheme] = await Promise.all([
+          // These modules are independent. Fetch them together, then apply the
+          // overrides in the same order before initializing the global services.
+          const [getLanguages, getTextmate, getTheme, getViews, getExtensions] = await Promise.all([
             import('@codingame/monaco-vscode-languages-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-textmate-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-theme-service-override').then(m => m.default),
+            this.config.viewsConfig.$type === 'ViewsService'
+              ? import('@codingame/monaco-vscode-views-service-override').then(m => m.default)
+              : import('@codingame/monaco-vscode-editor-service-override').then(m => m.default),
+            import('@codingame/monaco-vscode-extensions-service-override').then(m => m.default),
           ])
           mergeServices(this.serviceOverrides, { ...getLanguages(), ...getTextmate(), ...getTheme() })
 
-          await this.configureViewsServices()
+          this.configureViewsServices(getViews)
           if (this.config.userConfiguration?.json)
             await initUserConfiguration(this.config.userConfiguration.json)
 
-          await this.initAllServices()
+          await this.initAllServices(getExtensions)
           env.vscodeApiServicesInitialised = true
           env.vscodeApiViewsType = requestedViewsType
         }
@@ -131,18 +136,13 @@ export class MonacoVscodeApiWrapper {
     }
   }
 
-  private async configureViewsServices(): Promise<void> {
+  private configureViewsServices(getServiceOverride: (openEditor: OpenEditor) => monaco.editor.IEditorOverrideServices): void {
     if (this.config.viewsConfig.$type === 'ViewsService') {
       if (!this.config.viewsConfig.htmlContainer) {
         throw new Error('ViewsService requires an htmlContainer')
       }
-      const getViewsServiceOverride = (await import('@codingame/monaco-vscode-views-service-override')).default
-      mergeServices(this.serviceOverrides, getViewsServiceOverride(openEditorStub))
     }
-    else {
-      const getEditorServiceOverride = (await import('@codingame/monaco-vscode-editor-service-override')).default
-      mergeServices(this.serviceOverrides, getEditorServiceOverride(openEditorStub))
-    }
+    mergeServices(this.serviceOverrides, getServiceOverride(openEditorStub))
   }
 
   private async applyViewsPostConfig(): Promise<void> {
@@ -154,7 +154,7 @@ export class MonacoVscodeApiWrapper {
     }
   }
 
-  private async initAllServices(): Promise<void> {
+  private async initAllServices(getExtensionServiceOverride: () => monaco.editor.IEditorOverrideServices): Promise<void> {
     // monaco-vscode-api auto-loads layout/environment/extension/files/quickAccess;
     // we always add configuration/log/model + the extension host.
     const services: monaco.editor.IEditorOverrideServices = {
@@ -165,7 +165,6 @@ export class MonacoVscodeApiWrapper {
     }
     mergeServices(services, this.serviceOverrides)
 
-    const getExtensionServiceOverride = (await import('@codingame/monaco-vscode-extensions-service-override')).default
     mergeServices(services, getExtensionServiceOverride())
 
     this.checkServiceConsistency(services)

@@ -1,7 +1,6 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import { BrowserMessageReader, BrowserMessageWriter, CloseAction, ErrorAction } from 'vscode-languageclient/browser'
 import type { LogOutputChannel } from 'vscode'
-import { MonacoLanguageClient } from './vscode-api'
+import type { MonacoLanguageClient } from './vscode-api/monaco-language-client'
 import isMobile from 'is-mobile'
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 import { createCangjieProtocolMiddleware } from './cangjie-protocol'
@@ -62,7 +61,13 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
   if (isMobile({ tablet: true, featureDetect: true }))
     return undefined
 
-  const outputChannel = await getSharedOutputChannel()
+  // The editor can render before the WASM server is ready. Load the protocol
+  // client only when there is a live port to connect, not with the editor UI.
+  const [{ BrowserMessageReader, BrowserMessageWriter, CloseAction, ErrorAction }, { MonacoLanguageClient }, outputChannel] = await Promise.all([
+    import('vscode-languageclient/browser'),
+    import('./vscode-api/monaco-language-client'),
+    getSharedOutputChannel(),
+  ])
 
   return new MonacoLanguageClient({
     id: CANGJIE_LANGUAGE_NAME,
