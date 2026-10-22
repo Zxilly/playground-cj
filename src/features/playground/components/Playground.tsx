@@ -58,8 +58,6 @@ function Playground({ sharedCode, brand, tourLink, editorFallback, footer }: Pla
   const setEditor = usePlaygroundStore(state => state.setEditor)
   const { locale } = useLanguage()
 
-  const wrapperRef = useRef<MonacoEditorHandle | undefined>(undefined)
-
   const handleRun = useCallback(() => {
     usePlaygroundStore.getState().editor?.getAction('cangjie.compile.run')?.run()
   }, [])
@@ -84,7 +82,6 @@ function Playground({ sharedCode, brand, tourLink, editorFallback, footer }: Pla
   const isDesktop = useMedia('(min-width: 1024px)', false)
 
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
-    wrapperRef.current = editorApp
     const ed = editorApp.getEditor()!
     setEditor(ed)
   }, [setEditor])
@@ -109,7 +106,6 @@ function Playground({ sharedCode, brand, tourLink, editorFallback, footer }: Pla
             tourLink={tourLink}
             handleRun={handleRun}
             handleFormat={handleFormat}
-            wrapperRef={wrapperRef}
           />
         </div>
         <div id="main" className="min-h-0 flex-1 flex flex-col lg:flex-row px-2 lg:px-4 pt-1">

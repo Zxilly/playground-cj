@@ -10,8 +10,8 @@ import { usePlaygroundStore } from '@/stores/playground'
 function MockLanguageSelector() {
   return <div>Language Selector</div>
 }
-function MockExamplesDropdown() {
-  return <div>Examples Dropdown</div>
+function MockExamplesDropdown({ action, disabled }: { action: (code: string) => void, disabled?: boolean }) {
+  return <button type="button" disabled={disabled} onClick={() => action('main() { println("example") }')}>Examples Dropdown</button>
 }
 function MockShareButton() {
   return <button type="button">Share</button>
@@ -37,7 +37,6 @@ function renderHeader() {
         tourLink={<a href="https://tour.cj.zxilly.dev/zh">教程</a>}
         handleRun={run}
         handleFormat={format}
-        wrapperRef={{ current: undefined }}
       />
     </I18nProvider>,
   )
@@ -62,5 +61,29 @@ describe('playground header', () => {
     fireEvent.click(screen.getByRole('button', { name: '格式化' }))
     expect(run).toHaveBeenCalledOnce()
     expect(format).toHaveBeenCalledOnce()
+  })
+
+  it('replaces the current source with an undoable edit when an example is selected', () => {
+    let source = 'main() { println("my draft") }'
+    const range = { startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: source.length + 1 }
+    const editor = {
+      getModel: () => ({ getFullModelRange: () => range }),
+      pushUndoStop: vi.fn(),
+      executeEdits: vi.fn((_source, edits) => { source = edits[0].text }),
+      setPosition: vi.fn(),
+      revealLine: vi.fn(),
+    }
+    usePlaygroundStore.getState().setEditor(editor as unknown as monaco.editor.IStandaloneCodeEditor)
+    renderHeader()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Examples Dropdown' }))
+
+    expect(source).toBe('main() { println("example") }')
+    expect(editor.executeEdits).toHaveBeenCalledWith('playground.example', [{ range, text: source }])
+    expect(editor.pushUndoStop).toHaveBeenCalledTimes(2)
+    expect(editor.pushUndoStop.mock.invocationCallOrder[0]).toBeLessThan(editor.executeEdits.mock.invocationCallOrder[0])
+    expect(editor.pushUndoStop.mock.invocationCallOrder[1]).toBeGreaterThan(editor.executeEdits.mock.invocationCallOrder[0])
+    expect(editor.setPosition).toHaveBeenCalledWith({ lineNumber: 1, column: 1 })
+    expect(editor.revealLine).toHaveBeenCalledWith(1)
   })
 })

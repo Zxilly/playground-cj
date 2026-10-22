@@ -153,6 +153,55 @@ describe('playground initial load', () => {
     }
   }, 120_000)
 
+  it('replaces the source with a selected example and restores the typed draft on undo', async () => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+    try {
+      const page = await context.newPage()
+      const draft = 'main() { println("draft-before-example") }'
+      let submittedCode: string | undefined
+      await page.route('**/api/run', async (route) => {
+        submittedCode = route.request().postData() ?? undefined
+        await route.fulfill({ json: {
+          phase: 'run',
+          compiler_code: 0,
+          compiler_output: '',
+          compiler_output_truncated: false,
+          bin_code: 0,
+          bin_stdout: 'draft-before-example',
+          bin_stdout_truncated: false,
+          bin_stderr: '',
+          bin_stderr_truncated: false,
+        } })
+      })
+      await page.goto(`${baseUrl}/en`, { waitUntil: 'domcontentloaded' })
+      const run = page.getByRole('button', { name: 'Run', exact: true })
+      await expect.poll(() => run.isEnabled(), { timeout: 90_000 }).toBe(true)
+      const editorLines = page.locator('.monaco-editor .view-lines')
+      await editorLines.click()
+      await page.keyboard.press('ControlOrMeta+A')
+      await page.keyboard.insertText(draft)
+      await expect.poll(() => editorLines.textContent()).toContain('draft-before-example')
+
+      const examples = page.getByRole('combobox', { name: 'Select example', exact: true })
+      await examples.click()
+      await page.getByRole('option', { name: 'Array', exact: true }).click()
+      await expect.poll(() => examples.getAttribute('aria-expanded')).toBe('false')
+      await expect.poll(() => editorLines.textContent()).toContain('parse(text:')
+      expect(await editorLines.textContent()).not.toContain('draft-before-example')
+
+      await editorLines.click()
+      await page.keyboard.press('ControlOrMeta+Z')
+      await expect.poll(() => editorLines.textContent()).toContain('draft-before-example')
+      await run.click()
+      // Check the complete model through the existing Run action, not just the
+      // currently rendered Monaco lines, which are virtualized for long samples.
+      await expect.poll(() => submittedCode).toBe(draft)
+    }
+    finally {
+      await context.close()
+    }
+  }, 120_000)
+
   it('connects the deferred language client and preserves formatting and Chinese menus', async () => {
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } })
     try {
