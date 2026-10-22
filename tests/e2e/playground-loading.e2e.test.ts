@@ -76,6 +76,17 @@ describe('playground initial load', () => {
       const page = await context.newPage()
       const errors: string[] = []
       page.on('pageerror', error => errors.push(error.message))
+      await page.addInitScript(() => {
+        const metrics = window as unknown as { loadShift: number }
+        metrics.loadShift = 0
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            const shift = entry as PerformanceEntry & { hadRecentInput: boolean, value: number }
+            if (!shift.hadRecentInput)
+              metrics.loadShift += shift.value
+          }
+        }).observe({ type: 'layout-shift', buffered: true })
+      })
       const fullFontRequests: string[] = []
       page.on('request', (request) => {
         if (/HarmonyOS_Sans(?:-s|\.woff2)/.test(request.url()))
@@ -102,12 +113,26 @@ describe('playground initial load', () => {
       const run = page.getByRole('button', { name: locale === 'zh' ? '运行' : 'Run', exact: true })
       await expect.poll(() => run.isEnabled(), { timeout: 90_000 }).toBe(true)
       expect(await page.locator('.monaco-editor .view-lines').textContent()).toContain('shared-initial-source')
+      await page.evaluate(() => document.fonts.ready.then(() => new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      })))
+      expect(await page.evaluate(() => (window as unknown as { loadShift: number }).loadShift)).toBeLessThan(0.01)
       await run.click()
       await expect.poll(() => submittedCode).toBe(source)
       await expect.poll(() => page.locator('#panel-content').textContent()).toContain('shared-initial-source')
       await page.evaluate(() => document.fonts.ready.then(() => undefined))
       expect(fullFontRequests).toEqual([])
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+      // Exercise the deferred UI chunks and the current server-provided catalog.
+      await page.getByRole('combobox', { name: locale === 'zh' ? '中文' : 'English', exact: true }).click()
+      const languageOption = page.getByRole('option', { name: locale === 'zh' ? '中文' : 'English', exact: true })
+      await languageOption.waitFor()
+      await languageOption.click()
+      await page.getByRole('button', { name: locale === 'zh' ? '分享' : 'Share', exact: true }).click()
+      await page.getByRole('button', { name: locale === 'zh' ? '完整链接' : 'Full link', exact: true }).click()
+      const dialog = page.getByRole('dialog')
+      await dialog.waitFor()
+      expect(await dialog.getByRole('textbox').inputValue()).toContain('#data=')
       expect(errors).toEqual([])
     }
     finally {
