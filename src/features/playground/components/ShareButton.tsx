@@ -5,12 +5,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ChevronDown, Hash, Link } from 'lucide-react'
 import { memo, useCallback, useState } from 'react'
 import { toast } from 'sonner'
-import ShareDialog from '@/features/playground/components/ShareDialog'
-import { generateDataShareUrl, generateHashShareUrl } from '@/service/share'
+import dynamic from 'next/dynamic'
 import { Trans } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import { usePlaygroundStore } from '@/stores/playground'
+
+const ShareDialog = dynamic(() => import('./ShareDialog'))
 
 const ShareButton = memo(() => {
   const { i18n } = useLingui()
@@ -34,11 +35,13 @@ const ShareButton = memo(() => {
     }
 
     if (type === 'url') {
+      const { generateDataShareUrl } = await import('@/service/share')
       openShareDialog(generateDataShareUrl(code))
       setIsOpen(false)
     }
     else {
       toast.promise(async () => {
+        const { generateHashShareUrl } = await import('@/service/share')
         const url = await generateHashShareUrl(code)
         openShareDialog(url)
         setIsOpen(false)
@@ -83,11 +86,9 @@ const ShareButton = memo(() => {
           </div>
         </PopoverContent>
       </Popover>
-      <ShareDialog
-        isOpen={shareDialogUrl !== null}
-        onClose={closeShareDialog}
-        url={shareDialogUrl ?? ''}
-      />
+      {shareDialogUrl !== null && (
+        <ShareDialog isOpen onClose={closeShareDialog} url={shareDialogUrl} />
+      )}
     </>
   )
 })

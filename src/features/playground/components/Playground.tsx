@@ -90,7 +90,7 @@ function Playground({ sharedCode, brand, tourLink, editorFallback, footer }: Pla
   const outputTip = isOutputCollapsed ? i18n._(msg`显示`) : i18n._(msg`隐藏`)
 
   return (
-    <div className={`flex h-screen flex-col bg-background text-foreground ${dark ? 'dark' : ''}`}>
+    <div className={`flex h-dvh flex-col bg-background text-foreground ${dark ? 'dark' : ''}`}>
       <div className="flex min-h-0 flex-1 flex-col bg-background text-foreground p-4">
         <div id="header" className="flex-none px-2 lg:px-4">
           <PlaygroundHeader

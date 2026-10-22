@@ -1,6 +1,6 @@
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { LanguageSelector } from './LanguageSelector'
 
@@ -52,9 +52,12 @@ describe('language selector', () => {
       </I18nProvider>,
     )
 
-    const combobox = screen.getByRole('combobox')
+    const combobox = screen.getByRole('combobox', { name: 'English' })
     expect(combobox.className).toContain('min-h-11')
-    fireEvent.click(combobox)
+    await act(async () => {
+      fireEvent.click(combobox)
+      await vi.dynamicImportSettled()
+    })
 
     const englishOption = await screen.findByRole('option', { name: 'English' })
     const chineseOption = screen.getByRole('option', { name: '中文' })
@@ -74,7 +77,10 @@ describe('language selector', () => {
       </I18nProvider>,
     )
 
-    fireEvent.click(screen.getByRole('combobox'))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('combobox'))
+      await vi.dynamicImportSettled()
+    })
     const englishOption = await screen.findByRole('option', { name: 'English' })
     const chineseOption = screen.getByRole('option', { name: '中文' })
     const command = document.querySelector<HTMLElement>('[cmdk-root]')
