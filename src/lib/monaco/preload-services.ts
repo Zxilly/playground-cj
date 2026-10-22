@@ -7,7 +7,7 @@ export function preloadEditorServices(): Promise<unknown> {
     import('@codingame/monaco-vscode-languages-service-override'),
     import('@codingame/monaco-vscode-textmate-service-override'),
     import('@codingame/monaco-vscode-theme-service-override'),
-    import('@codingame/monaco-vscode-editor-service-override'),
+    import('@codingame/monaco-vscode-views-service-override'),
     import('@codingame/monaco-vscode-extensions-service-override'),
     import('@codingame/monaco-vscode-theme-defaults-default-extension'),
   ]).catch((error) => {

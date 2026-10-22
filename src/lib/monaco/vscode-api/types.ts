@@ -7,8 +7,8 @@ export interface ExtensionConfig {
   filesOrContents?: Map<string, string | URL>
 }
 
-// Standalone editor services, user configuration, a worker factory, and
-// declarative Cangjie syntax contributions. No workbench views are mounted.
+// Standalone editors and native output views share user configuration, workers,
+// and declarative Cangjie syntax contributions.
 export interface MonacoVscodeApiConfig {
   $type: 'extended'
   serviceOverrides?: monaco.editor.IEditorOverrideServices

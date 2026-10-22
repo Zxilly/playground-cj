@@ -20,6 +20,11 @@ minimumReleaseAgeExclude:
   - '@codingame/monaco-vscode-theme-defaults-default-extension@38.0.3'
   - '@codingame/monaco-vscode-theme-service-override@38.0.3'
   - zustand@5.0.16
+  - '@codingame/monaco-vscode-bulk-edit-service-override@38.0.3'
+  - '@codingame/monaco-vscode-keybindings-service-override@38.0.3'
+  - '@codingame/monaco-vscode-output-service-override@38.0.3'
+  - '@codingame/monaco-vscode-view-common-service-override@38.0.3'
+  - '@codingame/monaco-vscode-views-service-override@38.0.3'
 
 shellEmulator: true
 
