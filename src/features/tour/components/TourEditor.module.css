@@ -1,0 +1,80 @@
+.toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  padding: 0 12px;
+  color: var(--vscode-editor-foreground, var(--tour-text));
+  gap: 8px;
+  border-bottom: 1px solid var(--vscode-panel-border, var(--tour-border));
+  background: var(--vscode-editorGroupHeader-tabsBackground, var(--tour-surface));
+}
+
+.identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.identity h2 {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  --vscode-actionBar-toggledBackground: var(--vscode-toolbar-hoverBackground, var(--tour-border-soft));
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* Keep Monaco's 16px codicon + 3px padding under Tailwind's reset. */
+.actions :global(.action-label.codicon) {
+  box-sizing: content-box;
+}
+
+.nativeOutput {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.nativeOutput :global(.action-label.codicon) {
+  box-sizing: content-box;
+}
+
+/* Keep the native channel picker usable in a compact, narrow panel. VS Code
+   moves its filter into the body when the user makes the panel taller. */
+@container (max-width: 600px) {
+  .nativeOutput :global(.part.panel > .title .viewpane-filter-container) {
+    display: none;
+  }
+}
+
+.actions :global(.actions-container) {
+  gap: 4px;
+}
+
+.actions :global(.codicon-play) {
+  color: var(--vscode-debugIcon-startForeground, var(--tour-accent-fg));
+}
+
+.statusBar {
+  position: relative;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.statusBar:empty {
+  display: none;
+}
+
+.statusBar :global(.statusbar-container) {
+  border-top: 1px solid var(--vscode-panel-border, var(--tour-border));
+}

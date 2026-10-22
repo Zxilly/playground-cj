@@ -4,16 +4,18 @@ import { MonacoEditorReactComp } from '@/modules/cangjie-editor/components/Edito
 import CodeRunner from '@/modules/cangjie-editor/components/CodeRunner'
 import { Toaster } from '@/components/ui/sonner'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import { fontFamily } from '@/app/font'
 import { updateEditor } from '@/lib/monaco'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import { Play, RotateCcw } from 'lucide-react'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AnsiUp } from 'ansi_up'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePanelRef } from 'react-resizable-panels'
+import { useMedia } from 'react-use'
 import { useEditorBridge } from '@/modules/cangjie-editor/context/useEditorBridge'
 import { useTourEditorStore } from '@/stores/tourEditor'
 import { TourEditorLoading } from './TourEditorLoading'
+import { TourEditorToolbar } from './TourEditorToolbar'
+import { TourNativeOutput } from './TourNativeOutput'
+import styles from './TourEditor.module.css'
 
 interface TourEditorProps {
   code: string
@@ -51,18 +53,6 @@ interface CompilerDiagnostic {
   startColumn: number
   endLineNumber: number
   endColumn: number
-}
-
-function createLocalizedLabels(locale: string) {
-  return {
-    run: locale === 'en' ? 'Run' : String.fromCharCode(0x8FD0, 0x884C),
-    format: locale === 'en' ? 'Format' : String.fromCharCode(0x683C, 0x5F0F, 0x5316),
-    reset: locale === 'en' ? 'Reset' : String.fromCharCode(0x91CD, 0x7F6E),
-    compilerOutput: locale === 'en' ? 'Compiler Output' : String.fromCharCode(0x7F16, 0x8BD1, 0x8F93, 0x51FA),
-    programOutput: locale === 'en' ? 'Program Output' : String.fromCharCode(0x7A0B, 0x5E8F, 0x8F93, 0x51FA),
-    compilerPlaceholder: locale === 'en' ? 'Run to see compiler output.' : String.fromCharCode(0x8FD0, 0x884C, 0x540E, 0x5728, 0x6B64, 0x67E5, 0x770B, 0x7F16, 0x8BD1, 0x8F93, 0x51FA, 0x3002),
-    programPlaceholder: locale === 'en' ? 'Run to see program output.' : String.fromCharCode(0x8FD0, 0x884C, 0x540E, 0x5728, 0x6B64, 0x67E5, 0x770B, 0x7A0B, 0x5E8F, 0x8F93, 0x51FA, 0x3002),
-  }
 }
 
 function stripExitCodeFooter(output: string): string {
@@ -157,9 +147,27 @@ export function TourEditor({
 }: TourEditorProps) {
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
   const [editorReady, setEditorReady] = useState(false)
+  const [running, setRunning] = useState(false)
+  const [outputRevealRequest, setOutputRevealRequest] = useState(0)
+  const [outputState, setOutputState] = useState({ code, expanded: false })
+  if (outputState.code !== code)
+    setOutputState({ code, expanded: false })
+  const outputExpanded = outputState.code === code && outputState.expanded
+  const isDesktop = useMedia('(min-width: 1024px)', false)
+  const outputPanelRef = usePanelRef()
+  const outputGroupElementRef = useRef<HTMLDivElement>(null)
+  const statusBarHostRef = useRef<HTMLDivElement>(null)
+  const outputToggleRef = useRef<HTMLElement>(null)
+  const outputSizesRef = useRef({ desktopPercent: 32, mobilePixels: 96 })
+  const outputVisible = outputExpanded
+  const [outputMounted, setOutputMounted] = useState(false)
   const cursorPositionDisposableRef = useRef<{ dispose: () => void } | null>(null)
   const codeRef = useRef(code)
-  const ansiRef = useRef(new AnsiUp())
+  const setOutputExpanded = useCallback((expanded: boolean) => {
+    setOutputState({ code: codeRef.current, expanded })
+    if (expanded)
+      setOutputMounted(true)
+  }, [])
   const bridge = useEditorBridge()
   // Caller-owned instances skip bridge registration AND skip the code-prop
   // auto-reset effect — both behaviours are surface-specific to the singleton
@@ -178,16 +186,59 @@ export function TourEditor({
   const resetOutputs = useTourEditorStore(state => state.resetOutputs)
   const setInitialCode = useTourEditorStore(state => state.setInitialCode)
 
-  const labels = useMemo(() => createLocalizedLabels(locale), [locale])
-  const outputHtml = useMemo(() => {
-    const ansi = ansiRef.current
-    const compilerText = toolOutput || labels.compilerPlaceholder
-    const runtimeText = programOutput || labels.programPlaceholder
+  useEffect(() => {
+    if (layout !== 'full')
+      return
+    if (!outputVisible) {
+      outputPanelRef.current?.collapse()
+      return
+    }
 
-    return activeTab === 'program'
-      ? ansi.ansi_to_html(runtimeText)
-      : ansi.ansi_to_html(compilerText)
-  }, [activeTab, labels.compilerPlaceholder, labels.programPlaceholder, programOutput, toolOutput])
+    const group = outputGroupElementRef.current
+    if (!group)
+      return
+
+    // The outer reading/editor split also resizes at the desktop breakpoint.
+    // Restore output against the group's final height, not its pre-resize size.
+    // Keep mobile output compact while respecting the native panel's 77px minimum.
+    const resizeOutput = () => {
+      const height = group.getBoundingClientRect().height
+      if (height <= 0)
+        return
+      const desired = isDesktop
+        ? height * outputSizesRef.current.desktopPercent / 100
+        : outputSizesRef.current.mobilePixels
+      outputPanelRef.current?.resize(Math.max(77, Math.min(desired, height * 0.55)))
+    }
+    let frame: number | null = null
+    const observer = new ResizeObserver(() => {
+      if (frame !== null)
+        return
+      frame = requestAnimationFrame(() => {
+        frame = null
+        resizeOutput()
+      })
+    })
+    observer.observe(group)
+    resizeOutput()
+    return () => {
+      observer.disconnect()
+      if (frame !== null)
+        cancelAnimationFrame(frame)
+    }
+  }, [isDesktop, layout, outputPanelRef, outputVisible])
+
+  // CodeRunner reports the actual run lifecycle for both the toolbar and Monaco
+  // commands. Its callback reveals output without changing the reading toggle.
+  const handleRunningChange = useCallback((next: boolean) => {
+    setRunning(next)
+    if (next) {
+      setOutputExpanded(true)
+      // A new run must reveal the native channel even if React already considers
+      // the panel open (for example, after selecting the language-server log).
+      setOutputRevealRequest(request => request + 1)
+    }
+  }, [setOutputExpanded])
 
   const clearCompilerMarkers = useCallback(() => {
     const model = editorAppRef.current?.getEditor()?.getModel()
@@ -299,9 +350,10 @@ export function TourEditor({
     if (editor) {
       editor.getModel()?.setValue(codeRef.current)
       resetOutputs()
+      setOutputExpanded(false)
       clearCompilerMarkers()
     }
-  }, [clearCompilerMarkers, resetOutputs])
+  }, [clearCompilerMarkers, resetOutputs, setOutputExpanded])
 
   const handleFormatted = useCallback((formattedCode: string) => {
     editorAppRef.current?.getEditor()?.getModel()?.setValue(formattedCode)
@@ -327,17 +379,46 @@ export function TourEditor({
   }
 
   return (
-    <div className="flex h-full flex-col" data-tour-editor-root>
-      <ResizablePanelGroup orientation="vertical" className="h-full">
-        <ResizablePanel defaultSize={68} minSize={35}>
+    <div className="flex h-full min-h-0 flex-col" data-tour-editor-root>
+      <TourEditorToolbar
+        locale={locale}
+        ready={editorReady}
+        running={running}
+        outputExpanded={outputVisible}
+        outputToggleRef={outputToggleRef}
+        onToggleOutput={() => setOutputExpanded(!outputExpanded)}
+        onRun={handleRun}
+        onFormat={handleFormat}
+        onReset={handleReset}
+      />
+      <ResizablePanelGroup
+        elementRef={outputGroupElementRef}
+        orientation="vertical"
+        className="min-h-0 flex-1"
+        onLayoutChanged={(sizes, { isUserInteraction }) => {
+          if (!isUserInteraction)
+            return
+          const size = sizes['tour-output-panel']
+          if (size > 0) {
+            if (isDesktop)
+              outputSizesRef.current.desktopPercent = size
+            else
+              outputSizesRef.current.mobilePixels = outputPanelRef.current?.getSize().inPixels ?? 96
+          }
+          setOutputExpanded(size > 0)
+        }}
+      >
+        <ResizablePanel id="tour-code-panel" minSize="45%">
           <div
-            className="relative h-full min-h-0 border-b border-border transition-colors"
+            className="relative h-full min-h-0"
           >
             <MonacoEditorReactComp
               code={code}
               onLoad={onLoad}
               locale={locale}
               enableLanguageClient={enableLanguageClient}
+              statusBarCompactHeight={22}
+              statusBarHostRef={statusBarHostRef}
             />
             {!editorReady && (
               <div className="absolute inset-0 z-10">
@@ -346,80 +427,45 @@ export function TourEditor({
             )}
           </div>
         </ResizablePanel>
-        <ResizableHandle withHandle className="bg-border/80" />
-        <ResizablePanel defaultSize={32} minSize={18}>
-          <div className="flex h-full min-h-0 flex-col bg-muted/20">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-3 py-2">
-              <div className="flex items-center gap-2 whitespace-nowrap">
-                <button
-                  onClick={handleRun}
-                  disabled={!editorReady}
-                  data-tour-highlight="run"
-                  className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-tour-teal to-tour-teal-light px-3.5 py-1.5 text-xs font-medium text-white shadow-sm shadow-tour-teal/20 transition-colors hover:from-tour-teal-hover hover:to-tour-teal disabled:cursor-wait disabled:opacity-50"
-                >
-                  <Play className="size-3" />
-                  {labels.run}
-                </button>
-                <button
-                  onClick={handleFormat}
-                  disabled={!editorReady}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
-                >
-                  {labels.format}
-                </button>
-                <button
-                  onClick={handleReset}
-                  disabled={!editorReady}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait disabled:opacity-50"
-                >
-                  <RotateCcw className="size-3" />
-                  {labels.reset}
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 whitespace-nowrap text-xs">
-                <button
-                  onClick={() => setActiveTab('program')}
-                  aria-pressed={activeTab === 'program'}
-                  className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'program' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
-                >
-                  {labels.programOutput}
-                </button>
-                <button
-                  onClick={() => setActiveTab('tool')}
-                  aria-pressed={activeTab === 'tool'}
-                  className={`rounded-md px-2.5 py-1 font-medium transition-colors ${activeTab === 'tool' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}`}
-                >
-                  {labels.compilerOutput}
-                </button>
-              </div>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-auto px-3 py-2">
-              {(
-                activeTab === 'program'
-                  ? truncation.programStdout || truncation.programStderr
-                  : truncation.compilerOutput
-              ) && (
-                <p role="status" className="mb-2 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
-                  {activeTab === 'program'
-                    ? (locale === 'en'
-                        ? 'Program output was truncated.'
-                        : '程序输出已截断。')
-                    : (locale === 'en'
-                        ? 'Compiler output was truncated.'
-                        : '编译器输出已截断。')}
-                </p>
-              )}
-              <pre
-                className="whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground"
-                style={{ fontFamily }}
-                dangerouslySetInnerHTML={{ __html: outputHtml }}
+        <ResizableHandle disabled={!outputVisible} className={outputVisible ? 'bg-(--vscode-panel-border,var(--tour-border))' : 'hidden'} />
+        <ResizablePanel
+          id="tour-output-panel"
+          panelRef={outputPanelRef}
+          defaultSize="0%"
+          collapsedSize="0%"
+          collapsible
+          minSize="77px"
+        >
+          <div
+            id="tour-output-content"
+            hidden={!outputVisible}
+            inert={!outputVisible}
+            className="h-full min-h-0 overflow-hidden"
+          >
+            {editorReady && outputMounted && (
+              <TourNativeOutput
+                locale={locale}
+                expanded={outputVisible}
+                revealRequest={outputRevealRequest}
+                activeTab={activeTab}
+                onActiveTabChange={setActiveTab}
+                onClose={() => {
+                  setOutputExpanded(false)
+                  outputToggleRef.current?.focus()
+                }}
+                programOutput={programOutput + (truncation.programStdout || truncation.programStderr
+                  ? `\n\n${locale === 'en' ? 'Program output was truncated.' : '程序输出已截断。'}`
+                  : '')}
+                compilerOutput={toolOutput + (truncation.compilerOutput
+                  ? `\n\n${locale === 'en' ? 'Compiler output was truncated.' : '编译器输出已截断。'}`
+                  : '')}
               />
-            </div>
+            )}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      <div id="tour-editor-statusbar" ref={statusBarHostRef} className={styles.statusBar} />
 
       <div className="shrink-0">
         <Toaster richColors closeButton position="top-center" />
@@ -428,6 +474,7 @@ export function TourEditor({
           setProgramOutput={useTourEditorStore.getState().setProgramOutput}
           setTruncation={useTourEditorStore.getState().setTruncation}
           onFormatted={handleFormatted}
+          onRunningChange={handleRunningChange}
         />
       </div>
     </div>

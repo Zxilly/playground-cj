@@ -57,6 +57,7 @@ export const HMR_SLOT_KEYS = {
   MONACO_CANGJIE_MONARCH_PROVIDER: 'monaco.cangjieMonarchProvider',
   MONACO_MODEL_REGISTRY: 'monaco.modelRegistry',
   MONACO_MODEL_PAGE_CLEANUP: 'monaco.modelPageCleanup',
+  TOUR_OUTPUT_CHANNELS: 'tour.outputChannels',
 } as const
 
 declare global {
