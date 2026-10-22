@@ -122,3 +122,17 @@ document roots; enabling Shadow DOM would require revisiting this adaptation.
 `pnpm lingui:compile` only compiles catalogs. Font generation is its own
 `pnpm fonts:generate` task, explicitly called after catalog compilation by
 `predev` and `prebuild`.
+
+EdgeOne CLI 1.6.44 bundles adapter 0.2.10-beta.11, whose middleware runtime
+assumes flat Turbopack factory groups. Next 16.4 also emits a nested strict
+group. The adapter incorrectly registers that array as a module ID and fails
+at runtime despite a successful build. The deployment workflow patches only
+the adapter's factory installer to support this format and preserve factory
+aliases, matching Next's runtime behavior. Turbopack remains enabled.
+
+The patch checks both the adapter version and the original function hash and
+stops on an unknown implementation. Six regression tests cover the installer;
+eight checks execute the compiled application middleware. After deployment,
+HTTP checks verify both locales, isolation headers, language redirects, and
+the API origin guard. Remove the patch after an upstream adapter release
+supports these cases and passes the same checks.

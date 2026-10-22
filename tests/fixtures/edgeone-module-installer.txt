@@ -1,0 +1,24 @@
+// From @edgeone/opennextjs-pages 0.2.10-beta.11 (ISC).
+// Keep the upstream body intact to verify the deployment patch preimage.
+function installCompressedModuleFactories(chunkModules, offset) {
+  let i = offset || 0;
+  while (i < chunkModules.length) {
+    let moduleId = chunkModules[i];
+    let end = i + 1;
+    // \u627E\u5230\u5DE5\u5382\u51FD\u6570
+    while (end < chunkModules.length && typeof chunkModules[end] !== 'function') {
+      end++;
+    }
+    if (end === chunkModules.length) {
+      break;
+    }
+    if (!moduleFactories.has(moduleId)) {
+      const moduleFactoryFn = chunkModules[end];
+      for (; i < end; i++) {
+        moduleId = chunkModules[i];
+        moduleFactories.set(moduleId, moduleFactoryFn);
+      }
+    }
+    i = end + 1;
+  }
+}
