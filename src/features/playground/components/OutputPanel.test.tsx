@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -37,7 +37,7 @@ describe('outputPanel', () => {
     expect(within(panels[1]).getByText('hello world')).toBeTruthy()
   })
 
-  it('renders ANSI output as HTML while escaping program text', () => {
+  it('renders ANSI output as HTML while escaping program text', async () => {
     const { container } = render(
       <Wrapper>
         <OutputPanel
@@ -47,14 +47,13 @@ describe('outputPanel', () => {
         />
       </Wrapper>,
     )
+    await waitFor(() => expect(container.querySelector('pre')?.innerHTML).toContain('color:rgb(0,187,0)'))
     const panels = container.querySelectorAll('pre')
-
-    expect(panels[0].innerHTML).toContain('color:rgb(0,187,0)')
     expect(panels[1].querySelector('script')).toBeNull()
     expect(panels[1].textContent).toContain('<script>alert(1)</script>')
   })
 
-  it('promotes the compiler diagnostic and keeps the ANSI runner command collapsed', () => {
+  it('promotes the compiler diagnostic and keeps the ANSI runner command collapsed', async () => {
     const { container } = render(
       <Wrapper>
         <OutputPanel
@@ -65,6 +64,7 @@ describe('outputPanel', () => {
       </Wrapper>,
     )
 
+    await waitFor(() => expect(container.querySelector('pre')?.innerHTML).toContain('color:rgb(187,0,0)'))
     const visibleCompiler = container.querySelector('pre')
     expect(visibleCompiler?.textContent).toContain('error: expected expression')
     expect(visibleCompiler?.textContent).not.toContain('/cangjie/bin/cjc')

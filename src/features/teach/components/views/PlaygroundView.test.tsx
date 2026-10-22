@@ -728,7 +728,8 @@ describe('playgroundView student flow', () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
     fireEvent.click(screen.getByTestId('playground-run'))
 
-    const diagnostic = await screen.findByTestId('playground-stderr')
+    await waitFor(() => expect(screen.getByTestId('playground-stderr').innerHTML).toContain('color:rgb(187,0,0)'))
+    const diagnostic = screen.getByTestId('playground-stderr')
     expect(diagnostic.textContent).toContain('error: expected expression')
     expect(diagnostic.textContent).not.toContain('/opt/cangjie/bin/cjc')
     expect(diagnostic.textContent).not.toContain(ESC)
