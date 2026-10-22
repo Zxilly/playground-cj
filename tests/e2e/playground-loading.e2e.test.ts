@@ -27,7 +27,9 @@ describe('playground initial load', () => {
     const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width, height: 900 } })
     try {
       const page = await context.newPage()
-      await page.goto(`${baseUrl}/${locale}`, { waitUntil: 'domcontentloaded' })
+      // Remote CSS can finish after DOMContentLoaded when JavaScript is disabled.
+      // Layout assertions need stylesheets, while the page still cannot hydrate.
+      await page.goto(`${baseUrl}/${locale}`, { waitUntil: 'load' })
       expect(await page.locator('#header h1').isVisible()).toBe(true)
       expect(await page.locator('#panel-content').isVisible()).toBe(true)
       expect(await page.getByTestId('code-preview').isVisible()).toBe(true)
