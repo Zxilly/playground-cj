@@ -116,16 +116,18 @@ false matches in comments/strings, dynamic-index rejection, preserved indexes,
 and catalog bounds. Browser component tests verify file mirroring through the
 file service without eagerly importing the extension API.
 
-## EdgeOne adapter patch
+## EdgeOne compatibility hook
 
-The existing deployment patch is separate from these editor changes. CI
-installs EdgeOne CLI 1.6.44, checks its bundled adapter version
-`0.2.10-beta.11` and the original factory-installer function hash, then replaces
-that function in the installed adapter before compilation. It supports Next
-16.4's nested strict Turbopack factory groups and aliases.
+The deployment compatibility layer is separate from these editor changes.
+CI installs EdgeOne CLI 1.6.45 and preloads a Node module hook that checks
+the CLI version, adapter `0.2.10-beta.12`, and original factory-installer
+function hash. It transforms only the selected compiler module in memory to
+support Next 16.4's nested strict Turbopack factory groups and aliases.
 
-This is an automated, version-guarded dependency patch. It does not require
-editing deployed files by hand. Unknown adapter versions or source changes
-fail the deployment instead of applying an unverified patch. The workflow
-tests the installer, executes eight cases against compiled middleware, and
-checks live HTTP behavior after deployment. Turbopack remains enabled.
+Installed dependencies are never rewritten. Unknown package versions or source
+changes fail the build. Both deployment and the separate compiled-middleware
+verification explicitly enable the hook; no global `NODE_OPTIONS` is needed.
+Twelve regression tests cover factory registration and hook isolation, followed
+by eight checks against the compiled application middleware and live HTTP checks.
+Turbopack remains enabled. See the [hook operations guide](../edgeone-hook.md)
+for commands and the upgrade procedure.

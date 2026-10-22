@@ -126,16 +126,20 @@ document roots; enabling Shadow DOM would require revisiting this adaptation.
 `pnpm fonts:generate` task, explicitly called after catalog compilation by
 `predev` and `prebuild`.
 
-EdgeOne CLI 1.6.44 bundles adapter 0.2.10-beta.11, whose middleware runtime
-assumes flat Turbopack factory groups. Next 16.4 also emits a nested strict
+The middleware compiler in EdgeOne adapters 0.2.10-beta.11 (CLI 1.6.44) and
+0.2.10-beta.12 (CLI 1.6.45) assumes flat Turbopack factory groups.
+Next 16.4 also emits a nested strict
 group. The adapter incorrectly registers that array as a module ID and fails
-at runtime despite a successful build. The deployment workflow patches only
-the adapter's factory installer to support this format and preserve factory
-aliases, matching Next's runtime behavior. Turbopack remains enabled.
+at runtime despite a successful build. The deployment workflow now uses an
+explicit Node module loading hook to transform the selected adapter compiler
+in memory. Installed dependencies remain unchanged. The transform preserves
+factory aliases, matching Next's runtime behavior. Turbopack remains enabled.
 
-The patch checks both the adapter version and the original function hash and
-stops on an unknown implementation. Six regression tests cover the installer;
+The hook checks CLI and adapter versions and the original function hash and
+stops on an unknown implementation. Twelve regression tests cover the installer
+and module loading behavior;
 eight checks execute the compiled application middleware. After deployment,
 HTTP checks verify both locales, isolation headers, language redirects, and
-the API origin guard. Remove the patch after an upstream adapter release
-supports these cases and passes the same checks.
+the API origin guard. Remove the hook after an upstream adapter release
+supports these cases and passes the same checks. The [operations guide](../edgeone-hook.md)
+documents the opt-in command and upgrade procedure.

@@ -51,3 +51,4 @@ cangjie-mcp.log
 /.tmp/
 /docs/*
 !/docs/performance/
+!/docs/edgeone-hook.md
