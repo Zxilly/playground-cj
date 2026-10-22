@@ -10,13 +10,16 @@ import { fontFamily } from '@/app/font'
 import { getTourHref } from '@/lib/siteHref'
 import { getStarterCode } from '@/lib/monaco/starter-code'
 
-async function CodePreview({ locale, sharedCode }: { locale: string, sharedCode?: Promise<string | undefined> }) {
-  const code = await sharedCode ?? getStarterCode(locale)
+function CodePreview({ code }: { code: string }) {
   return (
     <pre data-testid="code-preview" className="m-0 overflow-hidden p-4 text-[15px] leading-5" style={{ fontFamily }}>
       <code>{code.split('\n', 40).join('\n').slice(0, 8000)}</code>
     </pre>
   )
+}
+
+async function SharedCodePreview({ locale, sharedCode }: { locale: string, sharedCode: Promise<string | undefined> }) {
+  return <CodePreview code={await sharedCode ?? getStarterCode(locale)} />
 }
 
 export default async function Wrapper({ lang, sharedCode }: { lang: string, sharedCode?: Promise<string | undefined> }) {
@@ -50,7 +53,11 @@ export default async function Wrapper({ lang, sharedCode }: { lang: string, shar
       editorFallback={(
         <div className="absolute inset-0 overflow-hidden bg-background" aria-busy="true">
           <Suspense fallback={loading}>
-            <CodePreview locale={locale} sharedCode={sharedCode} />
+            {/* Keep the default preview synchronous: streamed Suspense reveals
+                need JavaScript even when the async work is already resolved. */}
+            {sharedCode
+              ? <SharedCodePreview locale={locale} sharedCode={sharedCode} />
+              : <CodePreview code={getStarterCode(locale)} />}
             {loading}
           </Suspense>
         </div>
