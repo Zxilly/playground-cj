@@ -1858,10 +1858,18 @@ index 199e87d2..80edfab7 100644
      message(WARNING "Use the [cmake -DCOMPILER_TYPE=MSVC/MINGW/Ninja .] command to set the compiler type.")
  endif ()
 diff --git a/cangjie_tools/cangjie-language-server/src/languageserver/ArkASTWorker.cpp b/cangjie_tools/cangjie-language-server/src/languageserver/ArkASTWorker.cpp
-index 53fb79ee..6abb9189 100644
+index 53fb79ee..361e8e7a 100644
 --- a/cangjie_tools/cangjie-language-server/src/languageserver/ArkASTWorker.cpp
 +++ b/cangjie_tools/cangjie-language-server/src/languageserver/ArkASTWorker.cpp
-@@ -47,6 +47,12 @@ void ArkASTWorker::Update(const ParseInputs &inputs, NeedDiagnostics needDiag)
+@@ -7,4 +7,7 @@
+ #include "ArkASTWorker.h"
++#ifdef BUILD_WASM
++#include "../wasm/WasmCompilerGuard.h"
++#endif
+ #include <pthread.h>
+ #include "ArkAST.h"
+ #include "cangjie/Parse/Parser.h"
+@@ -47,6 +50,12 @@ void ArkASTWorker::Update(const ParseInputs &inputs, NeedDiagnostics needDiag)
              if (CompilerCangjieProject::GetInstance()->GetCangjieFileKind(realName).first == CangjieFileKind::MISSING) {
                  return;
              }
@@ -1874,7 +1882,17 @@ index 53fb79ee..6abb9189 100644
              // ast is not in cache, need to compile separately
              CompilerCangjieProject::GetInstance()->CompilerOneFile(realName, inputs.contents);
          }
-@@ -179,6 +185,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+@@ -79,6 +88,9 @@ void ArkASTWorker::Run()
+             if (!sLock.owns_lock()) {
+                 sLock.lock();
+             }
++#ifdef BUILD_WASM
++            std::lock_guard<std::recursive_mutex> compilerLock(wasmCompilerMutex);
++#endif
+             currentRequest.action();
+         }
+     }
+@@ -179,6 +191,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
              if (this->callback->isRenameDefined && this->callback->NeedReParser(this->callback->path) &&
                  this->callback->path != file) {
                  // LCOV_EXCL_START
@@ -1884,7 +1902,7 @@ index 53fb79ee..6abb9189 100644
                  CompilerCangjieProject::GetInstance()->CompilerOneFile(
                      this->callback->path, this->callback->GetContentsByFile(this->callback->path));
                  this->callback->UpdateDocNeedReparse(this->callback->path,
-@@ -187,6 +196,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+@@ -187,6 +202,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
                  this->callback->path = "";
                  // LCOV_EXCL_STOP
              }
@@ -1894,7 +1912,7 @@ index 53fb79ee..6abb9189 100644
              CompilerCangjieProject::GetInstance()->CompilerOneFile(file, this->callback->GetContentsByFile(file));
              this->callback->UpdateDocNeedReparse(file, inputs.version, false);
              std::vector<DiagnosticToken> diagnostics = callback->GetDiagsOfCurFile(file);
-@@ -196,6 +208,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+@@ -196,6 +214,9 @@ void ArkASTWorker::RunWithAST(const std::string &name,
          if (hierarchyIgnoreRequest.find(name) == hierarchyIgnoreRequest.end() &&
              (!CompilerCangjieProject::GetInstance()->FileHasSemaCache(file) ||
                  CompilerCangjieProject::GetInstance()->CheckNeedCompiler(file))) {
@@ -1904,7 +1922,7 @@ index 53fb79ee..6abb9189 100644
              CompilerCangjieProject::GetInstance()->IncrementOnePkgCompile(file, inputs.contents);
              std::vector<DiagnosticToken> diagnostics = callback->GetDiagsOfCurFile(file);
              callback->ReadyForDiagnostics(file, inputs.version, diagnostics);
-@@ -210,6 +225,12 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+@@ -210,6 +231,12 @@ void ArkASTWorker::RunWithAST(const std::string &name,
          }
          Logger::Instance().CleanKernelLog(std::this_thread::get_id());
          if (name == "SemanticTokens") {
@@ -1917,7 +1935,7 @@ index 53fb79ee..6abb9189 100644
              if (FileUtil::FileExist(file)) {
                  if (ast && ast->file && ast->packageInstance &&
                      ast->packageInstance->package) {
-@@ -221,6 +242,7 @@ void ArkASTWorker::RunWithAST(const std::string &name,
+@@ -221,6 +248,7 @@ void ArkASTWorker::RunWithAST(const std::string &name,
              } else {
                  callback->ReadyForDiagnostics(file, inputs.version, {});
              }
@@ -1925,7 +1943,17 @@ index 53fb79ee..6abb9189 100644
          }
          action(InputsAndAST{inputs, ast, curOnEditName, useASTCache});
      };
-@@ -301,6 +323,7 @@ bool ArkASTWorker::ParseAndInvokeWithASTCache(const std::string &name,
+@@ -261,6 +289,9 @@ void ArkASTWorker::RunWithASTCache(
+         if (isCompleteRunning) {
+             waitingCompletionTask = std::move(task);
+         } else {
++            // Reserve the completion slot before releasing the lock. A second
++            // request can arrive before the new thread starts running.
++            isCompleteRunning = true;
+             lock.unlock();
+             std::thread thread(std::move(task));
+             thread.detach();
+@@ -301,6 +332,7 @@ bool ArkASTWorker::ParseAndInvokeWithASTCache(const std::string &name,
      }
      CompilerCangjieProject::GetInstance()->ClearParseCache(name);
      // LCOV_EXCL_START
@@ -1933,7 +1961,7 @@ index 53fb79ee..6abb9189 100644
      if (CompilerCangjieProject::GetUseDB()) {
          lsp::BackgroundIndexDB *indexDB = CompilerCangjieProject::GetInstance()->GetBgIndexDB();
          if (!indexDB) {
-@@ -308,6 +331,7 @@ bool ArkASTWorker::ParseAndInvokeWithASTCache(const std::string &name,
+@@ -308,16 +340,16 @@ bool ArkASTWorker::ParseAndInvokeWithASTCache(const std::string &name,
          }
          indexDB->EraseThreadCache();
      }
@@ -1941,7 +1969,29 @@ index 53fb79ee..6abb9189 100644
      // LCOV_EXCL_STOP
      return true;
  }
-@@ -358,7 +382,7 @@ void AsyncTaskRunner::RunAsync(const std::string &name, std::function<void()> ac
+ void ArkASTWorker::DoCompletionWithASTCache(
+     const std::string &name, const std::string &file, Position pos, std::function<void(InputsAndAST)> action)
+ {
+-    if (!Options::GetInstance().IsOptionSet("test")) {
+-        std::unique_lock<std::mutex> lock(completionMtx);
+-        isCompleteRunning = true;
+-    }
++#ifdef BUILD_WASM
++    std::lock_guard<std::recursive_mutex> compilerLock(wasmCompilerMutex);
++#endif
+     auto inputs =
+         ParseInputs(file, this->callback->GetContentsByFile(file), this->callback->GetVersionByFile(file));
+     std::string absName = Cangjie::FileUtil::Normalize(file);
+@@ -333,8 +365,6 @@ void ArkASTWorker::DoCompletionWithASTCache(
+     }
+     int fileID = GetFileIDForCompletion(file);
+     if (fileID == -1) {
+-        std::unique_lock<std::mutex> lock(completionMtx);
+-        isCompleteRunning = false;
+         return;
+     }
+     pos.fileID = fileID;
+@@ -358,7 +388,7 @@ void AsyncTaskRunner::RunAsync(const std::string &name, std::function<void()> ac
          std::lock_guard<std::mutex> lock(mutex);
          ++inFlightTasks;
      }
@@ -3216,12 +3266,40 @@ index 00000000..a9ce433c
 +    )
 +
 +endif()
+diff --git a/cangjie_tools/cangjie-language-server/src/wasm/WasmCompilerGuard.h b/cangjie_tools/cangjie-language-server/src/wasm/WasmCompilerGuard.h
+new file mode 100644
+index 00000000..b267f0da
+--- /dev/null
++++ b/cangjie_tools/cangjie-language-server/src/wasm/WasmCompilerGuard.h
+@@ -0,0 +1,22 @@
++// Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
++// This source file is part of the Cangjie project, licensed under Apache-2.0
++// with Runtime Library Exception.
++//
++// See https://cangjie-lang.cn/pages/LICENSE for license information.
++
++#ifndef LSPSERVER_WASMCOMPILERGUARD_H
++#define LSPSERVER_WASMCOMPILERGUARD_H
++
++#ifdef BUILD_WASM
++#include <mutex>
++
++namespace ark {
++// Cache locks do not protect nodes while a compiler instance rebuilds its AST.
++// Serialize top-level protocol, diagnostic and completion operations in the
++// browser. Internal compiler pool jobs must not acquire this gate: their owner
++// waits for them while holding it.
++inline std::recursive_mutex wasmCompilerMutex;
++} // namespace ark
++#endif
++
++#endif // LSPSERVER_WASMCOMPILERGUARD_H
 diff --git a/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.cpp b/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.cpp
 new file mode 100644
-index 00000000..336894c4
+index 00000000..c4dc4ce3
 --- /dev/null
 +++ b/cangjie_tools/cangjie-language-server/src/wasm/WasmTransport.cpp
-@@ -0,0 +1,231 @@
+@@ -0,0 +1,233 @@
 +// Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
 +// This source file is part of the Cangjie project, licensed under Apache-2.0
 +// with Runtime Library Exception.
@@ -3231,6 +3309,7 @@ index 00000000..336894c4
 +#ifdef BUILD_WASM
 +
 +#include "WasmTransport.h"
++#include "WasmCompilerGuard.h"
 +#include "../languageserver/capabilities/shutdown/Shutdown.h"
 +#include "../languageserver/logger/Logger.h"
 +
@@ -3395,6 +3474,7 @@ index 00000000..336894c4
 +
 +LSPRet WasmTransport::HandleMessage(nlohmann::json message, MessageHandler &handler)
 +{
++    std::lock_guard<std::recursive_mutex> compilerLock(wasmCompilerMutex);
 +    Logger &logger = Logger::Instance();
 +
 +    // Message must be an object with "jsonrpc":"2.0".

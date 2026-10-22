@@ -9,14 +9,19 @@ async function initializeWorker(verify?: (port: MessagePort) => Promise<void>) {
   const logs: string[] = []
   const worker = new Worker(new URL('../workers/lsp-runtime.worker.ts', import.meta.url), { type: 'module' })
   const channel = new MessageChannel()
+  let rejectFailure: (error: Error) => void = () => {}
+  const failure = new Promise<never>((_resolve, reject) => {
+    rejectFailure = reject
+  })
+  void failure.catch(() => {})
   try {
     const initialized = new Promise<{ capabilities: object }>((resolve, reject) => {
-      worker.onerror = event => reject(new Error(event.message))
+      worker.onerror = event => rejectFailure(new Error(event.message))
       worker.onmessage = ({ data }) => {
         if (data.type === 'log')
           logs.push(data.message)
         if (data.type === 'error')
-          reject(new Error(data.message))
+          rejectFailure(new Error(data.message))
         if (data.type === 'ready') {
           channel.port1.postMessage({
             jsonrpc: '2.0',
@@ -47,10 +52,10 @@ async function initializeWorker(verify?: (port: MessagePort) => Promise<void>) {
       }
     })
     worker.postMessage({ type: 'start', serverPort: channel.port2 }, [channel.port2])
-    expect((await initialized).capabilities).toHaveProperty('textDocumentSync')
+    expect((await Promise.race([initialized, failure])).capabilities).toHaveProperty('textDocumentSync')
     expect(logs).toContain(`Cangjie LSP ${toolchainLock.release}`)
     channel.port1.postMessage({ jsonrpc: '2.0', method: 'initialized', params: {} })
-    await verify?.(channel.port1)
+    await Promise.race([verify?.(channel.port1), failure])
     return logs
   }
   finally {
@@ -86,6 +91,66 @@ it('type-checks STDX imports with the matching CJO modules and updates diagnosti
     await expect.poll(() => diagnostics.at(-1), { timeout: 30_000 }).toEqual([])
   })
 }, 60_000)
+
+it('keeps overlapping completions valid during diagnostic rebuilds', async () => {
+  await initializeWorker(async (port) => {
+    const uri = 'file:///playground/src/main.cj'
+    interface CompletionItem { label: string }
+    const responses = new Map<number, { result?: { items?: CompletionItem[] } | CompletionItem[], error?: unknown }>()
+    const diagnostics: { message: string }[][] = []
+    port.onmessage = ({ data }) => {
+      if (typeof data.id === 'number')
+        responses.set(data.id, data)
+      if (data.method === 'textDocument/publishDiagnostics' && data.params.uri === uri)
+        diagnostics.push(data.params.diagnostics)
+    }
+    const invalid = 'main() { let value: Int64 = "wrong" }'
+    const incomplete = (name: string) => `main() {\n    let ${name}: Int64 = 1\n    localV\n}`
+    port.postMessage({
+      jsonrpc: '2.0',
+      method: 'textDocument/didOpen',
+      params: { textDocument: { uri, languageId: 'Cangjie', version: 1, text: invalid } },
+    })
+    await expect.poll(() => diagnostics.flat(), { timeout: 30_000 }).toEqual(expect.arrayContaining([
+      expect.objectContaining({ message: expect.stringMatching(/Int64/) }),
+    ]))
+    for (let round = 0; round < 20; round += 1) {
+      const version = round * 2 + 2
+      const localName = `localValue${round}`
+      port.postMessage({
+        jsonrpc: '2.0',
+        method: 'textDocument/didChange',
+        params: { textDocument: { uri, version }, contentChanges: [{ text: incomplete(localName) }] },
+      })
+      const id = round + 1100
+      // Typing and an explicit completion invocation can issue adjacent requests.
+      for (const requestId of [id - 1000, id]) {
+        port.postMessage({
+          jsonrpc: '2.0',
+          id: requestId,
+          method: 'textDocument/completion',
+          params: { textDocument: { uri }, position: { line: 2, character: 10 }, context: { triggerKind: 1 } },
+        })
+      }
+      await expect.poll(() => responses.has(id), { timeout: 10_000 }).toBe(true)
+      const response = responses.get(id)!
+      expect(response.error).toBeUndefined()
+      const items = Array.isArray(response.result) ? response.result : response.result?.items
+      expect(items, JSON.stringify({ round, response })).toEqual(expect.arrayContaining([
+        expect.objectContaining({ label: localName }),
+      ]))
+      diagnostics.length = 0
+      port.postMessage({
+        jsonrpc: '2.0',
+        method: 'textDocument/didChange',
+        params: { textDocument: { uri, version: version + 1 }, contentChanges: [{ text: invalid }] },
+      })
+      await expect.poll(() => diagnostics.flat(), { timeout: 10_000 }).toEqual(expect.arrayContaining([
+        expect.objectContaining({ message: expect.stringMatching(/Int64/) }),
+      ]))
+    }
+  })
+}, 90_000)
 
 it('starts the real LSP worker with production caching and answers initialize', async () => {
   expect(CJO_MODULES.length).toBeGreaterThan(0)
