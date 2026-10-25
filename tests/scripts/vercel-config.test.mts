@@ -25,7 +25,7 @@ describe('vercel function lifecycle configuration', () => {
 })
 
 describe('vercel deployment input', () => {
-  it('downloads generated WASM assets during the remote build', () => {
+  it('ships pnpm configuration and downloads generated WASM assets during the remote build', () => {
     const ignoredPaths = readFileSync(resolve('.vercelignore'), 'utf8')
       .split(/\r?\n/)
       .map(line => line.trim())
@@ -35,6 +35,7 @@ describe('vercel deployment input', () => {
       '/*',
       '!package.json',
       '!pnpm-lock.yaml',
+      '!pnpm-workspace.yaml',
       '!patches',
       '!cj-runner',
       '!public',
