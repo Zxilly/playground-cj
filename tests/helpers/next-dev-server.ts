@@ -134,6 +134,7 @@ export async function startNextDevServer(): Promise<StartedNextDevServer> {
     env: {
       ...process.env,
       CI: '1',
+      PLAYGROUND_E2E: '1',
       NEXT_TELEMETRY_DISABLED: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],

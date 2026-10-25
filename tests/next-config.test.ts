@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import nextConfig from '../next.config'
 
 describe('next app config', () => {
@@ -16,5 +16,22 @@ describe('next app config', () => {
     expect(csp?.value).toBe(
       'base-uri \'self\'; object-src \'none\'; frame-src \'none\'; img-src \'self\' blob: data:; media-src \'self\' blob: data:',
     )
+  })
+})
+
+describe('next development indicator', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.resetModules()
+  })
+
+  it.each([
+    ['1', false],
+    [undefined, undefined],
+  ])('only hides the badge when PLAYGROUND_E2E is %s', async (value, expected) => {
+    vi.stubEnv('PLAYGROUND_E2E', value)
+    vi.resetModules()
+    const { default: config } = await import('../next.config')
+    expect(config.devIndicators).toBe(expected)
   })
 })

@@ -74,6 +74,8 @@ const WASM_ASSETS_VERSION = detectWasmAssetsVersion()
 const CJO_MODULES = collectCjoModules()
 
 const nextConfig: NextConfig = {
+  // Keep the dev-tools badge off mobile E2E controls; runtime errors still surface.
+  devIndicators: process.env.PLAYGROUND_E2E === '1' ? false : undefined,
   allowedDevOrigins: [
     '127.0.0.1',
   ],
