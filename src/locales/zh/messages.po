@@ -35,7 +35,6 @@ msgstr "AI 服务来源"
 msgid "AI 服务设置"
 msgstr "AI 服务设置"
 
-#: src/features/teach/components/TeachLanding.tsx:33
 #: src/features/teach/components/TeachTopBar.tsx:37
 #: src/features/tour/components/TourHeader.tsx:71
 #: src/features/tour/components/TourHeader.tsx:74
@@ -187,7 +186,7 @@ msgstr "仓颉代码提示暂不可用，系统会自动重启。点击管理。
 msgid "仓颉代码提示暂不可用。请手动重启。"
 msgstr "仓颉代码提示暂不可用。请手动重启。"
 
-#: src/features/playground/components/Playground.tsx:71
+#: src/features/playground/components/Playground.tsx:72
 msgid "代码"
 msgstr "代码"
 
@@ -226,10 +225,6 @@ msgstr "使用自定义 API Key"
 msgid "使用自定义 API Key 时，需同时配置服务地址与模型。"
 msgstr "使用自定义 API Key 时，需同时配置服务地址与模型。"
 
-#: src/features/teach/components/TeachLanding.tsx:68
-msgid "依据记忆曲线安排复习，帮助你长期留存所学内容。"
-msgstr "依据记忆曲线安排复习，帮助你长期留存所学内容。"
-
 #: src/components/ui/sidebar.tsx:207
 msgid "侧边栏"
 msgstr "侧边栏"
@@ -238,13 +233,17 @@ msgstr "侧边栏"
 msgid "保存"
 msgstr "保存"
 
-#: src/lib/monaco/actions.ts:98
+#: src/lib/monaco/actions.ts:101
 msgid "保存代码"
 msgstr "保存代码"
 
 #: src/modules/llm-config/components/LLMConfigDialog.tsx:236
 msgid "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
 msgstr "保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。"
+
+#: src/modules/llm-config/components/LLMConfigDialog.tsx:234
+msgid "保存后将使用共享额度，并移除当前 API Key；取消则保留原配置。"
+msgstr "保存后将使用共享额度，并移除当前 API Key；取消则保留原配置。"
 
 #: src/features/teach/components/views/PlaygroundView.tsx:416
 msgid "保留标签页"
@@ -257,14 +256,6 @@ msgstr "停止"
 #: src/modules/assistant-ui/chat/ThreadComposer.tsx:73
 msgid "停止生成"
 msgstr "停止生成"
-
-#: src/features/teach/components/TeachLanding.tsx:39
-msgid "先明确你想用仓颉完成什么，课堂会围绕这个目标调整讲解、示例与练习；课程范围由你选择的内置路径决定。整个工作区可导出，进度保存在本机。"
-msgstr "先明确你想用仓颉完成什么，课堂会围绕这个目标调整讲解、示例与练习；课程范围由你选择的内置路径决定。整个工作区可导出，进度保存在本机。"
-
-#: src/features/teach/components/TeachConfigWizard.tsx:151
-msgid "先选择驱动课堂的 AI 服务"
-msgstr "先选择驱动课堂的 AI 服务"
 
 #: src/features/teach/components/TeachConfigWizard.tsx:169
 msgid "共享 AI 服务"
@@ -298,6 +289,10 @@ msgstr "共享额度每日 0 点（北京时间）自动刷新。"
 #: src/components/ui/sheet.tsx:84
 msgid "关闭"
 msgstr "关闭"
+
+#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:113
+msgid "关闭提示"
+msgstr "关闭提示"
 
 #: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:103
 msgid "关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。"
@@ -343,7 +338,7 @@ msgstr "分享代码加载成功"
 msgid "分享失败"
 msgstr "分享失败"
 
-#: src/lib/monaco/actions.ts:96
+#: src/lib/monaco/actions.ts:99
 msgid "分享完整链接"
 msgstr "分享完整链接"
 
@@ -352,7 +347,7 @@ msgstr "分享完整链接"
 msgid "分享成功"
 msgstr "分享成功"
 
-#: src/lib/monaco/actions.ts:97
+#: src/lib/monaco/actions.ts:100
 msgid "分享短链接"
 msgstr "分享短链接"
 
@@ -370,7 +365,7 @@ msgstr "删除标签页"
 msgid "删除这个 Playground 标签页？"
 msgstr "删除这个 Playground 标签页？"
 
-#: src/features/teach/components/TeachLanding.tsx:64
+#: src/features/teach/components/TeachLanding.tsx:60
 msgid "动手练习"
 msgstr "动手练习"
 
@@ -428,7 +423,7 @@ msgstr "启动"
 msgid "回到最新内容"
 msgstr "回到最新内容"
 
-#: src/features/teach/components/TeachLanding.tsx:36
+#: src/features/teach/components/TeachLanding.tsx:32
 msgid "围绕你的目标学习仓颉基础"
 msgstr "围绕你的目标学习仓颉基础"
 
@@ -440,9 +435,13 @@ msgstr "图片附件预览"
 msgid "在 GitHub 查看源代码"
 msgstr "在 GitHub 查看源代码"
 
-#: src/features/teach/components/TeachLanding.tsx:65
+#: src/features/teach/components/TeachLanding.tsx:61
 msgid "在内置编辑器中编写仓颉代码并直接运行查看结果，课堂据此给出反馈。"
 msgstr "在内置编辑器中编写仓颉代码并直接运行查看结果，课堂据此给出反馈。"
+
+#: src/features/teach/components/TeachLanding.tsx:58
+msgid "在所选课程范围内，按你的目标调整讲解、示例和练习。"
+msgstr "在所选课程范围内，按你的目标调整讲解、示例和练习。"
 
 #: src/features/teach/components/TeachConfigWizard.tsx:213
 msgid "填写你的 API Key"
@@ -452,7 +451,7 @@ msgstr "填写你的 API Key"
 msgid "填写你的 API 服务"
 msgstr "填写你的 API 服务"
 
-#: src/features/teach/components/TeachLanding.tsx:67
+#: src/features/teach/components/TeachLanding.tsx:63
 msgid "复习巩固"
 msgstr "复习巩固"
 
@@ -501,10 +500,6 @@ msgstr "已保存代码"
 msgid "已停止生成。消息已放回输入框，你可以修改后重新发送。"
 msgstr "已停止生成。消息已放回输入框，你可以修改后重新发送。"
 
-#: src/modules/llm-config/components/LLMConfigDialog.tsx:234
-msgid "已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。"
-msgstr "已切回共享额度草稿；点击保存才会替换当前 API Key，取消会保留原设置。"
-
 #: src/features/playground/components/ShareDialog.tsx:26
 msgid "已复制分享链接"
 msgstr "已复制分享链接"
@@ -513,7 +508,7 @@ msgstr "已复制分享链接"
 msgid "已就绪，可直接进入"
 msgstr "已就绪，可直接进入"
 
-#: src/features/teach/components/TeachLanding.tsx:52
+#: src/features/teach/components/TeachLanding.tsx:48
 msgid "开始"
 msgstr "开始"
 
@@ -533,10 +528,6 @@ msgstr "总耗时{duration} ms"
 msgid "我熟悉的语言"
 msgstr "我熟悉的语言"
 
-#: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:113
-msgid "我知道了"
-msgstr "我知道了"
-
 #: src/modules/llm-config/components/QuotaExhaustedDialog.tsx:106
 msgid "打开 AI 服务设置填写自定义 API Key；不会清空已有课堂内容或练习记录。"
 msgstr "打开 AI 服务设置填写自定义 API Key；不会清空已有课堂内容或练习记录。"
@@ -545,13 +536,17 @@ msgstr "打开 AI 服务设置填写自定义 API Key；不会清空已有课堂
 msgid "打开 AI 课堂，从当前教程主题开始学习和练习。"
 msgstr "打开 AI 课堂，从当前教程主题开始学习和练习。"
 
+#: src/features/teach/components/TeachLanding.tsx:64
+msgid "按概念复习课程，并回顾已保存的讲解与错题诊断。"
+msgstr "按概念复习课程，并回顾已保存的讲解与错题诊断。"
+
+#: src/features/teach/components/TeachLanding.tsx:57
+msgid "按目标学习"
+msgstr "按目标学习"
+
 #: src/features/teach/components/TeachConfigWizard.tsx:190
 msgid "接入你自己的 OpenAI 兼容或 Anthropic 服务。"
 msgstr "接入你自己的 OpenAI 兼容或 Anthropic 服务。"
-
-#: src/features/teach/components/TeachConfigWizard.tsx:170
-msgid "推荐 · 开箱即用，无需任何配置。"
-msgstr "推荐 · 开箱即用，无需任何配置。"
 
 #: src/features/tour/components/mdx/Note.tsx:12
 msgid "提示"
@@ -591,6 +586,10 @@ msgstr "无法读取剩余额度，请稍后重试。"
 #: src/features/teach/components/views/PlaygroundView.tsx:306
 msgid "无法读取已保存的 Playground 草稿。原有内容已保留，不会被覆盖。"
 msgstr "无法读取已保存的 Playground 草稿。原有内容已保留，不会被覆盖。"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:170
+msgid "无需填写 API Key，即可使用共享额度。"
+msgstr "无需填写 API Key，即可使用共享额度。"
 
 #: src/components/ui/sidebar.tsx:209
 msgid "显示移动端侧边栏。"
@@ -641,7 +640,7 @@ msgstr "标准输出为空。"
 msgid "标签页名称"
 msgstr "标签页名称"
 
-#: src/features/playground/components/PlaygroundHeader.tsx:70
+#: src/features/playground/components/PlaygroundHeader.tsx:71
 msgid "格式化"
 msgstr "格式化"
 
@@ -735,14 +734,6 @@ msgstr "留空使用共享额度"
 #: src/features/tour/components/TourHeader.tsx:39
 msgid "目录"
 msgstr "目录"
-
-#: src/features/teach/components/TeachLanding.tsx:61
-msgid "目标优先"
-msgstr "目标优先"
-
-#: src/features/teach/components/TeachLanding.tsx:62
-msgid "目标会影响所选内置路径中的讲解、示例与练习，不会暗示当前没有提供的课程。"
-msgstr "目标会影响所选内置路径中的讲解、示例与练习，不会暗示当前没有提供的课程。"
 
 #: src/features/playground/components/ShareButton.tsx:88
 msgid "短链接"
@@ -883,17 +874,17 @@ msgstr "调整输出面板高度"
 msgid "输入消息"
 msgstr "输入消息"
 
-#: src/features/playground/components/Playground.tsx:75
+#: src/features/playground/components/Playground.tsx:76
 msgid "输出"
 msgstr "输出"
 
-#: src/features/playground/components/PlaygroundHeader.tsx:75
+#: src/features/playground/components/PlaygroundHeader.tsx:76
 #: src/features/teach/components/views/PlaygroundView.tsx:590
 msgid "运行"
 msgstr "运行"
 
 #: src/features/playground/components/OutputPanel.tsx:86
-#: src/features/playground/components/PlaygroundHeader.tsx:75
+#: src/features/playground/components/PlaygroundHeader.tsx:76
 #: src/features/teach/components/views/PlaygroundView.tsx:590
 #: src/service/run.ts:36
 msgid "运行中"
@@ -950,6 +941,10 @@ msgstr "进入工作区"
 msgid "退出码{exitCode}"
 msgstr "退出码{exitCode}"
 
+#: src/features/teach/components/TeachLanding.tsx:35
+msgid "选择内置课程并设置学习目标，课堂会据此调整讲解、示例与练习。进度保存在本机，工作区可导出。"
+msgstr "选择内置课程并设置学习目标，课堂会据此调整讲解、示例与练习。进度保存在本机，工作区可导出。"
+
 #: src/features/tour/components/mdx/LanguagePicker.tsx:20
 msgid "选择对比语言"
 msgstr "选择对比语言"
@@ -957,6 +952,10 @@ msgstr "选择对比语言"
 #: src/features/playground/components/ExamplesDropdown.tsx:35
 msgid "选择示例"
 msgstr "选择示例"
+
+#: src/features/teach/components/TeachConfigWizard.tsx:151
+msgid "选择课堂使用的 AI 服务"
+msgstr "选择课堂使用的 AI 服务"
 
 #: src/modules/cangjie-editor/components/LspStatusIndicator.tsx:123
 msgid "重启"

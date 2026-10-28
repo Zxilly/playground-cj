@@ -38,14 +38,14 @@ function difficultyLabel(
 ): string {
   const labels = english
     ? {
-        standard: 'standard scaffolding',
-        easy: 'guided scaffolding',
-        hard: 'from-scratch scaffolding',
+        standard: 'standard',
+        easy: 'with hints',
+        hard: 'from scratch',
       }
     : {
-        standard: '标准脚手架',
-        easy: '引导式脚手架',
-        hard: '从零脚手架',
+        standard: '常规',
+        easy: '提供提示',
+        hard: '从零编写',
       }
   return labels[instance.effectiveDifficulty]
 }

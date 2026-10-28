@@ -148,7 +148,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
             className="mt-2 text-balance text-2xl font-bold tracking-[-0.02em] text-foreground outline-none sm:text-[1.75rem]"
           >
             {step === 'source'
-              ? <Trans>先选择驱动课堂的 AI 服务</Trans>
+              ? <Trans>选择课堂使用的 AI 服务</Trans>
               : <Trans>填写你的 API 服务</Trans>}
           </h1>
 
@@ -167,7 +167,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                     onSelect={() => selectSource('shared')}
                     icon={Wallet}
                     title={<Trans>共享 AI 服务</Trans>}
-                    description={<Trans>推荐 · 开箱即用，无需任何配置。</Trans>}
+                    description={<Trans>无需填写 API Key，即可使用共享额度。</Trans>}
                     statusId={sharedStatusId}
                     status={(
                       <SharedStatus

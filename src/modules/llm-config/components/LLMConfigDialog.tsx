@@ -231,7 +231,7 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
           <p id={modeHelpId} className="text-xs leading-relaxed text-muted-foreground">
             {usingShared
               ? keySource === 'user'
-                ? <Trans>已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。</Trans>
+                ? <Trans>保存后将使用共享额度，并移除当前 API Key；取消则保留原配置。</Trans>
                 : <Trans>当前使用共享额度；如需自定义服务地址、API 风格与模型，请切换至“自定义 API Key”。</Trans>
               : <Trans>保存后使用自定义 API Key；如需恢复共享额度，请切换至“共享额度”。</Trans>}
           </p>

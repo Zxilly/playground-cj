@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, BookOpenCheck, Code2, Sparkles, Target } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { TeachTopBar } from './TeachTopBar'
@@ -28,16 +28,12 @@ export function TeachLanding({ onStart }: TeachLandingProps) {
         <div className="mx-auto grid min-h-full w-full max-w-7xl grid-cols-1 border-x border-border lg:grid-cols-[minmax(0,1.12fr)_minmax(21rem,0.88fr)]">
           <section className="flex min-w-0 items-center px-6 py-12 sm:px-10 lg:min-h-0 lg:px-14 lg:py-14 xl:px-16">
             <div className="min-w-0 max-w-3xl">
-              <div className="inline-flex max-w-full items-center gap-2 text-sm font-semibold text-primary">
-                <Sparkles aria-hidden="true" className="size-4 shrink-0" />
-                <span className="min-w-0 break-words"><Trans>AI 课堂</Trans></span>
-              </div>
-              <h1 className="mt-5 max-w-3xl text-balance break-words text-3xl font-bold leading-[1.08] tracking-[-0.035em] text-foreground sm:text-4xl lg:text-5xl xl:text-[3.4rem]">
+              <h1 className="max-w-3xl text-balance break-words text-3xl font-bold leading-[1.15] tracking-[-0.02em] text-foreground sm:text-4xl lg:text-5xl">
                 <Trans>围绕你的目标学习仓颉基础</Trans>
               </h1>
               <p className="mt-5 max-w-2xl text-pretty break-words text-base leading-7 text-muted-foreground sm:text-[1.05rem]">
                 <Trans>
-                  先明确你想用仓颉完成什么，课堂会围绕这个目标调整讲解、示例与练习；课程范围由你选择的内置路径决定。整个工作区可导出，进度保存在本机。
+                  选择内置课程并设置学习目标，课堂会据此调整讲解、示例与练习。进度保存在本机，工作区可导出。
                 </Trans>
               </p>
 
@@ -58,14 +54,14 @@ export function TeachLanding({ onStart }: TeachLandingProps) {
 
           <aside className="flex min-w-0 items-center border-t border-border bg-muted px-6 py-9 sm:px-10 lg:border-l lg:border-t-0 lg:px-10 xl:px-12">
             <div className="w-full">
-              <LandingFeature index="01" icon={Target} title={<Trans>目标优先</Trans>}>
-                <Trans>目标会影响所选内置路径中的讲解、示例与练习，不会暗示当前没有提供的课程。</Trans>
+              <LandingFeature title={<Trans>按目标学习</Trans>}>
+                <Trans>在所选课程范围内，按你的目标调整讲解、示例和练习。</Trans>
               </LandingFeature>
-              <LandingFeature index="02" icon={Code2} title={<Trans>动手练习</Trans>}>
+              <LandingFeature title={<Trans>动手练习</Trans>}>
                 <Trans>在内置编辑器中编写仓颉代码并直接运行查看结果，课堂据此给出反馈。</Trans>
               </LandingFeature>
-              <LandingFeature index="03" icon={BookOpenCheck} title={<Trans>复习巩固</Trans>}>
-                <Trans>依据记忆曲线安排复习，帮助你长期留存所学内容。</Trans>
+              <LandingFeature title={<Trans>复习巩固</Trans>}>
+                <Trans>按概念复习课程，并回顾已保存的讲解与错题诊断。</Trans>
               </LandingFeature>
             </div>
           </aside>
@@ -77,26 +73,14 @@ export function TeachLanding({ onStart }: TeachLandingProps) {
 
 interface LandingFeatureProps {
   children: React.ReactNode
-  icon: typeof Target
-  index: string
   title: React.ReactNode
 }
 
-function LandingFeature({ children, icon: Icon, index, title }: LandingFeatureProps) {
+function LandingFeature({ children, title }: LandingFeatureProps) {
   return (
-    <section className="group min-w-0 border-t border-border py-5 first:border-t-0">
-      <div className="flex min-w-0 items-start gap-3.5">
-        <span className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-background text-primary">
-          <Icon aria-hidden="true" className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="min-w-0 break-words text-sm font-semibold text-foreground">{title}</h2>
-            <span aria-hidden="true" className="font-mono text-[10px] font-semibold tracking-widest text-muted-foreground/55">{index}</span>
-          </div>
-          <p className="mt-1.5 break-words text-sm leading-6 text-muted-foreground">{children}</p>
-        </div>
-      </div>
+    <section className="min-w-0 border-t border-border py-5 first:border-t-0">
+      <h2 className="break-words text-base font-semibold text-foreground">{title}</h2>
+      <p className="mt-1.5 break-words text-sm leading-6 text-muted-foreground">{children}</p>
     </section>
   )
 }

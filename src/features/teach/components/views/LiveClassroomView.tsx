@@ -240,7 +240,7 @@ export function LiveClassroomView() {
               {entry.type === 'bridge_note' && (
                 <article className="rounded-lg border border-primary/20 bg-primary/5 p-4">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
-                    Bridge Note
+                    {english ? 'Transition note' : '课程衔接说明'}
                   </p>
                   <TeachMarkdown markdown={entry.markdown} />
                 </article>
@@ -263,8 +263,8 @@ export function LiveClassroomView() {
                   <BookmarkCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
                   <p>
                     {english
-                      ? `A ${entry.artifactType} was retained in Review View.`
-                      : `一条${entry.artifactType === 'clarification' ? '澄清' : '补救说明'}已保留到 Review View。`}
+                      ? `A ${entry.artifactType === 'clarification' ? 'saved explanation' : 'mistake diagnosis'} is available in Review.`
+                      : `一条${entry.artifactType === 'clarification' ? '讲解笔记' : '错题诊断'}已保存到复习页。`}
                   </p>
                 </article>
               )}

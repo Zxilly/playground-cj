@@ -11,9 +11,9 @@ const PROGRESS_COPY: Record<ConceptProgress, { zh: string, en: string }> = {
   unseen: { zh: '未接触', en: 'Unseen' },
   seen: { zh: '已接触', en: 'Seen' },
   practicing: { zh: '练习中', en: 'Practicing' },
-  demonstrated: { zh: '已证明', en: 'Demonstrated' },
-  blocked: { zh: '受阻', en: 'Blocked' },
-  stale: { zh: '证据过期', en: 'Stale' },
+  demonstrated: { zh: '已独立通过', en: 'Passed independently' },
+  blocked: { zh: '练习受阻', en: 'Practice blocked' },
+  stale: { zh: '练习要求已更新', en: 'Exercise requirements changed' },
 }
 
 export function ConceptProgressView() {
@@ -29,12 +29,12 @@ export function ConceptProgressView() {
           {english ? 'Learning progress' : '学习进度'}
         </div>
         <h1 className="mt-2 text-2xl font-semibold">
-          {english ? 'Evidence-derived progress' : '由学习证据推导的进度'}
+          {english ? 'Progress by concept' : '各知识点进度'}
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
           {english
-            ? 'The teacher cannot assign these states. They are derived from observable attempts across each concept’s Learning Skills.'
-            : '老师不能直接设置这些状态；它们只由你的练习结果推导。'}
+            ? 'Progress comes from recorded practice results for each concept’s skills. The AI teacher cannot set it directly.'
+            : '进度根据各知识点的练习结果计算，AI 老师不能直接修改。'}
         </p>
         <p className="mt-2 max-w-2xl rounded-md border border-border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">
           {english
@@ -74,7 +74,7 @@ export function ConceptProgressView() {
               </p>
               <p className="mt-3 text-xs text-muted-foreground">
                 {english
-                  ? `${evidence.length} evidence records · ${successes} observable successes`
+                  ? `${evidence.length} practice records · ${successes} successes`
                   : `${evidence.length} 次练习记录 · ${successes} 次成功`}
               </p>
             </li>

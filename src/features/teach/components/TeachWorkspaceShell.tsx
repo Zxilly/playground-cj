@@ -196,10 +196,10 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
                     <Sparkles aria-hidden="true" className="size-4 shrink-0 text-primary" />
                     <div className="min-w-0">
                       <SheetTitle className="truncate text-sm font-semibold">
-                        {english ? 'Lesson Orchestrator' : '课程编排老师'}
+                        {english ? 'AI teacher' : 'AI 老师'}
                       </SheetTitle>
                       <SheetDescription className="truncate text-[11px]">
-                        {english ? 'Chat is temporary unless explicitly retained' : '对话默认临时，只有结构化材料会被保留'}
+                        {english ? 'Chat is temporary; saved notes stay in Review.' : '对话为临时内容，已保存的材料可在复习页查看。'}
                       </SheetDescription>
                     </div>
                   </div>
@@ -247,10 +247,10 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
                   <Sparkles aria-hidden="true" className="size-4 shrink-0 text-primary" />
                   <div className="min-w-0">
                     <h2 id={chatTitleId} className="truncate text-sm font-semibold">
-                      {english ? 'Lesson Orchestrator' : '课程编排老师'}
+                      {english ? 'AI teacher' : 'AI 老师'}
                     </h2>
                     <p className="truncate text-[11px] text-muted-foreground">
-                      {english ? 'Chat is temporary unless explicitly retained' : '对话默认临时，只有结构化材料会被保留'}
+                      {english ? 'Chat is temporary; saved notes stay in Review.' : '对话为临时内容，已保存的材料可在复习页查看。'}
                     </p>
                   </div>
                 </div>

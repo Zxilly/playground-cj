@@ -137,8 +137,8 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
       </div>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
         {english
-          ? 'Your goal tailors explanations and practice within the built-in course range you select in this form.'
-          : '目标会用于调整讲解与练习，课程范围以你在表单中选择的内置路径为准。'}
+          ? 'Explanations and practice follow your goal within the course range you select.'
+          : '讲解与练习会按你的目标调整，内容限于所选课程范围。'}
       </p>
       <form
         className="mt-5 space-y-3"
@@ -170,7 +170,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           className="h-11 lg:h-9"
         />
         <label htmlFor="learning-target" className="block text-sm font-medium">
-          {english ? 'How far should this built-in path go?' : '这条内置路径学到哪里？'}
+          {english ? 'Course range' : '课程范围'}
         </label>
         <select
           id="learning-target"
@@ -197,15 +197,15 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
         {conceptIds.length > 0 && (
           <p className="text-xs text-muted-foreground">
             {english
-              ? `${conceptIds.length} lesson${conceptIds.length === 1 ? '' : 's'}, including prerequisites.`
-              : `共 ${conceptIds.length} 课，已按前置关系排好顺序。`}
+              ? `${conceptIds.length} lesson${conceptIds.length === 1 ? '' : 's'}, with prerequisites first.`
+              : `共 ${conceptIds.length} 课，所需基础课程已排在前面。`}
           </p>
         )}
         {conceptIds.length === 0 && (
           <p role="alert" className="text-sm text-destructive">
             {english
-              ? 'The built-in course is unavailable. Rebuild the application to restore it.'
-              : '内置课程暂不可用，请重新构建应用。'}
+              ? 'The built-in course is unavailable.'
+              : '内置课程暂不可用。'}
           </p>
         )}
         {exceedsTrackCapacity && (

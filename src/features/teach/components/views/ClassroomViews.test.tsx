@@ -519,7 +519,7 @@ describe('aI Classroom views', () => {
     fireEvent.change(screen.getByLabelText('What do you want to be able to do?'), {
       target: { value: 'Understand the program entry point' },
     })
-    fireEvent.change(screen.getByLabelText('How far should this built-in path go?'), {
+    fireEvent.change(screen.getByLabelText('Course range'), {
       target: { value: 'cj.program.main' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Start learning path' }))
@@ -544,7 +544,7 @@ describe('aI Classroom views', () => {
       name: 'Start learning path',
     }) as HTMLButtonElement).disabled).toBe(true)
 
-    fireEvent.change(screen.getByLabelText('How far should this built-in path go?'), {
+    fireEvent.change(screen.getByLabelText('Course range'), {
       target: { value: 'cj.capacity.0' },
     })
     expect(screen.queryByText(/one path can contain at most 64/)).toBeNull()
@@ -584,7 +584,7 @@ describe('aI Classroom views', () => {
     expect(screen.getByLabelText('What do you want to be able to do?').getAttribute('aria-describedby'))
       .toBe('learning-goal-count')
     expect(screen.getByText('0/240')).toBeTruthy()
-    expect(screen.getByLabelText('How far should this built-in path go?').className)
+    expect(screen.getByLabelText('Course range').className)
       .toContain('h-11')
     fireEvent.change(screen.getByLabelText('What do you want to be able to do?'), {
       target: { value: 'Second goal' },
@@ -747,7 +747,7 @@ describe('aI Classroom views', () => {
     render(<ReviewView />, { wrapper: workspaceWrapper(classroom, catalog) })
     await controlled.started
 
-    expect(screen.getByRole('status').textContent).toContain('Preparing retained teacher content')
+    expect(screen.getByRole('status').textContent).toContain('Loading saved review notes')
     expect(screen.queryByText('SECRET THEME BEFORE COMMIT')).toBeNull()
     expect(screen.queryByText('SECRET MARKDOWN BEFORE COMMIT')).toBeNull()
     expect(classroom.snapshot().teacherExposureEpoch).toBeNull()
@@ -792,7 +792,7 @@ describe('aI Classroom views', () => {
     controlled.reject(new Error('simulated durable-storage failure'))
 
     expect((await screen.findByRole('alert')).textContent).toContain(
-      'Retained teacher content could not be revealed safely.',
+      'Saved review notes could not be displayed.',
     )
     expect(screen.queryByText('NEVER RENDER THIS THEME')).toBeNull()
     expect(screen.queryByText('NEVER RENDER THIS MARKDOWN')).toBeNull()
@@ -860,7 +860,7 @@ describe('aI Classroom views', () => {
     })
     await controlled.started
 
-    expect(screen.getByRole('status').textContent).toContain('Preparing retained teacher content')
+    expect(screen.getByRole('status').textContent).toContain('Loading saved review notes')
     expect(screen.queryByText('BACKGROUND SECRET THEME')).toBeNull()
     expect(screen.queryByText('BACKGROUND SECRET MARKDOWN')).toBeNull()
 
@@ -1097,7 +1097,7 @@ describe('aI Classroom views', () => {
     expect(screen.getByText('Preparing failure diagnosis…')).toBeTruthy()
     expect(screen.getByText('Mistake diagnosis')).toBeTruthy()
     expect(screen.getByText(/Exercise criteria revision/)).toBeTruthy()
-    expect(screen.getByText(/failed attempt is already retained/i)).toBeTruthy()
+    expect(screen.getByText(/failed attempt is saved/i)).toBeTruthy()
     const originalRemediation = classroom.snapshot().reviewArtifacts[0]!
     fireEvent.click(screen.getByRole('button', { name: 'Remove retained item' }))
     expect(await screen.findByText('Dismissed retained topics')).toBeTruthy()
@@ -1172,7 +1172,7 @@ describe('aI Classroom views', () => {
         nextDiagnosticAttemptAt: null,
       })
     })
-    expect(screen.getByText(/diagnostic is still pending/i)).toBeTruthy()
+    expect(screen.getByText(/diagnosis is waiting to be generated/i)).toBeTruthy()
     classroom.dispose()
   })
 
@@ -1229,7 +1229,7 @@ describe('aI Classroom views', () => {
     render(<ReviewView />, { wrapper })
 
     fireEvent.click(screen.getByRole('button', {
-      name: 'Review manual recovery',
+      name: 'Review recovery options',
     }))
     expect(screen.getByRole('alert').textContent).toMatch(
       /previous model request may still be running.*duplicate charges/i,

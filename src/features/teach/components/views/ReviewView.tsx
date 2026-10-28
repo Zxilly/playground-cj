@@ -123,16 +123,16 @@ function TeacherArtifactExposureGate({
     return (
       <p role="alert" className="mt-4 text-sm text-destructive">
         {english
-          ? 'Retained teacher content could not be revealed safely.'
-          : '无法安全展示已保留的教师内容。'}
+          ? 'Saved review notes could not be displayed.'
+          : '无法显示已保存的复习材料。'}
       </p>
     )
   }
   return (
     <p role="status" className="mt-4 text-sm text-muted-foreground">
       {english
-        ? 'Preparing retained teacher content…'
-        : '正在准备已保留的教师内容…'}
+        ? 'Loading saved review notes…'
+        : '正在加载已保存的复习材料…'}
     </p>
   )
 }
@@ -402,7 +402,7 @@ export function ReviewView() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold">
-              {english ? 'Personal review artifacts' : '个人复习材料'}
+              {english ? 'Saved review notes' : '个人复习材料'}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {english
@@ -436,7 +436,7 @@ export function ReviewView() {
           {artifactGroups.length === 0
             ? (
                 <p className="mt-4 text-sm text-muted-foreground">
-                  {english ? 'No retained items for this concept.' : '这个概念还没有保留材料。'}
+                  {english ? 'No saved notes for this concept.' : '这个概念还没有保存的材料。'}
                 </p>
               )
             : (
@@ -502,8 +502,8 @@ export function ReviewView() {
                               <div className="mt-3 space-y-3">
                                 <p role="status" className="text-sm text-muted-foreground">
                                   {english
-                                    ? 'This failed attempt is already retained. The diagnostic is still pending and will not be presented as complete.'
-                                    : '这次失败已经保留；诊断仍在等待生成，不会被冒充为已完成内容。'}
+                                    ? 'This failed attempt is saved. The diagnosis is waiting to be generated.'
+                                    : '这次未通过的作答已保存，错题诊断等待生成。'}
                                 </p>
                                 {artifact.diagnosticClaim && (
                                   isRemediationDiagnosticClaimPotentiallyAbandoned(
@@ -558,7 +558,7 @@ export function ReviewView() {
                                                   disabled={recoveringArtifactId !== null}
                                                   onClick={() => setRecoveryCandidateId(artifact.id)}
                                                 >
-                                                  {english ? 'Review manual recovery' : '查看人工恢复'}
+                                                  {english ? 'Review recovery options' : '查看恢复选项'}
                                                 </Button>
                                               )}
                                         </div>
@@ -566,8 +566,8 @@ export function ReviewView() {
                                     : (
                                         <p className="text-xs text-muted-foreground">
                                           {english
-                                            ? 'Another browser session is still marked as handling this diagnosis. It will not be replaced automatically.'
-                                            : '另一个浏览器会话仍在处理这项诊断，系统不会自动替换它。'}
+                                            ? 'Another browser session is still marked as handling this diagnosis. No new request will start automatically.'
+                                            : '这项诊断仍标记为由另一个浏览器会话处理，系统不会自动发起新请求。'}
                                         </p>
                                       )
                                 )}
@@ -579,8 +579,8 @@ export function ReviewView() {
                                   <p role="status" className="text-sm text-destructive">
                                     {artifact.diagnosticFailure === 'context_too_large'
                                       ? (english
-                                          ? 'Automated diagnosis was not retained because the complete attempt context is too large to ground safely.'
-                                          : '完整尝试上下文过大，无法安全据此生成诊断，因此未保留自动诊断。')
+                                          ? 'The complete answer and its context exceed the limit for automatic diagnosis. No diagnosis was saved.'
+                                          : '本次作答及相关内容超过自动诊断的处理上限，未保存诊断结果。')
                                       : (english
                                           ? `Automated diagnosis stopped after ${artifact.diagnosticAttempts} failed attempts. No further background calls will run.`
                                           : `自动诊断在 ${artifact.diagnosticAttempts} 次失败后已停止，不会继续发起后台调用。`)}

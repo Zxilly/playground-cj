@@ -425,7 +425,7 @@ describe('llmConfigDialog', () => {
     fireEvent.click(resetButton)
     // Reset returns to the shared tab, so the API Key field is hidden again.
     expect(screen.queryByLabelText('API Key')).toBeNull()
-    screen.getByText('已切换为共享额度（草稿）；保存后替换当前 API Key，取消则保留原配置。')
+    screen.getByText('保存后将使用共享额度，并移除当前 API Key；取消则保留原配置。')
     expect(useLLMConfigStore.getState().keySource).toBe('user')
     expect(useLLMConfigStore.getState().config.apiKey).toBe('user-key')
 
@@ -489,8 +489,8 @@ describe('llmConfigDialog', () => {
 
     fireEvent.click(resetButton)
     expect(screen.queryByLabelText('API Key')).toBeNull()
-    screen.getByText('Switched to a shared quota draft. Save to replace the current API Key, or Cancel to keep the original settings.')
-    expect(screen.queryByText('已切回共享额度草稿；点击保存才会替换当前 API Key，取消会保留原设置。')).toBeNull()
+    screen.getByText('Save to use the shared quota and remove the current API Key. Cancel keeps your current settings.')
+    expect(screen.queryByText('保存后将使用共享额度，并移除当前 API Key；取消则保留原配置。')).toBeNull()
     expect(useLLMConfigStore.getState().keySource).toBe('user')
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))

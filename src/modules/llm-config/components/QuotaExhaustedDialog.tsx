@@ -110,7 +110,7 @@ export function QuotaExhaustedDialog() {
         <DialogFooter className="gap-2 sm:justify-end">
           <DialogClose asChild>
             <Button type="button" variant="outline" size="sm" aria-describedby={dismissDescriptionId} className="cursor-pointer">
-              <Trans>我知道了</Trans>
+              <Trans>关闭提示</Trans>
             </Button>
           </DialogClose>
           <Button type="button" size="sm" aria-describedby={`${refreshStatusId} ${settingsDescriptionId}`} onClick={handleGotoSettings} className="cursor-pointer">

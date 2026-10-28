@@ -130,7 +130,7 @@ describe('quotaExhaustedDialog', () => {
     for (const icon of document.querySelectorAll('svg'))
       expect(icon.getAttribute('aria-hidden')).toBe('true')
 
-    const dismiss = screen.getByRole('button', { name: '我知道了' })
+    const dismiss = screen.getByRole('button', { name: '关闭提示' })
     expect(describedByText(dismiss)).toBe('关闭提示后仍可查看当前页面；共享额度刷新后会恢复使用。')
 
     const settings = screen.getByRole('button', { name: '使用自定义 API Key' })
@@ -151,7 +151,7 @@ describe('quotaExhaustedDialog', () => {
     const status = screen.getByRole('status')
     expect(status.textContent).toContain('Refresh in ~')
 
-    const dismiss = screen.getByRole('button', { name: 'Got it' })
+    const dismiss = screen.getByRole('button', { name: 'Dismiss notice' })
     expect(describedByText(dismiss)).toBe('You can keep viewing the current page after closing this notice. Shared quota will recover after the refresh.')
 
     const settings = screen.getByRole('button', { name: 'Use a custom API Key' })
