@@ -1,0 +1,260 @@
+{
+  "measuredAt": "2026-10-28",
+  "browser": "156.0.8078.4",
+  "baseCommit": "e9e98ba534118311c2f35615eb0480c702903f13",
+  "dirty": true,
+  "conditions": "Cold cache, 40 ms latency, 10 Mbps, 4x CPU throttle, 1440x900. firstEditVerified and assistanceReadyObserved include browser automation overhead. Resource totals exclude workers and incomplete requests.",
+  "note": "Current working-tree baseline after the shared editor and responsive UI changes. This is not a paired before/after experiment. All timings include automation overhead where described in conditions. Server/browser process caches and other host activity are uncontrolled.",
+  "medians": {
+    "en": {
+      "visible": 8503.619999885559,
+      "editorReady": 8282.219999790192,
+      "firstEditVerified": 9737.974999904633,
+      "assistanceReadyObserved": 31045.11999988556,
+      "diagnosticObserved": 34128.56500005722,
+      "jsEncodedAtVisible": 2759576,
+      "jsDecodedAtVisible": 10435979,
+      "longTaskMsBeforeVisible": 5442,
+      "cssEncoded": 93517,
+      "cssDecoded": 669484
+    },
+    "zh": {
+      "visible": 6987.664999961853,
+      "editorReady": 6853.695000171661,
+      "firstEditVerified": 8040.25,
+      "assistanceReadyObserved": 29413.44000005722,
+      "diagnosticObserved": 32684.715000152588,
+      "jsEncodedAtVisible": 2924003,
+      "jsDecodedAtVisible": 11059196,
+      "longTaskMsBeforeVisible": 3789,
+      "cssEncoded": 93517,
+      "cssDecoded": 669484
+    }
+  },
+  "samples": [
+    {
+      "locale": "en",
+      "run": 0,
+      "visible": 10141.429999828339,
+      "editorReady": 9702.739999771118,
+      "firstEditVerified": 12707.144999980927,
+      "assistanceReadyObserved": 32606.254999637604,
+      "diagnosticObserved": 37192.93499994278,
+      "jsEncodedAtVisible": 2759576,
+      "jsDecodedAtVisible": 10435979,
+      "longTaskMsBeforeVisible": 7097,
+      "errors": [],
+      "cssEncoded": 93517,
+      "cssDecoded": 669484
+    },
+    {
+      "locale": "en",
+      "run": 1,
+      "visible": 8503.619999885559,
+      "editorReady": 8282.219999790192,
+      "firstEditVerified": 9737.974999904633,
+      "assistanceReadyObserved": 31045.11999988556,
+      "diagnosticObserved": 33779.420000076294,
+      "jsEncodedAtVisible": 2759576,
+      "jsDecodedAtVisible": 10435979,
+      "longTaskMsBeforeVisible": 5442,
+      "errors": [],
+      "cssEncoded": 93517,
+      "cssDecoded": 669484
+    },
+    {
+      "locale": "en",
+      "run": 2,
+      "visible": 8074.180000305176,
+      "editorReady": 7785.545000076294,
+      "firstEditVerified": 9699.680000305176,
+      "assistanceReadyObserved": 30455.450000286102,
+      "diagnosticObserved": 34128.56500005722,
+      "jsEncodedAtVisible": 2759576,
+      "jsDecodedAtVisible": 10435979,
+      "longTaskMsBeforeVisible": 5123,
+      "errors": [],
+      "cssEncoded": 93517,
+      "cssDecoded": 669484
+    },
+    {
+      "locale": "zh",
+      "run": 0,
+      "visible": 10883.239999771118,
+      "editorReady": 10448.775000095367,
+      "firstEditVerified": 13232.134999752045,
+      "assistanceReadyObserved": 34404.15999984741,
+      "diagnosticObserved": 37901.74499988556,
+      "jsEncodedAtVisible": 2924003,
+      "jsDecodedAtVisible": 11059196,
+      "longTaskMsBeforeVisible": 7507,
+      "errors": [],
+      "cssEncoded": 93517,
+      "cssDecoded": 669484
+    },
+    {
+      "locale": "zh",
+      "run": 1,
+      "visible": 6987.664999961853,
+      "editorReady": 6853.695000171661,
+      "firstEditVerified": 8011.4349999427795,
+      "assistanceReadyObserved": 29413.44000005722,
+      "diagnosticObserved": 32339.125,
+      "jsEncodedAtVisible": 2924003,
+      "jsDecodedAtVisible": 11059196,
+      "longTaskMsBeforeVisible": 3789,
+      "errors": [],
+      "cssEncoded": 93517,
+      "cssDecoded": 669484
+    },
+    {
+      "locale": "zh",
+      "run": 2,
+      "visible": 6718.6449999809265,
+      "editorReady": 6500.390000343323,
+      "firstEditVerified": 8040.25,
+      "assistanceReadyObserved": 29285.32000017166,
+      "diagnosticObserved": 32684.715000152588,
+      "jsEncodedAtVisible": 2924003,
+      "jsDecodedAtVisible": 11059196,
+      "longTaskMsBeforeVisible": 3558,
+      "errors": [],
+      "cssEncoded": 93517,
+      "cssDecoded": 669484
+    }
+  ],
+  "buildCss": {
+    "files": 21,
+    "bytes": 674784,
+    "gzipBytes": 95199,
+    "hiddenUtilities": 1,
+    "chunks": [
+      {
+        "name": "0-y9j0difm_5t.css",
+        "bytes": 22520,
+        "gzipBytes": 4062,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "03t-xk3pww1j8.css",
+        "bytes": 13380,
+        "gzipBytes": 2787,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "0r9ee3jmbwd_r.css",
+        "bytes": 116472,
+        "gzipBytes": 8542,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "0sbbglos7ev-x.css",
+        "bytes": 32290,
+        "gzipBytes": 4937,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "0tu19hx-ufek5.css",
+        "bytes": 2520,
+        "gzipBytes": 806,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "0y-jzj2v11h39.css",
+        "bytes": 45888,
+        "gzipBytes": 4930,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "10yg8zocvfxg6.css",
+        "bytes": 20073,
+        "gzipBytes": 2631,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "15a3as6890b2r.css",
+        "bytes": 49536,
+        "gzipBytes": 7576,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "194n9syv44ccx.css",
+        "bytes": 1118,
+        "gzipBytes": 457,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "19i79huj-v4dy.css",
+        "bytes": 24160,
+        "gzipBytes": 2086,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "1ex6-93pqr5mm.css",
+        "bytes": 2091,
+        "gzipBytes": 660,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "1p3b_y3wc4c6f.css",
+        "bytes": 22207,
+        "gzipBytes": 4680,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "1su8vqo1m0h_5.css",
+        "bytes": 3806,
+        "gzipBytes": 978,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "1zeyf283a7sc7.css",
+        "bytes": 94869,
+        "gzipBytes": 13570,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "2-06xmp2_9ehg.css",
+        "bytes": 103046,
+        "gzipBytes": 17688,
+        "hiddenUtilities": 1
+      },
+      {
+        "name": "29wy-py2s-pdl.css",
+        "bytes": 1814,
+        "gzipBytes": 540,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "2x5zj6pn4nzt4.css",
+        "bytes": 15598,
+        "gzipBytes": 2939,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "2yvetbxvdgwsq.css",
+        "bytes": 966,
+        "gzipBytes": 336,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "37pzc2rutejmf.css",
+        "bytes": 53006,
+        "gzipBytes": 8716,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "3c2fg4syu1rk4.css",
+        "bytes": 40504,
+        "gzipBytes": 4738,
+        "hiddenUtilities": 0
+      },
+      {
+        "name": "44e4nszccp57q.css",
+        "bytes": 8920,
+        "gzipBytes": 1540,
+        "hiddenUtilities": 0
+      }
+    ]
+  }
+}
