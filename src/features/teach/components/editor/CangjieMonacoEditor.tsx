@@ -4,6 +4,8 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { MonacoEditorReactComp } from '@/modules/cangjie-editor/components/EditorWrapper'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
 import { EditorBridgeProvider } from '@/modules/cangjie-editor/context/EditorBridgeProvider'
+import { useCodeRunner } from '@/modules/cangjie-editor/hooks/useCodeRunner'
+import { registerEditorActions } from '@/lib/monaco/actions'
 import { cn } from '@/lib/utils'
 import type { CangjieEditorProps } from './CangjieEditor'
 import { CangjieEditorLoadingState } from './CangjieEditorLoadingState'
@@ -31,6 +33,8 @@ export function CangjieMonacoEditor({
   onCodeChange,
 }: CangjieEditorProps) {
   const [ready, setReady] = useState(false)
+  const { format } = useCodeRunner()
+  const actionsRef = useRef<{ dispose: () => void } | null>(null)
   const monacoHandleRef = useRef<MonacoEditorHandle | null>(null)
   const contentSubscriptionRef = useRef<{ dispose: () => void } | null>(null)
   const onCodeChangeRef = useRef(onCodeChange)
@@ -63,6 +67,8 @@ export function CangjieMonacoEditor({
     contentSubscriptionRef.current?.dispose()
     monacoHandleRef.current = handle
     const editor = handle.getEditor()
+    actionsRef.current?.dispose()
+    actionsRef.current = editor ? registerEditorActions(editor, { format }) : null
     if (replaceCodeOnMount)
       editor?.getModel()?.setValue(initialCode)
     contentSubscriptionRef.current = editor?.onDidChangeModelContent(() => {
@@ -71,11 +77,12 @@ export function CangjieMonacoEditor({
         onCodeChangeRef.current?.(code)
     }) ?? null
     setReady(true)
-  }, [initialCode, replaceCodeOnMount])
+  }, [format, initialCode, replaceCodeOnMount])
 
   useEffect(() => () => {
     contentSubscriptionRef.current?.dispose()
     contentSubscriptionRef.current = null
+    actionsRef.current?.dispose()
   }, [])
 
   return (

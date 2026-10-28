@@ -18,25 +18,11 @@ import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
 import { useLanguage } from '@/hooks/useLanguage'
 import { usePlaygroundStore } from '@/stores/playground'
-import { markEditorStartup } from '@/lib/monaco/startup-timing'
-import { preloadEditorServices } from '@/lib/monaco/preload-services'
+import { loadEditorRuntime } from '@/lib/monaco/load-editor-runtime'
 
-// Keep the page shell server-rendered. Only the editor requires browser globals
-// and the VS Code runtime; Chinese localization must run before that runtime.
-const Editor = dynamic(() => {
-  markEditorStartup('requested')
-  return Promise.all([import('./PlaygroundEditor'), preloadEditorServices()]).then(([editor]) => editor)
-}, { ssr: false })
-const ChineseEditor = dynamic(
-  () => {
-    markEditorStartup('requested')
-    return import('@/lib/monaco/localization').then(() => {
-      markEditorStartup('locale-ready')
-      return Promise.all([import('./PlaygroundEditor'), preloadEditorServices()]).then(([editor]) => editor)
-    })
-  },
-  { ssr: false },
-)
+// Keep both imports statically analyzable and browser-only.
+const Editor = dynamic(() => loadEditorRuntime('en', () => import('./PlaygroundEditor')), { ssr: false })
+const ChineseEditor = dynamic(() => loadEditorRuntime('zh', () => import('./PlaygroundEditor')), { ssr: false })
 
 export interface PlaygroundProps {
   sharedCode?: Promise<string | undefined>

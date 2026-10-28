@@ -16,9 +16,14 @@ import type { FlatSection, TourChapterSlim } from '@/tour/types'
 import { getTourPath } from '@/lib/siteHref'
 import { EditorBridgeProvider } from '@/modules/cangjie-editor/context/EditorBridgeProvider'
 import { useTourNavigation } from '@/features/tour/hooks/useTourNavigation'
+import { loadEditorRuntime } from '@/lib/monaco/load-editor-runtime'
 
-const TourEditor = lazy(() => import('./TourEditor').then(module => ({ default: module.TourEditor })))
-const ChineseTourEditor = lazy(() => import('@/lib/monaco/localization').then(
+const TourEditor = lazy(() => loadEditorRuntime(
+  'en',
+  () => import('./TourEditor').then(module => ({ default: module.TourEditor })),
+))
+const ChineseTourEditor = lazy(() => loadEditorRuntime(
+  'zh',
   () => import('./TourEditor').then(module => ({ default: module.TourEditor })),
 ))
 
@@ -145,7 +150,7 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                 >
                   <div id="tour-editor-content" className="h-full min-h-0 overflow-hidden" inert={editorHidden} aria-hidden={editorHidden}>
                     <Suspense fallback={<TourEditorLoading code={code} locale={lang} />}>
-                      <Editor code={code} locale={lang} />
+                      <Editor code={code} locale={lang} sectionKey={`${section.chapterId}/${section.subChapterId}/${section.sectionId}`} />
                     </Suspense>
                   </div>
                 </ResizablePanel>

@@ -17,9 +17,9 @@ interface TourEditorState {
   readonly activeTab: TourOutputTab
 
   readonly setInitialCode: (code: string) => void
-  /** Used by CodeRunner to push the latest tool/compiler output into the panel. Auto-flips tab. */
+  /** Used by the command runner to push tool/compiler output into the panel. Auto-flips tab. */
   readonly setCompilerOutput: (output: string) => void
-  /** Used by CodeRunner to push the latest program output. Auto-flips tab if non-empty. */
+  /** Used by the command runner to push program output. Auto-flips tab if non-empty. */
   readonly setProgramOutput: (output: string) => void
   readonly setTruncation: (truncation: RunnerTruncationState) => void
   /** Atomic dual-write used by tools.ts after a remote run. Bypasses tab auto-flip. */

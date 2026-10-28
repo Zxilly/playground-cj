@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
+import type { KeyboardEvent } from 'react'
 import { AlertTriangle, FileCode2, Info, Loader2, Play, Plus, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { t } from '@lingui/core/macro'
@@ -22,7 +22,10 @@ import { usePlaygroundSession } from '@/features/teach/state/playground-session'
 import { DEFAULT_PLAYGROUND_CODE } from '@/features/teach/state/playground-workspace'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
+import { ProgramOutput } from '@/modules/cangjie-editor/components/ProgramOutput'
+import { RunTruncationNotice } from '@/modules/cangjie-editor/components/RunTruncationNotice'
 import { AnsiOutput } from '@/components/AnsiOutput'
+import { useResizableDimension } from '@/hooks/use-resizable-dimension'
 import { usePlaygroundEditorHost } from './playground-editor-host-context'
 import { useAbortScope } from '@/features/teach/context/abort-scope'
 
@@ -459,12 +462,6 @@ function PlaygroundEditorPane({
   const runTab = usePlaygroundSession(state => state.runTab)
   const resetTransient = usePlaygroundSession(state => state.resetTransient)
   const paneRef = useRef<HTMLDivElement | null>(null)
-  const resizeStateRef = useRef<{
-    pointerId: number
-    startY: number
-    startHeight: number
-    maxHeight: number
-  } | null>(null)
   const running = tab.running
 
   useEffect(() => () => {
@@ -490,51 +487,20 @@ function PlaygroundEditorPane({
     return () => observer.disconnect()
   }, [onOutputHeightChange])
 
-  const handleResizePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    resizeStateRef.current = {
-      pointerId: event.pointerId,
-      startY: event.clientY,
-      startHeight: outputHeight,
-      maxHeight: getMaxOutputHeight(),
-    }
-    event.currentTarget.setPointerCapture?.(event.pointerId)
-  }
-
-  const handleResizePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const resize = resizeStateRef.current
-    if (!resize || resize.pointerId !== event.pointerId)
-      return
-    onOutputHeightChange(clampOutputHeight(
-      resize.startHeight + resize.startY - event.clientY,
-      resize.maxHeight,
-    ))
-  }
-
-  const stopResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (resizeStateRef.current?.pointerId !== event.pointerId)
-      return
-    resizeStateRef.current = null
-    event.currentTarget.releasePointerCapture?.(event.pointerId)
-  }
-
-  const handleResizeKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const maxHeight = getMaxOutputHeight()
-    let nextHeight: number | null = null
-    if (event.key === 'ArrowUp')
-      nextHeight = outputHeight + (event.shiftKey ? OUTPUT_KEYBOARD_STEP * 2 : OUTPUT_KEYBOARD_STEP)
-    else if (event.key === 'ArrowDown')
-      nextHeight = outputHeight - (event.shiftKey ? OUTPUT_KEYBOARD_STEP * 2 : OUTPUT_KEYBOARD_STEP)
-    else if (event.key === 'Home')
-      nextHeight = MIN_OUTPUT_HEIGHT
-    else if (event.key === 'End')
-      nextHeight = maxHeight
-
-    if (nextHeight === null)
-      return
-    event.preventDefault()
-    onOutputHeightChange(clampOutputHeight(nextHeight, maxHeight))
-  }
+  const clampHeight = useCallback(
+    (height: number) => clampOutputHeight(height, getMaxOutputHeight()),
+    [getMaxOutputHeight],
+  )
+  const { startResize, onHandleKeyDown } = useResizableDimension({
+    axis: 'vertical',
+    value: outputHeight,
+    onChange: onOutputHeightChange,
+    clamp: clampHeight,
+    min: MIN_OUTPUT_HEIGHT,
+    getMax: getMaxOutputHeight,
+    keyboardStep: OUTPUT_KEYBOARD_STEP,
+    shiftMultiplier: 2,
+  })
 
   const run = async () => {
     // Commit the buffer version before attaching a run to it. Otherwise the
@@ -603,12 +569,9 @@ function PlaygroundEditorPane({
           aria-valuetext={`${Math.round(outputHeight)} px`}
           tabIndex={0}
           data-testid="playground-output-resizer"
-          onPointerDown={handleResizePointerDown}
-          onPointerMove={handleResizePointerMove}
-          onPointerUp={stopResize}
-          onPointerCancel={stopResize}
+          onPointerDown={startResize}
           onDoubleClick={() => onOutputHeightChange(DEFAULT_OUTPUT_HEIGHT)}
-          onKeyDown={handleResizeKeyDown}
+          onKeyDown={onHandleKeyDown}
           className="group absolute inset-x-0 -top-1 z-10 h-2 cursor-row-resize touch-none outline-none"
         >
           <span className="absolute inset-x-0 top-1 h-px bg-border transition-colors group-hover:bg-primary/60 group-focus-visible:h-0.5 group-focus-visible:bg-primary" />
@@ -639,33 +602,12 @@ function PlaygroundEditorPane({
             <div className="min-h-0 flex-1 overflow-auto p-3">
               {tab.result
                 ? (
-                    <div className="space-y-2">
-                      <pre
-                        data-testid="playground-program-output"
-                        className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-foreground"
-                      >
-                        {tab.result.stdout || (tab.result.phase === 'run'
-                          ? i18n._(t`标准输出为空。`)
-                          : i18n._(t`程序未运行。`))}
-                      </pre>
-                      {tab.result.stdoutTruncated && (
-                        <p role="status" className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
-                          <Trans>程序标准输出已截断。</Trans>
-                        </p>
-                      )}
-                      {tab.result.stderr && (
-                        <AnsiOutput
-                          text={tab.result.stderr}
-                          data-testid="playground-runtime-stderr"
-                          className="whitespace-pre-wrap break-all font-mono text-xs leading-6 text-error-foreground"
-                        />
-                      )}
-                      {tab.result.stderrTruncated && (
-                        <p role="status" className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
-                          <Trans>程序标准错误已截断。</Trans>
-                        </p>
-                      )}
-                    </div>
+                    <ProgramOutput
+                      result={tab.result}
+                      testId="playground-program-output"
+                      stderrTestId="playground-runtime-stderr"
+                      className="whitespace-pre-wrap break-all font-mono text-xs leading-6"
+                    />
                   )
                 : <p className="text-xs text-muted-foreground"><Trans>运行后，程序输出会显示在这里。</Trans></p>}
             </div>
@@ -701,9 +643,7 @@ function PlaygroundEditorPane({
                   )
                 : <p className="text-xs text-muted-foreground"><Trans>运行后，编译器输出会显示在这里。</Trans></p>}
               {tab.result?.compilerOutputTruncated && (
-                <p role="status" className="mt-2 rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
-                  <Trans>编译器输出已截断。</Trans>
-                </p>
+                <div className="mt-2"><RunTruncationNotice stream="compiler" /></div>
               )}
             </div>
           </section>

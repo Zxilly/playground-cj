@@ -703,6 +703,11 @@ describe('playgroundView student flow', () => {
     expect(output.style.height).toBe('200px')
     expect(resizer.getAttribute('aria-valuenow')).toBe('200')
 
+    fireEvent.keyDown(resizer, { key: 'ArrowUp', shiftKey: true })
+    expect(output.style.height).toBe('248px')
+    fireEvent.keyDown(resizer, { key: 'ArrowDown', shiftKey: true })
+    expect(output.style.height).toBe('200px')
+
     fireEvent.keyDown(resizer, { key: 'Home' })
     expect(output.style.height).toBe('112px')
 
@@ -766,5 +771,25 @@ describe('playgroundView student flow', () => {
     expect(screen.getByText('程序标准输出已截断。')).toBeTruthy()
     expect(screen.getByText('程序标准错误已截断。')).toBeTruthy()
     expect(screen.getByText('编译器输出已截断。')).toBeTruthy()
+  })
+
+  it('uses the shared ANSI renderer for stdout without mixing it into stderr', async () => {
+    runner.run.mockResolvedValueOnce({
+      ok: true,
+      phase: 'run',
+      stdout: `${ESC}[31mred output${ESC}[0m`,
+      stdoutTruncated: false,
+      stderr: 'separate error channel',
+      stderrTruncated: false,
+      compilerOutput: '',
+      compilerOutputTruncated: false,
+      exitCode: 0,
+    })
+    render(<PlaygroundView />, { wrapper: Wrapper })
+    fireEvent.click(screen.getByTestId('playground-run'))
+
+    await waitFor(() => expect(screen.getByTestId('playground-program-output').innerHTML).toContain('color:rgb(187,0,0)'))
+    expect(screen.getByTestId('playground-program-output').textContent).toBe('red output')
+    expect(screen.getByTestId('playground-runtime-stderr').textContent).toBe('separate error channel')
   })
 })

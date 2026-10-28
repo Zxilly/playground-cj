@@ -116,7 +116,6 @@ export default defineConfig({
         'src/modules/assistant-ui/chat/**',
         'src/modules/assistant-ui/registry/**',
         'src/modules/analytics/**',
-        'src/modules/cangjie-editor/components/CodeRunner.tsx',
         'src/modules/cangjie-editor/components/EditorWrapper.tsx',
         'src/modules/cangjie-editor/components/LspStatusIndicator.tsx',
         // Monaco does not render under jsdom; owning surfaces are unit-tested

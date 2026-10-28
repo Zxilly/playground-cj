@@ -1,4 +1,4 @@
-export { updateEditor } from './actions'
+export { registerEditorActions } from './actions'
 export { ensureCangjieMonarchTokensProvider } from './cangjie-monarch'
 export { createEditorAppConfig, createMonacoVscodeApiConfig, setEditorValue } from './config'
 export type { MonacoVscodeApiConfig } from './config'

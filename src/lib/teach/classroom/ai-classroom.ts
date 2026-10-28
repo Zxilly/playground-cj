@@ -78,11 +78,26 @@ const runResultSchema = z.object({
   stderrTruncated: z.boolean(),
   compilerOutput: runnerOutputSchema,
   compilerOutputTruncated: z.boolean(),
+  compilerExitCode: z.number().int().optional(),
   exitCode: z.number().int().nullable(),
   durationMs: z.number().nonnegative().optional(),
   failureKind: z.literal('runner_unavailable').optional(),
   failureMessage: z.string().trim().min(1).max(10_000).optional(),
 }).strict().superRefine((result, context) => {
+  if (
+    result.compilerExitCode !== undefined
+    && (
+      result.phase === null
+      || (result.phase === 'run' && result.compilerExitCode !== 0)
+      || (result.phase === 'compile' && result.compilerExitCode === 0)
+    )
+  ) {
+    context.addIssue({
+      code: 'custom',
+      path: ['compilerExitCode'],
+      message: 'compiler exit code must agree with the final phase',
+    })
+  }
   if (
     result.phase === 'run'
     && result.exitCode !== null

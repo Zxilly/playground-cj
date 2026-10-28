@@ -1,156 +1,117 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import { isBusy, remoteLock } from '@/lib/lock'
-import { saveAsFile } from '@/lib/file'
-import { generateDataShareUrl, generateHashShareUrl, loadLegacyShareCode } from '@/service/share'
-import { eventEmitter, EVENTS } from '@/lib/events'
-import { usePlaygroundStore } from '@/stores/playground'
-import { toast } from 'sonner'
 import { t } from '@lingui/core/macro'
-import { setEditorValue } from './config'
-import { HMR_SLOT_KEYS, hmrFlag } from '@/lib/hmr-store'
+import { abortable } from '@/lib/abortable'
+import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
 import { CANGJIE_LANGUAGE_ID } from './language'
 
-interface OnMountFunctionDependencies {
-  setToolOutput: (output: string) => void
-  setProgramOutput: (output: string) => void
-  ed: monaco.editor.IStandaloneCodeEditor
+type EditorCommand = (code: string, signal: AbortSignal) => void | Promise<void>
+
+export interface EditorCapabilities {
+  run?: EditorCommand
+  format?: (code: string, signal: AbortSignal) => Promise<string>
+  shareUrl?: EditorCommand
+  shareHash?: EditorCommand
+  save?: EditorCommand
 }
 
-// Document formatting provider is a global registration on the Monaco language
-// service — calling registerDocumentFormattingEditProvider twice for the same
-// language stacks providers and produces duplicate format requests. Gate it
-// behind an HMR-persistent flag so mount-cycles and HMR re-evals don't add
-// extra providers.
-const formattingProviderFlag = hmrFlag(HMR_SLOT_KEYS.MONACO_CANGJIE_FORMATTING_PROVIDER)
+interface EditorRegistration {
+  capabilities: EditorCapabilities
+  lifetime: AbortController
+}
 
-function ensureCangjieFormattingProvider(): void {
-  if (formattingProviderFlag.get())
+interface FormattingState {
+  provider?: monaco.IDisposable
+  editors: Map<monaco.editor.IStandaloneCodeEditor, EditorRegistration>
+}
+
+const formatting = hmrSlot<FormattingState>(HMR_SLOT_KEYS.MONACO_CANGJIE_FORMATTING_PROVIDER, () => ({
+  editors: new Map(),
+}))
+
+function ensureFormattingProvider() {
+  if (formatting.provider)
     return
-  formattingProviderFlag.set(true)
-
-  monaco.languages.registerDocumentFormattingEditProvider(CANGJIE_LANGUAGE_ID, {
-    async provideDocumentFormattingEdits(model) {
-      if (isBusy()) {
-        return
-      }
-
-      return new Promise((resolve) => {
-        const handleFormatted = (formattedCode: string) => {
-          eventEmitter.off(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
-          if (formattedCode === model.getValue()) {
-            resolve([])
-          }
-          else {
-            resolve([{
-              range: model.getFullModelRange(),
-              text: formattedCode,
-            }])
-          }
-        }
-
-        eventEmitter.on(EVENTS.FORMAT_CODE_COMPLETE, handleFormatted)
-        eventEmitter.emit(EVENTS.FORMAT_CODE, model.getValue())
-
+  formatting.provider = monaco.languages.registerDocumentFormattingEditProvider(CANGJIE_LANGUAGE_ID, {
+    async provideDocumentFormattingEdits(model, _options, token) {
+      const entry = [...formatting.editors].find(([editor, registration]) =>
+        editor.getModel() === model && registration.capabilities.format,
+      )?.[1]
+      if (!entry?.capabilities.format || token.isCancellationRequested)
+        return []
+      const cancellation = new AbortController()
+      const subscription = token.onCancellationRequested(() => cancellation.abort())
+      const signal = AbortSignal.any([cancellation.signal, entry.lifetime.signal])
+      const version = model.getVersionId()
+      const source = model.getValue()
+      try {
+        signal.throwIfAborted()
+        const formatted = await abortable(entry.capabilities.format(source, signal), signal)
+        // Monaco applies these edits itself, preserving undo. Ignore stale work
+        // when the learner types, changes models or closes this editor meanwhile.
+        if (signal.aborted || model.isDisposed() || model.getVersionId() !== version || formatted === source)
+          return []
+        if (![...formatting.editors.keys()].some(editor => editor.getModel() === model))
+          return []
         window.umami?.track('format')
-      })
-    },
-  })
-}
-
-function loadLegacyShareCodeToEditor(ed: monaco.editor.IStandaloneCodeEditor, setToolOutput: (output: string) => void) {
-  if (window.location.hash.includes('hash')) {
-    ed.setValue(t`分享代码加载中...`)
-
-    toast.promise(new Promise<void>((resolve, reject) => {
-      remoteLock.acquire('run', async () => {
-        const [code, success] = await loadLegacyShareCode()
-        if (success && code) {
-          setToolOutput(t`分享代码加载成功`)
-          setEditorValue(ed, code)
-          resolve()
-        }
-        else {
-          setToolOutput(t`分享代码加载失败`)
-          reject()
-        }
-      })
-    }), {
-      loading: t`分享代码加载中...`,
-      success: t`分享代码加载成功`,
-      error: t`分享代码加载失败`,
-    })
-  }
-}
-
-export function updateEditor(deps: OnMountFunctionDependencies) {
-  const { setToolOutput, ed } = deps
-
-  ensureCangjieFormattingProvider()
-
-  ed.addAction({
-    id: 'cangjie.compile.run',
-    label: t`编译运行`,
-    contextMenuGroupId: 'cangjie',
-    contextMenuOrder: 1.5,
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB],
-    run: (editor: monaco.editor.ICodeEditor) => {
-      if (isBusy()) {
-        return
+        return [{ range: model.getFullModelRange(), text: formatted }]
       }
-
-      eventEmitter.emit(EVENTS.RUN_CODE, editor.getValue())
-      window.umami?.track('run')
+      catch (error) {
+        if (signal.aborted)
+          return []
+        throw error
+      }
+      finally {
+        subscription.dispose()
+      }
     },
   })
+}
 
-  ed.addAction({
-    id: 'cangjie.share.url',
-    label: t`分享完整链接`,
-    contextMenuGroupId: 'cangjie',
-    contextMenuOrder: 1.5,
-    run: (editor: monaco.editor.ICodeEditor) => {
-      const code = editor.getValue()
-      const url = generateDataShareUrl(code)
-      usePlaygroundStore.getState().openShareDialog(url)
-      window.umami?.track('share.url')
-    },
-  })
-
-  ed.addAction({
-    id: 'cangjie.share.hash',
-    label: t`分享短链接`,
-    contextMenuGroupId: 'cangjie',
-    contextMenuOrder: 1.5,
-    run: async (editor: monaco.editor.ICodeEditor) => {
-      const code = editor.getValue()
-
-      toast.promise(async () => {
-        const url = await generateHashShareUrl(code)
-        usePlaygroundStore.getState().openShareDialog(url)
-      }, {
-        loading: t`分享中...`,
-        success: t`分享成功`,
-        error: t`分享失败`,
-      })
-
-      window.umami?.track('share.hash')
-    },
-  })
-
-  ed.addAction({
-    id: 'cangjie.save',
-    label: t`保存代码`,
-    contextMenuGroupId: 'cangjie',
-    contextMenuOrder: 1.5,
-    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
-    run: (editor: monaco.editor.ICodeEditor) => {
-      saveAsFile(editor.getValue())
-      toast.success(t`已保存代码`)
-      window.umami?.track('save')
-    },
-  })
-
-  loadLegacyShareCodeToEditor(ed, setToolOutput)
+/** Register only capabilities owned by this surface; release them on unmount. */
+export function registerEditorActions(
+  editor: monaco.editor.IStandaloneCodeEditor,
+  capabilities: EditorCapabilities,
+): monaco.IDisposable {
+  const registration = { capabilities, lifetime: new AbortController() }
+  formatting.editors.set(editor, registration)
+  if (capabilities.format)
+    ensureFormattingProvider()
+  const actions: monaco.IDisposable[] = []
+  const add = (id: string, label: string, command: EditorCommand | undefined, tracking: string, keybindings?: number[]) => {
+    if (!command)
+      return
+    actions.push(editor.addAction({
+      id,
+      label,
+      contextMenuGroupId: 'cangjie',
+      contextMenuOrder: 1.5,
+      keybindings,
+      run: (target) => {
+        window.umami?.track(tracking)
+        return command(target.getValue(), registration.lifetime.signal)
+      },
+    }))
+  }
+  add('cangjie.compile.run', t`编译运行`, capabilities.run, 'run', [
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB,
+    monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+  ])
+  add('cangjie.share.url', t`分享完整链接`, capabilities.shareUrl, 'share.url')
+  add('cangjie.share.hash', t`分享短链接`, capabilities.shareHash, 'share.hash')
+  add('cangjie.save', t`保存代码`, capabilities.save, 'save', [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS])
+  let disposed = false
+  const dispose = () => {
+    if (disposed)
+      return
+    disposed = true
+    registration.lifetime.abort(new DOMException('Editor actions disposed', 'AbortError'))
+    if (formatting.editors.get(editor) === registration)
+      formatting.editors.delete(editor)
+    for (const action of actions)
+      action.dispose()
+  }
+  actions.push(editor.onDidDispose(dispose))
+  return { dispose }
 }
 
 import.meta.webpackHot?.accept()

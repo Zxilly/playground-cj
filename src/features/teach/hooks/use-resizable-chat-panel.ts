@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react'
+import { useResizableDimension } from '@/hooks/use-resizable-dimension'
 
 const CHAT_WIDTH_KEY = 'teach:chat-width'
 export const CHAT_MIN_WIDTH = 320
@@ -27,7 +27,6 @@ function clampChatWidth(px: number): number {
 /** Owns desktop chat sizing, keyboard resizing, persistence, and drag cleanup. */
 export function useResizableChatPanel() {
   const chatRef = useRef<HTMLElement>(null)
-  const cleanupDragRef = useRef<() => void>(() => {})
   const persistArmedRef = useRef(false)
   const [chatWidth, setChatWidth] = useState(CHAT_DEFAULT_WIDTH)
   const [chatMaxWidth, setChatMaxWidth] = useState(() => effectiveMaxWidth())
@@ -67,53 +66,20 @@ export function useResizableChatPanel() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  useEffect(() => () => cleanupDragRef.current(), [])
-
-  const startResize = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    cleanupDragRef.current()
-    const rightEdge = chatRef.current?.getBoundingClientRect().right ?? window.innerWidth
-    const previousUserSelect = document.body.style.userSelect
-    const previousCursor = document.body.style.cursor
-
-    const onMove = (moveEvent: PointerEvent) => {
-      setChatWidth(clampChatWidth(rightEdge - moveEvent.clientX))
-    }
-    const cleanup = () => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', cleanup)
-      window.removeEventListener('pointercancel', cleanup)
-      document.body.style.userSelect = previousUserSelect
-      document.body.style.cursor = previousCursor
-      cleanupDragRef.current = () => {}
-    }
-
-    cleanupDragRef.current = cleanup
-    document.body.style.userSelect = 'none'
-    document.body.style.cursor = 'col-resize'
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', cleanup)
-    window.addEventListener('pointercancel', cleanup)
-  }, [])
-
-  const onHandleKeyDown = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'ArrowLeft') {
-      event.preventDefault()
-      setChatWidth(width => clampChatWidth(width + CHAT_KEYBOARD_STEP))
-    }
-    else if (event.key === 'ArrowRight') {
-      event.preventDefault()
-      setChatWidth(width => clampChatWidth(width - CHAT_KEYBOARD_STEP))
-    }
-    else if (event.key === 'Home') {
-      event.preventDefault()
-      setChatWidth(CHAT_MIN_WIDTH)
-    }
-    else if (event.key === 'End') {
-      event.preventDefault()
-      setChatWidth(effectiveMaxWidth())
-    }
-  }, [])
+  const getDragAnchor = useCallback(
+    () => chatRef.current?.getBoundingClientRect().right ?? window.innerWidth,
+    [],
+  )
+  const { startResize, onHandleKeyDown } = useResizableDimension({
+    axis: 'horizontal',
+    value: chatWidth,
+    onChange: setChatWidth,
+    clamp: clampChatWidth,
+    min: CHAT_MIN_WIDTH,
+    getMax: effectiveMaxWidth,
+    keyboardStep: CHAT_KEYBOARD_STEP,
+    getDragAnchor,
+  })
 
   return {
     chatRef,

@@ -98,4 +98,55 @@ describe('remoteRun', () => {
       'panic\n[stderr]\nstack trace\n----------\nexit code 2',
     )
   })
+
+  it('publishes a structured failure before rejecting and clears pending output on an outage', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'))
+    const actions = {
+      setToolOutput: vi.fn(),
+      setProgramOutput: vi.fn(),
+      setTruncation: vi.fn(),
+      setResult: vi.fn(),
+    }
+    const { remoteRun } = await importRunService()
+    await expect(remoteRun('main()', actions)).rejects.toThrow('offline')
+    expect(actions.setResult).toHaveBeenNthCalledWith(1, null)
+    expect(actions.setResult).toHaveBeenLastCalledWith(expect.objectContaining({
+      ok: false,
+      phase: null,
+      failureKind: 'runner_unavailable',
+    }))
+    expect(actions.setToolOutput).toHaveBeenLastCalledWith('代码运行服务暂时不可用，请稍后重试。')
+    expect(actions.setProgramOutput).toHaveBeenLastCalledWith('')
+  })
+
+  it('does not publish a stale response after the owning editor is canceled', async () => {
+    let finish!: (response: Response) => void
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise((resolve) => {
+      finish = resolve
+    }))
+    const actions = {
+      setToolOutput: vi.fn(),
+      setProgramOutput: vi.fn(),
+      setTruncation: vi.fn(),
+      setResult: vi.fn(),
+    }
+    const { remoteRun } = await importRunService()
+    const controller = new AbortController()
+    const pending = remoteRun('main()', actions, controller.signal)
+    controller.abort()
+    finish(jsonResponse({
+      phase: 'run',
+      compiler_output: '',
+      compiler_output_truncated: false,
+      compiler_code: 0,
+      bin_stdout: 'late',
+      bin_stdout_truncated: false,
+      bin_stderr: '',
+      bin_stderr_truncated: false,
+      bin_code: 0,
+    }))
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    expect(actions.setResult.mock.calls).toEqual([[null]])
+    expect(actions.setProgramOutput.mock.calls).toEqual([['运行中']])
+  })
 })

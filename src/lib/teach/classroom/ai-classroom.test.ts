@@ -17,6 +17,7 @@ import {
   renderPersistedDiagnostic,
 } from './persistence-policy'
 import { classroomSnapshotSchema, createEmptyClassroom } from './state'
+import { normalizeRunResult } from '@/lib/runner'
 
 function pack(review: 'approved' | 'pending'): CourseContentPack {
   return {
@@ -2674,7 +2675,17 @@ describe('ai classroom', () => {
       },
       observation: {
         type: 'run_result',
-        result: { ok: true, phase: 'run', stdout: '42\n', stdoutTruncated: false, stderr: '', stderrTruncated: false, compilerOutput: '', compilerOutputTruncated: false, exitCode: 0 },
+        result: normalizeRunResult({
+          phase: 'run',
+          compiler_code: 0,
+          compiler_output: '',
+          compiler_output_truncated: false,
+          bin_code: 0,
+          bin_stdout: '42\n',
+          bin_stdout_truncated: false,
+          bin_stderr: '',
+          bin_stderr_truncated: false,
+        }, 10),
       },
     })
 
@@ -2746,6 +2757,39 @@ describe('ai classroom', () => {
       ...original,
       assistance: 'hint',
     } as never)).rejects.toThrow(/unrecognized/i)
+  })
+
+  it.each([
+    { phase: 'run', compilerExitCode: 1, exitCode: 0 },
+    { phase: 'compile', compilerExitCode: 0, exitCode: null },
+    { phase: null, compilerExitCode: 0, exitCode: null },
+  ] as const)('rejects a compiler exit code inconsistent with phase $phase', (result) => {
+    const parsed = classroomCommandSchema.safeParse({
+      type: 'record_exercise_attempt',
+      attemptId: 'attempt:invalid-compiler-exit',
+      exerciseInstanceId: 'exercise:1',
+      submission: { type: 'code_output', code: 'main() {}' },
+      observation: {
+        type: 'run_result',
+        result: {
+          ...result,
+          ok: result.phase === 'run',
+          stdout: '',
+          stdoutTruncated: false,
+          stderr: '',
+          stderrTruncated: false,
+          compilerOutput: '',
+          compilerOutputTruncated: false,
+        },
+      },
+    })
+    expect(parsed.success).toBe(false)
+    expect(parsed.error?.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        path: ['observation', 'result', 'compilerExitCode'],
+        message: 'compiler exit code must agree with the final phase',
+      }),
+    ]))
   })
 
   it('does not persist an Attempt or Evidence when the runner is unavailable', async () => {
@@ -2886,17 +2930,17 @@ describe('ai classroom', () => {
       submission: { type: 'code_output', code: 'main() {' },
       observation: {
         type: 'run_result',
-        result: {
-          ok: false,
+        result: normalizeRunResult({
           phase: 'compile',
-          stdout: '',
-          stdoutTruncated: false,
-          stderr: '',
-          stderrTruncated: false,
-          compilerOutput: compilerDiagnostic,
-          compilerOutputTruncated: false,
-          exitCode: null,
-        },
+          compiler_code: 1,
+          compiler_output: compilerDiagnostic,
+          compiler_output_truncated: false,
+          bin_code: null,
+          bin_stdout: '',
+          bin_stdout_truncated: false,
+          bin_stderr: '',
+          bin_stderr_truncated: false,
+        }),
       },
     })
 

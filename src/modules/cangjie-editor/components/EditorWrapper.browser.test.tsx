@@ -4,6 +4,8 @@ import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { getService } from '@codingame/monaco-vscode-api'
 import { IFileService } from '@codingame/monaco-vscode-api/services'
 import { createEditorAppConfig } from '@/lib/monaco'
+import { registerEditorActions } from '@/lib/monaco/actions'
+import type { MonacoEditorHandle } from './EditorWrapper'
 import { MonacoEditorReactComp } from './EditorWrapper'
 
 vi.mock('@/app/font', () => ({ fontFamily: 'monospace' }))
@@ -31,6 +33,39 @@ function Editor({ hint, code, onLoad }: { hint: string, code: string, onLoad?: (
 afterEach(() => cleanup())
 
 describe('monacoEditorReactComp browser lifecycle', () => {
+  it('applies capability formatting through Monaco with undo and redo intact', async () => {
+    let resolveLoaded!: (handle: MonacoEditorHandle) => void
+    const loaded = new Promise<MonacoEditorHandle>((resolve) => {
+      resolveLoaded = resolve
+    })
+    render(
+      <div style={{ position: 'relative', width: 400, height: 240 }}>
+        <MonacoEditorReactComp
+          code="main(){println(1)}"
+          uriHint="browser-format-undo"
+          enableLanguageClient={false}
+          onLoad={resolveLoaded}
+        />
+      </div>,
+    )
+    const editor = (await loaded).getEditor()!
+    const registration = registerEditorActions(editor, {
+      format: async () => 'main() {\n    println(1)\n}',
+    })
+    const formatted = ['main() {', '    println(1)', '}'].join(editor.getModel()!.getEOL())
+    try {
+      await editor.getAction('editor.action.formatDocument')!.run()
+      expect(editor.getValue()).toBe(formatted)
+      await editor.getModel()!.undo()
+      expect(editor.getValue()).toBe('main(){println(1)}')
+      await editor.getModel()!.redo()
+      expect(editor.getValue()).toBe(formatted)
+    }
+    finally {
+      registration.dispose()
+    }
+  }, 60_000)
+
   it('backs a lesson editor model with the VS Code file service and keeps it current', async () => {
     const hint = 'teach:0001:b4'
     const uri = modelUri(hint)
