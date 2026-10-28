@@ -15,6 +15,14 @@
   z-index: 50;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .tour-highlight-pulse {
+    animation: none;
+    outline: 2px solid var(--tour-accent-fg);
+    outline-offset: 3px;
+  }
+}
+
 /* ── Tour Prose: mdBook-inspired typography ──
    Use alongside Tailwind `prose` class:
    <div className="prose dark:prose-invert max-w-none tour-prose">
