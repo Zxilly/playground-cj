@@ -186,8 +186,10 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
   })
 
   runtimeWorker.onmessage = (event: MessageEvent<{
-    type: 'ready' | 'log' | 'error'
+    type: 'ready' | 'log' | 'error' | 'stdlib-progress'
     message?: string
+    loaded?: number
+    total?: number
   }>) => {
     if (instance.aborted)
       return
@@ -196,10 +198,16 @@ function createConnection(origin: LspStateOrigin): ConnectionInstance {
       console.log('[LSP]', message.message)
       return
     }
+    if (message.type === 'stdlib-progress') {
+      setState({
+        stdlibModulesLoaded: message.loaded ?? 0,
+        stdlibModulesTotal: message.total ?? CJO_MODULES.length,
+      })
+      return
+    }
     if (message.type === 'ready') {
       setState({
         state: 'running',
-        stdlibModulesLoaded: STATE.runtimeStatus.stdlibModulesTotal,
         lastError: undefined,
         autoRestartAttempts: 0,
       })

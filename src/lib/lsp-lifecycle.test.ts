@@ -31,6 +31,14 @@ class FakeWorker {
     this.onmessage?.({ data: { type: 'ready' } } as MessageEvent)
   }
 
+  progress(loaded: number, total: number) {
+    this.onmessage?.({ data: { type: 'stdlib-progress', loaded, total } } as MessageEvent)
+  }
+
+  fail(message: string) {
+    this.onmessage?.({ data: { type: 'error', message } } as MessageEvent)
+  }
+
   terminate() {
     this.terminated = true
   }
@@ -81,5 +89,29 @@ describe('lsp runtime worker lifecycle', () => {
     await lsp.stopLsp('manual')
     expect(second.terminated).toBe(true)
     expect(lsp.getLspStatus().state).toBe('stopped')
+  })
+
+  it('preserves actual module progress on failure and does not invent loaded modules on ready', async () => {
+    const lsp = await import('./lsp')
+    const failedStart = lsp.startLsp('manual')
+    await vi.waitFor(() => expect(FakeWorker.instances).toHaveLength(1))
+    const first = FakeWorker.instances[0]!
+    first.progress(1, 2)
+    first.fail('Standard library incomplete: loaded 1/2 modules')
+    await failedStart
+    expect(lsp.getLspStatus()).toMatchObject({
+      state: 'crashed',
+      stdlibModulesLoaded: 1,
+      stdlibModulesTotal: 2,
+      lastError: 'Standard library incomplete: loaded 1/2 modules',
+    })
+
+    await lsp.stopLsp('manual')
+    const restarted = lsp.startLsp('manual')
+    await vi.waitFor(() => expect(FakeWorker.instances).toHaveLength(2))
+    FakeWorker.instances[1]!.ready()
+    await restarted
+    expect(lsp.getLspStatus().stdlibModulesLoaded).toBe(0)
+    await lsp.stopLsp('manual')
   })
 })

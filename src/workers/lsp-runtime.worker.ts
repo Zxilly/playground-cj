@@ -22,6 +22,7 @@ globalThis.onmessage = (event: MessageEvent<StartMessage>) => {
       onMessage: (_label, json) => serverPort.postMessage(json),
       onLog: message => post('log', message),
       onError: error => post('error', error.message),
+      onStdlibProgress: progress => globalThis.postMessage({ type: 'stdlib-progress', ...progress }),
     },
     () => false,
   ).then((module) => {

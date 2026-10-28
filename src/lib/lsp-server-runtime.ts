@@ -23,6 +23,9 @@ const CJO_DB_NAME = 'cjo-cache'
 const CJO_STORE_NAME = 'modules'
 const wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${WASM_ASSETS_VERSION}`
 const WASM_FATAL_RE = /\babort\(|RuntimeError|Uncaught/
+const CJO_FETCH_ATTEMPTS = 3
+const CJO_FETCH_TIMEOUT_MS = 15_000
+const CJO_CACHE_OPEN_TIMEOUT_MS = 2_000
 
 async function checkAndUpdateCacheVersion(): Promise<void> {
   if (!CACHE_ENABLED) {
@@ -33,14 +36,21 @@ async function checkAndUpdateCacheVersion(): Promise<void> {
 
   // This runs in a dedicated Worker, where localStorage is unavailable.
   // Keep the marker with the WASM cache so clearing caches also invalidates it.
-  const cache = await caches.open(wasmCacheName)
-  const marker = await cache.match(CACHE_VERSION_PATH)
-  const storedVersion = marker ? await marker.text() : null
-  if (storedVersion !== WASM_ASSETS_VERSION) {
-    console.log(`[Cache] Build version changed: ${storedVersion} -> ${WASM_ASSETS_VERSION}`)
-    await clearAllLspCache()
-    const freshCache = await caches.open(wasmCacheName)
-    await freshCache.put(CACHE_VERSION_PATH, new Response(WASM_ASSETS_VERSION))
+  try {
+    const cache = await caches.open(wasmCacheName)
+    const marker = await cache.match(CACHE_VERSION_PATH)
+    const storedVersion = marker ? await marker.text() : null
+    if (storedVersion !== WASM_ASSETS_VERSION) {
+      console.log(`[Cache] Build version changed: ${storedVersion} -> ${WASM_ASSETS_VERSION}`)
+      await clearAllLspCache()
+      const freshCache = await caches.open(wasmCacheName)
+      await freshCache.put(CACHE_VERSION_PATH, new Response(WASM_ASSETS_VERSION))
+    }
+  }
+  catch (error) {
+    // Versioned WASM URLs and CJO keys remain safe even when storage cannot be
+    // inspected or cleared. Cache availability must not gate language services.
+    console.warn('[Cache] Version check failed; continuing with versioned assets:', error)
   }
 }
 
@@ -49,20 +59,30 @@ async function cachedFetch(url: string, cacheName: string): Promise<Response> {
     return fetch(url, { cache: 'no-cache' })
   }
 
-  const cache = await caches.open(cacheName)
-
-  const cached = await cache.match(url)
-  if (cached) {
-    console.log(`[Cache] Hit: ${url}`)
-    return cached
+  let cache: Cache | undefined
+  try {
+    cache = await caches.open(cacheName)
+    const cached = await cache.match(url)
+    if (cached) {
+      console.log(`[Cache] Hit: ${url}`)
+      return cached
+    }
+  }
+  catch (error) {
+    console.warn('[Cache] WASM cache read failed; downloading:', error)
   }
 
   console.log(`[Cache] Miss: ${url}, fetching...`)
   const response = await fetch(url)
 
-  if (response.ok) {
-    await cache.put(url, response.clone())
-    console.log(`[Cache] Stored: ${url}`)
+  if (response.ok && cache) {
+    try {
+      await cache.put(url, response.clone())
+      console.log(`[Cache] Stored: ${url}`)
+    }
+    catch (error) {
+      console.warn('[Cache] WASM cache write failed; using downloaded bytes:', error)
+    }
   }
 
   return response
@@ -84,6 +104,7 @@ async function clearCjoCache(): Promise<void> {
       const request = indexedDB.deleteDatabase(CJO_DB_NAME)
       request.onsuccess = () => resolve()
       request.onerror = () => reject(request.error)
+      request.onblocked = () => reject(new Error('CJO cache is in use by another tab'))
     })
     console.log(`[Cache] Cleared CJO cache: ${CJO_DB_NAME}`)
   }
@@ -93,7 +114,11 @@ async function clearCjoCache(): Promise<void> {
 }
 
 export async function clearAllLspCache(): Promise<void> {
-  await Promise.all([clearWasmCache(), clearCjoCache()])
+  const results = await Promise.allSettled([clearWasmCache(), clearCjoCache()])
+  for (const result of results) {
+    if (result.status === 'rejected')
+      console.warn('[Cache] Could not clear LSP cache:', result.reason)
+  }
 }
 
 export interface EmscriptenModule {
@@ -125,8 +150,29 @@ function mkdirP(fs: EmscriptenModule['FS'], path: string): void {
 function openCjoDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(CJO_DB_NAME, 1)
-    request.onerror = () => reject(request.error)
-    request.onsuccess = () => resolve(request.result)
+    let settled = false
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const fail = (error: unknown) => {
+      settled = true
+      clearTimeout(timeout)
+      reject(error)
+    }
+    // A previous tab may keep the database open while a deletion is queued.
+    // Do not wait indefinitely for that tab before falling back to downloads.
+    timeout = setTimeout(() => fail(new Error('CJO cache open timed out')), CJO_CACHE_OPEN_TIMEOUT_MS)
+    request.onerror = () => fail(request.error)
+    request.onblocked = () => fail(new Error('CJO cache open blocked'))
+    request.onsuccess = () => {
+      const db = request.result
+      clearTimeout(timeout)
+      if (settled) {
+        db.close()
+        return
+      }
+      settled = true
+      db.onversionchange = () => db.close()
+      resolve(db)
+    }
     request.onupgradeneeded = () => {
       const db = request.result
       if (!db.objectStoreNames.contains(CJO_STORE_NAME)) {
@@ -141,7 +187,12 @@ function idbGet(db: IDBDatabase, key: string): Promise<Uint8Array | null> {
     const tx = db.transaction(CJO_STORE_NAME, 'readonly')
     const request = tx.objectStore(CJO_STORE_NAME).get(key)
     request.onerror = () => reject(request.error)
-    request.onsuccess = () => resolve(request.result || null)
+    request.onsuccess = () => {
+      const data = request.result
+      resolve(ArrayBuffer.isView(data) && Object.prototype.toString.call(data) === '[object Uint8Array]' && data.byteLength > 0
+        ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+        : null)
+    }
   })
 }
 
@@ -158,11 +209,52 @@ export interface LspServerCallbacks {
   onMessage: (label: 'Response' | 'Notification', json: object) => void
   onLog: (msg: string) => void
   onError: (err: Error) => void
+  onStdlibProgress?: (progress: { loaded: number, total: number }) => void
+}
+
+interface WasmFactoryOptions {
+  print: (text: string) => void
+  printErr: (text: string) => void
+  preRun: ((module: EmscriptenModule) => void)[]
+  instantiateWasm: (
+    imports: WebAssembly.Imports,
+    successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
+  ) => object
+}
+
+type WasmFactory = (options: WasmFactoryOptions) => Promise<EmscriptenModule>
+
+async function loadWasmFactory(): Promise<WasmFactory> {
+  const wasmModule = await import(/* webpackIgnore: true */ /* @vite-ignore */ LSP_WASM_PATH)
+  return wasmModule.default
+}
+
+async function downloadCjoModule(url: string): Promise<Uint8Array> {
+  for (let attempt = 1; ; attempt++) {
+    let retryable = true
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(CJO_FETCH_TIMEOUT_MS) })
+      if (!response.ok) {
+        retryable = response.status === 408 || response.status === 429 || response.status >= 500
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer())
+      if (bytes.byteLength === 0)
+        throw new Error('Empty standard library module')
+      return bytes
+    }
+    catch (error) {
+      if (!retryable || attempt >= CJO_FETCH_ATTEMPTS)
+        throw error
+      await new Promise(resolve => setTimeout(resolve, 250 * attempt))
+    }
+  }
 }
 
 export async function initializeLspServerInWorker(
   callbacks: LspServerCallbacks,
   shouldAbort: () => boolean,
+  loadFactory: () => Promise<WasmFactory> = loadWasmFactory,
 ): Promise<EmscriptenModule> {
   const { onMessage, onLog, onError } = callbacks
 
@@ -184,7 +276,7 @@ export async function initializeLspServerInWorker(
     }
   }
 
-  const WasmModule = await import(/* webpackIgnore: true */ /* @vite-ignore */ LSP_WASM_PATH)
+  const createWasmModule = await loadFactory()
   if (shouldAbort())
     throw new Error('aborted')
 
@@ -192,7 +284,7 @@ export async function initializeLspServerInWorker(
   const instantiationFailure = new Promise<never>((_resolve, reject) => {
     rejectInstantiation = reject
   })
-  const wasmModulePromise = WasmModule.default({
+  const wasmModulePromise = createWasmModule({
     print: (text: string) => onLog(`[stdout] ${text}`),
     printErr: (text: string) => {
       onLog(`[stderr] ${text}`)
@@ -221,7 +313,11 @@ export async function initializeLspServerInWorker(
       successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
     ) => {
       cachedFetch(LSP_WASM_BINARY_PATH, wasmCacheName)
-        .then(r => r.arrayBuffer())
+        .then((response) => {
+          if (!response.ok)
+            throw new Error(`HTTP ${response.status}`)
+          return response.arrayBuffer()
+        })
         .then(bytes => WebAssembly.instantiate(bytes, imports))
         .then(result => successCallback(result.instance, result.module))
         .catch((e) => {
@@ -260,6 +356,8 @@ export async function initializeLspServerInWorker(
   let loaded = 0
   let cached = 0
   let downloaded = 0
+  const failed: string[] = []
+  callbacks.onStdlibProgress?.({ loaded, total: CJO_MODULES.length })
 
   let db: IDBDatabase | null = null
   if (CACHE_ENABLED) {
@@ -273,9 +371,20 @@ export async function initializeLspServerInWorker(
 
   await Promise.all(CJO_MODULES.map(async (modulePath) => {
     const destPath = `${targetModulesPath}/${modulePath}`
+    // Never reuse unversioned entries from an older build when cache cleanup
+    // fails, or when another tab writes its older modules after invalidation.
+    const cacheKey = `${WASM_ASSETS_VERSION}:${modulePath}`
 
     try {
-      const cachedData = db ? await idbGet(db, modulePath) : null
+      let cachedData: Uint8Array | null = null
+      if (db) {
+        try {
+          cachedData = await idbGet(db, cacheKey)
+        }
+        catch (error) {
+          onLog(`  [cjo] Cache read failed; downloading ${modulePath}: ${String(error)}`)
+        }
+      }
 
       if (cachedData) {
         wasmMod.FS.writeFile(destPath, cachedData)
@@ -284,21 +393,19 @@ export async function initializeLspServerInWorker(
       }
       else {
         const url = `${LSP_MODULES_PATH}/${CJO_TARGET}/${modulePath}${WASM_ASSETS_VERSION_QS}`
-        const response = await fetch(url)
-        if (response.ok) {
-          const data = new Uint8Array(await response.arrayBuffer())
-          wasmMod.FS.writeFile(destPath, data)
+        const data = await downloadCjoModule(url)
+        wasmMod.FS.writeFile(destPath, data)
 
-          if (db) {
-            idbPut(db, modulePath, data)
-          }
+        if (db)
+          idbPut(db, cacheKey, data)
 
-          loaded++
-          downloaded++
-        }
+        loaded++
+        downloaded++
       }
+      callbacks.onStdlibProgress?.({ loaded, total: CJO_MODULES.length })
     }
     catch (e) {
+      failed.push(modulePath)
       onLog(`  [cjo] FAILED: ${modulePath} - ${(e as Error).message}`)
     }
   }))
@@ -307,6 +414,9 @@ export async function initializeLspServerInWorker(
   onLog(`Loaded ${loaded}/${CJO_MODULES.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)
   if (shouldAbort())
     throw new Error('aborted')
+  if (failed.length > 0) {
+    throw new Error(`Standard library incomplete: loaded ${loaded}/${CJO_MODULES.length} modules; failed: ${failed.join(', ')}`)
+  }
 
   onLog('Starting server loop...')
   wasmMod.startServerLoop()
