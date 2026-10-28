@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { chromium } from 'playwright'
 import type { Browser, Page, Route } from 'playwright'
 import enContentPacks from '../../src/lib/teach/classroom/generated/content-packs/en.json'
-import { startNextDevServer } from '../helpers/next-dev-server'
+import { startNextTestServer } from '../helpers/next-test-server'
 
 const VIEWPORT = { width: 1280, height: 900 } as const
 const MOCK_LLM_BASE_URL = 'https://mock-llm.invalid/v1'
@@ -115,11 +115,11 @@ async function replaceExerciseCode(
 describe('aI classroom workspace e2e', () => {
   let browser: Browser
   let page: Page
-  let server: Awaited<ReturnType<typeof startNextDevServer>> | undefined
+  let server: Awaited<ReturnType<typeof startNextTestServer>> | undefined
   let baseUrl: string
 
   beforeAll(async () => {
-    baseUrl = process.env.PLAYGROUND_TEST_URL ?? (server = await startNextDevServer()).url
+    baseUrl = process.env.PLAYGROUND_TEST_URL ?? (server = await startNextTestServer()).url
     browser = await chromium.launch({ headless: true })
   }, 180_000)
 

@@ -28,6 +28,7 @@ next-env.d.ts
 # Test artifacts (vitest browser failure screenshots / attachments)
 **/__screenshots__/
 /.vitest-attachments/
+/.vitest/
 
 # design-sync (claude.ai/design) — staged scripts, build output, all local state
 /.ds-sync/
@@ -50,5 +51,6 @@ cangjie-mcp.log
 /tour_gen/
 /.tmp/
 /docs/*
+!/docs/design/
 !/docs/performance/
 !/docs/edgeone-hook.md

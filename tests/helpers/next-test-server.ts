@@ -2,11 +2,12 @@ import { spawn, spawnSync } from 'node:child_process'
 import type { Buffer } from 'node:buffer'
 import { createRequire } from 'node:module'
 import { createServer } from 'node:net'
+import { setTimeout as delay } from 'node:timers/promises'
 import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 
 const require = createRequire(import.meta.url)
 
-interface StartedNextDevServer {
+interface StartedNextTestServer {
   port: number
   url: string
   stop: () => Promise<void>
@@ -35,13 +36,13 @@ function appendOutput(output: string, chunk: Buffer): string {
   return (output + chunk.toString()).slice(-8_000)
 }
 
-async function waitForHttp(url: string, getOutput: () => string) {
+async function waitForHttp(url: string, getOutput: () => string, signal: AbortSignal) {
   const deadline = Date.now() + 90_000
   let lastError: unknown
 
   while (Date.now() < deadline) {
     try {
-      const response = await fetch(url, { redirect: 'manual' })
+      const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.any([signal, AbortSignal.timeout(2_000)]) })
       if (response.status < 500)
         return
     }
@@ -49,10 +50,10 @@ async function waitForHttp(url: string, getOutput: () => string) {
       lastError = error
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await delay(500, undefined, { signal })
   }
 
-  throw new Error(`Next dev server did not become ready: ${String(lastError)}\n${getOutput()}`)
+  throw new Error(`Next test server did not become ready: ${String(lastError)}\n${getOutput()}`)
 }
 
 const EXISTING_DEV_SERVER_URLS = [
@@ -76,7 +77,7 @@ export async function findExistingDevServerUrl(fetchPage: FetchPage = fetch): Pr
   }
 }
 
-async function getExistingDevServer(): Promise<StartedNextDevServer | undefined> {
+async function getExistingDevServer(): Promise<StartedNextTestServer | undefined> {
   const url = await findExistingDevServerUrl()
   if (!url)
     return undefined
@@ -114,8 +115,9 @@ async function stopProcessTree(child: ChildProcessWithoutNullStreams) {
   })
 }
 
-export async function startNextDevServer(): Promise<StartedNextDevServer> {
-  const existing = await getExistingDevServer()
+export async function startNextTestServer(): Promise<StartedNextTestServer> {
+  const production = process.env.PLAYGROUND_TEST_MODE === 'production'
+  const existing = production ? undefined : await getExistingDevServer()
   if (existing)
     return existing
 
@@ -123,8 +125,7 @@ export async function startNextDevServer(): Promise<StartedNextDevServer> {
   const nextCli = require.resolve('next/dist/bin/next')
   const child = spawn(process.execPath, [
     nextCli,
-    'dev',
-    '--turbopack',
+    ...(production ? ['start'] : ['dev', '--turbopack']),
     '--hostname',
     '127.0.0.1',
     '--port',
@@ -133,6 +134,7 @@ export async function startNextDevServer(): Promise<StartedNextDevServer> {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      NODE_ENV: production ? 'production' : 'development',
       CI: '1',
       PLAYGROUND_E2E: '1',
       NEXT_TELEMETRY_DISABLED: '1',
@@ -147,17 +149,26 @@ export async function startNextDevServer(): Promise<StartedNextDevServer> {
 
   const exited = new Promise<never>((_, reject) => {
     child.once('exit', (code, signal) => {
-      reject(new Error(`Next dev server exited before readiness with code ${code} signal ${signal}\n${output}`))
+      reject(new Error(`Next test server exited before readiness with code ${code} signal ${signal}\n${output}`))
     })
   })
 
   const url = `http://127.0.0.1:${port}`
-  await Promise.race([
-    waitForHttp(`${url}/zh`, () => output),
-    exited,
-  ])
-
-  child.removeAllListeners('exit')
+  const readiness = new AbortController()
+  try {
+    await Promise.race([
+      waitForHttp(`${url}/zh`, () => output, readiness.signal),
+      exited,
+    ])
+  }
+  catch (error) {
+    await stopProcessTree(child)
+    throw error
+  }
+  finally {
+    readiness.abort()
+    child.removeAllListeners('exit')
+  }
 
   return {
     port,

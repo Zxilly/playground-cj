@@ -1,16 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { chromium } from 'playwright'
 import type { Browser, Page, Route } from 'playwright'
-import { startNextDevServer } from '../helpers/next-dev-server'
+import { startNextTestServer } from '../helpers/next-test-server'
 
 describe('tour page e2e', () => {
-  let server: Awaited<ReturnType<typeof startNextDevServer>> | undefined
+  let server: Awaited<ReturnType<typeof startNextTestServer>> | undefined
   let baseUrl: string
   let browser: Browser
   let page: Page
 
   beforeAll(async () => {
-    baseUrl = process.env.PLAYGROUND_TEST_URL ?? (server = await startNextDevServer()).url
+    baseUrl = process.env.PLAYGROUND_TEST_URL ?? (server = await startNextTestServer()).url
     browser = await chromium.launch({ headless: true })
     page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
   }, 120_000)
@@ -67,12 +67,29 @@ describe('tour page e2e', () => {
     expect(await previous.isEnabled()).toBe(true)
   }, 120_000)
 
+  it('opens the desktop table of contents and navigates to another lesson', async () => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto(`${baseUrl}/zh/tour/welcome/1`, { waitUntil: 'domcontentloaded' })
+    await page.getByRole('heading', { name: 'Hello, 世界', exact: true }).waitFor({ state: 'visible' })
+    const directoryToggle = page.locator('[data-sidebar="trigger"]')
+    await directoryToggle.click()
+    expect(await directoryToggle.getAttribute('aria-expanded')).toBe('true')
+    const sidebar = page.locator('[data-slot="sidebar-container"]')
+    await sidebar.waitFor({ state: 'visible' })
+    await sidebar.getByRole('button', { name: '已知语言', exact: true }).click()
+    await page.waitForURL(url => url.pathname === '/zh/tour/welcome/2')
+    await page.getByRole('heading', { name: '已知语言', exact: true }).waitFor({ state: 'visible' })
+    await directoryToggle.click()
+    expect(await directoryToggle.getAttribute('aria-expanded')).toBe('false')
+    await expect.poll(async () => (await sidebar.boundingBox())!.x + (await sidebar.boundingBox())!.width).toBeLessThanOrEqual(1)
+  }, 120_000)
+
   it('closes the mobile table of contents after choosing a lesson', async () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(`${baseUrl}/zh/tour/welcome/1`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('heading', { name: 'Hello, 世界', exact: true }).waitFor({ state: 'visible' })
 
-    await page.getByRole('button', { name: '切换侧边栏', exact: true }).click()
+    await page.locator('[data-sidebar="trigger"]').click()
     const drawer = page.getByRole('dialog', { name: '侧边栏', exact: true })
     await drawer.waitFor({ state: 'visible' })
     await drawer.getByRole('button', { name: '已知语言', exact: true }).click()
@@ -221,9 +238,10 @@ describe('tour page e2e', () => {
       expect(runBox.y + runBox.height).toBeLessThanOrEqual(editorBox.y + 1)
       const outputToggleBox = (await outputToggle.boundingBox())!
       expect(outputToggleBox.y + outputToggleBox.height).toBeLessThanOrEqual(editorBox.y + 1)
-      expect(runBox.width).toBeLessThanOrEqual(24)
-      expect(runBox.height).toBeLessThanOrEqual(24)
-      expect(outputToggleBox.width).toBeLessThanOrEqual(24)
+      expect(runBox.width).toBeGreaterThanOrEqual(44)
+      expect(runBox.height).toBeGreaterThanOrEqual(44)
+      expect(outputToggleBox.width).toBeGreaterThanOrEqual(44)
+      expect(outputToggleBox.height).toBeGreaterThanOrEqual(44)
       expect(await run.evaluate(element => element.closest('.monaco-toolbar .monaco-action-bar') !== null)).toBe(true)
 
       await editorLines.locator('.view-line').first().click()
@@ -412,9 +430,10 @@ describe('tour page e2e', () => {
         expect(Math.abs(statusBox.y + statusBox.height - (workspaceBox.y + workspaceBox.height))).toBeLessThanOrEqual(1)
         for (const control of [run, outputToggle, more]) {
           const box = (await control.boundingBox())!
-          expect(box.width).toBeCloseTo(22, 0)
-          expect(box.height).toBeCloseTo(22, 0)
+          expect(box.width).toBeGreaterThanOrEqual(44)
+          expect(box.height).toBeGreaterThanOrEqual(44)
         }
+        expect(await run.textContent()).toContain('运行')
         expect(await responsivePage.evaluate(() => ({
           horizontal: document.documentElement.scrollWidth > window.innerWidth + 1,
           vertical: document.documentElement.scrollHeight > window.innerHeight + 1,
@@ -451,7 +470,7 @@ describe('tour page e2e', () => {
 
       await responsivePage.setViewportSize({ width: 390, height: 844 })
       await expect.poll(async () => (await editorContent.boundingBox())?.width ?? 0).toBeCloseTo(390, 0)
-      await expect.poll(async () => (await editorContent.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(350)
+      await expect.poll(async () => (await editorContent.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(300)
       expect((await editorContent.boundingBox())!.height).toBeLessThanOrEqual(380)
       await expect.poll(async () => (await outputPanel.boundingBox())?.height ?? 0).toBeLessThanOrEqual(100)
       expect((await outputPanel.boundingBox())!.height).toBeGreaterThan(90)

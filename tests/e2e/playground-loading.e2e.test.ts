@@ -1,17 +1,18 @@
+import { readFile } from 'node:fs/promises'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { chromium, request } from 'playwright'
 import type { Browser } from 'playwright'
 import { compressToBase64 } from 'lz-string'
-import { startNextDevServer } from '../helpers/next-dev-server'
+import { startNextTestServer } from '../helpers/next-test-server'
 
 describe('playground initial load', () => {
-  let server: Awaited<ReturnType<typeof startNextDevServer>> | undefined
+  let server: Awaited<ReturnType<typeof startNextTestServer>> | undefined
   let browser: Browser
   let baseUrl: string
 
   beforeAll(async () => {
     // Point at `next start` to also verify the production chunk boundaries.
-    baseUrl = process.env.PLAYGROUND_TEST_URL ?? (server = await startNextDevServer()).url
+    baseUrl = process.env.PLAYGROUND_TEST_URL ?? (server = await startNextTestServer()).url
     browser = await chromium.launch({ headless: true })
   }, 120_000)
 
@@ -31,20 +32,22 @@ describe('playground initial load', () => {
       // Layout assertions need stylesheets, while the page still cannot hydrate.
       await page.goto(`${baseUrl}/${locale}`, { waitUntil: 'load' })
       expect(await page.locator('#header h1').isVisible()).toBe(true)
-      expect(await page.locator('#panel-content').isVisible()).toBe(true)
+      expect(await page.locator('#panel-content').isVisible()).toBe(width >= 1024)
       expect(await page.getByTestId('editor-loading').isVisible()).toBe(true)
       expect(await page.getByTestId('editor-loading').getAttribute('aria-busy')).toBe('true')
       expect(await page.locator('#editor [data-slot="skeleton"]').first().isVisible()).toBe(true)
       expect(await page.locator('#editor pre, #editor code').count()).toBe(0)
       const editorBox = (await page.locator('#editor').boundingBox())!
-      const outputBox = (await page.locator('#panel').boundingBox())!
       expect(editorBox.width).toBeGreaterThan(200)
       if (width >= 1024) {
+        const outputBox = (await page.locator('#panel').boundingBox())!
         expect(outputBox.x).toBeGreaterThan(editorBox.x + editorBox.width)
         expect(outputBox.y).toBe(editorBox.y)
       }
       else {
-        expect(outputBox.y).toBeGreaterThan(editorBox.y + editorBox.height)
+        expect(await page.getByRole('tab', { name: 'Code', exact: true }).getAttribute('aria-selected')).toBe('true')
+        expect(editorBox.height).toBeGreaterThan(450)
+        expect(editorBox.width).toBeGreaterThan(width - 40)
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
       expect(await page.locator('#editor [role="status"]').textContent())
@@ -199,6 +202,71 @@ describe('playground initial load', () => {
       // Check the complete model through the existing Run action, not just the
       // currently rendered Monaco lines, which are virtualized for long samples.
       await expect.poll(() => submittedCode).toBe(draft)
+    }
+    finally {
+      await context.close()
+    }
+  }, 120_000)
+
+  it('keeps the mobile editor and undo history mounted while switching output views', async () => {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
+    try {
+      const page = await context.newPage()
+      const starterCode = (await readFile(new URL('../../src/examples/hello-world.cj', import.meta.url), 'utf8')).replaceAll('\r\n', '\n')
+      let submittedCode: string | null = null
+      await page.route('**/api/run', (route) => {
+        submittedCode = route.request().postData()
+        return route.fulfill({ json: {
+          phase: 'compile',
+          compiler_code: 1,
+          compiler_output: 'main.cj:1:1: error: mobile diagnostic',
+          compiler_output_truncated: false,
+          bin_code: null,
+          bin_stdout: '',
+          bin_stdout_truncated: false,
+          bin_stderr: '',
+          bin_stderr_truncated: false,
+        } })
+      })
+      await page.goto(`${baseUrl}/zh`, { waitUntil: 'domcontentloaded' })
+      const run = page.getByRole('button', { name: '运行', exact: true })
+      await expect.poll(() => run.isEnabled(), { timeout: 90_000 }).toBe(true)
+      const editor = page.locator('#editor .monaco-editor')
+      const mountedEditor = await editor.elementHandle()
+      expect((await page.locator('#editor').boundingBox())!.width).toBeGreaterThan(350)
+      const lines = editor.locator('.view-lines')
+      const originalCode = await lines.textContent()
+      await lines.locator('.view-line').first().click()
+      await page.keyboard.press('ControlOrMeta+Home')
+      // A word is one native undo transaction. Punctuation and a trailing
+      // newline may create separate transactions in Chromium EditContext.
+      await page.keyboard.insertText('mobileDraft')
+      await expect.poll(() => lines.textContent()).toContain('mobileDraft')
+      await page.getByRole('tab', { name: '输出', exact: true }).click()
+      expect(await editor.isVisible()).toBe(false)
+      expect(await mountedEditor!.evaluate(element => element.isConnected)).toBe(true)
+      await page.getByRole('tab', { name: '代码', exact: true }).click()
+      await expect.poll(() => lines.textContent()).toContain('mobileDraft')
+      await lines.locator('.view-line').first().click()
+      expect(await editor.evaluate(element => element.contains(document.activeElement))).toBe(true)
+      await page.keyboard.press('ControlOrMeta+Z')
+      await page.keyboard.press('ControlOrMeta+Home')
+      await expect.poll(() => lines.textContent()).toBe(originalCode)
+      await run.click()
+      await expect.poll(() => submittedCode).toBe(starterCode)
+      await page.getByText('main.cj:1:1: error: mobile diagnostic').waitFor({ state: 'visible' })
+      expect(await page.getByRole('tab', { name: '输出', exact: true }).getAttribute('aria-selected')).toBe('true')
+      expect(await page.getByRole('tab', { name: '编译信息', exact: true }).getAttribute('aria-selected')).toBe('true')
+      expect(await mountedEditor!.evaluate(element => element.isConnected)).toBe(true)
+      await page.getByRole('combobox', { name: '选择示例', exact: true }).click()
+      await page.getByRole('option', { name: '数组', exact: true }).click()
+      await expect.poll(() => page.getByRole('tab', { name: '代码', exact: true }).getAttribute('aria-selected')).toBe('true')
+      await expect.poll(() => lines.textContent()).toContain('parse(text:')
+      expect(await mountedEditor!.evaluate(element => element.isConnected)).toBe(true)
+      await lines.click()
+      await page.keyboard.press('ControlOrMeta+Z')
+      await expect.poll(() => lines.textContent()).not.toContain('parse(text:')
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     }
     finally {
       await context.close()

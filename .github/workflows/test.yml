@@ -92,8 +92,15 @@ jobs:
       - name: Execute Browser tests
         run: pnpm run test:browser
 
-      - name: Execute AI classroom E2E tests
+      - name: Build production application
+        run: pnpm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Execute production E2E tests
         run: pnpm run test:e2e
+        env:
+          PLAYGROUND_TEST_MODE: production
 
   runner:
     runs-on: ubuntu-latest

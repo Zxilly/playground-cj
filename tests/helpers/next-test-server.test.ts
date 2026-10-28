@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest'
-import { findExistingDevServerUrl } from './next-dev-server'
+import { findExistingDevServerUrl } from './next-test-server'
 
 describe('findExistingDevServerUrl', () => {
   it('checks both loopback hostnames before starting a new Next dev server', async () => {
