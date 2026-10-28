@@ -4,7 +4,7 @@
 
 This pattern—a generic container with constraints—is common in real-world Cangjie code. Through constraints, generic classes can safely manipulate elements without knowing their concrete types; through generics, instantiated containers maintain specific element types, avoiding runtime type checks.
 
-The code on the right implements a user registry: it requires stored elements to implement the `Identifiable` interface, uses `HashMap` internally for storage, and returns `Option<T>` for queries to elegantly handle "not found" cases.
+The code on the right implements a user registry: it requires stored elements to implement the `Identifiable` interface, uses `HashMap` internally for storage, and returns `Option<T>` to represent query results that may be absent.
 
 <CompareGroup>
 
