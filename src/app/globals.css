@@ -1,7 +1,5 @@
 @import "tailwindcss" source("../");
 @import "./tailwind-theme.css";
-@source not "../features/tour";
-@source not "../features/teach";
 @source "../../tour";
 
 :root {
@@ -21,6 +19,7 @@
   --accent-foreground: hsl(0 0% 9%);
   --destructive: hsl(0 84.2% 60.2%);
   --destructive-foreground: hsl(0 0% 98%);
+  --error-foreground: #b42318;
   --border: hsl(0 0% 89.8%);
   --input: hsl(0 0% 89.8%);
   --ring: hsl(0 0% 3.9%);
@@ -74,6 +73,7 @@
   --accent: hsl(0 0% 14.9%);
   --accent-foreground: hsl(0 0% 9%);
   --destructive: hsl(0 62.8% 30.6%);
+  --error-foreground: #fda29b;
   --destructive-foreground: hsl(0 0% 98%);
   --border: hsl(0 0% 14.9%);
   --input: hsl(0 0% 14.9%);
