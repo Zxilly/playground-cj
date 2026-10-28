@@ -28,7 +28,7 @@ modal run modal/build_runner_image.py \
 modal deploy modal/runner.py
 ```
 
-This imports the already-built runner and only adds Modal's Python runtime.
+The import adds only Modal's Python runtime to the prebuilt runner.
 `--prebuilt-image` rejects mutable tags. Omitting it preserves the Dockerfile
 build used by the deployment workflow.
 

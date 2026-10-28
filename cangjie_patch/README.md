@@ -1,6 +1,6 @@
 # Browser toolchain build
 
-The browser LSP and formatter use **Cangjie STS 1.2.0**. Their standard-library
+The browser LSP and formatter use Cangjie STS 1.2.0. Their standard-library
 CJO files come from the same SDK and STDX 1.2.0.1 archives as the production
 runner, rather than from a separate nightly SDK.
 
@@ -29,8 +29,8 @@ also includes both provenance locks and the SDK/STDX licenses. Archive entry
 ordering and timestamps are fixed.
 
 The build directory is reusable for the same source revisions. Use a fresh
-directory when changing the release; the script refuses an unexpected source
-revision rather than resetting an existing checkout.
+directory when changing the release; the script rejects an unexpected source
+revision and leaves the existing checkout unchanged.
 
 ## Completion and diagnostic concurrency
 

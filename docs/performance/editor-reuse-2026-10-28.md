@@ -1,8 +1,8 @@
 # Shared editor runtime and responsive UI baseline
 
-Measured on 2026-10-28 using a local production build of the shared editor
-runtime and responsive Playground/Tour changes. This is a current-state
-baseline, not a paired before/after speed comparison.
+This baseline was measured on 2026-10-28 using a local production build of the
+shared editor runtime and responsive Playground/Tour changes. It records the
+current state; no paired before/after speed comparison was measured.
 
 ## Method
 
@@ -53,10 +53,10 @@ Runner and AI responses in the E2E suite are controlled fixtures. Native
 formatting undo/redo also has a Chromium browser regression test.
 
 A separate local runner smoke request returned `runner_admission_unavailable`
-(HTTP 503). A direct browser request to the loopback preview was rejected by
-the existing origin guard. These checks do not establish successful remote
-runner execution or a real AI provider session. The UI correctly surfaced the
-failure and ended its running state.
+(HTTP 503). The existing origin guard rejected a direct browser request to the
+loopback preview. Successful remote runner execution and a real AI provider
+session remain unverified. The UI displayed the failure and ended its running
+state.
 
 The frontend CI now builds the production application before running this
 same E2E suite with `PLAYGROUND_TEST_MODE=production`. Development-mode tests

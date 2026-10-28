@@ -63,8 +63,8 @@ response or restore a large existing conversation.
 The baseline contains three samples per cell (48 total); the optimized run
 contains two (32 total). Some baseline samples overlapped local validation
 processes, and the optimized run also showed substantial timing variation.
-All samples are retained, so timings are observations with host-load noise,
-not an isolated production speedup claim. Payload reductions provide independent
+All samples are retained. Timings include host-load noise and do not establish
+an isolated production speedup. Payload reductions provide independent
 evidence of the loading changes. The first Tour baseline request also includes
 cold server course compilation; subsequent requests reuse the cached course.
 

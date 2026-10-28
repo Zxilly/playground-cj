@@ -11,8 +11,8 @@ The hook resolves the adapter from `EDGEONE_CLI_DIRECTORY`, verifies both
 package names and exact versions, and matches the compiler's canonical file
 URL. The pure transform in `scripts/edgeone-turbopack-compat.mjs` checks the
 original factory-installer function hash and preserves factory identity across
-aliases. Other modules pass through unchanged. Unknown versions or function
-implementations throw an error rather than applying an unreviewed transform.
+aliases. Other modules pass through unchanged. The hook throws an error before
+transformation if a version or function implementation is unknown.
 
 ## Invocation
 
@@ -58,4 +58,3 @@ implementation before changing the pinned versions or expected function hash.
 Test a clean installation with and without the hook. If the upstream compiler
 passes the same middleware cases unaided, remove the hook and its explicit
 preload arguments while retaining the compiled and public deployment checks.
-This compatibility layer does not replace an upstream fix.

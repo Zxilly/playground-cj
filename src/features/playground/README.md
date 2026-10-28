@@ -19,9 +19,11 @@ Short-link requests start on the server but are passed down as promises. Suspens
 streams the surrounding page while the editor waits for the shared source. The skeleton does not wait for that request.
 URL-fragment shares are read only inside the browser editor, before creating its model.
 
-The UI font subset is checked in. To regenerate it after changing translations or
-examples, install `fonttools[woff]==4.62.1` and run `python scripts/subset-ui-font.py`.
-Glyphs absent from the subset fall back to the complete HarmonyOS font.
+The font subsets are checked in. After changing translations, run
+`pnpm lingui:compile` followed by `pnpm fonts:generate`. The Node.js generator
+uses HarfBuzz WASM to create Latin, locale UI, and Unicode fallback subsets from
+the compiled catalogs. Glyphs absent from the UI subsets load fallback subsets;
+the complete source fonts are not downloaded.
 
 All `@codingame/monaco-vscode-*` packages and the `vscode` alias must use the same
 version. Version 38.0.3 integrates Monaco 0.57.0 and VS Code 1.142.0; this project
@@ -30,8 +32,9 @@ uses its editor API rather than installing a second, standalone `monaco-editor`.
 `tests/e2e/playground-loading.e2e.test.ts` checks SSR with JavaScript disabled,
 responsive layout, hostname-specific links, shared source initialization, the
 deferred LSP client, formatting, and Chinese menus. Set `PLAYGROUND_TEST_URL` to
-an existing `next start` server to test production chunks; otherwise it uses the
-repository's Next development-server helper.
+an existing `next start` server to test production chunks, or set
+`PLAYGROUND_TEST_MODE=production` to have the test helper start the built
+application. Without either variable, the helper uses a Next development server.
 
 The loading tests also check layout shifts before interaction (total below 0.01)
 and exercise the deferred language and share controls. The workspace uses the

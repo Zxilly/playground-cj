@@ -77,9 +77,9 @@ bytes (11.9%) respectively. The deferred-host-only experiment accounts for
 165,065 transferred bytes; removing the workbench status bar saves another
 14,299 bytes. The final view and localization cleanup accounts for the rest.
 
-The large WASM language server remains a separate startup cost. Its first
-diagnostic does not improve materially; the English diagnostic arrived 0.645 s
-later in these samples. Editor usability and full code assistance must be
+The large WASM language server remains a separate startup cost. Time to its
+first diagnostic did not improve materially; the English diagnostic arrived
+0.645 s later in these samples. Editor usability and full code assistance must be
 reported separately. Deferring the host reduces work before editing but still
 incurs that work when code assistance starts.
 

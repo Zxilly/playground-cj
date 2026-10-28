@@ -78,9 +78,9 @@ menus. The local extension host is also part of the current VS Code services,
 model synchronization, and language-client integration, so it was retained.
 
 Full startup times vary across runs; the included measurement summary preserves
-both final rounds, including slow samples. These data do not establish a stable
-end-to-end speedup. The payload reduction and removal of the two serial waits
-are supported separately from that timing claim.
+both final rounds, including slow samples. The data support the payload
+reduction and removal of the two serial waits, but do not establish a stable
+end-to-end speedup.
 
 Medians below use three baseline samples and six final samples per locale/width.
 The Chinese desktop measurements regressed in this run; they are not excluded
