@@ -23,7 +23,7 @@ Go 使用 `import "fmt"` 导入整个包，然后通过 `fmt.Println()` 调用�
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust 使用 `use std::collections::ArrayList;` 导入，语法类似。但 Rust 没有隐式导入，标准库类型也需要显式声明。
+Rust 使用 `use` 将名称引入作用域，例如 `use std::collections::HashMap;`。在使用标准库的普通程序中，`Vec`、`String` 和 `Option` 等常用类型由 prelude 自动引入。
 </CompareWith>
 
 </CompareGroup>

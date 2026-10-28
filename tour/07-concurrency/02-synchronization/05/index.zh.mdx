@@ -16,7 +16,7 @@ C 版本需要使用 `pthread_mutex_lock()` 和 `pthread_mutex_unlock()`，必�
 </CompareWith>
 
 <CompareWith lang="java">
-Java 版本可以使用 `synchronized(counter)` 或 `ReentrantLock`；必须手动 unlock，容易忘记导致死锁。
+Java 可以使用 `synchronized(lock)`，退出代码块时会自动释放监视器锁。使用 `ReentrantLock` 时，应在成功加锁后通过 `finally` 调用 `unlock()`。
 </CompareWith>
 
 <CompareWith lang="go">

@@ -23,7 +23,7 @@ Go uses `import "fmt"` to import an entire package, then calls functions via `fm
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust uses `use std::collections::ArrayList;` for imports, with similar syntax. However, Rust has no implicit imports—standard library types also need explicit declarations.
+Rust brings names into scope with `use`, for example `use std::collections::HashMap;`. In ordinary programs using the standard library, the prelude automatically provides common types such as `Vec`, `String`, and `Option`.
 </CompareWith>
 
 </CompareGroup>

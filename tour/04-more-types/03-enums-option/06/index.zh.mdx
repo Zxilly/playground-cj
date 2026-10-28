@@ -15,15 +15,15 @@ C 的 `switch` 只基于值比较，不支持模式匹配或守卫。仓颉的 `
 </CompareWith>
 
 <CompareWith lang="java">
-Java 的 `switch` 不支持守卫，需要多个嵌套 if-else 处理复杂逻辑。仓颉的 `match` 和 `where` 更简洁清晰。
+Java 21 的模式 `switch` 可以用 `when` 为 `case` 模式添加条件。仓颉使用 `where`，本例将其用于 `Some(v)` 解构后的判断。
 </CompareWith>
 
 <CompareWith lang="go">
-Go 的 `switch` 不支持模式匹配和守卫，只能使用 `if-else` 链来处理类似逻辑，代码更冗长。
+Go 可以用不带表达式的 `switch` 和布尔 `case` 条件处理分数区间。仓颉可以在解构 `Some(v)` 时用 `where` 添加条件。
 </CompareWith>
 
 <CompareWith lang="rust">
-Rust 的 `match` 也支持守卫（称为 match guard），语法和语义与仓颉相同。
+Rust 的 match guard 使用 `if`，如 `Some(v) if v >= 90 => ...`。仓颉对应写作 `case Some(v) where v >= 90 => ...`；两者都用于给模式增加匹配条件。
 </CompareWith>
 
 </CompareGroup>

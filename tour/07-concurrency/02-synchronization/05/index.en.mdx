@@ -16,7 +16,7 @@ C version requires using `pthread_mutex_lock()` and `pthread_mutex_unlock()` wit
 </CompareWith>
 
 <CompareWith lang="java">
-Java version can use `synchronized(counter)` or `ReentrantLock`; manual unlock is required, making it easy to forget and cause deadlocks.
+Java can use `synchronized(lock)`, which releases the monitor lock when the block exits. With `ReentrantLock`, call `unlock()` in a `finally` block after acquiring the lock.
 </CompareWith>
 
 <CompareWith lang="go">
