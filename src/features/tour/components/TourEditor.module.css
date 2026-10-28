@@ -3,12 +3,12 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
-  height: 36px;
+  height: 56px;
   padding: 0 12px;
-  color: var(--vscode-editor-foreground, var(--tour-text));
+  color: var(--tour-text);
   gap: 8px;
   border-bottom: 1px solid var(--vscode-panel-border, var(--tour-border));
-  background: var(--vscode-editorGroupHeader-tabsBackground, var(--tour-surface));
+  background: var(--tour-surface);
 }
 
 .identity {
@@ -16,25 +16,91 @@
   min-width: 0;
   align-items: center;
   gap: 6px;
+  margin-right: auto;
 }
 
 .identity h2 {
   overflow: hidden;
-  font-size: 12px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .actions {
   --vscode-actionBar-toggledBackground: var(--vscode-toolbar-hoverBackground, var(--tour-border-soft));
-  height: 22px;
+  height: 44px;
   flex-shrink: 0;
 }
 
-/* Keep Monaco's 16px codicon + 3px padding under Tailwind's reset. */
-.actions :global(.action-label.codicon) {
-  box-sizing: content-box;
+.actions :global(.monaco-action-bar .action-item .action-label) {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+}
+
+.actions :global(.monaco-action-bar .action-item .action-label:hover) {
+  background: var(--accent);
+}
+
+.actions :global(.monaco-action-bar .action-item .action-label:focus-visible) {
+  outline: 2px solid var(--tour-accent-fg);
+  outline-offset: 2px;
+}
+
+.actions :global(.monaco-action-bar .action-item .action-label[data-tour-primary-action]) {
+  width: auto;
+  min-width: 84px;
+  gap: 8px;
+  padding: 0 14px;
+  background: var(--tour-accent-fg);
+  color: var(--background);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.actions :global(.action-label[data-tour-primary-action]::before) {
+  font-family: codicon;
+  font-size: 16px;
+}
+
+.actions :global(.monaco-action-bar .action-item .action-label[data-tour-primary-action]:hover) {
+  background: color-mix(in srgb, var(--tour-accent-fg), var(--foreground) 12%);
+}
+
+.actions :global(.action-label[aria-disabled=true]) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.shortcut {
+  display: none;
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (min-width: 1280px) {
+  .shortcut {
+    display: block;
+  }
+}
+
+@media (max-height: 500px) {
+  .toolbar {
+    height: 48px;
+    padding: 0 8px;
+  }
 }
 
 .nativeOutput {
@@ -59,10 +125,6 @@
 
 .actions :global(.actions-container) {
   gap: 4px;
-}
-
-.actions :global(.codicon-play) {
-  color: var(--vscode-debugIcon-startForeground, var(--tour-accent-fg));
 }
 
 .statusBar {

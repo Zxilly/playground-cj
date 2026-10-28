@@ -25,14 +25,14 @@ export default async function Wrapper({ lang, sharedCode }: { lang: string, shar
       sharedCode={sharedCode}
       brand={(
         <div className="flex min-w-0 items-center lg:shrink-0">
-          <Image src="/icon.png" alt="" width={32} height={32} className="m-2 size-6 lg:m-4 lg:size-8" />
-          <h1 className="min-w-0 whitespace-nowrap text-base font-bold lg:text-2xl">{i18n._(msg`仓颉 Playground`)}</h1>
+          <Image src="/icon.png" alt="" width={32} height={32} className="mr-2 size-6 shrink-0 lg:mr-3 lg:size-8" />
+          <h1 className="min-w-0 whitespace-nowrap text-sm font-bold sm:text-base lg:text-xl">{i18n._(msg`仓颉 Playground`)}</h1>
         </div>
       )}
       tourLink={(
-        <a href={tourHref} className={`${buttonVariants({ variant: 'outline' })} min-h-11 w-full lg:min-h-9`}>
-          <BookOpen className="mr-1 h-4 w-4" />
-          {i18n._(msg`教程`)}
+        <a href={tourHref} aria-label={i18n._(msg`教程`)} title={i18n._(msg`教程`)} className={`${buttonVariants({ variant: 'ghost' })} min-h-11 px-2`}>
+          <BookOpen aria-hidden="true" className="size-4" />
+          <span className="hidden sm:inline">{i18n._(msg`教程`)}</span>
         </a>
       )}
       editorFallback={(
@@ -48,11 +48,11 @@ export default async function Wrapper({ lang, sharedCode }: { lang: string, shar
         </div>
       )}
       footer={(
-        <footer className="flex-none p-4 pt-0 text-center text-sm text-muted-foreground">
+        <footer className="flex shrink-0 items-center justify-end gap-1 border-t border-border px-3 py-1 text-[11px] text-muted-foreground sm:px-6">
           {i18n._(msg`仓颉 1.2.0 · STDX 1.2.0.1 ·\u00A0`)}
           <a
             href="https://github.com/Zxilly/playground-cj"
-            className="inline-flex min-h-11 items-center justify-center px-1 hover:underline lg:min-h-0"
+            className="inline-flex min-h-6 items-center justify-center px-1 underline-offset-4 hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >

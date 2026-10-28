@@ -24,6 +24,7 @@ vi.mock('./ShareButton', () => ({ default: MockShareButton }))
 afterEach(() => {
   cleanup()
   usePlaygroundStore.getState().setEditor(undefined)
+  usePlaygroundStore.getState().setRunning(false)
 })
 
 function renderHeader() {
@@ -85,5 +86,18 @@ describe('playground header', () => {
     expect(editor.pushUndoStop.mock.invocationCallOrder[1]).toBeGreaterThan(editor.executeEdits.mock.invocationCallOrder[0])
     expect(editor.setPosition).toHaveBeenCalledWith({ lineNumber: 1, column: 1 })
     expect(editor.revealLine).toHaveBeenCalledWith(1)
+  })
+
+  it('shows and disables the running action until the current run finishes', () => {
+    usePlaygroundStore.getState().setEditor({} as monaco.editor.IStandaloneCodeEditor)
+    const { run } = renderHeader()
+    act(() => usePlaygroundStore.getState().setRunning(true))
+    const running = screen.getByRole('button', { name: '运行中' }) as HTMLButtonElement
+    expect(running.disabled).toBe(true)
+    expect(running.getAttribute('aria-busy')).toBe('true')
+    fireEvent.click(running)
+    expect(run).not.toHaveBeenCalled()
+    act(() => usePlaygroundStore.getState().setRunning(false))
+    expect((screen.getByRole('button', { name: '运行' }) as HTMLButtonElement).disabled).toBe(false)
   })
 })

@@ -1,15 +1,15 @@
 'use client'
 
 import { lazy, Suspense } from 'react'
-import { SidebarTrigger } from '@/components/ui/sidebar'
-import { Separator } from '@/components/ui/separator'
-import { Code2, Globe, Sparkles } from 'lucide-react'
+import { useSidebar } from '@/components/ui/sidebar'
+import { Globe, List } from 'lucide-react'
 import Image from 'next/image'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 import { LanguagePicker } from './mdx/LanguagePicker'
 import type { FlatSection } from '@/tour/types'
 import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourAIHref, getTourPath } from '@/lib/siteHref'
+import styles from './TourHeader.module.css'
 
 const LLMConfigDialog = lazy(() => import('@/modules/llm-config/components/LLMConfigDialog').then(
   module => ({ default: module.LLMConfigDialog }),
@@ -23,6 +23,24 @@ export interface TourHeaderProps {
   aiMode?: boolean
 }
 
+function TableOfContentsButton() {
+  const { toggleSidebar, isMobile, open, openMobile } = useSidebar()
+
+  return (
+    <button
+      type="button"
+      data-sidebar="trigger"
+      aria-label={t`切换侧边栏`}
+      aria-expanded={isMobile ? openMobile : open}
+      onClick={toggleSidebar}
+      className={styles.contentsButton}
+    >
+      <List size={18} aria-hidden="true" />
+      <Trans>目录</Trans>
+    </button>
+  )
+}
+
 export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
   const otherLang = lang === 'en' ? 'zh' : 'en'
   const otherLabel = lang === 'en' ? '中文' : 'EN'
@@ -33,82 +51,57 @@ export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
   const localeHref = getLocaleHref(otherLang, window.location)
   const playgroundHref = getPlaygroundHref(lang, { currentOrigin: window.location.origin })
 
-  // SidebarTrigger throws if rendered outside a SidebarProvider — only the
-  // tutorial route mounts one (via TourLayout). In AI mode the header lives on
-  // a sidebar-less page, so omit the trigger and its separator.
-  const hasSidebar = !aiMode
+  const chapterName = section && (section.chapterName[lang] ?? section.chapterName.zh)
+  const subChapterName = section && (section.subChapterName[lang] ?? section.subChapterName.zh)
+  const sectionName = section && (section.sectionName[lang] ?? section.sectionName.zh)
+  const ancestors = [chapterName, subChapterName].filter((name, index, names) => name && name !== names[index - 1])
 
   return (
-    <header className="flex h-[50px] shrink-0 items-center gap-1.5 bg-gradient-to-r from-tour-teal-deep via-tour-teal to-tour-teal-end px-2 text-white shadow-[0_2px_4px_rgba(0,0,0,0.15)] sm:gap-2 sm:px-4">
-      {hasSidebar && (
-        <>
-          <SidebarTrigger className="-ml-1 text-white hover:text-white hover:bg-white/10" />
-          <Separator orientation="vertical" className="!h-5 !bg-white/30" />
-        </>
-      )}
-      <a href={tourHomeHref} className="flex items-center shrink-0">
-        <Image src="/icon.png" alt={t`仓颉之旅首页`} width={22} height={22} />
-      </a>
-      <Separator orientation="vertical" className="!h-5 !bg-white/30" />
-      {section
-        ? (
-            <span className="min-w-0 text-[15px] text-white truncate [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
-              {section.chapterName[lang] ?? section.chapterName.zh}
-              <span className="mx-1.5 text-white/60">/</span>
-              {section.subChapterName[lang] ?? section.subChapterName.zh}
-              <span className="mx-1.5 text-white/60">/</span>
-              <span className="font-semibold">
-                {section.sectionName[lang] ?? section.sectionName.zh}
-              </span>
-            </span>
-          )
-        : (
-            <span className="text-[15px] text-white truncate font-semibold [text-shadow:0_1px_2px_rgba(0,0,0,0.2)]">
-              <Trans>AI 课堂</Trans>
-            </span>
+    <header className={styles.header}>
+      <div className={styles.primaryRow}>
+        <a href={tourHomeHref} aria-label={t`仓颉之旅首页`} className={styles.brand}>
+          <Image src="/icon.png" alt="" width={30} height={30} />
+          <span className={styles.brandName}><Trans>仓颉之旅</Trans></span>
+        </a>
+        <nav aria-label={t`主导航`} className={styles.navigation}>
+          <a href={tourHomeHref} aria-current={!aiMode ? 'page' : undefined} className={styles.navLink}>
+            <Trans>教程</Trans>
+          </a>
+          {aiMode
+            ? <span aria-current="page" className={styles.navLink}><Trans>AI 课堂</Trans></span>
+            : (
+                <a href={aiHref} className={styles.navLink} title={t`打开 AI 课堂，从当前教程主题开始学习和练习。`}>
+                  <Trans>AI 课堂</Trans>
+                </a>
+              )}
+          <a href={playgroundHref} className={styles.navLink}>Playground</a>
+        </nav>
+        <div className={styles.preferences}>
+          {aiMode && (
+            <Suspense fallback={<span className="block size-11" aria-hidden="true" />}>
+              <LLMConfigDialog />
+            </Suspense>
           )}
-      <div className="flex items-center gap-1 ml-auto shrink-0">
-        {aiMode
-          ? (
-              <div className="flex items-center gap-1.5 rounded-full pl-2.5 pr-1 py-1 bg-white/20 ring-1 ring-yellow-200/40 shadow-inner">
-                <Sparkles className="size-3.5 text-yellow-200 drop-shadow-[0_0_6px_rgba(254,240,138,0.6)]" />
-                <span className="hidden sm:inline text-[12px] font-medium text-white/95">
-                  <Trans>课堂进行中</Trans>
-                </span>
-                <Suspense fallback={<span className="block size-8" aria-hidden="true" />}>
-                  <LLMConfigDialog />
-                </Suspense>
-              </div>
-            )
-          : (
-              <a
-                href={aiHref}
-                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 bg-white/5 hover:bg-white/15 transition-colors text-[12px] font-medium text-white/95"
-                title={t`打开 AI 课堂，从当前教程主题开始学习和练习。`}
-              >
-                <Sparkles className="size-3.5 text-white/70" />
-                <span className="hidden sm:inline"><Trans>AI 课堂</Trans></span>
-              </a>
-            )}
-        <Separator orientation="vertical" className="!h-5 !bg-white/30 mx-1" />
+          <a href={localeHref} className={styles.localeLink} lang={otherLang}>
+            <Globe size={17} aria-hidden="true" />
+            {otherLabel}
+          </a>
+        </div>
+      </div>
+      <div className={styles.contextRow}>
+        {!aiMode && <TableOfContentsButton />}
+        {section && (
+          <nav aria-label={t`当前章节`} className={styles.breadcrumbs}>
+            {ancestors.map(name => (
+              <span key={name} className={styles.ancestor}>
+                {name}
+                <span aria-hidden="true" className={styles.breadcrumbSeparator}>/</span>
+              </span>
+            ))}
+            <span aria-current="page" className={styles.currentLesson} title={sectionName}>{sectionName}</span>
+          </nav>
+        )}
         <LanguagePicker />
-        <Separator orientation="vertical" className="!h-5 !bg-white/30 mx-1" />
-        <a
-          href={localeHref}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-white hover:bg-white/15 rounded transition-colors"
-        >
-          <Globe className="size-4" />
-          {otherLabel}
-        </a>
-        <a
-          href={playgroundHref}
-          aria-label="Playground"
-          title="Playground"
-          className="inline-flex items-center px-2.5 py-1.5 text-[13px] font-medium text-white hover:bg-white/15 rounded transition-colors"
-        >
-          <Code2 className="size-4 sm:hidden" aria-hidden="true" />
-          <span className="hidden sm:inline">Playground</span>
-        </a>
       </div>
     </header>
   )

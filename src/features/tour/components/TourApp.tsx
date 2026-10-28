@@ -93,7 +93,7 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
         >
           <div className="flex flex-col h-full bg-background text-foreground">
             <TourHeader lang={lang} section={section} />
-            <div className="flex-1 min-h-0 pt-1">
+            <div className="flex-1 min-h-0">
               <ResizablePanelGroup
                 groupRef={groupRef}
                 orientation={isDesktop ? 'horizontal' : 'vertical'}

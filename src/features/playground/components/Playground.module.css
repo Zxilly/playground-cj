@@ -1,0 +1,11 @@
+@media (max-width: 1023px) {
+  /* Panel className styles its content wrapper; size the outer flex items. */
+  .workspace > :global([data-panel]) {
+    flex: 1 1 100% !important;
+  }
+
+  .codeView > :global(#playground-output-panel),
+  .outputView > :global(#playground-code-panel) {
+    display: none !important;
+  }
+}

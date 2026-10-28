@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 import { ToolBar } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/toolbar/toolbar'
+import { ActionViewItem } from '@codingame/monaco-vscode-api/vscode/vs/base/browser/ui/actionbar/actionViewItems'
 import { Action } from '@codingame/monaco-vscode-api/vscode/vs/base/common/actions'
 import { Codicon } from '@codingame/monaco-vscode-api/vscode/vs/base/common/codicons'
 import { ThemeIcon } from '@codingame/monaco-vscode-api/vscode/vs/base/common/themables'
@@ -65,6 +66,7 @@ function updateToolbar(native: NativeToolbar, { locale, ready, running, outputEx
 
   native.runElement?.setAttribute('aria-busy', String(running))
   native.runElement?.setAttribute('data-tour-highlight', 'run')
+  native.runElement?.setAttribute('data-tour-primary-action', '')
   native.outputElement?.setAttribute('aria-expanded', String(outputExpanded))
   native.outputElement?.setAttribute('aria-controls', 'tour-output-content')
 }
@@ -92,6 +94,9 @@ export function TourEditorToolbar(props: TourEditorToolbarProps) {
       toggleMenuTitle: currentLabels.more,
       icon: true,
       label: false,
+      actionViewItemProvider: action => action.id === run.id
+        ? new ActionViewItem(undefined, action, { icon: true, label: true })
+        : undefined,
       highlightToggledItems: true,
     })
     toolbar.setActions([run, output], [format, reset])
@@ -131,6 +136,7 @@ export function TourEditorToolbar(props: TourEditorToolbarProps) {
         <h2>{labels.title}</h2>
       </div>
       <div ref={containerRef} className={styles.actions} />
+      <kbd className={styles.shortcut} aria-hidden="true">Shift + Enter</kbd>
     </div>
   )
 }

@@ -18,8 +18,11 @@ export function TourNavigation({ lang, currentIndex, total, onPrev, onNext, edit
   const hasPrev = currentIndex > 0
   const hasNext = currentIndex < total - 1
 
-  const prevLabel = lang === 'en' ? 'Previous' : String.fromCharCode(0x4E0A, 0x4E00, 0x9875)
-  const nextLabel = lang === 'en' ? 'Next' : String.fromCharCode(0x4E0B, 0x4E00, 0x9875)
+  const prevLabel = lang === 'en' ? 'Previous' : '上一页'
+  const nextLabel = lang === 'en' ? 'Next' : '下一页'
+  const progressLabel = lang === 'en'
+    ? `Lesson ${currentIndex + 1} of ${total}`
+    : `第 ${currentIndex + 1} 节，共 ${total} 节`
 
   if (editorToggle) {
     const toggleLabel = lang === 'en'
@@ -29,7 +32,7 @@ export function TourNavigation({ lang, currentIndex, total, onPrev, onNext, edit
     return (
       <nav
         aria-label={lang === 'en' ? 'Lesson controls' : '教程操作'}
-        className="shrink-0 border-t border-tour-border bg-tour-surface px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        className="shrink-0 border-t border-tour-border bg-background px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
       >
         <div className="mx-auto flex w-full max-w-xl items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center justify-between">
@@ -43,7 +46,7 @@ export function TourNavigation({ lang, currentIndex, total, onPrev, onNext, edit
             >
               <ChevronLeft aria-hidden="true" className="size-5" />
             </button>
-            <span className="whitespace-nowrap px-1 text-xs font-medium tabular-nums text-tour-text">
+            <span aria-label={progressLabel} className="whitespace-nowrap px-1 text-xs font-medium tabular-nums text-tour-text">
               {currentIndex + 1}
               <span className="mx-1 opacity-50">/</span>
               {total}
@@ -77,30 +80,32 @@ export function TourNavigation({ lang, currentIndex, total, onPrev, onNext, edit
   }
 
   return (
-    <div className="shrink-0 flex items-center justify-between px-6 py-3 border-t border-tour-border bg-tour-surface">
+    <nav aria-label={lang === 'en' ? 'Lesson controls' : '教程操作'} className="shrink-0 flex items-center justify-between gap-3 px-6 py-3 border-t border-tour-border bg-background">
       <button
+        type="button"
         disabled={!hasPrev}
         onClick={onPrev}
         data-tour-highlight="prev"
-        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md border border-tour-border text-tour-text hover:bg-tour-border/30 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+        className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md border border-tour-border text-tour-text hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
       >
         <ChevronLeft className="size-4" />
         {prevLabel}
       </button>
-      <span className="text-sm tabular-nums font-medium text-tour-muted">
+      <span aria-label={progressLabel} className="whitespace-nowrap text-sm tabular-nums font-medium text-muted-foreground">
         {currentIndex + 1}
-        <span className="mx-1 text-tour-muted/50">/</span>
+        <span className="mx-1">/</span>
         {total}
       </span>
       <button
+        type="button"
         disabled={!hasNext}
         onClick={onNext}
         data-tour-highlight="next"
-        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-gradient-to-r from-tour-teal to-tour-teal-light text-white hover:from-tour-teal-hover hover:to-tour-teal disabled:opacity-35 disabled:cursor-not-allowed transition-all shadow-sm"
+        className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-tour-accent-fg text-background hover:bg-tour-accent-fg/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tour-accent-fg disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
       >
         {nextLabel}
         <ChevronRight className="size-4" />
       </button>
-    </div>
+    </nav>
   )
 }

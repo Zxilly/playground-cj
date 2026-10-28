@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { DeferredPopover } from './DeferredPopover'
-import { ChevronDown, Hash, Link } from 'lucide-react'
+import { ChevronDown, Hash, Link, Share2 } from 'lucide-react'
 import { memo, useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import dynamic from 'next/dynamic'
@@ -62,10 +62,11 @@ const ShareButton = memo(() => {
         onOpenChange={setIsOpen}
         className="w-56"
         trigger={(
-          <Button disabled={!editorReady} className="min-h-11 w-full px-2 sm:w-auto lg:min-h-9 lg:px-4">
+          <Button variant="ghost" disabled={!editorReady} className="min-h-11 flex-1 gap-2 px-3 lg:flex-none">
+            <Share2 aria-hidden="true" className="size-4" />
             <Trans>分享</Trans>
             {' '}
-            <ChevronDown className="ml-2 h-4 w-4" />
+            <ChevronDown aria-hidden="true" className="hidden size-3 lg:block" />
           </Button>
         )}
       >

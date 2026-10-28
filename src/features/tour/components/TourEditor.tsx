@@ -244,7 +244,9 @@ export function TourEditor({
           setOutputExpanded(size > 0)
         }}
       >
-        <ResizablePanel id="tour-code-panel" minSize="45%">
+        {/* A short mobile group must fit 60px of code, 77px of native output,
+            and its separator. A 45% minimum can leave no valid expanded layout. */}
+        <ResizablePanel id="tour-code-panel" minSize={isDesktop ? '45%' : '60px'}>
           <div
             className="relative h-full min-h-0"
           >

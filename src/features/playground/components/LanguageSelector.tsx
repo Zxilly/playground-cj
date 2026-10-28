@@ -31,15 +31,15 @@ export function LanguageSelector() {
       preventOpenAutoFocus
       trigger={(
         <Button
-          variant="outline"
+          variant="ghost"
           role="combobox"
           aria-label={locale === 'zh' ? '中文' : 'English'}
           aria-expanded={open}
-          className="min-h-11 w-auto justify-between lg:min-h-9"
+          className="min-h-11 w-auto justify-between gap-1 px-2"
         >
-          <Globe className="mr-2 h-4 w-4" />
+          <Globe aria-hidden="true" className="size-4" />
           {locale === 'zh' ? '中文' : 'English'}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown aria-hidden="true" className="hidden size-3 shrink-0 sm:block" />
         </Button>
       )}
     >

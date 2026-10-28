@@ -16,7 +16,6 @@ interface PlaygroundState {
   readonly truncation: RunnerTruncationState
   readonly runResult: RunResult | null
   readonly running: boolean
-  readonly isOutputCollapsed: boolean
   readonly mobileView: 'code' | 'output'
   /** Non-null while the share dialog is open. Replaces the legacy SHOW_SHARE_DIALOG event. */
   readonly shareDialogUrl: string | null
@@ -27,7 +26,6 @@ interface PlaygroundState {
   readonly setTruncation: (truncation: RunnerTruncationState) => void
   readonly setRunResult: (result: RunResult | null) => void
   readonly setRunning: (running: boolean) => void
-  readonly toggleOutput: () => void
   readonly setMobileView: (view: 'code' | 'output') => void
   readonly openShareDialog: (url: string) => void
   readonly closeShareDialog: () => void
@@ -40,7 +38,6 @@ export const usePlaygroundStore = create<PlaygroundState>(set => ({
   truncation: NO_RUNNER_TRUNCATION,
   runResult: null,
   running: false,
-  isOutputCollapsed: false,
   mobileView: 'code',
   shareDialogUrl: null,
 
@@ -50,7 +47,6 @@ export const usePlaygroundStore = create<PlaygroundState>(set => ({
   setTruncation: truncation => set({ truncation }),
   setRunResult: runResult => set(runResult ? { runResult, mobileView: 'output' } : { runResult }),
   setRunning: running => set({ running }),
-  toggleOutput: () => set(state => ({ isOutputCollapsed: !state.isOutputCollapsed })),
   setMobileView: mobileView => set({ mobileView }),
   openShareDialog: url => set({ shareDialogUrl: url }),
   closeShareDialog: () => set(state => state.shareDialogUrl === null ? state : { shareDialogUrl: null }),

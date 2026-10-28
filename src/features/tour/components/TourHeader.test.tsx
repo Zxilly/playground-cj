@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
@@ -16,13 +16,12 @@ function MockImage() {
   return <div data-testid="next-image" />
 }
 
-function MockSidebarTrigger(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button data-testid="sidebar-trigger" {...props} />
-}
-
-function MockSeparator(props: React.HTMLAttributes<HTMLDivElement>) {
-  return <div {...props} />
-}
+const sidebarState = vi.hoisted(() => ({
+  toggleSidebar: vi.fn(),
+  isMobile: false,
+  open: false,
+  openMobile: false,
+}))
 
 function MockLanguagePicker() {
   return <div>Language Picker</div>
@@ -37,11 +36,7 @@ vi.mock('next/image', () => ({
 }))
 
 vi.mock('@/components/ui/sidebar', () => ({
-  SidebarTrigger: MockSidebarTrigger,
-}))
-
-vi.mock('@/components/ui/separator', () => ({
-  Separator: MockSeparator,
+  useSidebar: () => sidebarState,
 }))
 
 vi.mock('@/features/tour/components/mdx/LanguagePicker', () => ({
@@ -54,6 +49,10 @@ vi.mock('@/modules/llm-config/components/LLMConfigDialog', () => ({
 
 describe('tour header', () => {
   beforeEach(() => {
+    sidebarState.toggleSidebar.mockClear()
+    sidebarState.isMobile = false
+    sidebarState.open = false
+    sidebarState.openMobile = false
     vi.stubGlobal('location', {
       ...window.location,
       origin: 'https://tour.cj.zxilly.dev',
@@ -133,8 +132,41 @@ describe('tour header', () => {
       </Wrapper>,
     )
 
-    expect(screen.queryByTestId('sidebar-trigger')).toBeNull()
+    expect(screen.queryByRole('button', { name: '切换侧边栏' })).toBeNull()
     await screen.findByRole('button', { name: 'AI 服务设置' })
     expect(screen.queryByRole('link', { name: 'AI 课堂' })).toBeNull()
+  })
+
+  it('keeps the lesson title visible in a deduplicated breadcrumb and labels the directory control', () => {
+    render(
+      <Wrapper>
+        <TourHeader
+          lang="zh"
+          section={{
+            chapterName: { zh: '欢迎' },
+            subChapterName: { zh: '欢迎' },
+            sectionName: { zh: 'Hello, 世界' },
+          } as never}
+        />
+      </Wrapper>,
+    )
+
+    const breadcrumbs = screen.getByRole('navigation', { name: '当前章节' })
+    expect(within(breadcrumbs).getAllByText('欢迎')).toHaveLength(1)
+    expect(within(breadcrumbs).getByText('Hello, 世界').getAttribute('aria-current')).toBe('page')
+    const directory = screen.getByRole('button', { name: '切换侧边栏' })
+    expect(directory.textContent).toContain('目录')
+    expect(directory.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(directory)
+    expect(sidebarState.toggleSidebar).toHaveBeenCalledOnce()
+    expect(screen.getByRole('link', { name: '教程' }).getAttribute('aria-current')).toBe('page')
+  })
+
+  it('reports the mobile drawer state instead of the desktop directory state', () => {
+    sidebarState.isMobile = true
+    sidebarState.openMobile = true
+    render(<Wrapper><TourHeader lang="zh" /></Wrapper>)
+
+    expect(screen.getByRole('button', { name: '切换侧边栏' }).getAttribute('aria-expanded')).toBe('true')
   })
 })

@@ -7,7 +7,7 @@ const config: LinguiConfig = {
     {
       path: '<rootDir>/src/locales/{locale}/messages',
       include: ['src'],
-      exclude: ['**/node_modules/**'],
+      exclude: ['**/node_modules/**', '**/__screenshots__/**', '**/*.test.{ts,tsx}'],
     },
   ],
   compileNamespace: 'es',

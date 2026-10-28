@@ -2,7 +2,7 @@
 
 import { ALL_LANGUAGES, LANGUAGE_LABELS, useKnownLanguagesStore } from '@/stores/knownLanguages'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Settings2 } from 'lucide-react'
+import { ChevronDown, Settings2 } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { t } from '@lingui/core/macro'
 
@@ -18,14 +18,15 @@ export function LanguagePicker() {
         <button
           data-tour-highlight="langpicker"
           aria-label={t`选择对比语言`}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-white hover:bg-white/15 rounded transition-colors"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border border-border bg-background px-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <Settings2 className="size-4" />
-          <span className="hidden max-w-32 truncate sm:inline" title={knownLanguages.map(lang => LANGUAGE_LABELS[lang]).join(', ')}>
+          <Settings2 className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span className="max-w-20 truncate sm:max-w-32" title={knownLanguages.map(lang => LANGUAGE_LABELS[lang]).join(', ')}>
             {knownLanguages.length > 0
               ? knownLanguages.map(lang => LANGUAGE_LABELS[lang]).join(', ')
-              : <Trans>对比</Trans>}
+              : <Trans>对比语言</Trans>}
           </span>
+          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-3">
@@ -39,7 +40,7 @@ export function LanguagePicker() {
           {LANGUAGES.map(({ id, label }) => (
             <label
               key={id}
-              className="flex items-center gap-2.5 px-2 py-1.5 rounded hover:bg-accent cursor-pointer transition-colors"
+              className="flex min-h-11 items-center gap-2.5 px-2 py-1.5 rounded hover:bg-accent cursor-pointer transition-colors"
             >
               <input
                 type="checkbox"

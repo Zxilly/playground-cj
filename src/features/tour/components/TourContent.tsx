@@ -19,11 +19,11 @@ export function TourContent({ lang, section }: TourContentProps) {
 
   return (
     <ScrollArea key={`${section.chapterId}/${section.subChapterId}/${section.sectionId}`} className="h-full bg-tour-bg">
-      <div className="px-5 py-5 sm:px-8 sm:py-6 lg:px-10 lg:py-8">
-        <h1 className="text-[1.4rem] font-bold mb-4 text-tour-heading">
+      <article aria-labelledby="tour-lesson-title" className="px-5 py-6 sm:px-8 lg:px-9 lg:py-8">
+        <h1 id="tour-lesson-title" className="mb-5 text-2xl font-bold tracking-tight text-tour-heading lg:text-[1.75rem]">
           {section.sectionName[lang] ?? section.sectionName.zh}
         </h1>
-        <div className="prose dark:prose-invert max-w-[750px] tour-prose">
+        <div className="prose dark:prose-invert max-w-[70ch] tour-prose">
           {source
             ? <MDXRemote {...source} components={tourMdxComponents} />
             : (
@@ -32,7 +32,7 @@ export function TourContent({ lang, section }: TourContentProps) {
                 </Suspense>
               )}
         </div>
-      </div>
+      </article>
     </ScrollArea>
   )
 }
