@@ -36,6 +36,42 @@ describe('tour page e2e', () => {
     }
   })
 
+  it('keeps the current lesson code visible while the editor chunk is downloading', async () => {
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+    let releaseEditor!: () => void
+    const editorDownload = new Promise<void>((resolve) => {
+      releaseEditor = resolve
+    })
+    let heldEditor = false
+    await context.route('**/_next/static/chunks/*.js', async (route) => {
+      const response = await route.fetch()
+      const body = await response.text()
+      if (body.includes('tour-code-panel')) {
+        heldEditor = true
+        await editorDownload
+      }
+      await route.fulfill({ response, body })
+    })
+    try {
+      const loadingPage = await context.newPage()
+      await loadingPage.goto(`${baseUrl}/zh/tour/welcome/1`, { waitUntil: 'domcontentloaded' })
+      await expect.poll(() => heldEditor).toBe(true)
+      const code = loadingPage.locator('#tour-editor-content pre code')
+      expect(await code.textContent()).toContain('let greeting')
+      expect(await loadingPage.getByText('正在加载编辑器…', { exact: true }).isVisible()).toBe(true)
+      await loadingPage.locator('[data-tour-highlight="next"]').click()
+      await loadingPage.getByRole('heading', { name: '已知语言', exact: true }).waitFor()
+      expect(await code.textContent()).toContain('let language')
+      releaseEditor()
+      await expect.poll(() => loadingPage.getByRole('button', { name: '运行', exact: true }).isEnabled(), { timeout: 90_000 }).toBe(true)
+    }
+    finally {
+      releaseEditor()
+      await context.unrouteAll({ behavior: 'wait' })
+      await context.close()
+    }
+  }, 120_000)
+
   it('keeps lesson content in sync with next, browser Back and Forward, and editor keyboard input', async () => {
     await page.goto(`${baseUrl}/zh/tour/welcome/1`, {
       waitUntil: 'domcontentloaded',

@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { createContext, Suspense, use, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useGroupRef } from 'react-resizable-panels'
 import { TourLayout } from './TourLayout'
@@ -21,14 +21,21 @@ import { loadEditorRuntime } from '@/lib/monaco/load-editor-runtime'
 import { useHydrated } from '@/hooks/useHydrated'
 import { lessonDescription, TOUR_ORIGIN } from '@/lib/seo'
 
+const EditorPreviewContext = createContext({ code: '', locale: 'en' })
+
+function PendingTourEditor() {
+  const preview = use(EditorPreviewContext)
+  return <TourEditorLoading {...preview} />
+}
+
 const TourEditor = dynamic(() => loadEditorRuntime(
   'en',
   () => import('./TourEditor').then(module => ({ default: module.TourEditor })),
-), { ssr: false })
+), { ssr: false, loading: PendingTourEditor })
 const ChineseTourEditor = dynamic(() => loadEditorRuntime(
   'zh',
   () => import('./TourEditor').then(module => ({ default: module.TourEditor })),
-), { ssr: false })
+), { ssr: false, loading: PendingTourEditor })
 
 interface TourAppProps {
   lang: string
@@ -171,11 +178,13 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                   collapsedSize="0%"
                 >
                   <div id="tour-editor-content" className="h-full min-h-0 overflow-hidden" inert={editorHidden} aria-hidden={editorHidden}>
-                    <Suspense fallback={<TourEditorLoading code={code} locale={lang} />}>
-                      {hydrated
-                        ? <Editor code={code} locale={lang} sectionKey={`${section.chapterId}/${section.subChapterId}/${section.sectionId}`} />
-                        : <TourEditorLoading code={code} locale={lang} />}
-                    </Suspense>
+                    <EditorPreviewContext value={{ code, locale: lang }}>
+                      <Suspense fallback={<TourEditorLoading code={code} locale={lang} />}>
+                        {hydrated
+                          ? <Editor code={code} locale={lang} sectionKey={`${section.chapterId}/${section.subChapterId}/${section.sectionId}`} />
+                          : <TourEditorLoading code={code} locale={lang} />}
+                      </Suspense>
+                    </EditorPreviewContext>
                   </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
