@@ -36,8 +36,8 @@ jobs:
 
       # Submit only the canonical sitemap after a successful production deploy.
       # There is no scheduled resubmission of unchanged content.
-      - name: Notify IndexNow
-        uses: jtprogru/indexnow@e4d2007b9d3d724c14c415b86fcbf162dd78646c # v0.7.2
+      - uses: jtprogru/indexnow@e4d2007b9d3d724c14c415b86fcbf162dd78646c # v0.7.2
+        name: Notify IndexNow
         with:
           version: v0.7.2
           key: ${{ env.INDEXNOW_KEY }}
