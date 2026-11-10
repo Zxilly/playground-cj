@@ -72,3 +72,10 @@ jobs:
 
       - name: Verify public deployment
         run: node scripts/verify-edgeone-deployment.mjs https://play.cj.zxilly.com
+
+  indexnow:
+    name: Notify search engines
+    needs: deploy
+    permissions:
+      contents: read
+    uses: ./.github/workflows/indexnow.yml
