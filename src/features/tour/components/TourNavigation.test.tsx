@@ -5,6 +5,17 @@ import { TourNavigation } from '@/features/tour/components/TourNavigation'
 describe('tourNavigation', () => {
   afterEach(cleanup)
 
+  it('exposes crawlable lesson links without intercepting modifier clicks', () => {
+    const onNext = vi.fn()
+    render(<TourNavigation lang="en" currentIndex={0} total={3} onPrev={() => {}} onNext={onNext} nextHref="/en/tour/welcome/2" />)
+    const next = screen.getByRole('link', { name: /next/i })
+    expect(next.getAttribute('href')).toBe('/en/tour/welcome/2')
+    fireEvent.click(next, { ctrlKey: true })
+    expect(onNext).not.toHaveBeenCalled()
+    fireEvent.click(next)
+    expect(onNext).toHaveBeenCalledOnce()
+  })
+
   it('disables previous on the first section and reports progress', () => {
     render(<TourNavigation lang="en" currentIndex={0} total={3} onPrev={() => {}} onNext={() => {}} />)
 

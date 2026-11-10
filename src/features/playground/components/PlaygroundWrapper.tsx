@@ -52,6 +52,7 @@ export default async function Wrapper({ lang, sharedCode }: { lang: string, shar
           {i18n._(msg`仓颉 1.2.0 · STDX 1.2.0.1 ·\u00A0`)}
           <a
             href="https://github.com/Zxilly/playground-cj"
+            data-umami-event="github-click"
             className="inline-flex min-h-6 items-center justify-center px-1 underline-offset-4 hover:underline"
             target="_blank"
             rel="noopener noreferrer"

@@ -21,6 +21,21 @@ describe('tour page e2e', () => {
     await server?.stop()
   })
 
+  it('serves lesson text, examples and navigation in the initial HTML', async () => {
+    for (const lang of ['zh', 'en']) {
+      const response = await fetch(`${baseUrl}/${lang}/tour/welcome/1`)
+      expect(response.status).toBe(200)
+      // Ignore the serialized React payload: the visible document must contain the lesson.
+      const html = (await response.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '')
+      expect(html).toMatch(/<h1[^>]*>Hello,/)
+      expect(html).toContain(lang === 'zh' ? '欢迎来到' : 'Welcome to')
+      expect(html).toContain('let greeting')
+      expect(html).toContain(`href="/${lang}/tour/welcome/2"`)
+      expect(html).toContain(`href="https://tour.cj.zxilly.dev/${lang}/welcome/1"`)
+      expect(html).not.toContain('data-dgst=')
+    }
+  })
+
   it('keeps lesson content in sync with next, browser Back and Forward, and editor keyboard input', async () => {
     await page.goto(`${baseUrl}/zh/tour/welcome/1`, {
       waitUntil: 'domcontentloaded',
@@ -28,10 +43,10 @@ describe('tour page e2e', () => {
 
     await page.getByRole('heading', { name: 'Hello, 世界' }).waitFor({ state: 'visible' })
     expect(await page.getByText('欢迎来到').isVisible()).toBe(true)
-    expect(await page.getByRole('link', { name: 'Playground' }).isVisible()).toBe(true)
+    expect(await page.getByRole('navigation', { name: '主导航' }).getByRole('link', { name: 'Playground' }).isVisible()).toBe(true)
 
-    const previous = page.getByRole('button', { name: /上一页/ })
-    const next = page.getByRole('button', { name: /下一页/ })
+    const previous = page.locator('[data-tour-highlight="prev"]')
+    const next = page.locator('[data-tour-highlight="next"]')
     expect(await previous.isDisabled()).toBe(true)
     expect(await next.isEnabled()).toBe(true)
     expect(await page.getByText(/1\s*\/\s*\d+/).isVisible()).toBe(true)
@@ -49,9 +64,10 @@ describe('tour page e2e', () => {
     await next.click()
     await page.waitForURL(url => url.pathname === '/zh/tour/welcome/2')
     await page.getByRole('heading', { name: '已知语言', exact: true }).waitFor({ state: 'visible' })
+    expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toBe('https://tour.cj.zxilly.dev/zh/welcome/2')
     await expect.poll(() => editorCode.textContent()).toMatch(/let\s+language/)
 
-    await expect.poll(() => page.getByRole('button', { name: /上一页/ }).isEnabled()).toBe(true)
+    await expect.poll(() => page.locator('[data-tour-highlight="prev"]').isEnabled()).toBe(true)
     await expect.poll(() => page.getByText(/2\s*\/\s*\d+/).isVisible()).toBe(true)
 
     await page.goBack()
@@ -76,7 +92,7 @@ describe('tour page e2e', () => {
     expect(await directoryToggle.getAttribute('aria-expanded')).toBe('true')
     const sidebar = page.locator('[data-slot="sidebar-container"]')
     await sidebar.waitFor({ state: 'visible' })
-    await sidebar.getByRole('button', { name: '已知语言', exact: true }).click()
+    await sidebar.getByRole('link', { name: '已知语言', exact: true }).click()
     await page.waitForURL(url => url.pathname === '/zh/tour/welcome/2')
     await page.getByRole('heading', { name: '已知语言', exact: true }).waitFor({ state: 'visible' })
     await directoryToggle.click()
@@ -92,7 +108,7 @@ describe('tour page e2e', () => {
     await page.locator('[data-sidebar="trigger"]').click()
     const drawer = page.getByRole('dialog', { name: '侧边栏', exact: true })
     await drawer.waitFor({ state: 'visible' })
-    await drawer.getByRole('button', { name: '已知语言', exact: true }).click()
+    await drawer.getByRole('link', { name: '已知语言', exact: true }).click()
 
     await drawer.waitFor({ state: 'hidden' })
     await page.waitForURL(url => url.pathname === '/zh/tour/welcome/2')
@@ -119,7 +135,7 @@ describe('tour page e2e', () => {
       const toggle = mobilePage.locator('button[aria-controls="tour-editor-content"]')
       const editorContent = mobilePage.locator('#tour-editor-content')
       const lessonPanel = mobilePage.locator('#tour-content-panel')
-      const next = mobilePage.getByRole('button', { name: /下一页/ })
+      const next = mobilePage.locator('[data-tour-highlight=\"next\"]')
       expect(await mobilePage.getByRole('button', { name: '收起代码', exact: true }).isVisible()).toBe(true)
       expect(await toggle.getAttribute('aria-expanded')).toBe('true')
       await expect.poll(() => mobilePage.getByRole('button', { name: '运行', exact: true }).isEnabled(), { timeout: 90_000 }).toBe(true)
@@ -162,7 +178,7 @@ describe('tour page e2e', () => {
       expect(await toggle.getAttribute('aria-expanded')).toBe('false')
       expect(await editorContent.getAttribute('aria-hidden')).toBe('true')
       expect(await editorContent.evaluate(element => (element as HTMLElement).inert)).toBe(true)
-      expect(await mobilePage.getByRole('button', { name: /上一页/ }).isEnabled()).toBe(true)
+      expect(await mobilePage.locator('[data-tour-highlight=\"prev\"]').isEnabled()).toBe(true)
 
       await mobilePage.setViewportSize({ width: 1280, height: 900 })
       await expect.poll(() => editorContent.evaluate(element => (element as HTMLElement).inert)).toBe(false)
@@ -374,10 +390,10 @@ describe('tour page e2e', () => {
       await statusBar.getByText('Cangjie', { exact: true }).waitFor({ state: 'visible' })
       expect((await statusBar.boundingBox())?.height).toBe(22)
 
-      await mobilePage.getByRole('button', { name: '下一页', exact: true }).click()
+      await mobilePage.locator('[data-tour-highlight=\"next\"]').click()
       await mobilePage.waitForURL(url => url.pathname === '/zh/tour/welcome/2')
       expect(await outputToggle.getAttribute('aria-expanded')).toBe('false')
-      await mobilePage.getByRole('button', { name: '上一页', exact: true }).click()
+      await mobilePage.locator('[data-tour-highlight=\"prev\"]').click()
       await mobilePage.waitForURL(url => url.pathname === '/zh/tour/welcome/1')
       expect(await outputToggle.getAttribute('aria-expanded')).toBe('false')
     }
@@ -487,8 +503,8 @@ describe('tour page e2e', () => {
       await mobilePage.goto(`${baseUrl}/en/tour/welcome/1`, { waitUntil: 'domcontentloaded' })
       const toggle = mobilePage.getByRole('button', { name: 'Hide code', exact: true })
       await toggle.waitFor({ state: 'visible' })
-      const previous = mobilePage.getByRole('button', { name: 'Previous', exact: true })
-      const next = mobilePage.getByRole('button', { name: 'Next', exact: true })
+      const previous = mobilePage.locator('[data-tour-highlight=\"prev\"]')
+      const next = mobilePage.locator('[data-tour-highlight=\"next\"]')
       expect(await previous.isDisabled()).toBe(true)
       expect(await next.isEnabled()).toBe(true)
       expect(await mobilePage.getByText(/1\s*\/\s*\d+/).isVisible()).toBe(true)

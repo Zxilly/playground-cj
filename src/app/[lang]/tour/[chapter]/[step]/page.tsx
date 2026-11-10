@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { getSiteDomain } from '@/lib/siteHref'
+import { lessonDescription, localizedAlternates, TOUR_ORIGIN } from '@/lib/seo'
 
 interface PageProps {
   params: Promise<{
@@ -24,10 +25,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const sectionName = currentSection?.sectionName[lang] ?? 'Tour'
 
+  if (!currentSection)
+    notFound()
+
   return {
     title: lang === 'en'
       ? `${sectionName} - Cangjie Tour`
       : `${sectionName} - 仓颉之旅`,
+    description: lessonDescription(currentSection, lang),
+    alternates: localizedAlternates(TOUR_ORIGIN, lang, `/${chapter}/${step}`),
   }
 }
 

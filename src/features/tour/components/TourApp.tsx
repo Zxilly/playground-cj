@@ -1,6 +1,7 @@
 'use client'
 
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useGroupRef } from 'react-resizable-panels'
 import { TourLayout } from './TourLayout'
 import { TourSidebar } from './TourSidebar'
@@ -17,15 +18,17 @@ import { getTourPath } from '@/lib/siteHref'
 import { EditorBridgeProvider } from '@/modules/cangjie-editor/context/EditorBridgeProvider'
 import { useTourNavigation } from '@/features/tour/hooks/useTourNavigation'
 import { loadEditorRuntime } from '@/lib/monaco/load-editor-runtime'
+import { useHydrated } from '@/hooks/useHydrated'
+import { lessonDescription, TOUR_ORIGIN } from '@/lib/seo'
 
-const TourEditor = lazy(() => loadEditorRuntime(
+const TourEditor = dynamic(() => loadEditorRuntime(
   'en',
   () => import('./TourEditor').then(module => ({ default: module.TourEditor })),
-))
-const ChineseTourEditor = lazy(() => loadEditorRuntime(
+), { ssr: false })
+const ChineseTourEditor = dynamic(() => loadEditorRuntime(
   'zh',
   () => import('./TourEditor').then(module => ({ default: module.TourEditor })),
-))
+), { ssr: false })
 
 interface TourAppProps {
   lang: string
@@ -36,7 +39,8 @@ interface TourAppProps {
 }
 
 export default function TourApp({ lang, tourData, allSections, initialIndex, isTourDomain }: TourAppProps) {
-  const isDesktop = useMedia('(min-width: 1024px)')
+  const isDesktop = useMedia('(min-width: 1024px)', false)
+  const hydrated = useHydrated()
   const isShortMobile = useMedia('(max-width: 1023px) and (max-height: 500px)', false)
   const groupRef = useGroupRef()
   const [mobileEditorExpanded, setMobileEditorExpanded] = useState(true)
@@ -53,6 +57,18 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
     goPrev,
     goToSection,
   } = useTourNavigation({ allSections, basePath, initialIndex })
+
+  useEffect(() => {
+    if (!section)
+      return
+    const title = section.sectionName[lang] ?? section.sectionName.zh
+    document.title = `${title} - ${lang === 'en' ? 'Cangjie Tour' : '仓颉之旅'}`
+    document.querySelector('meta[name="description"]')?.setAttribute('content', lessonDescription(section, lang))
+    const suffix = `/${section.chapterSlug}/${section.chapterStep}`
+    document.querySelector('link[rel="canonical"]')?.setAttribute('href', `${TOUR_ORIGIN}/${lang}${suffix}`)
+    for (const [locale, hreflang] of [['zh', 'zh-CN'], ['en', 'en']])
+      document.querySelector(`link[rel="alternate"][hreflang="${hreflang}"]`)?.setAttribute('href', `${TOUR_ORIGIN}/${locale}${suffix}`)
+  }, [lang, section])
 
   useEffect(() => {
     // Resize the existing panels: collapsing must retain the editor model,
@@ -88,11 +104,15 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
               currentSubChapter={section.subChapterId}
               currentSection={section.sectionId}
               onNavigate={goToSection}
+              sectionHref={(chapterId, subChapterId, sectionId) => {
+                const target = allSections.find(s => s.chapterId === chapterId && s.subChapterId === subChapterId && s.sectionId === sectionId)
+                return target ? `${basePath}/${target.chapterSlug}/${target.chapterStep}` : basePath
+              }}
             />
           )}
         >
           <div className="flex flex-col h-full bg-background text-foreground">
-            <TourHeader lang={lang} section={section} />
+            <TourHeader lang={lang} section={section} servingDomain={isTourDomain ? 'tour' : 'playground'} />
             <div className="flex-1 min-h-0">
               <ResizablePanelGroup
                 groupRef={groupRef}
@@ -134,6 +154,8 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                         lang={lang}
                         currentIndex={currentIndex}
                         total={allSections.length}
+                        prevHref={allSections[currentIndex - 1] && `${basePath}/${allSections[currentIndex - 1].chapterSlug}/${allSections[currentIndex - 1].chapterStep}`}
+                        nextHref={allSections[currentIndex + 1] && `${basePath}/${allSections[currentIndex + 1].chapterSlug}/${allSections[currentIndex + 1].chapterStep}`}
                         onPrev={goPrev}
                         onNext={goNext}
                       />
@@ -150,7 +172,9 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                 >
                   <div id="tour-editor-content" className="h-full min-h-0 overflow-hidden" inert={editorHidden} aria-hidden={editorHidden}>
                     <Suspense fallback={<TourEditorLoading code={code} locale={lang} />}>
-                      <Editor code={code} locale={lang} sectionKey={`${section.chapterId}/${section.subChapterId}/${section.sectionId}`} />
+                      {hydrated
+                        ? <Editor code={code} locale={lang} sectionKey={`${section.chapterId}/${section.subChapterId}/${section.sectionId}`} />
+                        : <TourEditorLoading code={code} locale={lang} />}
                     </Suspense>
                   </div>
                 </ResizablePanel>
@@ -161,6 +185,8 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                 lang={lang}
                 currentIndex={currentIndex}
                 total={allSections.length}
+                prevHref={allSections[currentIndex - 1] && `${basePath}/${allSections[currentIndex - 1].chapterSlug}/${allSections[currentIndex - 1].chapterStep}`}
+                nextHref={allSections[currentIndex + 1] && `${basePath}/${allSections[currentIndex + 1].chapterSlug}/${allSections[currentIndex + 1].chapterStep}`}
                 onPrev={goPrev}
                 onNext={goNext}
                 editorToggle={{

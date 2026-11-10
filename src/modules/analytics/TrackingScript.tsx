@@ -1,6 +1,6 @@
 import Script from 'next/script'
 
-function TrackingScript() {
+function TrackingScript({ site }: { site: 'playground' | 'tour' }) {
   if (process.env.NODE_ENV !== 'production') {
     return null
   }
@@ -12,7 +12,11 @@ function TrackingScript() {
         strategy="lazyOnload"
         defer
         src="https://trail.learningman.top/script.js"
-        data-website-id="2cd9ea13-296b-4d90-998a-bbbc5613fc20"
+        data-website-id={site === 'tour' ? '1ac89003-265d-436b-95ae-be559608720d' : '2cd9ea13-296b-4d90-998a-bbbc5613fc20'}
+        data-before-send="sanitizeCangjieAnalytics"
+        data-domains={site === 'tour' ? 'play.cj.zxilly.com,playground.cj.zxilly.dev,tour.cj.zxilly.dev' : 'play.cj.zxilly.com,playground.cj.zxilly.dev'}
+        data-exclude-search="true"
+        data-exclude-hash="true"
         crossOrigin="anonymous"
       />
       <Script

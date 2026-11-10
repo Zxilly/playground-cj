@@ -20,7 +20,7 @@ function TourLoading() {
 
 const TourApp = dynamic(
   () => import('./TourApp'),
-  { ssr: false, loading: TourLoading },
+  { loading: TourLoading },
 )
 
 interface TourWrapperProps {

@@ -3,12 +3,12 @@
 import { ALL_LANGUAGES, LANGUAGE_LABELS, useKnownLanguagesStore } from '@/stores/knownLanguages'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronDown, Settings2 } from 'lucide-react'
-import { Trans } from '@lingui/react/macro'
-import { t } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 
 const LANGUAGES = ALL_LANGUAGES.map(id => ({ id, label: LANGUAGE_LABELS[id] }))
 
 export function LanguagePicker() {
+  const { t } = useLingui()
   const knownLanguages = useKnownLanguagesStore(state => state.knownLanguages)
   const toggleLanguage = useKnownLanguagesStore(state => state.toggleLanguage)
 

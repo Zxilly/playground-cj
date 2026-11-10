@@ -4,12 +4,13 @@ import { lazy, Suspense } from 'react'
 import { useSidebar } from '@/components/ui/sidebar'
 import { Globe, List } from 'lucide-react'
 import Image from 'next/image'
-import { Trans } from '@lingui/react/macro'
-import { t } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { LanguagePicker } from './mdx/LanguagePicker'
 import type { FlatSection } from '@/tour/types'
 import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourAIHref, getTourPath } from '@/lib/siteHref'
 import styles from './TourHeader.module.css'
+import { useHydrated } from '@/hooks/useHydrated'
+import type { SiteDomain } from '@/lib/siteHref'
 
 const LLMConfigDialog = lazy(() => import('@/modules/llm-config/components/LLMConfigDialog').then(
   module => ({ default: module.LLMConfigDialog }),
@@ -21,9 +22,11 @@ export interface TourHeaderProps {
   section?: FlatSection
   /** When true, current page IS the AI tutor: render config dialog + omit the switch link. */
   aiMode?: boolean
+  servingDomain?: SiteDomain
 }
 
 function TableOfContentsButton() {
+  const { t } = useLingui()
   const { toggleSidebar, isMobile, open, openMobile } = useSidebar()
 
   return (
@@ -41,15 +44,24 @@ function TableOfContentsButton() {
   )
 }
 
-export function TourHeader({ lang, section, aiMode = false }: TourHeaderProps) {
+export function TourHeader({ lang, section, aiMode = false, servingDomain = 'playground' }: TourHeaderProps) {
+  const { t } = useLingui()
+  const hydrated = useHydrated()
   const otherLang = lang === 'en' ? 'zh' : 'en'
   const otherLabel = lang === 'en' ? '中文' : 'EN'
-  const tourHomeHref = getTourPath(lang, { servingDomain: getSiteDomain(window.location.host) })
+  const location = hydrated
+    ? window.location
+    : {
+        host: servingDomain === 'tour' ? 'tour.cj.zxilly.dev' : 'play.cj.zxilly.com',
+        origin: servingDomain === 'tour' ? 'https://tour.cj.zxilly.dev' : 'https://play.cj.zxilly.com',
+        pathname: getTourPath(lang, { servingDomain, rest: section ? [section.chapterSlug, section.chapterStep] : ['ai'] }),
+      }
+  const tourHomeHref = getTourPath(lang, { servingDomain: getSiteDomain(location.host) })
   const aiHref = getTourAIHref(lang, {
-    currentOrigin: window.location.origin,
+    currentOrigin: location.origin,
   })
-  const localeHref = getLocaleHref(otherLang, window.location)
-  const playgroundHref = getPlaygroundHref(lang, { currentOrigin: window.location.origin })
+  const localeHref = getLocaleHref(otherLang, location)
+  const playgroundHref = getPlaygroundHref(lang, { currentOrigin: location.origin })
 
   const chapterName = section && (section.chapterName[lang] ?? section.chapterName.zh)
   const subChapterName = section && (section.subChapterName[lang] ?? section.subChapterName.zh)

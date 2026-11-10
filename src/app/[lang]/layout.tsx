@@ -4,9 +4,10 @@ import { uiFontFamily } from '@/app/font'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { notFound } from 'next/navigation'
+import Script from 'next/script'
 import { LinguiClientProvider } from '@/modules/i18n/LinguiClientProvider'
-import TrackingScript from '@/modules/analytics/TrackingScript'
 import { isLocale } from '@/lib/i18n'
+import { localizedAlternates, PLAYGROUND_ORIGIN } from '@/lib/seo'
 import '../globals.css'
 
 interface LayoutProps {
@@ -19,14 +20,16 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
 
   if (lang === 'en') {
     return {
-      title: 'Cangjie Playground',
-      description: 'An online playground for the Cangjie programming language',
+      title: 'Cangjie Playground – Write and run Cangjie online',
+      description: 'Write, format, run and share Cangjie code in your browser. Try examples with the online compiler and follow the interactive Cangjie Tour without installing an SDK.',
+      alternates: localizedAlternates(PLAYGROUND_ORIGIN, lang),
     }
   }
 
   return {
-    title: '仓颉 Playground',
-    description: '一个在线的仓颉编程语言 Playground',
+    title: '仓颉 Playground：在线编写和运行仓颉代码',
+    description: '在浏览器中编写、格式化、运行和分享仓颉代码，无需安装 SDK。通过在线编译器尝试代码示例，配合仓颉之旅交互教程学习编程语言。',
+    alternates: localizedAlternates(PLAYGROUND_ORIGIN, lang),
   }
 }
 
@@ -41,6 +44,15 @@ export default async function LangLayout({ children, params }: LayoutProps) {
   return (
     <html lang={documentLanguage} suppressHydrationWarning>
       <head>
+        {process.env.NODE_ENV === 'production' && (
+          <Script id="track-routing" strategy="beforeInteractive">
+            {`window.sanitizeCangjieAnalytics=function(type,payload){
+          payload.url=location.pathname;
+          if(payload.referrer){try{var ref=new URL(payload.referrer);payload.referrer=ref.origin+ref.pathname;}catch(e){payload.referrer='';}}
+          return payload;
+        };`}
+          </Script>
+        )}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var m=localStorage.getItem('classroom-theme-mode')||'auto';var d=m==='dark'||(m==='auto'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`,
@@ -59,7 +71,6 @@ export default async function LangLayout({ children, params }: LayoutProps) {
           {children}
         </LinguiClientProvider>
         {process.env.VERCEL === '1' && <Analytics />}
-        <TrackingScript />
         {process.env.VERCEL === '1' && <SpeedInsights />}
       </body>
     </html>

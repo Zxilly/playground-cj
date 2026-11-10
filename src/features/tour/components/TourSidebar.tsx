@@ -28,6 +28,7 @@ interface TourSidebarProps {
   currentSubChapter: string
   currentSection: string
   onNavigate: (chapterId: string, subChapterId: string, sectionId: string) => void
+  sectionHref?: (chapterId: string, subChapterId: string, sectionId: string) => string
 }
 
 function ActiveCollapsible({ active, children, className }: { active: boolean, children: ReactNode, className: string }) {
@@ -45,6 +46,7 @@ export function TourSidebar({
   currentSubChapter,
   currentSection,
   onNavigate,
+  sectionHref,
 }: TourSidebarProps) {
   const { isMobile, setOpenMobile } = useSidebar()
 
@@ -96,16 +98,22 @@ export function TourSidebar({
                                     return (
                                       <SidebarMenuSubItem key={s.id}>
                                         <SidebarMenuButton
+                                          asChild={Boolean(sectionHref)}
                                           isActive={isActive}
                                           aria-current={isActive ? 'page' : undefined}
                                           className="text-xs cursor-pointer"
-                                          onClick={() => {
+                                          onClick={(event) => {
+                                            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+                                              return
+                                            event.preventDefault()
                                             onNavigate(chapter.id, sub.id, s.id)
                                             if (isMobile)
                                               setOpenMobile(false)
                                           }}
                                         >
-                                          {s.name[lang] ?? s.name.zh}
+                                          {sectionHref
+                                            ? <a href={sectionHref(chapter.id, sub.id, s.id)}>{s.name[lang] ?? s.name.zh}</a>
+                                            : s.name[lang] ?? s.name.zh}
                                         </SidebarMenuButton>
                                       </SidebarMenuSubItem>
                                     )

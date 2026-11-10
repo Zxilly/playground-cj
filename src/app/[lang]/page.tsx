@@ -1,5 +1,6 @@
 import Wrapper from '@/features/playground/components/PlaygroundWrapper'
 import { getShareCode } from '@/lib/dpaste-server'
+import TrackingScript from '@/modules/analytics/TrackingScript'
 
 interface PageProps {
   params: Promise<{ lang: string }>
@@ -16,6 +17,7 @@ export default async function LangPage({ params, searchParams }: PageProps) {
   return (
     <main>
       <Wrapper lang={lang} sharedCode={code} />
+      <TrackingScript site="playground" />
     </main>
   )
 }
