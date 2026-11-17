@@ -1,4 +1,34 @@
 import { createHash } from 'node:crypto'
+
+const instrumentationMock = `  if (id.includes('instrumentation-globals')) {
+    const result = {
+      ensureInstrumentationRegistered: async () => {},
+      getInstrumentationModule: () => undefined,
+      instrumentationOnRequestError: async () => {},
+    };
+    Object.defineProperty(result, '__esModule', { value: true });
+    return result;
+  }`
+
+// Next 16.4.5 calls this new export before invoking the user's proxy. EdgeOne
+// already disables Node instrumentation; no registered instrumentation means
+// there are no deferred spans, so the new API must resolve to undefined too.
+export function transformEdgeOneInstrumentation(source) {
+  source = source.replaceAll('\r\n', '\n')
+  const patched = instrumentationMock.replace(
+    '      ensureInstrumentationRegistered: async () => {},',
+    '      ensureInstrumentationRegistered: async () => {},\n      ensureInstrumentationRegisteredWithDeferredSpans: async () => {},',
+  )
+  const signature = "  if (id.includes('instrumentation-globals')) {"
+  if (source.split(signature).length !== 2)
+    throw new Error('EdgeOne instrumentation mock changed; review the adapter before deploying')
+  if (source.includes(patched))
+    return source
+  if (!source.includes(instrumentationMock))
+    throw new Error('EdgeOne instrumentation mock changed; review the adapter before deploying')
+  return source.replace(instrumentationMock, patched)
+}
+
 const originalHash = 'f45add8b2aa122b943e1af19c5bed74af1340a8d28cd56ecc51021593cf34d77'
 const signature = 'function installCompressedModuleFactories(chunkModules, offset) {'
 

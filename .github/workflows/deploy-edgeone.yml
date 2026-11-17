@@ -58,6 +58,18 @@ jobs:
       - name: Login to Tencent Cloud China
         run: node "$EDGEONE_CLI_DIRECTORY/edgeone-bin/edgeone.js" login --site china --token "$EDGEONE_API_TOKEN"
 
+      # The CLI combines build and production upload. Check the current Next
+      # output before invoking it so adapter regressions cannot go live first.
+      - name: Build middleware preflight
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Verify middleware before production upload
+        run: >-
+          node --import ./scripts/edgeone-compat-hook.mjs
+          scripts/verify-edgeone-middleware.mjs "$EDGEONE_CLI_DIRECTORY"
+
       - name: Build and deploy the Next.js application
         run: >-
           node --import ./scripts/edgeone-compat-hook.mjs

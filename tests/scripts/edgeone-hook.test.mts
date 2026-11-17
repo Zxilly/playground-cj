@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 const hook = pathToFileURL(resolve('scripts/edgeone-compat-hook.mjs')).href
 const upstream = readFileSync('tests/fixtures/edgeone-module-installer.txt', 'utf8')
+const instrumentation = readFileSync('tests/fixtures/edgeone-instrumentation-mock.txt', 'utf8')
 const directories: string[] = []
 
 function fixture(options: { cliVersion?: string, adapterVersion?: string, source?: string } = {}) {
@@ -21,7 +22,7 @@ function fixture(options: { cliVersion?: string, adapterVersion?: string, source
   mkdirSync(join(adapter, 'dist/build/functions/middleware'), { recursive: true })
   writeFileSync(join(cli, 'package.json'), JSON.stringify({ name: 'edgeone', version: options.cliVersion ?? '1.6.45' }))
   writeFileSync(join(adapter, 'package.json'), JSON.stringify({ name: '@edgeone/opennextjs-pages', version: options.adapterVersion ?? '0.2.10-beta.12', type: 'module' }))
-  const source = `const moduleFactories = new Map();\n${options.source ?? upstream}\nexport function probe() { installCompressedModuleFactories([[10, () => 'strict'], 20, () => 'flat']); return moduleFactories.has(10); }\n`
+  const source = `const moduleFactories = new Map();\n${options.source ?? upstream}\nfunction externalRequire(id) {\n${instrumentation}\n}\nexport function probe() { installCompressedModuleFactories([[10, () => 'strict'], 20, () => 'flat']); return moduleFactories.has(10) && typeof externalRequire('instrumentation-globals').ensureInstrumentationRegisteredWithDeferredSpans === 'function'; }\n`
   writeFileSync(compiler, source)
   const unrelated = join(adapter, 'unrelated.js')
   writeFileSync(unrelated, source)

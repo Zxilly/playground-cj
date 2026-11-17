@@ -7,12 +7,19 @@ groups. `scripts/edgeone-compat-hook.mjs` registers a synchronous Node
 It transforms the compiler module in memory without rewriting `node_modules`
 or application chunks. Turbopack remains enabled.
 
+Next 16.4.5 also calls `ensureInstrumentationRegisteredWithDeferredSpans` in
+the Proxy entry. The adapter's instrumentation mock only exposes the older
+registration API. The hook adds the new async export, resolving to `undefined`
+because the adapter has no registered Node instrumentation or deferred spans.
+The complete original mock must match before this transform is applied.
+
 The hook resolves the adapter from `EDGEONE_CLI_DIRECTORY`, verifies both
 package names and exact versions, and matches the compiler's canonical file
 URL. The pure transform in `scripts/edgeone-turbopack-compat.mjs` checks the
 original factory-installer function hash and preserves factory identity across
 aliases. Other modules pass through unchanged. The hook throws an error before
-transformation if a version or function implementation is unknown.
+transformation if a version, function implementation, or instrumentation mock
+is unknown.
 
 ## Invocation
 
@@ -49,8 +56,9 @@ pnpm exec vitest run --project unit tests/scripts/edgeone-turbopack.test.mts tes
 
 The regression tests cover nested groups, aliases, offsets, malformed chunks,
 changed source, explicit package selection, version rejection, child-process
-inheritance, module isolation, and unchanged installed files. Deployment still
-executes eight cases against compiled application middleware, then checks both
+inheritance, module isolation, and unchanged installed files. Deployment executes
+nine cases against compiled application middleware before invoking the CLI's
+combined build/upload command, repeats them after deployment, then checks both
 public locales, isolation headers, language redirects, and the API origin guard.
 
 When updating the CLI, inspect its actual adapter dependency and factory

@@ -2,7 +2,7 @@ import { registerHooks, createRequire } from 'node:module'
 import { readFileSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { transformEdgeOneTurbopack } from './edgeone-turbopack-compat.mjs'
+import { transformEdgeOneInstrumentation, transformEdgeOneTurbopack } from './edgeone-turbopack-compat.mjs'
 
 // Explicit opt-in: never install this hook through a global NODE_OPTIONS.
 const cliDirectory = process.env.EDGEONE_CLI_DIRECTORY
@@ -32,7 +32,7 @@ registerHooks({
     const source = typeof loaded.source === 'string' ? loaded.source : Buffer.from(loaded.source).toString('utf8')
     // The pure transform validates the original function hash. Only the module
     // returned to Node changes; installed dependencies remain byte-for-byte intact.
-    const transformed = transformEdgeOneTurbopack(source)
+    const transformed = transformEdgeOneInstrumentation(transformEdgeOneTurbopack(source))
     console.log('[edgeone-compat] Loaded the validated Turbopack compiler through the in-memory hook')
     return { ...loaded, source: transformed }
   },

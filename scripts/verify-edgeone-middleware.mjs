@@ -15,6 +15,7 @@ if (result.errors.length || result.warnings.length)
   throw new Error(JSON.stringify(result))
 
 const cases = [
+  { path: 'https://play.cj.zxilly.com/zh', status: 200, header: ['x-locale', 'zh'] },
   { path: 'https://play.cj.zxilly.com/en', status: 200, header: ['x-middleware-next', '1'] },
   { path: 'https://play.cj.zxilly.com/', status: 307, header: ['location', 'https://play.cj.zxilly.com/en/'] },
   { path: 'https://play.cj.zxilly.com/', cookie: 'locale=zh', status: 307, header: ['location', 'https://play.cj.zxilly.com/zh/'] },

@@ -3,9 +3,31 @@
 import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
-import { transformEdgeOneTurbopack } from '../../scripts/edgeone-turbopack-compat.mjs'
+import { transformEdgeOneInstrumentation, transformEdgeOneTurbopack } from '../../scripts/edgeone-turbopack-compat.mjs'
 
 const upstream = readFileSync('tests/fixtures/edgeone-module-installer.txt', 'utf8')
+const instrumentation = readFileSync('tests/fixtures/edgeone-instrumentation-mock.txt', 'utf8')
+
+describe('edgeOne instrumentation exports', () => {
+  it('supports the Next 16.4.5 deferred instrumentation call without emitting spans', async () => {
+    const source = `function externalRequire(id) {\n${instrumentation}\n}`
+    const patched = transformEdgeOneInstrumentation(source)
+    const exports = runInNewContext(`${patched}\nexternalRequire('next/dist/server/lib/router-utils/instrumentation-globals.external.js')`)
+    expect(await exports.ensureInstrumentationRegisteredWithDeferredSpans('/app', '.next')).toBeUndefined()
+    expect(await exports.ensureInstrumentationRegistered('/app', '.next')).toBeUndefined()
+    expect(exports.getInstrumentationModule()).toBeUndefined()
+    expect(exports.__esModule).toBe(true)
+    expect(transformEdgeOneInstrumentation(patched)).toBe(patched)
+  })
+
+  it('rejects missing, changed, or ambiguous upstream mocks', () => {
+    expect(() => transformEdgeOneInstrumentation('')).toThrow('instrumentation mock changed')
+    expect(() => transformEdgeOneInstrumentation(instrumentation.replace('async () => {}', '() => {}')))
+      .toThrow('instrumentation mock changed')
+    expect(() => transformEdgeOneInstrumentation(instrumentation + instrumentation))
+      .toThrow('instrumentation mock changed')
+  })
+})
 
 function installer() {
   return runInNewContext(`

@@ -1,0 +1,9 @@
+  if (id.includes('instrumentation-globals')) {
+    const result = {
+      ensureInstrumentationRegistered: async () => {},
+      getInstrumentationModule: () => undefined,
+      instrumentationOnRequestError: async () => {},
+    };
+    Object.defineProperty(result, '__esModule', { value: true });
+    return result;
+  }
