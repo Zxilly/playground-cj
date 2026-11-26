@@ -1,5 +1,7 @@
 package playground
 
+// Example: Binary tree traversal with class inheritance and polymorphism
+// Features: open class, inheritance (<:), method overriding, optional chaining (?.)
 open class NodeA {
     public NodeA(protected var value: Rune,
         protected let left!: ?NodeA = None,

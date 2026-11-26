@@ -20,12 +20,8 @@ C has no inheritance or sealed class concept; type extension cannot be restricte
 Java doesn't have native `sealed` classes (added in Java 17+); other patterns are needed to restrict inheritance. Cangjie natively supports `sealed` classes.
 </CompareWith>
 
-<CompareWith lang="kotlin">
-Kotlin's `sealed class` restricts subclasses to the same file. Cangjie restricts them to the same package.
-</CompareWith>
-
-<CompareWith lang="scala">
-Scala 3's `sealed` also restricts inheritance. Cangjie's semantics are similar, used to close type hierarchies.
+<CompareWith lang="rust">
+Rust typically uses `enum` to model closed sets of variants for exhaustive matching; alongside `enum`, Cangjie also offers `sealed` classes that restrict subclasses to the same package.
 </CompareWith>
 
 </CompareGroup>

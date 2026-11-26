@@ -4,7 +4,7 @@ In Cangjie, functions are first-class citizens that can be passed and used like 
 
 Function types can be used as variable types, function parameter types, or return types. You can assign functions to variables, pass them as parameters to other functions, or return them from functions. This makes functional programming possible.
 
-In the example on the right, `double` and `square` are ordinary functions, and `apply` accepts a function parameter `f` and calls it. Note that line 14 assigns the function `double` to variable `fn`, after which `fn(5)` is equivalent to calling `double(5)`.
+In the example on the right, `double` and `square` are ordinary functions, and `apply` accepts a function parameter `f` and calls it. Notice how `main()` assigns `double` to `fn` via `let fn: (Int64) -> Int64 = double`, after which `fn(5)` is equivalent to calling `double(5)`.
 
 <Note>
 When overloaded functions are used as expressions, ambiguity may arise. In such cases, you need to explicitly specify the variable type to resolve the ambiguity, such as `let fn: (Int64) -> Int64 = double`.
@@ -30,4 +30,4 @@ Rust uses the `fn` type to represent function pointers, while closures use the `
 
 </CompareGroup>
 
-Try changing the assignment of `fn` on line 16 to `square` and observe the output change.
+Try changing `double` to `square` in `let fn: (Int64) -> Int64 = double` and observe the output change.

@@ -60,8 +60,6 @@ const LANGUAGE_LABELS: Record<string, string> = {
 }
 
 const STATIC_TOUR_CODE_SNIPPET_REFS = new Set([
-  // Requires a separately linked native `increment` symbol.
-  '09-ffi-unsafe/02-c-types/04',
   // Macro package fragments are compiled as part of a macro package, not as
   // standalone programs.
   '10-macros/01-intro/02',
@@ -269,7 +267,7 @@ const DEFAULT_CURRENT_COURSE_CONTENT: Record<
     }],
   },
   'cj.var.immutable': {
-    sourceRefs: ['02-basics/01-bindings/01'],
+    sourceRefs: ['02-basics/02-bindings/01'],
     skillTitle: {
       zh: '声明并使用 let 绑定',
       en: 'Declare and use a let binding',
@@ -367,7 +365,7 @@ const DEFAULT_CURRENT_COURSE_CONTENT: Record<
     }],
   },
   'cj.var.mutable': {
-    sourceRefs: ['02-basics/01-bindings/02'],
+    sourceRefs: ['02-basics/02-bindings/02'],
     skillTitle: {
       zh: '声明并更新 var 绑定',
       en: 'Declare and update a var binding',

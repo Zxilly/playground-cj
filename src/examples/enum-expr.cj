@@ -1,5 +1,7 @@
 package playground
 
+// 示例场景：用递归枚举构建算术表达式语法树并求值
+// 涉及特性：代数数据类型 enum、match 模式匹配、四则运算符重载
 enum Expr {
     Num(Float64) |
     Add(Expr, Expr) | Sub(Expr, Expr) | Mul(Expr, Expr) | Div(Expr, Expr)

@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-export const ALL_LANGUAGES = ['c', 'java', 'go', 'rust', 'python'] as const
+export const ALL_LANGUAGES = ['c', 'java', 'go', 'rust'] as const
 export type Language = typeof ALL_LANGUAGES[number]
 
 export const LANGUAGE_LABELS = {
@@ -11,7 +11,6 @@ export const LANGUAGE_LABELS = {
   java: 'Java',
   go: 'Go',
   rust: 'Rust',
-  python: 'Python',
 } satisfies Record<Language, string>
 
 export function isKnownLanguageId(lang: string): lang is Language {
@@ -42,6 +41,14 @@ export const useKnownLanguagesStore = create<KnownLanguagesState>()(
       name: 'tour-known-languages',
       storage: createJSONStorage(() => localStorage),
       partialize: state => ({ knownLanguages: state.knownLanguages }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as { knownLanguages?: unknown } | undefined
+        const raw = Array.isArray(persisted?.knownLanguages) ? persisted.knownLanguages : []
+        return {
+          ...currentState,
+          knownLanguages: raw.filter((lang): lang is Language => typeof lang === 'string' && isKnownLanguageId(lang)),
+        }
+      },
     },
   ),
 )

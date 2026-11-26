@@ -16,8 +16,8 @@
 Java 方法默认可重写，需用 `final` 阻止。仓颉相反：默认不可重写，需用 `open` 开放。
 </CompareWith>
 
-<CompareWith lang="c#">
-C# 也需要 `virtual` 和 `override`，与仓颉的 `open` 和 `override` 设计理念相似。
+<CompareWith lang="rust">
+Rust 不支持类继承与方法重写，而是通过 trait 实现多态。仓颉既支持接口，也支持显式的 `open` / `override` 类继承重写。
 </CompareWith>
 
 </CompareGroup>

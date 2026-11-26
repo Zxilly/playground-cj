@@ -10,7 +10,7 @@
 `unsafe` 不会关闭所有检查，只是允许执行与 C 互操作相关的特定操作。其他安全机制仍然有效。
 </Note>
 
-下面的示例展示了三种 unsafe 用法：unsafe 块、unsafe 函数以及在 unsafe 块内包含多条语句。试着将第 20 行的调用移到 unsafe 块外面，观察编译错误。
+下面的示例展示了三种 unsafe 用法：unsafe 块、unsafe 函数以及在 unsafe 块内包含多条语句。试着将 `main()` 中的 `rand()` 或 `getRandomPair()` 调用移到 `unsafe` 块外面，观察编译错误。
 
 <CompareGroup>
 

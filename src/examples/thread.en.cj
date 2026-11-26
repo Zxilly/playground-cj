@@ -1,5 +1,7 @@
 package playground
 
+// Example: Parallel Monte Carlo estimation of Pi using lightweight threads
+// Features: spawn, Future, ArrayList, constants, and loops
 import std.collection.*
 import std.random.*
 import std.math.*

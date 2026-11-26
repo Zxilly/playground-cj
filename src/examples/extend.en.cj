@@ -1,5 +1,7 @@
 package playground
 
+// Example: Extend String with a cyclic right-shift operator >>
+// Features: extend declarations, operator overloading, string slicing
 extend String {
     operator func >>(n: Int64): String {
         if (n <= 0) {

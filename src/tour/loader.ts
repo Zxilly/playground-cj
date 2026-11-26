@@ -25,6 +25,23 @@ function compareIds(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true })
 }
 
+function assertUniqueOrderPrefixes(entries: readonly { name: string }[], dir: string): void {
+  const seen = new Map<number, string>()
+  for (const entry of entries) {
+    const prefix = Number.parseInt(entry.name, 10)
+    if (Number.isNaN(prefix))
+      continue
+
+    const existing = seen.get(prefix)
+    if (existing) {
+      throw new Error(
+        `Duplicate numeric prefix ${prefix} in ${dir}: "${existing}" and "${entry.name}"`,
+      )
+    }
+    seen.set(prefix, entry.name)
+  }
+}
+
 function readRequiredFile(filePath: string): string {
   if (!existsSync(filePath))
     throw new Error(`Missing required file: ${filePath}`)
@@ -111,6 +128,7 @@ async function loadSubChapter(subDir: string, subId: string): Promise<TourSubCha
   const entries = readdirSync(subDir, { withFileTypes: true })
     .filter(e => e.isDirectory() && SECTION_DIR_RE.test(e.name))
     .sort((a, b) => compareIds(a.name, b.name))
+  assertUniqueOrderPrefixes(entries, subDir)
 
   const sections = await Promise.all(entries.map(e => loadSection(join(subDir, e.name), e.name)))
 
@@ -122,6 +140,7 @@ async function loadChapter(chapterDir: string, chapterId: string): Promise<TourC
   const entries = readdirSync(chapterDir, { withFileTypes: true })
     .filter(e => e.isDirectory() && TOP_LEVEL_DIR_RE.test(e.name))
     .sort((a, b) => compareIds(a.name, b.name))
+  assertUniqueOrderPrefixes(entries, chapterDir)
 
   const subChapters = await Promise.all(entries.map(e => loadSubChapter(join(chapterDir, e.name), e.name)))
 
@@ -144,6 +163,7 @@ export async function loadTourData(): Promise<TourChapter[]> {
   const entries = readdirSync(TOUR_DIR, { withFileTypes: true })
     .filter(e => e.isDirectory() && TOP_LEVEL_DIR_RE.test(e.name))
     .sort((a, b) => compareIds(a.name, b.name))
+  assertUniqueOrderPrefixes(entries, TOUR_DIR)
 
   // Metadata and the page can request the same course concurrently on a cold
   // server. Share the expensive MDX compilation, but allow a failed load to retry.

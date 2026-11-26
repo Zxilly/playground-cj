@@ -7,6 +7,45 @@ import { getSiteDomain } from '@/lib/siteHref'
 
 const COOKIE_NAME = 'locale'
 
+/**
+ * Legacy step redirects for chapters whose duplicated lessons were removed.
+ * Live steps within the current chapter range are never redirected; only
+ * previously indexed out-of-range step numbers are mapped to their canonical
+ * post-deduplication step.
+ */
+const LEGACY_TOUR_STEP_REDIRECTS: Record<string, Record<string, string>> = {
+  'basics': {
+    23: '13', // 02-bindings-types/10 -> 03-basic-types/06 (Unit & Nothing)
+    24: '14', // 02-bindings-types/11 -> 04-operators/01 (Arithmetic)
+    25: '15', // 02-bindings-types/12 -> 04-operators/02 (Comparison & Logical)
+    26: '16', // 02-bindings-types/13 -> 04-operators/03 (Assignment)
+    27: '17', // 03-functions/01 -> 05-functions/01 (Defining Functions)
+    28: '18', // 03-functions/02 -> 05-functions/02 (Implicit Return)
+    29: '19', // 03-functions/03 -> 05-functions/03 (Multiple Return Values)
+    30: '20', // 03-functions/04 -> 05-functions/04 (Named Parameters)
+    31: '21', // 03-functions/05 -> 05-functions/05 (Default Parameter Values)
+    32: '22', // 03-functions/06 -> 05-functions/06 (Congratulations!)
+    33: '14', // 03-operators/01 -> 04-operators/01 (Arithmetic)
+    34: '15', // 03-operators/02 -> 04-operators/02 (Comparison & Logical)
+    35: '16', // 03-operators/03 -> 04-operators/03 (Assignment)
+  },
+  'reflection-annotations': {
+    6: '5', // 02-annotations/03 after deduplicating 01-reflection/02
+  },
+}
+
+function resolveLegacyTourStep(rest: string[]): string[] | null {
+  if (rest.length !== 2)
+    return null
+
+  const [chapter, step] = rest
+  const mappedStep = LEGACY_TOUR_STEP_REDIRECTS[chapter]?.[step]
+  if (!mappedStep)
+    return null
+
+  return [chapter, mappedStep]
+}
+
 interface ParsedPath {
   lang: Locale | null
   hasTourSegment: boolean
@@ -112,6 +151,13 @@ export function proxy(request: NextRequest): NextResponse {
 
   if (domain === 'tour') {
     const lang = parsed.lang ?? getPreferredLocale(request)
+    const legacyRest = resolveLegacyTourStep(parsed.rest)
+
+    if (legacyRest) {
+      const url = request.nextUrl.clone()
+      url.pathname = buildPath(lang, false, legacyRest)
+      return NextResponse.redirect(url, 301)
+    }
 
     // Case 1: No locale in URL → rewrite with locale and /tour/
     if (!parsed.lang) {
@@ -134,6 +180,16 @@ export function proxy(request: NextRequest): NextResponse {
   }
 
   // Playground domain
+  if (parsed.hasTourSegment) {
+    const legacyRest = resolveLegacyTourStep(parsed.rest)
+    if (legacyRest) {
+      const lang = parsed.lang ?? getPreferredLocale(request)
+      const url = request.nextUrl.clone()
+      url.pathname = buildPath(lang, true, legacyRest)
+      return NextResponse.redirect(url, 301)
+    }
+  }
+
   if (parsed.lang) {
     const response = NextResponse.next()
     response.headers.set('x-locale', parsed.lang)

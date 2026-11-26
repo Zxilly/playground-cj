@@ -1,5 +1,7 @@
 package playground
 
+// Example: Build and evaluate an arithmetic expression tree with a recursive enum
+// Features: Algebraic data types (enum), match pattern matching, operator overloading
 enum Expr {
     Num(Float64) |
     Add(Expr, Expr) | Sub(Expr, Expr) | Mul(Expr, Expr) | Div(Expr, Expr)

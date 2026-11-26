@@ -4,10 +4,10 @@ When the last parameter of a function is a function type, the lambda can be writ
 
 If a function has only one parameter and that parameter is a function type, the parentheses `()` can even be omitted entirely, writing only the lambda. This is particularly useful when defining DSLs (domain-specific languages) and builder patterns.
 
-In the example on the right, `myIf`'s second parameter is a function type, and line 20 calls it using trailing lambda syntax. `applyTwice` has only one function parameter, and line 24 omits the parentheses, writing the lambda directly. Both forms are equivalent to the conventional call syntax.
+In the example on the right, `myIf`'s second parameter is a function type, and `myIf(true) { 100 }` calls it using trailing lambda syntax. `applyTwice` has only one function parameter, so `applyTwice { value => value + 3 }` omits the parentheses and writes the lambda directly. Both forms are equivalent to conventional call syntax.
 
 <Note>
-The `=>` of a trailing lambda can be omitted when the function body is a single expression. Compare line 22 and line 25: multi-line lambdas are clearer, while single expressions can be more concise.
+The `=>` of a parameterless trailing lambda can be omitted. Compare the conventional call `myIf(true, { => 100 })` with the trailing form `myIf(true) { 100 }`, as well as `applyTwice { value => value + 3 }`: multi-line lambdas stay clear, while single expressions stay concise.
 </Note>
 
 <CompareGroup>
@@ -30,4 +30,4 @@ Rust's trailing closure syntax is exactly the same as Cangjie, writing closures 
 
 </CompareGroup>
 
-Try rewriting line 24 to conventional call syntax `applyTwice({ value => value + 3 })` to understand the equivalence of both forms.
+Try rewriting `applyTwice { value => value + 3 }` to the conventional call syntax `applyTwice({ value: Int64 => value + 3 })` to see the equivalence of both forms.

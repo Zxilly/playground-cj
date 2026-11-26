@@ -1,5 +1,7 @@
 # Monaco module graph and first-edit latency
 
+> **Status: Historical snapshot (superseded).** This 2026-10-22 report records an earlier optimization pass and has been superseded by subsequent editor and UI changes (see [editor-reuse-2026-10-28.md](./editor-reuse-2026-10-28.md) and current source code for the active VS Code service set).
+
 This follow-up compares the production build at `64add8e` with the editor
 changes in `8f8d699`, measured on 2026-10-22 before committing. Both builds use
 Turbopack and Monaco/VS Code 38.0.3.
@@ -128,6 +130,6 @@ Installed dependencies are never rewritten. Unknown package versions or source
 changes fail the build. Both deployment and the separate compiled-middleware
 verification explicitly enable the hook; no global `NODE_OPTIONS` is needed.
 Twelve regression tests cover factory registration and hook isolation, followed
-by eight checks against the compiled application middleware and live HTTP checks.
+by nine checks against the compiled application middleware and live HTTP checks.
 Turbopack remains enabled. See the [hook operations guide](../edgeone-hook.md)
 for commands and the upgrade procedure.

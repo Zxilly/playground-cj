@@ -1,5 +1,7 @@
 package playground
 
+// Example: Compute iterative sequences using higher-order functions and lambdas
+// Features: Function-typed parameters, single-line and multi-line lambdas
 func iter(n: Int64, x0: Float64, f: (Float64) -> Float64) {
     var x = x0
     for (_ in 0..n) {

@@ -18,8 +18,8 @@ C 没有切片操作，需要手动管理指针和计算范围。仓颉的切片
 Java 没有原生切片操作，需要用 `Arrays.copyOfRange()` 或 `List.subList()` 实现。仓颉的切片语法更直观。
 </CompareWith>
 
-<CompareWith lang="python">
-Python 的切片使用 `arr[1:4]` 语法且支持负索引。仓颉使用 Range 类型 `arr[1..4]`，不支持负索引。
+<CompareWith lang="rust">
+Rust 的切片 `&arr[1..4]` 是指向原数据的借用视图，受借用检查约束。仓颉使用 Range 语法 `arr[1..4]` 进行切片，直接返回新数组且不影响原数组。
 </CompareWith>
 
 <CompareWith lang="go">

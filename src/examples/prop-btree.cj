@@ -1,5 +1,7 @@
 package playground
 
+// 示例场景：通过可变计算属性（mut prop）沿二叉树向下传播赋值
+// 涉及特性：class 主构造函数、mut prop getter/setter、可选链赋值
 class Node {
     private var value: Int64 = 0
     public Node(private var name: Rune,

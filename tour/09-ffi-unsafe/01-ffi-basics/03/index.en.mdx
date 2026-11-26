@@ -10,7 +10,7 @@ In addition to `unsafe` blocks, you can also mark an entire function as `unsafe`
 `unsafe` doesn't turn off all checks, it only allows specific operations related to C interoperability. Other safety mechanisms remain effective.
 </Note>
 
-The example below demonstrates three uses of unsafe: unsafe blocks, unsafe functions, and unsafe blocks containing multiple statements. Try moving the call on line 20 outside the unsafe block to observe the compilation error.
+The example below demonstrates three uses of unsafe: unsafe blocks, unsafe functions, and unsafe blocks containing multiple statements. Try moving the `rand()` or `getRandomPair()` call in `main()` outside the `unsafe` block to observe the compilation error.
 
 <CompareGroup>
 

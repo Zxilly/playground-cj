@@ -28,4 +28,4 @@ Rust uses `extern "C"` to declare external functions, and calls also require `un
 
 <Note>`foreign` functions can only have declarations, not implementations. Variadic arguments are represented using `...`, such as `printf(fmt: CString, ...): Int32`.</Note>
 
-Try adding a call to a foreign function on line 16 and see what compilation error occurs.
+Try calling a `foreign` function such as `abs(42)` outside an `unsafe` block and see what compilation error occurs.

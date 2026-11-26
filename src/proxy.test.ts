@@ -53,3 +53,49 @@ describe('china website redirect', () => {
     expect(proxy(request('https://playground.cj.zxilly.dev/en', 'CN', 'POST')).headers.get('location')).toBeNull()
   })
 })
+
+describe('legacy tour step redirects', () => {
+  it('301 redirects legacy basics steps on the playground domain while preserving query', () => {
+    vi.stubEnv('VERCEL', '')
+    const cases = [
+      ['https://play.cj.zxilly.com/zh/tour/basics/23', 'https://play.cj.zxilly.com/zh/tour/basics/13'],
+      ['https://play.cj.zxilly.com/en/tour/basics/24?from=search', 'https://play.cj.zxilly.com/en/tour/basics/14?from=search'],
+      ['https://play.cj.zxilly.com/zh/tour/basics/27', 'https://play.cj.zxilly.com/zh/tour/basics/17'],
+      ['https://play.cj.zxilly.com/zh/tour/basics/32', 'https://play.cj.zxilly.com/zh/tour/basics/22'],
+      ['https://play.cj.zxilly.com/zh/tour/basics/33', 'https://play.cj.zxilly.com/zh/tour/basics/14'],
+      ['https://play.cj.zxilly.com/zh/tour/basics/35', 'https://play.cj.zxilly.com/zh/tour/basics/16'],
+      ['https://play.cj.zxilly.com/tour/basics/27', 'https://play.cj.zxilly.com/zh/tour/basics/17'],
+      ['https://play.cj.zxilly.com/zh/tour/reflection-annotations/6', 'https://play.cj.zxilly.com/zh/tour/reflection-annotations/5'],
+    ] as const
+
+    for (const [from, to] of cases) {
+      const response = proxy(request(from, 'US'))
+      expect(response.status, from).toBe(301)
+      expect(response.headers.get('location'), from).toBe(to)
+    }
+  })
+
+  it('301 redirects legacy basics steps on the tour domain', () => {
+    vi.stubEnv('VERCEL', '')
+    const cases = [
+      ['https://tour.cj.zxilly.dev/zh/basics/27', 'https://tour.cj.zxilly.dev/zh/basics/17'],
+      ['https://tour.cj.zxilly.dev/en/tour/basics/32?ref=old', 'https://tour.cj.zxilly.dev/en/basics/22?ref=old'],
+      ['https://tour.cj.zxilly.dev/basics/35', 'https://tour.cj.zxilly.dev/zh/basics/16'],
+      ['https://tour.cj.zxilly.dev/en/reflection-annotations/6', 'https://tour.cj.zxilly.dev/en/reflection-annotations/5'],
+    ] as const
+
+    for (const [from, to] of cases) {
+      const response = proxy(request(from, 'US'))
+      expect(response.status, from).toBe(301)
+      expect(response.headers.get('location'), from).toBe(to)
+    }
+  })
+
+  it('does not redirect current canonical basics steps 1..22', () => {
+    vi.stubEnv('VERCEL', '')
+    for (const step of ['1', '14', '22']) {
+      expect(proxy(request(`https://play.cj.zxilly.com/zh/tour/basics/${step}`, 'US')).headers.get('location')).toBeNull()
+      expect(proxy(request(`https://tour.cj.zxilly.dev/zh/basics/${step}`, 'US')).headers.get('location')).toBeNull()
+    }
+  })
+})

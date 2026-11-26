@@ -23,7 +23,7 @@
       "summary": { "zh": "let 声明的绑定一旦初始化便不能再赋值。", "en": "let bindings cannot be reassigned after initialization." },
       "difficulty": 1,
       "prerequisites": ["cj.program.main"],
-      "chapterRefs": ["02-basics/01-bindings"],
+      "chapterRefs": ["02-basics/02-bindings"],
       "commonMisconceptions": [
         { "zh": "把 let 当作 Python 的赋值，认为可以在同作用域重新声明同名变量。", "en": "Treating let like Python assignment and assuming same-scope redeclaration is allowed." }
       ]
@@ -34,7 +34,7 @@
       "summary": { "zh": "var 声明的绑定可以重新赋值；和 let 形成对比。", "en": "var bindings allow reassignment; contrasts with let." },
       "difficulty": 1,
       "prerequisites": ["cj.var.immutable"],
-      "chapterRefs": ["02-basics/01-bindings"],
+      "chapterRefs": ["02-basics/02-bindings"],
       "commonMisconceptions": [
         { "zh": "把『重新赋值』和『重新声明』混淆。", "en": "Confusing reassignment with redeclaration." }
       ]
@@ -45,7 +45,7 @@
       "summary": { "zh": "Int、Float、Bool、Rune、String 等内建类型与字面量形式。", "en": "Built-in types like Int, Float, Bool, Rune, String and their literal forms." },
       "difficulty": 1,
       "prerequisites": ["cj.var.immutable"],
-      "chapterRefs": ["02-basics/02-basic-types"]
+      "chapterRefs": ["02-basics/03-basic-types"]
     },
     {
       "conceptId": "cj.type.annotation",
@@ -53,7 +53,7 @@
       "summary": { "zh": "`name: Type = value` 形式的显式类型标注，与类型推断的关系。", "en": "Explicit type annotation `name: Type = value` and how it relates to inference." },
       "difficulty": 2,
       "prerequisites": ["cj.type.basic"],
-      "chapterRefs": ["02-basics/02-basic-types", "02-basics/02-bindings-types"]
+      "chapterRefs": ["02-basics/02-bindings"]
     },
     {
       "conceptId": "cj.type.inference",
@@ -61,7 +61,7 @@
       "summary": { "zh": "编译器根据初始化值推断绑定类型；强调与动态类型的区别。", "en": "The compiler infers binding types from initializers — distinct from dynamic typing." },
       "difficulty": 2,
       "prerequisites": ["cj.type.annotation"],
-      "chapterRefs": ["02-basics/02-basic-types"],
+      "chapterRefs": ["02-basics/02-bindings"],
       "commonMisconceptions": [
         { "zh": "把『推断』当作『动态类型』，认为同一变量可重绑不同类型。", "en": "Treating inference as dynamic typing and expecting a binding can hold different types over time." }
       ]
@@ -72,7 +72,7 @@
       "summary": { "zh": "+、-、*、/、% 等运算与整型/浮点的结果类型规则。", "en": "+, -, *, /, % and result-type rules between integer and float operands." },
       "difficulty": 1,
       "prerequisites": ["cj.type.basic"],
-      "chapterRefs": ["02-basics/03-operators", "02-basics/02-bindings-types"]
+      "chapterRefs": ["02-basics/04-operators"]
     },
     {
       "conceptId": "cj.expr.comparison",
@@ -80,7 +80,7 @@
       "summary": { "zh": "==、!=、<、<=、>、>= 返回 Bool 值。", "en": "==, !=, <, <=, >, >= return Bool values." },
       "difficulty": 1,
       "prerequisites": ["cj.type.basic"],
-      "chapterRefs": ["02-basics/03-operators"]
+      "chapterRefs": ["02-basics/04-operators"]
     },
     {
       "conceptId": "cj.expr.logical",
@@ -88,7 +88,7 @@
       "summary": { "zh": "&&、||、! 与短路求值规则。", "en": "&&, ||, ! with short-circuit evaluation." },
       "difficulty": 2,
       "prerequisites": ["cj.expr.comparison"],
-      "chapterRefs": ["02-basics/03-operators"]
+      "chapterRefs": ["02-basics/04-operators"]
     },
     {
       "conceptId": "cj.string.basic",
@@ -96,7 +96,7 @@
       "summary": { "zh": "String 字面量、连接、长度等基础操作。", "en": "String literals, concatenation, and length basics." },
       "difficulty": 1,
       "prerequisites": ["cj.type.basic"],
-      "chapterRefs": ["02-basics/02-basic-types"]
+      "chapterRefs": ["02-basics/03-basic-types"]
     },
     {
       "conceptId": "cj.string.interpolation",
@@ -104,7 +104,7 @@
       "summary": { "zh": "在字符串字面量中嵌入表达式的语法。", "en": "Embedding expressions inside string literals." },
       "difficulty": 2,
       "prerequisites": ["cj.string.basic", "cj.var.immutable"],
-      "chapterRefs": ["02-basics/02-basic-types"]
+      "chapterRefs": ["02-basics/03-basic-types"]
     },
     {
       "conceptId": "cj.control.if-expr",
@@ -171,7 +171,7 @@
       "summary": { "zh": "func 名(参数: 类型): 返回类型 { ... } 的基本形式。", "en": "func name(params: Type): ReturnType { ... }." },
       "difficulty": 2,
       "prerequisites": ["cj.type.annotation"],
-      "chapterRefs": ["02-basics/03-functions"]
+      "chapterRefs": ["02-basics/05-functions"]
     },
     {
       "conceptId": "cj.function.params",
@@ -179,7 +179,7 @@
       "summary": { "zh": "位置参数、命名参数与默认值。", "en": "Positional, named, and default-valued parameters." },
       "difficulty": 2,
       "prerequisites": ["cj.function.signature"],
-      "chapterRefs": ["02-basics/03-functions"]
+      "chapterRefs": ["02-basics/05-functions"]
     },
     {
       "conceptId": "cj.function.return",
@@ -187,7 +187,7 @@
       "summary": { "zh": "显式 return；最后表达式作为隐式返回值。", "en": "Explicit `return`; trailing expression as implicit return." },
       "difficulty": 2,
       "prerequisites": ["cj.function.signature"],
-      "chapterRefs": ["02-basics/03-functions"]
+      "chapterRefs": ["02-basics/05-functions"]
     },
     {
       "conceptId": "cj.function.lambda",

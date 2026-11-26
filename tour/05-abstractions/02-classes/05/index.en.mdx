@@ -16,8 +16,8 @@ The dual constraints of `open` and `override` both ensure clear design intent an
 Java methods are overridable by default, requiring `final` to prevent. Cangjie is the opposite: not overridable by default, requiring `open` to allow.
 </CompareWith>
 
-<CompareWith lang="c#">
-C# also requires `virtual` and `override`, similar to Cangjie's `open` and `override` design philosophy.
+<CompareWith lang="rust">
+Rust does not have class inheritance or method overriding, relying on traits for polymorphism instead. Cangjie supports both interfaces and explicit `open` / `override` class inheritance.
 </CompareWith>
 
 </CompareGroup>

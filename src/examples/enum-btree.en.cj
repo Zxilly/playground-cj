@@ -1,5 +1,7 @@
 package playground
 
+// Example: Build and traverse a binary tree using a recursive enum
+// Features: Enum constructors with payloads, match pattern matching, static methods
 enum Tree {
     Empty | Leaf(Int64) | Node(Int64, Tree, Tree)
 

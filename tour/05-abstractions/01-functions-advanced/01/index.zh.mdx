@@ -4,7 +4,7 @@
 
 函数类型可以作为变量类型、函数参数类型或返回类型。你可以将函数赋值给变量，作为参数传递给其他函数，或从函数中返回。这让函数式编程成为可能。
 
-右侧示例中，`double` 和 `square` 是普通函数，`apply` 接受一个函数参数 `f` 并调用它。注意第 14 行将函数 `double` 赋值给变量 `fn`，之后 `fn(5)` 就相当于调用 `double(5)`。
+右侧示例中，`double` 和 `square` 是普通函数，`apply` 接受一个函数参数 `f` 并调用它。注意 `main()` 中通过 `let fn: (Int64) -> Int64 = double` 将函数 `double` 赋值给变量 `fn`，之后 `fn(5)` 就相当于调用 `double(5)`。
 
 <Note>
 当重载函数作为表达式使用时，可能产生歧义。此时需要显式指定变量类型来消除歧义，如 `let fn: (Int64) -> Int64 = double`。
@@ -30,4 +30,4 @@ Rust 使用 `fn` 类型表示函数指针，闭包则用 `Fn`、`FnMut`、`FnOnc
 
 </CompareGroup>
 
-试试修改第 16 行的 `fn` 赋值为 `square`，观察输出变化。
+试试将 `let fn: (Int64) -> Int64 = double` 中的 `double` 改为 `square`，观察输出变化。

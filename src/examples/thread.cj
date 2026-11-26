@@ -1,5 +1,7 @@
 package playground
 
+// 示例场景：使用多线程（spawn / Future）并行执行蒙特卡洛算法估算圆周率
+// 涉及特性：轻量级线程 spawn、Future、ArrayList、常量与循环
 import std.collection.*
 import std.random.*
 import std.math.*
@@ -32,5 +34,5 @@ main() {
     }
     let pi = Float64(n) / Float64(M * N) * 4.0
     println("π ≈ ${pi}")
-    println("deviation: ${abs(Float64.getPI() - pi)}")
+    println("误差：${abs(Float64.getPI() - pi)}")
 }

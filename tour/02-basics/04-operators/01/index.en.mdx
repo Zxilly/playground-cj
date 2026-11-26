@@ -1,0 +1,31 @@
+# Arithmetic Operators
+
+Cangjie provides standard arithmetic operators: addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), remainder (`%`), and exponentiation (`**`). These operators behave mostly as you'd expect from other languages, with some details to note.
+
+Integer division rounds the result toward zero. For example, `7 / 3` yields `2`, while `-7 / 3` yields `-2`. The remainder operator `%` supports only integer types and is defined as `a - b * (a / b)`, so the result has the same sign as the dividend. The unary minus `-` can negate a numeric value. For exponentiation `**`, when the left operand is `Int64` the right operand must be `UInt64`; when the left operand is `Float64`, the right operand may be `Int64` or `Float64`.
+
+Operators have fixed precedence: unary minus has the highest precedence, followed by `**`, then `*`, `/`, `%`, and finally `+`, `-`. Use parentheses to change the order of operations and make your code's intent clearer.
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C also lacks the `**` exponentiation operator and requires calling the `pow()` function. C's handling of integer overflow is more permissive.
+</CompareWith>
+
+<CompareWith lang="java">
+Java also lacks the `**` operator and uses `Math.pow()` method instead. Java also doesn't check for integer overflow.
+</CompareWith>
+
+<CompareWith lang="go">
+Go does not have an exponentiation operator `**`; you need to use the `math.Pow` function. Go's remainder operator behaves the same as Cangjie's.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust also lacks the `**` operator and uses the `pow()` method instead. Rust checks for integer overflow in debug mode, while Cangjie always forbids overflow.
+</CompareWith>
+
+</CompareGroup>
+
+The code on the right demonstrates various arithmetic operators. Try modifying the operands in expressions or adding parentheses, predict the results, then run to verify.
+
+<Highlight target="run">Run</Highlight> to see the output, and try modifying the code to understand operator behavior.

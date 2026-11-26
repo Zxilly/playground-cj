@@ -141,8 +141,8 @@ describe('course content pack builder', () => {
     const expectedReferences = {
       'cj.program.main': ['01-welcome/01-intro/01'],
       'cj.io.println': ['01-welcome/01-intro/01'],
-      'cj.var.immutable': ['02-basics/01-bindings/01'],
-      'cj.var.mutable': ['02-basics/01-bindings/02'],
+      'cj.var.immutable': ['02-basics/02-bindings/01'],
+      'cj.var.mutable': ['02-basics/02-bindings/02'],
     }
 
     for (const [conceptId, expected] of Object.entries(expectedReferences)) {

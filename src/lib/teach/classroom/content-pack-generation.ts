@@ -14,6 +14,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import {
+  basename,
   delimiter,
   dirname,
   isAbsolute,
@@ -194,16 +195,33 @@ export function resolveExecutableFromPath(
   for (const possiblePath of possiblePaths) {
     if (!isExecutableFile(possiblePath))
       continue
-    return realpathSync.native(possiblePath)
+    // Canonicalize the parent directory while preserving the executable's own
+    // filename so multi-call shims (e.g. `cjc.exe` symlinked to `cjv.exe`)
+    // retain `cjc` as argv[0] when invoked.
+    return join(realpathSync.native(dirname(possiblePath)), basename(possiblePath))
   }
   return undefined
+}
+
+function unwrapCjvShim(executable: string): string {
+  const realTarget = realpathSync.native(executable)
+  const targetName = basename(realTarget).replace(/\.exe$/i, '').toLowerCase()
+  if (targetName !== 'cjv')
+    return executable
+
+  const resolved = runCommand(realTarget, ['which', 'cjc'])
+  const resolvedPath = resolved.stdout.trim().split(/\r?\n/, 1)[0]?.trim()
+  if (resolved.status === 0 && resolvedPath && isExecutableFile(resolvedPath))
+    return realpathSync.native(resolvedPath)
+
+  return executable
 }
 
 function requireCangjieCompiler(): string {
   for (const candidate of compilerCandidates()) {
     const executable = resolveExecutableFromPath(candidate)
     if (executable)
-      return executable
+      return unwrapCjvShim(executable)
   }
   throw new Error(
     'Cangjie compiler is required to verify Course Content Pack reference solutions; '
@@ -273,6 +291,17 @@ function compileAndRunContentPackProgram(
   }
 }
 
+export interface VerifyContentPackExecutablesOptions {
+  /**
+   * Enforce the locked Linux x64 `cjc` SHA-256, target triple, and exact
+   * compiler release from `cj-runner/cangjie-toolchain.lock.json`.
+   * Defaults to `true` (strict CI behavior). Set to `false` only on non-Linux
+   * local dev hosts so developers can still compile and execute all programs
+   * with their local `cjc` binary.
+   */
+  strictToolchainLock?: boolean
+}
+
 /**
  * Compile and run every checked-in reference/starter pair and every current
  * Core Content Block classified as a standalone program. Snippets are skipped
@@ -282,14 +311,18 @@ function compileAndRunContentPackProgram(
  */
 export function verifyContentPackExecutables(
   packsByLocale: ContentPackPacksByLocale,
+  options: VerifyContentPackExecutablesOptions = {},
 ): {
   compiler: ContentPackCompilerIdentity
+  toolchainLocked: boolean
   verifiedCodeSamples: ContentPackCodeSampleValidation[]
   verifiedTemplates: ContentPackReferenceValidation[]
 } {
+  const strictToolchainLock = options.strictToolchainLock ?? true
   const programSamples = contentPackProgramValidationInputs(packsByLocale)
   const compiler = requireCangjieCompiler()
-  assertLockedCompilerBytesBeforeExecution(compiler)
+  if (strictToolchainLock)
+    assertLockedCompilerBytesBeforeExecution(compiler)
   const executableDirectories = cangjieExecutableDirectories(compiler)
   const cases = getContentPackReferenceValidationCases()
   const compilerVersionResult = runCommand(
@@ -306,8 +339,11 @@ export function verifyContentPackExecutables(
     throw new Error('Cangjie compiler did not report a usable version')
   const reportedCompilerIdentity = parseCangjieCompilerIdentity(
     compilerVersionOutput,
+    strictToolchainLock,
   )
-  const toolchain = assertLockedCangjieCompiler(reportedCompilerIdentity)
+  const toolchain = strictToolchainLock
+    ? assertLockedCangjieCompiler(reportedCompilerIdentity)
+    : loadCangjieToolchainLock().provenance
   const compilerIdentity: ContentPackCompilerIdentity = {
     ...reportedCompilerIdentity,
     toolchain,
@@ -416,6 +452,7 @@ export function verifyContentPackExecutables(
 
   return {
     compiler: compilerIdentity,
+    toolchainLocked: strictToolchainLock,
     verifiedCodeSamples,
     verifiedTemplates,
   }
@@ -425,7 +462,7 @@ export interface ContentPackCompilerIdentity {
   name: 'cjc'
   version: string
   backend: 'cjnative'
-  target: 'x86_64-unknown-linux-gnu'
+  target: string
   toolchain: CangjieToolchainProvenance
 }
 
@@ -555,14 +592,18 @@ export function validateContentPackReferenceCase(
 
 function parseCangjieCompilerIdentity(
   versionOutput: string,
+  strictLinuxTarget = true,
 ): Omit<ContentPackCompilerIdentity, 'toolchain'> {
   const firstLine = versionOutput.split(/\r?\n/, 1)[0].trim()
   const targetLine = versionOutput.split(/\r?\n/, 2)[1]?.trim()
   const match = /^Cangjie Compiler:\s+(\S+)\s+\(([^)]+)\)$/.exec(firstLine)
+  const targetMatch = targetLine ? /^Target:\s+(\S+)$/.exec(targetLine) : null
+  const target = targetMatch?.[1]
   if (
     !match
     || match[2] !== 'cjnative'
-    || targetLine !== 'Target: x86_64-unknown-linux-gnu'
+    || !target
+    || (strictLinuxTarget && target !== 'x86_64-unknown-linux-gnu')
   ) {
     throw new Error(
       `Unsupported Cangjie compiler identity: ${JSON.stringify(firstLine)}`,
@@ -572,7 +613,7 @@ function parseCangjieCompilerIdentity(
     name: 'cjc',
     version: match[1],
     backend: 'cjnative',
-    target: 'x86_64-unknown-linux-gnu',
+    target,
   }
 }
 

@@ -1,0 +1,31 @@
+# Strings and Interpolation
+
+The string type is represented by `String`, a sequence of Unicode characters. String literals come in three forms: single-line strings, multi-line strings, and multi-line raw strings.
+
+Single-line strings are enclosed in a pair of single or double quotes. Multi-line strings are enclosed in three single quotes `'''` or three double quotes `"""`, and can span multiple lines. Multi-line raw strings start with `#` and quotes, preserving content as-is without interpreting escape sequences.
+
+Interpolated strings embed the value of expressions into strings using `${expression}`. The curly braces can contain any expression, even including declaration statements. Interpolated strings make string concatenation concise and intuitive, avoiding cumbersome `+` operations. The code on the right demonstrates basic string usage and interpolation functionality.
+
+<Note>Multi-line raw strings do not support string interpolation; `${...}` within them is treated as raw content.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C has no native string type; requires `char[]` arrays and string library functions. Cangjie's `String` is a first-class type with built-in interpolation.
+</CompareWith>
+
+<CompareWith lang="java">
+Java's `String` is immutable; concatenation uses `+` or `StringBuilder`. Cangjie's `${expr}` syntax is more concise, avoiding temporary objects.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses backticks `` ` `` for raw strings (no escapes) and double quotes for regular strings. Go's string interpolation requires `fmt.Sprintf`, while Cangjie directly uses `${expr}` which is more concise. Go uses `+` for string concatenation, while Cangjie can use either `+` or interpolation.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's string interpolation requires the `format!` macro, like `format!("value is {}", x)`. Cangjie's built-in interpolation syntax `${expr}` is closer to JavaScript or Swift style, more intuitive and concise.
+</CompareWith>
+
+</CompareGroup>
+
+Try putting an arithmetic expression or function call inside `${}`.

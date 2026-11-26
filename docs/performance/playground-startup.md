@@ -1,5 +1,7 @@
 # Playground startup measurements
 
+> **Status: Historical snapshot (superseded).** This 2026-10-22 report records an earlier startup baseline and has been superseded by [monaco-startup.md](./monaco-startup.md), [editor-reuse-2026-10-28.md](./editor-reuse-2026-10-28.md), and later architecture updates.
+
 Measured on 2026-10-22 against a local production server. The comparison starts
 at `9d628fd`, after the Lingui-driven font subsets and route CSS split.
 
@@ -138,7 +140,7 @@ factory aliases, matching Next's runtime behavior. Turbopack remains enabled.
 The hook checks CLI and adapter versions and the original function hash and
 stops on an unknown implementation. Twelve regression tests cover the installer
 and module loading behavior;
-eight checks execute the compiled application middleware. After deployment,
+nine checks execute the compiled application middleware. After deployment,
 HTTP checks verify both locales, isolation headers, language redirects, and
 the API origin guard. Remove the hook after an upstream adapter release
 supports these cases and passes the same checks. The [operations guide](../edgeone-hook.md)

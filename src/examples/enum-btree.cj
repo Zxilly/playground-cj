@@ -1,5 +1,7 @@
 package playground
 
+// 示例场景：使用代数数据类型（递归枚举）构建并遍历二叉树
+// 涉及特性：enum 带载荷构造器、match 模式匹配、静态成员函数
 enum Tree {
     Empty | Leaf(Int64) | Node(Int64, Tree, Tree)
 

@@ -1,5 +1,7 @@
 package playground
 
+// Example: Compose binary tree traversal purely with closures
+// Features: Higher-order functions, closures, named parameters with default lambdas
 func node(value: Rune,
     left!: () -> Unit = {=>}, right!: () -> Unit = {=>}) {
     return { =>

@@ -5,7 +5,7 @@ foreign func rand(): Int32
 foreign func printf(fmt: CString, ...): Int32
 
 unsafe main() {
-    let text = LibC.mallocCString("random number: %d\n")
+    let text = LibC.mallocCString("随机数：%d\n")
     for (_ in 0..5) {
         printf(text, rand())
     }

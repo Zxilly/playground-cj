@@ -1,25 +1,25 @@
-# 自定义注解
+# 反射调用方法
 
-注解将结构化元数据附加到声明上，可在运行时通过反射读取。仓颉通过 `@Annotation` 标记定义注解类，注解类必须提供 `const init` 构造函数。
+反射不仅限于读写变量，还可以在运行时动态调用方法。通过 `TypeInfo` 的 `getStaticFunction` 和 `getInstanceFunction` 可以按名称和参数类型查找方法，然后使用 `apply` 调用它。
 
-定义注解时，使用 `@Annotation` 修饰 `class`，并在类中声明需要存储的字段。注解类不能使用 `abstract`、`open` 或 `sealed` 修饰。使用注解时，语法为 `@注解名[参数]`，参数会在编译期求值并绑定到类型上。
+静态方法通过 `getStaticFunction("方法名", 参数类型...)` 获取，实例方法通过 `getInstanceFunction("方法名", 参数类型...)` 获取。参数类型需要传入相应的 `TypeInfo` 对象。调用时，静态方法传入类型信息和参数数组，实例方法还需传入接收者对象。
 
-通过 `TypeInfo.findAnnotation<T>()` 可以在运行时获取类型上的注解信息，返回 `Option<T>` 类型。这使得框架可以在运行时根据注解执行不同逻辑，例如版本控制、权限检查等。
+动态方法调用是框架开发的重要工具。例如，测试框架可以扫描带有特定注解的测试方法并执行它们，序列化框架可以自动调用 getter/setter 方法。
 
-<Note>注解不会被继承。子类不会获得父类的注解元数据。</Note>
+<Note>反射调用方法时需要正确匹配参数类型。类型不匹配会导致运行时错误。</Note>
 
-右侧代码定义了 `@Version` 注解，并用它标记两个 API 类。运行时通过反射读取并打印版本号。
+右侧代码定义了包含实例方法和静态方法的 `Calculator` 类，然后通过反射动态调用这些方法。注意参数类型信息的获取方式：`TypeInfo.of<Int64>()`。
 
 <CompareGroup>
 
-<CompareWith lang="java">
-Java 注解通过 `@interface` 定义，使用 `@Retention` 控制生命周期。仓颉注解必须使用 `const init`，参数在编译期求值。
+<CompareWith lang="go">
+Go 通过 `reflect.Value.MethodByName()` 获取方法，调用时使用 `Call()`。仓颉需要显式指定参数类型，更严格但类型安全。
 </CompareWith>
 
-<CompareWith lang="go">
-Go 使用结构体标签（struct tags）实现类似功能，如 `` `json:"name"` ``。仓颉的注解是类型安全的，可以携带复杂结构。
+<CompareWith lang="java">
+Java 反射使用 `getMethod()` 和 `invoke()`。仓颉的 `apply()` 类似，但返回 `Option` 要求显式处理错误。
 </CompareWith>
 
 </CompareGroup>
 
-试着添加新的注解类型，如 `@Author` 记录作者信息。
+试着添加一个新方法，并通过反射调用它。

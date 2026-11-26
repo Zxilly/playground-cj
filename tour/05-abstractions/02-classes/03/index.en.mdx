@@ -24,8 +24,8 @@ Java has no property syntax and typically defines `getXXX()` and `setXXX()` meth
 Go doesn't have property syntax and typically defines `GetXXX()` and `SetXXX()` methods. Cangjie's `prop` is more concise and intuitive.
 </CompareWith>
 
-<CompareWith lang="c#">
-C#'s property syntax is similar to Cangjie's, also using `get` and `set`. Cangjie requires the `mut` modifier to define a setter.
+<CompareWith lang="rust">
+Rust structs have no property syntax and use explicit getter/setter methods instead. Cangjie's `prop` lets you encapsulate computed logic behind field-access syntax, using `mut` when a setter is needed.
 </CompareWith>
 
 </CompareGroup>

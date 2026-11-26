@@ -18,8 +18,8 @@ C has no slicing operation and requires manual pointer management and range calc
 Java has no native slicing operation and requires `Arrays.copyOfRange()` or `List.subList()`. Cangjie's slicing syntax is more intuitive.
 </CompareWith>
 
-<CompareWith lang="python">
-Python slicing uses `arr[1:4]` syntax and supports negative indices. Cangjie uses Range type `arr[1..4]` and does not support negative indices.
+<CompareWith lang="rust">
+Rust slices (`&arr[1..4]`) are borrowed views into the original data subject to borrow checking. Cangjie uses Range syntax `arr[1..4]` and returns a new array without modifying the original.
 </CompareWith>
 
 <CompareWith lang="go">

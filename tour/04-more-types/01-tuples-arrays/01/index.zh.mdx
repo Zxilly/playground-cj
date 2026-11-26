@@ -22,8 +22,8 @@ Java 直到最近才引入 record（Java 16+）来模拟元组。传统 Java 需
 Rust 的元组也用索引访问，但 Rust 允许通过 `.` 语法访问（如 `tuple.0`），仓颉只支持 `[]` 语法。
 </CompareWith>
 
-<CompareWith lang="python">
-Python 的元组也是不可变的，但 Python 支持元组解包和切片。仓颉的元组不支持切片操作。
+<CompareWith lang="go">
+Go 没有独立的元组类型，通常使用多返回值或结构体表达组合值。仓颉的元组可以直接作为一等值存储和传递。
 </CompareWith>
 
 </CompareGroup>

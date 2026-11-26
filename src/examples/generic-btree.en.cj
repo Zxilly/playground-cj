@@ -1,5 +1,7 @@
 package playground
 
+// Example: Generic binary tree struct supporting Rune and Int64 node values
+// Features: Generic struct<T>, interface constraint (where T <: ToString), mut func
 struct Node<T> where T <: ToString {
     public Node(var value: T,
         let left!: ?Node<T> = None,

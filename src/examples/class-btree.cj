@@ -1,5 +1,7 @@
 package playground
 
+// 示例场景：使用类继承与多态遍历二叉树（中序与前序混合）
+// 涉及特性：open class、继承 <:、方法重写、可选链 ?.、命名默认参数
 open class NodeA {
     public NodeA(protected var value: Rune,
         protected let left!: ?NodeA = None,

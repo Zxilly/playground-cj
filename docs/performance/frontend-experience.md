@@ -1,5 +1,7 @@
 # Frontend loading and interaction improvements
 
+> **Status: Historical snapshot (superseded).** This 2026-10-22 report records an earlier loading/interaction pass and has been superseded by [editor-reuse-2026-10-28.md](./editor-reuse-2026-10-28.md) and subsequent frontend refactors.
+
 Measured on 2026-10-22 against local production builds, starting from `d32e8f0`.
 This follows the [Monaco startup work](./monaco-startup.md) and covers the
 Playground, Tour, first-time AI Classroom entry, and returning classroom entry.

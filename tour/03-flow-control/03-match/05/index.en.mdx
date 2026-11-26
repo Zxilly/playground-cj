@@ -6,7 +6,7 @@ This is especially useful when working with interface types. You can choose diff
 
 <Note>Type patterns can only match subtypes of interfaces or open classes (`open class`). Due to Cangjie's type system, the compiler cannot predict all possible subtypes, so typically a wildcard `_` is used as a fallback at the end.</Note>
 
-Try deleting `case _ => "unknown"` on line 27 and see what error message the compiler gives.
+Try deleting the wildcard arm `case _ => "Unknown shape"` in `describe` and see what error message the compiler gives.
 
 <CompareGroup>
 

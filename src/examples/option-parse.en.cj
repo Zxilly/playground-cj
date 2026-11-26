@@ -1,5 +1,7 @@
 package playground
 
+// Example: Parse a string into an integer using Option<Int64> for safe failure handling
+// Features: Option type, None, if expressions, string byte indexing
 func parseInt(text: String): Option<Int64> {
     if (text.isEmpty() || text == "-") {
         return None

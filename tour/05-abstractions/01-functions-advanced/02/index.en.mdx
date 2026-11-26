@@ -4,7 +4,7 @@ Lambda expressions are anonymous functions used to quickly define short function
 
 Parameter types in lambdas can be omitted, and the compiler will infer them from context. The return type of a lambda also doesn't need to be explicitly declared; the compiler automatically deduces it from the expression body. The value of the last expression is the return value.
 
-The example on the right shows various uses of lambdas: assigning to variables, multi-line lambda bodies, and passing as function parameters. Line 6's `double` uses a single-line lambda, line 10's `abs` uses a multi-line if expression, and line 17 passes a lambda directly in a function call.
+The example on the right shows various uses of lambdas: assigning to variables, multi-line lambda bodies, and passing as function parameters. `double` uses a single-line lambda, `abs` uses a multi-line `if` expression, and `apply({ x: Int64 => x * 3 }, 4)` passes a lambda directly in a function call.
 
 <Note>
 Parameterless lambdas must be written as `{ => expression }`, where `=>` cannot be omitted. When returning `void`, lambdas can be used to perform side-effect operations.
@@ -30,4 +30,4 @@ Rust closures are written as `|x| x * 2`, with parameter types optional. Cangjie
 
 </CompareGroup>
 
-Try changing line 6 to `{ x: Int64 => x * x }` to implement the square function.
+Try changing `let double = { x: Int64 => x * 2 }` to `{ x: Int64 => x * x }` to implement squaring instead.

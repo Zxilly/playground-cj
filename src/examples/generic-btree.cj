@@ -1,5 +1,7 @@
 package playground
 
+// 示例场景：泛型结构体实现可复用二叉树，支持字符与整数节点
+// 涉及特性：泛型 struct<T>、where 接口约束（ToString）、mut 成员函数
 struct Node<T> where T <: ToString {
     public Node(var value: T,
         let left!: ?Node<T> = None,

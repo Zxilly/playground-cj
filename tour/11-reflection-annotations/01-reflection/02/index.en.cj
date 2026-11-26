@@ -1,48 +1,51 @@
 import std.reflect.*
 
-// Define version number annotation
-@Annotation
-public class Version {
-    let code: String
+// Define a calculator class with various methods
+class Calculator {
+    // Instance method: add two numbers
+    public func add(a: Int64, b: Int64): Int64 {
+        return a + b
+    }
     
-    const init(code: String) {
-        this.code = code
+    // Instance method: multiply two numbers
+    public func multiply(a: Int64, b: Int64): Int64 {
+        return a * b
     }
-}
-
-// Apply annotation to classes
-@Version["1.0"]
-class ApiV1 {
-    public func call(): String {
-        "API Version 1.0"
-    }
-}
-
-@Version["2.0"]
-class ApiV2 {
-    public func call(): String {
-        "API Version 2.0"
-    }
-}
-
-main() {
-    // Create API objects of different versions
-    let objects = [ApiV1() as Object, ApiV2() as Object]
     
-    println("Checking API version information:")
+    // Static method: calculate square
+    public static func square(n: Int64): Int64 {
+        return n * n
+    }
+}
+
+main(): Unit {
+    let calc = Calculator()
+    let info = TypeInfo.of(calc)
+    let intInfo = TypeInfo.of<Int64>()
+    
+    println("Reflective method invocation demo:")
     println()
     
-    for (obj in objects) {
-        // Get type information of the object
-        let typeInfo = TypeInfo.of(obj)
-        
-        // Find Version annotation
-        let annOpt = typeInfo.findAnnotation<Version>()
-        
-        if (let Some(ann) <- annOpt) {
-            println("  ${typeInfo.name}: version ${ann.code}")
-        } else {
-            println("  ${typeInfo.name}: no version information")
-        }
+    // Reflectively invoke instance method: add
+    let addFunc = info.getInstanceFunction("add", intInfo, intInfo)
+    let addResult = (addFunc.apply(calc, [10, 20]) as Int64).getOrThrow()
+    println("  add(10, 20) = ${addResult}")
+    
+    // Reflectively invoke instance method: multiply
+    let mulFunc = info.getInstanceFunction("multiply", intInfo, intInfo)
+    let mulResult = (mulFunc.apply(calc, [5, 6]) as Int64).getOrThrow()
+    println("  multiply(5, 6) = ${mulResult}")
+    
+    // Reflectively invoke static method: square
+    let squareFunc = info.getStaticFunction("square", intInfo)
+    let squareResult = (squareFunc.apply(TypeInfo.of<Calculator>(), [7]) as Int64).getOrThrow()
+    println("  square(7) = ${squareResult}")
+    println()
+    
+    // List all public methods of the type
+    println("All public methods of Calculator class:")
+    let methods = info.instanceFunctions.toArray()
+    for (m in methods) {
+        println("  - ${m}")
     }
 }

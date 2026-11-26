@@ -39,12 +39,12 @@ import cffiEn from '@/examples/cffi.en.cj'
 
 export const examples: [string, { zh: { name: string, content: string }, en: { name: string, content: string } }][] = [
   ['hello-world', { zh: { name: 'Hello World', content: helloWorld }, en: { name: 'Hello World', content: helloWorldEn } }],
+  ['variables', { zh: { name: '变量', content: variables }, en: { name: 'Variables', content: variablesEn } }],
   ['array', { zh: { name: '数组', content: array }, en: { name: 'Array', content: arrayEn } }],
   ['for', { zh: { name: '循环', content: _for }, en: { name: 'For Loop', content: forEn } }],
-  ['extend', { zh: { name: '扩展', content: extend }, en: { name: 'Extend', content: extendEn } }],
+  ['extend', { zh: { name: '扩展', content: extend }, en: { name: 'Extensions', content: extendEn } }],
   ['lambda', { zh: { name: 'Lambda', content: lambda }, en: { name: 'Lambda', content: lambdaEn } }],
   ['option', { zh: { name: 'Option', content: optionParse }, en: { name: 'Option', content: optionParseEn } }],
-  ['variables', { zh: { name: '变量', content: variables }, en: { name: 'Variables', content: variablesEn } }],
   ['thread', { zh: { name: '线程', content: thread }, en: { name: 'Thread', content: threadEn } }],
   ['class-btree', { zh: { name: '二叉树（类实现）', content: classBTree }, en: { name: 'Binary Tree (Class)', content: classBTreeEn } }],
   ['enum-btree', { zh: { name: '二叉树（枚举实现）', content: enumBTree }, en: { name: 'Binary Tree (Enum)', content: enumBTreeEn } }],
@@ -54,7 +54,7 @@ export const examples: [string, { zh: { name: string, content: string }, en: { n
   ['struct-btree', { zh: { name: '二叉树（结构体实现）', content: structBTree }, en: { name: 'Binary Tree (Struct)', content: structBTreeEn } }],
   ['enum-expr', { zh: { name: '枚举表达式', content: enumExpr }, en: { name: 'Enum Expression', content: enumExprEn } }],
   ['functional', { zh: { name: '函数式', content: functional }, en: { name: 'Functional', content: functionalEn } }],
-  ['cube', { zh: { name: '魔方', content: cube }, en: { name: 'Cube', content: cubeEn } }],
+  ['cube', { zh: { name: '魔方', content: cube }, en: { name: 'Rubik\'s Cube', content: cubeEn } }],
   ['cffi', { zh: { name: 'CFFI', content: cffi }, en: { name: 'CFFI', content: cffiEn } }],
 ]
 

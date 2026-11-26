@@ -6,7 +6,7 @@ Exhaustiveness checking helps avoid missing edge cases. If a `match` is incomple
 
 For `enum`, after listing all constructors, no `_` branch is needed because the compiler knows all cases are covered. But for integers, strings, and similar types where the value domain is open, `_` must be used to close the match.
 
-Try deleting `case West` on line 14 and observe the error message the compiler reports to understand how exhaustiveness checking works.
+Try deleting the `case West` branch inside `match (dir)` and observe the error message the compiler reports to understand how exhaustiveness checking works.
 
 <CompareGroup>
 

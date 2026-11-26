@@ -3,14 +3,13 @@
 You have completed the Macros chapter!
 
 This chapter covered:
-- Basic concepts and working principles of macros
-- How to define and use macros
-- Advanced macro features (attribute matching, nesting, hygiene)
-- Practical macro examples
-- Macro debugging techniques
+- Basic concepts of macros, macro packages, and macro parameters
+- `Token`, `Tokens`, `quote` expressions, and `$()` interpolation
+- Practical macro examples (such as debug-print and unit-test macros)
+- Macro expansion and debugging techniques (`--debug-macro` and `diagReport`)
 
 Macros are a metaprogramming tool in Cangjie. They generate code at compile time and can achieve functionality that ordinary functions cannot. Macros add complexity to code, so prefer functions when they are sufficient.
 
 You can return to the module list to select the next chapter, or continue exploring other features of Cangjie.
 
-<Note>Run the tests locally with `cjc --test main.cj -o main && ./main`. A normal run only executes `main()`. `String.size` counts UTF-8 bytes: `"Hello"` has 5 bytes and `"你好"` has 6.</Note>
+<Note>Run the tests locally with `cjc --test main.cj -o main && ./main`. A normal run only executes `main()`. Note that `String.size` counts UTF-8 bytes (`"Hello"` is 5 bytes).</Note>

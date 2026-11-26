@@ -1,0 +1,31 @@
+# let (Immutable Bindings)
+
+The `let` keyword is used to create immutable bindings, associating a name with a value. Once bound, that name cannot point to a new value. This immutability is the default choice in Cangjie, helping you write safer and more predictable code.
+
+In Cangjie, the basic form of variable definition is: `modifier variable_name: variable_type = initial_value`. The `let` modifier indicates that the variable is immutable, and the modifier is mandatory (cannot be omitted). Variables declared with `let` can only be assigned once, during initialization. Note that an immutable binding only prevents the binding itself from being reassigned; if it holds a reference to a mutable object, the object's contents can still be modified.
+
+The code on the right defines three immutable bindings: `name` bound to a string, `year` bound to an integer, and `pi` bound to a floating-point number. The type of each variable is automatically inferred from its initial value. If you try to uncomment `// name = "Other"`, the compiler will report an error—`let` bound values cannot be reassigned.
+
+<Note>Local variables support delayed initialization (declaring the type first and assigning later), as long as they are initialized before being referenced. Global variables and static member variables must be initialized at declaration.</Note>
+
+<CompareGroup>
+
+<CompareWith lang="c">
+C can use `const` to express non-modifiable constraints on objects or through pointers, but `const` does not mean compile-time constant. Cangjie instead uses `let` for bindings that cannot be reassigned.
+</CompareWith>
+
+<CompareWith lang="java">
+Java uses the `final` modifier to declare immutable variables, with semantics close to Cangjie's `let`.
+</CompareWith>
+
+<CompareWith lang="go">
+Go uses `:=` to declare variables, and declared variables are always mutable with no concept of immutable variables. Cangjie's `let` provides immutability guarantees.
+</CompareWith>
+
+<CompareWith lang="rust">
+Rust's `let` is also immutable by default with the same semantics as Cangjie, but Rust allows variable shadowing within the same scope, while Cangjie does not.
+</CompareWith>
+
+</CompareGroup>
+
+Try adding a new `let` binding and printing its value, or try to modify an existing binding and observe the compiler's error message.

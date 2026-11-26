@@ -20,12 +20,8 @@ C 没有继承或密封类的概念，无法限制类型扩展。仓颉的 `seal
 Java 没有原生的 `sealed` 类（Java 17+ 添加），需要使用其他模式限制继承。仓颉原生支持 `sealed` 类。
 </CompareWith>
 
-<CompareWith lang="kotlin">
-Kotlin 的 `sealed class` 限制子类在同一文件内。仓颉限制在同一个包内。
-</CompareWith>
-
-<CompareWith lang="scala">
-Scala 3 的 `sealed` 同样限制继承。仓颉的语义类似，用于封闭类型层级。
+<CompareWith lang="rust">
+Rust 通常用 `enum` 表达封闭的有限变体集合并支持穷尽匹配；仓颉除 `enum` 外还提供 `sealed` 类，将子类继承限制在同一个包内。
 </CompareWith>
 
 </CompareGroup>

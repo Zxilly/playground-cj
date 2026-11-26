@@ -28,4 +28,4 @@ Rust 使用 `extern "C"` 声明外部函数，调用同样需要 `unsafe` 块。
 
 <Note>`foreign` 函数只能有声明不能有实现。变长参数使用 `...` 表示，如 `printf(fmt: CString, ...): Int32`。</Note>
 
-尝试在第 16 行添加对外国函数的调用，看看会发生什么编译错误。
+尝试在 `unsafe` 块外直接调用 `abs(42)` 等 `foreign` 函数，看看会发生什么编译错误。

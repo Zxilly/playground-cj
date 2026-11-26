@@ -1,5 +1,7 @@
 package playground
 
+// Example: Propagate values down a binary tree using a mutable computed property
+// Features: Primary class constructor, mut prop getter/setter, optional chaining
 class Node {
     private var value: Int64 = 0
     public Node(private var name: Rune,

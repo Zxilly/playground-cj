@@ -1,5 +1,7 @@
 package playground
 
+// Example: Define and in-order traverse a binary tree using a value-type struct
+// Features: Primary struct constructor, optional type (?Node), named default parameters
 struct Node {
     public Node(var value: Rune,
         let left!: ?Node = None,

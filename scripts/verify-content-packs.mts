@@ -38,15 +38,32 @@ async function main(): Promise<void> {
     }
   }
 
+  const isLinux = process.platform === 'linux'
+  const forceStrict = process.env.CI === 'true'
+    || process.env.CONTENT_PACKS_STRICT_TOOLCHAIN === '1'
+  const strictToolchainLock = isLinux || forceStrict
+
+  if (!strictToolchainLock) {
+    console.warn(
+      `[content-packs:verify] Non-Linux host (${process.platform}) detected: `
+      + 'skipping Linux x64 cjc SHA-256/target lock check (still strictly enforced on Linux/CI; '
+      + 'set CONTENT_PACKS_STRICT_TOOLCHAIN=1 to require it). '
+      + 'Compiling and executing all exercises and code samples with local cjc...',
+    )
+  }
+
   const verification = verifyContentPackExecutables({
     en: artifacts.en.packs,
     zh: artifacts.zh.packs,
-  })
+  }, { strictToolchainLock })
+  const lockMode = verification.toolchainLocked
+    ? 'locked Linux x64 toolchain'
+    : `local ${verification.compiler.target} compiler (non-Linux lock check skipped)`
   console.log(
     `Verified ${artifacts.en.packs.length} bilingual course modules, `
     + `${verification.verifiedTemplates.length} exercise programs, and `
     + `${verification.verifiedCodeSamples.length} runnable code samples `
-    + `with cjc ${verification.compiler.version}.`,
+    + `with cjc ${verification.compiler.version} (${lockMode}).`,
   )
 }
 

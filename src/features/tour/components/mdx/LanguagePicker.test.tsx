@@ -21,7 +21,7 @@ describe('tour comparison language controls', () => {
     useKnownLanguagesStore.setState({ knownLanguages: [] })
   })
 
-  it('lets learners opt into Python comparisons that already exist in course content', () => {
+  it('lets learners opt into supported comparison languages', () => {
     render(
       <Wrapper>
         <LanguagePicker />
@@ -32,20 +32,24 @@ describe('tour comparison language controls', () => {
     expect(trigger.textContent).toContain('对比')
 
     fireEvent.click(trigger)
-    screen.getByLabelText('Python')
-    fireEvent.click(screen.getByLabelText('Python'))
+    screen.getByLabelText('Rust')
+    fireEvent.click(screen.getByLabelText('Rust'))
 
-    expect(trigger.textContent).toContain('Python')
-    expect(useKnownLanguagesStore.getState().knownLanguages).toContain('python')
+    expect(trigger.textContent).toContain('Rust')
+    expect(useKnownLanguagesStore.getState().knownLanguages).toContain('rust')
+    expect(screen.queryByLabelText('Python')).toBeNull()
   })
 
-  it('renders known Python compare blocks and ignores unknown compare ids', () => {
-    useKnownLanguagesStore.setState({ knownLanguages: ['python'] })
+  it('renders known Rust compare blocks and ignores unknown compare ids', () => {
+    useKnownLanguagesStore.setState({ knownLanguages: ['rust'] })
 
     render(
       <Wrapper>
+        <CompareWith lang="rust">
+          <p>Rust tuple comparison note.</p>
+        </CompareWith>
         <CompareWith lang="python">
-          <p>Python tuple migration note.</p>
+          <p>Unsupported python note.</p>
         </CompareWith>
         <CompareWith lang="swift">
           <p>Unknown language note.</p>
@@ -53,10 +57,11 @@ describe('tour comparison language controls', () => {
       </Wrapper>,
     )
 
-    screen.getByText('Python tuple migration note.')
+    screen.getByText('Rust tuple comparison note.')
     expect(
-      screen.getByText((_content, element) => element?.className === 'tour-compare-label' && element.textContent === '对比 Python'),
+      screen.getByText((_content, element) => element?.className === 'tour-compare-label' && element.textContent === '对比 Rust'),
     ).toBeTruthy()
+    expect(screen.queryByText('Unsupported python note.')).toBeNull()
     expect(screen.queryByText('Unknown language note.')).toBeNull()
   })
 })

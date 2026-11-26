@@ -61,25 +61,15 @@ describe('static tour editorial source facts', () => {
 
   it('keeps language comparisons technically accurate in both locales', () => {
     const sections = loadStaticTourContentSections()
-    for (const ref of [
-      '02-basics/01-bindings/01',
-      '02-basics/02-bindings-types/01',
-    ]) {
-      const source = sourceByRef(sections, ref)
-      expect(source.markdown.zh).toContain('`const` 不等同于编译时常量')
-      expect(source.markdown.en).toContain('`const` does not mean compile-time constant')
-    }
+    const immutableBinding = sourceByRef(sections, '02-basics/02-bindings/01')
+    expect(immutableBinding.markdown.zh).toContain('`const` 不等同于编译时常量')
+    expect(immutableBinding.markdown.en).toContain('`const` does not mean compile-time constant')
 
-    for (const ref of [
-      '02-basics/02-basic-types/03',
-      '02-basics/02-bindings-types/07',
-    ]) {
-      const source = sourceByRef(sections, ref)
-      for (const markdown of Object.values(source.markdown)) {
-        expect(markdown).toContain('C99')
-        expect(markdown).toContain('`_Bool`')
-        expect(markdown).toContain('`<stdbool.h>`')
-      }
+    const booleanType = sourceByRef(sections, '02-basics/03-basic-types/03')
+    for (const markdown of Object.values(booleanType.markdown)) {
+      expect(markdown).toContain('C99')
+      expect(markdown).toContain('`_Bool`')
+      expect(markdown).toContain('`<stdbool.h>`')
     }
 
     const genericStruct = sourceByRef(sections, '06-generics/01-basics/02')

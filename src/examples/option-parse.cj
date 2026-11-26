@@ -1,5 +1,7 @@
 package playground
 
+// 示例场景：手动将字符串解析为整数，使用 Option<Int64> 表示解析可能失败
+// 涉及特性：Option 类型、None、if 表达式、字符串字节索引
 func parseInt(text: String): Option<Int64> {
     if (text.isEmpty() || text == "-") {
         return None
@@ -21,6 +23,6 @@ main() {
     println(number.getOrThrow())
     let result = parseInt("123-456")
     if (result.isNone()) {
-        println("parse failed")
+        println("解析失败")
     }
 }

@@ -1,25 +1,25 @@
-# Custom Annotations
+# Reflective Method Invocation
 
-Annotations attach structured metadata to declarations that can be read at runtime through reflection. Cangjie defines annotation classes by marking them with `@Annotation`, and annotation classes must provide a `const init` constructor.
+Reflection is not limited to reading and writing variables; it can also dynamically invoke methods at runtime. Through `TypeInfo`'s `getStaticFunction` and `getInstanceFunction`, you can find methods by name and parameter types, then use `apply` to invoke them.
 
-When defining an annotation, use `@Annotation` to decorate the `class` and declare the fields to be stored in the class. Annotation classes cannot be decorated with `abstract`, `open`, or `sealed`. When using annotations, the syntax is `@AnnotationName[arguments]`, where arguments are evaluated at compile time and bound to the type.
+Static methods are obtained through `getStaticFunction("methodName", parameterTypes...)`, and instance methods through `getInstanceFunction("methodName", parameterTypes...)`. Parameter types need to pass in corresponding `TypeInfo` objects. When invoking, static methods pass in type information and an array of parameters, while instance methods also need to pass in the receiver object.
 
-Through `TypeInfo.findAnnotation<T>()`, you can retrieve annotation information on a type at runtime, which returns an `Option<T>` type. This allows frameworks to execute different logic at runtime based on annotations, such as version control, permission checking, etc.
+Dynamic method invocation is an important tool for framework development. For example, testing frameworks can scan for test methods with specific annotations and execute them, and serialization frameworks can automatically call getter/setter methods.
 
-<Note>Annotations are not inherited. Subclasses do not obtain annotation metadata from parent classes.</Note>
+<Note>When invoking methods through reflection, parameter types must match correctly. Type mismatches will cause runtime errors.</Note>
 
-The code on the right defines a `@Version` annotation and uses it to mark two API classes. At runtime, version numbers are read and printed through reflection.
+The code on the right defines a `Calculator` class containing instance methods and static methods, then dynamically invokes these methods through reflection. Note how to obtain parameter type information: `TypeInfo.of<Int64>()`.
 
 <CompareGroup>
 
-<CompareWith lang="java">
-Java annotations are defined through `@interface` and use `@Retention` to control lifecycle. Cangjie annotations must use `const init`, with arguments evaluated at compile time.
+<CompareWith lang="go">
+Go obtains methods through `reflect.Value.MethodByName()` and uses `Call()` for invocation. Cangjie requires explicitly specifying parameter types, which is stricter but type-safe.
 </CompareWith>
 
-<CompareWith lang="go">
-Go uses struct tags to implement similar functionality, such as `` `json:"name"` ``. Cangjie's annotations are type-safe and can carry complex structures.
+<CompareWith lang="java">
+Java reflection uses `getMethod()` and `invoke()`. Cangjie's `apply()` is similar but returns `Option` requiring explicit error handling.
 </CompareWith>
 
 </CompareGroup>
 
-Try adding a new annotation type, such as `@Author` to record author information.
+Try adding a new method and invoking it through reflection.

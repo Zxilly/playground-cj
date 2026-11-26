@@ -1,5 +1,7 @@
 package playground
 
+// 示例场景：使用高阶函数与 Lambda 表达式计算离散动力系统迭代序列
+// 涉及特性：函数类型参数、单行与多行 Lambda 表达式
 func iter(n: Int64, x0: Float64, f: (Float64) -> Float64) {
     var x = x0
     for (_ in 0..n) {
