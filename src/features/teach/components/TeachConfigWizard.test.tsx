@@ -146,14 +146,19 @@ describe('teachConfigWizard', () => {
     expect(screen.getByTestId('teach-config-enter').className).toContain('min-h-11')
     expect(screen.getByRole('button', { name: 'Anthropic' }).className).toContain('min-h-11')
 
-    // Security guarantee: no hardcoded third-party baseURL is prefilled by default.
+    // Security guarantee: no hardcoded third-party baseURL or model is prefilled by default.
     const baseUrlInput = screen.getByLabelText('服务地址') as HTMLInputElement
+    const modelInput = screen.getByLabelText('模型') as HTMLInputElement
     expect(baseUrlInput.value).not.toContain('learningman.top')
+    expect(modelInput.value).not.toContain('mimo')
+    if (!process.env.NEXT_PUBLIC_LLM_MODEL)
+      expect(modelInput.value).toBe('')
 
     const enter = screen.getByTestId('teach-config-enter')
     expect(enter.hasAttribute('disabled')).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'OpenAI' }))
     expect(baseUrlInput.value).toBe('https://api.openai.com/v1')
+    expect(modelInput.value).toBe('gpt-4o-mini')
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'my-key' } })
     expect(enter.hasAttribute('disabled')).toBe(false)
 

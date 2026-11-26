@@ -10,6 +10,7 @@ import {
   LLM_PROVIDER_PRESETS,
   normaliseLLMConfig,
   OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
+  OPENAI_COMPATIBLE_DEFAULT_MODEL,
   resolveProviderDefaults,
   resolveSharedGatewayConfig,
   SHARED_GATEWAY_BASE_URL,
@@ -55,6 +56,7 @@ describe('model provider config', () => {
     expect(resolveProviderDefaults('openai-compatible')).toMatchObject({
       provider: 'openai-compatible',
       baseURL: OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
+      model: OPENAI_COMPATIBLE_DEFAULT_MODEL,
     })
     expect(resolveProviderDefaults('anthropic')).toMatchObject({
       provider: 'anthropic',
@@ -182,10 +184,13 @@ describe('model provider config', () => {
     vi.unstubAllGlobals()
   })
 
-  it('never falls back to a hardcoded third-party proxy domain', () => {
+  it('never falls back to a hardcoded third-party proxy domain or model', () => {
     expect(OPENAI_COMPATIBLE_DEFAULT_BASE_URL).not.toContain('learningman.top')
+    expect(OPENAI_COMPATIBLE_DEFAULT_MODEL).not.toContain('mimo')
     if (!process.env.NEXT_PUBLIC_LLM_BASE_URL)
       expect(OPENAI_COMPATIBLE_DEFAULT_BASE_URL).toBe('')
+    if (!process.env.NEXT_PUBLIC_LLM_MODEL)
+      expect(OPENAI_COMPATIBLE_DEFAULT_MODEL).toBe('')
   })
 
   it('applies official presets and clears credentials when switching providers', () => {

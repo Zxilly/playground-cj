@@ -123,4 +123,16 @@ describe('outputPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: '取消运行' }))
     expect(onCancelRun).toHaveBeenCalledOnce()
   })
+
+  it('renders an explicit collapse button when onCollapse is provided and invokes it on click', () => {
+    const onCollapse = vi.fn()
+    const { rerender } = render(<Wrapper><OutputPanel {...initial} /></Wrapper>)
+    expect(screen.queryByRole('button', { name: '收起输出' })).toBeNull()
+
+    rerender(<Wrapper><OutputPanel {...initial} onCollapse={onCollapse} /></Wrapper>)
+    const collapseButton = screen.getByRole('button', { name: '收起输出' })
+    expect(collapseButton.closest('[role="tablist"]')).toBeNull()
+    fireEvent.click(collapseButton)
+    expect(onCollapse).toHaveBeenCalledOnce()
+  })
 })

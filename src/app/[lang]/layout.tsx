@@ -74,7 +74,7 @@ export default async function LangLayout({ children, params }: LayoutProps) {
             initialMessages={messages}
           >
             {children}
-            <Toaster richColors closeButton position="top-center" />
+            <Toaster richColors closeButton position="bottom-right" />
           </LinguiClientProvider>
         </ThemeProvider>
         {process.env.VERCEL === '1' && <Analytics />}

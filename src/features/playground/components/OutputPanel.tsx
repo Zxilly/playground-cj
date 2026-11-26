@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle2, ChevronDown, CircleAlert, LoaderCircle, Square, Terminal, X } from 'lucide-react'
+import { CheckCircle2, ChevronDown, CircleAlert, LoaderCircle, PanelRightClose, Square, Terminal, X } from 'lucide-react'
 import { Trans } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
@@ -25,6 +25,7 @@ interface OutputPanelProps {
   onCancelRun?: () => void
   stdin?: string
   onStdinChange?: (value: string) => void
+  onCollapse?: () => void
 }
 
 export function OutputPanel({
@@ -36,6 +37,7 @@ export function OutputPanel({
   onCancelRun,
   stdin = '',
   onStdinChange,
+  onCollapse,
 }: OutputPanelProps) {
   const { i18n } = useLingui()
   const [selection, setSelection] = useState<{ result: RunResult | null, channel: string }>({ result: null, channel: 'program' })
@@ -52,17 +54,32 @@ export function OutputPanel({
 
   return (
     <Tabs id="panel-content" value={channel} onValueChange={next => setSelection({ result, channel: next })} className="min-h-0 flex-1 gap-0">
-      <TabsList className="h-11 w-full shrink-0 justify-start rounded-none border-b border-border bg-background p-0">
-        <TabsTrigger value="program" className="h-full flex-none rounded-none border-0 border-b-2 border-transparent px-3 text-muted-foreground data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:shadow-none">
-          <Trans>程序输出</Trans>
-        </TabsTrigger>
-        <TabsTrigger value="compiler" className="h-full flex-none rounded-none border-0 border-b-2 border-transparent px-3 text-muted-foreground data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:shadow-none">
-          <Trans>编译器输出</Trans>
-          {(result?.phase === 'compile' || result?.phase === null) && (
-            <CircleAlert aria-hidden="true" className="size-4 text-error-foreground" />
-          )}
-        </TabsTrigger>
-      </TabsList>
+      <div className="flex h-11 w-full shrink-0 items-center border-b border-border bg-background">
+        <TabsList className="h-full min-w-0 flex-1 justify-start rounded-none bg-transparent p-0">
+          <TabsTrigger value="program" className="h-full flex-none rounded-none border-0 border-b-2 border-transparent px-3 text-muted-foreground data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:shadow-none">
+            <Trans>程序输出</Trans>
+          </TabsTrigger>
+          <TabsTrigger value="compiler" className="h-full flex-none rounded-none border-0 border-b-2 border-transparent px-3 text-muted-foreground data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:shadow-none">
+            <Trans>编译器输出</Trans>
+            {(result?.phase === 'compile' || result?.phase === null) && (
+              <CircleAlert aria-hidden="true" className="size-4 text-error-foreground" />
+            )}
+          </TabsTrigger>
+        </TabsList>
+        {onCollapse && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={i18n._(msg`收起输出`)}
+            title={i18n._(msg`收起输出`)}
+            onClick={onCollapse}
+            className="mr-1.5 hidden size-8 shrink-0 text-muted-foreground hover:text-foreground lg:inline-flex"
+          >
+            <PanelRightClose aria-hidden="true" className="size-4" />
+          </Button>
+        )}
+      </div>
       {empty
         ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-muted/20 px-4 text-center">

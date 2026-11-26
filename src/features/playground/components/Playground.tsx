@@ -56,6 +56,11 @@ function Playground({ sharedCode, servingDomain = 'playground', brand, editorFal
     setOutputCollapsed(false)
   }, [outputPanelRef])
 
+  const handleCollapseOutput = useCallback(() => {
+    outputPanelRef.current?.collapse()
+    setOutputCollapsed(true)
+  }, [outputPanelRef])
+
   const handleRun = useCallback(() => {
     if (outputPanelRef.current?.isCollapsed()) {
       outputPanelRef.current.expand()
@@ -153,6 +158,7 @@ function Playground({ sharedCode, servingDomain = 'playground', brand, editorFal
                     onCancelRun={cancelRun ? handleCancelRun : undefined}
                     stdin={stdin}
                     onStdinChange={setStdin}
+                    onCollapse={handleCollapseOutput}
                   />
                 </div>
               </TabsContent>

@@ -285,7 +285,7 @@ msgstr "How does the main() entry point work in Cangjie?"
 msgid "仓颉里 let 和 var 有什么区别？分别适合什么场景？"
 msgstr "What is the difference between let and var in Cangjie?"
 
-#: src/features/playground/components/Playground.tsx:109
+#: src/features/playground/components/Playground.tsx:114
 msgid "代码"
 msgstr "Code"
 
@@ -635,7 +635,7 @@ msgstr "Cancel"
 msgid "取消新学习路径"
 msgstr "Cancel new learning path"
 
-#: src/features/playground/components/OutputPanel.tsx:93
+#: src/features/playground/components/OutputPanel.tsx:110
 #: src/features/playground/components/PlaygroundHeader.tsx:209
 #: src/features/teach/components/views/PlaygroundView.tsx:660
 #: src/features/tour/components/TourEditorToolbar.tsx:39
@@ -707,7 +707,7 @@ msgstr "Write Cangjie code in the built-in editor and run it directly to see the
 msgid "在所选课程范围内，按你的目标调整讲解、示例和练习。"
 msgstr "Explanations, examples, and practice follow your goal within the course range you choose."
 
-#: src/features/playground/components/OutputPanel.tsx:164
+#: src/features/playground/components/OutputPanel.tsx:181
 msgid "在此输入程序运行时从 stdin 读取的内容…"
 msgstr "Enter standard input (stdin) to feed the program when it runs…"
 
@@ -923,7 +923,7 @@ msgstr "Generation stopped. Your message is back in the composer so you can edit
 msgid "已取消运行"
 msgstr "Run cancelled."
 
-#: src/features/playground/components/OutputPanel.tsx:141
+#: src/features/playground/components/OutputPanel.tsx:158
 msgid "已填写"
 msgstr "Filled"
 
@@ -1094,7 +1094,7 @@ msgstr "See frequent mistakes and how to avoid them"
 msgid "总结本节要点"
 msgstr "Summarize key takeaways"
 
-#: src/features/playground/components/OutputPanel.tsx:206
+#: src/features/playground/components/OutputPanel.tsx:223
 msgid "总耗时 {duration} ms"
 msgstr "Total time {duration} ms"
 
@@ -1214,6 +1214,8 @@ msgstr "Close teacher chat"
 msgid "收起说明"
 msgstr "Hide details"
 
+#: src/features/playground/components/OutputPanel.tsx:74
+#: src/features/playground/components/OutputPanel.tsx:75
 #: src/features/tour/components/TourEditorToolbar.tsx:43
 msgid "收起输出"
 msgstr "Hide output"
@@ -1315,7 +1317,7 @@ msgstr "Service address"
 msgid "服务已连通，但当前触发限流或额度不足（429）。"
 msgstr "Connected to the service, but rate-limited or out of quota (429)."
 
-#: src/features/playground/components/OutputPanel.tsx:195
+#: src/features/playground/components/OutputPanel.tsx:212
 msgid "服务异常"
 msgstr "Service error"
 
@@ -1391,11 +1393,11 @@ msgstr "Show hint"
 msgid "查看老师讲解后，这个工作区内后续的作答会作为有指导练习，而不会计为独立测验。"
 msgstr "Once you view a teacher explanation, later answers in this workspace are treated as guided practice rather than an independent check."
 
-#: src/features/playground/components/OutputPanel.tsx:165
+#: src/features/playground/components/OutputPanel.tsx:182
 msgid "标准输入"
 msgstr "Standard input"
 
-#: src/features/playground/components/OutputPanel.tsx:138
+#: src/features/playground/components/OutputPanel.tsx:155
 msgid "标准输入 (stdin)"
 msgstr "Standard input (stdin)"
 
@@ -1515,7 +1517,7 @@ msgstr "Testing connection…"
 msgid "正在运行 Playground 代码…"
 msgstr "Running Playground code…"
 
-#: src/features/playground/components/OutputPanel.tsx:82
+#: src/features/playground/components/OutputPanel.tsx:99
 #: src/features/tour/components/TourNativeOutput.tsx:53
 #: src/modules/cangjie-editor/hooks/useCodeRunner.ts:40
 msgid "正在运行…"
@@ -1566,7 +1568,7 @@ msgstr "Clean up old backups"
 msgid "清空当前浏览器的学习路径、练习记录与练习场草稿（建议先导出备份）。"
 msgstr "Clear learning paths, exercise records, and Playground drafts in this browser."
 
-#: src/features/playground/components/OutputPanel.tsx:148
+#: src/features/playground/components/OutputPanel.tsx:165
 msgid "清空标准输入"
 msgstr "Clear standard input"
 
@@ -1670,7 +1672,7 @@ msgctxt "exercise"
 msgid "程序标准错误已截断。"
 msgstr "Program stderr was truncated."
 
-#: src/features/playground/components/OutputPanel.tsx:57
+#: src/features/playground/components/OutputPanel.tsx:60
 #: src/features/teach/components/views/PlaygroundView.tsx:683
 #: src/features/tour/components/TourNativeOutput.tsx:50
 msgid "程序输出"
@@ -1758,12 +1760,12 @@ msgstr "Continue my current lesson"
 msgid "编译中"
 msgstr "Compiling"
 
-#: src/features/playground/components/OutputPanel.tsx:117
+#: src/features/playground/components/OutputPanel.tsx:134
 #: src/features/teach/components/views/PlaygroundView.tsx:715
 msgid "编译器未返回输出。"
 msgstr "The compiler returned no output."
 
-#: src/features/playground/components/OutputPanel.tsx:60
+#: src/features/playground/components/OutputPanel.tsx:63
 #: src/features/teach/components/views/PlaygroundView.tsx:704
 #: src/features/tour/components/TourNativeOutput.tsx:51
 msgid "编译器输出"
@@ -1775,7 +1777,7 @@ msgstr "Compiler output"
 msgid "编译器输出已截断。"
 msgstr "Compiler output was truncated."
 
-#: src/features/playground/components/OutputPanel.tsx:193
+#: src/features/playground/components/OutputPanel.tsx:210
 #: src/service/run.ts:88
 msgid "编译失败"
 msgstr "Compilation failed"
@@ -2012,7 +2014,7 @@ msgstr "Path: {learningTrackGoal}"
 msgid "输入消息"
 msgstr "Input message"
 
-#: src/features/playground/components/Playground.tsx:113
+#: src/features/playground/components/Playground.tsx:118
 msgid "输出"
 msgstr "Output"
 
@@ -2022,7 +2024,7 @@ msgstr "Output"
 msgid "运行"
 msgstr "Run"
 
-#: src/features/playground/components/OutputPanel.tsx:179
+#: src/features/playground/components/OutputPanel.tsx:196
 #: src/features/playground/components/PlaygroundHeader.tsx:222
 #: src/features/teach/components/views/PlaygroundView.tsx:650
 #: src/features/tour/components/TourEditorToolbar.tsx:38
@@ -2034,7 +2036,7 @@ msgstr "Running"
 msgid "运行中…"
 msgstr "Running…"
 
-#: src/features/playground/components/OutputPanel.tsx:70
+#: src/features/playground/components/OutputPanel.tsx:87
 msgid "运行代码后，结果会显示在这里"
 msgstr "Run your code to see the result here"
 
@@ -2050,13 +2052,13 @@ msgstr "Program output will appear here after you run the code."
 msgid "运行后，编译器输出会显示在这里。"
 msgstr "Compiler output will appear here after you run the code."
 
-#: src/features/playground/components/OutputPanel.tsx:196
+#: src/features/playground/components/OutputPanel.tsx:213
 #: src/modules/cangjie-editor/hooks/useCodeRunner.ts:58
 #: src/service/run.ts:98
 msgid "运行失败"
 msgstr "Run failed"
 
-#: src/features/playground/components/OutputPanel.tsx:186
+#: src/features/playground/components/OutputPanel.tsx:203
 msgid "运行完成"
 msgstr "Run complete"
 
@@ -2165,7 +2167,7 @@ msgstr "Connected ({latencyMs} ms)"
 msgid "连接超时，请检查网络或服务地址后重试。"
 msgstr "Connection timed out. Check your network or service address and try again."
 
-#: src/features/playground/components/OutputPanel.tsx:201
+#: src/features/playground/components/OutputPanel.tsx:218
 #: src/service/run.ts:22
 msgid "退出码 {code}"
 msgstr "Exit code {code}"

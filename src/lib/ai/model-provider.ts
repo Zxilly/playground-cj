@@ -25,11 +25,13 @@ export interface LLMConfig {
 }
 
 export const SHARED_GATEWAY_BASE_URL = '/api/ai-gateway/v1'
-// Never default user-supplied keys to a third-party proxy domain. Only prefill
-// when explicitly configured via NEXT_PUBLIC_LLM_BASE_URL; otherwise leave blank
-// so the user explicitly chooses an official preset or enters their own endpoint.
+// Never default user-supplied keys to a third-party proxy domain or model. Only
+// prefill when explicitly configured via NEXT_PUBLIC_LLM_BASE_URL /
+// NEXT_PUBLIC_LLM_MODEL; otherwise leave blank so the user explicitly chooses
+// an official preset or enters their own endpoint and model.
 export const OPENAI_COMPATIBLE_DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_LLM_BASE_URL?.trim() || ''
-export const OPENAI_COMPATIBLE_DEFAULT_MODEL = process.env.NEXT_PUBLIC_LLM_DEFAULT_MODEL || 'gpt-4o-mini'
+export const OPENAI_COMPATIBLE_DEFAULT_MODEL = process.env.NEXT_PUBLIC_LLM_MODEL?.trim() || ''
+export const SHARED_GATEWAY_DEFAULT_MODEL = process.env.NEXT_PUBLIC_LLM_DEFAULT_MODEL?.trim() || 'gpt-4o-mini'
 export const ANTHROPIC_DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_ANTHROPIC_BASE_URL?.trim() || 'https://api.anthropic.com/v1'
 export const ANTHROPIC_DEFAULT_MODEL = process.env.NEXT_PUBLIC_ANTHROPIC_DEFAULT_MODEL || 'claude-sonnet-4-5'
 
@@ -228,7 +230,7 @@ export function resolveProviderDefaults(provider: LLMProvider): LLMConfig {
       }
 }
 
-export function resolveSharedGatewayConfig(model = OPENAI_COMPATIBLE_DEFAULT_MODEL): LLMConfig {
+export function resolveSharedGatewayConfig(model = SHARED_GATEWAY_DEFAULT_MODEL): LLMConfig {
   return {
     transport: 'shared-gateway',
     provider: 'openai-compatible',

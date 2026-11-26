@@ -592,11 +592,15 @@ describe('llmConfigDialog', () => {
     fireEvent.mouseDown(screen.getByRole('tab', { name: '自定义 API Key' }))
 
     const baseUrlInput = screen.getByLabelText('服务地址') as HTMLInputElement
+    const modelInput = screen.getByLabelText('模型') as HTMLInputElement
     expect(baseUrlInput.value).not.toContain('learningman.top')
+    expect(modelInput.value).not.toContain('mimo')
+    if (!process.env.NEXT_PUBLIC_LLM_MODEL)
+      expect(modelInput.value).toBe('')
 
     fireEvent.click(screen.getByRole('button', { name: 'DeepSeek' }))
     expect(baseUrlInput.value).toBe('https://api.deepseek.com/v1')
-    expect((screen.getByLabelText('模型') as HTMLInputElement).value).toBe('deepseek-chat')
+    expect(modelInput.value).toBe('deepseek-chat')
 
     const testButton = screen.getByTestId('llm-test-connection')
     expect(testButton).toHaveProperty('disabled', true)
