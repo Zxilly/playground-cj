@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { browserRunnerClient } from './runner-client'
+import { browserRunnerClient, RunnerRequestError } from './runner-client'
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
   return new Response(JSON.stringify(body), init)
@@ -56,6 +56,66 @@ describe('browserRunnerClient', () => {
     await expect(browserRunnerClient.run('main()')).rejects.toThrow(
       'Remote action failed: gateway timeout',
     )
+  })
+
+  it('classifies structured HTTP errors including 429 Retry-After, 413, 504, and 503 busy', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(jsonResponse(
+        { error: 'Too many requests', code: 'runner_rate_limit_exceeded' },
+        { status: 429, headers: { 'Retry-After': '45' } },
+      ))
+      .mockResolvedValueOnce(jsonResponse(
+        { error: 'Too large', code: 'request_body_too_large' },
+        { status: 413 },
+      ))
+      .mockResolvedValueOnce(jsonResponse(
+        { error: 'Timed out', code: 'runner_timeout' },
+        { status: 504 },
+      ))
+      .mockResolvedValueOnce(jsonResponse(
+        { error: 'Busy', code: 'runner_proxy_busy' },
+        { status: 503, headers: { 'Retry-After': '3' } },
+      ))
+
+    await expect(browserRunnerClient.run('main()')).rejects.toMatchObject({
+      name: 'RunnerRequestError',
+      failureKind: 'rate_limited',
+      httpStatus: 429,
+      retryAfterSeconds: 45,
+      errorCode: 'runner_rate_limit_exceeded',
+    })
+
+    await expect(browserRunnerClient.run('main()')).rejects.toMatchObject({
+      name: 'RunnerRequestError',
+      failureKind: 'payload_too_large',
+      httpStatus: 413,
+    })
+
+    await expect(browserRunnerClient.run('main()')).rejects.toMatchObject({
+      name: 'RunnerRequestError',
+      failureKind: 'timeout',
+      httpStatus: 504,
+    })
+
+    await expect(browserRunnerClient.run('main()')).rejects.toMatchObject({
+      name: 'RunnerRequestError',
+      failureKind: 'service_busy',
+      httpStatus: 503,
+      retryAfterSeconds: 3,
+    })
+  })
+
+  it('classifies fetch TypeError as network_error or offline', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
+
+    try {
+      await browserRunnerClient.run('main()')
+      expect.unreachable()
+    }
+    catch (error) {
+      expect(error).toBeInstanceOf(RunnerRequestError)
+      expect((error as RunnerRequestError).failureKind).toBe('network_error')
+    }
   })
 
   it('rejects successful responses outside the canonical contract', async () => {

@@ -5,15 +5,34 @@ import { TourNavigation } from '@/features/tour/components/TourNavigation'
 describe('tourNavigation', () => {
   afterEach(cleanup)
 
-  it('exposes crawlable lesson links without intercepting modifier clicks', () => {
+  it('exposes crawlable lesson links without invalid button attributes or intercepting modifier clicks', () => {
     const onNext = vi.fn()
     render(<TourNavigation lang="en" currentIndex={0} total={3} onPrev={() => {}} onNext={onNext} nextHref="/en/tour/welcome/2" />)
     const next = screen.getByRole('link', { name: /next/i })
     expect(next.getAttribute('href')).toBe('/en/tour/welcome/2')
+    expect(next.getAttribute('type')).toBeNull()
+    expect(next.getAttribute('disabled')).toBeNull()
     fireEvent.click(next, { ctrlKey: true })
     expect(onNext).not.toHaveBeenCalled()
     fireEvent.click(next)
     expect(onNext).toHaveBeenCalledOnce()
+  })
+
+  it('renders completion CTA links to AI Classroom and Playground on the last lesson', () => {
+    render(
+      <TourNavigation
+        lang="zh"
+        currentIndex={2}
+        total={3}
+        onPrev={() => {}}
+        onNext={() => {}}
+        aiHref="/zh/tour/ai?topic=concurrency"
+        playgroundHref="/zh"
+      />,
+    )
+
+    expect(screen.getByRole('link', { name: 'AI 课堂' }).getAttribute('href')).toBe('/zh/tour/ai?topic=concurrency')
+    expect(screen.getByRole('link', { name: 'Playground' }).getAttribute('href')).toBe('/zh')
   })
 
   it('disables previous on the first section and reports progress', () => {

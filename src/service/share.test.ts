@@ -57,6 +57,16 @@ describe('share loading', () => {
 })
 
 describe('share URL generation', () => {
+  it('clears existing query parameters such as ?hash=OLD when generating a #data= URL', () => {
+    window.history.replaceState(null, '', '/zh?hash=OLD123&debug=1#old=1')
+
+    const url = new URL(generateDataShareUrl('main() { println("new") }'))
+
+    expect(url.pathname).toBe('/zh')
+    expect(url.search).toBe('')
+    expect(url.hash).toMatch(/^#data=/)
+  })
+
   it('creates hash share URLs without preserving existing search or hash state', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ hash: 'new-hash' })))
     window.history.replaceState(null, '', '/playground?debug=1#old=1')

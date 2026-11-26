@@ -93,4 +93,37 @@ describe('highlight', () => {
     expect(disconnect).toHaveBeenCalled()
     expect(vi.getTimerCount()).toBe(0)
   })
+
+  it('supports keyboard focus, Enter/Space activation, and click for mobile/keyboard users', () => {
+    render(
+      <div>
+        <button type="button" data-tour-highlight="run">Run</button>
+        <Highlight target="run">run button</Highlight>
+      </div>,
+    )
+
+    const target = screen.getByRole('button', { name: 'Run' })
+    const trigger = screen.getByRole('button', { name: 'run button' })
+    expect(trigger.getAttribute('tabindex')).toBe('0')
+
+    act(() => {
+      vi.advanceTimersByTime(3000)
+    })
+    expect(target.classList.contains('tour-highlight-pulse')).toBe(false)
+
+    fireEvent.focus(trigger)
+    expect(target.classList.contains('tour-highlight-pulse')).toBe(true)
+    fireEvent.blur(trigger)
+    expect(target.classList.contains('tour-highlight-pulse')).toBe(false)
+
+    fireEvent.keyDown(trigger, { key: 'Enter' })
+    expect(target.classList.contains('tour-highlight-pulse')).toBe(true)
+    act(() => {
+      vi.advanceTimersByTime(3000)
+    })
+    expect(target.classList.contains('tour-highlight-pulse')).toBe(false)
+
+    fireEvent.click(trigger)
+    expect(target.classList.contains('tour-highlight-pulse')).toBe(true)
+  })
 })

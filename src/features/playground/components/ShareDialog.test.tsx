@@ -51,9 +51,14 @@ function MockDialogTitle({ children }: { children: ReactNode }) {
   return <h2>{children}</h2>
 }
 
+function MockDialogDescription({ children }: { children: ReactNode }) {
+  return <p>{children}</p>
+}
+
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: MockDialog,
   DialogContent: MockDialogContent,
+  DialogDescription: MockDialogDescription,
   DialogHeader: MockDialogHeader,
   DialogTitle: MockDialogTitle,
 }))

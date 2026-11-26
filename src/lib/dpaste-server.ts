@@ -34,6 +34,12 @@ function requestDpaste(path: string, payload?: string): Promise<{ status: number
   })
 }
 
+export type ShareCodeLoadError = 'invalid_hash' | 'not_found' | 'timeout' | 'unavailable'
+
+export type ShareCodeResult
+  = | { ok: true, code: string }
+    | { ok: false, reason: ShareCodeLoadError, status?: number }
+
 export async function createDpaste(content: string): Promise<string> {
   const payload = new URLSearchParams({ content, title: 'Playground Cangjie', expiry_days: '200' })
   const response = await requestDpaste('/api/v2/', payload.toString())
@@ -42,9 +48,26 @@ export async function createDpaste(content: string): Promise<string> {
   return response.body.trim()
 }
 
-export async function getShareCode(hash: string): Promise<string | undefined> {
+export async function getShareCodeResult(hash: string): Promise<ShareCodeResult> {
   if (!/^[a-z0-9]+$/i.test(hash))
-    return undefined
-  const response = await requestDpaste(`/${hash}.txt`)
-  return response.status === 200 ? response.body : undefined
+    return { ok: false, reason: 'invalid_hash' }
+
+  try {
+    const response = await requestDpaste(`/${hash}.txt`)
+    if (response.status === 200)
+      return { ok: true, code: response.body }
+    if (response.status === 404 || response.status === 410)
+      return { ok: false, reason: 'not_found', status: response.status }
+    return { ok: false, reason: 'unavailable', status: response.status }
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.toLowerCase().includes('timed out'))
+      return { ok: false, reason: 'timeout' }
+    return { ok: false, reason: 'unavailable' }
+  }
+}
+
+export async function getShareCode(hash: string): Promise<ShareCodeResult | string | undefined> {
+  return getShareCodeResult(hash)
 }

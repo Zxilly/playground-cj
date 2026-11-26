@@ -4,6 +4,7 @@ import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TourSidebar } from '@/features/tour/components/TourSidebar'
+import { buildTourSectionKey, useTourProgressStore } from '@/stores/tourProgress'
 
 const sidebar = vi.hoisted(() => ({ isMobile: false, setOpenMobile: vi.fn() }))
 
@@ -103,6 +104,12 @@ describe('tourSidebar', () => {
     cleanup()
     sidebar.isMobile = false
     sidebar.setOpenMobile.mockClear()
+    useTourProgressStore.setState({
+      hydrated: false,
+      drafts: {},
+      visitedSections: {},
+      lastVisited: null,
+    })
   })
 
   it('renders localized tour entries and marks the current section active', () => {
@@ -173,5 +180,27 @@ describe('tourSidebar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Types' }))
     expect(sidebar.setOpenMobile).toHaveBeenCalledWith(false)
+  })
+
+  it('displays hydrated reading progress across sections', () => {
+    useTourProgressStore.setState({
+      hydrated: true,
+      drafts: {},
+      visitedSections: {
+        [buildTourSectionKey('basics', 'intro', 'hello')]: true,
+        [buildTourSectionKey('basics', 'intro', 'types')]: true,
+      },
+      lastVisited: null,
+    })
+
+    render(
+      <Wrapper>
+        <TourSidebar lang="en" tourData={tourData} currentChapter="basics" currentSubChapter="intro" currentSection="hello" onNavigate={() => {}} />
+      </Wrapper>,
+    )
+
+    const bar = screen.getByRole('progressbar', { name: 'Reading progress' })
+    expect(bar.getAttribute('aria-valuenow')).toBe('2')
+    expect(bar.getAttribute('aria-valuemax')).toBe('3')
   })
 })

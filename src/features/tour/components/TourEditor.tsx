@@ -2,18 +2,19 @@
 
 import { MonacoEditorReactComp } from '@/modules/cangjie-editor/components/EditorWrapper'
 import { useCodeRunner } from '@/modules/cangjie-editor/hooks/useCodeRunner'
-import { Toaster } from '@/components/ui/sonner'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { registerEditorActions } from '@/lib/monaco/actions'
 import { clearCompilerMarkers as clearModelCompilerMarkers, setCompilerMarkers } from '@/lib/monaco/compiler-markers'
+import type { RunResult } from '@/lib/runner'
 import { t } from '@lingui/core/macro'
 import { toast } from 'sonner'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePanelRef } from 'react-resizable-panels'
 import { useMedia } from 'react-use'
 import { useEditorBridge } from '@/modules/cangjie-editor/context/useEditorBridge'
 import { useTourEditorStore } from '@/stores/tourEditor'
+import { useTourProgressStore } from '@/stores/tourProgress'
 import { TourEditorLoading } from './TourEditorLoading'
 import { TourEditorToolbar } from './TourEditorToolbar'
 import { TourNativeOutput } from './TourNativeOutput'
@@ -26,6 +27,7 @@ interface TourEditorProps {
 }
 
 const TOUR_RUN_MARKER_OWNER = 'tour-run'
+const DRAFT_SAVE_DEBOUNCE_MS = 300
 
 export function TourEditor({
   code,
@@ -35,9 +37,18 @@ export function TourEditor({
   const scopeKey = sectionKey ?? code
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
   const actionsRef = useRef<{ dispose: () => void } | null>(null)
+  const contentChangeRef = useRef<{ dispose: () => void } | null>(null)
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const runAbortRef = useRef<AbortController | null>(null)
+  const suppressDraftSaveRef = useRef(false)
   const [editorReady, setEditorReady] = useState(false)
   const [editorError, setEditorError] = useState<Error | null>(null)
   const [running, setRunning] = useState(false)
+  const [runResultState, setRunResultState] = useState<{ scopeKey: string, result: RunResult | null }>({
+    scopeKey,
+    result: null,
+  })
+  const runResult = runResultState.scopeKey === scopeKey ? runResultState.result : null
   const [outputRevealRequest, setOutputRevealRequest] = useState(0)
   const [outputState, setOutputState] = useState({ scopeKey, expanded: false })
   if (outputState.scopeKey !== scopeKey)
@@ -68,6 +79,11 @@ export function TourEditor({
   const setActiveTab = useTourEditorStore(state => state.setActiveTab)
   const resetOutputs = useTourEditorStore(state => state.resetOutputs)
   const setInitialCode = useTourEditorStore(state => state.setInitialCode)
+
+  const initialEditorCode = useMemo(() => {
+    const restored = useTourProgressStore.getState().hydrate()
+    return restored.drafts[scopeKey] ?? code
+  }, [code, scopeKey])
 
   useEffect(() => {
     if (!outputVisible) {
@@ -121,6 +137,10 @@ export function TourEditor({
     }
   }, [setOutputExpanded])
 
+  const setRunResult = useCallback((result: RunResult | null) => {
+    setRunResultState({ scopeKey: scopeKeyRef.current, result })
+  }, [])
+
   const store = useTourEditorStore.getState()
   const { run, format } = useCodeRunner({
     scopeKey,
@@ -128,6 +148,7 @@ export function TourEditor({
       setToolOutput: store.setCompilerOutput,
       setProgramOutput: store.setProgramOutput,
       setTruncation: store.setTruncation,
+      setResult: setRunResult,
     },
     onRunningChange: handleRunningChange,
   })
@@ -151,14 +172,26 @@ export function TourEditor({
     setInitialCode(code)
     resetOutputs()
     clearCompilerMarkers()
+    runAbortRef.current?.abort()
+    runAbortRef.current = null
+
+    const restored = useTourProgressStore.getState().hydrate()
+    const targetCode = restored.drafts[scopeKey] ?? code
 
     const editor = editorAppRef.current?.getEditor()
     const model = editor?.getModel()
     if (!model)
       return
 
-    if (model.getValue() !== code)
-      model.setValue(code)
+    if (model.getValue() !== targetCode) {
+      suppressDraftSaveRef.current = true
+      try {
+        model.setValue(targetCode)
+      }
+      finally {
+        suppressDraftSaveRef.current = false
+      }
+    }
   }, [clearCompilerMarkers, code, resetOutputs, scopeKey, setInitialCode])
 
   useEffect(() => {
@@ -168,10 +201,20 @@ export function TourEditor({
   useEffect(() => {
     return () => {
       actionsRef.current?.dispose()
+      contentChangeRef.current?.dispose()
+      if (draftSaveTimerRef.current) {
+        clearTimeout(draftSaveTimerRef.current)
+        draftSaveTimerRef.current = null
+      }
+      runAbortRef.current?.abort()
       clearCompilerMarkers()
       bridge.editor.setEditor(undefined)
     }
   }, [clearCompilerMarkers, bridge.editor])
+
+  const handleCancelRun = useCallback(() => {
+    runAbortRef.current?.abort(new DOMException('Cancelled by user', 'AbortError'))
+  }, [])
 
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     editorAppRef.current = editorApp
@@ -182,15 +225,60 @@ export function TourEditor({
     actionsRef.current?.dispose()
     actionsRef.current = ed
       ? registerEditorActions(ed, {
-          run,
+          run: async (source, signal) => {
+            runAbortRef.current?.abort()
+            const controller = new AbortController()
+            runAbortRef.current = controller
+            const combinedSignal = AbortSignal.any([signal, controller.signal])
+            try {
+              await run(source, combinedSignal)
+            }
+            catch (error) {
+              if (controller.signal.aborted && !signal.aborted) {
+                const cancelledText = locale === 'en' ? 'Run cancelled.' : '已取消运行'
+                useTourEditorStore.getState().setCompilerOutput(cancelledText)
+                useTourEditorStore.getState().setProgramOutput('')
+                toast.info(cancelledText)
+                return
+              }
+              throw error
+            }
+            finally {
+              if (runAbortRef.current === controller)
+                runAbortRef.current = null
+            }
+          },
           format,
-          onSave: () => {
+          onSave: (source) => {
+            if (draftSaveTimerRef.current) {
+              clearTimeout(draftSaveTimerRef.current)
+              draftSaveTimerRef.current = null
+            }
+            useTourProgressStore.getState().saveDraft(scopeKeyRef.current, source, codeRef.current)
             toast.success(t`已保存代码`)
           },
         })
       : null
+
+    contentChangeRef.current?.dispose()
+    const model = ed?.getModel()
+    if (model) {
+      contentChangeRef.current = model.onDidChangeContent(() => {
+        if (suppressDraftSaveRef.current)
+          return
+        if (draftSaveTimerRef.current)
+          clearTimeout(draftSaveTimerRef.current)
+        const activeKey = scopeKeyRef.current
+        const starter = codeRef.current
+        draftSaveTimerRef.current = setTimeout(() => {
+          draftSaveTimerRef.current = null
+          useTourProgressStore.getState().saveDraft(activeKey, model.getValue(), starter)
+        }, DRAFT_SAVE_DEBOUNCE_MS)
+      })
+    }
+
     syncCompilerMarkers(useTourEditorStore.getState().compilerOutput)
-  }, [bridge.editor, format, run, syncCompilerMarkers])
+  }, [bridge.editor, format, locale, run, syncCompilerMarkers])
 
   const onError = useCallback((error: Error) => {
     setEditorError(error)
@@ -209,14 +297,26 @@ export function TourEditor({
     const editor = editorAppRef.current?.getEditor()
     const model = editor?.getModel()
     if (editor && model) {
-      editor.pushUndoStop()
-      editor.executeEdits('tour.reset', [{ range: model.getFullModelRange(), text: codeRef.current }])
-      editor.pushUndoStop()
+      if (draftSaveTimerRef.current) {
+        clearTimeout(draftSaveTimerRef.current)
+        draftSaveTimerRef.current = null
+      }
+      suppressDraftSaveRef.current = true
+      try {
+        editor.pushUndoStop()
+        editor.executeEdits('tour.reset', [{ range: model.getFullModelRange(), text: codeRef.current }])
+        editor.pushUndoStop()
+      }
+      finally {
+        suppressDraftSaveRef.current = false
+      }
+      useTourProgressStore.getState().clearDraft(scopeKeyRef.current)
       resetOutputs()
+      setRunResult(null)
       setOutputExpanded(false)
       clearCompilerMarkers()
     }
-  }, [clearCompilerMarkers, resetOutputs, setOutputExpanded])
+  }, [clearCompilerMarkers, resetOutputs, setOutputExpanded, setRunResult])
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-tour-editor-root>
@@ -228,6 +328,7 @@ export function TourEditor({
         outputToggleRef={outputToggleRef}
         onToggleOutput={() => setOutputExpanded(!outputExpanded)}
         onRun={handleRun}
+        onCancelRun={running ? handleCancelRun : undefined}
         onFormat={handleFormat}
         onReset={handleReset}
       />
@@ -255,7 +356,7 @@ export function TourEditor({
             className="relative h-full min-h-0"
           >
             <MonacoEditorReactComp
-              code={code}
+              code={initialEditorCode}
               onLoad={onLoad}
               onError={onError}
               locale={locale}
@@ -264,7 +365,7 @@ export function TourEditor({
             />
             {!editorReady && !editorError && (
               <div className="absolute inset-0 z-10">
-                <TourEditorLoading code={code} locale={locale} />
+                <TourEditorLoading code={initialEditorCode} locale={locale} />
               </div>
             )}
           </div>
@@ -295,6 +396,9 @@ export function TourEditor({
                   setOutputExpanded(false)
                   outputToggleRef.current?.focus()
                 }}
+                running={running}
+                onCancelRun={running ? handleCancelRun : undefined}
+                runResult={runResult}
                 programOutput={programOutput + (truncation.programStdout || truncation.programStderr
                   ? `\n\n${locale === 'en' ? 'Program output was truncated.' : '程序输出已截断。'}`
                   : '')}
@@ -308,10 +412,6 @@ export function TourEditor({
       </ResizablePanelGroup>
 
       <div id="tour-editor-statusbar" ref={statusBarHostRef} className={styles.statusBar} />
-
-      <div className="shrink-0">
-        <Toaster richColors closeButton position="top-center" />
-      </div>
     </div>
   )
 }

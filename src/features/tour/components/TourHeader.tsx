@@ -1,27 +1,22 @@
 'use client'
 
-import { lazy, Suspense } from 'react'
 import { useSidebar } from '@/components/ui/sidebar'
-import { Globe, List } from 'lucide-react'
+import { List } from 'lucide-react'
 import Image from 'next/image'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { AppNavLinks, LocaleSwitchLink, ThemeToggle } from '@/components/app-shell'
 import { LanguagePicker } from './mdx/LanguagePicker'
 import type { FlatSection } from '@/tour/types'
-import { getLocaleHref, getPlaygroundHref, getSiteDomain, getTourAIHref, getTourPath } from '@/lib/siteHref'
+import { getSiteDomain, getTourPath } from '@/lib/siteHref'
 import styles from './TourHeader.module.css'
 import { useHydrated } from '@/hooks/useHydrated'
+import type { Locale } from '@/lib/i18n'
 import type { SiteDomain } from '@/lib/siteHref'
-
-const LLMConfigDialog = lazy(() => import('@/modules/llm-config/components/LLMConfigDialog').then(
-  module => ({ default: module.LLMConfigDialog }),
-))
 
 export interface TourHeaderProps {
   lang: string
-  /** Tutorial mode: shows chapter / sub-chapter / section breadcrumb. Omit on AI route. */
+  /** Shows chapter / sub-chapter / section breadcrumb and forwards current chapter to AI Classroom. */
   section?: FlatSection
-  /** When true, current page IS the AI tutor: render config dialog + omit the switch link. */
-  aiMode?: boolean
   servingDomain?: SiteDomain
 }
 
@@ -44,24 +39,16 @@ function TableOfContentsButton() {
   )
 }
 
-export function TourHeader({ lang, section, aiMode = false, servingDomain = 'playground' }: TourHeaderProps) {
+export function TourHeader({ lang, section, servingDomain = 'playground' }: TourHeaderProps) {
   const { t } = useLingui()
   const hydrated = useHydrated()
-  const otherLang = lang === 'en' ? 'zh' : 'en'
-  const otherLabel = lang === 'en' ? '中文' : 'EN'
-  const location = hydrated
-    ? window.location
-    : {
-        host: servingDomain === 'tour' ? 'tour.cj.zxilly.dev' : 'play.cj.zxilly.com',
-        origin: servingDomain === 'tour' ? 'https://tour.cj.zxilly.dev' : 'https://play.cj.zxilly.com',
-        pathname: getTourPath(lang, { servingDomain, rest: section ? [section.chapterSlug, section.chapterStep] : ['ai'] }),
-      }
-  const tourHomeHref = getTourPath(lang, { servingDomain: getSiteDomain(location.host) })
-  const aiHref = getTourAIHref(lang, {
-    currentOrigin: location.origin,
+  const currentLocale: Locale = lang === 'en' ? 'en' : 'zh'
+  const fallbackPathname = getTourPath(currentLocale, {
+    servingDomain,
+    rest: section ? [section.chapterSlug, section.chapterStep] : [],
   })
-  const localeHref = getLocaleHref(otherLang, location)
-  const playgroundHref = getPlaygroundHref(lang, { currentOrigin: location.origin })
+  const currentDomain = hydrated ? getSiteDomain(window.location.host) : servingDomain
+  const tourHomeHref = getTourPath(currentLocale, { servingDomain: currentDomain })
 
   const chapterName = section && (section.chapterName[lang] ?? section.chapterName.zh)
   const subChapterName = section && (section.subChapterName[lang] ?? section.subChapterName.zh)
@@ -75,33 +62,26 @@ export function TourHeader({ lang, section, aiMode = false, servingDomain = 'pla
           <Image src="/icon.png" alt="" width={30} height={30} />
           <span className={styles.brandName}><Trans>仓颉之旅</Trans></span>
         </a>
-        <nav aria-label={t`主导航`} className={styles.navigation}>
-          <a href={tourHomeHref} aria-current={!aiMode ? 'page' : undefined} className={styles.navLink}>
-            <Trans>教程</Trans>
-          </a>
-          {aiMode
-            ? <span aria-current="page" className={styles.navLink}><Trans>AI 课堂</Trans></span>
-            : (
-                <a href={aiHref} className={styles.navLink} title={t`打开 AI 课堂，从当前教程主题开始学习和练习。`}>
-                  <Trans>AI 课堂</Trans>
-                </a>
-              )}
-          <a href={playgroundHref} className={styles.navLink}>Playground</a>
-        </nav>
+        <AppNavLinks
+          active="tour"
+          lang={currentLocale}
+          servingDomain={servingDomain}
+          aiTopic={section?.chapterSlug}
+          className={styles.navigation}
+          linkClassName={styles.navLink}
+          activeLinkClassName={styles.navLinkActive}
+        />
         <div className={styles.preferences}>
-          {aiMode && (
-            <Suspense fallback={<span className="block size-11" aria-hidden="true" />}>
-              <LLMConfigDialog />
-            </Suspense>
-          )}
-          <a href={localeHref} className={styles.localeLink} lang={otherLang}>
-            <Globe size={17} aria-hidden="true" />
-            {otherLabel}
-          </a>
+          <ThemeToggle />
+          <LocaleSwitchLink
+            lang={currentLocale}
+            fallbackPathname={fallbackPathname}
+            className={styles.localeLink}
+          />
         </div>
       </div>
       <div className={styles.contextRow}>
-        {!aiMode && <TableOfContentsButton />}
+        <TableOfContentsButton />
         {section && (
           <nav aria-label={t`当前章节`} className={styles.breadcrumbs}>
             {ancestors.map(name => (

@@ -1,7 +1,7 @@
 'use client'
 
 import type { RefObject } from 'react'
-import { LoaderCircle, PanelBottom, Play, RotateCcw, WandSparkles } from 'lucide-react'
+import { LoaderCircle, PanelBottom, Play, RotateCcw, Square, WandSparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import styles from './TourEditor.module.css'
@@ -14,6 +14,7 @@ export interface TourEditorToolbarProps {
   outputToggleRef: RefObject<HTMLElement | null>
   onToggleOutput: () => void
   onRun: () => void
+  onCancelRun?: () => void
   onFormat: () => void
   onReset: () => void
 }
@@ -24,6 +25,7 @@ function getLabels(locale: string) {
         title: 'Code',
         run: 'Run',
         running: 'Running',
+        cancel: 'Cancel',
         format: 'Format',
         reset: 'Reset',
         showOutput: 'Show output',
@@ -33,6 +35,7 @@ function getLabels(locale: string) {
         title: '示例代码',
         run: '运行',
         running: '运行中',
+        cancel: '取消运行',
         format: '格式化',
         reset: '重置',
         showOutput: '展开输出',
@@ -48,6 +51,7 @@ export function TourEditorToolbar({
   outputToggleRef,
   onToggleOutput,
   onRun,
+  onCancelRun,
   onFormat,
   onReset,
 }: TourEditorToolbarProps) {
@@ -77,6 +81,21 @@ export function TourEditorToolbar({
             : <Play className="size-4" aria-hidden="true" />}
           <span>{running ? labels.running : labels.run}</span>
         </Button>
+
+        {running && onCancelRun && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onCancelRun}
+            aria-label={labels.cancel}
+            title={labels.cancel}
+            className="min-h-9 gap-1.5 px-2.5 text-error-foreground hover:text-error-foreground"
+          >
+            <Square className="size-3.5 fill-current" aria-hidden="true" />
+            <span className="hidden sm:inline">{labels.cancel}</span>
+          </Button>
+        )}
 
         <Button
           type="button"

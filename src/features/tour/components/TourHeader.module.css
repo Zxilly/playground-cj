@@ -44,8 +44,11 @@
   white-space: nowrap;
 }
 
-.navLink[aria-current] {
+.navLink[aria-current],
+.navLinkActive {
   border-bottom-color: var(--tour-accent-fg);
+  border-radius: 0;
+  background: transparent;
   color: var(--tour-accent-fg);
   font-weight: 600;
 }

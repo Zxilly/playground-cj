@@ -78,4 +78,26 @@ describe('tourEditorToolbar', () => {
     expect(outputButton.disabled).toBe(false)
     expect(outputButton.getAttribute('aria-expanded')).toBe('true')
   })
+
+  it('renders a clickable cancel button while running when onCancelRun is supplied', () => {
+    const outputToggleRef = createRef<HTMLElement | null>()
+    const onCancelRun = vi.fn()
+    render(
+      <TourEditorToolbar
+        locale="zh"
+        ready
+        running
+        outputExpanded
+        outputToggleRef={outputToggleRef}
+        onToggleOutput={vi.fn()}
+        onRun={vi.fn()}
+        onCancelRun={onCancelRun}
+        onFormat={vi.fn()}
+        onReset={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '取消运行' }))
+    expect(onCancelRun).toHaveBeenCalledOnce()
+  })
 })

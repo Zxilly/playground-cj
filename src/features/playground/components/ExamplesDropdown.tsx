@@ -10,15 +10,35 @@ import { useLingui } from '@lingui/react'
 
 const ExamplesMenu = dynamic(() => import('./ExamplesMenu'))
 
-interface ExamplesDropdownProps {
-  action: (nextCode: string) => void
-  disabled?: boolean
+export interface ExampleSelectionMeta {
+  key: string
+  name: string
 }
 
-export function ExamplesDropdown({ action, disabled }: ExamplesDropdownProps) {
+interface ExamplesDropdownProps {
+  action: (nextCode: string, meta?: ExampleSelectionMeta) => void
+  disabled?: boolean
+  /** Controlled example key; `null` indicates custom/draft/shared code. Omit for uncontrolled mode. */
+  selectedKey?: string | null
+  /** Controlled display label for the combobox button. */
+  selectedLabel?: string | null
+}
+
+export function ExamplesDropdown({
+  action,
+  disabled,
+  selectedKey,
+  selectedLabel,
+}: ExamplesDropdownProps) {
   const { i18n } = useLingui()
   const [open, setOpen] = useState(false)
-  const [selected, setSelected] = useState({ key: 'hello-world', name: 'Hello World' })
+  const [uncontrolled, setUncontrolled] = useState({ key: 'hello-world', name: 'Hello World' })
+
+  const isControlled = selectedKey !== undefined
+  const activeKey = isControlled ? (selectedKey ?? '') : uncontrolled.key
+  const activeLabel = isControlled
+    ? (selectedLabel || i18n._(msg`选择示例`))
+    : uncontrolled.name
 
   return (
     <DeferredPopover
@@ -35,17 +55,18 @@ export function ExamplesDropdown({ action, disabled }: ExamplesDropdownProps) {
           aria-label={i18n._(msg`选择示例`)}
           className="min-h-11 w-full justify-between lg:min-h-9"
         >
-          <span className="truncate">{selected.name}</span>
+          <span className="truncate">{activeLabel}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       )}
     >
       {open && (
         <ExamplesMenu
-          selectedKey={selected.key}
+          selectedKey={activeKey}
           onSelect={(key, name, content) => {
-            setSelected({ key, name })
-            action(content)
+            if (!isControlled)
+              setUncontrolled({ key, name })
+            action(content, { key, name })
             setOpen(false)
           }}
         />

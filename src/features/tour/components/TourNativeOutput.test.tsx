@@ -54,4 +54,45 @@ describe('tourNativeOutput', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close output' }))
     expect(baseProps.onClose).toHaveBeenCalledOnce()
   })
+
+  it('displays structured rate-limit errors and cancel button while running', () => {
+    const onCancelRun = vi.fn()
+    const { rerender } = render(
+      <TourNativeOutput
+        {...baseProps}
+        locale="zh"
+        activeTab="tool"
+        runResult={{
+          ok: false,
+          phase: null,
+          exitCode: null,
+          stdout: '',
+          stderr: '',
+          compilerOutput: '',
+          stdoutTruncated: false,
+          stderrTruncated: false,
+          compilerOutputTruncated: false,
+          failureKind: 'runner_unavailable',
+          failureReason: 'rate_limited',
+          failureMessage: 'Too many requests',
+          httpStatus: 429,
+          retryAfterSeconds: 60,
+        }}
+      />,
+    )
+
+    expect(screen.getByRole('alert').textContent).toContain('60 秒')
+
+    rerender(
+      <TourNativeOutput
+        {...baseProps}
+        locale="zh"
+        running
+        onCancelRun={onCancelRun}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '取消运行' }))
+    expect(onCancelRun).toHaveBeenCalledOnce()
+  })
 })

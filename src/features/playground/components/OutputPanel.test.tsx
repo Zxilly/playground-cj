@@ -82,4 +82,45 @@ describe('outputPanel', () => {
     fireEvent.mouseDown(screen.getByRole('tab', { name: '编译信息' }), { button: 0, ctrlKey: false })
     expect(screen.getByText('编译器输出已截断。')).toBeTruthy()
   })
+
+  it('shows structured actionable error guidance for 429 rate limits and supports cancel run & stdin', () => {
+    const onCancelRun = vi.fn()
+    const onStdinChange = vi.fn()
+    const rateLimited: RunResult = {
+      ok: false,
+      phase: null,
+      exitCode: null,
+      stdout: '',
+      stderr: '',
+      compilerOutput: '',
+      stdoutTruncated: false,
+      stderrTruncated: false,
+      compilerOutputTruncated: false,
+      failureKind: 'runner_unavailable',
+      failureReason: 'rate_limited',
+      failureMessage: 'Remote action failed: Too many requests',
+      httpStatus: 429,
+      retryAfterSeconds: 45,
+    }
+
+    const { rerender } = render(
+      <Wrapper>
+        <OutputPanel {...initial} result={rateLimited} stdin="" onStdinChange={onStdinChange} />
+      </Wrapper>,
+    )
+
+    expect(screen.getByRole('alert').textContent).toContain('45 秒')
+
+    fireEvent.click(screen.getByRole('button', { name: /标准输入/ }))
+    fireEvent.change(screen.getByRole('textbox', { name: '标准输入' }), { target: { value: '123\n' } })
+    expect(onStdinChange).toHaveBeenCalledWith('123\n')
+
+    rerender(
+      <Wrapper>
+        <OutputPanel {...initial} running onCancelRun={onCancelRun} />
+      </Wrapper>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: '取消运行' }))
+    expect(onCancelRun).toHaveBeenCalledOnce()
+  })
 })

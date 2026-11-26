@@ -1,7 +1,7 @@
 'use client'
 
-import type { MouseEvent } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight, Code2 } from 'lucide-react'
+import type { MouseEvent, ReactNode } from 'react'
+import { ChevronDown, ChevronLeft, ChevronRight, Code2, Sparkles, Terminal } from 'lucide-react'
 
 interface TourNavigationProps {
   lang: string
@@ -11,69 +11,159 @@ interface TourNavigationProps {
   onNext: () => void
   prevHref?: string
   nextHref?: string
+  aiHref?: string
+  playgroundHref?: string
   editorToggle?: {
     expanded: boolean
     onToggle: () => void
   }
 }
 
-export function TourNavigation({ lang, currentIndex, total, onPrev, onNext, editorToggle, prevHref, nextHref }: TourNavigationProps) {
-  const Previous = prevHref ? 'a' : 'button'
-  const Next = nextHref ? 'a' : 'button'
-  const navigate = (event: MouseEvent, action: () => void) => {
+interface NavActionProps {
+  href?: string
+  disabled: boolean
+  ariaLabel?: string
+  highlightTarget: 'prev' | 'next'
+  className: string
+  onNavigate: () => void
+  children: ReactNode
+}
+
+function NavAction({
+  href,
+  disabled,
+  ariaLabel,
+  highlightTarget,
+  className,
+  onNavigate,
+  children,
+}: NavActionProps) {
+  const handleClick = (event: MouseEvent) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
       return
     event.preventDefault()
-    action()
+    onNavigate()
   }
+
+  if (href && !disabled) {
+    return (
+      <a
+        href={href}
+        aria-label={ariaLabel}
+        onClick={handleClick}
+        data-tour-highlight={highlightTarget}
+        className={className}
+      >
+        {children}
+      </a>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      disabled={disabled}
+      onClick={handleClick}
+      data-tour-highlight={highlightTarget}
+      className={className}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function TourNavigation({
+  lang,
+  currentIndex,
+  total,
+  onPrev,
+  onNext,
+  editorToggle,
+  prevHref,
+  nextHref,
+  aiHref,
+  playgroundHref,
+}: TourNavigationProps) {
+  const isEnglish = lang === 'en'
   const hasPrev = currentIndex > 0
   const hasNext = currentIndex < total - 1
+  const isLastLesson = total > 0 && !hasNext
+  const showCompletionCta = isLastLesson && Boolean(aiHref || playgroundHref)
 
-  const prevLabel = lang === 'en' ? 'Previous' : '上一页'
-  const nextLabel = lang === 'en' ? 'Next' : '下一页'
-  const progressLabel = lang === 'en'
+  const prevLabel = isEnglish ? 'Previous' : '上一页'
+  const nextLabel = isEnglish ? 'Next' : '下一页'
+  const progressLabel = isEnglish
     ? `Lesson ${currentIndex + 1} of ${total}`
     : `第 ${currentIndex + 1} 节，共 ${total} 节`
+  const aiCtaLabel = isEnglish ? 'AI Classroom' : 'AI 课堂'
+  const playgroundCtaLabel = 'Playground'
+  const completionPrompt = isEnglish
+    ? 'Tour complete! Continue practicing:'
+    : '已完成全部教程！继续实践：'
 
   if (editorToggle) {
-    const toggleLabel = lang === 'en'
+    const toggleLabel = isEnglish
       ? (editorToggle.expanded ? 'Hide code' : 'Show code')
       : (editorToggle.expanded ? '收起代码' : '展开代码')
 
     return (
       <nav
-        aria-label={lang === 'en' ? 'Lesson controls' : '教程操作'}
+        aria-label={isEnglish ? 'Lesson controls' : '教程操作'}
         className="shrink-0 border-t border-tour-border bg-background px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
       >
+        {showCompletionCta && (
+          <div className="mx-auto mb-2 flex w-full max-w-xl flex-wrap items-center justify-between gap-2 rounded-md border border-tour-border bg-tour-surface px-3 py-2 text-xs">
+            <span className="font-medium text-tour-heading">{completionPrompt}</span>
+            <div className="flex items-center gap-2">
+              {aiHref && (
+                <a
+                  href={aiHref}
+                  className="inline-flex min-h-8 items-center gap-1 rounded-md bg-brand px-2.5 py-1 font-medium text-brand-foreground transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  <Sparkles aria-hidden="true" className="size-3.5" />
+                  {aiCtaLabel}
+                </a>
+              )}
+              {playgroundHref && (
+                <a
+                  href={playgroundHref}
+                  className="inline-flex min-h-8 items-center gap-1 rounded-md border border-tour-border bg-background px-2.5 py-1 font-medium text-tour-text transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  <Terminal aria-hidden="true" className="size-3.5" />
+                  {playgroundCtaLabel}
+                </a>
+              )}
+            </div>
+          </div>
+        )}
         <div className="mx-auto flex w-full max-w-xl items-center gap-3">
           <div className="flex min-w-0 flex-1 items-center justify-between">
-            <Previous
+            <NavAction
               href={prevHref}
-              type="button"
-              aria-label={prevLabel}
               disabled={!hasPrev}
-              onClick={event => navigate(event, onPrev)}
-              data-tour-highlight="prev"
+              ariaLabel={prevLabel}
+              highlightTarget="prev"
+              onNavigate={onPrev}
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-tour-text transition-colors hover:bg-tour-border/30 active:bg-tour-border/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tour-accent-fg disabled:cursor-not-allowed disabled:opacity-35"
             >
               <ChevronLeft aria-hidden="true" className="size-5" />
-            </Previous>
+            </NavAction>
             <span aria-label={progressLabel} className="whitespace-nowrap px-1 text-xs font-medium tabular-nums text-tour-text">
               {currentIndex + 1}
               <span className="mx-1 opacity-50">/</span>
               {total}
             </span>
-            <Next
+            <NavAction
               href={nextHref}
-              type="button"
-              aria-label={nextLabel}
               disabled={!hasNext}
-              onClick={event => navigate(event, onNext)}
-              data-tour-highlight="next"
+              ariaLabel={nextLabel}
+              highlightTarget="next"
+              onNavigate={onNext}
               className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-tour-text transition-colors hover:bg-tour-border/30 active:bg-tour-border/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tour-accent-fg disabled:cursor-not-allowed disabled:opacity-35"
             >
               <ChevronRight aria-hidden="true" className="size-5" />
-            </Next>
+            </NavAction>
           </div>
           <span aria-hidden="true" className="h-6 w-px shrink-0 bg-tour-border" />
           <button
@@ -93,34 +183,59 @@ export function TourNavigation({ lang, currentIndex, total, onPrev, onNext, edit
   }
 
   return (
-    <nav aria-label={lang === 'en' ? 'Lesson controls' : '教程操作'} className="shrink-0 flex items-center justify-between gap-3 px-6 py-3 border-t border-tour-border bg-background">
-      <Previous
-        href={prevHref}
-        type="button"
-        disabled={!hasPrev}
-        onClick={event => navigate(event, onPrev)}
-        data-tour-highlight="prev"
-        className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md border border-tour-border text-tour-text hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
-      >
-        <ChevronLeft className="size-4" />
-        {prevLabel}
-      </Previous>
-      <span aria-label={progressLabel} className="whitespace-nowrap text-sm tabular-nums font-medium text-muted-foreground">
-        {currentIndex + 1}
-        <span className="mx-1">/</span>
-        {total}
-      </span>
-      <Next
-        href={nextHref}
-        type="button"
-        disabled={!hasNext}
-        onClick={event => navigate(event, onNext)}
-        data-tour-highlight="next"
-        className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md bg-tour-accent-fg text-background hover:bg-tour-accent-fg/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tour-accent-fg disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
-      >
-        {nextLabel}
-        <ChevronRight className="size-4" />
-      </Next>
+    <nav aria-label={isEnglish ? 'Lesson controls' : '教程操作'} className="shrink-0 border-t border-tour-border bg-background">
+      {showCompletionCta && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-tour-border bg-tour-surface px-6 py-2.5 text-sm">
+          <span className="font-medium text-tour-heading">{completionPrompt}</span>
+          <div className="flex items-center gap-2">
+            {aiHref && (
+              <a
+                href={aiHref}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-brand-foreground transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <Sparkles aria-hidden="true" className="size-3.5" />
+                {aiCtaLabel}
+              </a>
+            )}
+            {playgroundHref && (
+              <a
+                href={playgroundHref}
+                className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-tour-border bg-background px-3 py-1.5 text-xs font-medium text-tour-text transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <Terminal aria-hidden="true" className="size-3.5" />
+                {playgroundCtaLabel}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="flex items-center justify-between gap-3 px-6 py-3">
+        <NavAction
+          href={prevHref}
+          disabled={!hasPrev}
+          highlightTarget="prev"
+          onNavigate={onPrev}
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-tour-border px-4 py-2 text-sm font-medium text-tour-text transition-colors hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          <ChevronLeft aria-hidden="true" className="size-4" />
+          {prevLabel}
+        </NavAction>
+        <span aria-label={progressLabel} className="whitespace-nowrap text-sm font-medium tabular-nums text-muted-foreground">
+          {currentIndex + 1}
+          <span className="mx-1">/</span>
+          {total}
+        </span>
+        <NavAction
+          href={nextHref}
+          disabled={!hasNext}
+          highlightTarget="next"
+          onNavigate={onNext}
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          {nextLabel}
+          <ChevronRight aria-hidden="true" className="size-4" />
+        </NavAction>
+      </div>
     </nav>
   )
 }

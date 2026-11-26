@@ -54,6 +54,7 @@ export function generateDataShareUrl(code: string): string {
   const base64UrlData = base64ToBase64Url(compressToBase64(code))
   const params = new URLSearchParams({ data: base64UrlData })
   const url = new URL(window.location.href)
+  url.search = ''
   url.hash = params.toString()
   return url.toString()
 }

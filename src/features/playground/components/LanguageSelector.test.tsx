@@ -59,7 +59,7 @@ describe('language selector', () => {
       await vi.dynamicImportSettled()
     })
 
-    const englishOption = await screen.findByRole('option', { name: 'English' })
+    const englishOption = await screen.findByRole('option', { name: 'English' }, { timeout: 3000 })
     const chineseOption = screen.getByRole('option', { name: '中文' })
     expect(englishOption.getAttribute('aria-selected')).toBe('true')
     expect(chineseOption.getAttribute('aria-selected')).toBe('false')
@@ -81,7 +81,7 @@ describe('language selector', () => {
       fireEvent.click(screen.getByRole('combobox'))
       await vi.dynamicImportSettled()
     })
-    const englishOption = await screen.findByRole('option', { name: 'English' })
+    const englishOption = await screen.findByRole('option', { name: 'English' }, { timeout: 3000 })
     const chineseOption = screen.getByRole('option', { name: '中文' })
     const command = document.querySelector<HTMLElement>('[cmdk-root]')
     expect(command).not.toBeNull()

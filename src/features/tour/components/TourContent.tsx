@@ -23,7 +23,7 @@ export function TourContent({ lang, section }: TourContentProps) {
         <h1 id="tour-lesson-title" className="mb-5 text-2xl font-bold tracking-tight text-tour-heading lg:text-[1.75rem]">
           {section.sectionName[lang] ?? section.sectionName.zh}
         </h1>
-        <div className="prose dark:prose-invert max-w-[70ch] tour-prose">
+        <div className="max-w-[70ch] tour-prose">
           {source
             ? <MDXRemote {...source} components={tourMdxComponents} />
             : (
