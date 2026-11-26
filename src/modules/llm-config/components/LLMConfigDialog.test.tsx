@@ -572,6 +572,47 @@ describe('llmConfigDialog', () => {
     secondUsage.resolve(responseWithUsage({ total_granted: 8000, total_used: 2000, total_available: 6000 }))
     await waitFor(() => expect(screen.getByText('$0.0120')).toBeTruthy())
   })
+
+  it('offers official provider presets and tests direct connections cleanly', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes('/api/ai-gateway/metadata')) {
+        return responseWithUsage({ total_granted: 5000, total_used: 1000, total_available: 4000 })
+      }
+      return new Response('{}', { status: 200 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <Wrapper>
+        <LLMConfigDialog />
+      </Wrapper>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'open llm settings' }))
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '自定义 API Key' }))
+
+    const baseUrlInput = screen.getByLabelText('服务地址') as HTMLInputElement
+    expect(baseUrlInput.value).not.toContain('learningman.top')
+
+    fireEvent.click(screen.getByRole('button', { name: 'DeepSeek' }))
+    expect(baseUrlInput.value).toBe('https://api.deepseek.com/v1')
+    expect((screen.getByLabelText('模型') as HTMLInputElement).value).toBe('deepseek-chat')
+
+    const testButton = screen.getByTestId('llm-test-connection')
+    expect(testButton).toHaveProperty('disabled', true)
+
+    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'sk-deepseek-test' } })
+    expect(testButton).toHaveProperty('disabled', false)
+
+    fireEvent.click(testButton)
+    await waitFor(() => {
+      expect(screen.getByTestId('llm-test-connection-result').textContent).toContain('连接成功')
+    })
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.deepseek.com/v1/chat/completions',
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
 })
 
 function responseWithUsage(data: { total_granted: number, total_used: number, total_available: number }) {

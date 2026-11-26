@@ -60,23 +60,19 @@ describe('teachWorkspaceShell', () => {
     expect(screen.getByText('chat')).toBeTruthy()
   })
 
-  it('keeps navigation in the running Chat scope until the learner stops or waits', async () => {
+  it('allows browsing Review freely while a teacher response is streaming and shows a non-blocking status hint', async () => {
     render(<TeachWorkspaceShell chat={<div>chat</div>} />, { wrapper: Wrapper })
     act(() => useWorkspaceStore.getState().setTeacherChatRunMode('live'))
 
     const review = screen.getByRole('button', { name: /Review/ })
-    expect(review.getAttribute('aria-disabled')).toBe('true')
-    expect(review.getAttribute('aria-describedby')).toBe('teacher-chat-navigation-status')
-    expect(screen.getByRole('status').textContent).toContain('response is in progress')
+    expect(review.getAttribute('aria-disabled')).toBeNull()
+    expect(screen.getByRole('status').textContent).toContain('AI teacher is responding')
+
     fireEvent.click(review)
-    expect(screen.getByText('viewport:live')).toBeTruthy()
+    expect(await screen.findByText('viewport:review')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: /Progress/ }))
     expect(await screen.findByText('viewport:progress')).toBeTruthy()
-
-    act(() => useWorkspaceStore.getState().setTeacherChatRunMode(null))
-    fireEvent.click(review)
-    expect(await screen.findByText('viewport:review')).toBeTruthy()
   })
 
   it('opens a compact Chat for a new prefill and resets it across viewports', () => {
@@ -87,8 +83,8 @@ describe('teachWorkspaceShell', () => {
     )
     expect(screen.queryByTestId('workspace-chat')).toBeNull()
     const toggle = screen.getByRole('button', { name: 'Open teacher chat' })
-    expect(toggle.className).toContain('top-1.5')
-    expect(toggle.className).not.toContain('bottom-')
+    expect(toggle.className).not.toContain('fixed')
+    expect(toggle.className).not.toContain('top-1.5')
 
     act(() => {
       useWorkspaceStore.getState().setPendingPrefill('Please explain this.')

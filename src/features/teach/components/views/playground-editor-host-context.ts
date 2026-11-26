@@ -9,6 +9,7 @@ export interface PlaygroundEditorHostContextValue {
   editorHandleRef: RefObject<CangjieEditorHandle | null>
   flushPendingCode: () => void
   registerEditorSlot: RefCallback<HTMLDivElement>
+  registerRunHandler: (handler: (() => void | Promise<void>) | null) => void
 }
 
 export const PlaygroundEditorHostContext = createContext<PlaygroundEditorHostContextValue | null>(null)

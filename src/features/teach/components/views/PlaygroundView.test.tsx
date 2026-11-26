@@ -792,4 +792,25 @@ describe('playgroundView student flow', () => {
     expect(screen.getByTestId('playground-program-output').textContent).toBe('red output')
     expect(screen.getByTestId('playground-runtime-stderr').textContent).toBe('separate error channel')
   })
+
+  it('cancels an in-flight run, dismisses the scope note, and protects inactive tab close buttons', async () => {
+    runner.run.mockImplementationOnce(() => new Promise<RunResult>(() => {}))
+    render(<PlaygroundView />, { wrapper: Wrapper })
+
+    expect(screen.getByTestId('playground-format')).toBeTruthy()
+    expect(screen.getByTestId('playground-close-tab').className).toContain('pointer-events-none')
+    expect(screen.getByTestId('playground-close-tab').className).toContain('group-data-[active=true]:pointer-events-auto')
+
+    fireEvent.click(screen.getByTestId('playground-scope-note-dismiss'))
+    expect(screen.queryByTestId('playground-scope-note')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('playground-run'))
+    const cancel = screen.getByTestId('playground-cancel-run')
+    expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(true)
+
+    fireEvent.click(cancel)
+    await waitFor(() => {
+      expect(usePlaygroundSession.getState().tabs[0]?.running).toBe(false)
+    })
+  })
 })

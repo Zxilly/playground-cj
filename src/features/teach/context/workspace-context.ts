@@ -1,6 +1,7 @@
 import { createContext } from 'react'
 import type { AIClassroom } from '@/lib/teach/classroom/ai-classroom'
 import type { ContentPackCatalog } from '@/lib/teach/classroom/content-catalog'
+import type { ClassroomStorage } from '@/lib/teach/classroom/storage'
 import type { KnowledgeSource } from '@/lib/teach/knowledge/source'
 import type { CangjieRunner, RunResult } from '@/lib/teach/feedback/run-cangjie'
 import type { ActiveEditorRegistry } from '@/features/teach/state/active-editor-store'
@@ -14,6 +15,9 @@ export interface WorkspaceContextValue {
   runner: CangjieRunner
   activeEditor: ActiveEditorRegistry
   now: () => number
+  storage?: ClassroomStorage
+  storageScope?: string
+  courseVersion?: string
 }
 
 export type { RunResult }

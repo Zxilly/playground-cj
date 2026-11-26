@@ -44,13 +44,12 @@ beforeEach(() => {
 })
 
 describe('workspace collaborator ownership', () => {
-  it('uses the built-in catalog and Course-versioned persistence scope', async () => {
+  it('uses the built-in catalog and Course-versioned persistence scope without silently discarding older scopes', async () => {
     const collaborators = await createWorkspaceCollaborators('en')
 
     expect(mocks.createCatalog).toHaveBeenCalledWith('en')
     expect(mocks.createStorage).toHaveBeenCalledWith({
       scope: 'classroom:course:sha256:test',
-      discardOtherScopesWithPrefix: 'classroom',
     })
     expect(mocks.createClassroom).toHaveBeenCalledWith(expect.objectContaining({
       catalog: mocks.catalog,
@@ -72,11 +71,9 @@ describe('workspace collaborator ownership', () => {
     expect(mocks.createCatalog).toHaveBeenNthCalledWith(2, 'zh')
     expect(mocks.createStorage).toHaveBeenNthCalledWith(1, {
       scope: 'classroom:course:sha256:test',
-      discardOtherScopesWithPrefix: 'classroom',
     })
     expect(mocks.createStorage).toHaveBeenNthCalledWith(2, {
       scope: 'classroom:course:sha256:test',
-      discardOtherScopesWithPrefix: 'classroom',
     })
 
     await chinese.dispose()

@@ -1,16 +1,23 @@
 import { setupI18n } from '@lingui/core'
 import { I18nProvider } from '@lingui/react'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TeachTopBar } from './TeachTopBar'
 
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/en/tour/ai',
+}))
+
+afterEach(cleanup)
+
 describe('teachTopBar', () => {
-  it('keeps the mobile back target at least 44px while preserving desktop density', () => {
+  it('keeps the mobile back target at least 44px while unifying app shell navigation', () => {
     const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
     i18n.activate('en')
     render(
       <I18nProvider i18n={i18n}>
         <TeachTopBar
+          lang="en"
           backLabel="Back to setup"
           onBack={vi.fn()}
         />
@@ -20,5 +27,11 @@ describe('teachTopBar', () => {
     const back = screen.getByRole('button', { name: 'Back to setup' })
     expect(back.className).toContain('size-11')
     expect(back.className).toContain('lg:size-8')
+
+    // Unified Wave 1 app-shell primitives are mounted
+    expect(screen.getByRole('navigation')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Playground' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: '切换为中文' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /切换主题/ })).toBeTruthy()
   })
 })

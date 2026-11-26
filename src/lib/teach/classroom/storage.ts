@@ -29,6 +29,11 @@ export interface ClassroomCommitGuard {
   assertActive: () => void
 }
 
+export interface ClassroomScopeRecord {
+  scope: string
+  snapshot: ClassroomSnapshot
+}
+
 export interface ClassroomStorage {
   /** Returns unknown deliberately: the aggregate owns runtime state validation. */
   load: () => Promise<unknown | null>
@@ -41,6 +46,16 @@ export interface ClassroomStorage {
     expectedRevision: number,
     commitGuard?: ClassroomCommitGuard,
   ) => Promise<void>
+  /**
+   * Atomically replaces the current scope with a validated snapshot (used for
+   * explicit workspace import or reset) while keeping revisions monotonic so
+   * active runtimes and sibling tabs reload cleanly.
+   */
+  replace?: (snapshot: ClassroomSnapshot) => Promise<ClassroomSnapshot>
+  /** Lists persisted scopes (optionally filtered by prefix) without deleting them. */
+  listScopes?: (prefix?: string) => Promise<ClassroomScopeRecord[]>
+  /** Explicitly deletes a single named scope after learner confirmation. */
+  deleteScope?: (scope: string) => Promise<void>
   /** Emits committed revisions written by another adapter/tab when available. */
   subscribe?: (listener: (revision: number) => void) => () => void
   close?: () => Promise<void>
@@ -62,6 +77,12 @@ function parseCandidate(
   return parsed
 }
 
+function matchesScopePrefix(scopeKey: string, prefix: string | undefined): boolean {
+  if (!prefix)
+    return true
+  return scopeKey === prefix || scopeKey.startsWith(`${prefix}:`)
+}
+
 /** In-memory adapter used by tests and non-persistent previews. */
 export function createMemoryClassroomStorage(
   initial?: ClassroomSnapshot,
@@ -69,6 +90,7 @@ export function createMemoryClassroomStorage(
   let stored = initial
     ? structuredClone(classroomSnapshotSchema.parse(initial))
     : null
+  const listeners = new Set<(revision: number) => void>()
   return {
     load: async () => stored == null ? null : structuredClone(stored),
     save: async (snapshot, expectedRevision, commitGuard) => {
@@ -78,6 +100,26 @@ export function createMemoryClassroomStorage(
       if (actualRevision !== expectedRevision)
         throw new ClassroomRevisionConflictError(expectedRevision, actualRevision)
       stored = structuredClone(candidate)
+    },
+    replace: async (snapshot) => {
+      const parsed = classroomSnapshotSchema.parse(snapshot)
+      const actualRevision = stored?.revision ?? 0
+      const nextRevision = Math.max(parsed.revision, actualRevision + 1)
+      const candidate = classroomSnapshotSchema.parse({
+        ...parsed,
+        revision: nextRevision,
+      })
+      stored = structuredClone(candidate)
+      for (const listener of listeners)
+        listener(candidate.revision)
+      return structuredClone(candidate)
+    },
+    listScopes: async () => stored == null
+      ? []
+      : [{ scope: 'memory', snapshot: structuredClone(stored) }],
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
     },
   }
 }
@@ -92,8 +134,6 @@ interface AIClassroomDatabase extends DBSchema {
 export interface IndexedDBClassroomStorageOptions {
   /** Isolates independent classrooms inside the v8 database. */
   scope: string
-  /** Deletes obsolete sibling scopes before the first operation. */
-  discardOtherScopesWithPrefix?: string
   /** Primarily useful for isolated tests; production uses the v8 constant. */
   databaseName?: string
 }
@@ -113,8 +153,9 @@ function isRevisionNotification(value: unknown): value is RevisionNotification {
 }
 
 /**
- * Production browser persistence. This intentionally uses a new v8 database
- * and has no legacy database lookup or migration path.
+ * Production browser persistence. Preserves sibling Course scopes across
+ * upgrades so learners never lose history silently; old scopes can be migrated,
+ * exported, or explicitly deleted on request.
  */
 export function createIndexedDBClassroomStorage(
   options: IndexedDBClassroomStorageOptions,
@@ -125,12 +166,6 @@ export function createIndexedDBClassroomStorage(
   const databaseName = options.databaseName ?? AI_CLASSROOM_V8_DATABASE_NAME
   if (!databaseName.trim())
     throw new Error('IndexedDB AI Classroom storage requires a database name')
-  const discardPrefix = options.discardOtherScopesWithPrefix?.trim()
-  if (options.discardOtherScopesWithPrefix !== undefined && !discardPrefix) {
-    throw new Error(
-      'IndexedDB AI Classroom obsolete scope prefix must be non-empty',
-    )
-  }
 
   let databasePromise: Promise<IDBPDatabase<AIClassroomDatabase>> | null = null
   let channel: BroadcastChannel | null = null
@@ -147,24 +182,6 @@ export function createIndexedDBClassroomStorage(
         if (!db.objectStoreNames.contains(SNAPSHOT_STORE_NAME))
           db.createObjectStore(SNAPSHOT_STORE_NAME)
       },
-    }).then(async (db) => {
-      if (!discardPrefix)
-        return db
-      try {
-        const transaction = db.transaction(SNAPSHOT_STORE_NAME, 'readwrite')
-        const keys = await transaction.store.getAllKeys()
-        await Promise.all(keys
-          .filter(key => key !== scope
-            && (key === discardPrefix
-              || key.startsWith(`${discardPrefix}:`)))
-          .map(key => transaction.store.delete(key)))
-        await transaction.done
-        return db
-      }
-      catch (error) {
-        db.close()
-        throw error
-      }
     })
     return databasePromise
   }
@@ -224,6 +241,56 @@ export function createIndexedDBClassroomStorage(
         type: 'revision_committed',
         revision: candidate.revision,
       } satisfies RevisionNotification)
+    },
+    replace: async (snapshot) => {
+      const parsed = classroomSnapshotSchema.parse(snapshot)
+      const db = await database()
+      const transaction = db.transaction(SNAPSHOT_STORE_NAME, 'readwrite')
+      const rawStored = await transaction.store.get(scope)
+      const stored = rawStored == null
+        ? null
+        : classroomSnapshotSchema.safeParse(rawStored)
+      const actualRevision = stored?.success ? stored.data.revision : 0
+      const nextRevision = Math.max(parsed.revision, actualRevision + 1)
+      const candidate = classroomSnapshotSchema.parse({
+        ...parsed,
+        revision: nextRevision,
+      })
+      await transaction.store.put(candidate, scope)
+      await transaction.done
+      for (const listener of listeners)
+        listener(candidate.revision)
+      ensureChannel()?.postMessage({
+        type: 'revision_committed',
+        revision: candidate.revision,
+      } satisfies RevisionNotification)
+      return structuredClone(candidate)
+    },
+    listScopes: async (prefix) => {
+      const normalizedPrefix = prefix?.trim() || undefined
+      const db = await database()
+      const transaction = db.transaction(SNAPSHOT_STORE_NAME, 'readonly')
+      const keys = await transaction.store.getAllKeys()
+      const records: ClassroomScopeRecord[] = []
+      for (const key of keys) {
+        if (!matchesScopePrefix(key, normalizedPrefix))
+          continue
+        const raw = await transaction.store.get(key)
+        const parsed = classroomSnapshotSchema.safeParse(raw)
+        if (parsed.success)
+          records.push({ scope: key, snapshot: parsed.data })
+      }
+      await transaction.done
+      return records
+    },
+    deleteScope: async (targetScope) => {
+      const normalizedTarget = targetScope.trim()
+      if (!normalizedTarget)
+        return
+      const db = await database()
+      const transaction = db.transaction(SNAPSHOT_STORE_NAME, 'readwrite')
+      await transaction.store.delete(normalizedTarget)
+      await transaction.done
     },
     subscribe: (listener) => {
       if (closed)

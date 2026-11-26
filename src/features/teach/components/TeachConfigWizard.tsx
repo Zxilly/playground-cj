@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, CircleAlert, Loader2, ShieldCheck, Wallet } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, CircleAlert, Loader2, ShieldCheck, Wallet } from 'lucide-react'
 import { t } from '@lingui/core/macro'
 import { Trans } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
@@ -130,8 +130,8 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
         onBack={onBack}
       />
 
-      <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-background px-4 py-8 sm:px-6 sm:py-10">
-        <div className="w-full max-w-xl rounded-lg border border-border bg-background p-5 sm:p-6">
+      <div className="flex min-h-0 flex-1 justify-center overflow-y-auto bg-background px-4 py-8 sm:px-6 sm:py-10">
+        <div className="my-auto w-full max-w-xl rounded-lg border border-border bg-background p-5 sm:p-6">
           <div aria-hidden="true" className="mb-6 grid grid-cols-2 gap-2">
             <span className="h-1.5 rounded-full bg-primary" />
             <span className={cn('h-1.5 rounded-full transition-colors', step === 'credentials' ? 'bg-primary' : 'bg-muted')} />
@@ -190,7 +190,7 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                     description={<Trans>接入你自己的 OpenAI 兼容或 Anthropic 服务。</Trans>}
                   />
 
-                  <div className="mt-2 flex items-center gap-3">
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
                     <Button
                       type="button"
                       size="lg"
@@ -202,7 +202,25 @@ export function TeachConfigWizard({ onEnter, onBack }: TeachConfigWizardProps) {
                       {source === 'custom' ? <Trans>下一步</Trans> : <Trans>进入工作区</Trans>}
                       <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
                     </Button>
+                    {(sharedQuotaExhausted || bootstrap.status === 'error') && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="lg"
+                        data-testid="teach-source-self-study"
+                        onClick={onEnter}
+                        className="min-h-11 rounded-md px-4 lg:min-h-10"
+                      >
+                        <BookOpen aria-hidden="true" className="size-4 shrink-0" />
+                        <Trans>以自练模式进入</Trans>
+                      </Button>
+                    )}
                   </div>
+                  {(sharedQuotaExhausted || bootstrap.status === 'error') && (
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      <Trans>自练模式无需 AI 服务，可直接学习内置静态课程并使用练习场；之后可随时在顶部配置自定义 API Key。</Trans>
+                    </p>
+                  )}
                 </div>
               )
             : (
@@ -357,7 +375,7 @@ function SharedStatus({ exhausted, ready, status, resetMoment, quotaPercent, quo
   }
   return (
     <span className="mt-1 inline-flex items-center gap-1.5 ps-10 text-xs text-muted-foreground">
-      <Loader2 aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
+      <Loader2 aria-hidden="true" className="size-3.5 shrink-0 animate-spin motion-reduce:animate-none" />
       <Trans>正在准备共享服务…</Trans>
     </span>
   )
@@ -376,7 +394,7 @@ function QuotaMeter({ percent }: { percent: number | null }) {
       <span role="progressbar" aria-label={t`今日额度剩余`} className="mt-1 flex flex-col gap-1 ps-10">
         <span className="flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground"><Trans>今日额度剩余</Trans></span>
-          <Loader2 aria-hidden="true" className="size-3 shrink-0 animate-spin text-muted-foreground" />
+          <Loader2 aria-hidden="true" className="size-3 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none" />
         </span>
         <span className="h-1 rounded-full bg-muted" />
       </span>

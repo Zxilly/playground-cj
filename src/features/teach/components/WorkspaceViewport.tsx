@@ -1,7 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Loader2, ShieldAlert } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, ChevronUp, Loader2, ShieldAlert } from 'lucide-react'
 import type { WorkspaceView } from '@/features/teach/state/workspace-store'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useClassroomSnapshot } from '@/features/teach/hooks/use-classroom-snapshot'
@@ -33,24 +34,51 @@ function WorkspaceViewLoading() {
 export function WorkspaceViewport({ view }: { view: WorkspaceView }) {
   const { classroom, lang } = useWorkspace()
   const snapshot = useClassroomSnapshot(classroom)
+  const [noticeExpanded, setNoticeExpanded] = useState(false)
   const english = lang === 'en'
+  const showExposureNotice = Boolean(snapshot.teacherExposureEpoch) && view !== 'playground'
 
   return (
     <>
-      {snapshot.teacherExposureEpoch && (
+      {showExposureNotice && (
         <aside
           role="status"
-          className="mb-5 flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm leading-6 text-foreground"
+          data-testid="teacher-exposure-notice"
+          className="mb-4 rounded-lg border border-amber-500/35 bg-amber-500/8 px-3.5 py-2.5 text-xs leading-5 text-foreground"
         >
-          <ShieldAlert
-            aria-hidden="true"
-            className="mt-0.5 size-5 shrink-0 text-amber-700 dark:text-amber-300"
-          />
-          <p>
-            {english
-              ? 'You have viewed teacher explanations or guidance. Later answers are still useful for practice and feedback, but they are not treated as an independent check in this workspace.'
-              : '你已查看老师讲解或指导。之后的作答仍可用于练习和反馈，但在这个工作区内不会被视为独立测验。'}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <ShieldAlert
+                aria-hidden="true"
+                className="size-4 shrink-0 text-amber-700 dark:text-amber-300"
+              />
+              <span className="font-medium">
+                {english
+                  ? 'Guided practice mode (teacher explanation viewed)'
+                  : '当前为有指导练习模式（已查看老师讲解）'}
+              </span>
+            </div>
+            <button
+              type="button"
+              aria-expanded={noticeExpanded}
+              onClick={() => setNoticeExpanded(expanded => !expanded)}
+              className="inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-amber-500/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {noticeExpanded
+                ? (english ? 'Hide details' : '收起说明')
+                : (english ? 'Details' : '详情')}
+              {noticeExpanded
+                ? <ChevronUp aria-hidden="true" className="size-3.5" />
+                : <ChevronDown aria-hidden="true" className="size-3.5" />}
+            </button>
+          </div>
+          {noticeExpanded && (
+            <p className="mt-2 ps-6 text-xs leading-5 text-muted-foreground">
+              {english
+                ? 'You have viewed teacher explanations or guidance. Later answers are still useful for practice and feedback, but they are not treated as an independent check in this workspace.'
+                : '你已查看老师讲解或指导。之后的作答仍可用于练习和反馈，但在这个工作区内不会被视为独立测验。'}
+            </p>
+          )}
         </aside>
       )}
       <WorkspaceViewContent view={view} />

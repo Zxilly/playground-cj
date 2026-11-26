@@ -5,6 +5,10 @@ import type { ReactElement, ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TeachLanding } from './TeachLanding'
 
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/zh/tour/ai',
+}))
+
 function Wrapper({ children }: { children: ReactNode }) {
   const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
   i18n.activate('zh')

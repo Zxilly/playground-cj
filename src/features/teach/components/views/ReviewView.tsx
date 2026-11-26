@@ -121,7 +121,7 @@ function TeacherArtifactExposureGate({
     return children
   if (failed || cryptoUnavailable) {
     return (
-      <p role="alert" className="mt-4 text-sm text-destructive">
+      <p role="alert" className="mt-4 text-sm text-error-foreground">
         {english
           ? 'Saved review notes could not be displayed.'
           : '无法显示已保存的复习材料。'}
@@ -365,13 +365,8 @@ export function ReviewView() {
       </div>
 
       <article className="rounded-xl border border-border bg-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold">{pack.concept.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{pack.concept.summary}</p>
-          </div>
-          <div className="flex items-center gap-2" />
-        </div>
+        <h2 className="text-xl font-semibold">{pack.concept.title}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{pack.concept.summary}</p>
       </article>
 
       <div className="space-y-3">
@@ -413,7 +408,7 @@ export function ReviewView() {
           {canCreateReviewCheck && reviewTemplate && (
             <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void createReviewCheck()} className="min-h-11 lg:min-h-8">
               {busy
-                ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
                 : <RotateCcw aria-hidden="true" className="size-4" />}
               {english ? 'Create Review Check' : '创建复习检查'}
             </Button>
@@ -425,13 +420,20 @@ export function ReviewView() {
           </p>
         )}
         {canCreateReviewCheck && trackPinnedContentVersion !== pack.version && (
-          <p className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
-            {english
-              ? `A new review check will use the displayed course revision ${formatRevisionLabel(pack.version)}. Your current path uses revision ${formatRevisionLabel(trackPinnedContentVersion ?? '')}.`
-              : '新的复习检查将使用当前展示的课程版本。'}
-          </p>
+          <details className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            <summary className="cursor-pointer font-medium text-foreground">
+              {english
+                ? 'Course revision updated for new review checks'
+                : '新复习检查将使用最新课程版本'}
+            </summary>
+            <p className="mt-2 font-mono">
+              {english
+                ? `Displayed revision ${formatRevisionLabel(pack.version)} · Path revision ${formatRevisionLabel(trackPinnedContentVersion ?? '')}`
+                : `当前展示版本 ${formatRevisionLabel(pack.version)} · 学习路径版本 ${formatRevisionLabel(trackPinnedContentVersion ?? '')}`}
+            </p>
+          </details>
         )}
-        {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-error-foreground">{error}</p>}
         <TeacherArtifactExposureGate required={requiresTeacherArtifactExposure}>
           {artifactGroups.length === 0
             ? (
@@ -447,6 +449,9 @@ export function ReviewView() {
                       (count, item) => count + (item.type === 'remediation' ? item.attemptIds.length : 0),
                       0,
                     )
+                    const artifactVersionLabel = artifact.type === 'clarification'
+                      ? revisionLabel('clarification', artifact.contentVersion, english)
+                      : revisionLabel('remediation', group.learningContractVersion, english)
                     return (
                       <li key={group.key} className="rounded-lg border border-border p-4">
                         <div className="flex items-start justify-between gap-3">
@@ -459,18 +464,6 @@ export function ReviewView() {
                             <p className="mt-1 text-sm font-medium">
                               {artifact.misconceptionTheme
                                 ?? (english ? 'Preparing failure diagnosis…' : '正在准备失败诊断…')}
-                            </p>
-                            <p
-                              className="mt-1 font-mono text-xs text-muted-foreground"
-                              title={artifact.type === 'clarification'
-                                ? (english ? 'Course revision details' : '课程版本详情')
-                                : group.learningContractVersion !== null
-                                  ? (english ? 'Exercise criteria revision details' : '练习规则版本详情')
-                                  : undefined}
-                            >
-                              {artifact.type === 'clarification'
-                                ? revisionLabel('clarification', artifact.contentVersion, english)
-                                : revisionLabel('remediation', group.learningContractVersion, english)}
                             </p>
                             {failedAttemptCount > 1 && (
                               <p className="mt-1 text-xs text-muted-foreground">
@@ -514,13 +507,13 @@ export function ReviewView() {
                                         <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
                                           <p className="text-sm text-muted-foreground">
                                             {english
-                                              ? 'This saved diagnostic task may have been interrupted. The app cannot know whether its earlier model request has stopped, so it will not start another automatically.'
-                                              : '这项已保存的诊断任务可能已经中断。应用无法确认先前的模型请求是否已停止，因此不会自动再次发起请求。'}
+                                              ? 'This diagnosis appears to have been interrupted.'
+                                              : '这项错题诊断可能已中断。'}
                                           </p>
                                           {recoveryCandidateId === artifact.id
                                             ? (
                                                 <div role="alert" className="space-y-2">
-                                                  <p className="text-sm text-destructive">
+                                                  <p className="text-sm text-error-foreground">
                                                     {english
                                                       ? 'The previous model request may still be running. Recovering can send another request and may cause duplicate charges.'
                                                       : '先前的模型请求可能仍在运行。恢复后会再次发送请求，并可能产生重复计费。'}
@@ -543,7 +536,7 @@ export function ReviewView() {
                                                       onClick={() => void recoverPotentiallyAbandonedClaim(artifact.id)}
                                                     >
                                                       {recoveringArtifactId === artifact.id && (
-                                                        <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                                                        <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
                                                       )}
                                                       {english ? 'Accept risk and recover' : '接受风险并恢复'}
                                                     </Button>
@@ -564,11 +557,16 @@ export function ReviewView() {
                                         </div>
                                       )
                                     : (
-                                        <p className="text-xs text-muted-foreground">
-                                          {english
-                                            ? 'Another browser session is still marked as handling this diagnosis. No new request will start automatically.'
-                                            : '这项诊断仍标记为由另一个浏览器会话处理，系统不会自动发起新请求。'}
-                                        </p>
+                                        <details className="text-xs text-muted-foreground">
+                                          <summary className="cursor-pointer font-medium">
+                                            {english ? 'Technical details' : '技术详情'}
+                                          </summary>
+                                          <p className="mt-1.5">
+                                            {english
+                                              ? 'Another browser session is currently handling this diagnosis. No new request will start automatically.'
+                                              : '这项诊断当前由另一个浏览器会话处理，系统不会自动发起新请求。'}
+                                          </p>
+                                        </details>
                                       )
                                 )}
                               </div>
@@ -576,7 +574,7 @@ export function ReviewView() {
                           : artifact.type === 'remediation' && artifact.diagnosticStatus === 'failed'
                             ? (
                                 <div className="mt-3 space-y-3">
-                                  <p role="status" className="text-sm text-destructive">
+                                  <p role="status" className="text-sm text-error-foreground">
                                     {artifact.diagnosticFailure === 'context_too_large'
                                       ? (english
                                           ? 'The complete answer and its context exceed the limit for automatic diagnosis. No diagnosis was saved.'
@@ -594,7 +592,7 @@ export function ReviewView() {
                                       onClick={() => void retryDiagnostic(artifact.id)}
                                     >
                                       {retryingArtifactId === artifact.id
-                                        ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                                        ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
                                         : <RotateCcw aria-hidden="true" className="size-4" />}
                                       {english ? 'Retry diagnostic' : '重试诊断'}
                                     </Button>
@@ -604,6 +602,21 @@ export function ReviewView() {
                             : artifact.markdown && (
                               <div className="mt-3"><TeachMarkdown markdown={artifact.markdown} /></div>
                             )}
+                        <details className="mt-3 text-xs text-muted-foreground">
+                          <summary className="cursor-pointer font-medium">
+                            {english ? 'Technical details' : '技术详情'}
+                          </summary>
+                          <p
+                            className="mt-1.5 font-mono"
+                            title={artifact.type === 'clarification'
+                              ? (english ? 'Course revision details' : '课程版本详情')
+                              : group.learningContractVersion !== null
+                                ? (english ? 'Exercise criteria revision details' : '练习规则版本详情')
+                                : undefined}
+                          >
+                            {artifactVersionLabel}
+                          </p>
+                        </details>
                       </li>
                     )
                   })}
@@ -636,14 +649,19 @@ export function ReviewView() {
                             ? 'Saved failed attempt'
                             : '已保存的失败尝试')}
                       </p>
-                      <p
-                        className="mt-1 font-mono text-xs text-muted-foreground"
-                        title={suppression.type === 'clarification'
-                          ? (english ? 'Course revision details' : '课程版本详情')
-                          : (english ? 'Exercise criteria revision details' : '练习规则版本详情')}
-                      >
-                        {suppressionVersionLabels.get(suppression.id)}
-                      </p>
+                      <details className="mt-1 text-xs text-muted-foreground">
+                        <summary className="cursor-pointer font-medium">
+                          {english ? 'Technical details' : '技术详情'}
+                        </summary>
+                        <p
+                          className="mt-1 font-mono"
+                          title={suppression.type === 'clarification'
+                            ? (english ? 'Course revision details' : '课程版本详情')
+                            : (english ? 'Exercise criteria revision details' : '练习规则版本详情')}
+                        >
+                          {suppressionVersionLabels.get(suppression.id)}
+                        </p>
+                      </details>
                     </div>
                     <Button
                       type="button"

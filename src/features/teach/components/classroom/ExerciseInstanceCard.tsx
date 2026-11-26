@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Lightbulb, Loader2, Play, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AnsiOutput } from '@/components/AnsiOutput'
@@ -78,6 +78,7 @@ export function ExerciseInstanceCard({ instance }: { instance: ExerciseInstance 
           classroom={classroom}
           runner={runner}
           activeEditor={activeEditor}
+          lang={lang}
           english={english}
           learningTrackGoal={learningTrackGoal}
           revealedHints={revealedHints}
@@ -144,6 +145,7 @@ function CodeOutputExercise({
   classroom,
   english,
   instance,
+  lang,
   lastAttempt,
   lastEvidenceType,
   learningTrackGoal,
@@ -154,6 +156,7 @@ function CodeOutputExercise({
   classroom: ReturnType<typeof useWorkspace>['classroom']
   english: boolean
   instance: ExerciseInstance & { task: Extract<ExerciseInstance['task'], { type: 'code_output' }> }
+  lang: 'zh' | 'en'
   lastAttempt: ReturnType<typeof useClassroomSnapshot>['attempts'][number] | undefined
   lastEvidenceType: AttemptEvidenceType | undefined
   learningTrackGoal: string | undefined
@@ -180,6 +183,16 @@ function CodeOutputExercise({
   const compilerOutput = lastAttempt?.result.compilerOutput
     ? renderPersistedDiagnostic(lastAttempt.result.compilerOutput)
     : ''
+
+  useEffect(() => {
+    const handle = handleRef.current
+    if (!handle)
+      return
+    if (lastAttempt?.result.phase === 'compile' && compilerOutput)
+      handle.setCompilerMarkers?.(compilerOutput)
+    else
+      handle.clearCompilerMarkers?.()
+  }, [compilerOutput, lastAttempt?.id, lastAttempt?.result.phase])
 
   const run = () => {
     const code = handleRef.current?.getCode() ?? initialCode
@@ -218,8 +231,11 @@ function CodeOutputExercise({
         <DynamicCangjieEditor
           initialCode={initialCode}
           handleRef={handleRef}
+          locale={lang}
+          compact
           uriHint={`exercise/${instance.id}.cj`}
           modelScope={CLASSROOM_EDITOR_MODEL_SCOPE}
+          onRun={run}
         />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -231,7 +247,7 @@ function CodeOutputExercise({
           className="min-h-11 lg:min-h-8"
         >
           {attempt.busy
-            ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
             : <Play aria-hidden="true" className="size-4" />}
           {attempt.busy
             ? (english ? 'Running…' : '运行中…')
@@ -260,7 +276,7 @@ function CodeOutputExercise({
             }}
           >
             {revealingHint
-              ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
               : <Lightbulb aria-hidden="true" className="size-4" />}
             {english ? 'Show hint' : '查看提示'}
           </Button>
@@ -279,7 +295,7 @@ function CodeOutputExercise({
       {lastAttempt && (
         <div className="mt-4 space-y-2 rounded-md border border-border/70 bg-muted/20 p-3">
           <p className={lastAttempt.result.passed
-            ? 'flex items-center gap-2 text-sm font-semibold text-emerald-600'
+            ? 'flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400'
             : 'flex items-center gap-2 text-sm font-semibold text-error-foreground'}
           >
             {lastAttempt.result.passed
@@ -373,7 +389,7 @@ function AttemptVerdict({
   return (
     <div className="mt-3 space-y-1">
       <p className={passed
-        ? 'flex items-center gap-2 text-sm font-semibold text-emerald-600'
+        ? 'flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400'
         : 'flex items-center gap-2 text-sm font-semibold text-error-foreground'}
       >
         {passed
@@ -463,7 +479,7 @@ function RecallExercise({
         disabled={!answer.trim() || attempt.busy}
         onClick={submit}
       >
-        {attempt.busy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+        {attempt.busy && <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />}
         {english ? 'Submit answer' : '提交回答'}
       </Button>
       {attempt.error && <p role="alert" className="mt-3 text-sm text-error-foreground">{attempt.error}</p>}
@@ -576,7 +592,7 @@ function QuizExercise({
         disabled={!complete || attempt.busy}
         onClick={submit}
       >
-        {attempt.busy && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
+        {attempt.busy && <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />}
         {english ? 'Submit answers' : '提交答案'}
       </Button>
       {attempt.error && <p role="alert" className="mt-3 text-sm text-error-foreground">{attempt.error}</p>}

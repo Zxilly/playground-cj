@@ -1,16 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ANTHROPIC_DEFAULT_BASE_URL,
+  applyProviderPreset,
   createConfiguredModel,
+  detectProviderPreset,
   isLLMConfigReady,
   isUserConfigIncomplete,
   isValidLLMBaseURL,
+  LLM_PROVIDER_PRESETS,
   normaliseLLMConfig,
   OPENAI_COMPATIBLE_DEFAULT_BASE_URL,
   resolveProviderDefaults,
   resolveSharedGatewayConfig,
   SHARED_GATEWAY_BASE_URL,
   switchProvider,
+  testLLMConnection,
 } from './model-provider'
 
 const openAIModelMock = vi.hoisted(() => vi.fn(model => ({ provider: 'openai-compatible', model })))
@@ -172,6 +176,98 @@ describe('model provider config', () => {
       baseURL: new URL(SHARED_GATEWAY_BASE_URL, window.location.origin).toString(),
     })
     expect(openAIModelMock).toHaveBeenCalledWith('shared-model')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('never falls back to a hardcoded third-party proxy domain', () => {
+    expect(OPENAI_COMPATIBLE_DEFAULT_BASE_URL).not.toContain('learningman.top')
+    if (!process.env.NEXT_PUBLIC_LLM_BASE_URL)
+      expect(OPENAI_COMPATIBLE_DEFAULT_BASE_URL).toBe('')
+  })
+
+  it('applies official presets and clears credentials when switching providers', () => {
+    expect(LLM_PROVIDER_PRESETS.map(p => p.id)).toEqual([
+      'openai',
+      'deepseek',
+      'anthropic',
+      'custom',
+    ])
+
+    const blank = resolveProviderDefaults('openai-compatible')
+    const openai = applyProviderPreset({ ...blank, apiKey: 'sk-initial' }, 'openai')
+    expect(openai).toEqual({
+      transport: 'direct',
+      provider: 'openai-compatible',
+      baseURL: 'https://api.openai.com/v1',
+      apiKey: 'sk-initial',
+      model: 'gpt-4o-mini',
+    })
+    expect(detectProviderPreset(openai)).toBe('openai')
+
+    const deepseek = applyProviderPreset(openai, 'deepseek')
+    expect(deepseek).toEqual({
+      transport: 'direct',
+      provider: 'openai-compatible',
+      baseURL: 'https://api.deepseek.com/v1',
+      apiKey: '',
+      model: 'deepseek-chat',
+    })
+    expect(detectProviderPreset(deepseek)).toBe('deepseek')
+
+    const anthropic = applyProviderPreset({ ...deepseek, apiKey: 'ds-key' }, 'anthropic')
+    expect(anthropic).toMatchObject({
+      provider: 'anthropic',
+      baseURL: ANTHROPIC_DEFAULT_BASE_URL,
+      apiKey: '',
+    })
+    expect(detectProviderPreset(anthropic)).toBe('anthropic')
+
+    const custom = applyProviderPreset({ ...anthropic, apiKey: 'anth-key' }, 'custom')
+    expect(custom).toEqual({
+      transport: 'direct',
+      provider: 'openai-compatible',
+      baseURL: '',
+      apiKey: '',
+      model: '',
+    })
+    expect(detectProviderPreset(custom)).toBe('custom')
+  })
+
+  it('tests direct connections and classifies auth, not-found, rate-limit, and network responses', async () => {
+    expect(await testLLMConnection({
+      provider: 'openai-compatible',
+      baseURL: '',
+      apiKey: 'sk-test',
+      model: 'gpt-4o-mini',
+    })).toEqual({ ok: false, kind: 'incomplete' })
+
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 401 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 404 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 429 }))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const base = {
+      provider: 'openai-compatible' as const,
+      baseURL: 'https://api.openai.com/v1/',
+      apiKey: 'sk-test',
+      model: 'gpt-4o-mini',
+    }
+    expect(await testLLMConnection(base)).toMatchObject({ ok: true })
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://api.openai.com/v1/chat/completions',
+      expect.objectContaining({ method: 'POST' }),
+    )
+    expect(await testLLMConnection(base)).toEqual({ ok: false, kind: 'auth', status: 401 })
+    expect(await testLLMConnection(base)).toEqual({ ok: false, kind: 'not_found', status: 404 })
+    expect(await testLLMConnection(base)).toEqual({ ok: false, kind: 'rate_limit', status: 429 })
+    expect(await testLLMConnection(base)).toEqual({ ok: false, kind: 'network' })
   })
 
   it('creates an Anthropic model without passing the OpenAI-compatible provider name', () => {

@@ -1343,4 +1343,58 @@ describe('aI Classroom views', () => {
     expect(screen.queryByText('Completed independently')).toBeNull()
     classroom.dispose()
   })
+
+  it('lets learners jump from ConceptProgressView and retention markers directly to ReviewView', async () => {
+    const { classroom, wrapper } = await setup([pack(), dependentPack()])
+    await classroom.execute({
+      type: 'start_learning_track',
+      trackId: globalThis.crypto.randomUUID(),
+      goal: 'Learn main',
+      conceptIds: ['cj.program.main'],
+      explicitLearnerGoal: true,
+    })
+    await classroom.execute({
+      type: 'retain_clarification',
+      learningTrackId: activeTrackId(classroom),
+      artifactId: 'artifact:jump',
+      conceptId: 'cj.program.main',
+      contentVersion: 'cv:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      misconceptionTheme: 'main entry',
+      markdown: 'Start with `main()`.',
+    })
+
+    const progressRendered = render(<ConceptProgressView />, { wrapper })
+    const conceptButton = screen.getByRole('button', { name: /Print output/ })
+    fireEvent.click(conceptButton)
+    expect(useWorkspaceStore.getState().view).toBe('review')
+    expect(useWorkspaceStore.getState().reviewConceptId).toBe('cj.io.println')
+    progressRendered.unmount()
+
+    useWorkspaceStore.getState().setView('live')
+    render(<LiveClassroomView />, { wrapper })
+    fireEvent.click(screen.getByTestId('retention-marker-open-cj.program.main'))
+    expect(useWorkspaceStore.getState().view).toBe('review')
+    expect(useWorkspaceStore.getState().reviewConceptId).toBe('cj.program.main')
+    classroom.dispose()
+  })
+
+  it('prefills TrackSetup from URL ?topic= and supports quick goal presets', async () => {
+    window.history.replaceState({}, '', '/en/tour/ai?topic=cj.io.println')
+    try {
+      const { classroom, wrapper } = await setup([pack(), dependentPack()])
+      render(<LiveClassroomView />, { wrapper })
+
+      const targetSelect = screen.getByLabelText('Course range') as HTMLSelectElement
+      const goalInput = screen.getByLabelText('What do you want to be able to do?') as HTMLInputElement
+      expect(targetSelect.value).toBe('cj.io.println')
+      expect(goalInput.value).toContain('Print output')
+
+      fireEvent.click(screen.getByRole('button', { name: /Learn Cangjie starter syntax/ }))
+      expect(goalInput.value).toContain('Learn Cangjie starter syntax')
+      classroom.dispose()
+    }
+    finally {
+      window.history.replaceState({}, '', '/')
+    }
+  })
 })

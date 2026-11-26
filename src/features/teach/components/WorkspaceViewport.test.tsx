@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
@@ -77,29 +77,37 @@ describe('workspace viewport teacher exposure disclosure', () => {
     classroom.dispose()
   })
 
-  it('shows the global teacher-guidance boundary above every main workspace view', async () => {
+  it('shows a lightweight collapsible notice on assessment/review views and hides it in Playground', async () => {
     const { classroom, wrapper } = await setup('en')
     await classroom.execute({
       type: 'record_teacher_exposure',
       interactionId: 'teacher:visible-output',
     })
 
-    const views: WorkspaceView[] = ['live', 'review', 'progress', 'playground']
-    const rendered = render(<WorkspaceViewport view={views[0]} />, { wrapper })
+    const assessmentViews: WorkspaceView[] = ['live', 'review', 'progress']
+    const rendered = render(<WorkspaceViewport view={assessmentViews[0]} />, { wrapper })
 
-    for (const view of views) {
+    for (const view of assessmentViews) {
       rendered.rerender(<WorkspaceViewport view={view} />)
       await screen.findByText(`${view} view`)
-      expect(screen.getByRole('status').textContent).toBe(
-        'You have viewed teacher explanations or guidance. Later answers are still useful for practice and feedback, but they are not treated as an independent check in this workspace.',
-      )
-      expect(screen.getByRole('status').nextElementSibling?.textContent).toBe(`${view} view`)
+      const notice = screen.getByRole('status')
+      expect(notice.textContent).toContain('Guided practice mode')
+      expect(notice.nextElementSibling?.textContent).toBe(`${view} view`)
     }
+
+    fireEvent.click(screen.getByRole('button', { name: 'Details' }))
+    expect(screen.getByRole('status').textContent).toContain(
+      'You have viewed teacher explanations or guidance. Later answers are still useful for practice and feedback, but they are not treated as an independent check in this workspace.',
+    )
+
+    rendered.rerender(<WorkspaceViewport view="playground" />)
+    await screen.findByText('playground view')
+    expect(screen.queryByRole('status')).toBeNull()
 
     classroom.dispose()
   })
 
-  it('states the same evidence limitation in Chinese', async () => {
+  it('states the same evidence limitation in Chinese when expanded', async () => {
     const { classroom, wrapper } = await setup('zh')
     await classroom.execute({
       type: 'record_teacher_exposure',
@@ -108,7 +116,9 @@ describe('workspace viewport teacher exposure disclosure', () => {
 
     render(<WorkspaceViewport view="progress" />, { wrapper })
 
-    expect(screen.getByRole('status').textContent).toBe(
+    expect(screen.getByRole('status').textContent).toContain('当前为有指导练习模式')
+    fireEvent.click(screen.getByRole('button', { name: '详情' }))
+    expect(screen.getByRole('status').textContent).toContain(
       '你已查看老师讲解或指导。之后的作答仍可用于练习和反馈，但在这个工作区内不会被视为独立测验。',
     )
     classroom.dispose()

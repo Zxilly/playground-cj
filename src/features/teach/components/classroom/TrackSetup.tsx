@@ -1,13 +1,30 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { ArrowRight, Loader2, Target, X } from 'lucide-react'
+import { ArrowRight, Loader2, Sparkles, Target, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
+import {
+  readTopicFromLocation,
+  resolveTopicToConceptId,
+} from '@/features/teach/navigation/topic-resolution'
 import { MAX_LEARNING_TRACK_CONCEPTS } from '@/lib/teach/classroom/state'
 
 const MAX_GOAL_LENGTH = 240
+
+const QUICK_GOALS = {
+  zh: [
+    '快速掌握仓颉入门语法并写出第一个程序',
+    '理解 main 入口、println 输出与变量声明',
+    '区分不可变绑定 let 与可变变量 var 的使用场景',
+  ],
+  en: [
+    'Learn Cangjie starter syntax and run my first program',
+    'Master main(), println output, and variable declarations',
+    'Understand when to use immutable let vs mutable var',
+  ],
+} as const
 
 function orderedCourseConcepts(
   catalog: ReturnType<typeof useWorkspace>['catalog'],
@@ -63,21 +80,41 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
     () => orderedCourseConcepts(catalog),
     [catalog],
   )
-  const [goal, setGoal] = useState('')
-  const [targetConceptId, setTargetConceptId] = useState('')
+  const english = lang === 'en'
+  const initialTopicMatch = useMemo(() => {
+    // Only prefill from the landing `?topic=` query param during first-time setup.
+    if (onCancel)
+      return null
+    const topic = readTopicFromLocation()
+    if (!topic)
+      return null
+    const conceptId = resolveTopicToConceptId(topic, catalog)
+    const pack = conceptId ? catalog.get(conceptId) : undefined
+    return {
+      topic,
+      conceptId: conceptId ?? '',
+      suggestedGoal: pack
+        ? (english
+            ? `Understand and practice ${pack.concept.title}`
+            : `理解并掌握「${pack.concept.title}」`)
+        : '',
+    }
+  }, [catalog, english, onCancel])
+  const [goal, setGoal] = useState(() => initialTopicMatch?.suggestedGoal ?? '')
+  const [targetConceptId, setTargetConceptId] = useState(() => initialTopicMatch?.conceptId ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const pendingStartRef = useRef<{
     payloadKey: string
     trackId: string
   } | null>(null)
-  const english = lang === 'en'
   const conceptIds = useMemo(
     () => conceptsThroughTarget(catalog, orderedConceptIds, targetConceptId),
     [catalog, orderedConceptIds, targetConceptId],
   )
   const exceedsTrackCapacity
     = conceptIds.length > MAX_LEARNING_TRACK_CONCEPTS
+  const quickGoals = english ? QUICK_GOALS.en : QUICK_GOALS.zh
 
   const submit = async () => {
     const normalized = goal.trim()
@@ -169,6 +206,22 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           autoComplete="off"
           className="h-11 lg:h-9"
         />
+        <div className="flex flex-wrap items-center gap-1.5" aria-label={english ? 'Quick goal presets' : '快捷目标标签'}>
+          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Sparkles aria-hidden="true" className="size-3" />
+            {english ? 'Quick pick:' : '快捷填充：'}
+          </span>
+          {quickGoals.map(preset => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setGoal(preset)}
+              className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs text-foreground transition-colors hover:border-primary/50 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
         <label htmlFor="learning-target" className="block text-sm font-medium">
           {english ? 'Course range' : '课程范围'}
         </label>
@@ -202,20 +255,20 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           </p>
         )}
         {conceptIds.length === 0 && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm text-error-foreground">
             {english
               ? 'The built-in course is unavailable.'
               : '内置课程暂不可用。'}
           </p>
         )}
         {exceedsTrackCapacity && (
-          <p role="alert" className="text-sm text-destructive">
+          <p role="alert" className="text-sm text-error-foreground">
             {english
               ? `This path requires ${conceptIds.length} lessons, but one path can contain at most ${MAX_LEARNING_TRACK_CONCEPTS}. Select an earlier target.`
               : `这条路径需要 ${conceptIds.length} 课，但单条路径最多容纳 ${MAX_LEARNING_TRACK_CONCEPTS} 课。请选择更早的目标。`}
           </p>
         )}
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        {error && <p role="alert" className="text-sm text-error-foreground">{error}</p>}
         <Button
           type="submit"
           className="min-h-11 lg:min-h-9"
@@ -227,7 +280,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           }
         >
           {submitting
-            ? <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
             : <ArrowRight aria-hidden="true" className="size-4" />}
           {english ? 'Start learning path' : '开始学习'}
         </Button>

@@ -100,7 +100,7 @@ describe('workspace history provider', () => {
     expect(window.location.hash).toBe('#external')
   })
 
-  it('canonicalizes an unmarked blocked popstate back to the running chat scope', () => {
+  it('allows unmarked popstate navigation even while a teacher response is streaming', () => {
     renderProvider()
     act(() => useWorkspaceStore.getState().setTeacherChatRunMode('live'))
     const go = vi.spyOn(window.history, 'go').mockImplementation(() => {})
@@ -110,17 +110,16 @@ describe('workspace history provider', () => {
       window.dispatchEvent(new PopStateEvent('popstate', { state: { next: 'external' } }))
     })
 
-    expect(screen.getByText('live')).toBeTruthy()
+    expect(screen.getByText('review')).toBeTruthy()
     expect(go).not.toHaveBeenCalled()
     expect(window.history.state.next).toBe('external')
-    expect(window.location.search).toBe('?topic=main')
+    expect(window.location.search).toContain('view=review')
     expect(window.location.hash).toBe('#external')
   })
 
-  it('rolls back a popstate that would cross the running teacher scope', () => {
+  it('never hijacks browser back navigation during streaming generation', () => {
     renderProvider()
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
-    const reviewState = window.history.state
     act(() => useWorkspaceStore.getState().setTeacherChatRunMode('review'))
 
     const go = vi.spyOn(window.history, 'go').mockImplementation(() => {})
@@ -133,13 +132,7 @@ describe('workspace history provider', () => {
       window.dispatchEvent(new PopStateEvent('popstate', { state: liveState }))
     })
 
-    expect(screen.getByText('review')).toBeTruthy()
-    expect(go).toHaveBeenCalledWith(1)
-
-    act(() => {
-      window.history.replaceState(reviewState, '', '/zh/tour/ai?topic=main&view=review')
-      window.dispatchEvent(new PopStateEvent('popstate', { state: reviewState }))
-    })
-    expect(screen.getByText('review')).toBeTruthy()
+    expect(screen.getByText('live')).toBeTruthy()
+    expect(go).not.toHaveBeenCalled()
   })
 })

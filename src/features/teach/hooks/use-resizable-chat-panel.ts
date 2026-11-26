@@ -8,15 +8,17 @@ export const CHAT_MIN_WIDTH = 320
 export const CHAT_MAX_WIDTH = 640
 export const CHAT_DEFAULT_WIDTH = 400
 const CHAT_KEYBOARD_STEP = 24
+const DESKTOP_SIDEBAR_BREAKPOINT = 1024
 const SIDEBAR_WIDTH = 208
 const CENTER_MIN_WIDTH = 600
 
 function effectiveMaxWidth(): number {
   if (typeof window === 'undefined')
     return CHAT_MAX_WIDTH
+  const sidebarWidth = window.innerWidth >= DESKTOP_SIDEBAR_BREAKPOINT ? SIDEBAR_WIDTH : 0
   return Math.max(
     CHAT_MIN_WIDTH,
-    Math.min(CHAT_MAX_WIDTH, window.innerWidth - SIDEBAR_WIDTH - CENTER_MIN_WIDTH),
+    Math.min(CHAT_MAX_WIDTH, window.innerWidth - sidebarWidth - CENTER_MIN_WIDTH),
   )
 }
 
@@ -28,7 +30,7 @@ function clampChatWidth(px: number): number {
 export function useResizableChatPanel() {
   const chatRef = useRef<HTMLElement>(null)
   const persistArmedRef = useRef(false)
-  const [chatWidth, setChatWidth] = useState(CHAT_DEFAULT_WIDTH)
+  const [chatWidth, setChatWidth] = useState(() => clampChatWidth(CHAT_DEFAULT_WIDTH))
   const [chatMaxWidth, setChatMaxWidth] = useState(() => effectiveMaxWidth())
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   AI_CLASSROOM_V8_DATABASE_NAME,
   ClassroomRevisionConflictError,
@@ -41,7 +41,7 @@ describe('indexedDB classroom storage', () => {
     await Promise.all([first.close?.(), second.close?.()])
   })
 
-  it('discards obsolete Course scopes without touching unrelated classrooms', async () => {
+  it('preserves previous Course scopes on upgrade and supports listing, replacing, and explicit deletion', async () => {
     const databaseName = `${AI_CLASSROOM_V8_DATABASE_NAME}-test-${crypto.randomUUID()}`
     const legacy = createIndexedDBClassroomStorage({
       databaseName,
@@ -65,12 +65,30 @@ describe('indexedDB classroom storage', () => {
     const current = createIndexedDBClassroomStorage({
       databaseName,
       scope: 'classroom:course:sha256:current',
-      discardOtherScopesWithPrefix: 'classroom',
     })
+    // Opening a new Course scope must never silently wipe older scopes.
     await expect(current.load()).resolves.toBeNull()
-    await expect(legacy.load()).resolves.toBeNull()
-    await expect(oldCourse.load()).resolves.toBeNull()
+    await expect(legacy.load()).resolves.toEqual(revisionOne)
+    await expect(oldCourse.load()).resolves.toEqual(revisionOne)
     await expect(unrelated.load()).resolves.toEqual(revisionOne)
+
+    const listed = await current.listScopes?.('classroom')
+    expect(listed?.map(item => item.scope).sort()).toEqual([
+      'classroom',
+      'classroom:course:sha256:old',
+    ])
+
+    // Explicit replace bumps revision monotonically and notifies listeners.
+    const notified = vi.fn()
+    current.subscribe?.(notified)
+    const replaced = await current.replace?.(createEmptyClassroom())
+    expect(replaced?.revision).toBe(1)
+    expect(notified).toHaveBeenCalledWith(1)
+
+    // Explicit deleteScope removes only the requested scope.
+    await current.deleteScope?.('classroom:course:sha256:old')
+    await expect(oldCourse.load()).resolves.toBeNull()
+    await expect(legacy.load()).resolves.toEqual(revisionOne)
 
     await Promise.all([
       legacy.close?.(),

@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import type { WorkspaceView } from '@/features/teach/state/workspace-store'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
-import { isWorkspaceViewBlocked } from '@/features/teach/navigation/workspace-view-url'
 import { useWorkspaceHistoryNavigation } from '@/features/teach/navigation/workspace-history-context'
 
 interface NavEntry {
@@ -42,25 +41,18 @@ export function WorkspaceNav() {
       >
         {NAV_ENTRIES.map(({ view: entryView, icon: Icon, zh, zhShort, en, enShort }) => {
           const active = view === entryView
-          const blocked = isWorkspaceViewBlocked(entryView, teacherChatRunMode)
           return (
             <button
               key={entryView}
               type="button"
               data-testid={`workspace-nav-${entryView}`}
               aria-current={active ? 'page' : undefined}
-              aria-disabled={blocked || undefined}
-              aria-describedby={blocked ? navigationStatusId : undefined}
-              onClick={() => {
-                if (!blocked)
-                  navigate(entryView)
-              }}
+              onClick={() => navigate(entryView)}
               className={cn(
                 'flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-[11px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/35 sm:gap-2 sm:px-2 sm:text-xs lg:w-full lg:justify-start lg:gap-3 lg:px-3 lg:text-start lg:text-sm',
                 active
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-background hover:text-foreground',
-                blocked && 'cursor-not-allowed opacity-45 hover:bg-transparent hover:text-muted-foreground',
               )}
             >
               <Icon aria-hidden="true" className="size-4 shrink-0" />
@@ -77,8 +69,8 @@ export function WorkspaceNav() {
           className="mt-1.5 rounded-md border border-border bg-muted/45 px-2 py-1.5 text-[11px] leading-4 text-muted-foreground"
         >
           {lang === 'en'
-            ? 'A teacher response is in progress. Wait or stop it before switching chat context.'
-            : '老师正在回复。请等待完成或停止生成后，再切换对话范围。'}
+            ? 'AI teacher is responding. You can still browse other views freely; switching between Live and Review changes the chat context.'
+            : 'AI 老师正在回复。你仍可自由切换页面查看内容；在实时课堂与复习页之间切换会切换对话上下文。'}
         </p>
       )}
     </div>

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { BookmarkCheck, MessageCircle, Plus, Route, SkipForward } from 'lucide-react'
+import { ArrowUpRight, BookmarkCheck, MessageCircle, Plus, Route, SkipForward } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useClassroomSnapshot } from '@/features/teach/hooks/use-classroom-snapshot'
+import { useWorkspaceHistoryNavigation } from '@/features/teach/navigation/workspace-history-context'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { TeachMarkdown } from '@/features/teach/components/blocks/TeachMarkdown'
 import { ContentReferenceGroup } from '@/features/teach/components/classroom/CoreContent'
@@ -49,6 +50,8 @@ export function LiveClassroomView() {
   const { catalog, classroom, lang } = useWorkspace()
   const snapshot = useClassroomSnapshot(classroom)
   const setPendingPrefill = useWorkspaceStore(state => state.setPendingPrefill)
+  const openReviewConcept = useWorkspaceStore(state => state.openReviewConcept)
+  const navigate = useWorkspaceHistoryNavigation()
   const track = snapshot.tracks.find(item => item.id === snapshot.activeTrackId)
   const english = lang === 'en'
   const [creatingTrack, setCreatingTrack] = useState(false)
@@ -174,7 +177,7 @@ export function LiveClassroomView() {
           </div>
         </div>
         {trackSelectionError && (
-          <p role="alert" className="mt-3 text-sm text-destructive">
+          <p role="alert" className="mt-3 text-sm text-error-foreground">
             {trackSelectionError}
           </p>
         )}
@@ -217,7 +220,7 @@ export function LiveClassroomView() {
         </h2>
       )}
 
-      <ol aria-label="Classroom Stream" className="space-y-5">
+      <ol aria-label={english ? 'Classroom stream' : '课堂活动流'} className="space-y-5">
         {stream.map((entry, index) => {
           const pack = catalog.require(entry.conceptId)
           const entryPack = 'contentVersion' in entry
@@ -259,13 +262,29 @@ export function LiveClassroomView() {
                 </article>
               )}
               {entry.type === 'retention_marker' && (
-                <article className="flex gap-3 rounded-lg border border-border bg-muted/20 p-4 text-sm">
-                  <BookmarkCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <p>
-                    {english
-                      ? `A ${entry.artifactType === 'clarification' ? 'saved explanation' : 'mistake diagnosis'} is available in Review.`
-                      : `一条${entry.artifactType === 'clarification' ? '讲解笔记' : '错题诊断'}已保存到复习页。`}
-                  </p>
+                <article className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 p-4 text-sm">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <BookmarkCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <p>
+                      {english
+                        ? `A ${entry.artifactType === 'clarification' ? 'saved explanation' : 'mistake diagnosis'} is available in Review.`
+                        : `一条${entry.artifactType === 'clarification' ? '讲解笔记' : '错题诊断'}已保存到复习页。`}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-testid={`retention-marker-open-${entry.conceptId}`}
+                    onClick={() => {
+                      navigate('review')
+                      openReviewConcept(entry.conceptId)
+                    }}
+                    className="min-h-11 shrink-0 lg:min-h-8"
+                  >
+                    {english ? 'View in Review' : '前往复习页查看'}
+                    <ArrowUpRight aria-hidden="true" className="size-3.5" />
+                  </Button>
                 </article>
               )}
             </li>

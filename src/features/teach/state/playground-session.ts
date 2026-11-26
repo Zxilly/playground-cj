@@ -54,6 +54,7 @@ export interface PlaygroundSession {
     workspaceSignal: AbortSignal,
     run: (code: string, signal: AbortSignal) => Promise<RunResult>,
   ) => Promise<boolean>
+  cancelRun: (tabId: string) => void
   retryPersistence: () => void
   resolveConflict: (resolution: 'use_remote' | 'keep_copy') => string | null
   acquire: () => Promise<() => Promise<void>>
@@ -199,6 +200,7 @@ export function createPlaygroundSession(
       }
       return true
     },
+    cancelRun: tabId => cancelRun(tabId),
     retryPersistence: () => {
       if (get().persistenceStatus === 'error' && owners.size > 0) {
         void replaceFailedRuntime().catch(() => undefined)

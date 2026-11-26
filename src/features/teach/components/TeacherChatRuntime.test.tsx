@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
     }),
   },
   config: {},
+  setSettingsDialogOpen: vi.fn(),
   threadRunning: false,
   chatRuntimeOptions: [] as Array<{
     messages?: TeacherChatMessage[]
@@ -147,6 +148,7 @@ vi.mock('@/stores/llmConfig', () => ({
     keySource: 'manual',
     autoQuota: null,
     setAutoQuota: vi.fn(),
+    setSettingsDialogOpen: mocks.setSettingsDialogOpen,
   }),
 }))
 vi.mock('@/features/teach/context/abort-scope', () => ({
@@ -727,6 +729,40 @@ describe('teacherChatRuntime', () => {
     await waitFor(() => {
       expect(rendered.queryByTestId('teacher-runtime-error')).toBeNull()
     })
+  })
+
+  it('classifies 401/403 and 404 errors with a one-click AI settings action', async () => {
+    const rendered = render(
+      <WorkspaceContext value={context}>
+        <TeacherChatRuntime lang="zh" />
+      </WorkspaceContext>,
+    )
+    await waitFor(() => expect(mocks.chatRuntimeOptions.length).toBeGreaterThan(0))
+
+    act(() => {
+      mocks.chatRuntimeOptions.at(-1)?.onError?.(
+        new Error('401 Unauthorized: invalid api key'),
+      )
+      mocks.chatRuntimeOptions.at(-1)?.onFinish?.({
+        isError: true,
+        messages: [],
+      })
+    })
+    expect(rendered.getByTestId('teacher-runtime-error').textContent).toContain('API Key 无效或无权限')
+    rendered.getByTestId('teacher-runtime-error-settings').click()
+    expect(mocks.setSettingsDialogOpen).toHaveBeenCalledWith(true)
+
+    act(() => {
+      mocks.chatRuntimeOptions.at(-1)?.onError?.(
+        new Error('404 Not Found: model_not_found'),
+      )
+      mocks.chatRuntimeOptions.at(-1)?.onFinish?.({
+        isError: true,
+        messages: [],
+      })
+    })
+    expect(rendered.getByTestId('teacher-runtime-error').textContent).toContain('404')
+    expect(rendered.getByTestId('teacher-runtime-error-settings')).toBeTruthy()
   })
 
   it('does not turn an intentional stop into an error banner', async () => {

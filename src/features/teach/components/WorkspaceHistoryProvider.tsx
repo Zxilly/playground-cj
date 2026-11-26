@@ -9,7 +9,6 @@ import type { PropsWithChildren } from 'react'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import {
   createWorkspaceHistoryMarker,
-  isWorkspaceViewBlocked,
   mergeWorkspaceHistoryState,
   readWorkspaceHistoryMarker,
   readWorkspaceView,
@@ -36,7 +35,6 @@ function markersMatch(
 
 export function WorkspaceHistoryProvider({ children }: PropsWithChildren) {
   const cursorRef = useRef<WorkspaceHistoryMarker | null>(null)
-  const revertingRef = useRef(false)
 
   useLayoutEffect(() => {
     const initialView = readWorkspaceView(window.location)
@@ -62,31 +60,6 @@ export function WorkspaceHistoryProvider({ children }: PropsWithChildren) {
       const state = useWorkspaceStore.getState()
       const targetMarker = readWorkspaceHistoryMarker(event.state)
 
-      if (revertingRef.current) {
-        revertingRef.current = false
-        cursorRef.current = targetMarker ?? cursorRef.current
-        return
-      }
-
-      if (isWorkspaceViewBlocked(requestedView, state.teacherChatRunMode)) {
-        const currentMarker = cursorRef.current
-        if (currentMarker && targetMarker && currentMarker.position !== targetMarker.position) {
-          revertingRef.current = true
-          window.history.go(currentMarker.position - targetMarker.position)
-          return
-        }
-
-        const fallbackMarker = currentMarker
-          ?? createWorkspaceHistoryMarker(state.view, 0)
-        cursorRef.current = fallbackMarker
-        window.history.replaceState(
-          mergeWorkspaceHistoryState(window.history.state, fallbackMarker),
-          '',
-          workspaceViewHref(window.location, state.view),
-        )
-        return
-      }
-
       const markerForTarget = targetMarker
         ?? createWorkspaceHistoryMarker(requestedView, cursorRef.current?.position ?? 0)
       cursorRef.current = markerForTarget
@@ -108,8 +81,6 @@ export function WorkspaceHistoryProvider({ children }: PropsWithChildren) {
 
   const navigate = useCallback<WorkspaceHistoryNavigation>((requestedView) => {
     const state = useWorkspaceStore.getState()
-    if (isWorkspaceViewBlocked(requestedView, state.teacherChatRunMode))
-      return false
     if (requestedView === state.view)
       return true
 

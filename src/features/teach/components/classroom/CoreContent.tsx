@@ -1,13 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 import type { CoreContentBlock, CourseContentPack } from '@/lib/teach/classroom/content-packs'
 import { TeachMarkdown } from '@/features/teach/components/blocks/TeachMarkdown'
+import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { cn } from '@/lib/utils'
 import { useRootDarkMode } from '@/lib/theme/useRootDarkMode'
 
-function CodeBlock({ block }: { block: Extract<CoreContentBlock, { type: 'code_sample' }> }) {
+function CodeBlock({
+  block,
+  english,
+}: {
+  block: Extract<CoreContentBlock, { type: 'code_sample' }>
+  english: boolean
+}) {
   const [highlight, setHighlight] = useState<{
     key: string
     html: string
@@ -36,7 +43,7 @@ function CodeBlock({ block }: { block: Extract<CoreContentBlock, { type: 'code_s
   return (
     <figure className="overflow-hidden rounded-md border border-border/70 bg-muted/20">
       <figcaption className="border-b border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground">
-        Cangjie
+        {english ? 'Cangjie' : '仓颉代码'}
       </figcaption>
       {html
         ? (
@@ -70,6 +77,9 @@ export function CoreContent({
   exposureLabel?: string
   showSource?: boolean
 }) {
+  const workspace = use(WorkspaceContext)
+  const english = workspace?.lang === 'en'
+
   return (
     <article
       data-core-content-id={block.id}
@@ -85,9 +95,9 @@ export function CoreContent({
       )}
       {block.type === 'prose'
         ? <TeachMarkdown markdown={block.markdown} source="validated" />
-        : <CodeBlock block={block} />}
+        : <CodeBlock block={block} english={english} />}
       {showSource && (
-        <ul aria-label="Source References" className="space-y-1 border-t border-border/60 pt-2">
+        <ul aria-label={english ? 'Source references' : '参考来源'} className="space-y-1 border-t border-border/60 pt-2">
           {block.sourceReferences.map(source => (
             <li key={`${source.sourceId}:${source.ref}`} className="flex items-start gap-1.5 text-xs text-muted-foreground">
               <ExternalLink aria-hidden="true" className="mt-0.5 size-3 shrink-0" />
@@ -111,6 +121,8 @@ export function ContentReferenceGroup({
   blockIds: string[]
   pack: CourseContentPack
 }) {
+  const workspace = use(WorkspaceContext)
+  const english = workspace?.lang === 'en'
   const blocks = new Map(pack.blocks.map(block => [block.id, block]))
   return (
     <div className="space-y-3">
@@ -119,10 +131,10 @@ export function ContentReferenceGroup({
         return block
           ? <CoreContent key={blockId} block={block} showSource />
           : (
-              <p key={blockId} role="alert" className="rounded-md border border-destructive/30 p-3 text-sm text-destructive">
-                Current Course invariant failed: missing Core Content Block
-                {' '}
-                {blockId}
+              <p key={blockId} role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-error-foreground">
+                {english
+                  ? 'This section of lesson content is temporarily unavailable in the current course revision. Please refresh or check Review for the latest version.'
+                  : '这部分课程内容在当前课程版本中暂不可用，请刷新页面或在复习页查看最新内容。'}
               </p>
             )
       })}

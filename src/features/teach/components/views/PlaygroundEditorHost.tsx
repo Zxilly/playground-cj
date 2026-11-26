@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, RefCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { t } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
+import { toast } from 'sonner'
 import type { CangjieEditorComponent, CangjieEditorHandle } from '@/features/teach/components/editor/CangjieEditor'
 import { DynamicCangjieEditor } from '@/features/teach/components/editor/DynamicCangjieEditor'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
@@ -57,6 +59,7 @@ export function PlaygroundEditorHost({
   const slotRef = useRef<HTMLDivElement | null>(null)
   const layoutFrameRef = useRef<number | null>(null)
   const persistTimerRef = useRef<number | null>(null)
+  const runHandlerRef = useRef<(() => void | Promise<void>) | null>(null)
   const pendingCodeRef = useRef<{
     tabId: string
     code: string
@@ -79,7 +82,10 @@ export function PlaygroundEditorHost({
       cancelAnimationFrame(layoutFrameRef.current)
     layoutFrameRef.current = requestAnimationFrame(() => {
       layoutFrameRef.current = null
-      editorHandleRef.current?.layout?.()
+      if (editorHandleRef.current?.relayout)
+        editorHandleRef.current.relayout()
+      else
+        editorHandleRef.current?.layout?.()
     })
   }, [])
 
@@ -234,12 +240,27 @@ export function PlaygroundEditorHost({
     persistLiveEditorCode,
   ])
 
+  const registerRunHandler = useCallback((handler: (() => void | Promise<void>) | null) => {
+    runHandlerRef.current = handler
+  }, [])
+
+  const handleRunFromEditor = useCallback(() => {
+    return runHandlerRef.current?.()
+  }, [])
+
+  const handleSaveFromEditor = useCallback(() => {
+    flushPendingCode()
+    persistLiveEditorCode()
+    toast.success(i18n._(t`已保存代码`))
+  }, [flushPendingCode, i18n, persistLiveEditorCode])
+
   const context = useMemo<PlaygroundEditorHostContextValue>(() => ({
     activateEditor,
     editorHandleRef,
     flushPendingCode,
     registerEditorSlot,
-  }), [activateEditor, flushPendingCode, registerEditorSlot])
+    registerRunHandler,
+  }), [activateEditor, flushPendingCode, registerEditorSlot, registerRunHandler])
 
   return (
     <PlaygroundEditorHostContext value={context}>
@@ -252,6 +273,8 @@ export function PlaygroundEditorHost({
           canonicalModel
           fillHeight
           onCodeChange={persistActiveCode}
+          onRun={handleRunFromEditor}
+          onSave={handleSaveFromEditor}
         />,
         hostElement,
       )}

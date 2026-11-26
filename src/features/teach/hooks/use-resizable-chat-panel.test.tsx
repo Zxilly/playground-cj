@@ -55,6 +55,22 @@ describe('useResizableChatPanel', () => {
     expect(handle.getAttribute('aria-valuenow')).toBe('320')
   })
 
+  it('clamps initial width immediately and omits sidebar width on 768-1024px medium screens', () => {
+    vi.stubGlobal('innerWidth', 960)
+    render(<ChatPanel />)
+    const handle = screen.getByRole('separator')
+    // 960 - 0 (no sidebar below 1024px) - 600 = 360; default 400 is clamped immediately.
+    expect(handle.getAttribute('aria-valuemax')).toBe('360')
+    expect(handle.getAttribute('aria-valuenow')).toBe('360')
+
+    act(() => {
+      vi.stubGlobal('innerWidth', 800)
+      window.dispatchEvent(new Event('resize'))
+    })
+    expect(handle.getAttribute('aria-valuemax')).toBe('320')
+    expect(handle.getAttribute('aria-valuenow')).toBe('320')
+  })
+
   it('keeps resizing usable when preference storage throws', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('Storage blocked')

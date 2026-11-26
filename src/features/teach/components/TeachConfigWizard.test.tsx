@@ -6,6 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_LLM_CONFIG, useLLMConfigStore } from '@/stores/llmConfig'
 import { TeachConfigWizard } from './TeachConfigWizard'
 
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/zh/tour/ai',
+}))
+
 // The wizard calls the LLM bootstrap hook on mount. It performs network I/O
 // (fetch /api/ai-gateway/metadata) and store writes exercised in its own unit test; here we
 // stub it so the wizard's source/credentials flow is the unit under test.
@@ -103,7 +107,7 @@ describe('teachConfigWizard', () => {
     expect(onEnter).not.toHaveBeenCalled()
   })
 
-  it('prompts to switch to a personal key when the shared quota is exhausted', () => {
+  it('prompts to switch to a personal key or enter self-study mode when the shared quota is exhausted', () => {
     useLLMConfigStore.setState({
       config: DEFAULT_LLM_CONFIG,
       keySource: 'auto',
@@ -114,12 +118,23 @@ describe('teachConfigWizard', () => {
         exhausted: true,
       },
     })
-    renderWizard()
+    const { onEnter } = renderWizard()
     expect(screen.getByTestId('teach-config-quota-exhausted')).toBeTruthy()
     expect(screen.getByTestId('teach-source-next').hasAttribute('disabled')).toBe(true)
+
+    fireEvent.click(screen.getByTestId('teach-source-self-study'))
+    expect(onEnter).toHaveBeenCalledTimes(1)
   })
 
-  it('walks the custom path: pick custom, fill the key, then enter', () => {
+  it('allows entering self-study mode when the shared service is unavailable', () => {
+    bootstrapMock.mockReturnValue({ status: 'error', error: 'offline' })
+    const { onEnter } = renderWizard()
+    expect(screen.getByTestId('teach-source-next').hasAttribute('disabled')).toBe(true)
+    fireEvent.click(screen.getByTestId('teach-source-self-study'))
+    expect(onEnter).toHaveBeenCalledTimes(1)
+  })
+
+  it('walks the custom path: pick custom, choose official preset, fill the key, then enter', () => {
     useLLMConfigStore.setState({ config: DEFAULT_LLM_CONFIG, keySource: 'auto' })
     const { onEnter } = renderWizard()
 
@@ -131,15 +146,21 @@ describe('teachConfigWizard', () => {
     expect(screen.getByTestId('teach-config-enter').className).toContain('min-h-11')
     expect(screen.getByRole('button', { name: 'Anthropic' }).className).toContain('min-h-11')
 
-    // baseURL + model are seeded from the provider defaults; only the key is missing.
+    // Security guarantee: no hardcoded third-party baseURL is prefilled by default.
+    const baseUrlInput = screen.getByLabelText('服务地址') as HTMLInputElement
+    expect(baseUrlInput.value).not.toContain('learningman.top')
+
     const enter = screen.getByTestId('teach-config-enter')
     expect(enter.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'OpenAI' }))
+    expect(baseUrlInput.value).toBe('https://api.openai.com/v1')
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'my-key' } })
     expect(enter.hasAttribute('disabled')).toBe(false)
 
     fireEvent.click(enter)
     expect(onEnter).toHaveBeenCalledTimes(1)
     expect(useLLMConfigStore.getState().config.apiKey).toBe('my-key')
+    expect(useLLMConfigStore.getState().config.baseURL).toBe('https://api.openai.com/v1')
     expect(useLLMConfigStore.getState().keySource).toBe('user')
   })
 

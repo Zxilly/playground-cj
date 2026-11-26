@@ -17,6 +17,9 @@ export function WorkspaceProvider({
   runner,
   activeEditor,
   now,
+  storage,
+  storageScope,
+  courseVersion,
   children,
 }: WorkspaceProviderProps) {
   return (
@@ -28,6 +31,9 @@ export function WorkspaceProvider({
       runner,
       activeEditor,
       now,
+      storage,
+      storageScope,
+      courseVersion,
     }}
     >
       {children}

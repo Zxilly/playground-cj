@@ -65,8 +65,7 @@ interface LLMConfigDialogProps {
   /**
    * When false, omit the built-in gear-icon trigger and let an external caller
    * open the dialog via `useLLMConfigStore.setSettingsDialogOpen`. Useful when
-   * mounting the dialog inside a host that already provides its own trigger,
-   * or with surface colors the white-on-teal default trigger does not match.
+   * mounting the dialog inside a host that already provides its own trigger.
    */
   withTrigger?: boolean
   /** External trigger to restore focus to when `withTrigger` is false. */
@@ -181,16 +180,17 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
       {withTrigger && (
         <DialogTrigger asChild>
           <button
+            type="button"
             aria-label={t`AI 服务设置`}
             title={t`AI 服务设置`}
-            className="inline-flex size-7 cursor-pointer items-center justify-center rounded-full text-white/85 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200/60"
+            className="inline-flex size-11 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:size-9"
           >
-            <Settings aria-hidden="true" className="size-3.5" />
+            <Settings aria-hidden="true" className="size-4" />
           </button>
         </DialogTrigger>
       )}
       <DialogContent
-        className="teach-workspace-theme sm:max-w-[480px]"
+        className="teach-workspace-theme sm:max-w-[500px]"
         onCloseAutoFocus={(event) => {
           if (!returnFocusRef?.current)
             return
@@ -218,12 +218,12 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
             setMode(nextMode)
           }}
         >
-          <TabsList aria-label={t`AI 服务来源`} className="grid w-full grid-cols-2">
-            <TabsTrigger value="shared" className="min-h-11 lg:min-h-9">
+          <TabsList aria-label={t`AI 服务来源`} className="grid h-auto w-full grid-cols-2">
+            <TabsTrigger value="shared" className="h-auto min-h-11 py-1.5 lg:min-h-9">
               <Wallet aria-hidden="true" className="size-3.5" />
               <Trans>共享额度</Trans>
             </TabsTrigger>
-            <TabsTrigger value="custom" className="min-h-11 lg:min-h-9">
+            <TabsTrigger value="custom" className="h-auto min-h-11 py-1.5 lg:min-h-9">
               <ShieldCheck aria-hidden="true" className="size-3.5" />
               <Trans>自定义 API Key</Trans>
             </TabsTrigger>
@@ -245,7 +245,7 @@ export function LLMConfigDialog({ returnFocusRef, withTrigger = true }: LLMConfi
                 className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${exhausted || lowBudget ? 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300' : 'border-border/60 bg-muted/30 text-muted-foreground'}`}
               >
                 {visibleUsage.loading
-                  ? <Loader2 aria-hidden="true" className="size-3.5 mt-0.5 shrink-0 animate-spin text-muted-foreground" />
+                  ? <Loader2 aria-hidden="true" className="size-3.5 mt-0.5 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none" />
                   : visibleUsage.error
                     ? <CircleAlert aria-hidden="true" className="size-3.5 mt-0.5 shrink-0 text-amber-500" />
                     : <Wallet aria-hidden="true" className={`size-3.5 mt-0.5 shrink-0 ${exhausted || lowBudget ? 'text-amber-500' : 'text-primary'}`} />}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { AlertTriangle, FileCode2, Info, Loader2, Play, Plus, X } from 'lucide-react'
+import { AlertTriangle, FileCode2, Info, Loader2, Play, Plus, Square, Wand2, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { t } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react'
@@ -24,6 +24,7 @@ import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
 import { ProgramOutput } from '@/modules/cangjie-editor/components/ProgramOutput'
 import { RunTruncationNotice } from '@/modules/cangjie-editor/components/RunTruncationNotice'
+import { useCodeRunner } from '@/modules/cangjie-editor/hooks/useCodeRunner'
 import { AnsiOutput } from '@/components/AnsiOutput'
 import { useResizableDimension } from '@/hooks/use-resizable-dimension'
 import { usePlaygroundEditorHost } from './playground-editor-host-context'
@@ -67,6 +68,7 @@ export function PlaygroundView() {
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [pendingCloseTab, setPendingCloseTab] = useState<PlaygroundTab | null>(null)
+  const [scopeNoteDismissed, setScopeNoteDismissed] = useState(false)
   const pendingCloseTitle = pendingCloseTab?.title ?? ''
   const conflictRecoveryKey = conflict
     ? [
@@ -164,9 +166,9 @@ export function PlaygroundView() {
   }
 
   return (
-    <section data-testid="playground-view" className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background">
+    <section data-testid="playground-view" className="flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-background">
       <h1 className="sr-only">Playground</h1>
-      <div className="flex h-12 shrink-0 items-stretch border-b border-border bg-muted/35 shadow-[inset_0_-1px_0_hsl(var(--border))] lg:h-10">
+      <div className="flex h-12 shrink-0 items-stretch border-b border-border bg-muted/35 lg:h-10">
         <div
           role="tablist"
           aria-label={t`Playground 标签页`}
@@ -252,7 +254,7 @@ export function PlaygroundView() {
                   event.stopPropagation()
                   requestCloseTab(tab, event.currentTarget)
                 }}
-                className="inline-flex size-11 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-muted-foreground/15 hover:text-foreground focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary group-hover:opacity-100 group-data-[active=true]:opacity-70 lg:size-8"
+                className="pointer-events-none inline-flex size-11 shrink-0 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-[opacity,background-color,color] hover:bg-muted-foreground/15 hover:text-foreground focus:pointer-events-auto focus:opacity-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary group-hover:pointer-events-auto group-hover:opacity-100 group-data-[active=true]:pointer-events-auto group-data-[active=true]:opacity-70 lg:size-8"
                 aria-label={`${t`关闭标签页`}: ${tab.title}`}
               >
                 <X aria-hidden="true" className="size-3" />
@@ -271,24 +273,37 @@ export function PlaygroundView() {
           <Plus aria-hidden="true" className="size-4" />
         </button>
       </div>
-      <div
-        data-testid="playground-scope-note"
-        className="flex min-h-8 shrink-0 flex-col gap-1 border-b border-border bg-muted/20 px-3 py-1.5 text-xs leading-5 text-muted-foreground"
-      >
-        <p className="flex min-w-0 items-center gap-2">
-          <Info aria-hidden="true" className="size-3.5 shrink-0" />
-          <Trans>这里的标签页和草稿属于整个 AI 课堂工作区，会在所有学习目标之间共享。</Trans>
-        </p>
-        <p>
-          <Trans>键盘提示：在编辑器中按 Ctrl+M，可切换 Tab 键是缩进代码还是移出编辑器。</Trans>
-        </p>
-      </div>
+      {!scopeNoteDismissed && (
+        <div
+          data-testid="playground-scope-note"
+          className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/20 px-3 py-1 text-xs leading-5 text-muted-foreground"
+        >
+          <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+            <Info aria-hidden="true" className="size-3.5 shrink-0" />
+            <span>
+              <Trans>这里的标签页和草稿属于整个 AI 课堂工作区，会在所有学习目标之间共享。</Trans>
+            </span>
+            <span className="opacity-75">
+              <Trans>键盘提示：在编辑器中按 Ctrl+M，可切换 Tab 键是缩进代码还是移出编辑器。</Trans>
+            </span>
+          </p>
+          <button
+            type="button"
+            data-testid="playground-scope-note-dismiss"
+            aria-label={t`关闭提示`}
+            onClick={() => setScopeNoteDismissed(true)}
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <X aria-hidden="true" className="size-3.5" />
+          </button>
+        </div>
+      )}
       {persistenceStatus === 'opening' && (
         <div
           role="status"
           className="flex shrink-0 items-center gap-2 border-b border-border bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
         >
-          <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+          <Loader2 aria-hidden="true" className="size-3.5 animate-spin motion-reduce:animate-none" />
           <Trans>正在加载 Playground 草稿…</Trans>
         </div>
       )}
@@ -458,10 +473,14 @@ function PlaygroundEditorPane({
     editorHandleRef,
     flushPendingCode,
     registerEditorSlot,
+    registerRunHandler,
   } = usePlaygroundEditorHost()
+  const { format } = useCodeRunner()
   const runTab = usePlaygroundSession(state => state.runTab)
+  const cancelRun = usePlaygroundSession(state => state.cancelRun)
   const resetTransient = usePlaygroundSession(state => state.resetTransient)
   const paneRef = useRef<HTMLDivElement | null>(null)
+  const [formatting, setFormatting] = useState(false)
   const running = tab.running
 
   useEffect(() => () => {
@@ -502,7 +521,7 @@ function PlaygroundEditorPane({
     shiftMultiplier: 2,
   })
 
-  const run = async () => {
+  const run = useCallback(async () => {
     // Commit the buffer version before attaching a run to it. Otherwise the
     // normal debounce can publish the exact code already being run as a "new"
     // source version and incorrectly cancel that run moments later.
@@ -519,7 +538,48 @@ function PlaygroundEditorPane({
       runSignal,
       (source, signal) => runner.run(source, signal),
     )
-  }
+  }, [editorHandleRef, flushPendingCode, runSignal, runTab, runner, tab.id, tab.initialCode])
+
+  const formatActiveCode = useCallback(async () => {
+    if (formatting)
+      return
+    setFormatting(true)
+    try {
+      const handle = editorHandleRef.current
+      if (handle?.format) {
+        await handle.format()
+      }
+      else {
+        const code = handle?.getCode() ?? tab.initialCode
+        const formatted = await format(code, runSignal)
+        if (formatted !== code) {
+          handle?.setCode(formatted)
+          flushPendingCode()
+        }
+      }
+    }
+    catch {
+      // Formatting toast/error feedback is handled by useCodeRunner.
+    }
+    finally {
+      setFormatting(false)
+    }
+  }, [editorHandleRef, flushPendingCode, format, formatting, runSignal, tab.initialCode])
+
+  useEffect(() => {
+    registerRunHandler(run)
+    return () => registerRunHandler(null)
+  }, [registerRunHandler, run])
+
+  useEffect(() => {
+    const handle = editorHandleRef.current
+    if (!handle)
+      return
+    if (tab.result?.phase === 'compile' && tab.result.compilerOutput)
+      handle.setCompilerMarkers?.(tab.result.compilerOutput)
+    else
+      handle.clearCompilerMarkers?.()
+  }, [editorHandleRef, tab.id, tab.result])
 
   return (
     <div
@@ -576,7 +636,7 @@ function PlaygroundEditorPane({
         >
           <span className="absolute inset-x-0 top-1 h-px bg-border transition-colors group-hover:bg-primary/60 group-focus-visible:h-0.5 group-focus-visible:bg-primary" />
         </div>
-        <div className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-muted/20 px-2 sm:h-11">
+        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-muted/20 px-2 sm:h-11">
           <button
             type="button"
             data-testid="playground-run"
@@ -585,11 +645,34 @@ function PlaygroundEditorPane({
             className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:brightness-95 disabled:opacity-50 lg:h-8"
           >
             {running
-              ? <Loader2 aria-hidden="true" className="size-3.5 animate-spin" />
+              ? <Loader2 aria-hidden="true" className="size-3.5 animate-spin motion-reduce:animate-none" />
               : <Play aria-hidden="true" className="size-3.5" />}
             {running ? <Trans>运行中</Trans> : <Trans>运行</Trans>}
           </button>
-          <span className="text-xs font-semibold text-muted-foreground"><Trans>运行结果</Trans></span>
+          {running && (
+            <button
+              type="button"
+              data-testid="playground-cancel-run"
+              onClick={() => cancelRun(tab.id)}
+              className="inline-flex h-11 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:h-8"
+            >
+              <Square aria-hidden="true" className="size-3 fill-current" />
+              <Trans>取消运行</Trans>
+            </button>
+          )}
+          <button
+            type="button"
+            data-testid="playground-format"
+            disabled={formatting || running}
+            onClick={() => void formatActiveCode()}
+            className="inline-flex h-11 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 lg:h-8"
+          >
+            {formatting
+              ? <Loader2 aria-hidden="true" className="size-3.5 animate-spin motion-reduce:animate-none" />
+              : <Wand2 aria-hidden="true" className="size-3.5" />}
+            <Trans>格式化</Trans>
+          </button>
+          <span className="ms-1 text-xs font-semibold text-muted-foreground"><Trans>运行结果</Trans></span>
         </div>
         <div className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-border overflow-hidden sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           <section className="flex min-h-0 flex-col" aria-labelledby={`playground-program-output-${tab.id}`}>

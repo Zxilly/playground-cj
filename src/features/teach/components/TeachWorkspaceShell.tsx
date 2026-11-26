@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useId, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import { useCallback, useId, useRef } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import { MessageCircle, Sparkles, X } from 'lucide-react'
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -11,9 +11,9 @@ import {
   SheetContent,
   SheetDescription,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet'
 import { CHAT_MIN_WIDTH, useResizableChatPanel } from '@/features/teach/hooks/use-resizable-chat-panel'
+import { useResponsiveChatOpen } from '@/features/teach/hooks/use-responsive-chat-open'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useIsCompactViewport } from '@/hooks/use-mobile'
@@ -23,6 +23,11 @@ import { WorkspaceViewport } from './WorkspaceViewport'
 
 export interface TeachWorkspaceShellProps {
   chat: ReactNode
+  /** Controlled compact-chat state when the toggle button lives in TeachTopBar. */
+  compactChatOpen?: boolean
+  onCompactChatOpenChange?: (open: boolean) => void
+  compactChatToggleRef?: RefObject<HTMLButtonElement | null>
+  compactChatRegionId?: string
 }
 
 function WorkspaceViewTransition({
@@ -58,61 +63,41 @@ function WorkspaceViewTransition({
   )
 }
 
-function useResponsiveChatOpen(
-  compact: boolean,
-  pendingPrefill: string | null,
-  prefillRevision: number,
-) {
-  // Opening is an edge-triggered learner action. A retained draft must not
-  // reopen the mobile sheet when the active learning path remounts the shell.
-  const [chatOpen, setChatOpen] = useState(false)
-  const [observed, setObserved] = useState({ compact, pendingPrefill, prefillRevision })
-  if (
-    observed.compact !== compact
-    || observed.pendingPrefill !== pendingPrefill
-    || observed.prefillRevision !== prefillRevision
-  ) {
-    const enteredCompact = compact && !observed.compact
-    const receivedCompactPrefill = compact
-      && pendingPrefill !== null
-      && (
-        observed.pendingPrefill !== pendingPrefill
-        || observed.prefillRevision !== prefillRevision
-        || !observed.compact
-      )
-    setObserved({ compact, pendingPrefill, prefillRevision })
-    if (receivedCompactPrefill)
-      setChatOpen(true)
-    else if (enteredCompact)
-      setChatOpen(false)
-  }
-  return [chatOpen, setChatOpen] as const
-}
-
 /** Responsive shell around the canonical Live, Review, Progress, and Chat surfaces. */
-export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
+export function TeachWorkspaceShell({
+  chat,
+  compactChatOpen,
+  onCompactChatOpenChange,
+  compactChatToggleRef,
+  compactChatRegionId,
+}: TeachWorkspaceShellProps) {
   const { lang } = useWorkspace()
   const view = useWorkspaceStore(state => state.view)
   const pendingPrefill = useWorkspaceStore(state => state.pendingPrefill)
   const prefillRevision = useWorkspaceStore(state => state.prefillRevision)
   const compact = useIsCompactViewport()
-  const [chatOpen, setChatOpen] = useResponsiveChatOpen(
+  const [internalChatOpen, setInternalChatOpen] = useResponsiveChatOpen(
     compact,
     pendingPrefill,
     prefillRevision,
   )
+  const hasExternalToggle = compactChatOpen !== undefined && onCompactChatOpenChange !== undefined
+  const chatOpen = hasExternalToggle ? compactChatOpen : internalChatOpen
+  const setChatOpen = hasExternalToggle ? onCompactChatOpenChange : setInternalChatOpen
   const reduceMotion = useReducedMotion() === true
-  const chatRegionId = useId()
+  const generatedChatRegionId = useId()
+  const chatRegionId = compactChatRegionId ?? generatedChatRegionId
   const chatTitleId = useId()
-  const chatToggleRef = useRef<HTMLButtonElement>(null)
+  const internalChatToggleRef = useRef<HTMLButtonElement>(null)
+  const activeToggleRef = compactChatToggleRef ?? internalChatToggleRef
   const mobileChatRef = useRef<HTMLDivElement>(null)
   const { chatMaxWidth, chatRef, chatWidth, onHandleKeyDown, startResize } = useResizableChatPanel()
   const english = lang === 'en'
 
   const closeChat = useCallback(() => {
     setChatOpen(false)
-    requestAnimationFrame(() => chatToggleRef.current?.focus())
-  }, [setChatOpen])
+    requestAnimationFrame(() => activeToggleRef.current?.focus())
+  }, [activeToggleRef, setChatOpen])
 
   return (
     <div
@@ -120,9 +105,27 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
       className="relative grid h-full min-h-0 w-full grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-background text-foreground md:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[13rem_minmax(0,1fr)_auto] lg:grid-rows-1"
     >
       <aside
-        className="teach-scrollbar-hidden relative col-start-1 row-start-1 min-w-0 overflow-x-auto border-b border-border bg-sidebar px-2 py-2 md:col-span-2 lg:col-span-1 lg:col-start-1 lg:row-start-1 lg:flex lg:w-52 lg:flex-col lg:border-e lg:border-b-0 lg:px-3 lg:py-4"
+        className="teach-scrollbar-hidden relative col-start-1 row-start-1 flex min-w-0 items-center gap-1.5 overflow-x-auto border-b border-border bg-sidebar px-2 py-2 md:col-span-2 lg:col-span-1 lg:col-start-1 lg:row-start-1 lg:flex lg:w-52 lg:flex-col lg:items-stretch lg:border-e lg:border-b-0 lg:px-3 lg:py-4"
       >
-        <WorkspaceNav />
+        <div className="min-w-0 flex-1 lg:flex-initial">
+          <WorkspaceNav />
+        </div>
+        {compact && !hasExternalToggle && (
+          <Button
+            ref={internalChatToggleRef}
+            type="button"
+            variant="secondary"
+            size="icon"
+            data-testid="workspace-chat-toggle"
+            aria-label={english ? 'Open teacher chat' : '打开老师对话'}
+            aria-controls={chatRegionId}
+            aria-expanded={chatOpen}
+            onClick={() => setChatOpen(true)}
+            className="size-11 shrink-0 rounded-md"
+          >
+            <MessageCircle aria-hidden="true" className="size-5" />
+          </Button>
+        )}
       </aside>
 
       <section
@@ -133,7 +136,7 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
         <AnimatePresence initial={false} mode="wait">
           <WorkspaceViewTransition key={view} reduceMotion={reduceMotion} view={view}>
             <div className={view === 'playground'
-              ? 'h-full min-h-0 w-full'
+              ? 'flex h-full min-h-0 w-full flex-col'
               : 'mx-auto w-full max-w-4xl'}
             >
               <WorkspaceViewport view={view} />
@@ -153,22 +156,6 @@ export function TeachWorkspaceShell({ chat }: TeachWorkspaceShellProps) {
                   closeChat()
               }}
             >
-              <SheetTrigger asChild>
-                <Button
-                  ref={chatToggleRef}
-                  type="button"
-                  size="icon-lg"
-                  data-testid="workspace-chat-toggle"
-                  aria-label={english ? 'Open teacher chat' : '打开老师对话'}
-                  aria-controls={chatRegionId}
-                  className={cn(
-                    'fixed top-1.5 end-16 z-40 size-11 rounded-md',
-                    chatOpen && 'hidden',
-                  )}
-                >
-                  <MessageCircle aria-hidden="true" className="size-5" />
-                </Button>
-              </SheetTrigger>
               <SheetContent
                 ref={mobileChatRef}
                 id={chatRegionId}

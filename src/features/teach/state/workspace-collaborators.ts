@@ -11,6 +11,10 @@ import { createIndexedDBClassroomStorage } from '@/lib/teach/classroom/storage'
 import { createCangjieMcpKnowledgeSource } from '@/lib/teach/knowledge/cangjie-mcp-source'
 import { defaultRunner } from '@/lib/teach/feedback/run-cangjie'
 import { createActiveEditorRegistry } from './active-editor-store'
+import {
+  migrateCompatibleClassroomSnapshot,
+  selectMostRecentLegacyScope,
+} from './workspace-snapshot'
 
 export interface WorkspaceCollaborators
   extends Omit<WorkspaceContextValue, 'lang'> {
@@ -199,9 +203,10 @@ async function disposeWorkspaceResources(
 
 /**
  * Build and open the only production AI Classroom aggregate. Its IndexedDB
- * scope is shared across UI locales and keyed by the logical Course Version,
- * so a new Git-built Course starts empty. The bilingual catalog lets one
- * Classroom Stream reopen exact provenance after a language switch.
+ * scope is shared across UI locales and keyed by the logical Course Version.
+ * When a new Course Version starts empty, compatible learning paths are
+ * migrated automatically while previous-version scopes stay preserved in
+ * IndexedDB so learners can back up or explicitly clean them up later.
  */
 export async function createWorkspaceCollaborators(
   lang: string,
@@ -223,8 +228,42 @@ export async function createWorkspaceCollaborators(
     const catalog = createBuiltInCourseContentPackCatalog(selectedLocale)
     resources.storage = createIndexedDBClassroomStorage({
       scope: CLASSROOM_STORAGE_SCOPE,
-      discardOtherScopesWithPrefix: 'classroom',
     })
+
+    // Never wipe older Course scopes on upgrade. If the new Course scope is
+    // empty, migrate compatible learning progress from the most recent prior
+    // scope while keeping the original scope intact for backup export.
+    if (resources.storage.listScopes) {
+      const existing = await initializationOwnership.wait(
+        resources.storage.load(),
+        boundary.signal,
+      )
+      throwIfAborted(boundary.signal)
+      if (existing === null) {
+        const scopes = await initializationOwnership.wait(
+          resources.storage.listScopes('classroom'),
+          boundary.signal,
+        )
+        throwIfAborted(boundary.signal)
+        const latestLegacy = selectMostRecentLegacyScope(
+          scopes,
+          CLASSROOM_STORAGE_SCOPE,
+        )
+        if (latestLegacy) {
+          const migrated = await initializationOwnership.wait(
+            migrateCompatibleClassroomSnapshot(latestLegacy.snapshot, catalog),
+            boundary.signal,
+          )
+          throwIfAborted(boundary.signal)
+          if (migrated) {
+            await initializationOwnership.wait(
+              resources.storage.save(migrated, 0),
+              boundary.signal,
+            ).catch(() => undefined)
+          }
+        }
+      }
+    }
 
     resources.classroom = createAIClassroom({
       catalog,
@@ -238,6 +277,7 @@ export async function createWorkspaceCollaborators(
     throwIfAborted(boundary.signal)
     await initializationOwnership.finish()
     const openedClassroom = resources.classroom
+    const openedStorage = resources.storage
     let disposal: Promise<void> | undefined
     boundary.close()
 
@@ -248,6 +288,9 @@ export async function createWorkspaceCollaborators(
       runner: defaultRunner,
       activeEditor: createActiveEditorRegistry(),
       now: Date.now,
+      storage: openedStorage,
+      storageScope: CLASSROOM_STORAGE_SCOPE,
+      courseVersion: BUILT_IN_COURSE_VERSION,
       dispose: () => {
         disposal ??= disposeWorkspaceResources(resources).finally(releaseLease)
         return disposal
