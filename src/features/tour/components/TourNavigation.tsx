@@ -2,9 +2,10 @@
 
 import type { MouseEvent, ReactNode } from 'react'
 import { ChevronDown, ChevronLeft, ChevronRight, Code2, Sparkles, Terminal } from 'lucide-react'
+import { useLingui } from '@lingui/react/macro'
 
 interface TourNavigationProps {
-  lang: string
+  lang?: string
   currentIndex: number
   total: number
   onPrev: () => void
@@ -74,7 +75,6 @@ function NavAction({
 }
 
 export function TourNavigation({
-  lang,
   currentIndex,
   total,
   onPrev,
@@ -85,31 +85,27 @@ export function TourNavigation({
   aiHref,
   playgroundHref,
 }: TourNavigationProps) {
-  const isEnglish = lang === 'en'
+  const { t } = useLingui()
   const hasPrev = currentIndex > 0
   const hasNext = currentIndex < total - 1
   const isLastLesson = total > 0 && !hasNext
   const showCompletionCta = isLastLesson && Boolean(aiHref || playgroundHref)
 
-  const prevLabel = isEnglish ? 'Previous' : '上一页'
-  const nextLabel = isEnglish ? 'Next' : '下一页'
-  const progressLabel = isEnglish
-    ? `Lesson ${currentIndex + 1} of ${total}`
-    : `第 ${currentIndex + 1} 节，共 ${total} 节`
-  const aiCtaLabel = isEnglish ? 'AI Classroom' : 'AI 课堂'
+  const prevLabel = t`上一页`
+  const nextLabel = t`下一页`
+  const lessonNumber = currentIndex + 1
+  const progressLabel = t`第 ${lessonNumber} 节，共 ${total} 节`
+  const aiCtaLabel = t`AI 课堂`
   const playgroundCtaLabel = 'Playground'
-  const completionPrompt = isEnglish
-    ? 'Tour complete! Continue practicing:'
-    : '已完成全部教程！继续实践：'
+  const completionPrompt = t`已完成全部教程！继续实践：`
+  const navAriaLabel = t`教程操作`
 
   if (editorToggle) {
-    const toggleLabel = isEnglish
-      ? (editorToggle.expanded ? 'Hide code' : 'Show code')
-      : (editorToggle.expanded ? '收起代码' : '展开代码')
+    const toggleLabel = editorToggle.expanded ? t`收起代码` : t`展开代码`
 
     return (
       <nav
-        aria-label={isEnglish ? 'Lesson controls' : '教程操作'}
+        aria-label={navAriaLabel}
         className="shrink-0 border-t border-tour-border bg-background px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
       >
         {showCompletionCta && (
@@ -183,7 +179,7 @@ export function TourNavigation({
   }
 
   return (
-    <nav aria-label={isEnglish ? 'Lesson controls' : '教程操作'} className="shrink-0 border-t border-tour-border bg-background">
+    <nav aria-label={navAriaLabel} className="shrink-0 border-t border-tour-border bg-background">
       {showCompletionCta && (
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-tour-border bg-tour-surface px-6 py-2.5 text-sm">
           <span className="font-medium text-tour-heading">{completionPrompt}</span>

@@ -1,7 +1,12 @@
-import type { ComponentProps, ReactNode } from 'react'
-import { cleanup, render, screen } from '@testing-library/react'
+import type { ComponentProps, ReactElement, ReactNode } from 'react'
+import { cleanup, render as rtlRender, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TourContent } from '@/features/tour/components/TourContent'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
+
+function render(ui: ReactElement) {
+  return rtlRender(<TestI18nProvider locale="en">{ui}</TestI18nProvider>)
+}
 
 function MockScrollArea({ children }: { children: ReactNode }) {
   return <section data-testid="scroll-area">{children}</section>

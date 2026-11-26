@@ -7,21 +7,18 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { setupI18n } from '@lingui/core'
-import { I18nProvider } from '@lingui/react'
 import type { ReactNode } from 'react'
 import type { WorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import TeachAppRoot from './TeachAppRoot'
 
 const mocks = vi.hoisted(() => ({
   create: vi.fn(),
 }))
 
-const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
-
 function render(ui: ReactNode) {
   return renderUI(ui, {
-    wrapper: ({ children }) => <I18nProvider i18n={i18n}>{children}</I18nProvider>,
+    wrapper: ({ children }) => <TestI18nProvider locale="en">{children}</TestI18nProvider>,
   })
 }
 

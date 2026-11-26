@@ -9,6 +9,7 @@ import { createContentPackCatalog } from '@/lib/teach/classroom/content-catalog'
 import type { CourseContentPack } from '@/lib/teach/classroom/content-packs'
 import type { ClassroomStorage } from '@/lib/teach/classroom/storage'
 import { createMemoryClassroomStorage } from '@/lib/teach/classroom/storage'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { LiveClassroomView } from './LiveClassroomView'
 import { ReviewView } from './ReviewView'
 import { ConceptProgressView } from './ConceptProgressView'
@@ -198,17 +199,19 @@ async function setup(packs = [pack()]) {
   })
   await classroom.open()
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <WorkspaceProvider
-      lang="en"
-      classroom={classroom}
-      catalog={catalog}
-      knowledge={{ id: 'test', search: async () => [] }}
-      runner={{ run: async () => ({ ok: true, phase: 'run', stdout: '', stdoutTruncated: false, stderr: '', stderrTruncated: false, compilerOutput: '', compilerOutputTruncated: false, exitCode: 0 }) }}
-      activeEditor={createActiveEditorRegistry()}
-      now={() => 2_000}
-    >
-      {children}
-    </WorkspaceProvider>
+    <TestI18nProvider locale="en">
+      <WorkspaceProvider
+        lang="en"
+        classroom={classroom}
+        catalog={catalog}
+        knowledge={{ id: 'test', search: async () => [] }}
+        runner={{ run: async () => ({ ok: true, phase: 'run', stdout: '', stdoutTruncated: false, stderr: '', stderrTruncated: false, compilerOutput: '', compilerOutputTruncated: false, exitCode: 0 }) }}
+        activeEditor={createActiveEditorRegistry()}
+        now={() => 2_000}
+      >
+        {children}
+      </WorkspaceProvider>
+    </TestI18nProvider>
   )
   return { catalog, classroom, wrapper }
 }
@@ -219,17 +222,19 @@ function workspaceWrapper(
   now: () => number = () => 2_000,
 ) {
   return ({ children }: { children: ReactNode }) => (
-    <WorkspaceProvider
-      lang="en"
-      classroom={classroom}
-      catalog={catalog}
-      knowledge={{ id: 'test', search: async () => [] }}
-      runner={{ run: async () => ({ ok: true, phase: 'run', stdout: '', stdoutTruncated: false, stderr: '', stderrTruncated: false, compilerOutput: '', compilerOutputTruncated: false, exitCode: 0 }) }}
-      activeEditor={createActiveEditorRegistry()}
-      now={now}
-    >
-      {children}
-    </WorkspaceProvider>
+    <TestI18nProvider locale="en">
+      <WorkspaceProvider
+        lang="en"
+        classroom={classroom}
+        catalog={catalog}
+        knowledge={{ id: 'test', search: async () => [] }}
+        runner={{ run: async () => ({ ok: true, phase: 'run', stdout: '', stdoutTruncated: false, stderr: '', stderrTruncated: false, compilerOutput: '', compilerOutputTruncated: false, exitCode: 0 }) }}
+        activeEditor={createActiveEditorRegistry()}
+        now={now}
+      >
+        {children}
+      </WorkspaceProvider>
+    </TestI18nProvider>
   )
 }
 

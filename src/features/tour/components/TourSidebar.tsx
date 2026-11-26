@@ -18,7 +18,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { CheckCircle2, ChevronRight } from 'lucide-react'
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import type { TourChapterSlim } from '@/tour/types'
 import { buildTourSectionKey, useTourProgressStore } from '@/stores/tourProgress'
 
@@ -49,6 +49,7 @@ export function TourSidebar({
   onNavigate,
   sectionHref,
 }: TourSidebarProps) {
+  const { t } = useLingui()
   const { isMobile, setOpenMobile } = useSidebar()
   const hydrated = useTourProgressStore(state => state.hydrated)
   const visitedSections = useTourProgressStore(state => state.visitedSections)
@@ -81,7 +82,7 @@ export function TourSidebar({
             {totalCount > 0 && (
               <div className="mb-2 px-2" data-testid="tour-reading-progress">
                 <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>{lang === 'en' ? 'Reading progress' : '学习进度'}</span>
+                  <span><Trans context="tour">学习进度</Trans></span>
                   <span className="tabular-nums">
                     {visitedCount}
                     {' / '}
@@ -90,7 +91,7 @@ export function TourSidebar({
                 </div>
                 <div
                   role="progressbar"
-                  aria-label={lang === 'en' ? 'Reading progress' : '学习进度'}
+                  aria-label={t({ message: '学习进度', context: 'tour' })}
                   aria-valuemin={0}
                   aria-valuemax={totalCount}
                   aria-valuenow={visitedCount}

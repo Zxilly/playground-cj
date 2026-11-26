@@ -1,17 +1,14 @@
 import { cleanup, fireEvent, render as renderUI, screen } from '@testing-library/react'
-import { setupI18n } from '@lingui/core'
-import { I18nProvider } from '@lingui/react'
 import type { ReactNode } from 'react'
 import { renderToString } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import TeachApp from './TeachApp'
 
 const modules = vi.hoisted(() => ({ openRuntime: vi.fn() }))
 
-const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
-
 function render(ui: ReactNode) {
-  return renderUI(<I18nProvider i18n={i18n}>{ui}</I18nProvider>)
+  return renderUI(<TestI18nProvider locale="en">{ui}</TestI18nProvider>)
 }
 
 vi.mock('./TeachLanding', () => ({
@@ -37,7 +34,7 @@ describe('teachOnboarding', () => {
     localStorage.setItem('teach:onboarded', '1')
     const readStorage = vi.spyOn(Storage.prototype, 'getItem')
     try {
-      const html = renderToString(<I18nProvider i18n={i18n}><TeachApp lang="en" /></I18nProvider>)
+      const html = renderToString(<TestI18nProvider locale="en"><TeachApp lang="en" /></TestI18nProvider>)
       expect(html).toContain('Opening AI Classroom…')
       expect(readStorage).not.toHaveBeenCalled()
       expect(modules.openRuntime).not.toHaveBeenCalled()

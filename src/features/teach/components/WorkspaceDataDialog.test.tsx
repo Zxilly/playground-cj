@@ -1,6 +1,4 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { setupI18n } from '@lingui/core'
-import { I18nProvider } from '@lingui/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { WorkspaceProvider } from '@/features/teach/context/WorkspaceProvider'
@@ -10,6 +8,7 @@ import { buildWorkspaceSnapshotBundle } from '@/features/teach/state/workspace-s
 import { createAIClassroom } from '@/lib/teach/classroom/ai-classroom'
 import { createBuiltInCourseContentPackCatalog } from '@/lib/teach/classroom/built-in-course'
 import { createMemoryClassroomStorage } from '@/lib/teach/classroom/storage'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { WorkspaceDataDialog } from './WorkspaceDataDialog'
 
 afterEach(() => {
@@ -35,10 +34,8 @@ async function setupWorkspace() {
     conceptIds: ['cj.program.main'],
     explicitLearnerGoal: true,
   })
-  const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
-  i18n.activate('en')
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <I18nProvider i18n={i18n}>
+    <TestI18nProvider locale="en">
       <WorkspaceProvider
         lang="en"
         classroom={classroom}
@@ -53,7 +50,7 @@ async function setupWorkspace() {
       >
         {children}
       </WorkspaceProvider>
-    </I18nProvider>
+    </TestI18nProvider>
   )
   return { catalog, classroom, storage, wrapper }
 }

@@ -7,6 +7,7 @@ import { createModelFileMirror } from '@/lib/monaco/model-file-mirror'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
 import { subscribeLspStatus } from '@/lib/lsp'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { MonacoEditorReactComp } from './EditorWrapper'
 import type { MonacoEditorHandle } from './EditorWrapper'
 
@@ -491,7 +492,11 @@ describe('monacoEditorReactComp', () => {
 
     const onError = vi.fn()
     const onLoad = vi.fn()
-    render(<MonacoEditorReactComp code="main() {}" locale="en" onError={onError} onLoad={onLoad} />)
+    render(
+      <TestI18nProvider locale="en">
+        <MonacoEditorReactComp code="main() {}" locale="en" onError={onError} onLoad={onLoad} />
+      </TestI18nProvider>,
+    )
 
     await act(async () => {
       monacoInit.resolve()

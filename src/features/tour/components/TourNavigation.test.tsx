@@ -1,6 +1,20 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TourNavigation } from '@/features/tour/components/TourNavigation'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
+
+function render(ui: ReactElement<{ lang?: string }>) {
+  const locale = ui.props.lang === 'en' ? 'en' : 'zh'
+  const view = rtlRender(<TestI18nProvider locale={locale}>{ui}</TestI18nProvider>)
+  return {
+    ...view,
+    rerender: (nextUi: ReactElement<{ lang?: string }>) => {
+      const nextLocale = nextUi.props.lang === 'en' ? 'en' : 'zh'
+      return view.rerender(<TestI18nProvider locale={nextLocale}>{nextUi}</TestI18nProvider>)
+    },
+  }
+}
 
 describe('tourNavigation', () => {
   afterEach(cleanup)

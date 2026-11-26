@@ -38,9 +38,9 @@ describe('remoteRun', () => {
     await remoteRun('main()', actions)
 
     expect(actions.setToolOutput).toHaveBeenNthCalledWith(1, '编译中')
-    expect(actions.setToolOutput).toHaveBeenNthCalledWith(2, 'compiled\n----------\nexit code 0')
+    expect(actions.setToolOutput).toHaveBeenNthCalledWith(2, 'compiled\n----------\n退出码 0')
     expect(actions.setProgramOutput).toHaveBeenNthCalledWith(1, '运行中')
-    expect(actions.setProgramOutput).toHaveBeenNthCalledWith(2, 'hello\n----------\nexit code 0')
+    expect(actions.setProgramOutput).toHaveBeenNthCalledWith(2, 'hello\n----------\n退出码 0')
     expect(actions.setTruncation).toHaveBeenLastCalledWith({
       compilerOutput: false,
       programStdout: false,
@@ -69,7 +69,7 @@ describe('remoteRun', () => {
 
     await expect(remoteRun('bad', actions)).rejects.toThrow('编译失败')
 
-    expect(actions.setToolOutput).toHaveBeenLastCalledWith('syntax error\n----------\nexit code 1')
+    expect(actions.setToolOutput).toHaveBeenLastCalledWith('syntax error\n----------\n退出码 1')
     expect(actions.setProgramOutput).toHaveBeenLastCalledWith('')
   })
 
@@ -95,7 +95,7 @@ describe('remoteRun', () => {
     await expect(remoteRun('panic', actions)).rejects.toThrow('运行失败')
 
     expect(actions.setProgramOutput).toHaveBeenLastCalledWith(
-      'panic\n[stderr]\nstack trace\n----------\nexit code 2',
+      'panic\n[标准错误]\nstack trace\n----------\n退出码 2',
     )
   })
 

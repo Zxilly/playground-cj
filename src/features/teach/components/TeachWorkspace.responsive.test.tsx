@@ -1,8 +1,13 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import { cleanup, fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import type { ReactElement, ReactNode } from 'react'
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { TeachWorkspace } from './TeachWorkspace'
+
+function render(ui: ReactElement) {
+  return rtlRender(<TestI18nProvider locale="en">{ui}</TestI18nProvider>)
+}
 
 function MockTeacherChatRuntime({
   children,

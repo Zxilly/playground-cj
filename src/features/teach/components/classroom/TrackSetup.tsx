@@ -2,6 +2,8 @@
 
 import { useMemo, useRef, useState } from 'react'
 import { ArrowRight, Loader2, Sparkles, Target, X } from 'lucide-react'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
@@ -13,18 +15,11 @@ import { MAX_LEARNING_TRACK_CONCEPTS } from '@/lib/teach/classroom/state'
 
 const MAX_GOAL_LENGTH = 240
 
-const QUICK_GOALS = {
-  zh: [
-    '快速掌握仓颉入门语法并写出第一个程序',
-    '理解 main 入口、println 输出与变量声明',
-    '区分不可变绑定 let 与可变变量 var 的使用场景',
-  ],
-  en: [
-    'Learn Cangjie starter syntax and run my first program',
-    'Master main(), println output, and variable declarations',
-    'Understand when to use immutable let vs mutable var',
-  ],
-} as const
+const QUICK_GOALS = [
+  msg`快速掌握仓颉入门语法并写出第一个程序`,
+  msg`理解 main 入口、println 输出与变量声明`,
+  msg`区分不可变绑定 let 与可变变量 var 的使用场景`,
+] as const
 
 function orderedCourseConcepts(
   catalog: ReturnType<typeof useWorkspace>['catalog'],
@@ -75,12 +70,12 @@ interface TrackSetupProps {
 
 /** Starting a learning path is deliberately a learner-only UI action. */
 export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
-  const { classroom, catalog, lang } = useWorkspace()
+  const { i18n, t } = useLingui()
+  const { classroom, catalog } = useWorkspace()
   const orderedConceptIds = useMemo(
     () => orderedCourseConcepts(catalog),
     [catalog],
   )
-  const english = lang === 'en'
   const initialTopicMatch = useMemo(() => {
     // Only prefill from the landing `?topic=` query param during first-time setup.
     if (onCancel)
@@ -90,16 +85,15 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
       return null
     const conceptId = resolveTopicToConceptId(topic, catalog)
     const pack = conceptId ? catalog.get(conceptId) : undefined
+    const conceptTitle = pack?.concept.title
     return {
       topic,
       conceptId: conceptId ?? '',
-      suggestedGoal: pack
-        ? (english
-            ? `Understand and practice ${pack.concept.title}`
-            : `理解并掌握「${pack.concept.title}」`)
+      suggestedGoal: conceptTitle
+        ? t`理解并掌握「${conceptTitle}」`
         : '',
     }
-  }, [catalog, english, onCancel])
+  }, [catalog, onCancel, t])
   const [goal, setGoal] = useState(() => initialTopicMatch?.suggestedGoal ?? '')
   const [targetConceptId, setTargetConceptId] = useState(() => initialTopicMatch?.conceptId ?? '')
   const [submitting, setSubmitting] = useState(false)
@@ -112,9 +106,10 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
     () => conceptsThroughTarget(catalog, orderedConceptIds, targetConceptId),
     [catalog, orderedConceptIds, targetConceptId],
   )
+  const lessonCount = conceptIds.length
   const exceedsTrackCapacity
-    = conceptIds.length > MAX_LEARNING_TRACK_CONCEPTS
-  const quickGoals = english ? QUICK_GOALS.en : QUICK_GOALS.zh
+    = lessonCount > MAX_LEARNING_TRACK_CONCEPTS
+  const quickGoals = QUICK_GOALS.map(descriptor => i18n._(descriptor))
 
   const submit = async () => {
     const normalized = goal.trim()
@@ -157,14 +152,14 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
       </span>
       <div className="flex items-start justify-between gap-3">
         <h1 className="text-xl font-semibold">
-          {english ? 'Set your practice goal' : '设置你的练习目标'}
+          <Trans>设置你的练习目标</Trans>
         </h1>
         {onCancel && (
           <Button
             type="button"
             size="icon-sm"
             variant="ghost"
-            aria-label={english ? 'Cancel new learning path' : '取消新学习路径'}
+            aria-label={t`取消新学习路径`}
             onClick={onCancel}
             className="size-11 lg:size-8"
           >
@@ -173,9 +168,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
         )}
       </div>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        {english
-          ? 'Explanations and practice follow your goal within the course range you select.'
-          : '讲解与练习会按你的目标调整，内容限于所选课程范围。'}
+        <Trans>讲解与练习会按你的目标调整，内容限于所选课程范围。</Trans>
       </p>
       <form
         className="mt-5 space-y-3"
@@ -186,7 +179,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
       >
         <div className="flex items-baseline justify-between gap-3">
           <label htmlFor="learning-goal" className="block text-sm font-medium">
-            {english ? 'What do you want to be able to do?' : '你希望最终能够完成什么？'}
+            <Trans>你希望最终能够完成什么？</Trans>
           </label>
           <span id="learning-goal-count" className="shrink-0 text-xs tabular-nums text-muted-foreground">
             {goal.length}
@@ -200,16 +193,14 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           maxLength={MAX_GOAL_LENGTH}
           aria-describedby="learning-goal-count"
           onChange={event => setGoal(event.target.value)}
-          placeholder={english
-            ? 'For example: understand Cangjie basics and write small programs independently'
-            : '例如：掌握仓颉基础并独立编写小程序'}
+          placeholder={t`例如：掌握仓颉基础并独立编写小程序`}
           autoComplete="off"
           className="h-11 lg:h-9"
         />
-        <div className="flex flex-wrap items-center gap-1.5" aria-label={english ? 'Quick goal presets' : '快捷目标标签'}>
+        <div className="flex flex-wrap items-center gap-1.5" aria-label={t`快捷目标标签`}>
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
             <Sparkles aria-hidden="true" className="size-3" />
-            {english ? 'Quick pick:' : '快捷填充：'}
+            <Trans>快捷填充：</Trans>
           </span>
           {quickGoals.map(preset => (
             <button
@@ -223,7 +214,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           ))}
         </div>
         <label htmlFor="learning-target" className="block text-sm font-medium">
-          {english ? 'Course range' : '课程范围'}
+          <Trans>课程范围</Trans>
         </label>
         <select
           id="learning-target"
@@ -233,10 +224,8 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
         >
           <option value="">
             {orderedConceptIds.length > MAX_LEARNING_TRACK_CONCEPTS
-              ? (english
-                  ? 'Select an earlier target'
-                  : '请选择更早的学习目标')
-              : (english ? 'Complete starter course' : '完整入门课程')}
+              ? t`请选择更早的学习目标`
+              : t`完整入门课程`}
           </option>
           {orderedConceptIds.map((conceptId) => {
             const pack = catalog.get(conceptId)
@@ -247,25 +236,19 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
             )
           })}
         </select>
-        {conceptIds.length > 0 && (
+        {lessonCount > 0 && (
           <p className="text-xs text-muted-foreground">
-            {english
-              ? `${conceptIds.length} lesson${conceptIds.length === 1 ? '' : 's'}, with prerequisites first.`
-              : `共 ${conceptIds.length} 课，所需基础课程已排在前面。`}
+            {t`共 ${lessonCount} 课，所需基础课程已排在前面。`}
           </p>
         )}
-        {conceptIds.length === 0 && (
+        {lessonCount === 0 && (
           <p role="alert" className="text-sm text-error-foreground">
-            {english
-              ? 'The built-in course is unavailable.'
-              : '内置课程暂不可用。'}
+            <Trans>内置课程暂不可用。</Trans>
           </p>
         )}
         {exceedsTrackCapacity && (
           <p role="alert" className="text-sm text-error-foreground">
-            {english
-              ? `This path requires ${conceptIds.length} lessons, but one path can contain at most ${MAX_LEARNING_TRACK_CONCEPTS}. Select an earlier target.`
-              : `这条路径需要 ${conceptIds.length} 课，但单条路径最多容纳 ${MAX_LEARNING_TRACK_CONCEPTS} 课。请选择更早的目标。`}
+            {t`这条路径需要 ${lessonCount} 课，但单条路径最多容纳 ${MAX_LEARNING_TRACK_CONCEPTS} 课。请选择更早的目标。`}
           </p>
         )}
         {error && <p role="alert" className="text-sm text-error-foreground">{error}</p>}
@@ -282,7 +265,7 @@ export function TrackSetup({ onCancel, onStarted }: TrackSetupProps = {}) {
           {submitting
             ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
             : <ArrowRight aria-hidden="true" className="size-4" />}
-          {english ? 'Start learning path' : '开始学习'}
+          <Trans>开始学习</Trans>
         </Button>
       </form>
     </section>

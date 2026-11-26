@@ -3,6 +3,7 @@
 import { useCallback, useId, useRef } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import { MessageCircle, Sparkles, X } from 'lucide-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +16,6 @@ import {
 import { CHAT_MIN_WIDTH, useResizableChatPanel } from '@/features/teach/hooks/use-resizable-chat-panel'
 import { useResponsiveChatOpen } from '@/features/teach/hooks/use-responsive-chat-open'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
-import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useIsCompactViewport } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 import { WorkspaceNav } from './WorkspaceNav'
@@ -71,7 +71,7 @@ export function TeachWorkspaceShell({
   compactChatToggleRef,
   compactChatRegionId,
 }: TeachWorkspaceShellProps) {
-  const { lang } = useWorkspace()
+  const { t } = useLingui()
   const view = useWorkspaceStore(state => state.view)
   const pendingPrefill = useWorkspaceStore(state => state.pendingPrefill)
   const prefillRevision = useWorkspaceStore(state => state.prefillRevision)
@@ -92,7 +92,6 @@ export function TeachWorkspaceShell({
   const activeToggleRef = compactChatToggleRef ?? internalChatToggleRef
   const mobileChatRef = useRef<HTMLDivElement>(null)
   const { chatMaxWidth, chatRef, chatWidth, onHandleKeyDown, startResize } = useResizableChatPanel()
-  const english = lang === 'en'
 
   const closeChat = useCallback(() => {
     setChatOpen(false)
@@ -117,7 +116,7 @@ export function TeachWorkspaceShell({
             variant="secondary"
             size="icon"
             data-testid="workspace-chat-toggle"
-            aria-label={english ? 'Open teacher chat' : '打开老师对话'}
+            aria-label={t`打开老师对话`}
             aria-controls={chatRegionId}
             aria-expanded={chatOpen}
             onClick={() => setChatOpen(true)}
@@ -129,7 +128,7 @@ export function TeachWorkspaceShell({
       </aside>
 
       <section
-        aria-label={english ? 'Classroom workspace' : '课堂工作区'}
+        aria-label={t`课堂工作区`}
         data-testid="workspace-viewport"
         className="relative col-start-1 row-start-2 min-h-0 min-w-0 overflow-hidden bg-background lg:col-start-2 lg:row-start-1"
       >
@@ -183,10 +182,10 @@ export function TeachWorkspaceShell({
                     <Sparkles aria-hidden="true" className="size-4 shrink-0 text-primary" />
                     <div className="min-w-0">
                       <SheetTitle className="truncate text-sm font-semibold">
-                        {english ? 'AI teacher' : 'AI 老师'}
+                        <Trans>AI 老师</Trans>
                       </SheetTitle>
                       <SheetDescription className="truncate text-[11px]">
-                        {english ? 'Chat is temporary; saved notes stay in Review.' : '对话为临时内容，已保存的材料可在复习页查看。'}
+                        <Trans>对话为临时内容，已保存的材料可在复习页查看。</Trans>
                       </SheetDescription>
                     </div>
                   </div>
@@ -196,7 +195,7 @@ export function TeachWorkspaceShell({
                       variant="ghost"
                       size="icon-lg"
                       className="size-11"
-                      aria-label={english ? 'Close teacher chat' : '收起老师对话'}
+                      aria-label={t`收起老师对话`}
                     >
                       <X aria-hidden="true" className="size-4" />
                     </Button>
@@ -218,7 +217,7 @@ export function TeachWorkspaceShell({
               <div
                 role="separator"
                 aria-orientation="vertical"
-                aria-label={english ? 'Resize chat panel' : '调整对话栏宽度'}
+                aria-label={t`调整对话栏宽度`}
                 aria-valuenow={Math.round(chatWidth)}
                 aria-valuemin={CHAT_MIN_WIDTH}
                 aria-valuemax={Math.round(chatMaxWidth)}
@@ -234,10 +233,10 @@ export function TeachWorkspaceShell({
                   <Sparkles aria-hidden="true" className="size-4 shrink-0 text-primary" />
                   <div className="min-w-0">
                     <h2 id={chatTitleId} className="truncate text-sm font-semibold">
-                      {english ? 'AI teacher' : 'AI 老师'}
+                      <Trans>AI 老师</Trans>
                     </h2>
                     <p className="truncate text-[11px] text-muted-foreground">
-                      {english ? 'Chat is temporary; saved notes stay in Review.' : '对话为临时内容，已保存的材料可在复习页查看。'}
+                      <Trans>对话为临时内容，已保存的材料可在复习页查看。</Trans>
                     </p>
                   </div>
                 </div>

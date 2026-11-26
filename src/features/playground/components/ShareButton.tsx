@@ -46,7 +46,7 @@ const ShareButton = memo(() => {
         openShareDialog(url)
         setIsOpen(false)
       }, {
-        loading: i18n._(msg`分享中...`),
+        loading: i18n._(msg`分享中…`),
         success: i18n._(msg`分享成功`),
         error: i18n._(msg`短链接创建失败，请改用「完整链接」分享。`),
       })

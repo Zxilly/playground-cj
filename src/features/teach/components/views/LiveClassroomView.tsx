@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { ArrowUpRight, BookmarkCheck, MessageCircle, Plus, Route, SkipForward } from 'lucide-react'
+import type { I18n } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
@@ -20,40 +23,33 @@ import type {
 function skipMarkerExplanation(
   entry: Extract<ClassroomStreamEntry, { type: 'skip_marker' }>,
   track: LearningTrack,
-  english: boolean,
+  i18n: I18n,
 ): string {
   if (entry.basis.type === 'successful_evidence') {
-    return english
-      ? `Current successful observable Evidence covers all ${entry.basis.evidenceIds.length} required Learning Skills.`
-      : `当前成功记录已覆盖全部 ${entry.basis.evidenceIds.length} 项必需能力。`
+    const count = entry.basis.evidenceIds.length
+    return i18n._(msg`当前成功记录已覆盖全部 ${count} 项必需能力。`)
   }
   const adjustmentId = entry.basis.adjustmentId
   const adjustment = track.adjustments.find(
     candidate => candidate.id === adjustmentId,
   )
   if (adjustment?.type === 'accelerate') {
-    return english
-      ? 'A verified successful Placement Check explicitly accelerated the Track beyond this Concept.'
-      : '入门检查已通过，学习路径已明确跳到这个知识点之后。'
+    return i18n._(msg`入门检查已通过，学习路径已明确跳到这个知识点之后。`)
   }
   if (adjustment?.type === 'delay') {
-    return english
-      ? 'A blocked frontier was explicitly delayed to the next eligible Concept.'
-      : '当前受阻知识点已延后，路径转到下一个可学习内容。'
+    return i18n._(msg`当前受阻知识点已延后，路径转到下一个可学习内容。`)
   }
-  return english
-    ? 'The verified Skip Marker basis is unavailable.'
-    : '当前无法读取跳过本步骤的依据。'
+  return i18n._(msg`当前无法读取跳过本步骤的依据。`)
 }
 
 export function LiveClassroomView() {
-  const { catalog, classroom, lang } = useWorkspace()
+  const { i18n, t } = useLingui()
+  const { catalog, classroom } = useWorkspace()
   const snapshot = useClassroomSnapshot(classroom)
   const setPendingPrefill = useWorkspaceStore(state => state.setPendingPrefill)
   const openReviewConcept = useWorkspaceStore(state => state.openReviewConcept)
   const navigate = useWorkspaceHistoryNavigation()
   const track = snapshot.tracks.find(item => item.id === snapshot.activeTrackId)
-  const english = lang === 'en'
   const [creatingTrack, setCreatingTrack] = useState(false)
   const [activatingTrack, setActivatingTrack] = useState(false)
   const [expandedGoalId, setExpandedGoalId] = useState<string | null>(null)
@@ -72,13 +68,15 @@ export function LiveClassroomView() {
   }
 
   const stream = snapshot.stream.filter(entry => entry.learningTrackId === track.id)
+  const lessonCount = track.conceptIds.length
+  const trackGoal = track.goal
 
   return (
     <section data-testid="live-classroom-view" className="space-y-6">
       <header className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
           <Route aria-hidden="true" className="size-4" />
-          {english ? 'Learning path' : '学习路径'}
+          <Trans>学习路径</Trans>
         </div>
         <div className="mt-2 grid gap-3">
           <div className="min-w-0">
@@ -102,23 +100,21 @@ export function LiveClassroomView() {
                 className="mt-1 min-h-11 px-0 text-xs text-muted-foreground hover:bg-transparent"
               >
                 {expandedGoalId === track.id
-                  ? (english ? 'Show less' : '收起完整目标')
-                  : (english ? 'Show full goal' : '查看完整目标')}
+                  ? <Trans>收起完整目标</Trans>
+                  : <Trans>查看完整目标</Trans>}
               </Button>
             )}
             <p className="mt-1 text-sm text-muted-foreground">
-              {english
-                ? `${track.conceptIds.length} lessons · shown in learning order`
-                : `${track.conceptIds.length} 课 · 按学习顺序排列`}
+              {t`${lessonCount} 课 · 按学习顺序排列`}
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-2">
             {snapshot.tracks.length > 1 && (
               <label className="grid min-w-0 flex-[1_1_16rem] gap-1 text-xs font-medium text-muted-foreground">
-                <span>{english ? 'Current learning path' : '当前学习路径'}</span>
+                <span><Trans>当前学习路径</Trans></span>
                 <select
                   data-testid="active-learning-track"
-                  aria-label={english ? 'Current learning path' : '当前学习路径'}
+                  aria-label={t`当前学习路径`}
                   aria-describedby="active-learning-track-description"
                   title={track.goal}
                   value={track.id}
@@ -158,9 +154,7 @@ export function LiveClassroomView() {
                   ))}
                 </select>
                 <span id="active-learning-track-description" className="sr-only">
-                  {english
-                    ? `Selected learning goal: ${track.goal}`
-                    : `当前选中的学习目标：${track.goal}`}
+                  {t`当前选中的学习目标：${trackGoal}`}
                 </span>
               </label>
             )}
@@ -172,7 +166,7 @@ export function LiveClassroomView() {
               className="min-h-11 lg:min-h-8"
             >
               <Plus aria-hidden="true" className="size-4" />
-              {english ? 'Start a new learning goal' : '开始新的学习目标'}
+              <Trans>开始新的学习目标</Trans>
             </Button>
           </div>
         </div>
@@ -186,41 +180,35 @@ export function LiveClassroomView() {
       {stream.length === 0 && (
         <div className="rounded-xl border border-dashed border-border p-8 text-center">
           <h2 className="text-lg font-semibold">
-            {english ? 'Your learning path is ready' : '学习路径已准备好'}
+            <Trans>学习路径已准备好</Trans>
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-            {english
-              ? 'Prepare a first-lesson request, review it in chat, then send when ready.'
-              : '先把第一课请求放入老师对话，确认内容后再发送。'}
+            <Trans>先把第一课请求放入老师对话，确认内容后再发送。</Trans>
           </p>
           <p className="mx-auto mt-2 max-w-lg text-xs leading-5 text-muted-foreground">
-            {english
-              ? 'Once you view a teacher explanation, later answers in this workspace are treated as guided practice rather than an independent check.'
-              : '查看老师讲解后，这个工作区内后续的作答会作为有指导练习，而不会计为独立测验。'}
+            <Trans>查看老师讲解后，这个工作区内后续的作答会作为有指导练习，而不会计为独立测验。</Trans>
           </p>
           <Button
             type="button"
             className="mt-4 min-h-11 lg:min-h-9"
             onClick={() => setPendingPrefill(
-              english
-                ? 'Please start the first lesson in my current learning path.'
-                : '请开始当前学习路径的第一课。',
+              t`请开始当前学习路径的第一课。`,
               { type: 'first_lesson', learningTrackId: track.id },
             )}
           >
             <MessageCircle aria-hidden="true" className="size-4" />
-            {english ? 'Prepare first-lesson request' : '准备第一课请求'}
+            <Trans>准备第一课请求</Trans>
           </Button>
         </div>
       )}
 
       {stream.length > 0 && (
         <h2 className="text-lg font-semibold">
-          {english ? 'Lesson activity' : '课堂活动'}
+          <Trans context="live-classroom">课堂活动</Trans>
         </h2>
       )}
 
-      <ol aria-label={english ? 'Classroom stream' : '课堂活动流'} className="space-y-5">
+      <ol aria-label={t`课堂活动流`} className="space-y-5">
         {stream.map((entry, index) => {
           const pack = catalog.require(entry.conceptId)
           const entryPack = 'contentVersion' in entry
@@ -243,7 +231,7 @@ export function LiveClassroomView() {
               {entry.type === 'bridge_note' && (
                 <article className="rounded-lg border border-primary/20 bg-primary/5 p-4">
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
-                    {english ? 'Transition note' : '课程衔接说明'}
+                    <Trans>课程衔接说明</Trans>
                   </p>
                   <TeachMarkdown markdown={entry.markdown} />
                 </article>
@@ -253,10 +241,10 @@ export function LiveClassroomView() {
                   <SkipForward aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                   <div>
                     <p className="font-medium">
-                      {english ? 'Lesson content skipped for this step' : '本步骤跳过了部分课程内容'}
+                      <Trans>本步骤跳过了部分课程内容</Trans>
                     </p>
                     <p className="mt-1 text-muted-foreground">
-                      {skipMarkerExplanation(entry, track, english)}
+                      {skipMarkerExplanation(entry, track, i18n)}
                     </p>
                   </div>
                 </article>
@@ -266,9 +254,9 @@ export function LiveClassroomView() {
                   <div className="flex min-w-0 items-start gap-3">
                     <BookmarkCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
                     <p>
-                      {english
-                        ? `A ${entry.artifactType === 'clarification' ? 'saved explanation' : 'mistake diagnosis'} is available in Review.`
-                        : `一条${entry.artifactType === 'clarification' ? '讲解笔记' : '错题诊断'}已保存到复习页。`}
+                      {entry.artifactType === 'clarification'
+                        ? <Trans>一条讲解笔记已保存到复习页。</Trans>
+                        : <Trans>一条错题诊断已保存到复习页。</Trans>}
                     </p>
                   </div>
                   <Button
@@ -282,7 +270,7 @@ export function LiveClassroomView() {
                     }}
                     className="min-h-11 shrink-0 lg:min-h-8"
                   >
-                    {english ? 'View in Review' : '前往复习页查看'}
+                    <Trans>前往复习页查看</Trans>
                     <ArrowUpRight aria-hidden="true" className="size-3.5" />
                   </Button>
                 </article>

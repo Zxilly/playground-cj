@@ -5,6 +5,9 @@ import type { ReactNode } from 'react'
 import { AssistantRuntimeProvider, useAui, useAuiEvent, useAuiState } from '@assistant-ui/react'
 import { useChatRuntime } from '@assistant-ui/react-ai-sdk'
 import { CircleAlert, Settings2, X } from 'lucide-react'
+import type { I18n } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Thread } from '@/modules/assistant-ui/chat/Thread'
@@ -51,7 +54,7 @@ function readHttpStatus(error: unknown): number | null {
   return null
 }
 
-function safeTeacherRuntimeError(error: unknown, lang: TeacherLang): TeacherRuntimeErrorState | null {
+function safeTeacherRuntimeError(error: unknown, i18n: I18n): TeacherRuntimeErrorState | null {
   const status = readHttpStatus(error)
   const serialized = String(
     error instanceof Error ? `${error.name} ${error.message}` : error ?? '',
@@ -64,9 +67,7 @@ function safeTeacherRuntimeError(error: unknown, lang: TeacherLang): TeacherRunt
     || /\b(?:401|403)\b|unauthori[sz]ed|forbidden|invalid.?api.?key|authentication|permission.?denied/.test(serialized)
   ) {
     return {
-      message: lang === 'en'
-        ? 'The API key is invalid or does not have permission for this service. Check your key in AI service settings.'
-        : 'API Key 无效或无权限访问当前服务。请前往“AI 服务设置”检查密钥与权限。',
+      message: i18n._(msg`API Key 无效或无权限访问当前服务。请前往“AI 服务设置”检查密钥与权限。`),
       openSettings: true,
     }
   }
@@ -75,224 +76,131 @@ function safeTeacherRuntimeError(error: unknown, lang: TeacherLang): TeacherRunt
     || /\b404\b|not.?found|model_not_found|no such model/.test(serialized)
   ) {
     return {
-      message: lang === 'en'
-        ? 'The configured model or endpoint was not found (404). Check the service address and model name in AI service settings.'
-        : '未找到所配置的模型或接口地址（404）。请前往“AI 服务设置”检查服务地址与模型名称。',
+      message: i18n._(msg`未找到所配置的模型或接口地址（404）。请前往“AI 服务设置”检查服务地址与模型名称。`),
       openSettings: true,
     }
   }
   if (status === 429 || /\b429\b|rate.?limit|quota|too many requests/.test(serialized)) {
     return {
-      message: lang === 'en'
-        ? 'The AI service is rate-limiting requests. Wait a moment, then try again.'
-        : 'AI 服务当前请求过多。请稍等片刻后重试。',
+      message: i18n._(msg`AI 服务当前请求过多。请稍等片刻后重试。`),
       openSettings: true,
     }
   }
   if (/timeout|timed out/.test(serialized)) {
     return {
-      message: lang === 'en'
-        ? 'The classroom teacher timed out. Please try again.'
-        : '课堂老师响应超时，请重试。',
+      message: i18n._(msg`课堂老师响应超时，请重试。`),
     }
   }
   if (/network|fetch|unavailable|busy/.test(serialized)) {
     return {
-      message: lang === 'en'
-        ? 'The AI service is temporarily unavailable. Please try again.'
-        : 'AI 服务暂时不可用，请重试。',
+      message: i18n._(msg`AI 服务暂时不可用，请重试。`),
     }
   }
   return {
-    message: lang === 'en'
-      ? 'The classroom teacher could not complete this response. Please try again.'
-      : '课堂老师暂时无法完成这次回复，请重试。',
+    message: i18n._(msg`课堂老师暂时无法完成这次回复，请重试。`),
   }
 }
 
 function buildTeacherSuggestions({
   conceptTitle,
   hasActiveTrack,
-  lang,
+  i18n,
   scopeMode,
   view,
 }: {
   conceptTitle: string | null
   hasActiveTrack: boolean
-  lang: TeacherLang
+  i18n: I18n
   scopeMode: TeacherChatRunMode
   view: 'live' | 'review' | 'progress' | 'playground'
 }): readonly ThreadWelcomeSuggestion[] {
-  const english = lang === 'en'
   if (scopeMode === 'review' && conceptTitle) {
-    return english
-      ? [
-          {
-            title: `Explain ${conceptTitle}`,
-            description: 'Walk through the core idea with a short example',
-            prompt: `Please explain "${conceptTitle}" step by step with a minimal Cangjie example.`,
-          },
-          {
-            title: 'Common pitfalls',
-            description: 'See frequent mistakes and how to avoid them',
-            prompt: `What are the most common mistakes learners make with "${conceptTitle}", and how do I avoid them?`,
-          },
-          {
-            title: 'Quick understanding check',
-            description: 'Ask me a short question to verify mastery',
-            prompt: `Ask me a quick question to check my understanding of "${conceptTitle}".`,
-          },
-          {
-            title: 'Compare with other languages',
-            description: 'Connect this concept to C, Java, Go, or Rust',
-            prompt: `How does "${conceptTitle}" in Cangjie compare with similar features in Go, Rust, or Java?`,
-          },
-        ]
-      : [
-          {
-            title: `通俗讲解「${conceptTitle}」`,
-            description: '用一个简短可运行的仓颉示例带我理解核心要点',
-            prompt: `请结合一个最简仓颉示例，循序渐进地讲解「${conceptTitle}」。`,
-          },
-          {
-            title: '常见易错点',
-            description: '总结初学者最容易踩的坑与避坑建议',
-            prompt: `学习「${conceptTitle}」时最常见有哪些误区或报错？应该怎样避免？`,
-          },
-          {
-            title: '出题检验理解',
-            description: '用一个小问题帮我确认是否真正掌握',
-            prompt: `请围绕「${conceptTitle}」给我出一个简短的检验问题，帮我确认掌握情况。`,
-          },
-          {
-            title: '跨语言对比',
-            description: '对比 C / Java / Go / Rust 中的对应概念',
-            prompt: `仓颉中的「${conceptTitle}」和 Go、Rust 或 Java 相比有什么异同？`,
-          },
-        ]
+    return [
+      {
+        title: i18n._(msg`通俗讲解「${conceptTitle}」`),
+        description: i18n._(msg`用一个简短可运行的仓颉示例带我理解核心要点`),
+        prompt: i18n._(msg`请结合一个最简仓颉示例，循序渐进地讲解「${conceptTitle}」。`),
+      },
+      {
+        title: i18n._(msg`常见易错点`),
+        description: i18n._(msg`总结初学者最容易踩的坑与避坑建议`),
+        prompt: i18n._(msg`学习「${conceptTitle}」时最常见有哪些误区或报错？应该怎样避免？`),
+      },
+      {
+        title: i18n._(msg`出题检验理解`),
+        description: i18n._(msg`用一个小问题帮我确认是否真正掌握`),
+        prompt: i18n._(msg`请围绕「${conceptTitle}」给我出一个简短的检验问题，帮我确认掌握情况。`),
+      },
+      {
+        title: i18n._(msg`跨语言对比`),
+        description: i18n._(msg`对比 C / Java / Go / Rust 中的对应概念`),
+        prompt: i18n._(msg`仓颉中的「${conceptTitle}」和 Go、Rust 或 Java 相比有什么异同？`),
+      },
+    ]
   }
 
   if (view === 'playground') {
-    return english
-      ? [
-          {
-            title: 'Review my Playground code',
-            description: 'Check style, clarity, and edge cases in my active editor',
-            prompt: 'Please inspect the code in my active Playground editor and give me concise improvement suggestions.',
-          },
-          {
-            title: 'Explain a compiler error',
-            description: 'Help me understand why my Cangjie code failed to compile',
-            prompt: 'My current Playground code has an issue. Can you inspect it and explain what went wrong?',
-          },
-          {
-            title: 'Suggest a mini challenge',
-            description: 'Get a short coding task to practice right here',
-            prompt: 'Give me a small 10-line Cangjie coding challenge I can write and run in the Playground.',
-          },
-        ]
-      : [
-          {
-            title: '点评当前练习场代码',
-            description: '读取我正在编辑的代码并给出清晰改进建议',
-            prompt: '请查看我当前练习场编辑器中的仓颉代码，指出潜在问题并给出改进建议。',
-          },
-          {
-            title: '排查编译报错',
-            description: '帮我定位代码为什么编译不通过或输出不符',
-            prompt: '我当前练习场里的代码运行或编译遇到问题，请帮我分析原因并给出修改思路。',
-          },
-          {
-            title: '来道小程序挑战',
-            description: '出一个 10 行左右的仓颉小题目练练手',
-            prompt: '请给我出一道适合在练习场直接编写运行的仓颉小程序挑战题。',
-          },
-        ]
+    return [
+      {
+        title: i18n._(msg`点评当前练习场代码`),
+        description: i18n._(msg`读取我正在编辑的代码并给出清晰改进建议`),
+        prompt: i18n._(msg`请查看我当前练习场编辑器中的仓颉代码，指出潜在问题并给出改进建议。`),
+      },
+      {
+        title: i18n._(msg`排查编译报错`),
+        description: i18n._(msg`帮我定位代码为什么编译不通过或输出不符`),
+        prompt: i18n._(msg`我当前练习场里的代码运行或编译遇到问题，请帮我分析原因并给出修改思路。`),
+      },
+      {
+        title: i18n._(msg`来道小程序挑战`),
+        description: i18n._(msg`出一个 10 行左右的仓颉小题目练练手`),
+        prompt: i18n._(msg`请给我出一道适合在练习场直接编写运行的仓颉小程序挑战题。`),
+      },
+    ]
   }
 
   if (hasActiveTrack) {
-    return english
-      ? [
-          {
-            title: 'Continue my current lesson',
-            description: 'Pick up the next step in my active learning path',
-            prompt: 'Please guide me through the next step in my current learning path.',
-          },
-          {
-            title: 'Slow down with an example',
-            description: 'Break down the current concept into smaller pieces',
-            prompt: 'Could you slow down and explain the current concept with a simpler runnable example?',
-          },
-          {
-            title: 'Give me a practice task',
-            description: 'Apply what we just covered in code',
-            prompt: 'I am ready for a hands-on practice exercise on the current concept.',
-          },
-          {
-            title: 'Summarize key takeaways',
-            description: 'Recap what to remember before moving on',
-            prompt: 'Please summarize the key takeaways from this lesson so far.',
-          },
-        ]
-      : [
-          {
-            title: '继续当前课程',
-            description: '按我的学习路径推进下一步讲解或练习',
-            prompt: '请按我当前的学习路径，继续下一步的讲解或练习。',
-          },
-          {
-            title: '放慢节奏举个例子',
-            description: '把当前概念拆细，用简单示例演示',
-            prompt: '可以放慢一点节奏，用一个更简单的仓颉例子解释当前知识点吗？',
-          },
-          {
-            title: '安排一道动手练习',
-            description: '通过写代码检验刚刚学到的内容',
-            prompt: '我准备好做一道当前知识点的动手练习了。',
-          },
-          {
-            title: '总结本节要点',
-            description: '梳理核心语法和注意事项方便复习',
-            prompt: '请帮我总结目前这一节的核心语法要点和注意事项。',
-          },
-        ]
+    return [
+      {
+        title: i18n._(msg`继续当前课程`),
+        description: i18n._(msg`按我的学习路径推进下一步讲解或练习`),
+        prompt: i18n._(msg`请按我当前的学习路径，继续下一步的讲解或练习。`),
+      },
+      {
+        title: i18n._(msg`放慢节奏举个例子`),
+        description: i18n._(msg`把当前概念拆细，用简单示例演示`),
+        prompt: i18n._(msg`可以放慢一点节奏，用一个更简单的仓颉例子解释当前知识点吗？`),
+      },
+      {
+        title: i18n._(msg`安排一道动手练习`),
+        description: i18n._(msg`通过写代码检验刚刚学到的内容`),
+        prompt: i18n._(msg`我准备好做一道当前知识点的动手练习了。`),
+      },
+      {
+        title: i18n._(msg`总结本节要点`),
+        description: i18n._(msg`梳理核心语法和注意事项方便复习`),
+        prompt: i18n._(msg`请帮我总结目前这一节的核心语法要点和注意事项。`),
+      },
+    ]
   }
 
-  return english
-    ? [
-        {
-          title: 'What does this course cover?',
-          description: 'See the built-in starter concepts and how lessons work',
-          prompt: 'What Cangjie concepts are included in this starter classroom, and how should I begin?',
-        },
-        {
-          title: 'How does main() work?',
-          description: 'Understand the entry point of a Cangjie program',
-          prompt: 'How does the main() entry point work in Cangjie?',
-        },
-        {
-          title: 'let vs var in Cangjie',
-          description: 'Learn when to use immutable vs mutable variables',
-          prompt: 'What is the difference between let and var in Cangjie?',
-        },
-      ]
-    : [
-        {
-          title: '这门课包含哪些内容？',
-          description: '了解内置入门知识点和推荐学习节奏',
-          prompt: '当前 AI 课堂内置了哪些仓颉知识点？我应该从哪里开始学？',
-        },
-        {
-          title: 'main() 入口怎么写？',
-          description: '快速了解仓颉程序的最小可运行结构',
-          prompt: '仓颉程序的 main() 入口有什么特点？可以给我看一个最小例子吗？',
-        },
-        {
-          title: 'let 和 var 有什么区别？',
-          description: '区分不可变绑定与可变变量的使用场景',
-          prompt: '仓颉里 let 和 var 有什么区别？分别适合什么场景？',
-        },
-      ]
+  return [
+    {
+      title: i18n._(msg`这门课包含哪些内容？`),
+      description: i18n._(msg`了解内置入门知识点和推荐学习节奏`),
+      prompt: i18n._(msg`当前 AI 课堂内置了哪些仓颉知识点？我应该从哪里开始学？`),
+    },
+    {
+      title: i18n._(msg`main() 入口怎么写？`),
+      description: i18n._(msg`快速了解仓颉程序的最小可运行结构`),
+      prompt: i18n._(msg`仓颉程序的 main() 入口有什么特点？可以给我看一个最小例子吗？`),
+    },
+    {
+      title: i18n._(msg`let 和 var 有什么区别？`),
+      description: i18n._(msg`区分不可变绑定与可变变量的使用场景`),
+      prompt: i18n._(msg`仓颉里 let 和 var 有什么区别？分别适合什么场景？`),
+    },
+  ]
 }
 
 /**
@@ -308,6 +216,7 @@ export function TeacherChatRuntime({
   children?: (chat: ReactNode) => ReactNode
   lang: string
 }) {
+  const { i18n } = useLingui()
   useLLMConfigBootstrap({ reportErrors: false })
   const { catalog, classroom } = useWorkspace()
   const snapshot = useClassroomSnapshot(classroom)
@@ -357,11 +266,11 @@ export function TeacherChatRuntime({
     () => buildTeacherSuggestions({
       conceptTitle: reviewConceptTitle,
       hasActiveTrack: activeTrackId !== null,
-      lang: normalizedLang,
+      i18n,
       scopeMode: scope.mode,
       view,
     }),
-    [activeTrackId, normalizedLang, reviewConceptTitle, scope.mode, view],
+    [activeTrackId, i18n, reviewConceptTitle, scope.mode, view],
   )
   const rememberHistory = useCallback((messages: TeacherChatMessage[]) => {
     const histories = historiesRef.current
@@ -541,6 +450,7 @@ function TeacherChatProjection({
   scopeMode: TeacherChatRunMode
   suggestions: readonly ThreadWelcomeSuggestion[]
 }) {
+  const { i18n } = useLingui()
   const [runtimeError, setRuntimeError] = useState<TeacherRuntimeErrorState | null>(initialRuntimeError ?? null)
   const runtimeErrorRef = useRef<TeacherRuntimeErrorState | null>(initialRuntimeError ?? null)
   const updateRuntimeError = useCallback((nextError: TeacherRuntimeErrorState | null) => {
@@ -551,7 +461,7 @@ function TeacherChatProjection({
   const runtime = useChatRuntime<TeacherChatMessage>({
     messages: initialMessages,
     onError: (error) => {
-      const nextError = safeTeacherRuntimeError(error, lang)
+      const nextError = safeTeacherRuntimeError(error, i18n)
       if (nextError !== null)
         updateRuntimeError(nextError)
     },
@@ -560,7 +470,7 @@ function TeacherChatProjection({
         updateRuntimeError(null)
       }
       else if (isError && runtimeErrorRef.current === null) {
-        updateRuntimeError(safeTeacherRuntimeError(null, lang))
+        updateRuntimeError(safeTeacherRuntimeError(null, i18n))
       }
       else if (!isError) {
         updateRuntimeError(null)
@@ -625,18 +535,18 @@ function TeacherRuntimeErrorRunBridge({
 }
 
 function TeacherChatSurface({
-  lang,
   onDismissRuntimeError,
   renderChat,
   runtimeError,
   suggestions,
 }: {
-  lang: TeacherLang
+  lang?: TeacherLang
   onDismissRuntimeError: () => void
   renderChat?: (chat: ReactNode) => ReactNode
   runtimeError: TeacherRuntimeErrorState | null
   suggestions: readonly ThreadWelcomeSuggestion[]
 }) {
+  const { t } = useLingui()
   const setSettingsDialogOpen = useLLMConfigStore(state => state.setSettingsDialogOpen)
   const running = useAuiState(state => state.thread.isRunning)
   const hasRenderedMessageError = useAuiState(state =>
@@ -665,7 +575,7 @@ function TeacherChatSurface({
                   onClick={() => setSettingsDialogOpen?.(true)}
                 >
                   <Settings2 aria-hidden="true" className="size-3.5" />
-                  {lang === 'en' ? 'Open AI service settings' : '打开 AI 服务设置'}
+                  <Trans>打开 AI 服务设置</Trans>
                 </Button>
               )}
             </div>
@@ -674,7 +584,7 @@ function TeacherChatSurface({
               variant="ghost"
               size="icon"
               className="-m-1 size-11 shrink-0 lg:size-8"
-              aria-label={lang === 'en' ? 'Dismiss error' : '关闭错误提示'}
+              aria-label={t`关闭错误提示`}
               onClick={onDismissRuntimeError}
             >
               <X aria-hidden="true" className="size-4" />

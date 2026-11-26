@@ -7,6 +7,7 @@ import type { WorkspaceView } from '@/features/teach/state/workspace-store'
 import { createAIClassroom } from '@/lib/teach/classroom/ai-classroom'
 import { createContentPackCatalog } from '@/lib/teach/classroom/content-catalog'
 import { createMemoryClassroomStorage } from '@/lib/teach/classroom/storage'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { WorkspaceViewport } from './WorkspaceViewport'
 
 function MockConceptProgressView() {
@@ -49,17 +50,19 @@ async function setup(lang: 'zh' | 'en') {
   })
   await classroom.open()
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <WorkspaceProvider
-      lang={lang}
-      classroom={classroom}
-      catalog={catalog}
-      knowledge={{ id: 'test', search: async () => [] }}
-      runner={{ run: async () => ({ ok: true, phase: 'run', stdout: '', stdoutTruncated: false, stderr: '', stderrTruncated: false, compilerOutput: '', compilerOutputTruncated: false, exitCode: 0 }) }}
-      activeEditor={createActiveEditorRegistry()}
-      now={() => 2_000}
-    >
-      {children}
-    </WorkspaceProvider>
+    <TestI18nProvider locale={lang}>
+      <WorkspaceProvider
+        lang={lang}
+        classroom={classroom}
+        catalog={catalog}
+        knowledge={{ id: 'test', search: async () => [] }}
+        runner={{ run: async () => ({ ok: true, phase: 'run', stdout: '', stdoutTruncated: false, stderr: '', stderrTruncated: false, compilerOutput: '', compilerOutputTruncated: false, exitCode: 0 }) }}
+        activeEditor={createActiveEditorRegistry()}
+        now={() => 2_000}
+      >
+        {children}
+      </WorkspaceProvider>
+    </TestI18nProvider>
   )
   return { classroom, wrapper }
 }

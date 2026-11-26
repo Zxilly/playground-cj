@@ -19,12 +19,12 @@ export interface Actions {
 
 function buildOutput(content: string, code: number): string {
   const trailing = content.endsWith('\n') ? '' : '\n'
-  return `${content}${trailing}----------\n${t`exit code ${code}`}`
+  return `${content}${trailing}----------\n${t`退出码 ${code}`}`
 }
 
 function buildProgramOutput(stdout: string, stderr: string, code: number): string {
   const content = stderr
-    ? `${stdout}${stdout && !stdout.endsWith('\n') ? '\n' : ''}[stderr]\n${stderr}`
+    ? `${stdout}${stdout && !stdout.endsWith('\n') ? '\n' : ''}[${t`标准错误`}]\n${stderr}`
     : stdout
   return buildOutput(content, code)
 }

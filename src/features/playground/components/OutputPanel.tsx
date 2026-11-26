@@ -46,7 +46,7 @@ export function OutputPanel({
     : result?.phase === 'compile' || result?.phase === null ? 'compiler' : 'program'
   const empty = !result && !running && !toolOutput && !programOutput
   const style = { fontFamily }
-  const exitCode = result?.exitCode
+  const code = result?.exitCode
   const duration = result?.durationMs === undefined ? null : Math.round(result.durationMs)
   const failureSummary = result?.phase === null ? formatLocalizedRunFailure(result) : null
 
@@ -57,7 +57,7 @@ export function OutputPanel({
           <Trans>程序输出</Trans>
         </TabsTrigger>
         <TabsTrigger value="compiler" className="h-full flex-none rounded-none border-0 border-b-2 border-transparent px-3 text-muted-foreground data-[state=active]:border-brand data-[state=active]:text-brand data-[state=active]:shadow-none">
-          <Trans>编译信息</Trans>
+          <Trans>编译器输出</Trans>
           {(result?.phase === 'compile' || result?.phase === null) && (
             <CircleAlert aria-hidden="true" className="size-4 text-error-foreground" />
           )}
@@ -79,7 +79,7 @@ export function OutputPanel({
                       <div role="status" className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-2">
                           <LoaderCircle aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
-                          <Trans>正在运行...</Trans>
+                          <Trans>正在运行…</Trans>
                         </span>
                         {onCancelRun && (
                           <Button
@@ -196,22 +196,14 @@ export function OutputPanel({
                         : <Trans>运行失败</Trans>}
                   </>
                 )}
-          {!running && exitCode !== null && exitCode !== undefined && (
+          {!running && code !== null && code !== undefined && (
             <span>
-              <Trans>
-                退出码
-                {exitCode}
-              </Trans>
+              {i18n._(msg`退出码 ${code}`)}
             </span>
           )}
           {!running && duration !== null && (
             <span className="ml-auto tabular-nums">
-              <Trans>
-                总耗时
-                {duration}
-                {' '}
-                ms
-              </Trans>
+              {i18n._(msg`总耗时 ${duration} ms`)}
             </span>
           )}
         </div>

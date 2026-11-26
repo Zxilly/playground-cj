@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Lightbulb, Loader2, Play, XCircle } from 'lucide-react'
+import type { I18n, MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { AnsiOutput } from '@/components/AnsiOutput'
 import { CompilerDiagnosticOutput } from '@/features/teach/components/blocks/CompilerDiagnosticOutput'
@@ -23,37 +26,30 @@ type AttemptEvidenceType = LearningEvidence['type']
 
 function exercisePurposeLabel(
   instance: ExerciseInstance,
-  english: boolean,
+  i18n: I18n,
 ): string {
   if (instance.purpose === 'placement')
-    return english ? 'Placement Check' : '水平检查'
+    return i18n._(msg`水平检查`)
   if (instance.purpose === 'review')
-    return english ? 'Review Check' : '复习检查'
-  return english ? 'Practice' : '练习'
+    return i18n._(msg`复习检查`)
+  return i18n._(msg`练习`)
 }
 
 function difficultyLabel(
   instance: ExerciseInstance,
-  english: boolean,
+  i18n: I18n,
 ): string {
-  const labels = english
-    ? {
-        standard: 'standard',
-        easy: 'with hints',
-        hard: 'from scratch',
-      }
-    : {
-        standard: '常规',
-        easy: '提供提示',
-        hard: '从零编写',
-      }
-  return labels[instance.effectiveDifficulty]
+  const labels = {
+    standard: msg`常规`,
+    easy: msg`提供提示`,
+    hard: msg`从零编写`,
+  } as const
+  return i18n._(labels[instance.effectiveDifficulty])
 }
 
 export function ExerciseInstanceCard({ instance }: { instance: ExerciseInstance }) {
   const { activeEditor, classroom, lang, runner } = useWorkspace()
   const snapshot = useClassroomSnapshot(classroom)
-  const english = lang === 'en'
   const learningTrackGoal = snapshot.tracks.find(
     track => track.id === instance.learningTrackId,
   )?.goal
@@ -79,7 +75,6 @@ export function ExerciseInstanceCard({ instance }: { instance: ExerciseInstance 
           runner={runner}
           activeEditor={activeEditor}
           lang={lang}
-          english={english}
           learningTrackGoal={learningTrackGoal}
           revealedHints={revealedHints}
         />
@@ -91,7 +86,6 @@ export function ExerciseInstanceCard({ instance }: { instance: ExerciseInstance 
           lastAttempt={lastAttempt}
           lastEvidenceType={lastEvidenceType}
           classroom={classroom}
-          english={english}
           learningTrackGoal={learningTrackGoal}
         />
       )
@@ -102,7 +96,6 @@ export function ExerciseInstanceCard({ instance }: { instance: ExerciseInstance 
           lastAttempt={lastAttempt}
           lastEvidenceType={lastEvidenceType}
           classroom={classroom}
-          english={english}
           learningTrackGoal={learningTrackGoal}
         />
       )
@@ -110,26 +103,25 @@ export function ExerciseInstanceCard({ instance }: { instance: ExerciseInstance 
 }
 
 function ExerciseMetadata({
-  english,
   instance,
   learningTrackGoal,
 }: {
-  english: boolean
   instance: ExerciseInstance
   learningTrackGoal: string | undefined
 }) {
+  const { i18n, t } = useLingui()
   const visibleTrack = instance.learningTrackId === null
-    ? (english ? 'Independent practice' : '独立练习')
+    ? t`独立练习`
     : learningTrackGoal
-      ? `${english ? 'Path' : '路径'}: ${learningTrackGoal}`
-      : (english ? 'Current learning path' : '当前学习路径')
+      ? t`路径：${learningTrackGoal}`
+      : t`当前学习路径`
 
   return (
     <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {exercisePurposeLabel(instance, english)}
+        {exercisePurposeLabel(instance, i18n)}
         {' · '}
-        {difficultyLabel(instance, english)}
+        {difficultyLabel(instance, i18n)}
       </p>
       <div className="flex min-w-0 max-w-full flex-wrap justify-end text-[11px] text-muted-foreground">
         <span className="max-w-72 truncate">
@@ -143,7 +135,6 @@ function ExerciseMetadata({
 function CodeOutputExercise({
   activeEditor,
   classroom,
-  english,
   instance,
   lang,
   lastAttempt,
@@ -154,7 +145,6 @@ function CodeOutputExercise({
 }: {
   activeEditor: ReturnType<typeof useWorkspace>['activeEditor']
   classroom: ReturnType<typeof useWorkspace>['classroom']
-  english: boolean
   instance: ExerciseInstance & { task: Extract<ExerciseInstance['task'], { type: 'code_output' }> }
   lang: 'zh' | 'en'
   lastAttempt: ReturnType<typeof useClassroomSnapshot>['attempts'][number] | undefined
@@ -163,6 +153,7 @@ function CodeOutputExercise({
   revealedHints: number
   runner: ReturnType<typeof useWorkspace>['runner']
 }) {
+  const { t } = useLingui()
   const initialCode = lastAttempt?.submission.type === 'code_output'
     ? lastAttempt.submission.code
     : instance.task.starterCode
@@ -200,9 +191,7 @@ function CodeOutputExercise({
     void attempt.submit(async (signal) => {
       const result = await runner.run(code, signal)
       if (result.failureKind === 'runner_unavailable') {
-        throw new Error(english
-          ? 'The code runner is temporarily unavailable. Your answer is still in the editor; try again later.'
-          : '代码运行服务暂时不可用。你的答案仍保留在编辑器中，请稍后重试。')
+        throw new Error(t`代码运行服务暂时不可用。你的答案仍保留在编辑器中，请稍后重试。`)
       }
       return {
         submission: { type: 'code_output', code },
@@ -216,7 +205,6 @@ function CodeOutputExercise({
   return (
     <section data-testid="exercise-instance" className="rounded-lg border border-border bg-card p-4">
       <ExerciseMetadata
-        english={english}
         instance={instance}
         learningTrackGoal={learningTrackGoal}
       />
@@ -250,8 +238,8 @@ function CodeOutputExercise({
             ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
             : <Play aria-hidden="true" className="size-4" />}
           {attempt.busy
-            ? (english ? 'Running…' : '运行中…')
-            : (english ? 'Run and record attempt' : '运行并记录尝试')}
+            ? <Trans>运行中…</Trans>
+            : <Trans>运行并记录尝试</Trans>}
         </Button>
         {revealedHints < instance.task.hints.length && (
           <Button
@@ -278,7 +266,7 @@ function CodeOutputExercise({
             {revealingHint
               ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
               : <Lightbulb aria-hidden="true" className="size-4" />}
-            {english ? 'Show hint' : '查看提示'}
+            <Trans>查看提示</Trans>
           </Button>
         )}
       </div>
@@ -302,8 +290,8 @@ function CodeOutputExercise({
               ? <CheckCircle2 aria-hidden="true" className="size-4" />
               : <XCircle aria-hidden="true" className="size-4" />}
             {lastAttempt.result.passed
-              ? (english ? 'Passed' : '通过')
-              : (english ? 'Not passed yet' : '尚未通过')}
+              ? <Trans>通过</Trans>
+              : <Trans>尚未通过</Trans>}
           </p>
           {stdout && (
             <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-background p-2 font-mono text-xs">
@@ -312,7 +300,7 @@ function CodeOutputExercise({
           )}
           {lastAttempt.result.stdout?.sourceTruncated && (
             <p role="status" className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
-              {english ? 'Program stdout was truncated.' : '程序标准输出已截断。'}
+              <Trans context="exercise">程序标准输出已截断。</Trans>
             </p>
           )}
           {stderr && (
@@ -320,7 +308,7 @@ function CodeOutputExercise({
           )}
           {lastAttempt.result.stderr?.sourceTruncated && (
             <p role="status" className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
-              {english ? 'Program stderr was truncated.' : '程序标准错误已截断。'}
+              <Trans context="exercise">程序标准错误已截断。</Trans>
             </p>
           )}
           {compilerOutput && (
@@ -330,15 +318,14 @@ function CodeOutputExercise({
           )}
           {lastAttempt.result.compilerOutput?.sourceTruncated && (
             <p role="status" className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">
-              {english ? 'Compiler output was truncated.' : '编译器输出已截断。'}
+              <Trans>编译器输出已截断。</Trans>
             </p>
           )}
-          <AttemptEvidenceLabel english={english} type={lastEvidenceType} />
+          <AttemptEvidenceLabel type={lastEvidenceType} />
         </div>
       )}
       <AttemptStatus
         busy={attempt.busy}
-        english={english}
         passed={lastAttempt?.result.passed}
       />
     </section>
@@ -347,19 +334,18 @@ function CodeOutputExercise({
 
 function AttemptStatus({
   busy,
-  english,
   passed,
 }: {
   busy: boolean
-  english: boolean
   passed: boolean | undefined
 }) {
+  const { t } = useLingui()
   const label = busy
-    ? (english ? 'Submitting attempt…' : '正在提交尝试…')
+    ? t`正在提交尝试…`
     : passed === true
-      ? (english ? 'Passed' : '通过')
+      ? t`通过`
       : passed === false
-        ? (english ? 'Not passed yet' : '尚未通过')
+        ? t`尚未通过`
         : ''
 
   return (
@@ -376,11 +362,9 @@ function AttemptStatus({
 }
 
 function AttemptVerdict({
-  english,
   evidenceType,
   passed,
 }: {
-  english: boolean
   evidenceType: AttemptEvidenceType | undefined
   passed: boolean | undefined
 }) {
@@ -396,50 +380,49 @@ function AttemptVerdict({
           ? <CheckCircle2 aria-hidden="true" className="size-4" />
           : <XCircle aria-hidden="true" className="size-4" />}
         {passed
-          ? (english ? 'Passed' : '通过')
-          : (english ? 'Not passed yet' : '尚未通过')}
+          ? <Trans>通过</Trans>
+          : <Trans>尚未通过</Trans>}
       </p>
-      <AttemptEvidenceLabel english={english} type={evidenceType} />
+      <AttemptEvidenceLabel type={evidenceType} />
     </div>
   )
 }
 
+const ATTEMPT_EVIDENCE_LABELS: Record<AttemptEvidenceType, MessageDescriptor> = {
+  aided: msg`在老师帮助下完成`,
+  practice: msg`练习尝试`,
+  independent: msg`独立完成`,
+}
+
 function AttemptEvidenceLabel({
-  english,
   type,
 }: {
-  english: boolean
   type: AttemptEvidenceType | undefined
 }) {
+  const { i18n } = useLingui()
   if (!type)
     return null
-  const labels: Record<AttemptEvidenceType, { en: string, zh: string }> = {
-    aided: { en: 'Completed with teacher help', zh: '在老师帮助下完成' },
-    practice: { en: 'Practice attempt', zh: '练习尝试' },
-    independent: { en: 'Completed independently', zh: '独立完成' },
-  }
   return (
     <p className="text-xs text-muted-foreground">
-      {english ? labels[type].en : labels[type].zh}
+      {i18n._(ATTEMPT_EVIDENCE_LABELS[type])}
     </p>
   )
 }
 
 function RecallExercise({
   classroom,
-  english,
   instance,
   lastAttempt,
   lastEvidenceType,
   learningTrackGoal,
 }: {
   classroom: ReturnType<typeof useWorkspace>['classroom']
-  english: boolean
   instance: ExerciseInstance & { task: Extract<ExerciseInstance['task'], { type: 'recall' }> }
   lastAttempt: ReturnType<typeof useClassroomSnapshot>['attempts'][number] | undefined
   lastEvidenceType: AttemptEvidenceType | undefined
   learningTrackGoal: string | undefined
 }) {
+  const { t } = useLingui()
   const previousAnswer = lastAttempt?.submission.type === 'recall'
     ? lastAttempt.submission.answer
     : ''
@@ -460,7 +443,6 @@ function RecallExercise({
   return (
     <section data-testid="exercise-instance" className="rounded-lg border border-border bg-card p-4">
       <ExerciseMetadata
-        english={english}
         instance={instance}
         learningTrackGoal={learningTrackGoal}
       />
@@ -470,7 +452,7 @@ function RecallExercise({
         onChange={event => setAnswer(event.target.value)}
         rows={4}
         className="mt-3 w-full resize-y rounded-md border border-input bg-background p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-        aria-label={english ? 'Your answer' : '你的回答'}
+        aria-label={t`你的回答`}
       />
       <Button
         type="button"
@@ -480,17 +462,15 @@ function RecallExercise({
         onClick={submit}
       >
         {attempt.busy && <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />}
-        {english ? 'Submit answer' : '提交回答'}
+        <Trans>提交回答</Trans>
       </Button>
       {attempt.error && <p role="alert" className="mt-3 text-sm text-error-foreground">{attempt.error}</p>}
       <AttemptVerdict
-        english={english}
         evidenceType={lastEvidenceType}
         passed={lastAttempt?.result.passed}
       />
       <AttemptStatus
         busy={attempt.busy}
-        english={english}
         passed={lastAttempt?.result.passed}
       />
     </section>
@@ -499,14 +479,12 @@ function RecallExercise({
 
 function QuizExercise({
   classroom,
-  english,
   instance,
   lastAttempt,
   lastEvidenceType,
   learningTrackGoal,
 }: {
   classroom: ReturnType<typeof useWorkspace>['classroom']
-  english: boolean
   instance: ExerciseInstance & { task: Extract<ExerciseInstance['task'], { type: 'quiz' }> }
   lastAttempt: ReturnType<typeof useClassroomSnapshot>['attempts'][number] | undefined
   lastEvidenceType: AttemptEvidenceType | undefined
@@ -551,7 +529,6 @@ function QuizExercise({
   return (
     <section data-testid="exercise-instance" className="rounded-lg border border-border bg-card p-4">
       <ExerciseMetadata
-        english={english}
         instance={instance}
         learningTrackGoal={learningTrackGoal}
       />
@@ -593,17 +570,15 @@ function QuizExercise({
         onClick={submit}
       >
         {attempt.busy && <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />}
-        {english ? 'Submit answers' : '提交答案'}
+        <Trans>提交答案</Trans>
       </Button>
       {attempt.error && <p role="alert" className="mt-3 text-sm text-error-foreground">{attempt.error}</p>}
       <AttemptVerdict
-        english={english}
         evidenceType={lastEvidenceType}
         passed={lastAttempt?.result.passed}
       />
       <AttemptStatus
         busy={attempt.busy}
-        english={english}
         passed={lastAttempt?.result.passed}
       />
     </section>

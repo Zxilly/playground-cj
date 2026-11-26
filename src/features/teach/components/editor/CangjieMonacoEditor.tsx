@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { AlertCircle, RefreshCw } from 'lucide-react'
+import { Trans } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { MonacoEditorReactComp } from '@/modules/cangjie-editor/components/EditorWrapper'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
@@ -138,8 +139,6 @@ export function CangjieMonacoEditor({
     actionsRef.current?.dispose()
   }, [])
 
-  const isEnglish = locale === 'en'
-
   return (
     <EditorBridgeProvider lang={locale}>
       {/*
@@ -178,7 +177,7 @@ export function CangjieMonacoEditor({
           >
             <AlertCircle aria-hidden="true" className="size-6 text-error-foreground" />
             <p className="font-medium text-foreground">
-              {isEnglish ? 'Failed to load code editor' : '代码编辑器加载失败'}
+              <Trans>代码编辑器加载失败</Trans>
             </p>
             <p className="max-w-sm text-xs text-muted-foreground">
               {loadError.message}
@@ -191,7 +190,7 @@ export function CangjieMonacoEditor({
               className="min-h-11 lg:min-h-8"
             >
               <RefreshCw aria-hidden="true" className="size-3.5" />
-              <span>{isEnglish ? 'Retry' : '重试'}</span>
+              <span><Trans>重试</Trans></span>
             </Button>
           </div>
         )}

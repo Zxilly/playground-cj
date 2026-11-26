@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { useMachine } from '@xstate/react'
 import { RotateCcw, TriangleAlert } from 'lucide-react'
+import { Trans } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { createWorkspaceCollaborators } from '@/features/teach/state/workspace-collaborators'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
@@ -40,23 +41,21 @@ function TeachAppRuntime({ locale }: { locale: 'en' | 'zh' }) {
         <TriangleAlert aria-hidden="true" className="size-8 text-amber-500" />
         <div className="max-w-md">
           <h1 className="text-lg font-semibold">
-            {locale === 'en' ? 'Unable to open AI Classroom' : '无法打开 AI 课堂'}
+            <Trans>无法打开 AI 课堂</Trans>
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {locale === 'en'
-              ? 'The local classroom workspace could not be opened. Your stored data was left unchanged.'
-              : '无法打开本地课堂工作区；已有数据保持原样。'}
+            <Trans>无法打开本地课堂工作区；已有数据保持原样。</Trans>
           </p>
           <details className="mt-3 text-start text-xs text-muted-foreground">
             <summary className="cursor-pointer font-medium">
-              {locale === 'en' ? 'Technical details' : '技术详情'}
+              <Trans>技术详情</Trans>
             </summary>
             <p className="mt-2 break-words font-mono">{runtime.context.message}</p>
           </details>
         </div>
         <Button type="button" variant="outline" onClick={() => send({ type: 'retry' })}>
           <RotateCcw aria-hidden="true" className="size-4" />
-          {locale === 'en' ? 'Retry' : '重试'}
+          <Trans>重试</Trans>
         </Button>
       </div>
     )

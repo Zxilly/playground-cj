@@ -235,7 +235,7 @@ export function TourEditor({
             }
             catch (error) {
               if (controller.signal.aborted && !signal.aborted) {
-                const cancelledText = locale === 'en' ? 'Run cancelled.' : '已取消运行'
+                const cancelledText = t`已取消运行`
                 useTourEditorStore.getState().setCompilerOutput(cancelledText)
                 useTourEditorStore.getState().setProgramOutput('')
                 toast.info(cancelledText)
@@ -278,7 +278,7 @@ export function TourEditor({
     }
 
     syncCompilerMarkers(useTourEditorStore.getState().compilerOutput)
-  }, [bridge.editor, format, locale, run, syncCompilerMarkers])
+  }, [bridge.editor, format, run, syncCompilerMarkers])
 
   const onError = useCallback((error: Error) => {
     setEditorError(error)
@@ -400,10 +400,10 @@ export function TourEditor({
                 onCancelRun={running ? handleCancelRun : undefined}
                 runResult={runResult}
                 programOutput={programOutput + (truncation.programStdout || truncation.programStderr
-                  ? `\n\n${locale === 'en' ? 'Program output was truncated.' : '程序输出已截断。'}`
+                  ? `\n\n${t`程序输出已截断。`}`
                   : '')}
                 compilerOutput={toolOutput + (truncation.compilerOutput
-                  ? `\n\n${locale === 'en' ? 'Compiler output was truncated.' : '编译器输出已截断。'}`
+                  ? `\n\n${t`编译器输出已截断。`}`
                   : '')}
               />
             )}

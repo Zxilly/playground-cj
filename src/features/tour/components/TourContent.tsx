@@ -1,6 +1,7 @@
 'use client'
 
 import { lazy, Suspense } from 'react'
+import { Trans } from '@lingui/react/macro'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { MDXRemote } from 'next-mdx-remote'
 import { tourMdxComponents } from './mdx'
@@ -27,7 +28,7 @@ export function TourContent({ lang, section }: TourContentProps) {
           {source
             ? <MDXRemote {...source} components={tourMdxComponents} />
             : (
-                <Suspense fallback={<p role="status">{lang === 'en' ? 'Loading lesson…' : '正在加载章节…'}</p>}>
+                <Suspense fallback={<p role="status"><Trans>正在加载章节…</Trans></p>}>
                   <Markdown>{(section.markdown[lang] || section.markdown.zh || '').replace(HEADING_RE, '')}</Markdown>
                 </Suspense>
               )}

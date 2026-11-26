@@ -37,7 +37,7 @@ export function useCodeRunner(options: CodeRunnerOptions = {}) {
       ? AbortSignal.any([signal, lifetimeRef.current.signal])
       : lifetimeRef.current.signal
     runSignal.throwIfAborted()
-    const notification = toast.loading(i18n._(msg`正在运行...`))
+    const notification = toast.loading(i18n._(msg`正在运行…`))
     try {
       await remoteLock.acquire('run', async () => {
         runSignal.throwIfAborted()
@@ -67,7 +67,7 @@ export function useCodeRunner(options: CodeRunnerOptions = {}) {
     formatSignal.throwIfAborted()
     if (isBusy())
       return code
-    const notification = toast.loading(i18n._(msg`正在格式化...`))
+    const notification = toast.loading(i18n._(msg`正在格式化…`))
     try {
       const formatted = await remoteLock.acquire('run', async () => {
         formatSignal.throwIfAborted()

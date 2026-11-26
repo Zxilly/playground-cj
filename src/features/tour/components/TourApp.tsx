@@ -4,6 +4,7 @@ import { createContext, Suspense, use, useEffect, useRef, useState } from 'react
 import dynamic from 'next/dynamic'
 import { useGroupRef } from 'react-resizable-panels'
 import { History, X } from 'lucide-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { TourLayout } from './TourLayout'
 import { TourSidebar } from './TourSidebar'
 import { TourHeader } from './TourHeader'
@@ -48,6 +49,7 @@ interface TourAppProps {
 }
 
 export default function TourApp({ lang, tourData, allSections, initialIndex, isTourDomain }: TourAppProps) {
+  const { t } = useLingui()
   const isDesktop = useMedia('(min-width: 1024px)', false)
   const hydrated = useHydrated()
   const isShortMobile = useMedia('(max-width: 1023px) and (max-height: 500px)', false)
@@ -73,13 +75,13 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
     if (!section)
       return
     const title = section.sectionName[lang] ?? section.sectionName.zh
-    document.title = `${title} - ${lang === 'en' ? 'Cangjie Tour' : '仓颉之旅'}`
+    document.title = `${title} - ${t`仓颉之旅`}`
     document.querySelector('meta[name="description"]')?.setAttribute('content', lessonDescription(section, lang))
     const suffix = `/${section.chapterSlug}/${section.chapterStep}`
     document.querySelector('link[rel="canonical"]')?.setAttribute('href', `${TOUR_ORIGIN}/${lang}${suffix}`)
     for (const [locale, hreflang] of [['zh', 'zh-CN'], ['en', 'en']])
       document.querySelector(`link[rel="alternate"][hreflang="${hreflang}"]`)?.setAttribute('href', `${TOUR_ORIGIN}/${locale}${suffix}`)
-  }, [lang, section])
+  }, [lang, section, t])
 
   useEffect(() => {
     if (!section)
@@ -210,7 +212,10 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                         <div className="flex min-w-0 items-center gap-2">
                           <History aria-hidden="true" className="size-3.5 shrink-0 text-tour-accent-fg" />
                           <span className="truncate">
-                            {lang === 'en' ? `Resume where you left off: ${resumeTitle}` : `上次读到：${resumeTitle}`}
+                            <Trans>
+                              上次读到：
+                              {resumeTitle}
+                            </Trans>
                           </span>
                         </div>
                         <div className="flex shrink-0 items-center gap-1.5">
@@ -222,11 +227,11 @@ export default function TourApp({ lang, tourData, allSections, initialIndex, isT
                             }}
                             className="inline-flex min-h-7 items-center rounded bg-brand px-2.5 py-1 text-xs font-medium text-brand-foreground transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                           >
-                            {lang === 'en' ? 'Continue' : '继续学习'}
+                            <Trans>继续学习</Trans>
                           </button>
                           <button
                             type="button"
-                            aria-label={lang === 'en' ? 'Dismiss resume prompt' : '关闭续学提示'}
+                            aria-label={t`关闭续学提示`}
                             onClick={() => setResumeTarget(null)}
                             className="inline-flex size-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                           >

@@ -29,7 +29,7 @@ export function CompilerDiagnosticOutput({ output, testId, variant = 'error', st
       {formatted.hasHiddenPreamble && (
         <details data-testid={testId ? `${testId}-raw` : undefined} className="rounded-md border border-border/60 bg-muted/20 text-xs text-muted-foreground">
           <summary className="cursor-pointer select-none px-3 py-2 font-medium">
-            <Trans>查看原始编译信息</Trans>
+            <Trans>查看原始编译器输出</Trans>
           </summary>
           <AnsiOutput text={formatted.fullAnsi} style={style} className="max-h-40 overflow-auto whitespace-pre-wrap break-all border-t border-border/60 px-3 py-2 font-mono leading-relaxed" />
         </details>

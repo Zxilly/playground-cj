@@ -26,7 +26,7 @@ export default function ExamplesMenu({ selectedKey, onSelect }: ExamplesMenuProp
 
   return (
     <Command label={i18n._(msg`搜索示例`)} defaultValue={examples[selectedKey]?.name ?? selectedKey}>
-      <CommandInput ref={inputRef} placeholder={i18n._(msg`搜索示例...`)} />
+      <CommandInput ref={inputRef} placeholder={i18n._(msg`搜索示例…`)} />
       <CommandEmpty><Trans>未找到示例。</Trans></CommandEmpty>
       <CommandGroup>
         <CommandList>

@@ -2,6 +2,7 @@ import type { CSSProperties, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertCircle, RefreshCw } from 'lucide-react'
+import { Trans } from '@lingui/react/macro'
 import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from '@/lib/monaco/vscode-api'
 import type { CodeResources, MonacoLanguageClient } from '@/lib/monaco/vscode-api'
 import {
@@ -546,8 +547,6 @@ export function MonacoEditorReactComp({
       void handle.updateCodeResources(editorAppConfig.codeResources)
   }, [editorAppConfig])
 
-  const isEnglish = locale === 'en'
-
   return (
     <div
       ref={rootRef}
@@ -563,7 +562,7 @@ export function MonacoEditorReactComp({
         >
           <AlertCircle className="size-6 text-destructive" aria-hidden="true" />
           <p className="font-medium text-foreground">
-            {isEnglish ? 'Failed to load code editor' : '代码编辑器加载失败'}
+            <Trans>代码编辑器加载失败</Trans>
           </p>
           <p className="max-w-sm text-xs text-muted-foreground">
             {initError.message}
@@ -575,7 +574,7 @@ export function MonacoEditorReactComp({
             onClick={() => setRetryCount(count => count + 1)}
           >
             <RefreshCw className="size-3.5" aria-hidden="true" />
-            <span>{isEnglish ? 'Retry' : '重试'}</span>
+            <span><Trans>重试</Trans></span>
           </Button>
         </div>
       )}

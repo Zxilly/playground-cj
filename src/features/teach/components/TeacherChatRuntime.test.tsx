@@ -1,7 +1,8 @@
-import { act, cleanup, render, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import { act, cleanup, render as rtlRender, waitFor } from '@testing-library/react'
+import type { ReactElement, ReactNode } from 'react'
 import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
@@ -13,6 +14,29 @@ import type {
   AIClassroomExecutionOptions,
   ClassroomCommand,
 } from '@/lib/teach/classroom/ai-classroom'
+
+function detectTestLocale(node: ReactNode): 'zh' | 'en' {
+  if (node && typeof node === 'object' && 'props' in node) {
+    const props = (node as ReactElement<{ lang?: unknown, children?: ReactNode }>).props
+    if (props?.lang === 'zh' || props?.lang === 'en')
+      return props.lang
+    if (props?.children)
+      return detectTestLocale(props.children)
+  }
+  return 'en'
+}
+
+function render(ui: ReactElement) {
+  const locale = detectTestLocale(ui)
+  const view = rtlRender(<TestI18nProvider locale={locale}>{ui}</TestI18nProvider>)
+  return {
+    ...view,
+    rerender: (nextUi: ReactElement) => {
+      const nextLocale = detectTestLocale(nextUi)
+      return view.rerender(<TestI18nProvider locale={nextLocale}>{nextUi}</TestI18nProvider>)
+    },
+  }
+}
 
 const mocks = vi.hoisted(() => ({
   abortSignal: new AbortController().signal,

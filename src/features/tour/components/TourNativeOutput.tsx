@@ -2,17 +2,18 @@
 
 import { useEffect, useRef } from 'react'
 import { CircleAlert, LoaderCircle, Square, Terminal, Wrench, X } from 'lucide-react'
+import { useLingui } from '@lingui/react/macro'
 import { AnsiOutput } from '@/components/AnsiOutput'
 import { Button } from '@/components/ui/button'
-import { formatRunFailureMessage } from '@/lib/runner'
 import type { RunResult } from '@/lib/runner'
+import { formatLocalizedRunFailure } from '@/service/run'
 import { cn } from '@/lib/utils'
 import styles from './TourEditor.module.css'
 
 type OutputTab = 'program' | 'tool'
 
 export interface TourNativeOutputProps {
-  locale: string
+  locale?: string
   expanded: boolean
   revealRequest: number
   programOutput: string
@@ -25,37 +26,12 @@ export interface TourNativeOutputProps {
   runResult?: RunResult | null
 }
 
-function getLabels(locale: string) {
-  return locale === 'en'
-    ? {
-        region: 'Execution output',
-        programTab: 'Program Output',
-        compilerTab: 'Compiler Output',
-        close: 'Close output',
-        running: 'Running…',
-        cancel: 'Cancel',
-        emptyProgram: 'Run the code to see program output here.',
-        emptyCompiler: 'No compiler diagnostics yet.',
-      }
-    : {
-        region: '运行输出',
-        programTab: '程序输出',
-        compilerTab: '编译输出',
-        close: '关闭输出',
-        running: '正在运行…',
-        cancel: '取消运行',
-        emptyProgram: '运行代码后将在此显示程序输出。',
-        emptyCompiler: '暂无编译诊断输出。',
-      }
-}
-
 /**
  * Lightweight React output panel backed by `AnsiOutput` so Tour preserves
  * ANSI-colored compiler diagnostics without loading VS Code's workbench
  * views/output service overrides.
  */
 export function TourNativeOutput({
-  locale,
   expanded,
   revealRequest,
   programOutput,
@@ -67,14 +43,24 @@ export function TourNativeOutput({
   onCancelRun,
   runResult = null,
 }: TourNativeOutputProps) {
+  const { t } = useLingui()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const labels = getLabels(locale)
+  const labels = {
+    region: t`运行输出`,
+    programTab: t`程序输出`,
+    compilerTab: t`编译器输出`,
+    close: t`关闭输出`,
+    running: t`正在运行…`,
+    cancel: t`取消运行`,
+    emptyProgram: t`运行代码后将在此显示程序输出。`,
+    emptyCompiler: t`暂无编译诊断输出。`,
+  }
 
   const currentText = activeTab === 'program' ? programOutput : compilerOutput
   const hasProgram = programOutput.trim().length > 0
   const hasCompiler = compilerOutput.trim().length > 0
   const failureMessage = runResult?.phase === null
-    ? formatRunFailureMessage(runResult, locale)
+    ? formatLocalizedRunFailure(runResult)
     : null
 
   useEffect(() => {

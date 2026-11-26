@@ -17,6 +17,7 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit --incremental false",
     "pretest": "pnpm prep && pnpm content-packs:generate",
     "test": "vitest --project unit --project component",
     "test:run": "pnpm prep && pnpm content-packs:generate && vitest run --project unit --project component",

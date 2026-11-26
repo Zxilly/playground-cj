@@ -1,17 +1,14 @@
 import type { ReactNode } from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { setupI18n } from '@lingui/core'
-import { I18nProvider } from '@lingui/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TourSidebar } from '@/features/tour/components/TourSidebar'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { buildTourSectionKey, useTourProgressStore } from '@/stores/tourProgress'
 
 const sidebar = vi.hoisted(() => ({ isMobile: false, setOpenMobile: vi.fn() }))
 
-function Wrapper({ children }: { children: ReactNode }) {
-  const i18n = setupI18n({ locale: 'zh', messages: { zh: {} } })
-  i18n.activate('zh')
-  return <I18nProvider i18n={i18n}>{children}</I18nProvider>
+function Wrapper({ children, locale = 'zh' }: { children: ReactNode, locale?: 'zh' | 'en' }) {
+  return <TestI18nProvider locale={locale}>{children}</TestI18nProvider>
 }
 
 function passthrough(tag: keyof HTMLElementTagNameMap) {
@@ -173,7 +170,7 @@ describe('tourSidebar', () => {
   it('closes the mobile drawer after selecting a lesson', () => {
     sidebar.isMobile = true
     render(
-      <Wrapper>
+      <Wrapper locale="en">
         <TourSidebar lang="en" tourData={tourData} currentChapter="basics" currentSubChapter="intro" currentSection="hello" onNavigate={() => {}} />
       </Wrapper>,
     )
@@ -194,7 +191,7 @@ describe('tourSidebar', () => {
     })
 
     render(
-      <Wrapper>
+      <Wrapper locale="en">
         <TourSidebar lang="en" tourData={tourData} currentChapter="basics" currentSubChapter="intro" currentSection="hello" onNavigate={() => {}} />
       </Wrapper>,
     )

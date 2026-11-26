@@ -2,12 +2,13 @@
 
 import type { RefObject } from 'react'
 import { LoaderCircle, PanelBottom, Play, RotateCcw, Square, WandSparkles } from 'lucide-react'
+import { useLingui } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import styles from './TourEditor.module.css'
 
 export interface TourEditorToolbarProps {
-  locale: string
+  locale?: string
   ready: boolean
   running: boolean
   outputExpanded: boolean
@@ -19,32 +20,7 @@ export interface TourEditorToolbarProps {
   onReset: () => void
 }
 
-function getLabels(locale: string) {
-  return locale === 'en'
-    ? {
-        title: 'Code',
-        run: 'Run',
-        running: 'Running',
-        cancel: 'Cancel',
-        format: 'Format',
-        reset: 'Reset',
-        showOutput: 'Show output',
-        hideOutput: 'Hide output',
-      }
-    : {
-        title: '示例代码',
-        run: '运行',
-        running: '运行中',
-        cancel: '取消运行',
-        format: '格式化',
-        reset: '重置',
-        showOutput: '展开输出',
-        hideOutput: '收起输出',
-      }
-}
-
 export function TourEditorToolbar({
-  locale,
   ready,
   running,
   outputExpanded,
@@ -55,7 +31,17 @@ export function TourEditorToolbar({
   onFormat,
   onReset,
 }: TourEditorToolbarProps) {
-  const labels = getLabels(locale)
+  const { t } = useLingui()
+  const labels = {
+    title: t`示例代码`,
+    run: t`运行`,
+    running: t`运行中`,
+    cancel: t`取消运行`,
+    format: t`格式化`,
+    reset: t`重置`,
+    showOutput: t`展开输出`,
+    hideOutput: t`收起输出`,
+  }
   const actionsDisabled = !ready || running
   const outputLabel = outputExpanded ? labels.hideOutput : labels.showOutput
 

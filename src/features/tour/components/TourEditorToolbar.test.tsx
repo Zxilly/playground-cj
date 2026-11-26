@@ -1,7 +1,14 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { createRef } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { TourEditorToolbar } from './TourEditorToolbar'
+
+function render(ui: ReactElement<{ locale?: string }>) {
+  const locale = ui.props.locale === 'en' ? 'en' : 'zh'
+  return rtlRender(<TestI18nProvider locale={locale}>{ui}</TestI18nProvider>)
+}
 
 afterEach(() => {
   cleanup()

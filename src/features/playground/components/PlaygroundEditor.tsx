@@ -155,7 +155,7 @@ export default function PlaygroundEditor({ sharedCode, onLoad, onError, locale, 
         usePlaygroundStore.getState().openShareDialog(generateDataShareUrl(source))
       },
       shareHash: async (source, signal) => {
-        const notification = toast.loading(t`分享中...`)
+        const notification = toast.loading(t`分享中…`)
         try {
           const url = await abortable(generateHashShareUrl(source), signal)
           signal.throwIfAborted()
@@ -217,7 +217,7 @@ export default function PlaygroundEditor({ sharedCode, onLoad, onError, locale, 
     const loadAbort = new AbortController()
     loadAbortRef.current = loadAbort
     const version = model?.getVersionId()
-    const notification = toast.loading(t`分享代码加载中...`)
+    const notification = toast.loading(t`分享代码加载中…`)
     void abortable(loadLegacyShareCode(), loadAbort.signal).then(([source, success]) => {
       if (!success)
         throw new Error('Shared source could not be loaded')

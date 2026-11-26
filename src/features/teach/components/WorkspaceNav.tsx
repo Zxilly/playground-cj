@@ -2,31 +2,31 @@
 
 import { BookOpenCheck, Code2, ListTree, Radio } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { cn } from '@/lib/utils'
 import type { WorkspaceView } from '@/features/teach/state/workspace-store'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
-import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useWorkspaceHistoryNavigation } from '@/features/teach/navigation/workspace-history-context'
 
 interface NavEntry {
   view: WorkspaceView
   icon: LucideIcon
-  zh: string
-  zhShort: string
-  en: string
-  enShort: string
+  label: MessageDescriptor
+  shortLabel: MessageDescriptor
 }
 
 const NAV_ENTRIES: NavEntry[] = [
-  { view: 'live', icon: Radio, zh: '实时课堂', zhShort: '课堂', en: 'Live class', enShort: 'Live' },
-  { view: 'review', icon: BookOpenCheck, zh: '概念复习', zhShort: '复习', en: 'Concept review', enShort: 'Review' },
-  { view: 'progress', icon: ListTree, zh: '学习进度', zhShort: '进度', en: 'Progress', enShort: 'Progress' },
-  { view: 'playground', icon: Code2, zh: '练习场', zhShort: '练习', en: 'Playground', enShort: 'Code' },
+  { view: 'live', icon: Radio, label: msg`实时课堂`, shortLabel: msg`课堂` },
+  { view: 'review', icon: BookOpenCheck, label: msg`概念复习`, shortLabel: msg`复习` },
+  { view: 'progress', icon: ListTree, label: msg({ message: '学习进度', context: 'nav' }), shortLabel: msg`进度` },
+  { view: 'playground', icon: Code2, label: msg`练习场`, shortLabel: msg({ message: '练习', context: 'nav-short' }) },
 ]
 
 /** Navigation mirrors the four canonical AI Classroom surfaces. */
 export function WorkspaceNav() {
-  const { lang } = useWorkspace()
+  const { i18n, t } = useLingui()
   const view = useWorkspaceStore(state => state.view)
   const teacherChatRunMode = useWorkspaceStore(state => state.teacherChatRunMode)
   const navigate = useWorkspaceHistoryNavigation()
@@ -36,10 +36,10 @@ export function WorkspaceNav() {
     <div className="w-full min-w-0">
       <nav
         data-testid="workspace-nav"
-        aria-label={lang === 'en' ? 'Classroom navigation' : '课堂导航'}
+        aria-label={t`课堂导航`}
         className="grid w-full min-w-0 grid-cols-4 gap-1 lg:flex lg:flex-col lg:gap-1.5"
       >
-        {NAV_ENTRIES.map(({ view: entryView, icon: Icon, zh, zhShort, en, enShort }) => {
+        {NAV_ENTRIES.map(({ view: entryView, icon: Icon, label, shortLabel }) => {
           const active = view === entryView
           return (
             <button
@@ -56,8 +56,8 @@ export function WorkspaceNav() {
               )}
             >
               <Icon aria-hidden="true" className="size-4 shrink-0" />
-              <span className="truncate lg:hidden">{lang === 'en' ? enShort : zhShort}</span>
-              <span className="hidden truncate lg:inline">{lang === 'en' ? en : zh}</span>
+              <span className="truncate lg:hidden">{i18n._(shortLabel)}</span>
+              <span className="hidden truncate lg:inline">{i18n._(label)}</span>
             </button>
           )
         })}
@@ -68,9 +68,7 @@ export function WorkspaceNav() {
           role="status"
           className="mt-1.5 rounded-md border border-border bg-muted/45 px-2 py-1.5 text-[11px] leading-4 text-muted-foreground"
         >
-          {lang === 'en'
-            ? 'AI teacher is responding. You can still browse other views freely; switching between Live and Review changes the chat context.'
-            : 'AI 老师正在回复。你仍可自由切换页面查看内容；在实时课堂与复习页之间切换会切换对话上下文。'}
+          <Trans>AI 老师正在回复。你仍可自由切换页面查看内容；在实时课堂与复习页之间切换会切换对话上下文。</Trans>
         </p>
       )}
     </div>

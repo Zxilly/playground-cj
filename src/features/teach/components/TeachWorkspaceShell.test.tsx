@@ -1,11 +1,10 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { setupI18n } from '@lingui/core'
-import { I18nProvider } from '@lingui/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkspaceContextValue } from '@/features/teach/context/workspace-context'
 import { WorkspaceContext } from '@/features/teach/context/workspace-context'
 import { useWorkspaceStore } from '@/features/teach/state/workspace-store'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { TeachWorkspaceShell } from './TeachWorkspaceShell'
 
 const viewport = vi.hoisted(() => ({ compact: false }))
@@ -30,12 +29,10 @@ const context = {
 } as WorkspaceContextValue
 
 function Wrapper({ children }: { children: ReactNode }) {
-  const i18n = setupI18n({ locale: 'en', messages: { en: {} } })
-  i18n.activate('en')
   return (
-    <I18nProvider i18n={i18n}>
+    <TestI18nProvider locale="en">
       <WorkspaceContext value={context}>{children}</WorkspaceContext>
-    </I18nProvider>
+    </TestI18nProvider>
   )
 }
 

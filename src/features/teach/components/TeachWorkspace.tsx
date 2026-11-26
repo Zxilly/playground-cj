@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react'
 import { Database, MessageCircle, Settings2 } from 'lucide-react'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import { AbortScopeProvider } from '@/features/teach/context/abort-scope'
 import { LLMConfigDialog } from '@/modules/llm-config/components/LLMConfigDialog'
@@ -54,9 +55,9 @@ export function TeachWorkspace({ lang }: { lang: string }) {
   const dataButtonRef = useRef<HTMLButtonElement>(null)
   const compactChatToggleRef = useRef<HTMLButtonElement>(null)
   const compactChatRegionId = useId()
+  const { t } = useLingui()
   const [workspaceController] = useState(() => new AbortController())
   const locale = lang === 'en' ? 'en' : 'zh'
-  const english = locale === 'en'
 
   useEffect(
     () => retainModelScope(CLASSROOM_EDITOR_MODEL_SCOPE),
@@ -78,7 +79,7 @@ export function TeachWorkspace({ lang }: { lang: string }) {
                   size="icon"
                   data-testid="workspace-chat-toggle"
                   className="size-11 shrink-0 rounded-md"
-                  aria-label={english ? 'Open teacher chat' : '打开老师对话'}
+                  aria-label={t`打开老师对话`}
                   aria-controls={compactChatRegionId}
                   aria-expanded={compactChatOpen}
                   onClick={() => setCompactChatOpen(true)}
@@ -93,13 +94,13 @@ export function TeachWorkspace({ lang }: { lang: string }) {
                 size="sm"
                 data-testid="workspace-data-trigger"
                 className="size-11 lg:h-9 lg:w-auto"
-                aria-label={english ? 'Workspace data' : '工作区数据'}
-                title={english ? 'Workspace data' : '工作区数据'}
+                aria-label={t`工作区数据`}
+                title={t`工作区数据`}
                 onClick={() => setDataDialogOpen(true)}
               >
                 <Database aria-hidden="true" className="size-4" />
                 <span className="hidden xl:inline">
-                  {english ? 'Data' : '数据'}
+                  <Trans>数据</Trans>
                 </span>
               </Button>
               <Button
@@ -108,13 +109,13 @@ export function TeachWorkspace({ lang }: { lang: string }) {
                 variant="ghost"
                 size="sm"
                 className="size-11 lg:h-9 lg:w-auto"
-                aria-label={english ? 'AI service settings' : 'AI 服务设置'}
-                title={english ? 'AI service settings' : 'AI 服务设置'}
+                aria-label={t`AI 服务设置`}
+                title={t`AI 服务设置`}
                 onClick={() => setSettingsDialogOpen(true)}
               >
                 <Settings2 aria-hidden="true" className="size-4" />
                 <span className="hidden xl:inline">
-                  {english ? 'AI settings' : 'AI 设置'}
+                  <Trans>AI 设置</Trans>
                 </span>
               </Button>
             </>

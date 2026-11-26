@@ -1,6 +1,20 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render as rtlRender, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TestI18nProvider } from '@/modules/i18n/test-i18n'
 import { TourNativeOutput } from './TourNativeOutput'
+
+function render(ui: ReactElement<{ locale?: string }>) {
+  const locale = ui.props.locale === 'en' ? 'en' : 'zh'
+  const view = rtlRender(<TestI18nProvider locale={locale}>{ui}</TestI18nProvider>)
+  return {
+    ...view,
+    rerender: (nextUi: ReactElement<{ locale?: string }>) => {
+      const nextLocale = nextUi.props.locale === 'en' ? 'en' : 'zh'
+      return view.rerender(<TestI18nProvider locale={nextLocale}>{nextUi}</TestI18nProvider>)
+    },
+  }
+}
 
 const baseProps = {
   locale: 'en',
@@ -28,7 +42,7 @@ describe('tourNativeOutput', () => {
 
     expect(view.container.querySelector('[data-tour-native-output]')).not.toBeNull()
     const programTab = screen.getByRole('tab', { name: 'Program Output' })
-    const compilerTab = screen.getByRole('tab', { name: 'Compiler Output' })
+    const compilerTab = screen.getByRole('tab', { name: 'Compiler output' })
     expect(programTab.getAttribute('aria-selected')).toBe('true')
     expect(compilerTab.getAttribute('aria-selected')).toBe('false')
 

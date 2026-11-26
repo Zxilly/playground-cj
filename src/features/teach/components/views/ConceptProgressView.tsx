@@ -10,6 +10,9 @@ import {
   CircleDot,
   RefreshCw,
 } from 'lucide-react'
+import type { MessageDescriptor } from '@lingui/core'
+import { msg } from '@lingui/core/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useWorkspace } from '@/features/teach/context/useWorkspace'
 import { useClassroomSnapshot } from '@/features/teach/hooks/use-classroom-snapshot'
 import { useWorkspaceHistoryNavigation } from '@/features/teach/navigation/workspace-history-context'
@@ -18,13 +21,13 @@ import { deriveConceptProgress } from '@/lib/teach/classroom/progress'
 import type { ConceptProgress } from '@/lib/teach/classroom/progress'
 import { cn } from '@/lib/utils'
 
-const PROGRESS_COPY: Record<ConceptProgress, { zh: string, en: string }> = {
-  unseen: { zh: '未接触', en: 'Unseen' },
-  seen: { zh: '已接触', en: 'Seen' },
-  practicing: { zh: '练习中', en: 'Practicing' },
-  demonstrated: { zh: '已独立通过', en: 'Passed independently' },
-  blocked: { zh: '练习受阻', en: 'Practice blocked' },
-  stale: { zh: '练习要求已更新', en: 'Exercise requirements changed' },
+const PROGRESS_COPY: Record<ConceptProgress, MessageDescriptor> = {
+  unseen: msg`未接触`,
+  seen: msg`已接触`,
+  practicing: msg`练习中`,
+  demonstrated: msg`已独立通过`,
+  blocked: msg`练习受阻`,
+  stale: msg`练习要求已更新`,
 }
 
 function ProgressStatusIcon({ progress }: { progress: ConceptProgress | undefined }) {
@@ -45,11 +48,11 @@ function ProgressStatusIcon({ progress }: { progress: ConceptProgress | undefine
 }
 
 export function ConceptProgressView() {
-  const { catalog, classroom, lang } = useWorkspace()
+  const { i18n, t } = useLingui()
+  const { catalog, classroom } = useWorkspace()
   const snapshot = useClassroomSnapshot(classroom)
   const openReviewConcept = useWorkspaceStore(state => state.openReviewConcept)
   const navigate = useWorkspaceHistoryNavigation()
-  const english = lang === 'en'
 
   const jumpToReview = (conceptId: string) => {
     navigate('review')
@@ -61,20 +64,16 @@ export function ConceptProgressView() {
       <header>
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
           <Activity aria-hidden="true" className="size-4" />
-          {english ? 'Learning progress' : '学习进度'}
+          <Trans>学习进度</Trans>
         </div>
         <h1 className="mt-2 text-2xl font-semibold">
-          {english ? 'Progress by concept' : '各知识点进度'}
+          <Trans>各知识点进度</Trans>
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          {english
-            ? 'Progress comes from recorded practice results for each concept’s skills. The AI teacher cannot set it directly.'
-            : '进度根据各知识点的练习结果计算，AI 老师不能直接修改。'}
+          <Trans>进度根据各知识点的练习结果计算，AI 老师不能直接修改。</Trans>
         </p>
         <p className="mt-2 max-w-2xl rounded-md border border-border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">
-          {english
-            ? 'Your classroom activity and progress stay in this browser.'
-            : '你的课堂活动和学习进度保存在当前浏览器中。'}
+          <Trans>你的课堂活动和学习进度保存在当前浏览器中。</Trans>
         </p>
       </header>
 
@@ -85,6 +84,7 @@ export function ConceptProgressView() {
             return null
           const progress = deriveConceptProgress(snapshot, pack)
           const evidence = snapshot.evidence.filter(item => item.conceptId === summary.conceptId)
+          const evidenceCount = evidence.length
           const successes = evidence.filter(item => item.outcome === 'success').length
           return (
             <li key={summary.conceptId}>
@@ -110,17 +110,15 @@ export function ConceptProgressView() {
                 )}
                 >
                   {progress
-                    ? PROGRESS_COPY[progress][english ? 'en' : 'zh']
+                    ? i18n._(PROGRESS_COPY[progress])
                     : null}
                 </p>
                 <div className="mt-3 flex w-full items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span>
-                    {english
-                      ? `${evidence.length} practice records · ${successes} successes`
-                      : `${evidence.length} 次练习记录 · ${successes} 次成功`}
+                    {t`${evidenceCount} 次练习记录 · ${successes} 次成功`}
                   </span>
                   <span className="inline-flex shrink-0 items-center gap-0.5 font-medium text-primary opacity-80 transition-opacity group-hover:opacity-100">
-                    {english ? 'Review' : '去复习'}
+                    <Trans>去复习</Trans>
                     <ArrowUpRight aria-hidden="true" className="size-3.5" />
                   </span>
                 </div>

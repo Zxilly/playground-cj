@@ -13,6 +13,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -85,7 +86,8 @@ export function WorkspaceDataDialog({
   returnFocusRef,
   onBeforeExport,
 }: WorkspaceDataDialogProps) {
-  const { catalog, classroom, courseVersion, lang, storage, storageScope } = useWorkspace()
+  const { t } = useLingui()
+  const { catalog, classroom, courseVersion, storage, storageScope } = useWorkspace()
   const snapshot = useClassroomSnapshot(classroom)
   const playgroundTabs = usePlaygroundSession(state => state.tabs)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -94,7 +96,6 @@ export function WorkspaceDataDialog({
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmCleanLegacy, setConfirmCleanLegacy] = useState(false)
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error', message: string } | null>(null)
-  const english = lang === 'en'
 
   const refreshLegacyScopes = useCallback(async () => {
     if (!storage?.listScopes) {
@@ -147,9 +148,7 @@ export function WorkspaceDataDialog({
       })
       const stamp = new Date().toISOString().slice(0, 10)
       triggerJsonDownload(`playground-cj-workspace-${stamp}.json`, bundle)
-      const message = english
-        ? 'Workspace snapshot exported (API keys are never included).'
-        : '已导出工作区快照（不包含任何 API Key）。'
+      const message = t`已导出工作区快照（不包含任何 API Key）。`
       setFeedback({ kind: 'success', message })
       toast.success(message)
     }
@@ -157,7 +156,7 @@ export function WorkspaceDataDialog({
       const detail = error instanceof Error ? error.message : String(error)
       setFeedback({
         kind: 'error',
-        message: english ? `Export failed: ${detail}` : `导出失败：${detail}`,
+        message: t`导出失败：${detail}`,
       })
     }
     finally {
@@ -173,18 +172,14 @@ export function WorkspaceDataDialog({
     if (file.size > MAX_WORKSPACE_IMPORT_BYTES) {
       setFeedback({
         kind: 'error',
-        message: english
-          ? 'The selected file exceeds the 4 MB workspace snapshot limit.'
-          : '所选文件超过 4 MB 的工作区快照上限。',
+        message: t`所选文件超过 4 MB 的工作区快照上限。`,
       })
       return
     }
     if (!storage?.replace) {
       setFeedback({
         kind: 'error',
-        message: english
-          ? 'This workspace session does not support importing snapshots.'
-          : '当前工作区会话不支持导入快照。',
+        message: t`当前工作区会话不支持导入快照。`,
       })
       return
     }
@@ -196,16 +191,12 @@ export function WorkspaceDataDialog({
       const parsed = await parseWorkspaceSnapshotImport(rawJson, catalog)
       if (!parsed.ok) {
         const message = parsed.reason === 'too_large'
-          ? (english ? 'Snapshot file is too large.' : '快照文件体积过大。')
+          ? t`快照文件体积过大。`
           : parsed.reason === 'invalid_json'
-            ? (english ? 'The file is not valid JSON.' : '文件不是有效的 JSON 格式。')
+            ? t`文件不是有效的 JSON 格式。`
             : parsed.reason === 'incompatible_course_version'
-              ? (english
-                  ? 'This snapshot belongs to an incompatible course version and cannot be imported into the current curriculum.'
-                  : '该快照来自不兼容的课程版本，无法导入当前课程。')
-              : (english
-                  ? 'Invalid workspace snapshot format. Existing data was left unchanged.'
-                  : '工作区快照格式校验未通过，已有数据未被修改。')
+              ? t`该快照来自不兼容的课程版本，无法导入当前课程。`
+              : t`工作区快照格式校验未通过，已有数据未被修改。`
         setFeedback({ kind: 'error', message })
         return
       }
@@ -214,12 +205,8 @@ export function WorkspaceDataDialog({
       await replacePlaygroundTabs(parsed.bundle.playground.tabs)
       useWorkspaceStore.getState().clearComposerDraft()
       const message = parsed.migrated
-        ? (english
-            ? 'Workspace imported and compatible learning paths were migrated to the current course.'
-            : '已导入工作区，并将兼容的学习路径迁移至当前课程版本。')
-        : (english
-            ? 'Workspace snapshot imported.'
-            : '工作区快照已导入。')
+        ? t`已导入工作区，并将兼容的学习路径迁移至当前课程版本。`
+        : t`工作区快照已导入。`
       setFeedback({ kind: 'success', message })
       toast.success(message)
     }
@@ -227,7 +214,7 @@ export function WorkspaceDataDialog({
       const detail = error instanceof Error ? error.message : String(error)
       setFeedback({
         kind: 'error',
-        message: english ? `Import failed: ${detail}` : `导入失败：${detail}`,
+        message: t`导入失败：${detail}`,
       })
     }
     finally {
@@ -245,9 +232,7 @@ export function WorkspaceDataDialog({
       await replacePlaygroundTabs([])
       useWorkspaceStore.getState().reset()
       setConfirmReset(false)
-      const message = english
-        ? 'Current classroom progress and Playground drafts have been reset.'
-        : '当前学习进度与练习场草稿已重置。'
+      const message = t`当前学习进度与练习场草稿已重置。`
       setFeedback({ kind: 'success', message })
       toast.success(message)
     }
@@ -255,7 +240,7 @@ export function WorkspaceDataDialog({
       const detail = error instanceof Error ? error.message : String(error)
       setFeedback({
         kind: 'error',
-        message: english ? `Reset failed: ${detail}` : `重置失败：${detail}`,
+        message: t`重置失败：${detail}`,
       })
     }
     finally {
@@ -273,9 +258,7 @@ export function WorkspaceDataDialog({
         await storage.deleteScope(record.scope)
       await refreshLegacyScopes()
       setConfirmCleanLegacy(false)
-      const message = english
-        ? 'Previous course-version backups have been removed.'
-        : '旧课程版本备份已清理。'
+      const message = t`旧课程版本备份已清理。`
       setFeedback({ kind: 'success', message })
       toast.success(message)
     }
@@ -283,13 +266,15 @@ export function WorkspaceDataDialog({
       const detail = error instanceof Error ? error.message : String(error)
       setFeedback({
         kind: 'error',
-        message: english ? `Cleanup failed: ${detail}` : `清理失败：${detail}`,
+        message: t`清理失败：${detail}`,
       })
     }
     finally {
       setBusyAction(null)
     }
   }
+
+  const legacyCount = legacyScopes.length
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
@@ -305,12 +290,10 @@ export function WorkspaceDataDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Database aria-hidden="true" className="size-4 text-primary" />
-            {english ? 'Workspace data' : '工作区数据管理'}
+            <Trans>工作区数据管理</Trans>
           </DialogTitle>
           <DialogDescription>
-            {english
-              ? 'Learning progress and Playground drafts stay in this browser. Export a JSON backup anytime; API keys are never exported.'
-              : '学习进度与练习场草稿保存在当前浏览器。可随时导出或导入 JSON 快照；导出内容绝不包含 API Key。'}
+            <Trans>学习进度与练习场草稿保存在当前浏览器。可随时导出或导入 JSON 快照；导出内容绝不包含 API Key。</Trans>
           </DialogDescription>
         </DialogHeader>
 
@@ -318,15 +301,15 @@ export function WorkspaceDataDialog({
           <div className="grid grid-cols-3 gap-2 rounded-lg border border-border bg-muted/25 p-3 text-center">
             <div>
               <p className="text-lg font-semibold tabular-nums">{snapshot.tracks.length}</p>
-              <p className="text-xs text-muted-foreground">{english ? 'Learning paths' : '学习路径'}</p>
+              <p className="text-xs text-muted-foreground"><Trans>学习路径</Trans></p>
             </div>
             <div>
               <p className="text-lg font-semibold tabular-nums">{snapshot.attempts.length}</p>
-              <p className="text-xs text-muted-foreground">{english ? 'Practice records' : '练习记录'}</p>
+              <p className="text-xs text-muted-foreground"><Trans>练习记录</Trans></p>
             </div>
             <div>
               <p className="text-lg font-semibold tabular-nums">{playgroundTabs.length}</p>
-              <p className="text-xs text-muted-foreground">{english ? 'Playground tabs' : '练习场标签'}</p>
+              <p className="text-xs text-muted-foreground"><Trans>练习场标签</Trans></p>
             </div>
           </div>
 
@@ -343,7 +326,7 @@ export function WorkspaceDataDialog({
               {busyAction === 'export'
                 ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
                 : <Download aria-hidden="true" className="size-4" />}
-              {english ? 'Export JSON snapshot' : '导出工作区快照 (JSON)'}
+              <Trans>导出工作区快照 (JSON)</Trans>
             </Button>
 
             <input
@@ -353,7 +336,7 @@ export function WorkspaceDataDialog({
               data-testid="workspace-import-input"
               onChange={event => void handleImportFileChange(event)}
               className="sr-only"
-              aria-label={english ? 'Import workspace JSON file' : '选择工作区 JSON 快照文件'}
+              aria-label={t`选择工作区 JSON 快照文件`}
             />
             <Button
               type="button"
@@ -367,21 +350,17 @@ export function WorkspaceDataDialog({
               {busyAction === 'import'
                 ? <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
                 : <Upload aria-hidden="true" className="size-4" />}
-              {english ? 'Import JSON snapshot' : '导入工作区快照 (JSON)'}
+              <Trans>导入工作区快照 (JSON)</Trans>
             </Button>
           </div>
 
-          {legacyScopes.length > 0 && (
+          {legacyCount > 0 && (
             <div className="rounded-lg border border-amber-500/35 bg-amber-500/5 p-3 text-xs leading-5">
               <p className="font-medium text-foreground">
-                {english
-                  ? `Preserved ${legacyScopes.length} previous course-version backup${legacyScopes.length === 1 ? '' : 's'}`
-                  : `已保留 ${legacyScopes.length} 份旧课程版本数据备份`}
+                {t`已保留 ${legacyCount} 份旧课程版本数据备份`}
               </p>
               <p className="mt-1 text-muted-foreground">
-                {english
-                  ? 'Course upgrades never erase earlier records automatically. Exporting a snapshot includes these backups, or you can remove them below.'
-                  : '课程版本升级不会静默清空旧数据。导出快照时会一并打包这些备份；确认不再需要后可手动清理。'}
+                <Trans>课程版本升级不会静默清空旧数据。导出快照时会一并打包这些备份；确认不再需要后可手动清理。</Trans>
               </p>
               {storage?.deleteScope && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -400,7 +379,7 @@ export function WorkspaceDataDialog({
                             {busyAction === 'clean-legacy' && (
                               <Loader2 aria-hidden="true" className="size-3.5 animate-spin motion-reduce:animate-none" />
                             )}
-                            {english ? 'Confirm delete backups' : '确认删除旧版本备份'}
+                            <Trans>确认删除旧版本备份</Trans>
                           </Button>
                           <Button
                             type="button"
@@ -410,7 +389,7 @@ export function WorkspaceDataDialog({
                             onClick={() => setConfirmCleanLegacy(false)}
                             className="min-h-9"
                           >
-                            {english ? 'Cancel' : '取消'}
+                            <Trans>取消</Trans>
                           </Button>
                         </>
                       )
@@ -425,7 +404,7 @@ export function WorkspaceDataDialog({
                           className="min-h-9"
                         >
                           <Trash2 aria-hidden="true" className="size-3.5" />
-                          {english ? 'Clean up old backups' : '清理旧版本备份'}
+                          <Trans>清理旧版本备份</Trans>
                         </Button>
                       )}
                 </div>
@@ -437,12 +416,10 @@ export function WorkspaceDataDialog({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm font-medium">
-                  {english ? 'Reset current workspace' : '重置当前工作区'}
+                  <Trans>重置当前工作区</Trans>
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {english
-                    ? 'Clear learning paths, exercise records, and Playground drafts in this browser.'
-                    : '清空当前浏览器的学习路径、练习记录与练习场草稿（建议先导出备份）。'}
+                  <Trans>清空当前浏览器的学习路径、练习记录与练习场草稿（建议先导出备份）。</Trans>
                 </p>
               </div>
               {!confirmReset && (
@@ -456,7 +433,7 @@ export function WorkspaceDataDialog({
                   className="min-h-11 shrink-0 text-error-foreground hover:text-error-foreground lg:min-h-8"
                 >
                   <RotateCcw aria-hidden="true" className="size-3.5" />
-                  {english ? 'Reset workspace' : '重置工作区'}
+                  <Trans>重置工作区</Trans>
                 </Button>
               )}
             </div>
@@ -465,9 +442,7 @@ export function WorkspaceDataDialog({
                 <p className="flex items-start gap-2 text-xs text-error-foreground">
                   <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                   <span>
-                    {english
-                      ? 'This will permanently erase current classroom progress and Playground drafts unless you exported a JSON backup.'
-                      : '此操作会清空当前课程的学习进度和练习场草稿且无法撤销。如未导出备份，请先点击上方导出。'}
+                    <Trans>此操作会清空当前课程的学习进度和练习场草稿且无法撤销。如未导出备份，请先点击上方导出。</Trans>
                   </span>
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -483,7 +458,7 @@ export function WorkspaceDataDialog({
                     {busyAction === 'reset' && (
                       <Loader2 aria-hidden="true" className="size-3.5 animate-spin motion-reduce:animate-none" />
                     )}
-                    {english ? 'Confirm reset' : '确认重置'}
+                    <Trans>确认重置</Trans>
                   </Button>
                   <Button
                     type="button"
@@ -493,7 +468,7 @@ export function WorkspaceDataDialog({
                     onClick={() => setConfirmReset(false)}
                     className="min-h-9"
                   >
-                    {english ? 'Cancel' : '取消'}
+                    <Trans>取消</Trans>
                   </Button>
                 </div>
               </div>
@@ -519,7 +494,7 @@ export function WorkspaceDataDialog({
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline" size="sm" className="min-h-11 lg:min-h-8">
-              {english ? 'Close' : '关闭'}
+              <Trans>关闭</Trans>
             </Button>
           </DialogClose>
         </DialogFooter>
