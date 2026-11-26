@@ -13,9 +13,10 @@ import {
   BreadcrumbList,
 } from '@/components/ui/breadcrumb'
 import {
-  DialogDescription,
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
@@ -91,6 +92,7 @@ describe('ui accessibility copy uses Lingui translations', () => {
           <DialogContent>
             <DialogTitle>测试弹窗</DialogTitle>
             <DialogDescription>测试说明</DialogDescription>
+            <DialogFooter showCloseButton />
           </DialogContent>
         </Dialog>
 
@@ -149,5 +151,21 @@ describe('ui accessibility copy uses Lingui translations', () => {
     screen.getByLabelText('Breadcrumb')
     screen.getByLabelText('Toggle Sidebar')
     expect(screen.getByTitle('Toggle Sidebar')).toBeTruthy()
+  })
+
+  it('uses Ctrl/Cmd+Shift+B for sidebar toggle without hijacking Ctrl/Cmd+B', () => {
+    window.innerWidth = 1280
+    const onOpenChange = vi.fn()
+    renderWithZh(
+      <SidebarProvider open onOpenChange={onOpenChange}>
+        <SidebarTrigger />
+      </SidebarProvider>
+    )
+
+    fireEvent.keyDown(window, { key: 'b', ctrlKey: true })
+    expect(onOpenChange).not.toHaveBeenCalled()
+
+    fireEvent.keyDown(window, { key: 'B', ctrlKey: true, shiftKey: true })
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 })

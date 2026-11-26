@@ -47,7 +47,7 @@ describe('outputPanel', () => {
 
   it('renders ANSI while escaping source markup', async () => {
     const { container } = render(<Wrapper><OutputPanel {...initial} programOutput={'\u001B[32m<script>alert(1)</script>\u001B[0m'} /></Wrapper>)
-    await waitFor(() => expect(container.querySelector('pre')?.innerHTML).toContain('color:rgb(0,187,0)'))
+    await waitFor(() => expect(container.querySelector('pre')?.innerHTML).toContain('class="ansi-green-fg"'))
     expect(container.querySelector('pre script')).toBeNull()
     expect(container.querySelector('pre')?.textContent).toContain('<script>alert(1)</script>')
   })
@@ -63,7 +63,7 @@ describe('outputPanel', () => {
     }
     rerender(<Wrapper><OutputPanel {...initial} result={failure} /></Wrapper>)
     expect(screen.getByRole('tab', { name: '编译信息' }).getAttribute('aria-selected')).toBe('true')
-    await waitFor(() => expect(container.querySelector('pre')?.innerHTML).toContain('color:rgb(187,0,0)'))
+    await waitFor(() => expect(container.querySelector('pre')?.innerHTML).toContain('class="ansi-red-fg"'))
     expect(container.querySelector('pre')?.textContent).not.toContain('/cangjie/bin/cjc')
     const raw = screen.getByText('查看原始编译信息').closest('details')
     expect(raw?.getAttribute('open')).toBeNull()

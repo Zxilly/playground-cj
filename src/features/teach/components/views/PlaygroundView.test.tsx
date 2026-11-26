@@ -733,12 +733,12 @@ describe('playgroundView student flow', () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
     fireEvent.click(screen.getByTestId('playground-run'))
 
-    await waitFor(() => expect(screen.getByTestId('playground-stderr').innerHTML).toContain('color:rgb(187,0,0)'))
+    await waitFor(() => expect(screen.getByTestId('playground-stderr').innerHTML).toContain('class="ansi-red-fg"'))
     const diagnostic = screen.getByTestId('playground-stderr')
     expect(diagnostic.textContent).toContain('error: expected expression')
     expect(diagnostic.textContent).not.toContain('/opt/cangjie/bin/cjc')
     expect(diagnostic.textContent).not.toContain(ESC)
-    expect(diagnostic.innerHTML).toContain('color:rgb(187,0,0)')
+    expect(diagnostic.innerHTML).toContain('class="ansi-red-fg"')
     expect(diagnostic.className).toContain('text-error-foreground')
 
     const raw = screen.getByTestId('playground-stderr-raw')
@@ -788,7 +788,7 @@ describe('playgroundView student flow', () => {
     render(<PlaygroundView />, { wrapper: Wrapper })
     fireEvent.click(screen.getByTestId('playground-run'))
 
-    await waitFor(() => expect(screen.getByTestId('playground-program-output').innerHTML).toContain('color:rgb(187,0,0)'))
+    await waitFor(() => expect(screen.getByTestId('playground-program-output').innerHTML).toContain('class="ansi-red-fg"'))
     expect(screen.getByTestId('playground-program-output').textContent).toBe('red output')
     expect(screen.getByTestId('playground-runtime-stderr').textContent).toBe('separate error channel')
   })

@@ -1,15 +1,11 @@
-import { useSyncExternalStore } from 'react'
+'use client'
 
-const QUERY = '(prefers-color-scheme: dark)'
+import { useRootDarkMode } from './useRootDarkMode'
 
+/**
+ * Unified dark mode hook backed by `next-themes` and root `html.dark`.
+ * Kept as a backwards-compatible alias of `useRootDarkMode`.
+ */
 export function useDarkMode(): boolean {
-  return useSyncExternalStore(
-    (callback) => {
-      const mql = window.matchMedia(QUERY)
-      mql.addEventListener('change', callback)
-      return () => mql.removeEventListener('change', callback)
-    },
-    () => window.matchMedia(QUERY).matches,
-    () => false,
-  )
+  return useRootDarkMode()
 }

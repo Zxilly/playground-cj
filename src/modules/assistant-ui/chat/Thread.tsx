@@ -5,17 +5,20 @@ import { ThreadMessage } from '@/modules/assistant-ui/chat/ThreadMessages'
 import { ThreadScrollToBottom } from '@/modules/assistant-ui/chat/ThreadScrollToBottom'
 import { ThreadStatusAnnouncer } from '@/modules/assistant-ui/chat/ThreadStatusAnnouncer'
 import { ThreadWelcome } from '@/modules/assistant-ui/chat/ThreadWelcome'
+import type { ThreadWelcomeSuggestion } from '@/modules/assistant-ui/chat/ThreadWelcome'
 
-interface ThreadProps {
+export interface ThreadProps {
   allowAttachments?: boolean
   onDismissMessageError?: () => void
   showMessageErrors?: boolean
+  suggestions?: readonly ThreadWelcomeSuggestion[]
 }
 
 export const Thread: FC<ThreadProps> = ({
   allowAttachments = true,
   onDismissMessageError,
   showMessageErrors = true,
+  suggestions,
 }) => {
   return (
     <ThreadPrimitive.Root
@@ -36,7 +39,7 @@ export const Thread: FC<ThreadProps> = ({
       >
         <div className="mx-auto flex w-full max-w-(--thread-max-width) flex-1 flex-col px-3 pt-3 sm:px-4 sm:pt-4">
           <AuiIf condition={s => s.thread.isEmpty}>
-            <ThreadWelcome />
+            <ThreadWelcome suggestions={suggestions} />
           </AuiIf>
 
           <div

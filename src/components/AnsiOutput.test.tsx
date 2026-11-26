@@ -5,15 +5,16 @@ import { AnsiOutput } from './AnsiOutput'
 describe('ansiOutput', () => {
   afterEach(cleanup)
 
-  it('renders terminal colours and escapes source markup', async () => {
+  it('renders theme-aware terminal colour classes and escapes source markup', async () => {
     const { getByTestId } = render(
       <AnsiOutput
         data-testid="output"
         text={'\u001B[31merror\u001B[0m <script>alert(1)</script>'}
       />,
     )
-    await waitFor(() => expect(getByTestId('output').innerHTML).toContain('color:rgb(187,0,0)'))
+    await waitFor(() => expect(getByTestId('output').innerHTML).toContain('class="ansi-red-fg"'))
     const output = getByTestId('output')
+    expect(output.innerHTML).not.toContain('color:rgb(')
     expect(output.querySelector('script')).toBeNull()
     expect(output.textContent).toContain('<script>alert(1)</script>')
   })

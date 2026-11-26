@@ -10,7 +10,7 @@ export const ThreadScrollToBottom: FC = () => {
       <TooltipIconButton
         tooltip={t`回到最新内容`}
         variant="outline"
-        className="aui-thread-scroll-to-bottom absolute -top-12 z-10 self-center rounded-full p-4 disabled:invisible dark:border-border dark:bg-background dark:hover:bg-accent"
+        className="aui-thread-scroll-to-bottom absolute -top-12 z-10 size-10 self-center rounded-full p-0 disabled:invisible lg:size-9 dark:border-border dark:bg-background dark:hover:bg-accent"
       >
         <ArrowDownIcon />
       </TooltipIconButton>

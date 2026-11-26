@@ -23,14 +23,14 @@
   }
 }
 
-/* ── Tour Prose: mdBook-inspired typography ──
-   Use alongside Tailwind `prose` class:
-   <div className="prose dark:prose-invert max-w-none tour-prose">
-   Requires --tour-code-font CSS var set on an ancestor.
+/* ── Tour Prose: self-contained mdBook-inspired typography ──
+   Does not depend on @tailwindcss/typography.
+   Uses --tour-code-font (defined globally in globals.css).
 */
 .tour-prose {
   font-size: 16px;
-  line-height: 1.45em;
+  line-height: 1.6;
+  color: var(--tour-text);
   overflow-wrap: break-word;
 }
 
@@ -38,7 +38,7 @@
 .tour-prose ol,
 .tour-prose ul,
 .tour-prose li {
-  line-height: 1.45em;
+  line-height: 1.6;
   color: var(--tour-text);
 }
 
@@ -48,25 +48,37 @@
 
 .tour-prose h1,
 .tour-prose h2,
-.tour-prose h3 {
+.tour-prose h3,
+.tour-prose h4 {
   color: var(--tour-heading);
   font-weight: 700;
 }
 
 .tour-prose h1 {
   font-size: 1.4rem;
+  line-height: 1.3;
   margin-bottom: 1rem;
 }
 
 .tour-prose h2 {
   font-size: 1.15rem;
-  margin-top: 2.5em;
+  line-height: 1.35;
+  margin-top: 2.25em;
   margin-bottom: 0.75rem;
 }
 
 .tour-prose h3 {
   font-size: 1rem;
-  margin-top: 2.5em;
+  line-height: 1.4;
+  margin-top: 2em;
+  margin-bottom: 0.5rem;
+}
+
+.tour-prose h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.5em;
   margin-bottom: 0.5rem;
 }
 
@@ -75,10 +87,110 @@
   font-weight: 600;
 }
 
+.tour-prose em {
+  font-style: italic;
+}
+
+/* Lists (explicitly restored after Tailwind v4 Preflight reset) */
 .tour-prose ul,
 .tour-prose ol {
   margin-top: 0;
   margin-bottom: 1em;
+  padding-left: 1.5em;
+}
+
+.tour-prose ul {
+  list-style-type: disc;
+}
+
+.tour-prose ol {
+  list-style-type: decimal;
+}
+
+.tour-prose ul ul {
+  list-style-type: circle;
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+}
+
+.tour-prose ul ul ul {
+  list-style-type: square;
+}
+
+.tour-prose ol ol {
+  list-style-type: lower-alpha;
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+}
+
+.tour-prose li {
+  margin: 0.3em 0;
+}
+
+.tour-prose li::marker {
+  color: var(--tour-accent-fg);
+}
+
+.tour-prose li > p {
+  margin-bottom: 0.5em;
+}
+
+.tour-prose li > p:last-child {
+  margin-bottom: 0;
+}
+
+/* Blockquotes */
+.tour-prose blockquote {
+  margin: 1.15em 0;
+  padding: 0.65rem 1rem;
+  border-left: 3px solid var(--tour-border);
+  background: var(--tour-surface);
+  color: var(--tour-text);
+  border-radius: 0 4px 4px 0;
+}
+
+.tour-prose blockquote > :first-child {
+  margin-top: 0;
+}
+
+.tour-prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Tables */
+.tour-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25em 0;
+  font-size: 0.925rem;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.tour-prose thead th {
+  background: var(--tour-surface);
+  color: var(--tour-heading);
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 2px solid var(--tour-border);
+}
+
+.tour-prose th,
+.tour-prose td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--tour-border-soft);
+  vertical-align: top;
+}
+
+.tour-prose tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--tour-surface) 55%, transparent);
+}
+
+/* Horizontal rules */
+.tour-prose hr {
+  border: 0;
+  border-top: 1px solid var(--tour-border);
+  margin: 1.75em 0;
 }
 
 .tour-prose a {

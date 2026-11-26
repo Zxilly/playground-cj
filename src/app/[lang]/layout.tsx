@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { uiFontFamily } from '@/app/font'
+import type { CSSProperties, ReactNode } from 'react'
+import { fontFamily, uiFontFamily } from '@/app/font'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { notFound } from 'next/navigation'
 import Script from 'next/script'
+import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider } from '@/lib/theme/ThemeProvider'
 import { LinguiClientProvider } from '@/modules/i18n/LinguiClientProvider'
 import { isLocale } from '@/lib/i18n'
 import { localizedAlternates, PLAYGROUND_ORIGIN } from '@/lib/seo'
@@ -42,7 +44,14 @@ export default async function LangLayout({ children, params }: LayoutProps) {
   const documentLanguage = lang === 'en' ? 'en' : 'zh-CN'
 
   return (
-    <html lang={documentLanguage} suppressHydrationWarning>
+    <html
+      lang={documentLanguage}
+      suppressHydrationWarning
+      style={{
+        '--app-font-sans': uiFontFamily,
+        '--app-font-mono': fontFamily,
+      } as CSSProperties}
+    >
       <head>
         {process.env.NODE_ENV === 'production' && (
           <Script id="track-routing" strategy="beforeInteractive">
@@ -53,23 +62,21 @@ export default async function LangLayout({ children, params }: LayoutProps) {
         };`}
           </Script>
         )}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var m=localStorage.getItem('classroom-theme-mode')||'auto';var d=m==='dark'||(m==='auto'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`,
-          }}
-        />
       </head>
       <body
         style={{
           fontFamily: uiFontFamily,
         }}
       >
-        <LinguiClientProvider
-          initialLocale={lang}
-          initialMessages={messages}
-        >
-          {children}
-        </LinguiClientProvider>
+        <ThemeProvider>
+          <LinguiClientProvider
+            initialLocale={lang}
+            initialMessages={messages}
+          >
+            {children}
+            <Toaster richColors closeButton position="top-center" />
+          </LinguiClientProvider>
+        </ThemeProvider>
         {process.env.VERCEL === '1' && <Analytics />}
         {process.env.VERCEL === '1' && <SpeedInsights />}
       </body>

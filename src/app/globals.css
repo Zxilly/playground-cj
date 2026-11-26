@@ -3,14 +3,22 @@
 @source "../../tour";
 
 :root {
+  color-scheme: light;
+
+  /* ── Unified Brand & Surface Tokens (light) ── */
+  --brand: #2a7a6e;
+  --brand-foreground: #ffffff;
+  --brand-hover: #23685e;
+  --editor-surface: #ffffff;
+
   --background: hsl(0 0% 100%);
   --foreground: hsl(0 0% 3.9%);
   --card: hsl(0 0% 100%);
   --card-foreground: hsl(0 0% 3.9%);
   --popover: hsl(0 0% 100%);
   --popover-foreground: hsl(0 0% 3.9%);
-  --primary: hsl(0 0% 9%);
-  --primary-foreground: hsl(0 0% 98%);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
   --secondary: hsl(0 0% 96.1%);
   --secondary-foreground: hsl(0 0% 9%);
   --muted: hsl(0 0% 96.1%);
@@ -22,7 +30,7 @@
   --error-foreground: #b42318;
   --border: hsl(0 0% 89.8%);
   --input: hsl(0 0% 89.8%);
-  --ring: hsl(0 0% 3.9%);
+  --ring: var(--brand);
   --chart-1: hsl(12 76% 61%);
   --chart-2: hsl(173 58% 39%);
   --chart-3: hsl(197 37% 24%);
@@ -31,53 +39,61 @@
   --radius: 0.6rem;
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(240 5.9% 10%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
   --sidebar-accent: hsl(240 4.8% 95.9%);
   --sidebar-accent-foreground: hsl(240 5.9% 10%);
   --sidebar-border: hsl(220 13% 91%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar-ring: var(--brand);
 
   /* ── Tour Design System: Semantic Tokens (light) ── */
+  --tour-code-font: var(--app-font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
   --tour-bg: #ffffff;
   --tour-surface: #f8f9fa;
   --tour-text: #1a1a1a;
   --tour-heading: #000000;
-  --tour-accent-fg: #2a7a6e;
-  --tour-link: #2a7a6e;
+  --tour-accent-fg: var(--brand);
+  --tour-link: var(--brand);
   --tour-border: #e0e0e0;
   --tour-border-soft: #e8e8e8;
   --tour-code-bg: #f3f4f6;
   --tour-code-text: #1a5c52;
   --tour-code-border: #d4d4d4;
-  --tour-compare-border: #2a7a6e;
-  --tour-compare-label: #2a7a6e;
+  --tour-compare-border: var(--brand);
+  --tour-compare-label: var(--brand);
   --tour-compare-bg: #f7faf9;
   --tour-compare-text: #333333;
-
 }
 
 .dark {
+  color-scheme: dark;
+
+  /* ── Unified Brand & Surface Tokens (dark) ── */
+  --brand: #5ec4b0;
+  --brand-foreground: hsl(0 0% 7%);
+  --brand-hover: #4db5a1;
+  --editor-surface: #1f1f1f;
+
   --background: hsl(0 0% 3.9%);
   --foreground: hsl(0 0% 98%);
   --card: hsl(0 0% 3.9%);
   --card-foreground: hsl(0 0% 98%);
   --popover: hsl(0 0% 3.9%);
   --popover-foreground: hsl(0 0% 98%);
-  --primary: hsl(0 0% 98%);
-  --primary-foreground: hsl(0 0% 9%);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
   --secondary: hsl(0 0% 14.9%);
   --secondary-foreground: hsl(0 0% 98%);
   --muted: hsl(0 0% 14.9%);
   --muted-foreground: hsl(0 0% 63.9%);
   --accent: hsl(0 0% 14.9%);
-  --accent-foreground: hsl(0 0% 9%);
+  --accent-foreground: hsl(0 0% 98%);
   --destructive: hsl(0 62.8% 30.6%);
   --error-foreground: #fda29b;
   --destructive-foreground: hsl(0 0% 98%);
   --border: hsl(0 0% 14.9%);
   --input: hsl(0 0% 14.9%);
-  --ring: hsl(0 0% 83.1%);
+  --ring: var(--brand);
   --chart-1: hsl(220 70% 50%);
   --chart-2: hsl(160 60% 45%);
   --chart-3: hsl(30 80% 55%);
@@ -85,32 +101,104 @@
   --chart-5: hsl(340 75% 55%);
   --sidebar: hsl(240 5.9% 10%);
   --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(224.3 76.3% 48%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
   --sidebar-accent: hsl(240 3.7% 15.9%);
   --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
   --sidebar-border: hsl(240 3.7% 15.9%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar-ring: var(--brand);
 
   /* ── Tour Design System: Semantic Tokens (dark) ── */
   --tour-bg: #141414;
   --tour-surface: #1e1e1e;
   --tour-text: #d4d4d4;
   --tour-heading: #e5e5e5;
-  --tour-accent-fg: #5ec4b0;
-  --tour-link: #5ec4b0;
+  --tour-accent-fg: var(--brand);
+  --tour-link: var(--brand);
   --tour-border: #333333;
   --tour-border-soft: #2a2a2a;
   --tour-code-bg: #1e1e1e;
   --tour-code-text: #7adfb8;
   --tour-code-border: #383838;
-  --tour-compare-border: #5ec4b0;
-  --tour-compare-label: #5ec4b0;
+  --tour-compare-border: var(--brand);
+  --tour-compare-label: var(--brand);
   --tour-compare-bg: #1a2420;
   --tour-compare-text: #c8c8c8;
-
 }
 
+/* ── WCAG AA ANSI Terminal Palette (light) ── */
+.ansi-black-fg { color: #1f2937; }
+.ansi-red-fg { color: #b91c1c; }
+.ansi-green-fg { color: #15803d; }
+.ansi-yellow-fg { color: #92400e; }
+.ansi-blue-fg { color: #1d4ed8; }
+.ansi-magenta-fg { color: #86198f; }
+.ansi-cyan-fg { color: #0e7490; }
+.ansi-white-fg { color: #4b5563; }
+
+.ansi-bright-black-fg { color: #4b5563; }
+.ansi-bright-red-fg { color: #dc2626; }
+.ansi-bright-green-fg { color: #166534; }
+.ansi-bright-yellow-fg { color: #854d0e; }
+.ansi-bright-blue-fg { color: #2563eb; }
+.ansi-bright-magenta-fg { color: #a21caf; }
+.ansi-bright-cyan-fg { color: #0f766e; }
+.ansi-bright-white-fg { color: #374151; }
+
+.ansi-black-bg { background-color: #e5e7eb; }
+.ansi-red-bg { background-color: #fee2e2; }
+.ansi-green-bg { background-color: #dcfce7; }
+.ansi-yellow-bg { background-color: #fef3c7; }
+.ansi-blue-bg { background-color: #dbeafe; }
+.ansi-magenta-bg { background-color: #fae8ff; }
+.ansi-cyan-bg { background-color: #cffafe; }
+.ansi-white-bg { background-color: #f3f4f6; }
+
+.ansi-bright-black-bg { background-color: #d1d5db; }
+.ansi-bright-red-bg { background-color: #fecaca; }
+.ansi-bright-green-bg { background-color: #bbf7d0; }
+.ansi-bright-yellow-bg { background-color: #fde68a; }
+.ansi-bright-blue-bg { background-color: #bfdbfe; }
+.ansi-bright-magenta-bg { background-color: #f5d0fe; }
+.ansi-bright-cyan-bg { background-color: #a5f3fc; }
+.ansi-bright-white-bg { background-color: #e5e7eb; }
+
+/* ── WCAG AA ANSI Terminal Palette (dark) ── */
+.dark .ansi-black-fg { color: #9ca3af; }
+.dark .ansi-red-fg { color: #f87171; }
+.dark .ansi-green-fg { color: #4ade80; }
+.dark .ansi-yellow-fg { color: #facc15; }
+.dark .ansi-blue-fg { color: #60a5fa; }
+.dark .ansi-magenta-fg { color: #e879f9; }
+.dark .ansi-cyan-fg { color: #22d3ee; }
+.dark .ansi-white-fg { color: #e5e7eb; }
+
+.dark .ansi-bright-black-fg { color: #a1a1aa; }
+.dark .ansi-bright-red-fg { color: #fca5a5; }
+.dark .ansi-bright-green-fg { color: #86efac; }
+.dark .ansi-bright-yellow-fg { color: #fde047; }
+.dark .ansi-bright-blue-fg { color: #93c5fd; }
+.dark .ansi-bright-magenta-fg { color: #f0abfc; }
+.dark .ansi-bright-cyan-fg { color: #67e8f9; }
+.dark .ansi-bright-white-fg { color: #f9fafb; }
+
+.dark .ansi-black-bg { background-color: rgba(156, 163, 175, 0.16); }
+.dark .ansi-red-bg { background-color: rgba(248, 113, 113, 0.22); }
+.dark .ansi-green-bg { background-color: rgba(74, 222, 128, 0.2); }
+.dark .ansi-yellow-bg { background-color: rgba(250, 204, 21, 0.2); }
+.dark .ansi-blue-bg { background-color: rgba(96, 165, 250, 0.22); }
+.dark .ansi-magenta-bg { background-color: rgba(232, 121, 249, 0.22); }
+.dark .ansi-cyan-bg { background-color: rgba(34, 211, 238, 0.2); }
+.dark .ansi-white-bg { background-color: rgba(229, 231, 235, 0.16); }
+
+.dark .ansi-bright-black-bg { background-color: rgba(161, 161, 170, 0.22); }
+.dark .ansi-bright-red-bg { background-color: rgba(252, 165, 165, 0.25); }
+.dark .ansi-bright-green-bg { background-color: rgba(134, 239, 172, 0.22); }
+.dark .ansi-bright-yellow-bg { background-color: rgba(253, 224, 71, 0.22); }
+.dark .ansi-bright-blue-bg { background-color: rgba(147, 197, 253, 0.24); }
+.dark .ansi-bright-magenta-bg { background-color: rgba(240, 171, 252, 0.24); }
+.dark .ansi-bright-cyan-bg { background-color: rgba(103, 232, 249, 0.22); }
+.dark .ansi-bright-white-bg { background-color: rgba(249, 250, 251, 0.2); }
 
 @layer base {
   * {

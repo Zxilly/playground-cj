@@ -1,4 +1,8 @@
+'use client'
+
 import { useSyncExternalStore } from 'react'
+import { useTheme } from 'next-themes'
+import { useHydrated } from '@/hooks/useHydrated'
 
 function subscribe(listener: () => void): () => void {
   if (typeof document === 'undefined' || typeof MutationObserver === 'undefined')
@@ -17,10 +21,17 @@ function snapshot(): boolean {
 }
 
 /**
- * Observe the actual root theme class rather than guessing from the OS media
- * query. This keeps asynchronously highlighted code aligned with an explicit
- * light/dark preference as well as with automatic theme changes.
+ * Observe the single site-wide theme source (`next-themes` / root `html.dark`).
+ * Returns `false` during SSR and initial hydration to avoid mismatches, then
+ * stays in sync with explicit light/dark choices and system theme changes.
  */
 export function useRootDarkMode(): boolean {
-  return useSyncExternalStore(subscribe, snapshot, () => false)
+  const { resolvedTheme } = useTheme()
+  const rootDark = useSyncExternalStore(subscribe, snapshot, () => false)
+  const hydrated = useHydrated()
+
+  if (hydrated && (resolvedTheme === 'dark' || resolvedTheme === 'light'))
+    return resolvedTheme === 'dark'
+
+  return rootDark
 }

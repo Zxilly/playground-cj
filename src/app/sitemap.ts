@@ -8,7 +8,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const isTour = getSiteDomain((await headers()).get('host') ?? '') === 'tour'
   const origin = isTour ? TOUR_ORIGIN : PLAYGROUND_ORIGIN
   const paths = isTour
-    ? flattenSections(await loadTourData()).map(section => `/${section.chapterSlug}/${section.chapterStep}`)
+    ? [
+        ...flattenSections(await loadTourData()).map(section => `/${section.chapterSlug}/${section.chapterStep}`),
+        '/ai',
+      ]
     : ['']
 
   return paths.flatMap(path => ['zh', 'en'].map(lang => ({

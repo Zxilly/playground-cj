@@ -1,9 +1,16 @@
-import { renderHook } from '@testing-library/react'
+import { createElement } from 'react'
+import type { ReactNode } from 'react'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { useTheme } from 'next-themes'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ThemeProvider } from './ThemeProvider'
 import { useDarkMode } from './useDarkMode'
 
 interface FakeMql {
   matches: boolean
+  media: string
+  addListener: ReturnType<typeof vi.fn>
+  removeListener: ReturnType<typeof vi.fn>
   addEventListener: ReturnType<typeof vi.fn>
   removeEventListener: ReturnType<typeof vi.fn>
   _trigger: (matches: boolean) => void
@@ -11,8 +18,11 @@ interface FakeMql {
 
 function makeFakeMql(initial: boolean): FakeMql {
   const listeners = new Set<(e: MediaQueryListEvent) => void>()
-  const fake = {
+  const fake: FakeMql = {
     matches: initial,
+    media: '(prefers-color-scheme: dark)',
+    addListener: vi.fn((cb: (e: MediaQueryListEvent) => void) => listeners.add(cb)),
+    removeListener: vi.fn((cb: (e: MediaQueryListEvent) => void) => listeners.delete(cb)),
     addEventListener: vi.fn((_: string, cb: (e: MediaQueryListEvent) => void) => listeners.add(cb)),
     removeEventListener: vi.fn((_: string, cb: (e: MediaQueryListEvent) => void) => listeners.delete(cb)),
     _trigger(matches: boolean) {
@@ -23,34 +33,73 @@ function makeFakeMql(initial: boolean): FakeMql {
   return fake
 }
 
+function ThemeWrapper({ children }: { children: ReactNode }) {
+  return createElement(ThemeProvider, null, children)
+}
+
 describe('useDarkMode', () => {
   let fakeMql: FakeMql
+
   beforeEach(() => {
     fakeMql = makeFakeMql(false)
-    vi.stubGlobal('window', { matchMedia: vi.fn(() => fakeMql) })
+    window.localStorage.clear()
+    document.documentElement.classList.remove('light', 'dark')
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn(() => fakeMql),
+    })
   })
+
   afterEach(() => {
-    vi.unstubAllGlobals()
+    window.localStorage.clear()
+    document.documentElement.classList.remove('light', 'dark')
   })
 
-  it('returns initial matches value', () => {
-    fakeMql.matches = true
+  it('tracks root html.dark when rendered outside ThemeProvider', async () => {
     const { result } = renderHook(() => useDarkMode())
-    expect(result.current).toBe(true)
-  })
-
-  it('updates when prefers-color-scheme changes', () => {
-    const { result, rerender } = renderHook(() => useDarkMode())
     expect(result.current).toBe(false)
-    fakeMql._trigger(true)
-    rerender()
+
+    await act(async () => {
+      document.documentElement.classList.add('dark')
+      await Promise.resolve()
+    })
     expect(result.current).toBe(true)
+
+    await act(async () => {
+      document.documentElement.classList.remove('dark')
+      await Promise.resolve()
+    })
+    expect(result.current).toBe(false)
   })
 
-  it('removes listener on unmount', () => {
-    const { unmount } = renderHook(() => useDarkMode())
-    expect(fakeMql.addEventListener).toHaveBeenCalledTimes(1)
-    unmount()
-    expect(fakeMql.removeEventListener).toHaveBeenCalledTimes(1)
+  it('reacts to next-themes explicit selection and system color scheme changes', async () => {
+    const { result } = renderHook(
+      () => ({ dark: useDarkMode(), theme: useTheme() }),
+      { wrapper: ThemeWrapper },
+    )
+
+    expect(result.current.dark).toBe(false)
+
+    await act(async () => {
+      fakeMql._trigger(true)
+    })
+    await waitFor(() => expect(result.current.dark).toBe(true))
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
+
+    await act(async () => {
+      result.current.theme.setTheme('light')
+    })
+    await waitFor(() => expect(result.current.dark).toBe(false))
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
+  })
+
+  it('migrates legacy classroom-theme-mode once on mount', async () => {
+    window.localStorage.setItem('classroom-theme-mode', 'dark')
+
+    const { result } = renderHook(() => useDarkMode(), { wrapper: ThemeWrapper })
+
+    await waitFor(() => expect(result.current).toBe(true))
+    expect(window.localStorage.getItem('theme')).toBe('dark')
+    expect(window.localStorage.getItem('classroom-theme-mode')).toBeNull()
   })
 })

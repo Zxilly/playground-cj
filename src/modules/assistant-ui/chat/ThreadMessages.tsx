@@ -127,7 +127,7 @@ function AssistantMessage({
   showMessageErrors,
 }: Required<Pick<ThreadMessageProps, 'showMessageErrors'>> & Pick<ThreadMessageProps, 'onDismissMessageError'>) {
   const ACTION_BAR_PT = 'pt-1.5'
-  const ACTION_BAR_HEIGHT = `mb-0 min-h-11 sm:-mb-7.5 sm:min-h-7.5 ${ACTION_BAR_PT}`
+  const ACTION_BAR_HEIGHT = `mb-0 min-h-11 lg:-mb-7.5 lg:min-h-7.5 ${ACTION_BAR_PT}`
 
   return (
     <MessagePrimitive.Root
@@ -197,7 +197,7 @@ export function ClassroomActivity({ children }: PropsWithChildren) {
     >
       <CollapsibleTrigger className="group/cot flex min-h-11 w-full items-center gap-2 rounded-md px-3 py-2 text-start text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:min-h-0">
         {running
-          ? <LoaderIcon aria-hidden="true" className="size-3.5 shrink-0 animate-spin" />
+          ? <LoaderIcon aria-hidden="true" className="size-3.5 shrink-0 animate-spin motion-reduce:animate-none" />
           : <CheckIcon aria-hidden="true" className="size-3.5 shrink-0" />}
         <span className="grow">
           {running ? <Trans>正在准备课堂内容…</Trans> : <Trans>课堂活动</Trans>}
@@ -296,7 +296,7 @@ function UserActionBar() {
       className="aui-user-action-bar-root flex flex-col items-end"
     >
       <ActionBarPrimitive.Edit asChild>
-        <TooltipIconButton tooltip={t`编辑`} className="aui-user-action-edit p-4">
+        <TooltipIconButton tooltip={t`编辑`} className="aui-user-action-edit">
           <PencilIcon />
         </TooltipIconButton>
       </ActionBarPrimitive.Edit>
