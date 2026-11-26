@@ -1,7 +1,6 @@
 export { registerEditorActions } from './actions'
-export { ensureCangjieMonarchTokensProvider } from './cangjie-monarch'
 export { createEditorAppConfig, createMonacoVscodeApiConfig, setEditorValue } from './config'
-export type { MonacoVscodeApiConfig } from './config'
+export type { EditorPresentationOptions, MonacoVscodeApiConfig } from './config'
 export { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
 export { createLanguageClient, disposeLanguageClient, ensureLanguageClient, isLanguageClientAvailable } from './language-client'
 export { acquireLanguageService } from './language-service-lifecycle'

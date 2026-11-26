@@ -9,18 +9,17 @@ import { DisposableStore, setUnexpectedErrorHandler } from '@codingame/monaco-vs
 import getBaseServiceOverride from '@codingame/monaco-vscode-base-service-override'
 import getConfigurationServiceOverride, { initUserConfiguration } from '@codingame/monaco-vscode-configuration-service-override'
 import getModelServiceOverride from '@codingame/monaco-vscode-model-service-override'
-import getOutputServiceOverride from '@codingame/monaco-vscode-output-service-override'
 import type * as monaco from '@codingame/monaco-vscode-editor-api'
-import type { OpenEditor } from '@codingame/monaco-vscode-views-service-override'
 import { URI } from '@codingame/monaco-vscode-api/vscode/vs/base/common/uri'
 import { encodeStringOrUrlToDataUrl } from './data-url'
 import { getEnhancedMonacoEnvironment, mergeServices } from './environment'
 import type { ExtensionConfig, MonacoVscodeApiConfig } from './types'
 import { markEditorStartup } from '../startup-timing'
 
-// We never open editors via the editor service (the app drives editors
-// directly), so the open-editor hook is a no-op.
-const openEditorStub: OpenEditor = async () => undefined
+function isServicesAlreadyInitializedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /services are already initialized/i.test(message)
+}
 
 function buildDefaultWorkspaceConfig(): IWorkbenchConstructionOptions {
   return {
@@ -38,7 +37,7 @@ function buildDefaultWorkspaceConfig(): IWorkbenchConstructionOptions {
 /**
  * Boots the global monaco-vscode-api services for this project's needs:
  * `extended` highlighting (textmate/theme/languages), standalone editor
- * services, native output views, and declarative Cangjie syntax contributions.
+ * services, and declarative Cangjie syntax contributions.
  *
  * The vscode services are a process-wide singleton — `start()` is idempotent
  * and only the first caller on a page performs the boot. Later editors await
@@ -81,27 +80,27 @@ export class MonacoVscodeApiWrapper {
         if (!env.vscodeApiServicesInitialised) {
           // These modules are independent. Fetch them together, then apply the
           // overrides in the same order before initializing the global services.
-          const [getLanguages, getTextmate, getTheme, getViews, getExtensions] = await Promise.all([
+          const [getLanguages, getTextmate, getTheme, getExtensions] = await Promise.all([
             import('@codingame/monaco-vscode-languages-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-textmate-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-theme-service-override').then(m => m.default),
-            import('@codingame/monaco-vscode-views-service-override').then(m => m.default),
             import('@codingame/monaco-vscode-extensions-service-override').then(m => m.default),
           ])
           markEditorStartup('overrides-loaded')
           mergeServices(this.serviceOverrides, { ...getLanguages(), ...getTextmate(), ...getTheme() })
 
-          // React owns the standalone editors and mounts the output panel when
-          // needed. Do not restore workbench editors or views during startup.
-          mergeServices(this.serviceOverrides, getViews(openEditorStub, undefined, state => ({
-            ...state,
-            editor: { ...state.editor, restoreEditors: false, editorsToOpen: Promise.resolve([]) },
-            views: { ...state.views, defaults: [], containerToRestore: {} },
-          })))
           if (this.config.userConfiguration?.json)
             await initUserConfiguration(this.config.userConfiguration.json)
 
-          await this.initAllServices(getExtensions)
+          try {
+            await this.initAllServices(getExtensions)
+          }
+          catch (error) {
+            if (!isServicesAlreadyInitializedError(error))
+              throw error
+            // Compatibility with a runtime initialized outside this wrapper or across HMR:
+            // mark services ready and continue registering theme + Cangjie grammar extensions.
+          }
           markEditorStartup('services-ready')
           env.vscodeApiServicesInitialised = true
         }
@@ -132,12 +131,11 @@ export class MonacoVscodeApiWrapper {
 
   private async initAllServices(getExtensionServiceOverride: () => monaco.editor.IEditorOverrideServices): Promise<void> {
     // monaco-vscode-api auto-loads layout/environment/extension/files/quickAccess;
-    // we add configuration/output/model. Output includes the log services. The
-    // extension host loads later for output channels and the language client.
+    // we add base/configuration/model. The extension host loads later for the
+    // language client.
     const services: monaco.editor.IEditorOverrideServices = {
       ...getBaseServiceOverride(),
       ...getConfigurationServiceOverride(),
-      ...getOutputServiceOverride(),
       ...getModelServiceOverride(),
     }
     mergeServices(services, this.serviceOverrides)

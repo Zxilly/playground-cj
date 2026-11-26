@@ -1,6 +1,7 @@
 interface WritableWasmFs {
   mkdir: (path: string) => void
   writeFile: (path: string, data: Uint8Array) => void
+  unlink?: (path: string) => void
 }
 
 interface Position {
@@ -141,6 +142,12 @@ export function createLspDocumentMirror(fs: WritableWasmFs, root = '/playground'
       }
       else if (parsed.method === 'textDocument/didClose') {
         documents.delete(uri)
+        if (path.startsWith(`${root}/standalone/`)) {
+          try {
+            fs.unlink?.(path)
+          }
+          catch {}
+        }
       }
     },
   }

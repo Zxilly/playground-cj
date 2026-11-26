@@ -5,11 +5,9 @@ import { useCodeRunner } from '@/modules/cangjie-editor/hooks/useCodeRunner'
 import { Toaster } from '@/components/ui/sonner'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { registerEditorActions } from '@/lib/monaco/actions'
-import { compilerMarkers } from '@/lib/monaco/compiler-markers'
-import { saveAsFile } from '@/lib/file'
+import { clearCompilerMarkers as clearModelCompilerMarkers, setCompilerMarkers } from '@/lib/monaco/compiler-markers'
 import { t } from '@lingui/core/macro'
 import { toast } from 'sonner'
-import * as monaco from '@codingame/monaco-vscode-editor-api'
 import type { MonacoEditorHandle } from '@/modules/cangjie-editor/components/EditorWrapper'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePanelRef } from 'react-resizable-panels'
@@ -38,6 +36,7 @@ export function TourEditor({
   const editorAppRef = useRef<MonacoEditorHandle | undefined>(undefined)
   const actionsRef = useRef<{ dispose: () => void } | null>(null)
   const [editorReady, setEditorReady] = useState(false)
+  const [editorError, setEditorError] = useState<Error | null>(null)
   const [running, setRunning] = useState(false)
   const [outputRevealRequest, setOutputRevealRequest] = useState(0)
   const [outputState, setOutputState] = useState({ scopeKey, expanded: false })
@@ -136,7 +135,7 @@ export function TourEditor({
   const clearCompilerMarkers = useCallback(() => {
     const model = editorAppRef.current?.getEditor()?.getModel()
     if (model)
-      monaco.editor.setModelMarkers(model, TOUR_RUN_MARKER_OWNER, [])
+      clearModelCompilerMarkers(model, TOUR_RUN_MARKER_OWNER)
   }, [])
 
   const syncCompilerMarkers = useCallback((output: string) => {
@@ -144,12 +143,15 @@ export function TourEditor({
     if (!model)
       return
 
-    monaco.editor.setModelMarkers(model, TOUR_RUN_MARKER_OWNER, compilerMarkers(output, model))
+    setCompilerMarkers(model, TOUR_RUN_MARKER_OWNER, output)
   }, [])
 
   useEffect(() => {
     codeRef.current = code
     setInitialCode(code)
+    resetOutputs()
+    clearCompilerMarkers()
+
     const editor = editorAppRef.current?.getEditor()
     const model = editor?.getModel()
     if (!model)
@@ -157,9 +159,6 @@ export function TourEditor({
 
     if (model.getValue() !== code)
       model.setValue(code)
-
-    resetOutputs()
-    clearCompilerMarkers()
   }, [clearCompilerMarkers, code, resetOutputs, scopeKey, setInitialCode])
 
   useEffect(() => {
@@ -177,6 +176,7 @@ export function TourEditor({
   const onLoad = useCallback((editorApp: MonacoEditorHandle) => {
     editorAppRef.current = editorApp
     const ed = editorApp.getEditor()
+    setEditorError(null)
     setEditorReady(Boolean(ed))
     bridge.editor.setEditor(ed ?? undefined)
     actionsRef.current?.dispose()
@@ -184,14 +184,18 @@ export function TourEditor({
       ? registerEditorActions(ed, {
           run,
           format,
-          save: (source) => {
-            saveAsFile(source)
+          onSave: () => {
             toast.success(t`已保存代码`)
           },
         })
       : null
     syncCompilerMarkers(useTourEditorStore.getState().compilerOutput)
   }, [bridge.editor, format, run, syncCompilerMarkers])
+
+  const onError = useCallback((error: Error) => {
+    setEditorError(error)
+    setEditorReady(false)
+  }, [])
 
   const handleRun = useCallback(() => {
     void editorAppRef.current?.getEditor()?.getAction('cangjie.compile.run')?.run().catch(() => {})
@@ -253,11 +257,12 @@ export function TourEditor({
             <MonacoEditorReactComp
               code={code}
               onLoad={onLoad}
+              onError={onError}
               locale={locale}
               statusBarCompactHeight={22}
               statusBarHostRef={statusBarHostRef}
             />
-            {!editorReady && (
+            {!editorReady && !editorError && (
               <div className="absolute inset-0 z-10">
                 <TourEditorLoading code={code} locale={locale} />
               </div>

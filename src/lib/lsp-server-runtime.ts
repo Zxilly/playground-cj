@@ -22,7 +22,8 @@ const WASM_CACHE_NAME_PREFIX = 'wasm-'
 const CJO_DB_NAME = 'cjo-cache'
 const CJO_STORE_NAME = 'modules'
 const wasmCacheName = `${WASM_CACHE_NAME_PREFIX}${WASM_ASSETS_VERSION}`
-const WASM_FATAL_RE = /\babort\(|RuntimeError|Uncaught/
+export const WASM_FATAL_RE = /^(?:(?:fatal:\s*)?(?:Aborted\(|abort\()|(?:Uncaught\s+)?(?:WebAssembly\.)?RuntimeError:|Uncaught\s+Error:)/
+const CJO_DOWNLOAD_CONCURRENCY = 6
 const CJO_FETCH_ATTEMPTS = 3
 const CJO_FETCH_TIMEOUT_MS = 15_000
 const CJO_CACHE_OPEN_TIMEOUT_MS = 2_000
@@ -130,6 +131,7 @@ export interface EmscriptenModule {
   FS: {
     mkdir: (path: string) => void
     writeFile: (path: string, data: Uint8Array) => void
+    unlink?: (path: string) => void
     analyzePath?: (path: string) => { exists: boolean }
     stat?: (path: string) => unknown
   }
@@ -369,46 +371,59 @@ export async function initializeLspServerInWorker(
     }
   }
 
-  await Promise.all(CJO_MODULES.map(async (modulePath) => {
-    const destPath = `${targetModulesPath}/${modulePath}`
-    // Never reuse unversioned entries from an older build when cache cleanup
-    // fails, or when another tab writes its older modules after invalidation.
-    const cacheKey = `${WASM_ASSETS_VERSION}:${modulePath}`
+  let nextIndex = 0
+  const workerCount = Math.min(CJO_DOWNLOAD_CONCURRENCY, CJO_MODULES.length)
+  const loadWorker = async () => {
+    while (nextIndex < CJO_MODULES.length) {
+      if (shouldAbort())
+        return
+      const modulePath = CJO_MODULES[nextIndex++]!
+      const destPath = `${targetModulesPath}/${modulePath}`
+      // Never reuse unversioned entries from an older build when cache cleanup
+      // fails, or when another tab writes its older modules after invalidation.
+      const cacheKey = `${WASM_ASSETS_VERSION}:${modulePath}`
 
-    try {
-      let cachedData: Uint8Array | null = null
-      if (db) {
-        try {
-          cachedData = await idbGet(db, cacheKey)
+      try {
+        let cachedData: Uint8Array | null = null
+        if (db) {
+          try {
+            cachedData = await idbGet(db, cacheKey)
+          }
+          catch (error) {
+            onLog(`  [cjo] Cache read failed; downloading ${modulePath}: ${String(error)}`)
+          }
         }
-        catch (error) {
-          onLog(`  [cjo] Cache read failed; downloading ${modulePath}: ${String(error)}`)
+
+        if (shouldAbort())
+          return
+
+        if (cachedData) {
+          wasmMod.FS.writeFile(destPath, cachedData)
+          loaded++
+          cached++
         }
-      }
+        else {
+          const url = `${LSP_MODULES_PATH}/${CJO_TARGET}/${modulePath}${WASM_ASSETS_VERSION_QS}`
+          const data = await downloadCjoModule(url)
+          if (shouldAbort())
+            return
+          wasmMod.FS.writeFile(destPath, data)
 
-      if (cachedData) {
-        wasmMod.FS.writeFile(destPath, cachedData)
-        loaded++
-        cached++
-      }
-      else {
-        const url = `${LSP_MODULES_PATH}/${CJO_TARGET}/${modulePath}${WASM_ASSETS_VERSION_QS}`
-        const data = await downloadCjoModule(url)
-        wasmMod.FS.writeFile(destPath, data)
+          if (db)
+            idbPut(db, cacheKey, data)
 
-        if (db)
-          idbPut(db, cacheKey, data)
-
-        loaded++
-        downloaded++
+          loaded++
+          downloaded++
+        }
+        callbacks.onStdlibProgress?.({ loaded, total: CJO_MODULES.length })
       }
-      callbacks.onStdlibProgress?.({ loaded, total: CJO_MODULES.length })
+      catch (e) {
+        failed.push(modulePath)
+        onLog(`  [cjo] FAILED: ${modulePath} - ${(e as Error).message}`)
+      }
     }
-    catch (e) {
-      failed.push(modulePath)
-      onLog(`  [cjo] FAILED: ${modulePath} - ${(e as Error).message}`)
-    }
-  }))
+  }
+  await Promise.all(Array.from({ length: workerCount }, () => loadWorker()))
 
   db?.close()
   onLog(`Loaded ${loaded}/${CJO_MODULES.length} stdlib modules (${cached} cached, ${downloaded} downloaded)`)

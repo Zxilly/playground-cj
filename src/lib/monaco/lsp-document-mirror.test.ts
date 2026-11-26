@@ -58,9 +58,10 @@ describe('lspDocumentMirror', () => {
     expect(writeFile).not.toHaveBeenCalled()
   })
 
-  it('forgets a closed standalone document so later changes are ignored', () => {
+  it('forgets and unlinks a closed standalone document so later changes are ignored', () => {
     const writeFile = vi.fn()
-    const mirror = createLspDocumentMirror({ mkdir: vi.fn(), writeFile })
+    const unlink = vi.fn()
+    const mirror = createLspDocumentMirror({ mkdir: vi.fn(), writeFile, unlink })
     const uri = 'file:///playground/standalone/tab-1/main.cj'
     mirror.handle(message('textDocument/didOpen', {
       textDocument: { uri, version: 4, text: 'package playground\nmain() {}' },
@@ -69,6 +70,8 @@ describe('lspDocumentMirror', () => {
     mirror.handle(message('textDocument/didClose', {
       textDocument: { uri },
     }))
+    expect(unlink).toHaveBeenCalledExactlyOnceWith('/playground/standalone/tab-1/main.cj')
+
     writeFile.mockClear()
     mirror.handle(message('textDocument/didChange', {
       textDocument: { uri, version: 5 },
@@ -76,5 +79,18 @@ describe('lspDocumentMirror', () => {
     }))
 
     expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('does not unlink the canonical project entry file on didClose', () => {
+    const unlink = vi.fn()
+    const mirror = createLspDocumentMirror({ mkdir: vi.fn(), writeFile: vi.fn(), unlink })
+    const uri = 'file:///playground/src/main.cj'
+    mirror.handle(message('textDocument/didOpen', {
+      textDocument: { uri, version: 1, text: 'main() {}' },
+    }))
+    mirror.handle(message('textDocument/didClose', {
+      textDocument: { uri },
+    }))
+    expect(unlink).not.toHaveBeenCalled()
   })
 })

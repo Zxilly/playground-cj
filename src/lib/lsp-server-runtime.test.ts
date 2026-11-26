@@ -231,4 +231,37 @@ describe('lsp runtime asset failures', () => {
     expect(WebAssembly.instantiate).not.toHaveBeenCalled()
     expect(runtime.module.startServerLoop).not.toHaveBeenCalled()
   })
+
+  it('bounds concurrent .cjo downloads to avoid connection pool timeout cascades', async () => {
+    const manyModules = Array.from({ length: 14 }, (_, i) => `std/mod_${i}.cjo`)
+    vi.stubEnv('CJO_MODULES', JSON.stringify(manyModules))
+    let inFlight = 0
+    let maxInFlight = 0
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes('.cjo')) {
+        inFlight++
+        maxInFlight = Math.max(maxInFlight, inFlight)
+        await new Promise(resolve => setTimeout(resolve, 10))
+        inFlight--
+      }
+      return assetResponse(url)
+    })
+    const runtime = await createRuntime()
+
+    await runtime.start()
+
+    expect(maxInFlight).toBeLessThanOrEqual(6)
+    expect(maxInFlight).toBeGreaterThan(1)
+    expect(runtime.callbacks.onStdlibProgress).toHaveBeenLastCalledWith({ loaded: 14, total: 14 })
+  })
+
+  it('matches only anchored Emscripten/WASM fatal diagnostics in WASM_FATAL_RE', async () => {
+    const { WASM_FATAL_RE } = await import('./lsp-server-runtime')
+    expect(WASM_FATAL_RE.test('Aborted(OOM)')).toBe(true)
+    expect(WASM_FATAL_RE.test('abort(1)')).toBe(true)
+    expect(WASM_FATAL_RE.test('RuntimeError: memory access out of bounds')).toBe(true)
+    expect(WASM_FATAL_RE.test('Uncaught RuntimeError: unreachable')).toBe(true)
+    expect(WASM_FATAL_RE.test('warning: function abort() is deprecated')).toBe(false)
+    expect(WASM_FATAL_RE.test('class RuntimeError extends Exception {}')).toBe(false)
+  })
 })

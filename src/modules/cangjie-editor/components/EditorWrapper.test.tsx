@@ -1,19 +1,23 @@
-import { act, cleanup, render } from '@testing-library/react'
-import { createRef } from 'react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { createRef, StrictMode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { retainModelScope } from '@/lib/monaco/model-lifecycle'
 import { createEditorAppConfig } from '@/lib/monaco'
+import { createModelFileMirror } from '@/lib/monaco/model-file-mirror'
 import { createCustomStatusBar } from '@/lib/statusbar'
 import type { StatusBarHandle } from '@/lib/statusbar'
 import { subscribeLspStatus } from '@/lib/lsp'
 import { MonacoEditorReactComp } from './EditorWrapper'
+import type { MonacoEditorHandle } from './EditorWrapper'
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void
-  const promise = new Promise<T>((r) => {
-    resolve = r
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
 }
 
 function createStatusBarHandle(parent: HTMLElement) {
@@ -31,7 +35,8 @@ const monacoInit = vi.hoisted(() => ({
 const vscodeWrapperStart = vi.hoisted(() => vi.fn())
 const vscodeWrapperInitExtensions = vi.hoisted(() => vi.fn())
 const vscodeWrapperDispose = vi.hoisted(() => vi.fn())
-const ensureCangjieMonarchTokensProvider = vi.hoisted(() => vi.fn())
+const ensureMonacoThemeSync = vi.hoisted(() => vi.fn())
+const ensureMonacoFontRemeasure = vi.hoisted(() => vi.fn())
 const configureMonacoWorkers = vi.hoisted(() => vi.fn())
 const acquireLanguageService = vi.hoisted(() => vi.fn())
 const isLanguageClientAvailable = vi.hoisted(() => vi.fn())
@@ -51,6 +56,14 @@ vi.mock('@/lib/monaco/vscode-api', () => ({
     initExtensions = vscodeWrapperInitExtensions
     dispose = vscodeWrapperDispose
   },
+}))
+
+vi.mock('@/lib/monaco/theme-sync', () => ({
+  ensureMonacoThemeSync,
+}))
+
+vi.mock('@/lib/monaco/font-remeasure', () => ({
+  ensureMonacoFontRemeasure,
 }))
 
 vi.mock('@/lib/monaco/model-file-mirror', () => ({
@@ -80,7 +93,7 @@ vi.mock('@codingame/monaco-vscode-editor-api', () => ({
 vi.mock('@/lib/monaco', () => ({
   configureMonacoWorkers,
   acquireLanguageService,
-  createEditorAppConfig: vi.fn((code?: string, _locale?: string, uriHint?: string) => ({
+  createEditorAppConfig: vi.fn((code?: string, _locale?: string, uriHint?: string, presentation?: Record<string, unknown>) => ({
     codeResources: {
       modified: {
         text: code ?? '',
@@ -88,11 +101,10 @@ vi.mock('@/lib/monaco', () => ({
         enforceLanguageId: 'cangjie',
       },
     },
-    editorOptions: { language: 'cangjie' },
+    editorOptions: { language: 'cangjie', fixedOverflowWidgets: true, ...(presentation ?? {}) },
   })),
   createLanguageClient: vi.fn(),
   createMonacoVscodeApiConfig: vi.fn(() => ({})),
-  ensureCangjieMonarchTokensProvider,
   isLanguageClientAvailable,
 }))
 
@@ -129,12 +141,17 @@ describe('monacoEditorReactComp', () => {
     vscodeWrapperStart.mockReset().mockResolvedValue(undefined)
     vscodeWrapperInitExtensions.mockReset().mockResolvedValue(undefined)
     vscodeWrapperDispose.mockReset().mockResolvedValue(undefined)
-    ensureCangjieMonarchTokensProvider.mockReset()
+    ensureMonacoThemeSync.mockReset()
+    ensureMonacoFontRemeasure.mockReset()
     configureMonacoWorkers.mockReset()
     acquireLanguageService.mockReset().mockReturnValue(vi.fn(async () => {}))
     isLanguageClientAvailable.mockReset().mockReturnValue(true)
     vi.mocked(createCustomStatusBar).mockReset().mockImplementation(async parent => createStatusBarHandle(parent))
     vi.mocked(subscribeLspStatus).mockReset().mockReturnValue(vi.fn())
+    vi.mocked(createModelFileMirror).mockReset().mockImplementation(async () => ({
+      update: modelFileMirrorUpdate,
+      dispose: modelFileMirrorDispose,
+    }))
     monacoEditorGetModel.mockReset().mockReturnValue(undefined)
     monacoEditorCreateModel.mockReset().mockImplementation((_text, _language, uri) => ({
       dispose: vi.fn(),
@@ -144,13 +161,13 @@ describe('monacoEditorReactComp', () => {
       isDisposed: vi.fn(() => false),
       uri,
     }))
-    monacoEditorCreate.mockReset().mockReturnValue({
+    monacoEditorCreate.mockReset().mockImplementation(() => ({
       dispose: vi.fn(),
       getModel: vi.fn(),
       layout: vi.fn(),
       setModel: vi.fn(),
       updateOptions: vi.fn(),
-    })
+    }))
     modelFileMirrorUpdate.mockReset()
     modelFileMirrorDispose.mockReset().mockResolvedValue(undefined)
     vi.stubGlobal('ResizeObserver', class {
@@ -169,6 +186,8 @@ describe('monacoEditorReactComp', () => {
       await monacoInit.promise
     })
     expect(monacoEditorCreate).toHaveBeenCalled()
+    expect(ensureMonacoThemeSync).toHaveBeenCalled()
+    expect(ensureMonacoFontRemeasure).toHaveBeenCalled()
     expect(createCustomStatusBar).toHaveBeenCalledWith(expect.any(HTMLElement), {
       position: 'bottom',
       height: 22,
@@ -184,7 +203,7 @@ describe('monacoEditorReactComp', () => {
     expect(dispose).toHaveBeenCalledOnce()
   })
 
-  it.each(['default', 'unresolved'] as const)('reserves and observes the status bar height with a %s host', async (host) => {
+  it.each(['default', 'unresolved'] as const)('uses flex container layout without manual statusbar subtraction for a %s host', async (host) => {
     const observe = vi.fn()
     vi.stubGlobal('ResizeObserver', class {
       observe = observe
@@ -196,8 +215,9 @@ describe('monacoEditorReactComp', () => {
         statusBarHostRef={host === 'unresolved' ? createRef<HTMLDivElement>() : undefined}
       />,
     )
-    const editorContainer = view.container.firstElementChild!
-    vi.spyOn(editorContainer, 'getBoundingClientRect').mockReturnValue({ width: 640, height: 320 } as DOMRect)
+    const rootEl = view.container.firstElementChild!
+    const editorCanvas = rootEl.firstElementChild!
+    vi.spyOn(editorCanvas, 'getBoundingClientRect').mockReturnValue({ width: 640, height: 298 } as DOMRect)
 
     await act(async () => {
       monacoInit.resolve()
@@ -205,17 +225,16 @@ describe('monacoEditorReactComp', () => {
     })
 
     const editor = monacoEditorCreate.mock.results.at(-1)!.value
-    const statusBar = await vi.mocked(createCustomStatusBar).mock.results.at(-1)!.value
-    expect(createCustomStatusBar).toHaveBeenCalledWith(editorContainer, {
+    expect(createCustomStatusBar).toHaveBeenCalledWith(rootEl, {
       position: 'bottom',
       height: 22,
       compactHeight: 44,
     })
     expect(editor.layout).toHaveBeenLastCalledWith({ width: 640, height: 298 }, true)
-    expect(observe.mock.calls).toEqual([[editorContainer], [statusBar.container]])
+    expect(observe.mock.calls).toEqual([[editorCanvas]])
   })
 
-  it('mounts the native status control externally without subtracting or observing its height', async () => {
+  it('mounts the status control externally and disposes cleanly on unmount', async () => {
     const statusBarHostRef = createRef<HTMLDivElement>()
     const nextStatusBarHostRef = createRef<HTMLDivElement>()
     const observe = vi.fn()
@@ -232,9 +251,9 @@ describe('monacoEditorReactComp', () => {
       </>
     )
     const view = render(surface())
-    const editorContainer = view.container.firstElementChild!
+    const editorCanvas = view.container.firstElementChild!.firstElementChild!
     const externalHost = statusBarHostRef.current!
-    vi.spyOn(editorContainer, 'getBoundingClientRect').mockReturnValue({ width: 640, height: 320 } as DOMRect)
+    vi.spyOn(editorCanvas, 'getBoundingClientRect').mockReturnValue({ width: 640, height: 320 } as DOMRect)
 
     await act(async () => {
       monacoInit.resolve()
@@ -250,7 +269,7 @@ describe('monacoEditorReactComp', () => {
     })
     expect(externalHost.contains(view.getByTestId('lsp-status-indicator'))).toBe(true)
     expect(editor.layout).toHaveBeenLastCalledWith({ width: 640, height: 320 }, true)
-    expect(observe.mock.calls).toEqual([[editorContainer]])
+    expect(observe.mock.calls).toEqual([[editorCanvas]])
     expect(acquireLanguageService).toHaveBeenCalledOnce()
 
     view.rerender(surface(nextStatusBarHostRef))
@@ -298,7 +317,7 @@ describe('monacoEditorReactComp', () => {
     expect(releaseLanguageService).toHaveBeenCalledOnce()
   })
 
-  it('coalesces resize notifications and skips layouts when dimensions are unchanged', async () => {
+  it('coalesces resize notifications, skips unchanged frames, and supports forced relayout()', async () => {
     isLanguageClientAvailable.mockReturnValue(false)
     let notifyResize!: () => void
     vi.stubGlobal('ResizeObserver', class {
@@ -318,29 +337,43 @@ describe('monacoEditorReactComp', () => {
       frames.clear()
       callbacks.forEach(callback => callback(0))
     }
-    const view = render(<MonacoEditorReactComp code="main() {}" />)
+    let handle: MonacoEditorHandle | undefined
+    const view = render(
+      <MonacoEditorReactComp
+        code="main() {}"
+        onLoad={(loadedHandle) => {
+          handle = loadedHandle
+        }}
+      />,
+    )
     let width = 640
-    vi.spyOn(view.container.firstElementChild!, 'getBoundingClientRect').mockImplementation(() => ({ width, height: 320 } as DOMRect))
+    const editorCanvas = view.container.firstElementChild!.firstElementChild!
+    vi.spyOn(editorCanvas, 'getBoundingClientRect').mockImplementation(() => ({ width, height: 320 } as DOMRect))
     await act(async () => {
       monacoInit.resolve()
       await monacoInit.promise
     })
     const editor = monacoEditorCreate.mock.results.at(-1)!.value
-    expect(editor.layout).toHaveBeenCalledOnce()
+    expect(editor.layout).toHaveBeenCalledTimes(2)
     expect(editor.layout).toHaveBeenLastCalledWith({ width: 640, height: 320 }, true)
 
     notifyResize()
     flushFrames()
-    expect(editor.layout).toHaveBeenCalledOnce()
+    expect(editor.layout).toHaveBeenCalledTimes(2)
+
+    // Forced relayout() always lays out even when dimensions match lastLayout.
+    handle?.relayout?.()
+    expect(editor.layout).toHaveBeenCalledTimes(3)
+    expect(editor.layout).toHaveBeenLastCalledWith({ width: 640, height: 320 }, true)
 
     width = 720
     notifyResize()
     notifyResize()
     notifyResize()
     expect(frames.size).toBe(1)
-    expect(editor.layout).toHaveBeenCalledOnce()
+    expect(editor.layout).toHaveBeenCalledTimes(3)
     flushFrames()
-    expect(editor.layout).toHaveBeenCalledTimes(2)
+    expect(editor.layout).toHaveBeenCalledTimes(4)
     expect(editor.layout).toHaveBeenLastCalledWith({ width: 720, height: 320 }, true)
 
     notifyResize()
@@ -348,7 +381,139 @@ describe('monacoEditorReactComp', () => {
     expect(frames.size).toBe(0)
     expect(cancelAnimationFrame).toHaveBeenCalledOnce()
     flushFrames()
-    expect(editor.layout).toHaveBeenCalledTimes(2)
+    expect(editor.layout).toHaveBeenCalledTimes(4)
+  })
+
+  it('survives React StrictMode double-mount without deadlocking', async () => {
+    isLanguageClientAvailable.mockReturnValue(false)
+    const onLoad = vi.fn()
+    const view = render(
+      <StrictMode>
+        <MonacoEditorReactComp code="main() {}" locale="zh" uriHint="strict-test" onLoad={onLoad} />
+      </StrictMode>,
+    )
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(monacoEditorCreate).toHaveBeenCalledOnce()
+    expect(onLoad).toHaveBeenCalledOnce()
+    view.unmount()
+  })
+
+  it('re-initializes cleanly when enableLanguageClient toggles', async () => {
+    const onLoad = vi.fn()
+    const view = render(
+      <MonacoEditorReactComp code="main() {}" enableLanguageClient={false} onLoad={onLoad} />,
+    )
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+    })
+
+    expect(monacoEditorCreate).toHaveBeenCalledTimes(1)
+    expect(acquireLanguageService).not.toHaveBeenCalled()
+    const firstEditor = monacoEditorCreate.mock.results[0]!.value
+
+    view.rerender(
+      <MonacoEditorReactComp code="main() {}" enableLanguageClient onLoad={onLoad} />,
+    )
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(firstEditor.dispose).toHaveBeenCalledOnce()
+    expect(monacoEditorCreate).toHaveBeenCalledTimes(2)
+    expect(acquireLanguageService).toHaveBeenCalledOnce()
+    expect(onLoad).toHaveBeenCalledTimes(2)
+  })
+
+  it('drops stale concurrent updateCodeResources calls using an epoch guard', async () => {
+    isLanguageClientAvailable.mockReturnValue(false)
+    let handle: MonacoEditorHandle | undefined
+    render(
+      <MonacoEditorReactComp
+        code="main() {}"
+        uriHint="a"
+        onLoad={(loadedHandle) => {
+          handle = loadedHandle
+        }}
+      />,
+    )
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+    })
+
+    const editor = monacoEditorCreate.mock.results.at(-1)!.value
+    const slowMirrorB = deferred<{ update: () => void, dispose: () => Promise<void> }>()
+    const disposeB = vi.fn(async () => {})
+    const disposeC = vi.fn(async () => {})
+
+    vi.mocked(createModelFileMirror)
+      .mockImplementationOnce(() => slowMirrorB.promise)
+      .mockImplementationOnce(async () => ({ update: vi.fn(), dispose: disposeC }))
+
+    const reqB = handle!.updateCodeResources!({
+      modified: { uri: 'file:///playground/b/main.cj', text: 'b', enforceLanguageId: 'cangjie' },
+    })
+    const reqC = handle!.updateCodeResources!({
+      modified: { uri: 'file:///playground/c/main.cj', text: 'c', enforceLanguageId: 'cangjie' },
+    })
+
+    await expect(reqC).resolves.toBe(true)
+    slowMirrorB.resolve({ update: vi.fn(), dispose: disposeB })
+    await expect(reqB).resolves.toBe(false)
+
+    expect(disposeB).toHaveBeenCalledOnce()
+    expect(disposeC).not.toHaveBeenCalled()
+    expect(editor.setModel).toHaveBeenCalledOnce()
+    expect(editor.setModel.mock.calls[0]?.[0].uri.toString()).toBe('file:///playground/c/main.cj')
+  })
+
+  it('surfaces initialization errors via onError and recovers when Retry is clicked', async () => {
+    isLanguageClientAvailable.mockReturnValue(false)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failure = new Error('WASM worker blocked')
+    vscodeWrapperStart
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce(undefined)
+
+    const onError = vi.fn()
+    const onLoad = vi.fn()
+    render(<MonacoEditorReactComp code="main() {}" locale="en" onError={onError} onLoad={onLoad} />)
+
+    await act(async () => {
+      monacoInit.resolve()
+      await monacoInit.promise
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(onError).toHaveBeenCalledWith(failure)
+    expect(onLoad).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toBeDefined()
+    expect(screen.getByText('WASM worker blocked')).toBeDefined()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(onLoad).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('does not create the editor after the host unmounts during async Monaco init', async () => {
@@ -378,63 +543,8 @@ describe('monacoEditorReactComp', () => {
     })
 
     expect(vscodeWrapperStart).toHaveBeenCalled()
-    expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
     expect(vscodeWrapperInitExtensions).not.toHaveBeenCalled()
     expect(monacoEditorCreate).toHaveBeenCalled()
-  })
-
-  it('does not duplicate extension file registration during the first Monaco initialization', async () => {
-    render(<MonacoEditorReactComp code="main() {}" locale="zh" />)
-
-    await act(async () => {
-      monacoInit.resolve()
-      await monacoInit.promise
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(vscodeWrapperStart).toHaveBeenCalled()
-    expect(vscodeWrapperInitExtensions).not.toHaveBeenCalled()
-    expect(monacoEditorCreate).toHaveBeenCalled()
-  })
-
-  it('does not attempt duplicate extension-file registration on later mounts', async () => {
-    monacoInit.initialised = true
-    vscodeWrapperInitExtensions.mockRejectedValueOnce(
-      new Error('file "extension-file://zxilly.cangjie/extension/extension.js/" already exists'),
-    )
-
-    render(<MonacoEditorReactComp code="main() {}" locale="zh" />)
-
-    await act(async () => {
-      monacoInit.resolve()
-      await monacoInit.promise
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(vscodeWrapperInitExtensions).not.toHaveBeenCalled()
-    expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
-    expect(monacoEditorCreate).toHaveBeenCalled()
-  })
-
-  it('continues editor startup when Monaco services were already initialized by another editor', async () => {
-    monacoInit.initialised = true
-    vscodeWrapperStart.mockRejectedValueOnce(new Error('Services are already initialized'))
-
-    render(<MonacoEditorReactComp code="main() {}" locale="zh" />)
-
-    await act(async () => {
-      monacoInit.resolve()
-      await monacoInit.promise
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(vscodeWrapperStart).toHaveBeenCalled()
-    expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
-    expect(monacoEditorCreate).toHaveBeenCalled()
-    expect(vscodeWrapperDispose).not.toHaveBeenCalled()
   })
 
   it('does not re-register or dispose the page runtime when one of two editors unmounts', async () => {
@@ -474,7 +584,6 @@ describe('monacoEditorReactComp', () => {
       await Promise.resolve()
     })
 
-    expect(ensureCangjieMonarchTokensProvider).toHaveBeenCalled()
     expect(monacoEditorCreate).toHaveBeenCalled()
     expect(onLoad).toHaveBeenCalled()
     expect(vscodeWrapperStart).toHaveBeenCalled()
@@ -485,6 +594,17 @@ describe('monacoEditorReactComp', () => {
     render(<MonacoEditorReactComp code="main() {}" />)
 
     expect(createEditorAppConfig).toHaveBeenCalledWith('main() {}', undefined, undefined)
+  })
+
+  it('forwards compact presentation options to createEditorAppConfig', () => {
+    render(<MonacoEditorReactComp code="main() {}" compact />)
+
+    expect(createEditorAppConfig).toHaveBeenCalledWith('main() {}', undefined, undefined, {
+      compact: true,
+      wordWrap: undefined,
+      scrollBeyondLastLine: undefined,
+      alwaysConsumeMouseWheel: undefined,
+    })
   })
 
   it('disposes an ordinary model when its editor unmounts', async () => {

@@ -5,6 +5,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import ts from 'typescript'
 
 const repository = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const SRC_IMPORT_RE = /(?:from\s+|import\s*\(\s*|import\s+)['"]((?:@codingame\/|vscode\/)[^'"]+)['"]/g
+const PKG_IMPORT_RE = /(?:from\s+|import\s*\(\s*|import\s+)['"]([^'"]+)['"]/g
+const SKIP_ASSET_RE = /\.(?:css|json|wasm|ttf|woff2?|svg|png|html)$/i
 
 export function collectNlsIds(source, filename = 'source.js') {
   if (!/\bfrom\s*['"][^'"]*\/nls(?:\.js)?['"]/.test(source))
@@ -42,7 +45,7 @@ export function collectNlsIds(source, filename = 'source.js') {
           // These calls use the English message argument, not the indexed catalog.
         }
         else {
-          throw new Error(`Non-static NLS index in ${filename}: ${node.getText(ast).slice(0,120)}`)
+          throw new Error(`Non-static NLS index in ${filename}: ${node.getText(ast).slice(0, 120)}`)
         }
       }
     }
@@ -93,18 +96,110 @@ export function collectMonacoPackages(root = repository) {
   return packages
 }
 
-function javascriptFiles(directory) {
+function walkFiles(directory, extensions, excludeTests = false) {
+  if (!existsSync(directory))
+    return []
   const files = []
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === 'node_modules')
+    if (entry.name === 'node_modules' || entry.name === 'generated')
       continue
-    const path = join(directory, entry.name)
-    if (entry.isDirectory())
-      files.push(...javascriptFiles(path))
-    else if (entry.isFile() && entry.name.endsWith('.js'))
-      files.push(path)
+    const fullPath = join(directory, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...walkFiles(fullPath, extensions, excludeTests))
+    }
+    else if (entry.isFile() && extensions.some(ext => entry.name.endsWith(ext))) {
+      if (excludeTests && /\.test\./.test(entry.name))
+        continue
+      files.push(fullPath)
+    }
   }
   return files.sort()
+}
+
+function resolveEsmSpecifier(specifier, fromFile, cache) {
+  const key = `${dirname(fromFile)}::${specifier}`
+  if (cache.has(key))
+    return cache.get(key)
+
+  let resolved = null
+  if (specifier.startsWith('.')) {
+    const base = resolve(dirname(fromFile), specifier)
+    for (const candidate of [base, `${base}.js`, `${base}.mjs`, join(base, 'index.js')]) {
+      if (existsSync(candidate)) {
+        resolved = realpathSync(candidate)
+        break
+      }
+    }
+  }
+  else {
+    const candidates = specifier === '@codingame/monaco-vscode-api'
+      ? ['@codingame/monaco-vscode-api/services', specifier]
+      : [specifier]
+    for (const candidate of candidates) {
+      try {
+        const url = import.meta.resolve(candidate, pathToFileURL(fromFile).href)
+        if (url.startsWith('file:')) {
+          resolved = realpathSync(fileURLToPath(url))
+          break
+        }
+      }
+      catch {}
+    }
+  }
+
+  cache.set(key, resolved)
+  return resolved
+}
+
+/**
+ * Traces only the Monaco/VS Code ESM modules reachable from `src/` so unused
+ * workbench features (chat, debug, terminal, MCP, userDataSync, views, etc.)
+ * do not bloat the shipped Chinese NLS catalog.
+ */
+export function collectReachableMonacoFiles(root = repository) {
+  const srcDirectory = join(root, 'src')
+  const sourceFiles = walkFiles(srcDirectory, ['.ts', '.tsx', '.js', '.mjs'], true)
+  const entrySpecifiers = new Set()
+
+  for (const file of sourceFiles) {
+    const source = readFileSync(file, 'utf8')
+    for (const match of source.matchAll(SRC_IMPORT_RE))
+      entrySpecifiers.add(match[1])
+  }
+
+  const cache = new Map()
+  const visited = new Set()
+  const queue = []
+  const rootAnchor = join(root, 'package.json')
+
+  for (const specifier of [...entrySpecifiers].sort()) {
+    const target = resolveEsmSpecifier(specifier, rootAnchor, cache)
+    if (target && !visited.has(target)) {
+      visited.add(target)
+      queue.push(target)
+    }
+  }
+
+  while (queue.length > 0) {
+    const file = queue.pop()
+    if (!file.endsWith('.js') && !file.endsWith('.mjs'))
+      continue
+    const source = readFileSync(file, 'utf8')
+    for (const match of source.matchAll(PKG_IMPORT_RE)) {
+      const specifier = match[1]
+      if (!specifier.startsWith('.') && !specifier.startsWith('@codingame/') && !specifier.startsWith('vscode/'))
+        continue
+      if (SKIP_ASSET_RE.test(specifier))
+        continue
+      const next = resolveEsmSpecifier(specifier, file, cache)
+      if (next && !visited.has(next)) {
+        visited.add(next)
+        queue.push(next)
+      }
+    }
+  }
+
+  return [...visited].sort()
 }
 
 function writeIfChanged(path, content) {
@@ -124,25 +219,41 @@ export function subsetNlsMessages(original, used) {
   return original.map((value, index) => used.has(index) ? value : null)
 }
 
+export function encodeSparseNlsMessages(subset) {
+  const entries = {}
+  for (let index = 0; index < subset.length; index++) {
+    const value = subset[index]
+    if (value !== null && value !== undefined)
+      entries[String(index)] = value
+  }
+  return { length: subset.length, entries }
+}
+
 export async function generateMonacoNls(root = repository, outputDirectory = join(root, 'src/lib/monaco/generated')) {
   const packages = collectMonacoPackages(root)
   const languagePack = [...packages].find(([, pkg]) => pkg.name === '@codingame/monaco-vscode-language-pack-zh-hans')
   if (!languagePack)
     throw new Error('The Chinese VS Code language pack must be installed')
   const [languageDirectory, languageMetadata] = languagePack
-  const used = new Set()
-  let files = 0
-  for (const [directory, metadata] of packages) {
+  for (const [, metadata] of packages) {
     if (metadata.version !== languageMetadata.version)
       throw new Error(`NLS package versions differ: ${metadata.name}@${metadata.version}, language pack ${languageMetadata.version}`)
-    for (const file of javascriptFiles(directory)) {
-      files++
-      for (const id of collectNlsIds(readFileSync(file, 'utf8'), file))
-        used.add(id)
-    }
   }
+
+  const reachableFiles = collectReachableMonacoFiles(root)
+  const filesToScan = reachableFiles.length > 0
+    ? reachableFiles
+    : [...packages.keys()].flatMap(directory => walkFiles(directory, ['.js']))
+
+  const used = new Set()
+  for (const file of filesToScan) {
+    for (const id of collectNlsIds(readFileSync(file, 'utf8'), file))
+      used.add(id)
+  }
+
   const { default: original } = await import(pathToFileURL(join(languageDirectory, 'translations/main.i18n.json.js')).href)
-  const messages = subsetNlsMessages(original, used)
+  const subset = subsetNlsMessages(original, used)
+  const encoded = encodeSparseNlsMessages(subset)
   const source = readFileSync(join(languageDirectory, 'index.js'), 'utf8')
   const manifestMatch = source.match(/^const manifest = (.+);$/m)
   if (!manifestMatch)
@@ -153,7 +264,8 @@ export async function generateMonacoNls(root = repository, outputDirectory = joi
   const themeTranslations = JSON.parse(readFileSync(join(languageDirectory, 'translations/extensions/vscode.theme-defaults.i18n.json'), 'utf8'))
   const directory = outputDirectory
   mkdirSync(directory, { recursive: true })
-  writeIfChanged(join(directory, 'zh-cn-messages.json'), `${JSON.stringify(messages)}\n`)
+  const encodedJson = `${JSON.stringify(encoded)}\n`
+  writeIfChanged(join(directory, 'zh-cn-messages.json'), encodedJson)
   writeIfChanged(join(directory, 'zh-cn-localization.json'), `${JSON.stringify({
     manifest,
     extensionTranslations: {
@@ -161,10 +273,13 @@ export async function generateMonacoNls(root = repository, outputDirectory = joi
     },
   }, null, 2)}\n`)
   const summary = {
-    version: languageMetadata.version, packages: packages.size, files,
-    usedMessages: used.size, totalMessages: original.length,
+    version: languageMetadata.version,
+    packages: packages.size,
+    files: filesToScan.length,
+    usedMessages: used.size,
+    totalMessages: original.length,
     originalBytes: Buffer.byteLength(JSON.stringify(original)),
-    subsetBytes: Buffer.byteLength(JSON.stringify(messages)),
+    subsetBytes: Buffer.byteLength(encodedJson),
   }
   console.log(JSON.stringify(summary))
   return summary

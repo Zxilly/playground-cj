@@ -4,10 +4,12 @@ let pending: Promise<unknown> | undefined
 
 export function preloadEditorServices(): Promise<unknown> {
   pending ??= Promise.all([
+    import('@codingame/monaco-vscode-base-service-override'),
+    import('@codingame/monaco-vscode-configuration-service-override'),
+    import('@codingame/monaco-vscode-model-service-override'),
     import('@codingame/monaco-vscode-languages-service-override'),
     import('@codingame/monaco-vscode-textmate-service-override'),
     import('@codingame/monaco-vscode-theme-service-override'),
-    import('@codingame/monaco-vscode-views-service-override'),
     import('@codingame/monaco-vscode-extensions-service-override'),
     import('@codingame/monaco-vscode-theme-defaults-default-extension'),
   ]).catch((error) => {

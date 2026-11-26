@@ -3,6 +3,12 @@
   "scopeName": "source.cj",
   "patterns": [
     {
+      "include": "#comments"
+    },
+    {
+      "include": "#originStrings"
+    },
+    {
       "include": "#strings"
     },
     {
@@ -18,19 +24,10 @@
       "include": "#quoteToken"
     },
     {
-      "include": "#originStrings"
-    },
-    {
-      "include": "#comments"
+      "include": "#classlike-declaration"
     },
     {
       "include": "#code"
-    },
-    {
-      "include": "#module"
-    },
-    {
-      "include": "#forStruct"
     },
     {
       "include": "#at"
@@ -40,9 +37,6 @@
     },
     {
       "include": "#macro"
-    },
-    {
-      "include": "#classlike-declaration"
     },
     {
       "include": "#variable"
@@ -67,18 +61,45 @@
       "patterns": [
         {
           "begin": "\\b(class|interface|struct|enum|extend|type)\\s+",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.Cangjie"
+            }
+          },
           "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[a-zA-Z_][a-zA-Z0-9_]*`|(?=[^\\w\\s])|\\b[a-zA-Z_][a-zA-Z0-9_]*",
-          "name": "support.class.Cangjie"
+          "endCaptures": {
+            "0": {
+              "name": "support.class.Cangjie"
+            }
+          }
         },
         {
           "begin": "\\b(func)\\s+",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.Cangjie"
+            }
+          },
           "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[a-zA-Z_][a-zA-Z0-9_]*`|(?=[^\\w\\s])|\\b[a-zA-Z_][a-zA-Z0-9_]*",
-          "name": "support.function.Cangjie"
+          "endCaptures": {
+            "0": {
+              "name": "support.function.Cangjie"
+            }
+          }
         },
         {
           "begin": "\\b(let|var)\\s+",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.Cangjie"
+            }
+          },
           "end": "(?=\\b[0-9])|(?=\\b(VArray|const|differentiable|grad|vjp|valWithGrad|adjoint|adjointOf|when|except|include|primal|stage|main|false|IntNative|mut|Nothing|prop|true|UIntNative|unsafe|Int8|Int16|Int32|Int64|UInt8|UInt16|UInt32|UInt64|Float16|Float32|Float64|Rune|Bool|Unit|struct|enum|This|package|import|class|interface|extend|func|let|var|type|init|this|super|if|else|case|try|catch|finally|for|do|while|throw|return|continue|break|is|as|in|match|where|spawn|synchronized|macro|quote|static|internal|external|operator|foreign|inout)\\s)|`[a-zA-Z_][a-zA-Z0-9_]*`|(?=[^\\w\\s])|\\b[a-zA-Z_][a-zA-Z0-9_]*",
-          "name": "support.variable.Cangjie"
+          "endCaptures": {
+            "0": {
+              "name": "support.variable.Cangjie"
+            }
+          }
         },
         {
           "name": "support.class.Cangjie",
@@ -90,8 +111,12 @@
         },
         {
           "begin": "\\b(case)\\s+",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.Cangjie"
+            }
+          },
           "end": "(?=(\\=\\>))|[\\n\\r]",
-          "name": "keyword.operator.Cangjie",
           "patterns": [
             {
               "include": "#memberAccess"
@@ -127,9 +152,12 @@
     "type": {
       "patterns": [
         {
-          "begin": "(?<!<)<",
-          "end": "(?=[^,*\\<\\>\\w\\s]|[\\n\\r])",
+          "begin": "(?<=[a-zA-Z0-9_`])<(?!<|=|:)(?=[\\w\\s,.*<>?()\\->:`]+>)",
+          "end": ">|(?=[^,*\\<\\>\\w\\s.?()\\->:`]|[\\n\\r])",
           "patterns": [
+            {
+              "include": "#type"
+            },
             {
               "include": "#keywords"
             },
@@ -263,36 +291,46 @@
     "originStrings": {
       "patterns": [
         {
-          "begin": "(?<!#)(#{2})+\"",
+          "name": "string.quoted.raw.Cangjie",
+          "begin": "(?<!#)(#+)(\")",
           "beginCaptures": {
             "1": {
               "name": "punctuation.definition.string.begin.Cangjie"
+            },
+            "2": {
+              "name": "punctuation.definition.string.begin.Cangjie"
             }
           },
-          "end": "\"(?<!#)(#{2})+",
+          "end": "(\")(\\1)(?!#)",
           "endCaptures": {
             "1": {
               "name": "punctuation.definition.string.end.Cangjie"
+            },
+            "2": {
+              "name": "punctuation.definition.string.end.Cangjie"
             }
-          },
-          "name": "string.quoted.double.Cangjie",
-          "contentName": "punctuation.definition.string.begin.Cangjie"
+          }
         },
         {
-          "begin": "(?<!#)#(#{2})*\"",
+          "name": "string.quoted.raw.Cangjie",
+          "begin": "(?<!#)(#+)(')",
           "beginCaptures": {
             "1": {
               "name": "punctuation.definition.string.begin.Cangjie"
+            },
+            "2": {
+              "name": "punctuation.definition.string.begin.Cangjie"
             }
           },
-          "end": "\"(?<!#)#(#{2})*",
+          "end": "(')(\\1)(?!#)",
           "endCaptures": {
             "1": {
               "name": "punctuation.definition.string.end.Cangjie"
+            },
+            "2": {
+              "name": "punctuation.definition.string.end.Cangjie"
             }
-          },
-          "name": "string.quoted.double.Cangjie",
-          "contentName": "punctuation.definition.string.begin.Cangjie"
+          }
         }
       ]
     },
@@ -363,34 +401,35 @@
         }
       ]
     },
+    "block-comment": {
+      "name": "comment.block.Cangjie",
+      "begin": "/\\*",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.begin.Cangjie"
+        }
+      },
+      "end": "\\*/",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.comment.end.Cangjie"
+        }
+      },
+      "patterns": [
+        {
+          "include": "#block-comment"
+        }
+      ]
+    },
     "comments": {
       "patterns": [
         {
-          "name": "comment.block.Cangjie",
-          "begin": "(/\\*)|(/\\*/\\*)",
-          "beginCaptures": {
-            "0": {
-              "name": "punctuation.definition.comment.begin.Cangjie"
-            }
-          },
-          "end": "(\\*/)",
-          "endCaptures": {
-            "0": {
-              "name": "punctuation.definition.comment.end.Cangjie"
-            }
-          },
-          "patterns": [
-            {
-              "name": "comment.block.Cangjie",
-              "begin": "(/\\*)|(/\\*/\\*)",
-              "end": "(\\*/)"
-            }
-          ]
+          "include": "#block-comment"
         },
         {
           "name": "comment.line.Cangjie",
-          "begin": "\/\/",
-          "end": "\n"
+          "begin": "//",
+          "end": "$"
         }
       ]
     },
@@ -468,7 +507,7 @@
     },
     "escape_string": {
       "name": "constant.character.escape.string.byteArray.Cangjie",
-      "match": "(\\\\\\\\)|(\\\\u\\{[0-9a-fA-F]{1,8}\\})|(\\\\[a|b|t|r|n|\"|\\'|f|v|\\$|0])"
+      "match": "(\\\\\\\\)|(\\\\u\\{[0-9a-fA-F]{1,8}\\})|(\\\\[abtrn\"'fv$0])"
     },
     "strings": {
       "patterns": [
@@ -483,8 +522,8 @@
     "string_single": {
       "patterns": [
         {
-          "begin": "(?<!\\\\)(r)?\\'",
-          "end": "\\'|\\n|\\r",
+          "begin": "\\br'|(?<!\\\\)'",
+          "end": "'|\\n|\\r",
           "name": "string.quoted.single.Cangjie",
           "patterns": [
             {
@@ -496,11 +535,7 @@
           ]
         },
         {
-          "match": "(r)?\\'(?<!\\\\)[\\s\\S](?<!\\\\)\\'",
-          "name": "string.quoted.single.Cangjie"
-        },
-        {
-          "begin": "(?<!\\\\)(r)?\"",
+          "begin": "\\br\"|(?<!\\\\)\"",
           "end": "\"|\\n|\\r",
           "name": "string.quoted.double.Cangjie",
           "patterns": [
@@ -513,7 +548,7 @@
           ]
         },
         {
-          "begin": "(?<!\\\\)J\"",
+          "begin": "\\bJ\"",
           "end": "\"|\\n|\\r",
           "name": "string.quoted.double.Cangjie",
           "patterns": [
@@ -523,7 +558,7 @@
           ]
         },
         {
-          "begin": "(?<!\\\\)b\"",
+          "begin": "\\bb\"",
           "end": "\"|\\n|\\r",
           "name": "constant.character.escape.string.byteArray.Cangjie",
           "patterns": [
@@ -533,7 +568,7 @@
           ]
         },
         {
-          "begin": "(?<!\\\\)b'",
+          "begin": "\\bb'",
           "end": "'|\\n|\\r",
           "name": "constant.character.escape.string.byteArray.Cangjie",
           "patterns": [

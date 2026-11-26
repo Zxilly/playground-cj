@@ -38,6 +38,7 @@ interface ConnectionInstance {
 interface LspRuntimeDeps {
   createMessageChannel: () => Pick<MessageChannel, 'port1' | 'port2'>
   createRuntimeWorker: () => Worker
+  disposeLanguageClient: () => Promise<void>
 }
 
 const MAX_AUTO_RESTART_ATTEMPTS = 4
@@ -48,6 +49,9 @@ const runtimeDeps: LspRuntimeDeps = {
     new URL('../workers/lsp-runtime.worker.ts', import.meta.url),
     { type: 'module', name: 'cangjie-lsp-runtime' },
   ),
+  disposeLanguageClient: () => import('@/lib/monaco/language-client')
+    .then(module => module.disposeLanguageClient())
+    .catch(() => undefined),
 }
 
 type StatusListener = (status: LspRuntimeStatus) => void
@@ -150,7 +154,13 @@ function handleCrash(err: Error, instance: ConnectionInstance): void {
     return
   }
   instance.crashHandled = true
+  STATE.connectionInstance = null
   console.error('[LSP] crash detected:', err)
+  // Terminate the crashed worker (and its Emscripten pthreads/WASM heap) and
+  // detach the language client immediately rather than leaking them across the
+  // backoff window or after retries are exhausted.
+  void disposeConnection(instance)
+  void runtimeDeps.disposeLanguageClient()
   const nextAttempt = STATE.runtimeStatus.autoRestartAttempts + 1
   STATE.runtimeStatus.autoRestartAttempts = nextAttempt
   setState({ autoRestartAttempts: nextAttempt })

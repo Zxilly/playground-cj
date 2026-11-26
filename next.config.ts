@@ -91,7 +91,7 @@ const nextConfig: NextConfig = {
       }],
     ],
   },
-  reactStrictMode: false,
+  reactStrictMode: true,
   turbopack: {
     rules: {
       '*.js': {

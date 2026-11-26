@@ -28,10 +28,10 @@ const FALLBACK_STATUS: LspRuntimeStatus = {
 
 const STATUS_ICONS: Record<LspStatusIcon, React.ReactNode> = {
   'ready': <Check className="h-3.5 w-3.5" />,
-  'spinner': <Loader2 className="h-3.5 w-3.5 animate-spin" />,
+  'spinner': <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />,
   'stopped': <Pause className="h-3.5 w-3.5" />,
   'manual-stopped': <CircleSlash className="h-3.5 w-3.5" />,
-  'crashed': <AlertCircle className="h-3.5 w-3.5 text-red-400" />,
+  'crashed': <AlertCircle className="h-3.5 w-3.5 text-(--vscode-statusBarItem-errorForeground,var(--destructive))" />,
 }
 
 interface ActionRowProps {
@@ -95,9 +95,10 @@ export function LspStatusIndicator() {
           aria-label={render.ariaLabel}
           title={render.tooltip}
           className={cn(
-            'inline-flex items-center gap-1.5 px-2 h-full text-xs',
-            'hover:bg-black/10 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-            'text-(--vscode-statusBar-foreground,#3b3b3b)',
+            'inline-flex items-center gap-1.5 px-2 h-full text-xs transition-colors',
+            'hover:bg-(--vscode-statusBarItem-hoverBackground,rgba(128,128,128,0.18))',
+            'focus:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+            'text-(--vscode-statusBar-foreground,var(--foreground,#ffffff))',
           )}
         >
           {STATUS_ICONS[render.icon]}

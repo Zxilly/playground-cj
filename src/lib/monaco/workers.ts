@@ -16,12 +16,6 @@ export function configureMonacoWorkers() {
         { type: 'module', name: label },
       )
     }
-    if (label === 'OutputLinkDetectionWorker') {
-      return new Worker(
-        new URL('../output.worker.js', import.meta.url),
-        { type: 'module', name: label },
-      )
-    }
     throw new Error(`Unknown worker label: ${label}`)
   }
 }

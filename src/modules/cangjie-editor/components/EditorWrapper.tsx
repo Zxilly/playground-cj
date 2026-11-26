@@ -1,9 +1,19 @@
 import type { CSSProperties, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 import { getEnhancedMonacoEnvironment, MonacoVscodeApiWrapper } from '@/lib/monaco/vscode-api'
 import type { CodeResources, MonacoLanguageClient } from '@/lib/monaco/vscode-api'
-import { acquireLanguageService, createEditorAppConfig, createMonacoVscodeApiConfig, ensureCangjieMonarchTokensProvider, ensureLanguageClient, isLanguageClientAvailable } from '@/lib/monaco'
+import {
+  acquireLanguageService,
+  createEditorAppConfig,
+  createMonacoVscodeApiConfig,
+  ensureLanguageClient,
+  isLanguageClientAvailable,
+} from '@/lib/monaco'
+import type { EditorPresentationOptions } from '@/lib/monaco'
+import { ensureMonacoFontRemeasure } from '@/lib/monaco/font-remeasure'
+import { ensureMonacoThemeSync } from '@/lib/monaco/theme-sync'
 import { acquireModel } from '@/lib/monaco/model-lifecycle'
 import { createModelFileMirror } from '@/lib/monaco/model-file-mirror'
 import { createCustomStatusBar } from '@/lib/statusbar'
@@ -11,6 +21,7 @@ import type { StatusBarHandle } from '@/lib/statusbar'
 import { getCurrentEditorPort, subscribeLspStatus } from '@/lib/lsp'
 import { registerLspCommands } from '@/lib/lsp-commands'
 import { LspStatusIndicator } from '@/modules/cangjie-editor/components/LspStatusIndicator'
+import { Button } from '@/components/ui/button'
 import * as monaco from '@codingame/monaco-vscode-editor-api'
 import { markEditorStartup } from '@/lib/monaco/startup-timing'
 
@@ -20,17 +31,24 @@ export interface MonacoEditorHandle {
   getEditor: () => monaco.editor.IStandaloneCodeEditor | undefined
   dispose: () => Promise<void> | void
   updateCodeResources?: (codeResources?: CodeResources) => Promise<boolean> | boolean
+  relayout?: () => void
 }
 
 export interface MonacoEditorProps {
   style?: CSSProperties
   code?: string
   onLoad?: (editorApp: MonacoEditorHandle) => void
+  onError?: (error: Error) => void
   locale?: string
   enableLanguageClient?: boolean
+  /** Compact/embedded preset (wordWrap on, no scrollBeyondLastLine, wheel passthrough). */
+  compact?: boolean
+  wordWrap?: monaco.editor.IStandaloneEditorConstructionOptions['wordWrap']
+  scrollBeyondLastLine?: boolean
+  alwaysConsumeMouseWheel?: boolean
   // Mount-time presentation options; language services remain enabled separately.
   statusBarCompactHeight?: number
-  // Resolved once on mount; an external host owns its own layout space.
+  // Resolved lazily when mounting the status bar; an external host owns its own layout space.
   statusBarHostRef?: RefObject<HTMLElement | null>
   // Disambiguator that becomes part of the model URI so multiple editors on
   // the same page hold independent models. Reuse across React mounts requires
@@ -42,9 +60,17 @@ export interface MonacoEditorProps {
   retainModelOnUnmount?: boolean
 }
 
-function isServicesAlreadyInitializedError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
-  return /services are already initialized/i.test(message)
+function measureContentBox(element: HTMLElement): { width: number, height: number } {
+  const { width: outerWidth, height: outerHeight } = element.getBoundingClientRect()
+  const computedStyle = window.getComputedStyle(element)
+  const paddingLeft = Number.parseFloat(computedStyle.paddingLeft) || 0
+  const paddingRight = Number.parseFloat(computedStyle.paddingRight) || 0
+  const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0
+  const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
+  return {
+    width: Math.max(0, outerWidth - paddingLeft - paddingRight),
+    height: Math.max(0, outerHeight - paddingTop - paddingBottom),
+  }
 }
 
 async function createStandaloneEditorHandle(
@@ -94,13 +120,22 @@ async function createStandaloneEditorHandle(
     throw error
   }
 
+  let disposed = false
+  let resourceEpoch = 0
+
   return {
-    getEditor: () => editor,
+    getEditor: () => (disposed ? undefined : editor),
+    relayout: () => {
+      if (disposed || !container.isConnected)
+        return
+      editor.layout(measureContentBox(container), true)
+    },
     updateCodeResources: async (codeResources) => {
       const nextResource = codeResources?.modified
-      if (!nextResource)
+      if (!nextResource || disposed)
         return false
 
+      const epoch = ++resourceEpoch
       const nextUri = monaco.Uri.parse(nextResource.uri ?? model.uri.toString())
       if (nextUri.toString() === model.uri.toString()) {
         if (nextResource.enforceLanguageId)
@@ -112,9 +147,15 @@ async function createStandaloneEditorHandle(
         nextUri.toString(),
         existingNextModel?.getValue() ?? nextResource.text ?? model.getValue(),
       )
+      if (disposed || epoch !== resourceEpoch) {
+        await nextModelFileMirror.dispose()
+        return false
+      }
+
+      const currentExistingNextModel = monaco.editor.getModel(nextUri)
       const nextLease = acquireModel(nextUri.toString(), () => {
-        if (existingNextModel)
-          return { resource: existingNextModel, owned: false }
+        if (currentExistingNextModel)
+          return { resource: currentExistingNextModel, owned: false }
         return {
           resource: monaco.editor.createModel(
             nextResource.text ?? model.getValue(),
@@ -159,6 +200,10 @@ async function createStandaloneEditorHandle(
       return true
     },
     dispose: async () => {
+      if (disposed)
+        return
+      disposed = true
+      resourceEpoch += 1
       editor.dispose()
       modelFileSubscription.dispose()
       await modelFileMirror.dispose()
@@ -170,95 +215,109 @@ async function createStandaloneEditorHandle(
 export function MonacoEditorReactComp({
   style,
   onLoad,
+  onError,
   code,
   locale,
   enableLanguageClient = true,
+  compact,
+  wordWrap,
+  scrollBeyondLastLine,
+  alwaysConsumeMouseWheel,
   statusBarCompactHeight = 44,
   statusBarHostRef,
   uriHint,
   modelScope,
   retainModelOnUnmount = false,
 }: MonacoEditorProps) {
+  const presentation = useMemo<EditorPresentationOptions | undefined>(() => {
+    if (
+      compact === undefined
+      && wordWrap === undefined
+      && scrollBeyondLastLine === undefined
+      && alwaysConsumeMouseWheel === undefined
+    ) {
+      return undefined
+    }
+    return { compact, wordWrap, scrollBeyondLastLine, alwaysConsumeMouseWheel }
+  }, [alwaysConsumeMouseWheel, compact, scrollBeyondLastLine, wordWrap])
+
   const editorAppConfig = useMemo(
-    () => createEditorAppConfig(code, locale, uriHint),
-    [code, locale, uriHint],
+    () => (presentation
+      ? createEditorAppConfig(code, locale, uriHint, presentation)
+      : createEditorAppConfig(code, locale, uriHint)),
+    [code, locale, presentation, uriHint],
   )
   const hasLanguageClient = enableLanguageClient && isLanguageClientAvailable()
 
-  const isInitializingRef = useRef(false)
   const isInitializedRef = useRef(false)
-
+  const cleanupPromiseRef = useRef<Promise<void>>(Promise.resolve())
   const languageClientRef = useRef<MonacoLanguageClient | null>(null)
-  const releaseLanguageServiceRef = useRef<(() => Promise<void>) | null>(null)
   const editorAppRef = useRef<MonacoEditorHandle | null>(null)
-  const statusBarRef = useRef<StatusBarHandle | null>(null)
-  const statusBarCompactHeightRef = useRef(statusBarCompactHeight)
-  const initialStatusBarHostRef = useRef(statusBarHostRef)
+  const rootRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const resizeObserverRef = useRef<ResizeObserver | null>(null)
-  const layoutFrameRef = useRef<number | null>(null)
-  const lspUnsubscribeRef = useRef<(() => void) | null>(null)
-  const boundGenerationRef = useRef<number>(0)
-  const rebuildPromiseRef = useRef<Promise<void> | null>(null)
-  const reconcileEpochRef = useRef(0)
 
-  // Mirror onLoad / editorAppConfig into refs so the init effect doesn't
-  // fire (and tear down + rebuild the editor) when a parent re-renders with a
-  // fresh callback identity, e.g. during HMR or during incidental upstream
-  // state changes.
+  // Mirror callbacks/config/lifecycle props into refs so the init effect does
+  // not tear down + rebuild the editor when a parent re-renders with a fresh
+  // callback identity or memoized config.
   const onLoadRef = useRef(onLoad)
   onLoadRef.current = onLoad
+  const onErrorRef = useRef(onError)
+  onErrorRef.current = onError
   const editorAppConfigRef = useRef(editorAppConfig)
   editorAppConfigRef.current = editorAppConfig
+  const statusBarCompactHeightRef = useRef(statusBarCompactHeight)
+  statusBarCompactHeightRef.current = statusBarCompactHeight
+  const statusBarHostRefRef = useRef(statusBarHostRef)
+  statusBarHostRefRef.current = statusBarHostRef
   const modelScopeRef = useRef(modelScope)
   modelScopeRef.current = modelScope
   const retainModelOnUnmountRef = useRef(retainModelOnUnmount)
   retainModelOnUnmountRef.current = retainModelOnUnmount
 
   const [indicatorHost, setIndicatorHost] = useState<HTMLElement | null>(null)
+  const [initError, setInitError] = useState<Error | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
+  // Unified init + dispose effect: a local `cancelled` flag + serialized
+  // `cleanupPromiseRef` guarantees React StrictMode double-mounts and
+  // `hasLanguageClient` toggles never deadlock or leak resources.
   useEffect(() => {
-    const externalStatusBarHost = initialStatusBarHostRef.current?.current
-    const reconcileEpoch = ++reconcileEpochRef.current
-    const isActive = () => reconcileEpochRef.current === reconcileEpoch
+    let cancelled = false
+    let localEditorHandle: MonacoEditorHandle | null = null
+    let localStatusBar: StatusBarHandle | null = null
+    let localLspUnsubscribe: (() => void) | null = null
+    let localReleaseLanguageService: (() => Promise<void>) | null = null
+    let localResizeObserver: ResizeObserver | null = null
+    let localLayoutFrame: number | null = null
+    let boundGeneration = 0
+    let rebuildPromise: Promise<void> | null = null
+    let lastLayout: { width: number, height: number } | undefined
+
     const getLiveContainer = () => {
       const container = containerRef.current
-      if (!container || !container.isConnected || !isActive())
+      if (cancelled || !container || !container.isConnected)
         return null
       return container
     }
 
-    let lastLayout: { width: number, height: number } | undefined
-    const updateEditorLayout = () => {
+    const updateEditorLayout = (force = false) => {
       const container = getLiveContainer()
-      if (container && editorAppRef.current) {
-        const parent = container.parentElement!
-        const { width: outerWidth, height: outerHeight } = parent.getBoundingClientRect()
-
-        const computedStyle = window.getComputedStyle(parent)
-        const paddingLeft = Number.parseFloat(computedStyle.paddingLeft) || 0
-        const paddingRight = Number.parseFloat(computedStyle.paddingRight) || 0
-        const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0
-        const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0
-
-        const width = Math.max(0, outerWidth - paddingLeft - paddingRight)
-        const statusBarHeight = externalStatusBarHost ? 0 : statusBarRef.current?.container.offsetHeight ?? 0
-        const height = Math.max(0, outerHeight - paddingTop - paddingBottom - statusBarHeight)
-
-        if (lastLayout?.width === width && lastLayout.height === height)
-          return
-        lastLayout = { width, height }
-        editorAppRef.current.getEditor()?.layout({ width, height }, true)
-      }
+      if (!container || !localEditorHandle)
+        return
+      const { width, height } = measureContentBox(container)
+      if (!force && lastLayout?.width === width && lastLayout.height === height)
+        return
+      lastLayout = { width, height }
+      localEditorHandle.getEditor()?.layout({ width, height }, true)
     }
 
     // Panel drags can notify several times per frame, especially with multiple
     // lesson editors. Measure and lay out each editor once before the next paint.
     const scheduleEditorLayout = () => {
-      if (layoutFrameRef.current !== null || !isActive())
+      if (cancelled || localLayoutFrame !== null)
         return
-      layoutFrameRef.current = requestAnimationFrame(() => {
-        layoutFrameRef.current = null
+      localLayoutFrame = requestAnimationFrame(() => {
+        localLayoutFrame = null
         updateEditorLayout()
       })
     }
@@ -266,17 +325,13 @@ export function MonacoEditorReactComp({
     // Per-editor lifecycle no longer owns the MonacoLanguageClient. The
     // singleton in `ensureLanguageClient` is shared across every editor on the
     // page; this function just makes sure it's booted against the current
-    // editor port. Multiple editors used to fight over the same MessagePort
-    // (MessagePort.onmessage is single-consumer), starving secondary editors
-    // of LSP service — keeping the client global eliminates that race.
+    // editor port.
     const reconcileLanguageClient = async (target: number) => {
-      if (!hasLanguageClient || !isActive())
+      if (!hasLanguageClient || cancelled)
         return
 
       languageClientRef.current = null
-      if (target === 0)
-        return
-      if (boundGenerationRef.current !== target)
+      if (target === 0 || boundGeneration !== target)
         return
 
       const port = getCurrentEditorPort()
@@ -284,9 +339,7 @@ export function MonacoEditorReactComp({
         return
 
       const client = await ensureLanguageClient(port)
-      if (!client)
-        return
-      if (!isActive() || boundGenerationRef.current !== target)
+      if (!client || cancelled || boundGeneration !== target)
         return
 
       languageClientRef.current = client
@@ -294,7 +347,7 @@ export function MonacoEditorReactComp({
 
     const queueReconcile = (target: number) => {
       const run = async () => {
-        if (!isActive())
+        if (cancelled)
           return
         try {
           await reconcileLanguageClient(target)
@@ -303,65 +356,82 @@ export function MonacoEditorReactComp({
           console.error('[LSP] reconcile failed:', e)
         }
       }
-      const next = rebuildPromiseRef.current ? rebuildPromiseRef.current.then(run, run) : run()
-      rebuildPromiseRef.current = next
+      const next = rebuildPromise ? rebuildPromise.then(run, run) : run()
+      rebuildPromise = next
       return next
     }
 
     const initAll = async () => {
-      const initialContainer = getLiveContainer()
-      if (!initialContainer || isInitializingRef.current || isInitializedRef.current) {
+      // Wait for any previous unmount's async disposal before acquiring models
+      // or mounting into the same DOM host.
+      await cleanupPromiseRef.current
+      if (cancelled)
         return
-      }
 
-      isInitializingRef.current = true
+      const initialContainer = getLiveContainer()
+      if (!initialContainer)
+        return
+
+      setInitError(null)
 
       try {
         await getEnhancedMonacoEnvironment().vscodeApiGlobalInitAwait
-        const containerAfterGlobalInit = getLiveContainer()
-        if (!containerAfterGlobalInit)
+        if (!getLiveContainer())
           return
 
         const vscodeApiConfig = createMonacoVscodeApiConfig()
         const vscodeApiWrapper = new MonacoVscodeApiWrapper(vscodeApiConfig)
-        try {
-          await vscodeApiWrapper.start()
-        }
-        catch (error) {
-          if (!isServicesAlreadyInitializedError(error))
-            throw error
-          // Compatibility with a runtime initialized outside this wrapper.
-        }
-        ensureCangjieMonarchTokensProvider()
-        const containerAfterWrapperStart = getLiveContainer()
-        if (!containerAfterWrapperStart)
+        await vscodeApiWrapper.start()
+        if (!getLiveContainer())
           return
+
+        ensureMonacoThemeSync()
+        ensureMonacoFontRemeasure()
 
         if (hasLanguageClient) {
           // Fire both concurrently: command registration does its own
           // dynamic imports and shouldn't serialize with LSP boot.
           void registerLspCommands()
-          releaseLanguageServiceRef.current ??= acquireLanguageService()
+          localReleaseLanguageService = acquireLanguageService()
+        }
+
+        const containerForEditor = getLiveContainer()
+        if (!containerForEditor) {
+          const release = localReleaseLanguageService
+          localReleaseLanguageService = null
+          await release?.()
+          return
         }
 
         const initialEditorAppConfig = editorAppConfigRef.current
-        const editorHandle: MonacoEditorHandle = await createStandaloneEditorHandle(
-          containerAfterWrapperStart,
+        const baseHandle = await createStandaloneEditorHandle(
+          containerForEditor,
           initialEditorAppConfig,
           modelScopeRef.current,
           retainModelOnUnmountRef.current,
         )
-        if (!isActive()) {
-          await editorHandle.dispose()
+        if (cancelled) {
+          await baseHandle.dispose()
+          const release = localReleaseLanguageService
+          localReleaseLanguageService = null
+          await release?.()
           return
         }
+
+        const editorHandle: MonacoEditorHandle = {
+          ...baseHandle,
+          relayout: () => updateEditorLayout(true),
+        }
+        localEditorHandle = editorHandle
         editorAppRef.current = editorHandle
 
         if (hasLanguageClient) {
-          lspUnsubscribeRef.current = subscribeLspStatus((status) => {
+          localLspUnsubscribe = subscribeLspStatus((status) => {
+            if (cancelled)
+              return
             const target = status.state === 'running' ? status.generation : 0
-            if (target !== boundGenerationRef.current) {
-              boundGenerationRef.current = target
+            if (target !== boundGeneration) {
+              boundGeneration = target
               void queueReconcile(target)
             }
           })
@@ -369,128 +439,146 @@ export function MonacoEditorReactComp({
 
         // Editing does not depend on the status bar's asynchronous setup.
         // Reveal the editor and bind its lifecycle before waiting for that UI.
-        updateEditorLayout()
-        resizeObserverRef.current?.disconnect()
-        resizeObserverRef.current = new ResizeObserver(scheduleEditorLayout)
-        const resizeParent = containerAfterWrapperStart.parentElement
-        if (resizeParent)
-          resizeObserverRef.current.observe(resizeParent)
+        updateEditorLayout(true)
+        localResizeObserver = new ResizeObserver(scheduleEditorLayout)
+        localResizeObserver.observe(containerForEditor)
         isInitializedRef.current = true
         onLoadRef.current?.(editorHandle)
         markEditorStartup('ready')
 
+        if (editorAppConfigRef.current !== initialEditorAppConfig) {
+          void editorHandle.updateCodeResources?.(editorAppConfigRef.current.codeResources)
+        }
+
         if (hasLanguageClient) {
-          const parentContainer = externalStatusBarHost ?? containerAfterWrapperStart.parentElement
-          if (parentContainer) {
-            const statusBar = await createCustomStatusBar(parentContainer, {
+          const externalHost = statusBarHostRefRef.current?.current
+          const statusBarParent = externalHost ?? rootRef.current
+          if (statusBarParent) {
+            const statusBar = await createCustomStatusBar(statusBarParent, {
               position: 'bottom',
               height: 22,
               compactHeight: statusBarCompactHeightRef.current,
             })
-            if (!getLiveContainer()) {
+            if (cancelled || !getLiveContainer()) {
               statusBar.dispose()
               return
             }
-            statusBarRef.current = statusBar
-            if (!externalStatusBarHost)
-              resizeObserverRef.current?.observe(statusBar.container)
+            localStatusBar = statusBar
 
             const host = document.createElement('div')
-            host.style.position = 'absolute'
-            host.style.right = '0'
-            host.style.top = '0'
-            host.style.bottom = '0'
             host.style.display = 'flex'
             host.style.alignItems = 'center'
+            host.style.height = '100%'
             host.style.zIndex = '2'
-            statusBarRef.current.container.appendChild(host)
+            statusBar.container.appendChild(host)
             setIndicatorHost(host)
           }
         }
 
-        if (!getLiveContainer())
+        if (cancelled || !getLiveContainer())
           return
 
-        updateEditorLayout()
+        updateEditorLayout(true)
         markEditorStartup('statusbar-ready')
       }
       catch (error) {
-        console.error('Editor initialization failed:', error)
-      }
-      finally {
-        isInitializingRef.current = false
+        if (cancelled)
+          return
+        const err = error instanceof Error ? error : new Error(String(error))
+        console.error('Editor initialization failed:', err)
+        const release = localReleaseLanguageService
+        localReleaseLanguageService = null
+        await release?.().catch(() => undefined)
+        setInitError(err)
+        onErrorRef.current?.(err)
       }
     }
 
     void initAll()
-    // Intentionally exclude callback/config/lifecycle props — they are mirrored
-    // through refs above. Including them would force a full editor
-    // teardown + rebuild on every parent re-render that produces a fresh
-    // callback or memoized config (especially common during HMR).
-  }, [hasLanguageClient])
 
-  // Push code/locale changes into the running editor without re-creating
-  // it. The init effect ignores `editorAppConfig` for this reason — model
-  // updates flow through `updateCodeResources` instead.
+    return () => {
+      cancelled = true
+      isInitializedRef.current = false
+      if (localLayoutFrame !== null) {
+        cancelAnimationFrame(localLayoutFrame)
+        localLayoutFrame = null
+      }
+      localResizeObserver?.disconnect()
+      localResizeObserver = null
+      localLspUnsubscribe?.()
+      localLspUnsubscribe = null
+      setIndicatorHost(null)
+      if (editorAppRef.current === localEditorHandle)
+        editorAppRef.current = null
+      languageClientRef.current = null
+
+      const statusBarToDispose = localStatusBar
+      localStatusBar = null
+      const editorToDispose = localEditorHandle
+      localEditorHandle = null
+      const releaseLanguageService = localReleaseLanguageService
+      localReleaseLanguageService = null
+
+      cleanupPromiseRef.current = cleanupPromiseRef.current.then(async () => {
+        try {
+          statusBarToDispose?.dispose()
+          await editorToDispose?.dispose()
+          await releaseLanguageService?.()
+        }
+        catch {}
+      })
+    }
+  }, [hasLanguageClient, retryCount])
+
+  // Push code/locale/presentation changes into the running editor without
+  // re-creating it. The init effect ignores `editorAppConfig` for this reason.
   useEffect(() => {
     if (!isInitializedRef.current)
       return
     const handle = editorAppRef.current
-    if (!handle?.updateCodeResources)
+    if (!handle)
       return
-    void handle.updateCodeResources(editorAppConfig.codeResources)
+    if (editorAppConfig.editorOptions) {
+      const { language: _language, ...runtimeOptions } = editorAppConfig.editorOptions
+      handle.getEditor()?.updateOptions(runtimeOptions)
+    }
+    if (handle.updateCodeResources)
+      void handle.updateCodeResources(editorAppConfig.codeResources)
   }, [editorAppConfig])
 
-  useEffect(() => {
-    const disposeAll = async () => {
-      try {
-        isInitializedRef.current = false
-        reconcileEpochRef.current += 1
-        rebuildPromiseRef.current = null
-        boundGenerationRef.current = 0
-        lspUnsubscribeRef.current?.()
-        lspUnsubscribeRef.current = null
-        setIndicatorHost(null)
-        const statusBar = statusBarRef.current
-        statusBarRef.current = null
-        const editorApp = editorAppRef.current
-        editorAppRef.current = null
-        // Drop only this component's reference. Releasing the service lease
-        // keeps the singleton alive for other editors and shuts it down when
-        // this was the final consumer.
-        languageClientRef.current = null
-        const releaseLanguageService = releaseLanguageServiceRef.current
-        releaseLanguageServiceRef.current = null
-
-        statusBar?.dispose()
-        await editorApp?.dispose()
-        await releaseLanguageService?.()
-      }
-      catch {
-      }
-    }
-
-    return () => {
-      if (layoutFrameRef.current !== null) {
-        cancelAnimationFrame(layoutFrameRef.current)
-        layoutFrameRef.current = null
-      }
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect()
-        resizeObserverRef.current = null
-      }
-
-      void disposeAll()
-    }
-  }, [])
+  const isEnglish = locale === 'en'
 
   return (
     <div
-      className="absolute w-full h-full flex flex-col"
+      ref={rootRef}
+      className="absolute inset-0 flex h-full w-full flex-col"
       style={style}
     >
-      <div ref={containerRef} className="absolute inset-0 overflow-hidden" />
+      <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden" />
       {indicatorHost && hasLanguageClient && createPortal(<LspStatusIndicator />, indicatorHost)}
+      {initError && (
+        <div
+          role="alert"
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-background/95 p-4 text-center text-sm"
+        >
+          <AlertCircle className="size-6 text-destructive" aria-hidden="true" />
+          <p className="font-medium text-foreground">
+            {isEnglish ? 'Failed to load code editor' : '代码编辑器加载失败'}
+          </p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            {initError.message}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setRetryCount(count => count + 1)}
+          >
+            <RefreshCw className="size-3.5" aria-hidden="true" />
+            <span>{isEnglish ? 'Retry' : '重试'}</span>
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

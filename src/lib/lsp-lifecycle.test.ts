@@ -99,6 +99,8 @@ describe('lsp runtime worker lifecycle', () => {
     first.progress(1, 2)
     first.fail('Standard library incomplete: loaded 1/2 modules')
     await failedStart
+    expect(first.terminated).toBe(true)
+    expect(lsp.getCurrentEditorPort()).toBeNull()
     expect(lsp.getLspStatus()).toMatchObject({
       state: 'crashed',
       stdlibModulesLoaded: 1,

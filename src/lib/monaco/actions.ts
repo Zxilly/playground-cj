@@ -11,6 +11,9 @@ export interface EditorCapabilities {
   format?: (code: string, signal: AbortSignal) => Promise<string>
   shareUrl?: EditorCommand
   shareHash?: EditorCommand
+  /** Optional save/draft persistence handler for Ctrl/Cmd+S. */
+  onSave?: EditorCommand
+  /** @deprecated Prefer `onSave`. Kept for backward compatibility. */
   save?: EditorCommand
 }
 
@@ -93,12 +96,13 @@ export function registerEditorActions(
     }))
   }
   add('cangjie.compile.run', t`编译运行`, capabilities.run, 'run', [
-    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB,
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
     monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB,
   ])
   add('cangjie.share.url', t`分享完整链接`, capabilities.shareUrl, 'share.url')
   add('cangjie.share.hash', t`分享短链接`, capabilities.shareHash, 'share.hash')
-  add('cangjie.save', t`保存代码`, capabilities.save, 'save', [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS])
+  add('cangjie.save', t`保存代码`, capabilities.onSave ?? capabilities.save, 'save', [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS])
   let disposed = false
   const dispose = () => {
     if (disposed)

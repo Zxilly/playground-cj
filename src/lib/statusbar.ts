@@ -10,7 +10,10 @@ export interface StatusBarHandle {
   dispose: () => void
 }
 
-/** Hosts the application's LSP control without a VS Code workbench statusbar. */
+/**
+ * Hosts the application's LSP status control as a normal flex item (never
+ * overlaying the editor canvas) without loading a VS Code workbench statusbar.
+ */
 export async function createCustomStatusBar(
   parentContainer: HTMLElement,
   options: StatusBarOptions = {},
@@ -23,18 +26,16 @@ export async function createCustomStatusBar(
   } = options
   const container = document.createElement('footer')
   container.className = `statusbar-container ${className}`.trim()
-  if (window.getComputedStyle(parentContainer).position === 'static')
-    parentContainer.style.position = 'relative'
   container.style.cssText = `
-    position: absolute;
+    position: relative;
     z-index: 1;
     width: 100%;
-    left: 0;
-    right: 0;
-    background: var(--vscode-statusBar-background, #007acc);
-    color: var(--vscode-statusBar-foreground, #ffffff);
+    background: var(--vscode-statusBar-background, var(--muted, #007acc));
+    color: var(--vscode-statusBar-foreground, var(--foreground, #ffffff));
+    border-top: 1px solid var(--vscode-statusBar-border, var(--border, transparent));
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     font-size: 12px;
     overflow: hidden;
     flex-shrink: 0;
@@ -47,11 +48,9 @@ export async function createCustomStatusBar(
   applyResponsiveHeight()
   compactViewport.addEventListener('change', applyResponsiveHeight)
   if (position === 'top') {
-    container.style.top = '0'
     parentContainer.insertBefore(container, parentContainer.firstChild)
   }
   else {
-    container.style.bottom = '0'
     parentContainer.appendChild(container)
   }
 

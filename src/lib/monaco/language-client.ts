@@ -1,5 +1,5 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api'
-import type { LogOutputChannel } from 'vscode'
+import type { LogLevel, LogOutputChannel } from 'vscode'
 import type { MonacoLanguageClient } from './vscode-api/monaco-language-client'
 import isMobile from 'is-mobile'
 import { HMR_SLOT_KEYS, hmrSlot } from '@/lib/hmr-store'
@@ -8,37 +8,44 @@ import { CANGJIE_LANGUAGE_ID, CANGJIE_LANGUAGE_NAME } from './language'
 import { LatestLanguageClientController } from './language-client-controller'
 import { ensureExtensionHost } from './vscode-api/extension-host'
 
-// A single Output Channel shared across every LanguageClient instance.
-// When clientOptions.outputChannel is set, vscode-languageclient treats it
-// as caller-owned and skips disposing it (see _disposeOutputChannel) —
-// which eliminates the doCreateOutputChannel / store-disposed race that
-// otherwise fires on every LSP restart and leaks a channel each time.
-// Stored on globalThis so HMR module re-eval doesn't drop the existing channel
-// and create a duplicate one on the next LSP boot.
+// A lightweight caller-owned LogOutputChannel shared across every LanguageClient
+// instance. Supplying our own channel eliminates the dependency on VS Code's
+// heavy output-service-override / views-service-override and prevents
+// vscode-languageclient from creating or disposing workbench output channels on
+// LSP restarts.
 interface OutputChannelState {
   channel: LogOutputChannel | null
-  pending: Promise<LogOutputChannel> | null
 }
 
 const channelState = hmrSlot<OutputChannelState>(HMR_SLOT_KEYS.LSP_OUTPUT_CHANNEL, () => ({
   channel: null,
-  pending: null,
 }))
 
-async function getSharedOutputChannel(): Promise<LogOutputChannel> {
-  if (channelState.channel)
-    return channelState.channel
-  if (!channelState.pending) {
-    channelState.pending = import('@codingame/monaco-vscode-extension-api')
-      .then(({ window }) => {
-        channelState.channel = window.createOutputChannel(CANGJIE_LANGUAGE_NAME, { log: true }) as unknown as LogOutputChannel
-        return channelState.channel
-      })
-      .finally(() => {
-        channelState.pending = null
-      })
+function createConsoleLogOutputChannel(name: string): LogOutputChannel {
+  const noopDisposable = { dispose: () => {} }
+  const prefix = `[LSP:${name}]`
+  return {
+    name,
+    logLevel: 3 as LogLevel, // LogLevel.Info
+    onDidChangeLogLevel: () => noopDisposable,
+    trace: (message: string, ...args: unknown[]) => console.debug(prefix, message, ...args),
+    debug: (message: string, ...args: unknown[]) => console.debug(prefix, message, ...args),
+    info: (message: string, ...args: unknown[]) => console.info(prefix, message, ...args),
+    warn: (message: string, ...args: unknown[]) => console.warn(prefix, message, ...args),
+    error: (error: string | Error, ...args: unknown[]) => console.error(prefix, error, ...args),
+    append: () => {},
+    appendLine: (value: string) => console.debug(prefix, value),
+    replace: () => {},
+    clear: () => {},
+    show: () => {},
+    hide: () => {},
+    dispose: () => {},
   }
-  return channelState.pending
+}
+
+function getSharedOutputChannel(): LogOutputChannel {
+  channelState.channel ??= createConsoleLogOutputChannel(CANGJIE_LANGUAGE_NAME)
+  return channelState.channel
 }
 
 function buildWorkspaceFolder() {
@@ -66,11 +73,11 @@ export async function createLanguageClient(port: MessagePort): Promise<MonacoLan
 
   // The editor can render before the WASM server is ready. Load the protocol
   // client only when there is a live port to connect, not with the editor UI.
-  const [{ BrowserMessageReader, BrowserMessageWriter, CloseAction, ErrorAction }, { MonacoLanguageClient }, outputChannel] = await Promise.all([
+  const [{ BrowserMessageReader, BrowserMessageWriter, CloseAction, ErrorAction }, { MonacoLanguageClient }] = await Promise.all([
     import('vscode-languageclient/browser'),
     import('./vscode-api/monaco-language-client'),
-    getSharedOutputChannel(),
   ])
+  const outputChannel = getSharedOutputChannel()
 
   return new MonacoLanguageClient({
     id: CANGJIE_LANGUAGE_NAME,
